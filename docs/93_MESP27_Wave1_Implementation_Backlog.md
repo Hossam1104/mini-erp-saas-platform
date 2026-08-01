@@ -74,22 +74,24 @@ This is a backlog-authoring artifact. It does not authorize coding, alter the BR
 
 These are the smallest technical foundations needed to implement the stories safely. They are proposed backlog records, not Jira subtasks.
 
-| ID | Proposed enabler | Minimum outcome / acceptance evidence | Dependencies | Sprint 1 |
-|---|---|---|---|---|
-| TE-01 | Modular Monolith solution and module seam | The approved backend/frontend structure exists conceptually with a Platform Administration boundary, explicit contracts, and no direct cross-module table mutation. Architecture tests are planned for forbidden references. | ARCH §§4–6; later implementation entry gate | Yes |
-| TE-02 | Shared SQL persistence and tenant-context guard | EF Core 10/SQL Server 2025 persistence conventions, module-owned schema ownership, trusted Tenant context, deny-by-default query/command guard, and isolation test fixture are defined. Database-per-tenant and per-Tenant schemas are not introduced. | ARCH §§4, 7; MESP-29; BRD M27-REQ-001/004, RULE-001/002 | Yes |
-| TE-03 | Authentication and authorization seam | ASP.NET Core Identity, secure HTTP-only first-party cookie session, policy evaluation seam, Platform actor versus Tenant actor scope, and separate export authorization checkpoints are represented without implementing MESP-28 behavior. | ARCH §2; MESP-28; BRD M27-REQ-045–049, 071–073, 095 | Yes |
-| TE-04 | REST/OpenAPI, error, correlation, and idempotency foundation | Versioned API contract conventions, safe validation/error envelope, stable request/correlation identity, optimistic concurrency approach, and idempotent command shape support provisioning, export, lifecycle, and audit flows. | ARCH §§2, 5; BRD M27-REQ-010/011/026/065/080 | Yes |
-| TE-05 | Durable work, notification, and private-file adapters | SQL-backed work records/hosted-worker seam, retryable notifications, private object-storage adapter, export artifact metadata, expiry, and checksum/integrity fields are defined. No broker or search cluster is added. | ARCH §§1–3; MESP-50; BRD M27-REQ-059/063/076 | No — needed before async stories |
-| TE-06 | Immutable audit and OpenTelemetry evidence | Common audit event contract, actor/Tenant/scope/correlation fields, authorized audit retrieval/export, structured logs, metrics, traces, freshness/data-as-of fields, and high-risk event taxonomy are defined. | ARCH §§2–3; MESP-38; BRD M27-REQ-007/074/075/078 | Yes |
-| TE-07 | Angular Wave 1 shell, component, and RTL baseline | Angular 22 standalone feature-route shell follows WF-07 Alternative B: Catalogue → tabbed Tenant Workspace; status uses icon/text, high-risk actions are isolated, EN/AR direction and LTR-embedded identifiers are supported, and accessibility-safe defaults exist. | ARCH §6; WF-01/WF-03/WF-07; BRD M27-REQ-081/082 | Yes |
-| TE-08 | Local and critical-flow test harness | Docker Compose local dependency profile, xUnit unit/integration/architecture test conventions, Playwright TypeScript browser/API fixtures, and a Restricted Validation Plan fixture for entitlement-denial tests are defined. | ARCH §§1–2, 8; MESP-48; BRD AC-009/041/042 | Yes |
+Estimates below are provisional planning points for decomposition only; they are not source commitments or Jira estimates.
+
+| ID | Proposed enabler | Estimate | Minimum outcome / acceptance evidence | Dependencies | Sprint 1 |
+|---|---|---:|---|---|---|
+| TE-01 | Modular Monolith solution and module seam | 3 | The approved backend/frontend structure exists conceptually with a Platform Administration boundary, explicit contracts, and no direct cross-module table mutation. Architecture tests are planned for forbidden references. | ARCH §§4–6; later implementation entry gate | Yes |
+| TE-02 | Shared SQL persistence and tenant-context guard | 5 | EF Core 10/SQL Server 2025 persistence conventions, module-owned schema ownership, trusted Tenant context, deny-by-default query/command guard, and isolation test fixture are defined. Database-per-tenant and per-Tenant schemas are not introduced. | ARCH §§4, 7; MESP-29; BRD M27-REQ-001/004, RULE-001/002 | Yes |
+| TE-03 | Authentication and authorization seam | 5 | ASP.NET Core Identity, secure HTTP-only first-party cookie session, policy evaluation seam, Platform actor versus Tenant actor scope, and separate export authorization checkpoints are represented without implementing MESP-28 behavior. | ARCH §2; MESP-28; BRD M27-REQ-045–049, 071–073, 095 | Yes |
+| TE-04 | REST/OpenAPI, error, correlation, and idempotency foundation | 3 | Versioned API contract conventions, safe validation/error envelope, stable request/correlation identity, optimistic concurrency approach, and idempotent command shape support provisioning, export, lifecycle, and audit flows. | ARCH §§2, 5; BRD M27-REQ-010/011/026/065/080 | Yes |
+| TE-05 | Durable work, notification, and private-file adapters | 5 | SQL-backed work records/hosted-worker seam, retryable notifications, private object-storage adapter, export artifact metadata, expiry, and checksum/integrity fields are defined. No broker or search cluster is added. | ARCH §§1–3; MESP-50; BRD M27-REQ-059/063/076 | No — needed before async stories |
+| TE-06 | Immutable audit and OpenTelemetry evidence | 3 | Common audit event contract, actor/Tenant/scope/correlation fields, authorized audit retrieval/export, structured logs, metrics, traces, freshness/data-as-of fields, and high-risk event taxonomy are defined. | ARCH §§2–3; MESP-38; BRD M27-REQ-007/074/075/078 | Yes |
+| TE-07 | Angular Wave 1 shell, component, and RTL baseline | 5 | Angular 22 standalone feature-route shell follows WF-07 Alternative B: Catalogue → tabbed Tenant Workspace; status uses icon/text, high-risk actions are isolated, EN/AR direction and LTR-embedded identifiers are supported, and accessibility-safe defaults exist. | ARCH §6; WF-01/WF-03/WF-07; BRD M27-REQ-081/082 | Yes |
+| TE-08 | Local and critical-flow test harness | 3 | Docker Compose local dependency profile, xUnit unit/integration/architecture test conventions, Playwright TypeScript browser/API fixtures, and a Restricted Validation Plan fixture for entitlement-denial tests are defined. | ARCH §§1–2, 8; MESP-48; BRD AC-009/041/042 | Yes |
 
 **Enabler guardrail:** TE-03 must not become an unapproved replacement for MESP-28. It supplies only the contract needed by this Epic; session lifetime, MFA, access-scope detail, and full Identity behavior remain MESP-28/MESP-38 decisions.
 
 ## 4. Sequenced user stories
 
-The sequence is dependency order, not an estimate. No story points, dates, capacity, assignee, or sprint commitment are invented.
+The sequence is dependency order. Provisional planning-point estimates are recorded in the enabler and Story quality tables for the requested recalculation; dates, capacity, assignees, and sprint commitments are not invented.
 
 | Seq. | ID | Story summary | Primary source trace | Earliest safe position |
 |---:|---|---|---|---|
@@ -97,22 +99,23 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 | 2 | US-02 | Tenant Catalogue with bounded views and states | BRD M27-REQ-001/004/067/070/071/072/097; WF-01 Screen 2 | Sprint 1 |
 | 3 | US-03 | Tenant Workspace read-only spine | BRD M27-REQ-004/010/078; WF-03 Screen 5; WF-07 Alternative B | Sprint 1 |
 | 4 | US-04 | Create Tenant draft wizard | BRD M27-REQ-003/024/030/093/094; WF-02 Screen 3 | After MESP-29/30 input contracts |
-| 5 | US-05 | Duplicate, completeness, and review gate | BRD M27-REQ-025/069/070; AC-004; WF-02 Screen 3 | After US-04 |
-| 6 | US-06 | Idempotent provisioning run and operations | BRD M27-REQ-026–029/065/066/076; AC-001–003; WF-02 Screens 3–4 | After US-05 and TE-05 |
-| 7 | US-07 | Plan Catalogue and version history | BRD M27-REQ-016/019; MESP-52; WF-04 Screen 7 | After TE-02–04, 06 |
+| 5 | US-05 | Duplicate, completeness, and review gate | BRD M27-REQ-025/069/070; AC-004; WF-02 Screen 3 | After US-04 and TE-07 |
+| 6 | US-06 | Idempotent provisioning run and operations | BRD M27-REQ-026–029/065/066/076; AC-001–003; WF-02 Screens 3–4 | After US-05, TE-05, and TE-07 |
+| 7 | US-07 | Plan Catalogue and version history | BRD M27-REQ-016/019; MESP-52; WF-04 Screen 7 | After TE-02–04, 06–07 |
 | 8 | US-08 | Subscription change preview and effective dating | BRD M27-REQ-017/018; RULE-004/005; AC-005/006; WF-04 Screen 7 | After US-07 |
-| 9 | US-09 | Entitlement visibility and denial proof | BRD M27-REQ-020–024/092; AC-007–010/042; WF-04 Screen 8 | After US-08 and TE-03 |
-| 10 | US-10 | Module readiness, dependency block, and rollback evidence | BRD M27-REQ-031–035; RULE-008/009; AC-011–014; WF-04 Screen 8 | After US-09 and MESP-30 contracts |
-| 11 | US-11 | Limits and Usage visibility | BRD M27-REQ-036–041; AC-015–017; WF-04 Screen 9 | After MESP-48 evidence; no invented thresholds |
+| 9 | US-09 | Entitlement visibility and denial proof | BRD M27-REQ-020–024/092; AC-007–010/042; WF-04 Screen 8 | After US-08 and TE-03/07 |
+| 10 | US-10 | Module readiness, dependency block, and rollback evidence | BRD M27-REQ-031–035; RULE-008/009; AC-011–014; WF-04 Screen 8 | After US-09, TE-07, and MESP-30 contracts |
+| 11 | US-11 | Limits and Usage visibility | BRD M27-REQ-036–041; AC-015–017; WF-04 Screen 9 | After TE-05/06/07 and MESP-48 evidence; no invented thresholds |
 | 12 | US-12 | Feature cohort rollout and rollback | BRD M27-REQ-050–053; AC-024/025; WF-01/03 operational visibility | After TE-03/04/06/07 and approved capability |
-| 13 | US-13 | Branding, templates, numbering, and document identity | BRD M27-REQ-042–044/094; AC-022/023; WF-04 Screen 10 | After MESP-30/37 contracts |
-| 14 | US-14 | Lifecycle workspace and suspension confirmation | BRD M27-REQ-012/013/054–056; RULE-028; AC-018–020/038; WF-03 Screens 5–6 | After US-03 and TE-03 |
-| 15 | US-15 | Reactivation and interrupted-work review | BRD M27-REQ-057/058; AC-021; WF-03 Screen 6 | After US-14 and TE-05 |
-| 16 | US-16 | Support authorization and active-session monitor | BRD M27-REQ-045–049/095; AC-026–029; WF-05 Screens 11–12 | After MESP-28/38 and MESP-50 duration decision |
-| 17 | US-17 | Platform Audit dashboard and authorized evidence export | BRD M27-REQ-074/075/078/084; AC-028/038; WF-05 Screen 13 | After TE-06 and US-14/16 |
-| 18 | US-18 | Export and offboarding disposition | BRD M27-REQ-059–061/065/067/068/076/077; AC-029–031; WF-06 Screen 14 | After TE-05 and MESP-50 policy |
-| 19 | US-19 | Purge review, cooling-off, and truthful certificate | BRD M27-REQ-062–064/096; AC-032–035; WF-06 Screens 15–16 | Last; blocked by MESP-50 |
-| 20 | US-20 | EN/AR localization and RTL completion across Wave 1 | BRD M27-REQ-077/081/082; AC-036/037; all WF mirrors | Cross-cutting; Sprint 1 slice only, completion before Epic exit |
+| 13 | US-13 | Branding, templates, numbering, and document identity | BRD M27-REQ-042–044/094; AC-022/023; WF-04 Screen 10 | After TE-07 and MESP-30/37 contracts |
+| 14 | US-14 | Lifecycle workspace and suspension confirmation | BRD M27-REQ-012/013/054–056; RULE-028; AC-018–020/038; WF-03 Screens 5–6 | After US-03 and TE-03/07 |
+| 15 | US-15 | Reactivation and interrupted-work review | BRD M27-REQ-057/058; AC-021; WF-03 Screen 6 | After US-14 and TE-05/07 |
+| 16 | US-16 | Support authorization and active-session monitor | BRD M27-REQ-045–049/095; AC-026–029; WF-05 Screens 11–12 | After TE-03/07, MESP-28/38, and MESP-50 duration decision |
+| 17 | US-17 | Platform Audit dashboard and authorized evidence export | BRD M27-REQ-074/075/078/084; AC-028/038; WF-05 Screen 13 | After TE-06/07 and US-14/16 |
+| 18 | US-18 | Bounded Tenant export and artifact integrity | BRD M27-REQ-059/065/067/068/076/077; AC-029/030; WF-06 Screen 14 | After TE-03/04/05/06/07 and MESP-50 export policy |
+| 19 | US-19 | Offboarding disposition and termination gate | BRD M27-REQ-060/061; AC-031; WF-06 Screen 14 | After US-18 and MESP-50 policy |
+| 20 | US-20 | Purge review, cooling-off, and truthful certificate | BRD M27-REQ-062–064/096; AC-032–035; WF-06 Screens 15–16 | After US-19; last high-risk workflow; blocked by MESP-50 |
+| 21 | US-21 | EN/AR localization and RTL completion across Wave 1 | BRD M27-REQ-077/081/082; AC-036/037; all WF mirrors | Cross-cutting acceptance overlay; Sprint 1 slice only, completion before Epic exit |
 
 ### US-01 — Platform Overview and exception navigation
 
@@ -126,6 +129,8 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 - Empty, loading, error, no-results, and restricted states are usable and do not reveal cross-Tenant information.
 
 **Trace:** BRD M27-REQ-010/078/079; WF-01 Screen 1.
+
+**Dependencies:** TE-01/02/03/04/06/07; MESP-29 isolation and MESP-38 evidence contracts.
 
 **Not included:** Invented KPI thresholds, production volume promises, or downstream ERP module dashboards.
 
@@ -189,7 +194,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-025/029/069/070; AC-004; WF-02 Screen 3.
 
-**Dependencies:** US-04; TE-02/04/06; duplicate rules from MESP-29/30.
+**Dependencies:** US-04; TE-02/04/06/07; duplicate rules from MESP-29/30.
 
 ### US-06 — Idempotent provisioning run and operations
 
@@ -205,7 +210,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-026–029/065/066/076/080; AC-001–003; WF-02 Screens 3–4.
 
-**Dependencies:** US-05; TE-04/05/06; MESP-29/30/37 contracts.
+**Dependencies:** US-05; TE-04/05/06/07; MESP-29/30/37 contracts.
 
 ### US-07 — Plan Catalogue and version history
 
@@ -220,7 +225,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-016/019/023; MESP-52; WF-04 Screen 7.
 
-**Dependencies:** TE-02/03/04/06; MESP-52 already approved. Keep out of Sprint 1.
+**Dependencies:** TE-02/03/04/06/07; MESP-52 already approved. Keep out of Sprint 1.
 
 ### US-08 — Subscription change preview and effective dating
 
@@ -235,7 +240,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-017/018/092; RULE-004/005/007; AC-005/006; WF-04 Screen 7.
 
-**Dependencies:** US-07; TE-03/04/06; MESP-52.
+**Dependencies:** US-07; TE-03/04/06/07; MESP-52.
 
 ### US-09 — Entitlement visibility and denial proof
 
@@ -251,7 +256,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-020–024/092; RULE-006/007; AC-007–010/042; WF-04 Screen 8.
 
-**Dependencies:** US-08; TE-02/03/06/08; MESP-28/MESP-29 authorization contracts.
+**Dependencies:** US-08; TE-02/03/06/07/08; MESP-28/MESP-29 authorization contracts.
 
 ### US-10 — Module readiness, dependency block, and rollback evidence
 
@@ -266,7 +271,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-031–035; RULE-008/009; AC-011–014; WF-04 Module Activation.
 
-**Dependencies:** US-09; TE-02/03/06; MESP-30 and later domain readiness contracts. Keep out of Sprint 1.
+**Dependencies:** US-09; TE-02/03/06/07; MESP-30 and later domain readiness contracts. Keep out of Sprint 1.
 
 ### US-11 — Limits and Usage visibility
 
@@ -282,7 +287,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-036–041; AC-015–017; WF-04 Screen 9.
 
-**Dependencies:** US-07/08; TE-05/06; MESP-48. Illustrative wireframe values are not implementation defaults.
+**Dependencies:** US-07/08; TE-05/06/07; MESP-48. Illustrative wireframe values are not implementation defaults.
 
 ### US-12 — Feature cohort rollout and rollback
 
@@ -328,7 +333,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-012/013/054–056; RULE-012/028; AC-018–020/038; WF-03 Screens 5–6.
 
-**Dependencies:** US-03; TE-03/04/06; MESP-28/29 and unresolved suspension-policy confirmations. Keep out of Sprint 1.
+**Dependencies:** US-03; TE-03/04/06/07; MESP-28/29 and unresolved suspension-policy confirmations. Keep out of Sprint 1.
 
 ### US-15 — Reactivation and interrupted-work review
 
@@ -343,7 +348,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-057/058; AC-021; WF-03 Screen 6.
 
-**Dependencies:** US-14; TE-04/05/06; MESP-28/29 and policy decision for read-only/suspension behavior.
+**Dependencies:** US-14; TE-04/05/06/07; MESP-28/29 and policy decision for read-only/suspension behavior.
 
 ### US-16 — Support authorization and active-session monitor
 
@@ -359,7 +364,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-045–049/095; AC-026–029; WF-05 Screens 11–12.
 
-**Dependencies:** TE-03/06; MESP-28, MESP-38, and MESP-50 maximum-duration/policy decisions. Keep out of Sprint 1.
+**Dependencies:** TE-03/06/07; MESP-28, MESP-38, and MESP-50 maximum-duration/policy decisions. Keep out of Sprint 1.
 
 ### US-17 — Platform Audit dashboard and authorized evidence export
 
@@ -374,25 +379,38 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-074/075/078/084; AC-028/038; WF-05 Screen 13.
 
-**Dependencies:** TE-03/04/06; US-14/16; MESP-38. Keep out of Sprint 1 except the audit foundation and read-only shell contract.
+**Dependencies:** TE-03/04/06/07; US-14/16; MESP-38. Keep out of Sprint 1 except the audit foundation and read-only shell contract.
 
-### US-18 — Export and offboarding disposition
+### US-18 — Bounded Tenant export and artifact integrity
 
-**User story:** As an authorized Platform/Privacy actor, I want a bounded export and offboarding review so that termination cannot proceed without a known export disposition, integrity evidence, legal-hold review, and visible waiver risk.
+**User story:** As an authorized Platform/Privacy actor, I want a bounded, integrity-verified Tenant export so that an authorized recipient can receive only the approved scope and expired or unsupported artifacts cannot be used.
 
 **Acceptance criteria:**
 
 - Export records scope, categories, formats, identifiers/relationships, exclusions, data-as-of, requester/approver, artifact, integrity evidence, expiry, download authorization, and downloads.
 - Export generation/download is asynchronous or stateful where required, retryable, bounded, and independently authorized.
 - A support identity cannot reach export authorization through support scope alone.
-- Waiver is explicit and warns when no accepted/recoverable Tenant copy may remain before purge; expired artifacts are inaccessible.
-- Termination requires export disposition, open matter review, legal-hold check, Subscription end, access closure plan, and responsible approval.
+- Expired artifacts are inaccessible and require a new authorized request; failed or partial generation remains visible and is not presented as complete.
 
-**Trace:** BRD M27-REQ-059–061/065/067/068/076/077; AC-029–031; WF-06 Screen 14.
+**Trace:** BRD M27-REQ-059/065/067/068/076/077; AC-029/030; WF-06 Screen 14.
 
-**Dependencies:** TE-03/04/05/06; MESP-50 export/retention policy. Keep out of Sprint 1.
+**Dependencies:** TE-03/04/05/06/07; MESP-50 export/retention policy. Keep out of Sprint 1.
 
-### US-19 — Purge review, cooling-off, and truthful certificate
+### US-19 — Offboarding disposition and termination gate
+
+**User story:** As an authorized Platform/Privacy actor, I want to review the Tenant’s offboarding disposition so that termination cannot proceed until export disposition, open matters, legal hold, Subscription end, access closure, and accountable approval are complete.
+
+**Acceptance criteria:**
+
+- Termination review records the accepted export or explicit waiver, open support/security matters, legal-hold result, Subscription end, access-closure plan, effective time, and responsible approver.
+- Waiver is explicit and warns when no accepted/recoverable Tenant copy may remain before purge; the decision is audited and cannot be inferred from an expired artifact.
+- A Tenant cannot enter Termination Pending or Terminated until the required disposition and approvals are complete; ordinary Tenant operation is then closed while governed retention remains.
+
+**Trace:** BRD M27-REQ-060/061; AC-031; WF-06 Screen 14.
+
+**Dependencies:** US-18; TE-03/04/05/06/07; MESP-50 export/retention/legal-hold policy. Keep out of Sprint 1.
+
+### US-20 — Purge review, cooling-off, and truthful certificate
 
 **User story:** As a Security/Privacy owner, I want purge approval and certificate evidence bounded to a certified scope so that irreversible operations have dual control, a cooling-off/final-notice gate, and truthful residual-copy disclosure.
 
@@ -406,9 +424,9 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-062–064/096; AC-032–035; WF-06 Screens 15–16.
 
-**Dependencies:** TE-04/05/06; MESP-50 and qualified privacy/legal/security validation. Last in sequence; excluded from Sprint 1.
+**Dependencies:** US-19; TE-04/05/06/07; MESP-50 and qualified privacy/legal/security validation. Last high-risk workflow; excluded from Sprint 1.
 
-### US-20 — EN/AR localization and RTL completion across Wave 1
+### US-21 — EN/AR localization and RTL completion across Wave 1
 
 **User story:** As an English- or Arabic-speaking Platform actor, I want the Wave 1 administration surface to preserve meaning and authority when language and direction change so that RTL is operationally equivalent to LTR.
 
@@ -421,7 +439,7 @@ The sequence is dependency order, not an estimate. No story points, dates, capac
 
 **Trace:** BRD M27-REQ-077/081/082; AC-036/037; WF-01–WF-06 mirrored screens; WF-07 recommendation.
 
-**Dependencies:** TE-07/08; approved glossary terminology and MESP-37 localization rules. Sprint 1 covers the shell/catalogue slice only; full completion is an Epic exit criterion.
+**Dependencies:** TE-07/08; approved glossary terminology and MESP-37 localization rules. Sprint 1 covers the shell/catalogue slice only; full completion is an Epic exit criterion after the Wave 1 screen outcomes are validated.
 
 ## 4A. Mandatory self-review pass 1 — coverage
 
@@ -430,12 +448,12 @@ The table below maps every approved MESP-27 functional section, requirement fami
 | MESP-27 section or requirement | Backlog item(s) | Coverage status | Deferred owner, when applicable |
 |---|---|---|---|
 | §3 Scope and §4 Out of scope; M27-REQ-001–006; M27-AC-039/041/043 | EPIC-PROPOSED-MESP27; TE-02/03; US-02/03/07/09/10/12 | Covered; B2B administration boundary and exclusions are explicit | MESP-28/29/30 for detailed identity, tenancy, and organization behavior |
-| §5 Source requirements and traceability | Source map; traces on TE-01–08 and US-01–20 | Covered; every item points to BRD and/or approved wireframe evidence | MESP-19 for future Jira traceability recording |
+| §5 Source requirements and traceability | Source map; traces on TE-01–08 and US-01–21 | Covered; every item points to BRD and/or approved wireframe evidence | MESP-19 for future Jira traceability recording |
 | §6 Definitions | Source map; TE-02/03/06; all stories use Tenant, Company/Legal Entity, Branch, Warehouse, Plan, Subscription, Entitlement, Permission, and Feature Flag distinctly | Covered; glossary terms are not redefined | MESP-18 / approved glossary owner |
-| §7 Actors and responsibilities | TE-03/06; US-01/02/04/06/12/14/16/17/18/19 | Covered; actor, scope, approval, and audit responsibilities remain explicit | MESP-28/38 for final identity, membership, and permission detail |
-| §8 Business assumptions; M27-REQ-009 | Decomposition rules; TE-05/06/07; US-04/07/11/12/18/19/20 | Covered — dependency retained; illustrative values are not defaults | MESP-37/48/50 and MESP-30 for unresolved business values |
-| §9 Business processes; M27-REQ-010/011 | TE-04/05/06; US-01/04/05/06/08/14/15/16/17/18/19 | Covered; state, next action, blocker, owner, evidence, retry, and notification are represented | MESP-38/50 for final policy evidence |
-| §10 Tenant lifecycle; M27-REQ-012–015 | US-03/06/14/15/18/19; TE-03/04/05/06 | Covered — dependency retained; canonical states, guarded transitions, data preservation, and purge truthfulness are explicit | M27-OQ-003/004 and MESP-50 for Grace Period, suspension, retention, and purge values |
+| §7 Actors and responsibilities; M27-REQ-007/008 | TE-03/06; US-01/02/04/06/12/14/16/17/18/19/20 | Covered; actor, scope, approval, and audit responsibilities remain explicit | MESP-28/38 for final identity, membership, and permission detail |
+| §8 Business assumptions; M27-REQ-009 | Decomposition rules; TE-05/06/07; US-04/07/11/12/18/19/20/21 | Covered — dependency retained; illustrative values are not defaults | MESP-37/48/50 and MESP-30 for unresolved business values |
+| §9 Business processes; M27-REQ-010/011 | TE-04/05/06; US-01/04/05/06/08/14/15/16/17/18/19/20 | Covered; state, next action, blocker, owner, evidence, retry, and notification are represented | MESP-38/50 for final policy evidence |
+| §10 Tenant lifecycle; M27-REQ-012–015 | US-03/06/14/15/18/19/20; TE-03/04/05/06 | Covered — dependency retained; canonical states, guarded transitions, data preservation, and purge truthfulness are explicit | M27-OQ-003/004 and MESP-50 for Grace Period, suspension, retention, and purge values |
 | §11 Plan and subscription model; M27-REQ-016–019; MESP-52 | US-07/08; TE-02/03/04/06 | Covered; one production R1 Plan, Restricted Validation Plan, effective dating, audit, and no billing automation are preserved | MESP-52 is approved; MESP-38 for final control evidence |
 | §12 Entitlement model; M27-REQ-020–024/092 | US-09; TE-03/06/08 | Covered; denial proof and no-override rule are testable | MESP-28/29 for final authorization and organizational scope |
 | §13 Tenant provisioning; M27-REQ-025–030/093 | US-04/05/06; TE-02/03/04/05/06/07 | Covered — dependency retained; draft, duplicate gate, idempotent run, safe retry, handover, and hosting controls are represented | MESP-29/30/37/50 for input contracts and production policy |
@@ -445,26 +463,26 @@ The table below maps every approved MESP-27 functional section, requirement fami
 | §17 Support access; M27-REQ-045–049/095 | US-16; TE-03/05/06 | Covered — dependency retained; named/time-boxed scope, revocation, monitor, and export separation are explicit | MESP-28/38 and MESP-50 for final identity and duration policy |
 | §18 Feature rollout; M27-REQ-050–053 | US-12; TE-03/04/06/07 | Covered; cohort, Entitlement, expiry, rollback, and audit are explicit | Product/Operations owner for each approved capability; MESP-28/38 for actor scope |
 | §19 Suspension and reactivation; M27-REQ-054–058 | US-14/15; TE-03/04/05/06 | Covered — dependency retained; confirmation, bypass evidence, checks, interrupted work, and notification are explicit | M27-OQ-003/004/005; MESP-28/29/38 |
-| §20 Offboarding; M27-REQ-059–064/096 | US-18/19; TE-04/05/06 | Covered — dependency retained; bounded export, disposition, legal hold, dual control, cooling-off, certificate, and residual-copy truth are explicit | MESP-50 and qualified privacy/legal/security review |
-| §21 Business rules; RULE-001–031 | TE-02/03/04/05/06/07; US-01–20 | Covered; rules are carried as acceptance constraints rather than invented workflows | Owning BRD decision where a rule contains an open value |
-| §22 State machines | US-06/08/09/10/14/15/16/18/19; TE-04/05/06 | Covered; state transitions and terminal/blocked states are demonstrable | MESP-29/30/38/50 for detailed state policy |
-| §23 Data requirements; M27-REQ-067/068/097 | TE-02/05/06; US-02/04/05/06/07/08/09/11/13/16/17/18/19 | Covered; ownership, scope, evidence, freshness, integrity, and retention metadata are mapped | MESP-29/30/38/50 for authoritative schemas and policy |
-| §24 Validation rules; M27-REQ-069/070 | TE-04/08; US-04/05/06/09/10/18/19 | Covered; field, duplicate, dependency, state, authorization, and high-risk validation are testable | MESP-29/30/37/50 for final rule catalogues |
-| §25 Permissions and authorization; M27-REQ-071–073 | TE-03; US-02/09/14/15/16/17/18/19 | Covered — contract-only where MESP-28 owns behavior; server-side scope and denial are explicit | MESP-28/38 |
-| §26 Audit requirements; M27-REQ-074/075 | TE-06; US-06/08/09/10/12/14/15/16/17/18/19 | Covered; material, denied, support, export, lifecycle, and purge evidence are included | MESP-38 for final retention, access, and immutability controls |
-| §27 Notifications; M27-REQ-076/077 | TE-05/06; US-06/11/14/15/16/18/19/20 | Covered; in-app/operational evidence, retry, escalation, and localization are explicit | MESP-50 and M27-OQ-007 for production notification policy |
+| §20 Offboarding; M27-REQ-059–064/096 | US-18/19/20; TE-04/05/06 | Covered — dependency retained; bounded export, disposition, legal hold, dual control, cooling-off, certificate, and residual-copy truth are explicit | MESP-50 and qualified privacy/legal/security review |
+| §21 Business rules; RULE-001–031 | TE-02/03/04/05/06/07; US-01–21 | Covered; rules are carried as acceptance constraints rather than invented workflows | Owning BRD decision where a rule contains an open value |
+| §22 State machines; M27-REQ-065/066 | US-06/08/09/10/14/15/16/18/19/20; TE-04/05/06 | Covered; state transitions and terminal/blocked states are demonstrable | MESP-29/30/38/50 for detailed state policy |
+| §23 Data requirements; M27-REQ-067/068/097 | TE-02/05/06; US-02/04/05/06/07/08/09/11/13/16/17/18/19/20 | Covered; ownership, scope, evidence, freshness, integrity, and retention metadata are mapped | MESP-29/30/38/50 for authoritative schemas and policy |
+| §24 Validation rules; M27-REQ-069/070 | TE-04/08; US-04/05/06/09/10/18/19/20 | Covered; field, duplicate, dependency, state, authorization, and high-risk validation are testable | MESP-29/30/37/50 for final rule catalogues |
+| §25 Permissions and authorization; M27-REQ-071–073 | TE-03; US-02/09/14/15/16/17/18/19/20 | Covered — contract-only where MESP-28 owns behavior; server-side scope and denial are explicit | MESP-28/38 |
+| §26 Audit requirements; M27-REQ-074/075 | TE-06; US-06/08/09/10/12/14/15/16/17/18/19/20 | Covered; material, denied, support, export, lifecycle, and purge evidence are included | MESP-38 for final retention, access, and immutability controls |
+| §27 Notifications; M27-REQ-076/077 | TE-05/06; US-06/11/14/15/16/18/19/20/21 | Covered; in-app/operational evidence, retry, escalation, and localization are explicit | MESP-50 and M27-OQ-007 for production notification policy |
 | §28 Reports and KPIs; M27-REQ-078/079 | US-01/02/07/09/11/16/17; TE-06 | Covered; data-as-of/freshness, bounded drill-through, and authorized evidence are explicit | MESP-48 for capacity/volume validation |
-| §29 Exceptions and recovery; M27-REQ-080 | TE-04/05; US-05/06/15/18/19 | Covered; safe retry, compensation, interrupted work, partial failure, and truthful completion are explicit | MESP-38/50 for operational recovery and purge policy |
-| §30 Localization; M27-REQ-081/082 | TE-07/08; US-20; all Wave 1 stories | Covered; EN/AR, RTL, embedded LTR identifiers, accessibility, and status text/icon semantics are explicit | MESP-37 for approved terminology and Country Pack rules |
-| §31 Security and privacy; M27-REQ-083/084 | TE-02/03/06; US-02/09/14/15/16/17/18/19 | Covered — dependency retained; isolation, least privilege, high-risk control, export separation, and purge truth are explicit | MESP-28/38/50 and qualified production validation |
-| §32 Integration requirements; M27-REQ-085–087 | TE-04/05; US-06/12/15/18 | Covered at the platform seam; no unapproved external integration is invented | MESP-39 for provider and integration contracts |
+| §29 Exceptions and recovery; M27-REQ-080 | TE-04/05; US-05/06/15/18/19/20 | Covered; safe retry, compensation, interrupted work, partial failure, and truthful completion are explicit | MESP-38/50 for operational recovery and purge policy |
+| §30 Localization; M27-REQ-081/082 | TE-07/08; US-21; all Wave 1 stories | Covered; EN/AR, RTL, embedded LTR identifiers, accessibility, and status text/icon semantics are explicit | MESP-37 for approved terminology and Country Pack rules |
+| §31 Security and privacy; M27-REQ-083/084 | TE-02/03/06; US-02/09/14/15/16/17/18/19/20 | Covered — dependency retained; isolation, least privilege, high-risk control, export separation, and purge truth are explicit | MESP-28/38/50 and qualified production validation |
+| §32 Integration requirements; M27-REQ-085–087 | TE-04/05; US-06/12/15/18/19 | Covered at the platform seam; no unapproved external integration is invented | MESP-39 for provider and integration contracts |
 | §33 Migration and opening requirements; M27-REQ-088/089 | US-04/05/06/10; TE-02/04 | Covered as controlled opening/configuration evidence only; business-data migration is not silently added | MESP-40 for migration and cutover behavior |
-| §34 Non-functional expectations; M27-REQ-090/091 and M27-AC-044 | TE-01–08; US-01/02/03/06/09/11/14/16/17/18/19/20 | Covered as enablers, gates, and validation evidence; no production SLA/volume claim is invented | MESP-48, MESP-50, architecture ADRs, and production validation |
-| §35 Given/When/Then acceptance scenarios M27-AC-001–044 | US-01–20; TE-04/05/06/08 | Covered; each scenario family is represented by one or more acceptance criteria or a protected exclusion | MESP-28/29/30/37/38/39/40/48/50 for owned dependencies |
+| §34 Non-functional expectations; M27-REQ-090/091 and M27-AC-044 | TE-01–08; US-01/02/03/06/09/11/14/16/17/18/19/20/21 | Covered as enablers, gates, and validation evidence; no production SLA/volume claim is invented | MESP-48, MESP-50, architecture ADRs, and production validation |
+| §35 Given/When/Then acceptance scenarios M27-AC-001–044 | US-01–21; TE-04/05/06/08 | Covered; each scenario family is represented by one or more acceptance criteria or a protected exclusion | MESP-28/29/30/37/38/39/40/48/50 for owned dependencies |
 | §36 Open questions M27-OQ-002–008 | DEP-01–07; affected stories explicitly held behind gates | Covered — blocked items remain visible and are not guessed | Named owner in each dependency/open-question row |
 | §37 Decisions M27-DEC-001–005, MESP-52, MESP-56, PD-019 | Epic exclusions; US-07/08/09/10/13; TE-03/07 | Covered; approved Plan, legal-entity boundary, purge truth, and technology constraint are preserved | Hossam for approval/change control; MESP-30/38/50 for detailed decisions |
 | §38 Dependencies | DEP-01–07; story dependency fields | Covered; blocking predecessors and owning BRDs are explicit | Named dependency owner |
-| §39 Risks | Epic completion evidence; TE-02/03/05/06/08; US-09/14/15/16/18/19 | Covered; mitigation is represented as a control, evidence, or explicit deferral | Hossam, Security/Privacy, Wafra, MESP owners as named in BRD |
+| §39 Risks | Epic completion evidence; TE-02/03/05/06/08; US-09/14/15/16/18/19/20 | Covered; mitigation is represented as a control, evidence, or explicit deferral | Hossam, Security/Privacy, Wafra, MESP owners as named in BRD |
 | §40 Approval criteria | §7 readiness gates; Pass 1–3 tables; no-Jira/no-code guardrail | Covered; approval remains a human gate before Jira or implementation | Hossam |
 
 ## 4B. Mandatory self-review pass 2 — story quality
@@ -477,24 +495,25 @@ Estimates are provisional sizing for decomposition only; they are not Jira commi
 | US-02 | 5 | One bounded Tenant Catalogue outcome | Search/filter/page a fixture register and open one workspace | Fields, server paging, restricted state, and absent row actions are assertable | No high-risk row actions or downstream module data | TE-02/03/04/06/07; MESP-29; WF-01 | 2 | Pass |
 | US-03 | 3 | One read-only Tenant Workspace spine outcome | Open a Tenant and inspect tabs, scope, and no-ERP navigation | Identity fields, tabs, isolation, and action location are assertable | No MESP-28 behavior or ERP workspace | TE-02/03/06/07; MESP-29/30; WF-03/07 | 3 | Pass |
 | US-04 | 8 | One draft-capture/review outcome; no provisioning execution | Save, edit, and validate a draft without submitting it | Required categories, provisional grouping, validation, and unresolved policy block are assertable | No Trial, override, Restricted Plan production assignment, or implementation detail | TE-02/03/04/07; MESP-29/30/37/50; WF-02 | 4 | Pass |
-| US-05 | 5 | One pre-authoritative duplicate/completeness gate | Show unique, duplicate, possible-match, and blocked review fixtures | Outcomes, source links, snapshot, and decision evidence are assertable | No invented duplicate algorithm or data migration | US-04; TE-02/04/06; MESP-29/30; WF-02 | 5 | Pass |
-| US-06 | 8 | One idempotent provisioning-run/recovery outcome | Fail a stage, retry the same request, and show no duplicate/Active state | Stage states, identity, safe retry, partial-access prohibition, and handover are assertable | No invitations or business transactions beyond BRD handover evidence | US-05; TE-04/05/06; MESP-29/30/37; WF-02 | 6 | Pass |
-| US-07 | 5 | One Plan catalogue/version-history outcome | Compare production and Restricted Validation Plan fixtures | Version fields, immutability, eligibility, and no-billing behavior are assertable | No POS, Trial, billing, payment, invoice, or accounting transaction | TE-02/03/04/06; MESP-52; WF-04 | 7 | Pass |
-| US-08 | 5 | One reviewed effective-dated Subscription-change outcome | Preview current/future change and inspect unchanged current Entitlement | Effective dates, history, preview, and no-override behavior are assertable | No per-Tenant Entitlement override or pricing engine | US-07; TE-03/04/06; MESP-52; WF-04 | 8 | Pass |
-| US-09 | 5 | One Entitlement/Permission denial-proof outcome | Exercise allowed, missing-Entitlement, missing-Permission, and restricted fixtures | Source, interval, dependency, denial, and non-production guard are assertable | No hidden grant, override, import, job, or integration bypass | US-08; TE-02/03/06/08; MESP-28/29; WF-04 | 9 | Pass |
-| US-10 | 8 | One module-readiness/activation-gate outcome | Show ready, blocked dependency, Read-Only, and rollback-evidence fixtures | Preconditions, blocker, state, and approval evidence are assertable | No Procurement, Inventory, Finance, Sales, or POS transactions | US-09; TE-02/03/06; MESP-30; WF-04 | 10 | Pass |
-| US-11 | 5 | One informational usage/limit-control outcome | Show fresh, stale, warning, and hard-limit fixture measures | Scope, unit, freshness, warning/non-block, hard-limit action, and escalation are assertable | No invented MESP-48 threshold or invoiceable amount | US-07/08; TE-05/06; MESP-48; WF-04 | 11 | Pass |
+| US-05 | 5 | One pre-authoritative duplicate/completeness gate | Show unique, duplicate, possible-match, and blocked review fixtures | Outcomes, source links, snapshot, and decision evidence are assertable | No invented duplicate algorithm or data migration | US-04; TE-02/04/06/07; MESP-29/30; WF-02 | 5 | Pass |
+| US-06 | 8 | One idempotent provisioning-run/recovery outcome | Fail a stage, retry the same request, and show no duplicate/Active state | Stage states, identity, safe retry, partial-access prohibition, and handover are assertable | No invitations or business transactions beyond BRD handover evidence | US-05; TE-04/05/06/07; MESP-29/30/37; WF-02 | 6 | Pass |
+| US-07 | 5 | One Plan catalogue/version-history outcome | Compare production and Restricted Validation Plan fixtures | Version fields, immutability, eligibility, and no-billing behavior are assertable | No POS, Trial, billing, payment, invoice, or accounting transaction | TE-02/03/04/06/07; MESP-52; WF-04 | 7 | Pass |
+| US-08 | 5 | One reviewed effective-dated Subscription-change outcome | Preview current/future change and inspect unchanged current Entitlement | Effective dates, history, preview, and no-override behavior are assertable | No per-Tenant Entitlement override or pricing engine | US-07; TE-03/04/06/07; MESP-52; WF-04 | 8 | Pass |
+| US-09 | 5 | One Entitlement/Permission denial-proof outcome | Exercise allowed, missing-Entitlement, missing-Permission, and restricted fixtures | Source, interval, dependency, denial, and non-production guard are assertable | No hidden grant, override, import, job, or integration bypass | US-08; TE-02/03/06/07/08; MESP-28/29; WF-04 | 9 | Pass |
+| US-10 | 8 | One module-readiness/activation-gate outcome | Show ready, blocked dependency, Read-Only, and rollback-evidence fixtures | Preconditions, blocker, state, and approval evidence are assertable | No Procurement, Inventory, Finance, Sales, or POS transactions | US-09; TE-02/03/06/07; MESP-30; WF-04 | 10 | Pass |
+| US-11 | 5 | One informational usage/limit-control outcome | Show fresh, stale, warning, and hard-limit fixture measures | Scope, unit, freshness, warning/non-block, hard-limit action, and escalation are assertable | No invented MESP-48 threshold or invoiceable amount | US-07/08; TE-05/06/07; MESP-48; WF-04 | 11 | Pass |
 | US-12 | 5 | One controlled feature-cohort rollout/rollback outcome | Enable an eligible cohort, inspect audit, then roll back | Cohort, Entitlement, expiry, rollback, and audit fields are assertable | No new capability, Permission, POS, or MESP-28 behavior | TE-03/04/06/07; approved capability; BRD §18 + WF-01/03 | 12 | Pass |
 | US-13 | 5 | One governed branding/document-identity outcome | Preview valid/invalid branding and numbering/template versions | Scope, fallback, version, effective interval, history, and accessibility are assertable | No tax meaning, authorization, or numbering-history rewrite | TE-02/03/06/07; MESP-30/37; WF-04 | 13 | Pass |
-| US-14 | 8 | One guarded lifecycle suspension outcome | Suspend a fixture with typed confirmation and inspect effects/audit | Transition, reason, bypass, access mode, job behavior, notification, and review date are assertable | No data deletion or guessed Grace Period/suspension policy | US-03; TE-03/04/06; MESP-28/29; OQ-003/004; WF-03 | 14 | Pass |
-| US-15 | 5 | One reactivation/interrupted-work review outcome | Block on an outstanding check, then clear it and restore deliberately | Checks, acknowledgments, restart review, reevaluation, and notices are assertable | No assumption that interrupted work completed; no emergency access | US-14; TE-04/05/06; MESP-28/29; WF-03 | 15 | Pass |
-| US-16 | 8 | One named support-session lifecycle outcome | Request, start, monitor, expire, and terminate a fixture session | Case, scope, consent, time-box, banner, expiry, denial, and export separation are assertable | No standing privilege, emergency access, or support-to-export shortcut | TE-03/06; MESP-28/38/50; WF-05 | 16 | Pass |
-| US-17 | 5 | One searchable audit-evidence outcome | Filter audit, inspect denial evidence, and request separately authorized export | Fields, freshness, scope, denial non-disclosure, authorization, and self-audit are assertable | No audit retention/identity policy invented | TE-03/04/06; US-14/16; MESP-38; WF-05 | 17 | Pass |
-| US-18 | 8 | One bounded export/offboarding-disposition outcome | Generate an export, inspect integrity/expiry, and review waiver/termination gate | Manifest, scope, artifact, expiry, authorization, waiver, legal hold, and approval are assertable | No production purge execution or MESP-50 duration invented | TE-03/04/05/06; MESP-50; WF-06 | 18 | Pass |
-| US-19 | 8 | One purge-review/certificate-truth outcome | Hold blocks approval; fixture approval/cooling-off yields truthful scoped certificate | Hold, dual control, scope, final notice, recheck, residual copies, and partial failure are assertable | No physical purge execution in Sprint 1 and no invented duration/retention | TE-04/05/06; MESP-50; WF-06 | 19 | Pass |
-| US-20 | 5 | One cross-cutting EN/AR/RTL equivalence outcome | Toggle language/direction over the shell and representative Wave 1 screens | Labels, warnings, direction, embedded identifiers, status cues, and authority invariance are assertable | No new localization/business behavior beyond MESP-37 | TE-07/08; MESP-37; WF-01–WF-07 | 20 | Pass |
+| US-14 | 8 | One guarded lifecycle suspension outcome | Suspend a fixture with typed confirmation and inspect effects/audit | Transition, reason, bypass, access mode, job behavior, notification, and review date are assertable | No data deletion or guessed Grace Period/suspension policy | US-03; TE-03/04/06/07; MESP-28/29; OQ-003/004; WF-03 | 14 | Pass |
+| US-15 | 5 | One reactivation/interrupted-work review outcome | Block on an outstanding check, then clear it and restore deliberately | Checks, acknowledgments, restart review, reevaluation, and notices are assertable | No assumption that interrupted work completed; no emergency access | US-14; TE-04/05/06/07; MESP-28/29; WF-03 | 15 | Pass |
+| US-16 | 8 | One named support-session lifecycle outcome | Request, start, monitor, expire, and terminate a fixture session | Case, scope, consent, time-box, banner, expiry, denial, and export separation are assertable | No standing privilege, emergency access, or support-to-export shortcut | TE-03/06/07; MESP-28/38/50; WF-05 | 16 | Pass |
+| US-17 | 5 | One searchable audit-evidence outcome | Filter audit, inspect denial evidence, and request separately authorized export | Fields, freshness, scope, denial non-disclosure, authorization, and self-audit are assertable | No audit retention/identity policy invented | TE-03/04/06/07; US-14/16; MESP-38; WF-05 | 17 | Pass |
+| US-18 | 5 | One bounded export/integrity outcome | Generate an export, inspect integrity/expiry, and verify unauthorized/expired download denial | Manifest, scope, artifact, expiry, authorization, retry, and integrity evidence are assertable | No offboarding state transition or production purge execution | TE-03/04/05/06/07; MESP-50; WF-06 | 18 | Pass |
+| US-19 | 5 | One offboarding-disposition/termination-gate outcome | Review accepted export or waiver, open matters, hold, closure plan, and approval | Disposition, waiver warning, legal hold, Subscription end, closure, and state transition are assertable | No purge execution or invented MESP-50 retention value | US-18; TE-03/04/05/06/07; MESP-50; WF-06 | 19 | Pass |
+| US-20 | 8 | One purge-review/certificate-truth outcome | Hold blocks approval; fixture approval/cooling-off yields truthful scoped certificate | Hold, dual control, scope, final notice, recheck, residual copies, and partial failure are assertable | No physical purge execution in Sprint 1 and no invented duration/retention | US-19; TE-04/05/06/07; MESP-50; WF-06 | 20 | Pass |
+| US-21 | 5 | One cross-cutting EN/AR/RTL equivalence outcome | Toggle language/direction over the shell and representative Wave 1 screens | Labels, warnings, direction, embedded identifiers, status cues, and authority invariance are assertable | No new localization/business behavior beyond MESP-37 | TE-07/08; MESP-37; WF-01–WF-07 | 21 | Pass |
 
-**Pass 2 split decision:** US-12 was added as a separate Story because Feature Rollout (§18 and AC-024/025) was not represented by a dedicated Story. The remaining Stories each retain one cohesive workflow outcome, have an estimate of 8 or below, and pass all checks above; no further split is required.
+**Pass 2 split decision:** US-12 was added as a separate Story because Feature Rollout (§18 and AC-024/025) was not represented by a dedicated Story. The former combined Export/offboarding Story was split into US-18 (bounded export) and US-19 (offboarding disposition) because each has a separate state, authorization gate, and independent demonstration. The remaining Stories each retain one cohesive workflow outcome, have an estimate of 8 or below, and pass all checks above; no further split is required.
 
 ## 4C. Mandatory self-review pass 3 — scope protection
 
@@ -509,10 +528,10 @@ The following terms may appear in the backlog only as explicit exclusions, safet
 | B2B Sales transactions | Pass — Release 1 is platform administration only | Document control, Epic boundary, US-03 |
 | Production billing automation | Pass — explicitly prohibited | US-07 acceptance criteria and Epic exclusions |
 | Per-Tenant Entitlement overrides | Pass — explicitly prohibited and tested as denial | US-08/US-09 and MESP-52 trace |
-| Production physical purge execution in Sprint 1 | Pass — US-19 is last and explicitly deferred; Sprint 1 is read-only | US-19; Sprint 1 scope and deferrals |
+| Production physical purge execution in Sprint 1 | Pass — US-20 is last high-risk workflow and explicitly deferred; Sprint 1 is read-only | US-20; Sprint 1 scope and deferrals |
 | Final MESP-28 Identity behavior | Pass — TE-03 is contract-only; final behavior remains a dependency | TE-03, DEP-01, US-12/US-16 |
 | Invented MESP-48 volume limits | Pass — no threshold or capacity promise is assigned | TE-08, DEP-03, US-11 |
-| Invented MESP-50 retention or purge durations | Pass — policy values remain unresolved and owned by MESP-50 | DEP-04, US-04/16/18/19 |
+| Invented MESP-50 retention or purge durations | Pass — policy values remain unresolved and owned by MESP-50 | DEP-04, US-04/16/18/19/20 |
 | Jira writes | Pass — no Jira issue, comment, or Sprint is created | Document control and §7 readiness gates |
 | Source-code changes | Pass — this is a backlog artifact only | Document control and task boundary |
 | Parallel execution recommendations | Pass — only dependency-ordered sequencing is proposed; no parallel work recommendation appears | §4 sequence and Sprint 1 candidate scope |
@@ -541,19 +560,21 @@ The following terms may appear in the backlog only as explicit exclusions, safet
 
 ### Candidate Sprint 1 scope
 
-| Include | Record | Sprint result |
-|---|---|---|
-| Technical enabler | TE-01 | Minimal Modular Monolith solution/module seam and architecture-test conventions |
-| Technical enabler | TE-02 | Trusted Tenant context, Platform-owned metadata read boundary, and isolation fixture |
-| Technical enabler | TE-03 | Platform/Tenant policy seam and secure first-party cookie contract; no MESP-28 implementation |
-| Technical enabler | TE-04 | REST/OpenAPI, error, correlation, and read-request safety conventions |
-| Technical enabler | TE-06 | Audit event contract, correlation propagation, and OpenTelemetry-compatible evidence seam |
-| Technical enabler | TE-07 | Angular 22 shell, navigation, Workspace spine, EN/AR/RTL baseline, accessible state markers |
-| Technical enabler | TE-08 | xUnit/Playwright fixtures, Docker Compose test dependencies, and cross-Tenant denial coverage |
-| User story | US-01 | Overview cards are data-backed links with freshness and restricted/error states |
-| User story | US-02 | Tenant Catalogue supports bounded search/filter/pagination and safe restricted state |
-| User story | US-03 | Tenant Workspace opens the approved read-only tabbed spine without ERP module navigation |
-| User story | US-20 (slice) | EN/AR/RTL behavior is proven for the shell, Overview, Catalogue, and Workspace slice |
+| Include | Record | Estimate | Sprint result |
+|---|---|---:|---|
+| Technical enabler | TE-01 | 3 | Minimal Modular Monolith solution/module seam and architecture-test conventions |
+| Technical enabler | TE-02 | 5 | Trusted Tenant context, Platform-owned metadata read boundary, and isolation fixture |
+| Technical enabler | TE-03 | 5 | Platform/Tenant policy seam and secure first-party cookie contract; no MESP-28 implementation |
+| Technical enabler | TE-04 | 3 | REST/OpenAPI, error, correlation, and read-request safety conventions |
+| Technical enabler | TE-06 | 3 | Audit event contract, correlation propagation, and OpenTelemetry-compatible evidence seam |
+| Technical enabler | TE-07 | 5 | Angular 22 shell, navigation, Workspace spine, EN/AR/RTL baseline, accessible state markers |
+| Technical enabler | TE-08 | 3 | xUnit/Playwright fixtures, Docker Compose test dependencies, and cross-Tenant denial coverage |
+| User story | US-01 | 3 | Overview cards are data-backed links with freshness and restricted/error states |
+| User story | US-02 | 5 | Tenant Catalogue supports bounded search/filter/pagination and safe restricted state |
+| User story | US-03 | 3 | Tenant Workspace opens the approved read-only tabbed spine without ERP module navigation |
+| User story | US-21 (slice) | 2 | EN/AR/RTL behavior is proven for the shell, Overview, Catalogue, and Workspace slice |
+
+**Sprint 1 provisional total:** **40 planning points** — 27 enabler points (TE-01/02/03/04/06/07/08) plus 13 Story/slice points (US-01 3 + US-02 5 + US-03 3 + US-21 shell slice 2). US-21’s full Story estimate remains 5; only its 2-point Sprint 1 slice is included. These are planning estimates, not Jira commitments.
 
 ### Sprint 1 exit evidence
 
@@ -585,11 +606,39 @@ Before any Jira recording or implementation start:
 ## 8. Scope and quality check
 
 - One proposed implementation Epic is defined.
-- Eight minimum technical enablers are defined.
-- Twenty sequenced User Stories are defined without subtasks; provisional decomposition estimates are recorded only in the mandatory quality table and are all 8 or below.
-- One proposed Sprint 1 is defined and limited to a read-only, tenant-isolated vertical slice.
+- Eight minimum technical enablers are defined with 32 provisional planning points in total.
+- Twenty-one sequenced User Stories are defined without subtasks; their provisional estimates total 119 points and the maximum is 8.
+- One proposed Sprint 1 is defined and limited to a read-only, tenant-isolated vertical slice; its provisional total is 40 points including enablers and the US-21 shell slice.
 - Pass 1 — Coverage: **PASS**. Every approved MESP-27 section, requirement family, decision, and acceptance-scenario family maps to at least one enabler or Story; unresolved values retain a named owner.
-- Pass 2 — Story quality: **PASS**. All twenty Stories deliver one demonstrable outcome, use testable acceptance criteria, have explicit dependencies and design references, remain within estimate 8, and are dependency-sequenced. US-12 was added to close the Feature Rollout gap.
+- Pass 2 — Story quality: **PASS**. All twenty-one Stories deliver one demonstrable outcome, use testable acceptance criteria, have explicit dependencies and design references, remain within estimate 8, and are dependency-sequenced. US-12 was added to close the Feature Rollout gap, and the former combined Export/offboarding Story was split into US-18 and US-19.
 - Pass 3 — Scope protection: **PASS**. No prohibited transaction scope, final MESP-28 behavior, invented MESP-48/MESP-50 values, Jira write, source-code change, production purge execution in Sprint 1, or parallel-execution recommendation is present as a deliverable.
 - No application code, Jira issue, Jira comment, Jira Sprint, test-case document, MESP-28 implementation, downstream ERP module work, or Retail POS work was created.
 - BRD NFRs, Trial exclusion, no-override rule, Restricted Validation Plan, support/export separation, purge truthfulness, multiple legal entities, and MESP-48/MESP-50 gates are preserved.
+
+## 9. Final recalculated order and Sprint 1 estimate
+
+| Seq. | Story | Final Story title | Estimate |
+|---:|---|---|---:|
+| 1 | US-01 | Platform Overview and exception navigation | 3 |
+| 2 | US-02 | Tenant Catalogue with bounded views and states | 5 |
+| 3 | US-03 | Tenant Workspace read-only spine | 3 |
+| 4 | US-04 | Create Tenant draft wizard | 8 |
+| 5 | US-05 | Duplicate, completeness, and review gate | 5 |
+| 6 | US-06 | Idempotent provisioning run and operations | 8 |
+| 7 | US-07 | Plan Catalogue and version history | 5 |
+| 8 | US-08 | Subscription change preview and effective dating | 5 |
+| 9 | US-09 | Entitlement visibility and denial proof | 5 |
+| 10 | US-10 | Module readiness, dependency block, and rollback evidence | 8 |
+| 11 | US-11 | Limits and Usage visibility | 5 |
+| 12 | US-12 | Feature cohort rollout and rollback | 5 |
+| 13 | US-13 | Branding, templates, numbering, and document identity | 5 |
+| 14 | US-14 | Lifecycle workspace and suspension confirmation | 8 |
+| 15 | US-15 | Reactivation and interrupted-work review | 5 |
+| 16 | US-16 | Support authorization and active-session monitor | 8 |
+| 17 | US-17 | Platform Audit dashboard and authorized evidence export | 5 |
+| 18 | US-18 | Bounded Tenant export and artifact integrity | 5 |
+| 19 | US-19 | Offboarding disposition and termination gate | 5 |
+| 20 | US-20 | Purge review, cooling-off, and truthful certificate | 8 |
+| 21 | US-21 | EN/AR localization and RTL completion across Wave 1 | 5 |
+
+**Final totals:** 8 Enablers; 21 User Stories; 119 provisional Story points; maximum Story estimate 8. Sprint 1 includes TE-01/02/03/04/06/07/08, US-01, US-02, US-03, and the US-21 shell slice for **40 provisional planning points**.
