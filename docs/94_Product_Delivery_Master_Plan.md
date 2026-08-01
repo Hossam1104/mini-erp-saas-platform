@@ -9,9 +9,10 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 2 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current implementation item | `MESP-57 / TE-01 — Done` |
-| Current branch | `main` |
-| Current Sprint | `S1-Solution Foundation — Done` |
+| Current activity | `MESP-28 — Identity and Access BRD — In Progress (Draft for Founder Review)` |
+| Current implementation item | `None — no active implementation item` |
+| Current branch | `docs/mesp-28-identity-access-brd` |
+| Current Sprint | `No active implementation Sprint — S1-Solution Foundation Done` |
 
 ---
 
@@ -54,7 +55,8 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 | MESP-57 development branch | Done |
 | MESP-57 implementation | Done — implemented, reviewed, merged through PR #1, validated on `main`, and closed in Jira |
 | Sprint 1 | Done — `S1-Solution Foundation` completed |
-| MESP-28 Identity and Access BRD | Not Started / To Do |
+| MESP-3 Identity and Access Epic | In Progress |
+| MESP-28 Identity and Access BRD | In Progress — Draft for Founder Review |
 | Remaining product BRDs | Not Started / To Do |
 
 ### Current Jira and Git state
@@ -62,10 +64,13 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 - [x] `MESP-27` — SaaS Platform Administration BRD is **Done**.
 - [x] `MESP-2` — Platform Administration Epic remains **In Progress**.
 - [x] `MESP-57` — Modular Monolith solution and module seam is **Done**.
+- [x] `MESP-3` — Identity and Access Epic moved to **In Progress** for the approved BRD activity.
+- [x] `MESP-28` — Identity and Access BRD moved to **In Progress** for the first founder-review draft.
 - [x] Sprint `S1-Solution Foundation` was created, started, and completed.
 - [x] Sprint contained only `MESP-57`.
-- [x] `MESP-58` through `MESP-85` remain **To Do**.
-- [x] `MESP-28` through `MESP-40` remain **To Do**.
+- [x] `MESP-58` through `MESP-85` remain **To Do**; no implementation item was started.
+- [x] `MESP-29` through `MESP-40` remain **To Do**; no downstream BRD was started.
+- [x] No Sprint is active and no Pull Request was created for MESP-28.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
 - [x] Implement `MESP-57 / TE-01`.
 - [x] Run the Release build.
@@ -196,7 +201,7 @@ Define the business meaning of each domain before technical implementation. Each
 - [x] MESP-27 founder approval.
 - [x] MESP-27 Wave 1 wireframes and Layout B baseline.
 - [ ] BPMN diagrams for all MESP-27 workflows.
-- [ ] `MESP-28` — Identity and Access BRD.
+- [ ] 🔄 `MESP-28` — Identity and Access BRD — **In Progress: Draft for Founder Review**. Approval is pending.
 - [ ] `MESP-29` — Multi-Tenancy BRD.
 - [ ] `MESP-30` — Organization BRD.
 
@@ -652,11 +657,12 @@ Implement approved backlog items sequentially, validate them with focused automa
 
 ### After MESP-57
 
-MESP-57 and Sprint 1 are complete. Do not automatically start MESP-58.
+MESP-57 and Sprint 1 are complete. The current requirements activity is MESP-28; do not automatically start MESP-58 or any implementation work.
 
-The next activity will be selected based on approved dependencies:
+The next activity will be selected based on founder review and approved dependencies:
 
-- [ ] Resume `MESP-28` Identity and Access BRD.
+- [x] Begin `MESP-28` Identity and Access BRD; first draft is on `docs/mesp-28-identity-access-brd`.
+- [ ] Founder review and approval of the MESP-28 BRD.
 - [ ] Complete `MESP-29` Multi-Tenancy BRD.
 - [ ] Complete `MESP-30` Organization BRD.
 - [ ] Produce the related DDD, FRS, Data Design, and TDS artifacts.
@@ -703,7 +709,7 @@ The next activity will be selected based on approved dependencies:
 - [ ] Demonstration completed.
 - [ ] Documentation updated only where necessary.
 
-**Phase 8 status: MESP-57 AND SPRINT 1 DONE; NO ACTIVE IMPLEMENTATION ITEM**
+**Phase 8 status: MESP-57 AND SPRINT 1 DONE; NO ACTIVE IMPLEMENTATION ITEM. MESP-28 IS REQUIREMENTS-ONLY.**
 
 ---
 
@@ -936,7 +942,9 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 
 ## Current action
 
-- [ ] Begin `MESP-28 — Identity and Access BRD` as the next approved requirements activity.
+- [x] Begin `MESP-28 — Identity and Access BRD` as the approved requirements activity.
+- [ ] Founder review the first draft, resolve or accept the open decisions, and provide approval or requested revisions.
+- [ ] Do not start DDD, FRS, Data Design, TDS, implementation refinement, MESP-58, or downstream BRDs until the applicable approval gates are satisfied.
 
 ## Completed MESP-57 outputs
 
@@ -976,9 +984,11 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 
 ## Next requirements gate
 
-- [ ] Review the approved scope and source documents for `MESP-28`.
-- [ ] Produce the Identity and Access BRD without starting implementation.
+- [x] Review the approved scope and source documents for `MESP-28`.
+- [x] Produce the Identity and Access BRD first draft without starting implementation.
+- [ ] Founder review and approve or return the draft for revision.
 - [ ] Keep `MESP-58` through `MESP-85` in To Do.
+- [ ] Keep `MESP-29` through `MESP-40` in To Do.
 - [ ] Do not start another implementation Enabler until its Definition of Ready is satisfied.
 
 ---
@@ -1002,6 +1012,7 @@ Use this section to record major milestones.
 | 2 August 2026 | Post-merge validation on `main` | Done | Restore and Release build passed; 6 architecture tests passed; required endpoints validated |
 | 2 August 2026 | MESP-57 closed | Done | Jira status moved to Done |
 | 2 August 2026 | Sprint 1 completed | Done | `S1-Solution Foundation` closed with MESP-57 completed |
+| 2 August 2026 | MESP-28 BRD started | In Progress | Founder-authorized first draft at `docs/12_Identity_and_Access_BRD.md`; branch `docs/mesp-28-identity-access-brd`; MESP-3 and MESP-28 In Progress; no implementation Sprint or Jira implementation work started |
 
 ---
 
@@ -1038,4 +1049,4 @@ Use this section to record major milestones.
 
 ## Current single next action
 
-> Begin `MESP-28 — Identity and Access BRD` as the next approved requirements activity. Do not start another implementation Enabler until its Definition of Ready is satisfied.
+> Review `docs/12_Identity_and_Access_BRD.md` v0.1, answer or revise IAM-OD-001 through IAM-OD-022, accept or revise the source-conflict register, and provide founder approval or requested changes. Do not start DDD, FRS, Data Design, TDS, implementation refinement, MESP-58, or downstream BRDs from this draft.
