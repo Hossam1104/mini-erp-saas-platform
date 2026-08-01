@@ -9,7 +9,7 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 2 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `MESP-28 — Identity and Access BRD — In Progress (Draft for Founder Review)` |
+| Current activity | `MESP-29 — Multi-Tenancy BRD — next single requirements activity (To Do; not started)` |
 | Current implementation item | `None — no active implementation item` |
 | Current branch | `docs/mesp-28-identity-access-brd` |
 | Current Sprint | `No active implementation Sprint — S1-Solution Foundation Done` |
@@ -56,7 +56,8 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 | MESP-57 implementation | Done — implemented, reviewed, merged through PR #1, validated on `main`, and closed in Jira |
 | Sprint 1 | Done — `S1-Solution Foundation` completed |
 | MESP-3 Identity and Access Epic | In Progress |
-| MESP-28 Identity and Access BRD | In Progress — Draft for Founder Review |
+| MESP-28 Identity and Access BRD | Done — v0.2 Approved Release 1 Baseline (2 August 2026) |
+| MESP-29 Multi-Tenancy BRD | Next single activity — To Do; not started |
 | Remaining product BRDs | Not Started / To Do |
 
 ### Current Jira and Git state
@@ -64,13 +65,13 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 - [x] `MESP-27` — SaaS Platform Administration BRD is **Done**.
 - [x] `MESP-2` — Platform Administration Epic remains **In Progress**.
 - [x] `MESP-57` — Modular Monolith solution and module seam is **Done**.
-- [x] `MESP-3` — Identity and Access Epic moved to **In Progress** for the approved BRD activity.
-- [x] `MESP-28` — Identity and Access BRD moved to **In Progress** for the first founder-review draft.
+- [x] `MESP-3` — Identity and Access Epic remains **In Progress** for the sequential foundation/domain documentation stream.
+- [x] `MESP-28` — Identity and Access BRD approved as the v0.2 Release 1 baseline and moved to **Done**.
 - [x] Sprint `S1-Solution Foundation` was created, started, and completed.
 - [x] Sprint contained only `MESP-57`.
 - [x] `MESP-58` through `MESP-85` remain **To Do**; no implementation item was started.
 - [x] `MESP-29` through `MESP-40` remain **To Do**; no downstream BRD was started.
-- [x] No Sprint is active and no Pull Request was created for MESP-28.
+- [x] No Sprint is active; MESP-28 documentation is on the controlled docs branch and has no implementation Sprint.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
 - [x] Implement `MESP-57 / TE-01`.
 - [x] Run the Release build.
@@ -86,21 +87,26 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 
 ---
 
-# 4. Delivery lifecycle
+# 4. Delivery lifecycle and fast-track documentation policy
 
-The product will follow this controlled lifecycle:
+The product will follow this controlled lifecycle. The former separate DDD, FRS, Data Design, and TDS documents are not mandatory standing deliverables.
 
 1. Product Requirements Document
 2. Business Requirements and BPMN
-3. Domain-Driven Design
-4. Functional Requirements Specification
-5. Data Design
-6. Technical Design Specification
-7. Implementation-ready Jira Backlog
-8. Implementation and Automated Testing
-9. Integration, UAT, Release, and Operations
+3. One Lean Implementation Specification per approved foundation/domain slice
+4. Implementation-ready Jira Backlog
+5. Implementation and Automated Testing
+6. Integration, UAT, Release, and Operations
 
-A domain must not move into implementation until its applicable upstream artifacts are approved, except for explicitly approved architecture-foundation Enablers such as MESP-57.
+A domain must not move into implementation until its BRD/BPMN and applicable Lean Implementation Specification are approved, except for explicitly approved architecture-foundation Enablers such as MESP-57.
+
+## Fast-track documentation policy
+
+- An approved BRD is the business baseline for its domain; do not keep it in a draft state after founder approval.
+- For each approved foundation/domain slice, create one Lean Implementation Specification that carries the required domain model/invariants, functional journeys, logical data decisions, authorization/API behavior, targeted tests, and acceptance traceability in one controlled document.
+- Do not create separate mandatory DDD, FRS, Data Design, or TDS documents for the same slice. Those concerns are content sections of the Lean Implementation Specification.
+- Security, tenant-isolation, MESP-48 supported-volume, and MESP-50 retention/privacy/legal-hold/purge gates remain mandatory and are not bypassed by the fast-track policy.
+- Keep documentation activities sequential: one current BRD or Lean Implementation Specification activity at a time; do not start implementation or a later BRD before the current evidence is committed and reviewed.
 
 ---
 
@@ -160,7 +166,7 @@ Freeze the product vision, business scope, target market, product boundaries, ar
 
 ## Objective
 
-Define the business meaning of each domain before technical implementation. Each BRD must capture workflows, actors, rules, exceptions, states, data requirements, reports, approvals, audit evidence, and business acceptance scenarios.
+Define the business meaning of each domain before technical implementation. Each BRD must capture workflows, actors, rules, exceptions, states, data requirements, reports, approvals, audit evidence, and business acceptance scenarios. A BRD is approved once its founder/business-owner decision record is complete; it is not held open for a second documentation package.
 
 ## Required outputs per domain
 
@@ -187,8 +193,8 @@ Define the business meaning of each domain before technical implementation. Each
 - Multi-currency impact.
 - Saudi localization impact.
 - Given/When/Then business acceptance scenarios.
-- BPMN process diagrams.
-- Open decisions.
+- BPMN process diagrams where the workflow needs them.
+- Founder-approved decision record and explicit deferred gates.
 - Founder/business-owner approval.
 
 ## Domain sequence and progress
@@ -201,8 +207,8 @@ Define the business meaning of each domain before technical implementation. Each
 - [x] MESP-27 founder approval.
 - [x] MESP-27 Wave 1 wireframes and Layout B baseline.
 - [ ] BPMN diagrams for all MESP-27 workflows.
-- [ ] 🔄 `MESP-28` — Identity and Access BRD — **In Progress: Draft for Founder Review**. Approval is pending.
-- [ ] `MESP-29` — Multi-Tenancy BRD.
+- [x] `MESP-28` — Identity and Access BRD — **Done: v0.2 Approved Release 1 Baseline** (2 August 2026).
+- [ ] `MESP-29` — Multi-Tenancy BRD — **next single activity; not started**.
 - [ ] `MESP-30` — Organization BRD.
 
 ### Core ERP domains
@@ -235,24 +241,24 @@ Define the business meaning of each domain before technical implementation. Each
 
 ## Phase 2 exit criteria per domain
 
-- [ ] BRD approved.
+- [x] BRD approved with a recorded founder/business-owner decision record.
 - [ ] BPMN diagrams approved.
 - [ ] All critical business rules are explicit.
 - [ ] State transitions are unambiguous.
 - [ ] Exceptions and negative paths are covered.
 - [ ] Permissions and separation-of-duties rules are approved.
-- [ ] Open decisions have owners and implementation gates.
+- [x] Deferred decisions have owners and explicit implementation or production gates.
 - [ ] No technical behavior is invented to fill a business gap.
 
-**Phase 2 status: IN PROGRESS**
+**Phase 2 status: IN PROGRESS — MESP-29 is the next single BRD activity; MESP-28 is approved and Done.**
 
 ---
 
-# Phase 3 — Domain-Driven Design
+# Phase 3 — Lean Implementation Specification: domain and behavior
 
 ## Objective
 
-Transform approved business requirements into clear domain boundaries and models without prematurely designing database tables or API payloads.
+Capture the domain-model and behavior sections of one Lean Implementation Specification for an approved foundation/domain slice. This is not a separate DDD deliverable.
 
 ## Required outputs per domain
 
@@ -272,11 +278,11 @@ Transform approved business requirements into clear domain boundaries and models
 - Consistency boundaries.
 - Transaction boundaries.
 - Domain error taxonomy.
-- Deferred design decisions.
+- Deferred design decisions and explicit production gates.
 
 ## Planned execution
 
-For each approved BRD:
+For each approved BRD, create or update one Lean Implementation Specification:
 
 1. Extract nouns, roles, documents, states, and business events.
 2. Confirm the owning Bounded Context.
@@ -287,17 +293,17 @@ For each approved BRD:
 7. Define allowed dependencies on other contexts.
 8. Validate the model against every BRD workflow and exception.
 9. Update the Business Glossary.
-10. Obtain approval before Data Design and detailed TDS work.
+10. Obtain approval for the complete Lean Implementation Specification before implementation refinement.
 
 ## Progress
 
 - [x] High-level module boundaries defined in the architecture baseline.
 - [x] Platform Administration identified as a distinct module boundary.
-- [ ] Formal Platform Administration DDD pack.
-- [ ] Identity and Access DDD pack.
-- [ ] Multi-Tenancy DDD pack.
-- [ ] Organization DDD pack.
-- [ ] Remaining domain DDD packs.
+- [ ] Platform Administration Lean Implementation Specification.
+- [ ] Identity and Access Lean Implementation Specification.
+- [ ] Multi-Tenancy Lean Implementation Specification.
+- [ ] Organization Lean Implementation Specification.
+- [ ] Remaining domain Lean Implementation Specifications.
 
 ## Exit criteria per domain
 
@@ -308,15 +314,15 @@ For each approved BRD:
 - [ ] No shared business-model dumping ground exists.
 - [ ] The model covers all BRD workflows and exceptions.
 
-**Phase 3 status: NOT STARTED FORMALLY**
+**Phase 3 status: NOT STARTED FOR MESP-29; domain-model content is a section of the future Lean Implementation Specification.**
 
 ---
 
-# Phase 4 — Functional Requirements Specification
+# Phase 4 — Lean Implementation Specification: user journeys and acceptance
 
 ## Objective
 
-Describe every approved feature from the user’s perspective, including user journeys, screens, actions, inputs, outputs, states, validations, permissions, errors, reports, localization, and functional acceptance criteria.
+Capture user journeys, screens, actions, inputs, outputs, states, validations, permissions, errors, reports, localization, and functional acceptance criteria as sections of the same Lean Implementation Specification. No standalone FRS document is required.
 
 ## Required outputs per domain
 
@@ -343,11 +349,11 @@ Describe every approved feature from the user’s perspective, including user jo
 - [x] MESP-27 Wave 1 low-fidelity wireframes exist.
 - [x] Layout B selected as the Tenant Workspace baseline.
 - [x] MESP-27 implementation Stories contain user-facing outcomes and acceptance criteria.
-- [ ] Formal MESP-27 FRS.
-- [ ] Formal Identity and Access FRS.
-- [ ] Formal Multi-Tenancy FRS.
-- [ ] Formal Organization FRS.
-- [ ] Remaining domain FRS documents.
+- [ ] MESP-27 user-journey and acceptance sections in its Lean Implementation Specification.
+- [ ] Identity and Access user-journey and acceptance sections.
+- [ ] Multi-Tenancy user-journey and acceptance sections.
+- [ ] Organization user-journey and acceptance sections.
+- [ ] Remaining domain user-journey and acceptance sections.
 
 ## Exit criteria per domain
 
@@ -358,15 +364,15 @@ Describe every approved feature from the user’s perspective, including user jo
 - [ ] Localization and accessibility expectations are included.
 - [ ] Functional acceptance criteria are testable.
 
-**Phase 4 status: PARTIAL FOR MESP-27, OTHERWISE NOT STARTED**
+**Phase 4 status: PARTIAL FOR MESP-27, OTHERWISE NOT STARTED; no standalone FRS documents are planned.**
 
 ---
 
-# Phase 5 — Data Design
+# Phase 5 — Lean Implementation Specification: logical data and integrity
 
 ## Objective
 
-Design the logical and physical data structures required to support approved domain behavior, tenant isolation, business integrity, performance, auditability, retention, and reporting.
+Capture the logical data and integrity decisions required to support approved domain behavior, tenant isolation, business integrity, performance, auditability, retention, and reporting in the same Lean Implementation Specification. Physical implementation detail is added only when the slice is ready; no standalone Data Design document is required.
 
 ## Required outputs per domain
 
@@ -425,15 +431,15 @@ Design the logical and physical data structures required to support approved dom
 - [ ] Audit, retention, and purge effects are covered.
 - [ ] No table ownership conflict exists between modules.
 
-**Phase 5 status: BASELINE DECISIONS DONE, DETAILED DESIGN NOT STARTED**
+**Phase 5 status: BASELINE DECISIONS DONE, detailed data sections not started for MESP-29; no standalone Data Design documents are planned.**
 
 ---
 
-# Phase 6 — Technical Design Specification
+# Phase 6 — Lean Implementation Specification: implementation readiness
 
 ## Objective
 
-Define how the approved business and functional behavior will be implemented across the solution, APIs, database, authorization, integrations, background processing, observability, security, and deployment.
+Capture the implementation-readiness decisions for the approved slice across solution boundaries, APIs, database, authorization, integrations, background processing, observability, security, and deployment in the same Lean Implementation Specification. No standalone TDS document is required.
 
 ## Required outputs per domain
 
@@ -467,7 +473,7 @@ Define how the approved business and functional behavior will be implemented acr
 - Deployment requirements.
 - Technical test strategy.
 - Failure and recovery behavior.
-- Traceability to BRD, DDD, FRS, and Data Design.
+- Traceability to the approved BRD/BPMN and the relevant Lean Implementation Specification sections.
 
 ## Progress
 
@@ -487,10 +493,10 @@ Define how the approved business and functional behavior will be implemented acr
 - [x] OpenTelemetry direction approved.
 - [x] xUnit and Playwright TypeScript direction approved.
 - [x] Transactional outbox/inbox direction approved.
-- [ ] Detailed Identity and Access TDS.
-- [ ] Detailed Multi-Tenancy TDS.
-- [ ] Detailed Organization TDS.
-- [ ] Detailed domain API and database specifications.
+- [ ] Identity and Access Lean Implementation Specification implementation-readiness sections.
+- [ ] Multi-Tenancy Lean Implementation Specification implementation-readiness sections.
+- [ ] Organization Lean Implementation Specification implementation-readiness sections.
+- [ ] Detailed domain API and database sections inside each Lean Implementation Specification.
 - [ ] Detailed production deployment design.
 
 ### Current MESP-57 technical foundation
@@ -519,7 +525,7 @@ Define how the approved business and functional behavior will be implemented acr
 - [ ] Technical risks and deferred decisions are recorded.
 - [ ] No implementation depends on an unresolved critical decision.
 
-**Phase 6 status: HIGH-LEVEL BASELINE DONE; DETAILED DOMAIN TDS PENDING**
+**Phase 6 status: HIGH-LEVEL BASELINE DONE; detailed Lean Implementation Specifications pending.**
 
 ---
 
@@ -575,11 +581,8 @@ Convert approved specifications into a controlled, traceable, sequenced backlog 
 A future Story or Enabler may enter a Sprint only when:
 
 - [ ] Applicable BRD is approved.
-- [ ] BPMN workflow is approved.
-- [ ] DDD ownership and invariants are approved.
-- [ ] FRS behavior is approved.
-- [ ] Data Design is approved.
-- [ ] TDS is approved.
+- [ ] BPMN workflow is approved where required.
+- [ ] Lean Implementation Specification for the slice is approved, including domain ownership, journeys, data decisions, authorization, and technical readiness.
 - [ ] Dependencies are resolved or explicitly sequenced.
 - [ ] Acceptance criteria are testable.
 - [ ] Security impact is reviewed.
@@ -657,15 +660,14 @@ Implement approved backlog items sequentially, validate them with focused automa
 
 ### After MESP-57
 
-MESP-57 and Sprint 1 are complete. The current requirements activity is MESP-28; do not automatically start MESP-58 or any implementation work.
+MESP-57 and Sprint 1 are complete. MESP-28 is now approved and Done. The next single requirements activity is MESP-29; do not automatically start MESP-58 or any implementation work.
 
 The next activity will be selected based on founder review and approved dependencies:
 
-- [x] Begin `MESP-28` Identity and Access BRD; first draft is on `docs/mesp-28-identity-access-brd`.
-- [ ] Founder review and approval of the MESP-28 BRD.
-- [ ] Complete `MESP-29` Multi-Tenancy BRD.
+- [x] Approve `MESP-28` Identity and Access BRD v0.2 on `docs/mesp-28-identity-access-brd`.
+- [ ] Begin `MESP-29` Multi-Tenancy BRD as the next single requirements activity.
 - [ ] Complete `MESP-30` Organization BRD.
-- [ ] Produce the related DDD, FRS, Data Design, and TDS artifacts.
+- [ ] Produce one Lean Implementation Specification per approved foundation/domain slice.
 - [ ] Refine the next Enabler only after its Definition of Ready is met.
 
 ## Testing strategy
@@ -805,10 +807,7 @@ Every implemented capability must preserve this chain:
 PRD requirement
 → BRD requirement and business rule
 → BPMN activity
-→ DDD context, aggregate, and invariant
-→ FRS feature and user behavior
-→ Logical and physical data design
-→ TDS component, API, and security control
+→ Lean Implementation Specification (domain model, journey, data, API, security, and test sections)
 → Jira Enabler, Story, or Task
 → Automated and manual test evidence
 → Commit and Pull Request
@@ -898,10 +897,7 @@ Use Luna Max for:
 
 - BRDs.
 - BPMN preparation.
-- DDD drafting.
-- FRS preparation.
-- Data Design drafting.
-- TDS drafting.
+- Lean Implementation Specification drafting.
 - Jira backlog work.
 - Jira synchronization.
 - Routine implementation.
@@ -942,9 +938,9 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 
 ## Current action
 
-- [x] Begin `MESP-28 — Identity and Access BRD` as the approved requirements activity.
-- [ ] Founder review the first draft, resolve or accept the open decisions, and provide approval or requested revisions.
-- [ ] Do not start DDD, FRS, Data Design, TDS, implementation refinement, MESP-58, or downstream BRDs until the applicable approval gates are satisfied.
+- [x] Approve `MESP-28 — Identity and Access BRD` v0.2 as the Release 1 baseline.
+- [ ] Begin `MESP-29 — Multi-Tenancy BRD` as the next single requirements activity; keep it To Do until this documentation commit is complete and reviewed.
+- [ ] Do not start the Lean Implementation Specification, implementation refinement, MESP-58, or any parallel downstream BRD until the applicable approval gates are satisfied.
 
 ## Completed MESP-57 outputs
 
@@ -985,8 +981,9 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 ## Next requirements gate
 
 - [x] Review the approved scope and source documents for `MESP-28`.
-- [x] Produce the Identity and Access BRD first draft without starting implementation.
-- [ ] Founder review and approve or return the draft for revision.
+- [x] Produce and approve the Identity and Access BRD v0.2 without starting implementation.
+- [x] Resolve the 22 historical IAM-OD records and four source-conflict records in the approved baseline.
+- [ ] Begin the next single MESP-29 Multi-Tenancy BRD activity after the MESP-28 approval evidence is committed and reviewed.
 - [ ] Keep `MESP-58` through `MESP-85` in To Do.
 - [ ] Keep `MESP-29` through `MESP-40` in To Do.
 - [ ] Do not start another implementation Enabler until its Definition of Ready is satisfied.
@@ -1012,7 +1009,7 @@ Use this section to record major milestones.
 | 2 August 2026 | Post-merge validation on `main` | Done | Restore and Release build passed; 6 architecture tests passed; required endpoints validated |
 | 2 August 2026 | MESP-57 closed | Done | Jira status moved to Done |
 | 2 August 2026 | Sprint 1 completed | Done | `S1-Solution Foundation` closed with MESP-57 completed |
-| 2 August 2026 | MESP-28 BRD started | In Progress | Founder-authorized first draft at `docs/12_Identity_and_Access_BRD.md`; branch `docs/mesp-28-identity-access-brd`; MESP-3 and MESP-28 In Progress; no implementation Sprint or Jira implementation work started |
+| 2 August 2026 | MESP-28 BRD approved | Done | `docs/12_Identity_and_Access_BRD.md` v0.2 Approved Release 1 Baseline; 40 Confirmed rules, 22 historical decision records resolved, no implementation Sprint or Jira implementation work started |
 
 ---
 
@@ -1023,7 +1020,7 @@ Use this section to record major milestones.
 - Mark Done only after checking the actual Jira state, repository change, generated artifact, or approval evidence.
 - Do not change completed product decisions without an explicit decision record.
 - Do not silently reorder domain dependencies.
-- Do not create implementation scope from unresolved BRD, DDD, FRS, Data Design, or TDS gaps.
+- Do not create implementation scope from unresolved BRD, BPMN, or Lean Implementation Specification gaps.
 - Keep one active implementation item unless an explicit founder decision authorizes otherwise.
 - Preserve Release 1 B2B ERP scope.
 - Keep Retail POS excluded.
@@ -1037,10 +1034,10 @@ Use this section to record major milestones.
 |---|---|
 | Phase 1 — PRD | **Done** |
 | Phase 2 — BRDs and BPMN | **In Progress** |
-| Phase 3 — DDD | **Not Started Formally** |
-| Phase 4 — FRS | **Partial for MESP-27** |
-| Phase 5 — Data Design | **Baseline Decisions Done; Detailed Design Pending** |
-| Phase 6 — TDS / Technical Architecture | **High-Level Baseline Done; Detailed Designs Pending** |
+| Phase 3 — Lean Implementation Specification: domain and behavior | **Not Started for MESP-29** |
+| Phase 4 — Lean Implementation Specification: user journeys | **Partial for MESP-27** |
+| Phase 5 — Lean Implementation Specification: logical data | **Baseline Decisions Done; detailed sections pending** |
+| Phase 6 — Lean Implementation Specification: implementation readiness | **High-Level Baseline Done; detailed slices pending** |
 | Phase 7 — Jira Backlog | **Done for MESP-27 Wave 1** |
 | Phase 8 — Implementation and Automated Testing | **MESP-57 and Sprint 1 Done; no active implementation item** |
 | Phase 9 — Integration, UAT, Release, Operations | **Not Started** |
@@ -1049,4 +1046,4 @@ Use this section to record major milestones.
 
 ## Current single next action
 
-> Review `docs/12_Identity_and_Access_BRD.md` v0.1, answer or revise IAM-OD-001 through IAM-OD-022, accept or revise the source-conflict register, and provide founder approval or requested changes. Do not start DDD, FRS, Data Design, TDS, implementation refinement, MESP-58, or downstream BRDs from this draft.
+> Begin the next single `MESP-29` Multi-Tenancy BRD activity after the committed and reviewed MESP-28 approval evidence is confirmed. Use one Lean Implementation Specification per approved foundation/domain slice. Do not start implementation refinement, MESP-58, or parallel downstream BRDs.
