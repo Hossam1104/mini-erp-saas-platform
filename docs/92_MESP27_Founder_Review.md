@@ -82,8 +82,8 @@ I accept that MESP-48 evidence and MESP-50 production decisions remain open at t
 | Confirm purge-certificate wording | Yes |
 | Confirm multiple-legal-entity decision | Yes |
 | Accept remaining MESP-48/MESP-50 gates | Yes |
-| Approved by | Hossam /  |
-| Date |  |
-| Requested changes |  |
+| Approved by | Hossam |
+| Date | 1 August 2026 |
+| Requested changes | None |
 
-MESP-27 remains **In Progress** with `status-in-review` until this block is signed. Do not start MESP-28 and do not create implementation Stories.
+MESP-27 Founder Review is **signed** by Hossam as of 1 August 2026. MESP-27 moves to Done and MESP-28 begins only after the Jira update in Appendix A of `docs/11_SaaS_Platform_Administration_BRD.md` is completed. Do not create implementation Stories.

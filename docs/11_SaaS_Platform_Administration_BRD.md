@@ -7,7 +7,8 @@
 | Document | SaaS Platform Administration Business Requirements Document |
 | Jira | MESP-27 — Produce SaaS Platform Administration BRD |
 | Version | v0.10 |
-| Status | Ready for Founder Approval after Independent Audit Corrections |
+| Status | Approved |
+| Approved by / date | Hossam / 1 August 2026 |
 | Prepared | 1 August 2026 |
 | Accountable owner | Hossam, interim Product Owner and Platform Operations owner |
 | Canonical PRD | `D:\AI Tools\Hossam\mini-erp-saas-platform\MiniERPSaaSPlatform_PRD_v1.2.docx` |
@@ -675,13 +676,13 @@ MESP-27 may be approved only when:
 
 | Decision | Founder response |
 |---|---|
-| Approve MESP-27 BRD | Approve / Request changes |
-| Confirm approved M27-DEC-001 / MESP-52 correction | Confirm / Request changes |
-| Confirm approved M27-DEC-005 / MESP-56 correction | Confirm / Request changes |
-| Accept MESP-48 evidence plan and no invented thresholds | Approve / Request changes |
-| Confirm MESP-50 remains a production gate | Approve / Request changes |
-| Approved by / date |  |
-| Requested changes |  |
+| Approve MESP-27 BRD | Approve |
+| Confirm approved M27-DEC-001 / MESP-52 correction | Confirm |
+| Confirm approved M27-DEC-005 / MESP-56 correction | Confirm |
+| Accept MESP-48 evidence plan and no invented thresholds | Approve |
+| Confirm MESP-50 remains a production gate | Approve |
+| Approved by / date | Hossam / 1 August 2026 |
+| Requested changes | None |
 
 ---
 
