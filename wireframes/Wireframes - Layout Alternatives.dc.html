@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/styles.css">
+  <script src="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/_ds_bundle.js"></script>
+  <title>Wave 1 — Layout Alternatives</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-neutral-200); font-family: var(--font-body); color: var(--color-text); }
+  </style>
+</helmet>
+
+<div style="max-width:1500px;margin:0 auto;padding:48px 40px 100px;">
+
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);">Wave 1 — SaaS Platform Administration</div>
+  <h1 style="font-family:var(--font-heading);font-weight:800;font-size:34px;margin:0 0 12px;">Layout alternatives</h1>
+  <p style="font-size:15px;line-height:1.6;color:var(--color-neutral-700);max-width:820px;margin:0 0 40px;">Three structural approaches to the same content — Tenant Catalogue, Tenant Workspace, high-risk lifecycle actions, Platform Audit. Schematic only: boxes stand for regions, not final visuals. Full evaluation matrix and recommendation in <span style="font-weight:700;color:var(--color-text);">05_Layout_Alternatives.md</span>.</p>
+
+  <!-- ALTERNATIVE A -->
+  <div style="border:2px solid var(--color-text);background:var(--color-bg);margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;padding:20px 28px;border-bottom:2px solid var(--color-divider);">
+      <div style="display:flex;align-items:baseline;gap:14px;">
+        <span style="font-family:var(--font-heading);font-weight:800;font-size:20px;">A — Data-Dense Operations Console</span>
+        <span style="font-size:12px;color:var(--color-neutral-600);">persistent left nav · full-width tables · right-side drawer</span>
+      </div>
+    </div>
+    <div style="padding:28px;">
+      <div style="display:flex;height:420px;border:2px solid var(--color-divider);position:relative;overflow:hidden;">
+        <div style="width:64px;flex-shrink:0;background:var(--color-neutral-200);border-right:2px solid var(--color-divider);display:flex;flex-direction:column;align-items:center;padding-top:16px;gap:18px;">
+          <div style="width:22px;height:22px;background:var(--color-accent);"></div>
+          <div style="width:22px;height:22px;border:2px solid var(--color-neutral-500);"></div>
+          <div style="width:22px;height:22px;border:2px solid var(--color-neutral-500);"></div>
+          <div style="width:22px;height:22px;border:2px solid var(--color-neutral-500);"></div>
+          <div style="width:22px;height:22px;border:2px solid var(--color-neutral-500);"></div>
+        </div>
+        <div style="flex:1;padding:18px 22px;overflow:hidden;">
+          <div style="display:flex;gap:10px;margin-bottom:14px;">
+            <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11px;color:var(--color-neutral-600);">Lifecycle: Active ▾</div>
+            <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11px;color:var(--color-neutral-600);">Country ▾</div>
+            <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11px;color:var(--color-neutral-600);">Plan ▾</div>
+            <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11px;color:var(--color-neutral-600);">Risk ▾</div>
+          </div>
+          <div style="border:2px solid var(--color-text);">
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;background:var(--color-neutral-800);color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;">
+              <div>Tenant</div><div>Country</div><div>Plan</div><div>Status</div><div>Usage</div><div>Risk</div>
+            </div>
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;padding:9px 10px;border-bottom:1px solid var(--color-divider);font-size:12px;">
+              <div>Tenant 014</div><div>SA</div><div>R1</div><div>Active</div><div>62%</div><div>—</div>
+            </div>
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;padding:9px 10px;border-bottom:1px solid var(--color-divider);font-size:12px;background:var(--color-accent-100);">
+              <div>Tenant 022</div><div>SA</div><div>R1</div><div>Grace</div><div>91%</div><div style="color:var(--color-accent-700);font-weight:700;">Warning</div>
+            </div>
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;padding:9px 10px;border-bottom:1px solid var(--color-divider);font-size:12px;">
+              <div>Tenant 031</div><div>SA</div><div>R1</div><div>Active</div><div>40%</div><div>—</div>
+            </div>
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;padding:9px 10px;font-size:12px;color:var(--color-neutral-500);">
+              <div>+ 46 more rows —</div><div></div><div></div><div></div><div></div><div></div>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;top:0;right:0;bottom:0;width:280px;background:var(--color-surface);border-left:2px solid var(--color-text);box-shadow:var(--shadow-lg);padding:18px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-600);margin-bottom:6px;">Drawer</div>
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:15px;margin-bottom:10px;">Tenant 022</div>
+          <div style="font-size:11px;color:var(--color-neutral-600);line-height:1.7;">Plan · Subscription · Entitlements<br>Usage · Support access<br>— summary only, full detail opens Workspace —</div>
+          <div style="margin-top:14px;padding:8px 14px;background:var(--color-accent);color:#fff;font-size:12px;font-weight:700;display:inline-block;">Suspend Tenant</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--color-neutral-600);margin:14px 0 0;">⚠ Note: Suspend sits one click from a dense data row — flagged as a clarity risk in the evaluation matrix.</p>
+    </div>
+  </div>
+
+  <!-- ALTERNATIVE B -->
+  <div style="border:2px solid var(--color-accent);background:var(--color-bg);margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;padding:20px 28px;border-bottom:2px solid var(--color-divider);background:var(--color-accent-100);">
+      <div style="display:flex;align-items:baseline;gap:14px;">
+        <span style="font-family:var(--font-heading);font-weight:800;font-size:20px;">B — Tenant Workspace</span>
+        <span style="font-size:12px;color:var(--color-neutral-700);">catalogue → tabbed workspace · lifecycle isolated</span>
+      </div>
+      <span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--color-accent);padding:5px 12px;">Recommended</span>
+    </div>
+    <div style="padding:28px;">
+      <div style="display:flex;height:420px;border:2px solid var(--color-divider);">
+        <div style="width:170px;flex-shrink:0;background:var(--color-neutral-200);border-right:2px solid var(--color-divider);padding:16px 0;font-size:12px;">
+          <div style="padding:9px 18px;font-weight:700;color:var(--color-accent-700);border-left:3px solid var(--color-accent);background:var(--color-accent-100);">Overview</div>
+          <div style="padding:9px 18px;color:var(--color-neutral-700);">Tenant Catalogue</div>
+          <div style="padding:9px 18px;color:var(--color-neutral-700);">Plans &amp; Subscriptions</div>
+          <div style="padding:9px 18px;color:var(--color-neutral-700);">Support Access</div>
+          <div style="padding:9px 18px;color:var(--color-neutral-700);">Compliance</div>
+          <div style="padding:9px 18px;color:var(--color-neutral-700);">Platform Audit</div>
+        </div>
+        <div style="flex:1;padding:18px 22px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-600);margin-bottom:8px;">Tenant Workspace — Tenant 022</div>
+          <div style="display:flex;gap:2px;border-bottom:2px solid var(--color-text);margin-bottom:14px;font-size:12px;">
+            <div style="padding:8px 14px;font-weight:700;border-bottom:2px solid var(--color-accent);margin-bottom:-2px;">Overview</div>
+            <div style="padding:8px 14px;color:var(--color-neutral-600);">Plan &amp; Subscription</div>
+            <div style="padding:8px 14px;color:var(--color-neutral-600);">Entitlements &amp; Modules</div>
+            <div style="padding:8px 14px;background:var(--color-accent);color:#fff;">Lifecycle</div>
+            <div style="padding:8px 14px;color:var(--color-neutral-600);">Support Access</div>
+            <div style="padding:8px 14px;color:var(--color-neutral-600);">Offboarding</div>
+            <div style="padding:8px 14px;color:var(--color-neutral-600);">Audit</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+            <div style="border:2px solid var(--color-divider);padding:14px;"><div style="font-size:10px;color:var(--color-neutral-600);text-transform:uppercase;">Status</div><div style="font-weight:700;margin-top:4px;">Grace Period</div></div>
+            <div style="border:2px solid var(--color-divider);padding:14px;"><div style="font-size:10px;color:var(--color-neutral-600);text-transform:uppercase;">Plan</div><div style="font-weight:700;margin-top:4px;">Release 1</div></div>
+            <div style="border:2px solid var(--color-divider);padding:14px;"><div style="font-size:10px;color:var(--color-neutral-600);text-transform:uppercase;">Legal entities</div><div style="font-weight:700;margin-top:4px;">2</div></div>
+          </div>
+          <div style="margin-top:16px;font-size:11px;color:var(--color-neutral-600);">Lifecycle tab (highlighted) is structurally separated — Suspend/Reactivate live only there, never as a table-row action.</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--color-neutral-700);margin:14px 0 0;">Recommended spine for Wave 1 — highest learnability, clearest high-risk isolation, strongest RTL/accessibility baseline (see evaluation matrix).</p>
+    </div>
+  </div>
+
+  <!-- ALTERNATIVE C -->
+  <div style="border:2px solid var(--color-text);background:var(--color-bg);margin-bottom:16px;">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;padding:20px 28px;border-bottom:2px solid var(--color-divider);">
+      <div style="display:flex;align-items:baseline;gap:14px;">
+        <span style="font-family:var(--font-heading);font-weight:800;font-size:20px;">C — Command Center</span>
+        <span style="font-size:12px;color:var(--color-neutral-600);">exception queues · recent high-risk activity · opens into a workspace</span>
+      </div>
+    </div>
+    <div style="padding:28px;">
+      <div style="border:2px solid var(--color-divider);padding:22px;min-height:420px;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-600);margin-bottom:12px;">Exception queues</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;">
+          <div style="border:2px solid var(--color-divider);padding:14px;"><div style="font-size:26px;font-weight:800;font-family:var(--font-heading);">2</div><div style="font-size:11px;color:var(--color-neutral-600);">Provisioning failures</div></div>
+          <div style="border:2px solid var(--color-accent);padding:14px;"><div style="font-size:26px;font-weight:800;font-family:var(--font-heading);color:var(--color-accent-700);">3</div><div style="font-size:11px;color:var(--color-neutral-600);">Suspended tenants</div></div>
+          <div style="border:2px solid var(--color-divider);padding:14px;"><div style="font-size:26px;font-weight:800;font-family:var(--font-heading);">1</div><div style="font-size:11px;color:var(--color-neutral-600);">Expiring support access</div></div>
+          <div style="border:2px solid var(--color-divider);padding:14px;"><div style="font-size:26px;font-weight:800;font-family:var(--font-heading);">5</div><div style="font-size:11px;color:var(--color-neutral-600);">Usage warnings</div></div>
+        </div>
+        <div style="display:flex;gap:18px;align-items:flex-start;">
+          <div style="flex:1;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-600);margin-bottom:8px;">Recent high-risk activity</div>
+            <div style="border:2px solid var(--color-divider);padding:10px 14px;font-size:12px;border-bottom:1px solid var(--color-divider);">Suspend — Tenant 022 — Security — 09:14</div>
+            <div style="border-left:2px solid var(--color-divider);border-right:2px solid var(--color-divider);padding:10px 14px;font-size:12px;border-bottom:1px solid var(--color-divider);">Support access granted — Tenant 014 — 08:40</div>
+            <div style="border:2px solid var(--color-divider);border-top:none;padding:10px 14px;font-size:12px;">Purge approved (1/2) — Tenant 009 — Yesterday</div>
+          </div>
+          <div style="font-size:22px;color:var(--color-neutral-400);padding-top:30px;">→</div>
+          <div style="width:260px;border:2px dashed var(--color-neutral-400);padding:14px;font-size:11px;color:var(--color-neutral-600);">Clicking a card opens the same Tenant Workspace as Alternative B — this is a front door, not a parallel structure.</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--color-neutral-600);margin:14px 0 0;">Strongest fit once a support team exists; with one operator today it assumes a queue that isn't there yet.</p>
+    </div>
+  </div>
+
+  <p style="font-size:12px;color:var(--color-neutral-500);margin-top:8px;">Full criterion-by-criterion scoring (usability, learnability, density, clicks, scalability, RTL, accessibility, high-risk clarity, audit visibility, solo-admin fit, future team fit) is in <span style="font-weight:700;">05_Layout_Alternatives.md</span>.</p>
+</div>
+
+</x-dc>
+</body>
+</html>

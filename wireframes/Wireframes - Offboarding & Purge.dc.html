@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/styles.css">
+  <script src="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/_ds_bundle.js"></script>
+  <title>Wave 1 — Export, Offboarding &amp; Purge</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-neutral-200); font-family: var(--font-body); color: var(--color-text); }
+    .wf-tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color: var(--color-accent-700); background: var(--color-surface); padding:3px 8px; margin-bottom:10px; }
+    .wf-label { font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--color-neutral-600); margin-bottom:4px; display:block; }
+    .wf-field { border:2px solid var(--color-divider); padding:8px 10px; font-size:12.5px; color:var(--color-neutral-700); }
+    .wf-frame { border:2px solid var(--color-text); background:var(--color-bg); padding:24px 30px; margin-bottom:16px; }
+    .wf-note { font-size:12px; color:var(--color-neutral-600); margin:0 0 40px; }
+  </style>
+</helmet>
+
+<div style="max-width:1500px;margin:0 auto;padding:48px 40px 100px;">
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);">Wave 1 — SaaS Platform Administration</div>
+  <h1 style="font-family:var(--font-heading);font-weight:800;font-size:34px;margin:0 0 12px;">Export, Offboarding &amp; Purge</h1>
+  <p style="font-size:15px;line-height:1.6;color:var(--color-neutral-700);max-width:900px;margin:0 0 36px;">The platform's most irreversible sequence — deliberately the most sober-looking screens in the whole system. Purge is visually distinguished from ordinary suspension/termination throughout: darker chrome, explicit dual-approval, no single-click path.</p>
+
+  <!-- EXPORT & OFFBOARDING EN -->
+  <div class="wf-tag">Screen 14 · Export and Offboarding · EN</div>
+  <div class="wf-frame">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">Export &amp; Offboarding — TEN-009 Al-Salam Holdings</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div><span class="wf-label">Export scope</span><div class="wf-field">Full tenant data + files</div></div>
+      <div><span class="wf-label">Data categories</span><div class="wf-field">Master data, transactions, documents, audit</div></div>
+      <div><span class="wf-label">Format</span><div class="wf-field">CSV + PDF document bundle</div></div>
+      <div><span class="wf-label">Requested by</span><div class="wf-field">Hossam — 3 days ago</div></div>
+      <div><span class="wf-label">Approved by</span><div class="wf-field">Hossam (Security/Privacy role)</div></div>
+      <div><span class="wf-label">Artifact state</span><div class="wf-field" style="font-weight:700;">Ready · checksum verified</div></div>
+      <div><span class="wf-label">Expiry</span><div class="wf-field" style="font-weight:700;color:var(--color-accent-700);">6 days remaining</div></div>
+      <div><span class="wf-label">Download authorization</span><div class="wf-field">Hossam only — separate re-check at download</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:16px;">
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Legal-hold status</div><div style="font-weight:700;margin-top:4px;">None active</div></div>
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Termination status</div><div style="font-weight:700;margin-top:4px;">Termination Pending</div></div>
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Completion evidence</div><div style="font-weight:700;margin-top:4px;">Manifest attached, integrity verified</div></div>
+    </div>
+    <div style="margin-top:16px;border:2px solid var(--color-accent);background:var(--color-accent-100);padding:12px 16px;font-size:12.5px;color:var(--color-accent-700);">⚠ If this export is waived instead of accepted: confirm whether ANY accepted, recoverable Tenant copy will remain before Termination proceeds. Waiving with an expiring or absent artifact risks leaving no recoverable copy before purge.</div>
+  </div>
+  <p class="wf-note">Annotations — 1. A support identity can never reach this screen's authorization state through support scope alone (RULE-021). 2. Waiver risk is a standing, visible warning — not a checkbox buried in a confirmation dialog.</p>
+
+  <!-- PURGE REVIEW EN — LEGAL HOLD BLOCKED -->
+  <div class="wf-tag">Screen 15 · Purge Review · EN · legal hold blocked</div>
+  <div class="wf-frame" style="border-color:var(--color-neutral-800);">
+    <div style="background:var(--color-neutral-800);color:#fff;padding:10px 20px;margin:-24px -30px 20px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Purge Review — distinct from Suspension/Termination — irreversible beyond this point</div>
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">TEN-003 Barakah Foods — Retained</div>
+    <div style="border:3px solid var(--color-accent);background:var(--color-accent-100);padding:14px 18px;font-size:13px;color:var(--color-accent-700);font-weight:700;margin-bottom:18px;">■ Legal hold active — Purge Approval and Execution are both blocked. This is a hard stop, not a warning to override.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;font-size:12.5px;">
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Termination date</div><div style="font-weight:700;margin-top:4px;">14 Mar 2026</div></div>
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Retention period</div><div style="font-weight:700;margin-top:4px;">Expired 12 Jun 2026</div></div>
+      <div style="border:2px solid var(--color-accent);padding:12px;"><div class="wf-label">Legal hold owner</div><div style="font-weight:700;margin-top:4px;color:var(--color-accent-700);">Security/Privacy Owner — dispute pending</div></div>
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Outstanding obligations</div><div style="font-weight:700;margin-top:4px;">None besides the hold</div></div>
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Export evidence</div><div style="font-weight:700;margin-top:4px;">Accepted 11 Jun 2026</div></div>
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Backup treatment</div><div style="font-weight:700;margin-top:4px;">Pending MESP-50 policy</div></div>
+    </div>
+  </div>
+
+  <!-- PURGE REVIEW EN — COOLING OFF -->
+  <div class="wf-frame" style="border-color:var(--color-neutral-800);">
+    <div style="background:var(--color-neutral-800);color:#fff;padding:10px 20px;margin:-24px -30px 20px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Purge Review — cooling-off in progress</div>
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">TEN-009 Al-Salam Holdings — Purge Approved</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;font-size:12.5px;margin-bottom:18px;">
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Certified scope</div><div style="font-weight:700;margin-top:4px;">All tenant data + files</div></div>
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Systems excluded</div><div style="font-weight:700;margin-top:4px;">Encrypted platform backups (30-day cycle)</div></div>
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">First approval</div><div style="font-weight:700;margin-top:4px;">Hossam — 20 Jul 2026</div></div>
+      <div style="border:2px solid var(--color-divider);padding:12px;"><div class="wf-label">Second approval</div><div style="font-weight:700;margin-top:4px;">External Security Reviewer — 21 Jul 2026</div></div>
+    </div>
+    <div style="display:flex;gap:20px;align-items:center;">
+      <div style="flex:1;border:2px solid var(--color-accent);background:var(--color-accent-100);padding:14px 18px;">
+        <div class="wf-label">Cooling-off ends</div>
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;color:var(--color-accent-700);">4 days remaining · 25 Aug 2026</div>
+        <div style="font-size:11.5px;color:var(--color-neutral-600);margin-top:4px;">Final notification: sent 21 Jul 2026, delivery confirmed. Legal hold rechecked automatically at execution time.</div>
+      </div>
+      <span style="padding:10px 20px;border:2px solid var(--color-neutral-500);color:var(--color-neutral-600);font-size:12.5px;">Revoke approval (before execution only)</span>
+    </div>
+  </div>
+  <p class="wf-note">Annotations — 1. Legal hold is a hard stop, not a dismissible warning — no override control is drawn. 2. Purge Review's dark header band is unique to this screen family, distinguishing it from Suspend/Reactivate's accent-red band and from ordinary workspace tabs.</p>
+
+  <!-- PURGE CERTIFICATE EN -->
+  <div class="wf-tag">Screen 16 · Purge Certificate · EN</div>
+  <div class="wf-frame" style="border-color:var(--color-neutral-800);">
+    <div style="background:var(--color-neutral-800);color:#fff;padding:10px 20px;margin:-24px -30px 20px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Purge Certificate — CERT-2026-0091</div>
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">TEN-041 Yanbu Distribution — Purged 2 Jul 2026</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:12.5px;">
+      <div style="border:2px solid var(--color-divider);padding:14px;"><div class="wf-label">Certified purge scope</div><div style="margin-top:6px;">All tenant records, files, and search indexes in the production database and primary object store.</div></div>
+      <div style="border:2px solid var(--color-divider);padding:14px;"><div class="wf-label">Systems included</div><div style="margin-top:6px;">Primary SQL database, primary file storage, search index</div></div>
+      <div style="border:2px solid var(--color-accent);padding:14px;background:var(--color-accent-100);"><div class="wf-label" style="color:var(--color-accent-700);">Systems excluded — residual copies</div><div style="margin-top:6px;color:var(--color-accent-700);font-weight:700;">Encrypted disaster-recovery backups — scheduled deletion per the approved backup-retention cycle, not yet elapsed.</div></div>
+      <div style="border:2px solid var(--color-divider);padding:14px;"><div class="wf-label">Legal-hold / retention restrictions</div><div style="margin-top:6px;">None active at execution time</div></div>
+      <div style="border:2px solid var(--color-divider);padding:14px;"><div class="wf-label">Approvers / operator</div><div style="margin-top:6px;">Hossam + External Security Reviewer · executed by Platform Operations</div></div>
+      <div style="border:2px solid var(--color-divider);padding:14px;"><div class="wf-label">Verification result</div><div style="margin-top:6px;font-weight:700;">Certified scope confirmed removed and unrecoverable</div></div>
+    </div>
+    <div style="margin-top:16px;border:3px solid var(--color-text);padding:14px 18px;font-size:12.5px;font-weight:700;">Restoration statement: restoration is not possible from the certified scope above. Restoration MAY remain possible from the excluded disaster-recovery backups until their scheduled deletion — this certificate does not claim universal impossibility (DD-09, REQ-096).</div>
+    <div style="margin-top:12px;font-size:11px;color:var(--color-neutral-600);">Certificate ID: CERT-2026-0091 · <span style="color:var(--color-accent-700);font-weight:700;">View full audit trail →</span></div>
+  </div>
+  <p class="wf-note">Annotations — 1. Certified-scope vs. residual-copy split is always shown, never collapsed into one "purge complete" line. 2. This is the only screen family allowed to describe an action as irreversible outright — and even then, scoped precisely.</p>
+
+  <!-- AR MIRRORS -->
+  <div class="wf-tag">Screens 14–15 (mirrored headers) · العربية · RTL</div>
+  <div class="wf-frame" dir="rtl">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:16px;margin-bottom:8px;">التصدير وإنهاء الخدمة — TEN-009</div>
+    <div style="font-size:12px;color:var(--color-neutral-700);margin-bottom:16px;">نطاق التصدير: كامل بيانات المستأجر · الحالة: جاهز، تم التحقق من التجزئة · الانتهاء: خلال ٦ أيام · <span style="color:var(--color-accent-700);font-weight:700;">تنبيه: التنازل عن التصدير قد لا يترك نسخة قابلة للاسترداد.</span></div>
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:16px;margin-bottom:8px;">مراجعة المسح — TEN-003</div>
+    <div style="border:3px solid var(--color-accent);background:var(--color-accent-100);padding:12px 16px;font-size:12.5px;color:var(--color-accent-700);font-weight:700;">■ تعليق قانوني نشط — الموافقة على المسح وتنفيذه محظوران. هذا إيقاف صارم وليس تحذيرًا يمكن تجاوزه.</div>
+  </div>
+  <p class="wf-note">Annotation — dark header band and hard-stop treatment carry over unchanged in direction and meaning; only text alignment and icon-before-word order flip.</p>
+
+  <div class="wf-tag">Screen 16 (mirrored) · Purge Certificate · العربية · RTL</div>
+  <div class="wf-frame" dir="rtl" style="border-color:var(--color-neutral-800);">
+    <div style="background:var(--color-neutral-800);color:#fff;padding:10px 20px;margin:-24px -30px 20px;font-size:12px;font-weight:700;">شهادة المسح — CERT-2026-0091</div>
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">TEN-041 ينبع للتوزيع — تم المسح ٢ يوليو ٢٠٢٦</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:12.5px;">
+      <div style="border:2px solid var(--color-divider);padding:14px;"><div class="wf-label">النطاق المعتمد للمسح</div><div style="margin-top:6px;">جميع سجلات المستأجر وملفاته وفهارس البحث في قاعدة البيانات الرئيسية.</div></div>
+      <div style="border:2px solid var(--color-accent);padding:14px;background:var(--color-accent-100);"><div class="wf-label" style="color:var(--color-accent-700);">الأنظمة المستثناة — نسخ متبقية</div><div style="margin-top:6px;color:var(--color-accent-700);font-weight:700;">نسخ احتياطية مشفّرة لاستعادة الكوارث — مجدولة للحذف ضمن دورة الاحتفاظ المعتمدة.</div></div>
+    </div>
+    <div style="margin-top:16px;border:3px solid var(--color-text);padding:14px 18px;font-size:12.5px;font-weight:700;">بيان الاستعادة: الاستعادة غير ممكنة من النطاق المعتمد أعلاه. قد تظل ممكنة من النسخ الاحتياطية المستثناة حتى موعد حذفها المجدول — لا تدّعي هذه الشهادة استحالة الاستعادة كليًا.</div>
+  </div>
+  <p class="wf-note">Annotation — the truthful, bounded restoration statement is treated as load-bearing text: it is never shortened or summarized away in translation.</p>
+</div>
+
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/styles.css">
+  <script src="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/_ds_bundle.js"></script>
+  <title>Wave 1 — Plans, Subscriptions, Entitlements, Modules, Limits &amp; Branding</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-neutral-200); font-family: var(--font-body); color: var(--color-text); }
+    .wf-tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color: var(--color-accent-700); background: var(--color-surface); padding:3px 8px; margin-bottom:10px; }
+    .wf-label { font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--color-neutral-600); margin-bottom:4px; display:block; }
+    .wf-frame { border:2px solid var(--color-text); background:var(--color-bg); padding:24px 30px; margin-bottom:16px; }
+    .wf-note { font-size:12px; color:var(--color-neutral-600); margin:0 0 40px; }
+  </style>
+</helmet>
+
+<div style="max-width:1500px;margin:0 auto;padding:48px 40px 100px;">
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);">Wave 1 — SaaS Platform Administration</div>
+  <h1 style="font-family:var(--font-heading);font-weight:800;font-size:34px;margin:0 0 12px;">Plans, Subscriptions, Entitlements, Modules, Limits &amp; Branding</h1>
+  <p style="font-size:15px;line-height:1.6;color:var(--color-neutral-700);max-width:900px;margin:0 0 36px;">Six screens. RTL shown in full for Entitlement Visibility and Limits &amp; Usage (the two with a distinct visual rule to prove out); the rest carry a compact mirrored header — the table/column-reversal pattern is already demonstrated across the other wireframe files.</p>
+
+  <!-- PLAN CATALOGUE -->
+  <div class="wf-tag">Screen 7 · Plan Catalogue · EN</div>
+  <div class="wf-frame">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">Plan Catalogue</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:2px solid var(--color-text);">
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Plan / version</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Status</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Effective interval</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Modules</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Service / support tier</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Price metadata</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Tenants using</th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--color-divider);">
+          <td style="padding:9px 7px;font-weight:700;">Release 1 Plan · v1.2</td>
+          <td style="padding:9px 7px;">Active</td>
+          <td style="padding:9px 7px;">1 Jan 2026 →</td>
+          <td style="padding:9px 7px;">Procurement, Inventory, B2B Sales, Finance, Reporting, Identity/Org</td>
+          <td style="padding:9px 7px;">Standard</td>
+          <td style="padding:9px 7px;color:var(--color-neutral-600);">SAR 0 · non-calculating</td>
+          <td style="padding:9px 7px;">47</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--color-divider);">
+          <td style="padding:9px 7px;color:var(--color-neutral-500);">Release 1 Plan · v1.1</td>
+          <td style="padding:9px 7px;color:var(--color-neutral-500);">Superseded</td>
+          <td style="padding:9px 7px;color:var(--color-neutral-500);">Sep – Dec 2025</td>
+          <td style="padding:9px 7px;color:var(--color-neutral-500);">Same set, earlier limit values</td>
+          <td style="padding:9px 7px;color:var(--color-neutral-500);">Standard</td>
+          <td style="padding:9px 7px;color:var(--color-neutral-500);">—</td>
+          <td style="padding:9px 7px;color:var(--color-neutral-500);">0 (historical)</td>
+        </tr>
+        <tr>
+          <td style="padding:9px 7px;font-weight:700;">Restricted Validation Plan · v1.0</td>
+          <td style="padding:9px 7px;">Non-production only</td>
+          <td style="padding:9px 7px;">—</td>
+          <td style="padding:9px 7px;">Deliberately omits Finance</td>
+          <td style="padding:9px 7px;">—</td>
+          <td style="padding:9px 7px;color:var(--color-neutral-500);">Not sellable</td>
+          <td style="padding:9px 7px;">1 (test tenant)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="wf-note">Annotation — one production Plan is the Wave 1 reality, but the version column and Superseded row exist to prove history works before a v1.3 ever ships (MESP-52). The Restricted Validation Plan is visually flagged "non-production" everywhere it appears, never shown as a Trial.</p>
+
+  <div class="wf-tag">Screen 7 (mirrored header) · Plan Catalogue · العربية</div>
+  <div class="wf-frame" dir="rtl">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:10px;">كتالوج الخطط</div>
+    <div style="font-size:12px;color:var(--color-neutral-700);">الخطة الأولى · الإصدار ١.٢ — نشطة — سارية من ١ يناير ٢٠٢٦ — ٤٧ مستأجرًا يستخدمها. خطة التحقق المقيدة · الإصدار ١.٠ — غير إنتاجية فقط.</div>
+  </div>
+  <p class="wf-note">Full table reverses column-by-block exactly as shown in the Tenant Catalogue mirror (Screen 2).</p>
+
+  <!-- SUBSCRIPTION MANAGEMENT -->
+  <div class="wf-tag">Screen 7 · Subscription Management · EN</div>
+  <div class="wf-frame">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">Subscription Management — TEN-014 Al-Ufuq Trading</div>
+    <div style="display:flex;gap:28px;">
+      <div style="flex:1;">
+        <div class="wf-label">Current</div>
+        <div style="border:2px solid var(--color-divider);padding:12px 16px;font-size:12.5px;margin-bottom:16px;">Release 1 Plan v1.2 · Effective since 1 Jan 2026 · Reason: initial provisioning · Assigner: Hossam</div>
+        <div class="wf-label">Scheduled change</div>
+        <div style="border:2px solid var(--color-accent);background:var(--color-accent-100);padding:12px 16px;font-size:12.5px;">Release 1 Plan v1.2 → limit increase (Users 50 → 100), effective 1 Sep 2026 · Reason: commercial upsell · Approver: Hossam</div>
+      </div>
+      <div style="width:340px;flex-shrink:0;border-left:2px solid var(--color-divider);padding-left:28px;">
+        <div class="wf-label">Impact preview</div>
+        <table style="width:100%;font-size:11.5px;margin-top:8px;border-collapse:collapse;">
+          <tr style="border-bottom:2px solid var(--color-text);"><td style="padding:5px 0;"></td><td style="padding:5px 0;text-align:end;font-weight:700;">Now</td><td style="padding:5px 0;text-align:end;font-weight:700;color:var(--color-accent-700);">After 1 Sep</td></tr>
+          <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:5px 0;color:var(--color-neutral-600);">User limit</td><td style="padding:5px 0;text-align:end;">50</td><td style="padding:5px 0;text-align:end;font-weight:700;">100</td></tr>
+          <tr><td style="padding:5px 0;color:var(--color-neutral-600);">Entitlements before 1 Sep</td><td colspan="2" style="padding:5px 0;text-align:end;">Unchanged</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <p class="wf-note">Annotation — a Subscription change is reviewed via this preview, never a bare "Save" (REQ-018); current Entitlements stay untouched until the effective date.</p>
+
+  <!-- ENTITLEMENT VISIBILITY EN -->
+  <div class="wf-tag">Screen 8 · Entitlement Visibility · EN</div>
+  <div class="wf-frame">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:8px;">Entitlements — TEN-014 Al-Ufuq Trading</div>
+    <div style="border:2px solid var(--color-text);padding:10px 16px;font-size:12.5px;font-weight:700;margin-bottom:16px;">"Entitled" does not mean "User permitted." Both an Entitlement and a user Permission are required.</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:2px solid var(--color-text);">
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Module / feature</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Status</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Effective / expiry</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Source</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Dependency</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Restriction</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Audit</th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--color-divider);">
+          <td style="padding:9px 7px;font-weight:700;">Inventory</td><td style="padding:9px 7px;">✓ Effective</td><td style="padding:9px 7px;">Since 1 Jan 2026</td><td style="padding:9px 7px;">Release 1 v1.2 · Subscription SUB-014</td><td style="padding:9px 7px;">Met</td><td style="padding:9px 7px;color:var(--color-neutral-500);">None</td><td style="padding:9px 7px;color:var(--color-accent-700);">View →</td>
+        </tr>
+        <tr>
+          <td style="padding:9px 7px;font-weight:700;">Finance</td><td style="padding:9px 7px;font-weight:700;color:var(--color-accent-700);">⬥ Temporarily restricted</td><td style="padding:9px 7px;">Since 1 Jan 2026</td><td style="padding:9px 7px;">Release 1 v1.2 · Subscription SUB-014</td><td style="padding:9px 7px;">Met</td><td style="padding:9px 7px;color:var(--color-accent-700);">Operational-safety hold (temporary)</td><td style="padding:9px 7px;color:var(--color-accent-700);">View →</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:16px;border:2px dashed var(--color-neutral-400);padding:12px 16px;font-size:11.5px;color:var(--color-neutral-600);">No override control exists on this screen, by design — a change here would require a versioned Plan change or an effective-dated Subscription change instead (RULE-007).</div>
+  </div>
+  <p class="wf-note">Annotation — a security/safety restriction can only block, never grant (REQ-092) — that's why Finance shows "restricted," not a different Entitlement.</p>
+
+  <div class="wf-tag">Screen 8 (mirrored) · Entitlement Visibility · العربية · RTL</div>
+  <div class="wf-frame" dir="rtl">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:8px;">الاستحقاقات — TEN-014 الأفق التجارية</div>
+    <div style="border:2px solid var(--color-text);padding:10px 16px;font-size:12.5px;font-weight:700;margin-bottom:16px;">"المستحق" لا يعني "المستخدم مصرّح له". يلزم توفر الاستحقاق والصلاحية معًا.</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:2px solid var(--color-text);">
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">التدقيق</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">القيد</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">المصدر</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">الحالة</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">الوحدة / الميزة</th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--color-divider);">
+          <td style="padding:9px 7px;color:var(--color-accent-700);">عرض ←</td><td style="padding:9px 7px;color:var(--color-neutral-500);">لا يوجد</td><td style="padding:9px 7px;">الخطة الأولى ١.٢</td><td style="padding:9px 7px;">✓ سارٍ</td><td style="padding:9px 7px;font-weight:700;">المخزون</td>
+        </tr>
+        <tr>
+          <td style="padding:9px 7px;color:var(--color-accent-700);">عرض ←</td><td style="padding:9px 7px;color:var(--color-accent-700);">قيد تشغيلي مؤقت</td><td style="padding:9px 7px;">الخطة الأولى ١.٢</td><td style="padding:9px 7px;font-weight:700;color:var(--color-accent-700);">⬥ مقيّد مؤقتًا</td><td style="padding:9px 7px;font-weight:700;">المالية</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="wf-note">Annotation — column block reversed exactly as in Screen 2's mirror; the "no override" dashed note repeats unchanged in Arabic below (omitted here for space).</p>
+
+  <!-- MODULE ACTIVATION EN -->
+  <div class="wf-tag">Screen 8 · Module Activation · EN · dependency-blocked state</div>
+  <div class="wf-frame">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">Module Activation — Finance — TEN-014</div>
+    <div class="wf-label">Activation checklist</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 32px;font-size:12.5px;margin:8px 0 18px;">
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:7px;"><span>Entitlement effective</span><span style="font-weight:700;">✓ Pass</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:7px;"><span>Dependencies (Organization)</span><span style="font-weight:700;color:var(--color-accent-700);">✕ Blocked</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:7px;"><span>Configuration readiness</span><span style="font-weight:700;">✓ Pass</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:7px;"><span>Master-data readiness</span><span style="color:var(--color-neutral-500);">— not evaluated (blocked upstream)</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:7px;"><span>Opening-data readiness</span><span style="color:var(--color-neutral-500);">— not evaluated</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:7px;"><span>Rollback plan approved</span><span style="font-weight:700;">✓ Pass</span></div>
+    </div>
+    <div style="border:2px solid var(--color-accent);background:var(--color-accent-100);padding:12px 16px;font-size:12.5px;color:var(--color-accent-700);">Blocked by: Organization configuration — Company "Al-Ufuq Trading LLC" missing a chart-of-accounts assignment. Owner: Tenant Administrator.</div>
+    <div style="margin-top:16px;display:flex;gap:16px;font-size:11.5px;color:var(--color-neutral-600);">
+      <span>Module states in this system: Not Entitled → Entitled/Not Configured → Configuration Required → Ready → <b>Active</b> / Read-Only / Deactivation Pending → Inactive</span>
+    </div>
+  </div>
+  <p class="wf-note">Annotation — Read-Only modules show the word "Read-Only" at full text weight (DD-05), never just a greyed row — colour-independent and RTL-icon-safe.</p>
+
+  <!-- LIMITS AND USAGE EN -->
+  <div class="wf-tag">Screen 9 · Limits and Usage · EN</div>
+  <div class="wf-frame">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">Limits &amp; Usage — TEN-022 Al-Nukhba Distribution</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:2px solid var(--color-text);">
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Measure</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Current</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">% used</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Source (Plan value)</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Freshness</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Status</th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--color-divider);">
+          <td style="padding:9px 7px;">Active users</td><td style="padding:9px 7px;">38 / 50</td><td style="padding:9px 7px;">76%</td><td style="padding:9px 7px;color:var(--color-neutral-600);">Release 1 v1.2</td><td style="padding:9px 7px;color:var(--color-neutral-600);">as of 2 min ago</td>
+          <td style="padding:9px 7px;">Normal</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--color-divider);background:var(--color-accent-100);">
+          <td style="padding:9px 7px;">File storage</td><td style="padding:9px 7px;">91 / 100 GB</td><td style="padding:9px 7px;font-weight:700;color:var(--color-accent-700);">91%</td><td style="padding:9px 7px;color:var(--color-neutral-600);">Release 1 v1.2</td><td style="padding:9px 7px;color:var(--color-neutral-600);">as of 2 min ago</td>
+          <td style="padding:9px 7px;font-weight:700;color:var(--color-accent-700);">▲ Warning — admins notified</td>
+        </tr>
+        <tr>
+          <td style="padding:9px 7px;">Monthly documents</td><td style="padding:9px 7px;">5,000 / 5,000</td><td style="padding:9px 7px;font-weight:700;color:#fff;background:var(--color-accent);display:inline-block;padding:2px 8px;">100%</td><td style="padding:9px 7px;color:var(--color-neutral-600);">Release 1 v1.2</td><td style="padding:9px 7px;color:var(--color-neutral-600);">as of 2 min ago</td>
+          <td style="padding:9px 7px;font-weight:700;color:var(--color-accent-700);">✕ Hard limit reached — new documents blocked; existing data and reads unaffected</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:14px;font-size:11.5px;color:var(--color-neutral-600);">No production threshold is claimed here until MESP-48 evidence is approved — these numbers are configurable Wave-1 placeholders, not commitments.</div>
+  </div>
+  <p class="wf-note">Annotation (DD-06) — Warning = accent-tinted row + "▲ Warning" word, action still allowed. Hard limit = solid accent chip + "✕ Hard limit reached" + the specific blocked action named — colour is never the only signal.</p>
+
+  <div class="wf-tag">Screen 9 (mirrored) · Limits and Usage · العربية · RTL</div>
+  <div class="wf-frame" dir="rtl">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">الحدود والاستخدام — TEN-022 النخبة للتوزيع</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:2px solid var(--color-text);">
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">الحالة</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">المصدر (قيمة الخطة)</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">نسبة الاستخدام</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">الحالي</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">المقياس</th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--color-divider);background:var(--color-accent-100);">
+          <td style="padding:9px 7px;font-weight:700;color:var(--color-accent-700);">▲ تحذير</td><td style="padding:9px 7px;color:var(--color-neutral-600);">الخطة الأولى ١.٢</td><td style="padding:9px 7px;font-weight:700;color:var(--color-accent-700);">٪٩١</td><td style="padding:9px 7px;">٩١ / ١٠٠ جيجابايت</td><td style="padding:9px 7px;">مساحة التخزين</td>
+        </tr>
+        <tr>
+          <td style="padding:9px 7px;font-weight:700;color:var(--color-accent-700);">✕ بلغ الحد الصارم</td><td style="padding:9px 7px;color:var(--color-neutral-600);">الخطة الأولى ١.٢</td><td style="padding:9px 7px;font-weight:700;">٪١٠٠</td><td style="padding:9px 7px;">٥٬٠٠٠ / ٥٬٠٠٠</td><td style="padding:9px 7px;">المستندات الشهرية</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="wf-note">Annotation — numerals may be shown as Arabic-Indic (٩١٪) or Western per Country Pack convention; both stay LTR-embedded digit groups, never mirrored digit-by-digit.</p>
+
+  <!-- BRANDING -->
+  <div class="wf-tag">Screen 10 · Branding and Document Identity · EN + AR preview (native bilingual screen)</div>
+  <div class="wf-frame">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:8px;">Branding &amp; Document Identity — TEN-014</div>
+    <div style="border:2px solid var(--color-text);padding:10px 16px;font-size:12px;font-weight:700;margin-bottom:16px;">Branding does not change permissions, posting, approval, entitlement, country-pack, or tenant-isolation behavior.</div>
+    <div style="display:flex;gap:28px;">
+      <div style="width:280px;flex-shrink:0;">
+        <div class="wf-label">English name</div><div class="wf-field" style="margin-bottom:10px;">Al-Ufuq Trading</div>
+        <div class="wf-label">Arabic name</div><div class="wf-field" dir="rtl" style="margin-bottom:10px;">شركة الأفق التجارية</div>
+        <div class="wf-label">Logo</div><div style="border:2px dashed var(--color-neutral-400);height:70px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--color-neutral-500);margin-bottom:10px;">Logo slot</div>
+        <div class="wf-label">Accessible colour preview</div>
+        <div style="display:flex;gap:6px;"><div style="width:28px;height:28px;background:var(--color-accent);"></div><div style="width:28px;height:28px;background:var(--color-neutral-800);"></div><div style="width:28px;height:28px;border:2px solid var(--color-divider);"></div></div>
+        <div style="font-size:10.5px;color:var(--color-neutral-600);margin-top:4px;">Contrast checked against document backgrounds</div>
+      </div>
+      <div style="flex:1;display:flex;gap:16px;">
+        <div style="flex:1;border:2px solid var(--color-divider);padding:16px;">
+          <div class="wf-label">English preview (invoice header)</div>
+          <div style="margin-top:8px;font-size:12px;"><b>Al-Ufuq Trading</b><br>Tax invoice · No. INV-2026-0417<br>Riyadh, Saudi Arabia</div>
+        </div>
+        <div style="flex:1;border:2px solid var(--color-divider);padding:16px;" dir="rtl">
+          <div class="wf-label">معاينة بالعربية (ترويسة الفاتورة)</div>
+          <div style="margin-top:8px;font-size:12px;"><b>شركة الأفق التجارية</b><br>فاتورة ضريبية · رقم INV-2026-0417<br>الرياض، السعودية</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;font-size:11.5px;color:var(--color-neutral-600);">Numbering profile: INV-{YYYY}-{seq} · Version 3, effective 1 Jan 2026 · full history retained; issued numbers are never reused (REQ-094).</div>
+  </div>
+  <p class="wf-note">Annotation — this screen is inherently bilingual, so it doubles as its own RTL demonstration; no separate mirrored screen is needed.</p>
+</div>
+
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/styles.css">
+  <script src="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/_ds_bundle.js"></script>
+  <title>Wave 1 — Platform Overview &amp; Tenant Catalogue</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-neutral-200); font-family: var(--font-body); color: var(--color-text); }
+    .wf-tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color: var(--color-accent-700); background: var(--color-surface); padding:3px 8px; margin-bottom:10px; }
+  </style>
+</helmet>
+
+<div style="max-width:1500px;margin:0 auto;padding:48px 40px 100px;">
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);">Wave 1 — SaaS Platform Administration</div>
+  <h1 style="font-family:var(--font-heading);font-weight:800;font-size:34px;margin:0 0 12px;">Platform Overview &amp; Tenant Catalogue</h1>
+  <p style="font-size:15px;line-height:1.6;color:var(--color-neutral-700);max-width:820px;margin:0 0 36px;">Structured Modernist wireframes — real grid/type/spacing, schematic content. Tenant Catalogue shown in EN default plus its Empty/Loading/Error/No-results/Restricted states, then mirrored in Arabic RTL.</p>
+
+  <!-- ================= PLATFORM OVERVIEW EN ================= -->
+  <div class="wf-tag">Screen 1 · Platform Overview · EN · default state</div>
+  <div style="border:2px solid var(--color-text);background:var(--color-bg);margin-bottom:16px;">
+    <!-- shell bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;border-bottom:2px solid var(--color-divider);">
+      <div style="display:flex;align-items:center;gap:26px;">
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:14px;letter-spacing:.02em;">MINI ERP · PLATFORM ADMIN</div>
+        <div style="display:flex;gap:18px;font-size:12.5px;">
+          <span style="font-weight:700;border-bottom:2px solid var(--color-accent);padding-bottom:18px;">Overview</span>
+          <span style="color:var(--color-neutral-600);">Tenants</span>
+          <span style="color:var(--color-neutral-600);">Plans &amp; Subscriptions</span>
+          <span style="color:var(--color-neutral-600);">Support</span>
+          <span style="color:var(--color-neutral-600);">Compliance</span>
+          <span style="color:var(--color-neutral-600);">Platform Audit</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;font-size:11.5px;">
+        <span style="padding:3px 8px;background:var(--color-neutral-800);color:#fff;letter-spacing:.06em;">STAGING</span>
+        <span style="border:2px solid var(--color-divider);padding:4px 10px;color:var(--color-neutral-600);">Search tenants, codes…</span>
+        <span><span style="font-weight:700;">EN</span> / <span style="color:var(--color-neutral-500);">ع</span></span>
+        <span style="color:var(--color-neutral-700);">Notices (3)</span>
+        <span style="color:var(--color-neutral-700);border-bottom:1px solid var(--color-neutral-400);">Audit</span>
+        <span style="font-weight:700;">Hossam · Platform Admin</span>
+      </div>
+    </div>
+    <!-- body -->
+    <div style="display:flex;">
+      <div style="width:190px;flex-shrink:0;border-right:2px solid var(--color-divider);padding:18px 0;font-size:12.5px;">
+        <div style="padding:9px 22px;font-weight:700;color:var(--color-accent-700);border-left:3px solid var(--color-accent);background:var(--color-accent-100);">Overview</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Tenant Catalogue</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Plans &amp; Subscriptions</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Support Access</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Compliance</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Platform Audit</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Notifications</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Configuration</div>
+      </div>
+      <div style="flex:1;padding:26px 30px;">
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;margin-bottom:2px;">Platform Overview</div>
+        <div style="font-size:12px;color:var(--color-neutral-600);margin-bottom:20px;">Every card below links to its underlying records — nothing here is a bare vanity number.</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+          <div style="border:2px solid var(--color-divider);padding:16px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Tenants by lifecycle</div>
+            <div style="font-size:12px;margin-top:10px;line-height:1.9;">Active 41 · Grace 3 · Suspended 2<br>Provisioning 1 · Draft 2</div>
+            <div style="font-size:11px;color:var(--color-accent-700);font-weight:700;margin-top:8px;">View Tenant Catalogue →</div>
+          </div>
+          <div style="border:2px solid var(--color-accent);padding:16px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Provisioning failures</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:24px;margin-top:6px;color:var(--color-accent-700);">2</div>
+            <div style="font-size:11.5px;margin-top:4px;">Tenant 037 — Foundation stage<br>Tenant 041 — Country-pack stage</div>
+            <div style="font-size:11px;color:var(--color-accent-700);font-weight:700;margin-top:8px;">Open Provisioning Operations →</div>
+          </div>
+          <div style="border:2px solid var(--color-divider);padding:16px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Suspended tenants</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:24px;margin-top:6px;">2</div>
+            <div style="font-size:11.5px;margin-top:4px;">Tenant 022 — Security<br>Tenant 009 — Commercial</div>
+            <div style="font-size:11px;color:var(--color-accent-700);font-weight:700;margin-top:8px;">Review Lifecycle →</div>
+          </div>
+          <div style="border:2px solid var(--color-divider);padding:16px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Expiring support access</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:24px;margin-top:6px;">1</div>
+            <div style="font-size:11.5px;margin-top:4px;">Tenant 014 — expires in 42 min</div>
+            <div style="font-size:11px;color:var(--color-accent-700);font-weight:700;margin-top:8px;">Open Active-Session Monitor →</div>
+          </div>
+          <div style="border:2px solid var(--color-divider);padding:16px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Usage-limit warnings</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:24px;margin-top:6px;">5</div>
+            <div style="font-size:11.5px;margin-top:4px;">Tenant 022 — Storage 91%<br>+ 4 more tenants</div>
+            <div style="font-size:11px;color:var(--color-accent-700);font-weight:700;margin-top:8px;">Open Limits &amp; Usage →</div>
+          </div>
+          <div style="border:2px solid var(--color-divider);padding:16px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Pending exports</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:24px;margin-top:6px;">1</div>
+            <div style="font-size:11.5px;margin-top:4px;">Tenant 009 — Generating, expires in 6d</div>
+            <div style="font-size:11px;color:var(--color-accent-700);font-weight:700;margin-top:8px;">Open Export &amp; Offboarding →</div>
+          </div>
+          <div style="border:2px solid var(--color-divider);padding:16px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Pending termination / purge</div>
+            <div style="font-size:12px;margin-top:10px;line-height:1.9;">Tenant 003 — Termination Pending<br>Tenant 009 — Cooling-off, 4d left</div>
+            <div style="font-size:11px;color:var(--color-accent-700);font-weight:700;margin-top:8px;">Open Purge Review →</div>
+          </div>
+          <div style="border:2px solid var(--color-divider);padding:16px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Recent high-risk audit events</div>
+            <div style="font-size:11.5px;margin-top:8px;line-height:1.8;">Suspend — Tenant 022 — 09:14<br>Support access granted — Tenant 014<br>Purge approved (1/2) — Tenant 009</div>
+            <div style="font-size:11px;color:var(--color-accent-700);font-weight:700;margin-top:8px;">Open Platform Audit →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--color-neutral-600);margin:0 0 44px;">Annotations — 1. Every figure is a link, never a static KPI. 2. Suspended/purge cards use the accent sparingly, reserved for what needs attention. 3. Auditor and Support Operator see the same layout, scoped read-only.</p>
+
+  <!-- ================= TENANT CATALOGUE EN DEFAULT ================= -->
+  <div class="wf-tag">Screen 2 · Tenant Catalogue · EN · default state</div>
+  <div style="border:2px solid var(--color-text);background:var(--color-bg);margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;border-bottom:2px solid var(--color-divider);">
+      <div style="display:flex;align-items:center;gap:26px;">
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:14px;">MINI ERP · PLATFORM ADMIN</div>
+        <div style="display:flex;gap:18px;font-size:12.5px;">
+          <span style="color:var(--color-neutral-600);">Overview</span>
+          <span style="font-weight:700;border-bottom:2px solid var(--color-accent);padding-bottom:18px;">Tenants</span>
+          <span style="color:var(--color-neutral-600);">Plans &amp; Subscriptions</span>
+          <span style="color:var(--color-neutral-600);">Support</span>
+          <span style="color:var(--color-neutral-600);">Compliance</span>
+          <span style="color:var(--color-neutral-600);">Platform Audit</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;font-size:11.5px;">
+        <span style="padding:3px 8px;background:var(--color-neutral-800);color:#fff;letter-spacing:.06em;">STAGING</span>
+        <span style="border:2px solid var(--color-divider);padding:4px 10px;color:var(--color-neutral-600);">Search tenants, codes…</span>
+        <span><span style="font-weight:700;">EN</span> / <span style="color:var(--color-neutral-500);">ع</span></span>
+        <span style="color:var(--color-neutral-700);">Notices (3)</span>
+        <span style="color:var(--color-neutral-700);border-bottom:1px solid var(--color-neutral-400);">Audit</span>
+        <span style="font-weight:700;">Hossam · Platform Admin</span>
+      </div>
+    </div>
+    <div style="display:flex;">
+      <div style="width:190px;flex-shrink:0;border-right:2px solid var(--color-divider);padding:18px 0;font-size:12.5px;">
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Overview</div>
+        <div style="padding:9px 22px;font-weight:700;color:var(--color-accent-700);border-left:3px solid var(--color-accent);background:var(--color-accent-100);">Tenant Catalogue</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Plans &amp; Subscriptions</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Support Access</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Compliance</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">Platform Audit</div>
+      </div>
+      <div style="flex:1;padding:26px 30px;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;">Tenant Catalogue</div>
+          <div style="padding:8px 16px;background:var(--color-accent);color:#fff;font-size:12.5px;font-weight:700;">+ Create Tenant</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;">
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);flex:1;max-width:260px;">Search tenants, codes, legal names…</div>
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Lifecycle: All ▾</div>
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Country ▾</div>
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Plan ▾</div>
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Risk ▾</div>
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Saved views ▾</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--color-text);">
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Tenant</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Country</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Legal entities</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Plan</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Subscription</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Modules</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Usage</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Last activity</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Provisioning</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Risk</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-neutral-600);">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--color-divider);">
+              <td style="padding:9px 8px;"><div style="font-weight:700;">Al-Ufuq Trading Co.</div><div style="font-size:11px;color:var(--color-neutral-500);">TEN-014</div></td>
+              <td style="padding:9px 8px;">Saudi Arabia</td>
+              <td style="padding:9px 8px;">2</td>
+              <td style="padding:9px 8px;">Release 1</td>
+              <td style="padding:9px 8px;">Effective</td>
+              <td style="padding:9px 8px;">6 / 6 Active</td>
+              <td style="padding:9px 8px;">62%</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-600);">2 hours ago</td>
+              <td style="padding:9px 8px;">— ✓ Ready</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-500);">—</td>
+              <td style="padding:9px 8px;color:var(--color-accent-700);font-weight:700;">Open →</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-divider);background:var(--color-accent-100);">
+              <td style="padding:9px 8px;"><div style="font-weight:700;">Al-Nukhba Distribution</div><div style="font-size:11px;color:var(--color-neutral-500);">TEN-022</div></td>
+              <td style="padding:9px 8px;">Saudi Arabia</td>
+              <td style="padding:9px 8px;">1</td>
+              <td style="padding:9px 8px;">Release 1</td>
+              <td style="padding:9px 8px;">Effective</td>
+              <td style="padding:9px 8px;">5 / 6 Active</td>
+              <td style="padding:9px 8px;font-weight:700;color:var(--color-accent-700);">91% ▲ Warning</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-600);">4 days ago</td>
+              <td style="padding:9px 8px;">— ✓ Ready</td>
+              <td style="padding:9px 8px;font-weight:700;color:var(--color-accent-700);">● Suspended — Security</td>
+              <td style="padding:9px 8px;color:var(--color-accent-700);font-weight:700;">Open →</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-divider);">
+              <td style="padding:9px 8px;"><div style="font-weight:700;">Al-Waha Group</div><div style="font-size:11px;color:var(--color-neutral-500);">TEN-031</div></td>
+              <td style="padding:9px 8px;">United Arab Emirates</td>
+              <td style="padding:9px 8px;">1</td>
+              <td style="padding:9px 8px;">Release 1</td>
+              <td style="padding:9px 8px;">Effective</td>
+              <td style="padding:9px 8px;">4 / 6 Active</td>
+              <td style="padding:9px 8px;">40%</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-600);">1 hour ago</td>
+              <td style="padding:9px 8px;">— ✓ Ready</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-500);">—</td>
+              <td style="padding:9px 8px;color:var(--color-accent-700);font-weight:700;">Open →</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-divider);">
+              <td style="padding:9px 8px;"><div style="font-weight:700;">Qimam Retailers Est.</div><div style="font-size:11px;color:var(--color-neutral-500);">TEN-037</div></td>
+              <td style="padding:9px 8px;">Saudi Arabia</td>
+              <td style="padding:9px 8px;">1</td>
+              <td style="padding:9px 8px;">Release 1</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-500);">Staged</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-500);">Not configured</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-500);">—</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-500);">—</td>
+              <td style="padding:9px 8px;font-weight:700;color:var(--color-accent-700);">✕ Failed — Foundation</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-500);">—</td>
+              <td style="padding:9px 8px;color:var(--color-accent-700);font-weight:700;">Retry →</td>
+            </tr>
+            <tr>
+              <td colspan="11" style="padding:10px 8px;font-size:11.5px;color:var(--color-neutral-500);">Showing 1–50 of 214 tenants · Page 1 of 5 · large result sets paginate server-side, never truncate silently →</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--color-neutral-600);margin:0 0 20px;">Annotations — 1. Bilingual name shown, code always visible underneath (DD-07). 2. Status uses icon-glyph + word, never colour alone (DD-06). 3. Suspend/Purge never appear as row actions — only "Open →" into Workspace.</p>
+
+  <!-- STATE STRIP -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:48px;">
+    <div style="border:2px solid var(--color-divider);background:var(--color-bg);padding:16px;">
+      <div class="wf-tag" style="margin-bottom:8px;">Empty</div>
+      <div style="border:2px dashed var(--color-neutral-400);padding:18px;text-align:center;font-size:11.5px;color:var(--color-neutral-600);">No tenants yet.<br><span style="display:inline-block;margin-top:8px;padding:6px 12px;border:2px solid var(--color-text);font-weight:700;">Create Tenant</span></div>
+    </div>
+    <div style="border:2px solid var(--color-divider);background:var(--color-bg);padding:16px;">
+      <div class="wf-tag" style="margin-bottom:8px;">Loading</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="height:12px;background:var(--color-neutral-200);width:90%;"></div>
+        <div style="height:12px;background:var(--color-neutral-200);width:75%;"></div>
+        <div style="height:12px;background:var(--color-neutral-200);width:85%;"></div>
+        <div style="height:12px;background:var(--color-neutral-200);width:60%;"></div>
+      </div>
+    </div>
+    <div style="border:2px solid var(--color-accent);background:var(--color-bg);padding:16px;">
+      <div class="wf-tag" style="margin-bottom:8px;">Error</div>
+      <div style="font-size:11.5px;color:var(--color-neutral-700);">Couldn't load the catalogue.<br><span style="display:inline-block;margin-top:8px;padding:6px 12px;border:2px solid var(--color-accent);color:var(--color-accent-700);font-weight:700;">Retry</span></div>
+    </div>
+    <div style="border:2px solid var(--color-divider);background:var(--color-bg);padding:16px;">
+      <div class="wf-tag" style="margin-bottom:8px;">No results</div>
+      <div style="font-size:11.5px;color:var(--color-neutral-700);">No tenants match these filters.<br><span style="display:inline-block;margin-top:8px;font-weight:700;color:var(--color-accent-700);">Clear filters</span></div>
+    </div>
+    <div style="border:2px solid var(--color-divider);background:var(--color-bg);padding:16px;">
+      <div class="wf-tag" style="margin-bottom:8px;">Restricted access</div>
+      <div style="font-size:11.5px;color:var(--color-neutral-700);">■ You're not authorized to view the cross-tenant register. Contact your Platform owner.</div>
+    </div>
+  </div>
+
+  <!-- ================= TENANT CATALOGUE AR MIRROR ================= -->
+  <div class="wf-tag">Screen 2 (mirrored) · Tenant Catalogue · العربية · RTL · default state</div>
+  <div dir="rtl" style="border:2px solid var(--color-text);background:var(--color-bg);margin-bottom:16px;font-family:var(--font-body);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;border-bottom:2px solid var(--color-divider);">
+      <div style="display:flex;align-items:center;gap:26px;">
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:14px;">إدارة المنصة · ميني إي آر بي</div>
+        <div style="display:flex;gap:18px;font-size:12.5px;">
+          <span style="color:var(--color-neutral-600);">نظرة عامة</span>
+          <span style="font-weight:700;border-bottom:2px solid var(--color-accent);padding-bottom:18px;">المستأجرون</span>
+          <span style="color:var(--color-neutral-600);">الخطط والاشتراكات</span>
+          <span style="color:var(--color-neutral-600);">الدعم</span>
+          <span style="color:var(--color-neutral-600);">الامتثال</span>
+          <span style="color:var(--color-neutral-600);">تدقيق المنصة</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;font-size:11.5px;">
+        <span style="padding:3px 8px;background:var(--color-neutral-800);color:#fff;letter-spacing:.02em;">بيئة تجريبية</span>
+        <span style="border:2px solid var(--color-divider);padding:4px 10px;color:var(--color-neutral-600);">ابحث عن مستأجرين، رموز…</span>
+        <span><span style="color:var(--color-neutral-500);">EN</span> / <span style="font-weight:700;">ع</span></span>
+        <span style="color:var(--color-neutral-700);">الإشعارات (٣)</span>
+        <span style="color:var(--color-neutral-700);border-bottom:1px solid var(--color-neutral-400);">التدقيق</span>
+        <span style="font-weight:700;">حسام · مسؤول المنصة</span>
+      </div>
+    </div>
+    <div style="display:flex;">
+      <div style="width:190px;flex-shrink:0;border-left:2px solid var(--color-divider);padding:18px 0;font-size:12.5px;">
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">نظرة عامة</div>
+        <div style="padding:9px 22px;font-weight:700;color:var(--color-accent-700);border-right:3px solid var(--color-accent);background:var(--color-accent-100);">سجل المستأجرين</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">الخطط والاشتراكات</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">الوصول الدعم</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">الامتثال</div>
+        <div style="padding:9px 22px;color:var(--color-neutral-700);">تدقيق المنصة</div>
+      </div>
+      <div style="flex:1;padding:26px 30px;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;">سجل المستأجرين</div>
+          <div style="padding:8px 16px;background:var(--color-accent);color:#fff;font-size:12.5px;font-weight:700;">+ إنشاء مستأجر</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;">
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);flex:1;max-width:260px;">ابحث بالاسم أو الرمز أو الاسم القانوني…</div>
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">دورة الحياة: الكل ▾</div>
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">الدولة ▾</div>
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">الخطة ▾</div>
+          <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">المخاطر ▾</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--color-text);">
+              <th style="text-align:start;padding:7px 8px;font-size:10px;text-transform:uppercase;color:var(--color-neutral-600);">الإجراءات</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">المخاطر</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">التزويد</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">آخر نشاط</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">الاستخدام</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">الوحدات</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">الاشتراك</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">الخطة</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">الكيانات القانونية</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">الدولة</th>
+              <th style="text-align:start;padding:7px 8px;font-size:10px;color:var(--color-neutral-600);">المستأجر</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--color-divider);">
+              <td style="padding:9px 8px;color:var(--color-accent-700);font-weight:700;">فتح ←</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-500);">—</td>
+              <td style="padding:9px 8px;">✓ جاهز —</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-600);">قبل ساعتين</td>
+              <td style="padding:9px 8px;">٪٦٢</td>
+              <td style="padding:9px 8px;">٦ / ٦ نشطة</td>
+              <td style="padding:9px 8px;">سارية</td>
+              <td style="padding:9px 8px;">الخطة الأولى</td>
+              <td style="padding:9px 8px;">٢</td>
+              <td style="padding:9px 8px;">السعودية</td>
+              <td style="padding:9px 8px;"><div style="font-weight:700;">شركة الأفق التجارية</div><div style="font-size:11px;color:var(--color-neutral-500);">TEN-014</div></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-divider);background:var(--color-accent-100);">
+              <td style="padding:9px 8px;color:var(--color-accent-700);font-weight:700;">فتح ←</td>
+              <td style="padding:9px 8px;font-weight:700;color:var(--color-accent-700);">● موقوف — أمني</td>
+              <td style="padding:9px 8px;">✓ جاهز —</td>
+              <td style="padding:9px 8px;color:var(--color-neutral-600);">قبل ٤ أيام</td>
+              <td style="padding:9px 8px;font-weight:700;color:var(--color-accent-700);">تحذير ▲ ٪٩١</td>
+              <td style="padding:9px 8px;">٥ / ٦ نشطة</td>
+              <td style="padding:9px 8px;">سارية</td>
+              <td style="padding:9px 8px;">الخطة الأولى</td>
+              <td style="padding:9px 8px;">١</td>
+              <td style="padding:9px 8px;">السعودية</td>
+              <td style="padding:9px 8px;"><div style="font-weight:700;">شركة النخبة للتوزيع</div><div style="font-size:11px;color:var(--color-neutral-500);">TEN-022</div></td>
+            </tr>
+            <tr>
+              <td colspan="11" style="padding:10px 8px;font-size:11.5px;color:var(--color-neutral-500);">عرض ١–٥٠ من ٢١٤ مستأجرًا · صفحة ١ من ٥ ←</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--color-neutral-600);margin:0;">Annotations — 1. Whole column block reversed; Tenant name stays first-scanned (now rightmost). 2. Codes (TEN-014) and percentages stay LTR-embedded inside the RTL row. 3. Nav active-marker flips from border-left to border-right; drawer/menu logic mirrors the same way throughout.</p>
+</div>
+
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/styles.css">
+  <script src="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/_ds_bundle.js"></script>
+  <title>Wave 1 — Create Tenant Wizard &amp; Provisioning Operations</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-neutral-200); font-family: var(--font-body); color: var(--color-text); }
+    .wf-tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color: var(--color-accent-700); background: var(--color-surface); padding:3px 8px; margin-bottom:10px; }
+    .wf-field { border:2px solid var(--color-divider); padding:8px 10px; font-size:12.5px; color:var(--color-neutral-700); }
+    .wf-label { font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--color-neutral-600); margin-bottom:4px; display:block; }
+  </style>
+</helmet>
+
+<div style="max-width:1500px;margin:0 auto;padding:48px 40px 100px;">
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);">Wave 1 — SaaS Platform Administration</div>
+  <h1 style="font-family:var(--font-heading);font-weight:800;font-size:34px;margin:0 0 12px;">Create Tenant Wizard &amp; Provisioning Operations</h1>
+  <p style="font-size:15px;line-height:1.6;color:var(--color-neutral-700);max-width:860px;margin:0 0 36px;">17 required inputs grouped into 7 review-friendly steps (provisional grouping — safe to adjust without a founder decision). Two steps detailed below, plus the resulting progress/success/failure states and the standalone Provisioning Operations screen.</p>
+
+  <!-- STEPPER HEADER (shared) -->
+  <div class="wf-tag">Screen 3 · Create Tenant Wizard · EN · Step 1 of 7 — Identity &amp; Names</div>
+  <div style="border:2px solid var(--color-text);background:var(--color-bg);margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;border-bottom:2px solid var(--color-divider);">
+      <div style="font-family:var(--font-heading);font-weight:800;font-size:14px;">MINI ERP · PLATFORM ADMIN</div>
+      <div style="font-size:11.5px;color:var(--color-neutral-600);">Draft saved 2 minutes ago · <span style="color:var(--color-accent-700);font-weight:700;">Cancel</span></div>
+    </div>
+    <div style="padding:22px 30px 0;">
+      <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;margin-bottom:16px;">Create Tenant</div>
+      <div style="display:flex;margin-bottom:26px;">
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-accent);padding-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--color-accent-700);">1 · Identity &amp; Names</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">2 · Country &amp; Locale</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">3 · Initial Company</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">4 · Initial Admin</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">5 · Plan, Modules &amp; Limits</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">6 · Branding &amp; Hosting</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">7 · Review &amp; Confirm</div></div>
+      </div>
+    </div>
+    <div style="padding:0 30px 28px;display:flex;gap:36px;">
+      <div style="flex:1;max-width:640px;">
+        <div style="border:2px solid var(--color-accent);background:var(--color-accent-100);padding:10px 14px;font-size:12px;color:var(--color-accent-700);margin-bottom:18px;">⬥ Possible match found — "Al-Ufuq Trading LLC" resembles an existing tenant. Review before continuing.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div><span class="wf-label">Tenant code</span><div class="wf-field">TEN-048</div></div>
+          <div><span class="wf-label">Contractual reference</span><div class="wf-field">CN-2026-048</div></div>
+          <div style="grid-column:1/3;"><span class="wf-label">Legal / customer identity</span><div class="wf-field">Al-Ufuq Trading Co. LLC</div></div>
+          <div><span class="wf-label">English display name</span><div class="wf-field">Al-Ufuq Trading</div></div>
+          <div><span class="wf-label">Arabic display name</span><div class="wf-field" dir="rtl">شركة الأفق التجارية</div></div>
+          <div><span class="wf-label">Business contact</span><div class="wf-field">ops@al-ufuq.example</div></div>
+          <div><span class="wf-label">Country</span><div class="wf-field">Saudi Arabia ▾</div></div>
+        </div>
+      </div>
+      <div style="width:280px;flex-shrink:0;border-left:2px solid var(--color-divider);padding-left:28px;">
+        <div class="wf-label">Validation</div>
+        <div style="font-size:12px;line-height:2;color:var(--color-neutral-700);">✓ Tenant code unique<br>✓ Bilingual names present<br>⬥ Possible duplicate — review<br>○ Country not yet selected</div>
+      </div>
+    </div>
+    <div style="border-top:2px solid var(--color-divider);padding:16px 30px;display:flex;justify-content:space-between;">
+      <span style="font-size:12.5px;color:var(--color-neutral-500);">Back (disabled — first step)</span>
+      <span style="padding:9px 22px;background:var(--color-accent);color:#fff;font-size:12.5px;font-weight:700;">Continue →</span>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--color-neutral-600);margin:0 0 40px;">Annotations — 1. Duplicate detection distinguishes "possible match" (reviewed) from a hard block (REQ-070) — never auto-creates or auto-rejects. 2. Validation rail updates per field, not only on submit.</p>
+
+  <!-- REVIEW STEP -->
+  <div class="wf-tag">Screen 3 · Create Tenant Wizard · EN · Step 7 of 7 — Review &amp; Confirm</div>
+  <div style="border:2px solid var(--color-text);background:var(--color-bg);margin-bottom:16px;">
+    <div style="padding:22px 30px;">
+      <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;margin-bottom:18px;">Review &amp; confirm — TEN-048 Al-Ufuq Trading</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 32px;font-size:12.5px;">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:8px;"><span>Identity &amp; names</span><span style="color:var(--color-neutral-700);">✓ Complete</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:8px;"><span>Country &amp; locale</span><span style="color:var(--color-neutral-700);">✓ Saudi Arabia · AR/EN · Asia/Riyadh · SAR</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:8px;"><span>Initial Company / Legal Entity</span><span style="color:var(--color-neutral-700);">✓ 1 entity configured</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:8px;"><span>Initial Administrator</span><span style="color:var(--color-neutral-700);">✓ Invitation ready to send</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:8px;"><span>Plan, Modules &amp; Limits</span><span style="color:var(--color-neutral-700);">✓ Release 1 Plan · 6 modules · default limits</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--color-divider);padding-bottom:8px;"><span>Branding &amp; hosting</span><span style="color:var(--color-accent-700);font-weight:700;">⬥ Using Platform default branding</span></div>
+      </div>
+      <div style="margin-top:18px;border:2px solid var(--color-divider);padding:12px 16px;font-size:11.5px;color:var(--color-neutral-600);">Idempotency: this request will use one stable request ID. Submitting again after a failure continues this same run — it will never create a second Tenant.</div>
+    </div>
+    <div style="border-top:2px solid var(--color-divider);padding:16px 30px;display:flex;justify-content:space-between;">
+      <span style="font-size:12.5px;color:var(--color-accent-700);font-weight:700;">← Back to edit</span>
+      <span style="padding:9px 22px;background:var(--color-accent);color:#fff;font-size:12.5px;font-weight:700;">Submit &amp; Provision Tenant</span>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--color-neutral-600);margin:0 0 40px;">Annotations — 1. Every section is a link back to that step, not just a flat summary. 2. No Trial option anywhere in this wizard — Release 1 excludes Trial Tenants entirely.</p>
+
+  <!-- PROVISIONING PROGRESS / SUCCESS / FAILURE -->
+  <div class="wf-tag">Screen 3 · Provisioning progress — Running, Success and Failure states</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+    <div style="border:2px solid var(--color-text);background:var(--color-bg);padding:22px;">
+      <div style="font-size:11px;color:var(--color-neutral-600);margin-bottom:4px;">Correlation ID: PRV-2026-0048</div>
+      <div style="font-family:var(--font-heading);font-weight:800;font-size:16px;margin-bottom:14px;">Provisioning TEN-048 — Running</div>
+      <div style="display:flex;flex-direction:column;gap:0;">
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-left:2px solid var(--color-neutral-300);padding-left:14px;"><span style="color:var(--color-neutral-700);">✓</span><span style="font-size:12.5px;">Request accepted</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-left:2px solid var(--color-neutral-300);padding-left:14px;"><span style="color:var(--color-neutral-700);">✓</span><span style="font-size:12.5px;">Duplicate / completeness validation</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-left:2px solid var(--color-neutral-300);padding-left:14px;"><span style="color:var(--color-neutral-700);">✓</span><span style="font-size:12.5px;">Foundation creation</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-left:2px solid var(--color-accent);padding-left:14px;background:var(--color-accent-100);"><span style="color:var(--color-accent-700);font-weight:700;">●</span><span style="font-size:12.5px;font-weight:700;">Country &amp; Plan application — running</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-left:2px solid var(--color-neutral-300);padding-left:14px;"><span style="color:var(--color-neutral-400);">○</span><span style="font-size:12.5px;color:var(--color-neutral-500);">Initial Company &amp; Administrator</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-left:2px solid var(--color-neutral-300);padding-left:14px;"><span style="color:var(--color-neutral-400);">○</span><span style="font-size:12.5px;color:var(--color-neutral-500);">Module preparation</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-left:2px solid var(--color-neutral-300);padding-left:14px;"><span style="color:var(--color-neutral-400);">○</span><span style="font-size:12.5px;color:var(--color-neutral-500);">Validation</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;padding-left:14px;"><span style="color:var(--color-neutral-400);">○</span><span style="font-size:12.5px;color:var(--color-neutral-500);">Handover</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="border:2px solid var(--color-neutral-400);background:var(--color-bg);padding:20px;">
+        <div style="font-size:11px;color:var(--color-neutral-600);margin-bottom:6px;">Success</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:8px;">TEN-048 reached Ready for Activation</div>
+        <div style="font-size:12px;color:var(--color-neutral-600);">All 8 stages complete · 0 operational transactions occurred · handover checklist attached</div>
+        <div style="margin-top:12px;padding:8px 16px;background:var(--color-text);color:#fff;font-size:12px;font-weight:700;display:inline-block;">Open Tenant Workspace →</div>
+      </div>
+      <div style="border:2px solid var(--color-accent);background:var(--color-bg);padding:20px;">
+        <div style="font-size:11px;color:var(--color-accent-700);margin-bottom:6px;">Failure — Tenant 037</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:8px;">Failed at "Country &amp; Plan application"</div>
+        <div style="font-size:12px;color:var(--color-neutral-600);">Reason: Country Pack version unavailable · Completed: Request, Validation, Foundation · Tenant remains non-operational</div>
+        <div style="margin-top:12px;display:flex;gap:10px;">
+          <span style="padding:8px 16px;background:var(--color-accent);color:#fff;font-size:12px;font-weight:700;">Retry (same request ID)</span>
+          <span style="padding:8px 16px;border:2px solid var(--color-divider);font-size:12px;">View correlation log</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--color-neutral-600);margin:0 0 44px;">Annotations — 1. Retry reuses the request ID — a second Tenant is never created (RULE-025). 2. Partial provisioning never produces an Active Tenant or usable invitation (REQ-028).</p>
+
+  <!-- CREATE TENANT AR MIRROR -->
+  <div class="wf-tag">Screen 3 (mirrored) · Create Tenant Wizard · العربية · RTL · Step 1 of 7</div>
+  <div dir="rtl" style="border:2px solid var(--color-text);background:var(--color-bg);margin-bottom:16px;">
+    <div style="padding:22px 30px 0;">
+      <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;margin-bottom:16px;">إنشاء مستأجر</div>
+      <div style="display:flex;margin-bottom:26px;">
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-accent);padding-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--color-accent-700);">١ · الهوية والأسماء</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">٢ · الدولة والإعدادات المحلية</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">٣ · الشركة الأولية</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">٤ · المسؤول الأولي</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">٥ · الخطة والوحدات</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">٦ · الهوية والاستضافة</div></div>
+        <div style="flex:1;text-align:center;border-bottom:3px solid var(--color-neutral-300);padding-bottom:10px;"><div style="font-size:11px;color:var(--color-neutral-500);">٧ · المراجعة والتأكيد</div></div>
+      </div>
+    </div>
+    <div style="padding:0 30px 28px;display:flex;gap:36px;">
+      <div style="flex:1;max-width:640px;">
+        <div style="border:2px solid var(--color-accent);background:var(--color-accent-100);padding:10px 14px;font-size:12px;color:var(--color-accent-700);margin-bottom:18px;">⬥ تطابق محتمل — "شركة الأفق التجارية ذ.م.م" يشبه مستأجرًا موجودًا. يرجى المراجعة قبل المتابعة.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div><span class="wf-label">رمز المستأجر</span><div class="wf-field">TEN-048</div></div>
+          <div><span class="wf-label">المرجع التعاقدي</span><div class="wf-field">CN-2026-048</div></div>
+          <div style="grid-column:1/3;"><span class="wf-label">الاسم القانوني</span><div class="wf-field">شركة الأفق التجارية ذ.م.م</div></div>
+          <div><span class="wf-label">الاسم بالعربية</span><div class="wf-field">الأفق التجارية</div></div>
+          <div><span class="wf-label">الاسم بالإنجليزية</span><div class="wf-field" dir="ltr" style="text-align:left;">Al-Ufuq Trading</div></div>
+          <div><span class="wf-label">جهة الاتصال</span><div class="wf-field" dir="ltr" style="text-align:left;">ops@al-ufuq.example</div></div>
+          <div><span class="wf-label">الدولة</span><div class="wf-field">▾ السعودية</div></div>
+        </div>
+      </div>
+      <div style="width:280px;flex-shrink:0;border-right:2px solid var(--color-divider);padding-right:28px;">
+        <div class="wf-label">التحقق</div>
+        <div style="font-size:12px;line-height:2;color:var(--color-neutral-700);">✓ رمز المستأجر فريد<br>✓ الأسماء الثنائية موجودة<br>⬥ تطابق محتمل — يراجع<br>○ لم يتم اختيار الدولة بعد</div>
+      </div>
+    </div>
+    <div style="border-top:2px solid var(--color-divider);padding:16px 30px;display:flex;justify-content:space-between;">
+      <span style="padding:9px 22px;background:var(--color-accent);color:#fff;font-size:12.5px;font-weight:700;">متابعة ←</span>
+      <span style="font-size:12.5px;color:var(--color-neutral-500);">رجوع (معطّل — الخطوة الأولى)</span>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--color-neutral-600);margin:0 0 44px;">Annotations — 1. Stepper fills start→end: step 1 sits at the visual right. 2. Validation rail moves to the physical left (still the logical "end"). 3. Codes/emails stay LTR-embedded even mid-RTL form.</p>
+
+  <!-- PROVISIONING OPERATIONS EN -->
+  <div class="wf-tag">Screen 4 · Provisioning Operations · EN · Failed run</div>
+  <div style="border:2px solid var(--color-text);background:var(--color-bg);padding:24px 30px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">
+      <div>
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;">Provisioning Operations — TEN-037 Qimam Retailers</div>
+        <div style="font-size:11.5px;color:var(--color-neutral-600);margin-top:2px;">Correlation ID: PRV-2026-0037 · Requested 3 hours ago</div>
+      </div>
+      <span style="padding:6px 14px;border:2px solid var(--color-accent);color:var(--color-accent-700);font-weight:700;font-size:12px;">✕ Failed</span>
+    </div>
+    <div style="display:flex;gap:28px;">
+      <div style="flex:1;">
+        <div class="wf-label">Stage timeline</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-200);font-size:11px;">✓ Request</div>
+          <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-200);font-size:11px;">✓ Validation</div>
+          <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-200);font-size:11px;">✓ Foundation</div>
+          <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-accent);color:#fff;font-size:11px;font-weight:700;">✕ Country/Plan</div>
+          <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-100);color:var(--color-neutral-400);font-size:11px;">Company/Admin</div>
+          <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-100);color:var(--color-neutral-400);font-size:11px;">Modules</div>
+          <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-100);color:var(--color-neutral-400);font-size:11px;">Validation</div>
+          <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-100);color:var(--color-neutral-400);font-size:11px;">Handover</div>
+        </div>
+        <div style="margin-top:16px;border:2px solid var(--color-divider);padding:14px;font-size:12px;">
+          <div style="font-weight:700;margin-bottom:6px;">Failure reason</div>
+          Country Pack version "SA-2026.1" is not eligible in this environment. Escalation: Platform Operations Owner.
+        </div>
+        <div style="margin-top:14px;">
+          <div class="wf-label">Audit timeline</div>
+          <div style="font-size:11.5px;color:var(--color-neutral-700);line-height:2;">09:02 Request accepted · 09:03 Validation passed · 09:04 Foundation created · 09:06 Country/Plan stage failed · 09:06 Operator notified</div>
+        </div>
+      </div>
+      <div style="width:260px;flex-shrink:0;border-left:2px solid var(--color-divider);padding-left:24px;">
+        <div class="wf-label">Created resources</div>
+        <div style="font-size:12px;color:var(--color-neutral-700);line-height:1.9;margin-bottom:14px;">Tenant shell (inactive)<br>Foundation record</div>
+        <div class="wf-label">Cleanup status</div>
+        <div style="font-size:12px;color:var(--color-neutral-700);margin-bottom:14px;">Not required — foundation isolated, no operational use possible</div>
+        <div class="wf-label">Pending manual action</div>
+        <div style="font-size:12px;color:var(--color-neutral-700);margin-bottom:14px;">Confirm Country Pack version, then retry</div>
+        <span style="display:inline-block;padding:9px 18px;background:var(--color-accent);color:#fff;font-size:12.5px;font-weight:700;">Retry this stage</span>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--color-neutral-600);margin:0 0 40px;">Annotations — 1. Failed stage names the exact blocker and owner, never a generic error. 2. Retry is scoped to the correlation ID — cannot spawn a duplicate Tenant.</p>
+
+  <!-- PROVISIONING OPERATIONS AR -->
+  <div class="wf-tag">Screen 4 (mirrored) · Provisioning Operations · العربية · RTL · Failed run</div>
+  <div dir="rtl" style="border:2px solid var(--color-text);background:var(--color-bg);padding:24px 30px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">
+      <div>
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;">عمليات التزويد — TEN-037 قمم للتجزئة</div>
+        <div style="font-size:11.5px;color:var(--color-neutral-600);margin-top:2px;">معرف الارتباط: PRV-2026-0037 · طُلب قبل ٣ ساعات</div>
+      </div>
+      <span style="padding:6px 14px;border:2px solid var(--color-accent);color:var(--color-accent-700);font-weight:700;font-size:12px;">✕ فشل</span>
+    </div>
+    <div class="wf-label">مخطط المراحل الزمني</div>
+    <div style="display:flex;gap:6px;margin-top:8px;">
+      <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-100);color:var(--color-neutral-400);font-size:11px;">التسليم</div>
+      <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-100);color:var(--color-neutral-400);font-size:11px;">التحقق</div>
+      <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-100);color:var(--color-neutral-400);font-size:11px;">الوحدات</div>
+      <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-100);color:var(--color-neutral-400);font-size:11px;">الشركة/المسؤول</div>
+      <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-accent);color:#fff;font-size:11px;font-weight:700;">✕ الدولة/الخطة</div>
+      <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-200);font-size:11px;">✓ الأساس</div>
+      <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-200);font-size:11px;">✓ التحقق</div>
+      <div style="flex:1;text-align:center;padding:8px 4px;background:var(--color-neutral-200);font-size:11px;">✓ الطلب</div>
+    </div>
+    <div style="margin-top:16px;border:2px solid var(--color-divider);padding:14px;font-size:12px;">
+      <div style="font-weight:700;margin-bottom:6px;">سبب الفشل</div>
+      إصدار الحزمة القُطرية "SA-2026.1" غير مؤهّل في هذه البيئة. التصعيد: مالك عمليات المنصة.
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--color-neutral-600);margin:16px 0 0;">Annotation — stage timeline reverses as a block; the failed stage stays visually distinct (accent fill) regardless of direction.</p>
+</div>
+
+</x-dc>
+</body>
+</html>

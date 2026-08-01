@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/styles.css">
+  <script src="_ds/modernist-ffa0a15b-2f90-4c29-9b15-ecb92b77b5db/_ds_bundle.js"></script>
+  <title>Wave 1 — Support Access &amp; Platform Audit</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-neutral-200); font-family: var(--font-body); color: var(--color-text); }
+    .wf-tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color: var(--color-accent-700); background: var(--color-surface); padding:3px 8px; margin-bottom:10px; }
+    .wf-label { font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--color-neutral-600); margin-bottom:4px; display:block; }
+    .wf-field { border:2px solid var(--color-divider); padding:8px 10px; font-size:12.5px; color:var(--color-neutral-700); }
+    .wf-frame { border:2px solid var(--color-text); background:var(--color-bg); padding:24px 30px; margin-bottom:16px; }
+    .wf-note { font-size:12px; color:var(--color-neutral-600); margin:0 0 40px; }
+  </style>
+</helmet>
+
+<div style="max-width:1500px;margin:0 auto;padding:48px 40px 100px;">
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);">Wave 1 — SaaS Platform Administration</div>
+  <h1 style="font-family:var(--font-heading);font-weight:800;font-size:34px;margin:0 0 12px;">Support Access &amp; Platform Audit</h1>
+  <p style="font-size:15px;line-height:1.6;color:var(--color-neutral-700);max-width:900px;margin:0 0 36px;">The two controls that keep platform operators honest: time-boxed, export-blind support access, and a global, cross-tenant evidence trail.</p>
+
+  <!-- SUPPORT ACCESS REQUEST EN -->
+  <div class="wf-tag">Screen 11 · Support-Access Request · EN</div>
+  <div class="wf-frame">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">New Support-Access Request</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div><span class="wf-label">Tenant</span><div class="wf-field">TEN-014 — Al-Ufuq Trading</div></div>
+      <div><span class="wf-label">Support case</span><div class="wf-field">CASE-4471</div></div>
+      <div><span class="wf-label">Named support user</span><div class="wf-field">N. Amir — Support Operator</div></div>
+      <div><span class="wf-label">Business reason</span><div class="wf-field">Investigate delayed invoice sync reported by Tenant</div></div>
+      <div><span class="wf-label">Requested scope</span><div class="wf-field">Finance module · read-only</div></div>
+      <div><span class="wf-label">Read / write level</span><div class="wf-field">Read-only</div></div>
+      <div><span class="wf-label">Start</span><div class="wf-field">Now</div></div>
+      <div><span class="wf-label">Expiry</span><div class="wf-field">+4 hours (max approved interval)</div></div>
+      <div><span class="wf-label">Tenant authorization</span><div class="wf-field" style="color:var(--color-accent-700);font-weight:700;">⬥ Pending — required before Active</div></div>
+      <div><span class="wf-label">Export authorization</span><div class="wf-field" style="color:var(--color-neutral-500);">Not requested</div></div>
+    </div>
+    <div style="margin-top:16px;border:2px solid var(--color-text);padding:12px 16px;font-size:12.5px;font-weight:700;">This request cannot grant export access. A Tenant export always needs a separate, explicit authorization.</div>
+    <div style="margin-top:16px;">
+      <div class="wf-label">Session banner preview (shown to the support user once Active)</div>
+      <div style="background:var(--color-neutral-800);color:#fff;padding:8px 16px;font-size:11.5px;margin-top:6px;">⬥ SUPPORT SESSION — TEN-014 — read-only — Finance — expires in 3h 58m — CASE-4471</div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:12px;">
+      <span style="padding:9px 20px;background:var(--color-neutral-400);color:#fff;font-size:12.5px;font-weight:700;">Submit (disabled — awaiting Tenant authorization)</span>
+      <span style="font-size:12.5px;color:var(--color-neutral-600);align-self:center;">Cancel</span>
+    </div>
+  </div>
+  <p class="wf-note">Annotations — 1. Export authorization is a visibly separate field, defaulted to "Not requested" (RULE-021). 2. The session banner never looks like a normal Tenant session — it's dark-chrome and case-labelled, by design (never disguised as ordinary tenant access).</p>
+
+  <!-- ACTIVE MONITOR EN -->
+  <div class="wf-tag">Screen 12 · Active Support-Access Monitor · EN</div>
+  <div class="wf-frame">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;margin-bottom:16px;">Active Support Sessions</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:2px solid var(--color-text);">
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Tenant</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Support user</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Scope</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Remaining</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Actions performed</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">Downloads / exports</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);">State</th>
+        <th style="text-align:start;padding:7px;font-size:10px;color:var(--color-neutral-600);"></th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--color-divider);background:var(--color-accent-100);">
+          <td style="padding:9px 7px;font-weight:700;">TEN-014</td><td style="padding:9px 7px;">N. Amir</td><td style="padding:9px 7px;">Finance · read-only</td>
+          <td style="padding:9px 7px;font-weight:700;color:var(--color-accent-700);">▲ 6 min — expiring soon</td><td style="padding:9px 7px;">4 reads</td><td style="padding:9px 7px;color:var(--color-neutral-600);">0 — blocked by design</td>
+          <td style="padding:9px 7px;font-weight:700;">Active</td><td style="padding:9px 7px;color:var(--color-accent-700);font-weight:700;">Force terminate</td>
+        </tr>
+        <tr>
+          <td style="padding:9px 7px;font-weight:700;">TEN-031</td><td style="padding:9px 7px;">N. Amir</td><td style="padding:9px 7px;">Inventory · read-only</td>
+          <td style="padding:9px 7px;">2h 10m</td><td style="padding:9px 7px;">1 read</td><td style="padding:9px 7px;color:var(--color-neutral-600);">0 — blocked by design</td>
+          <td style="padding:9px 7px;font-weight:700;">Active</td><td style="padding:9px 7px;color:var(--color-accent-700);font-weight:700;">Force terminate</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:14px;border:2px solid var(--color-accent);padding:10px 16px;font-size:12px;color:var(--color-accent-700);">No emergency-access session is currently open. If one is ever opened, it appears here with a distinct dark-red banner and a mandatory post-use review flag.</div>
+  </div>
+  <p class="wf-note">Annotations — 1. "Downloads / exports" always reads 0 unless a separate export authorization exists elsewhere — support scope alone can never produce a download (REQ-095). 2. Expiring-soon state is flagged before lapse, not only after.</p>
+
+  <!-- PLATFORM AUDIT EN -->
+  <div class="wf-tag">Screen 13 · Platform Audit Dashboard · EN</div>
+  <div class="wf-frame">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+      <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;">Platform Audit</div>
+      <div style="font-size:11px;color:var(--color-neutral-600);">Data as of 16:58 today · refreshed every 60s</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Actor ▾</div>
+      <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Tenant ▾</div>
+      <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Action type ▾</div>
+      <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Risk level ▾</div>
+      <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Date range ▾</div>
+      <div style="border:2px solid var(--color-divider);padding:6px 14px;font-size:11.5px;color:var(--color-neutral-600);">Saved views ▾</div>
+      <div style="border:2px solid var(--color-text);padding:6px 14px;font-size:11.5px;font-weight:700;">Export (requires authorization) ↓</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+      <thead><tr style="border-bottom:2px solid var(--color-text);">
+        <th style="text-align:start;padding:6px;font-size:10px;color:var(--color-neutral-600);">Time</th>
+        <th style="text-align:start;padding:6px;font-size:10px;color:var(--color-neutral-600);">Actor</th>
+        <th style="text-align:start;padding:6px;font-size:10px;color:var(--color-neutral-600);">Tenant</th>
+        <th style="text-align:start;padding:6px;font-size:10px;color:var(--color-neutral-600);">Action</th>
+        <th style="text-align:start;padding:6px;font-size:10px;color:var(--color-neutral-600);">Object</th>
+        <th style="text-align:start;padding:6px;font-size:10px;color:var(--color-neutral-600);">Result</th>
+        <th style="text-align:start;padding:6px;font-size:10px;color:var(--color-neutral-600);">Risk</th>
+        <th style="text-align:start;padding:6px;font-size:10px;color:var(--color-neutral-600);">Correlation</th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--color-divider);background:var(--color-accent-100);">
+          <td style="padding:7px 6px;">09:14</td><td style="padding:7px 6px;">Hossam</td><td style="padding:7px 6px;">TEN-022</td><td style="padding:7px 6px;font-weight:700;">Suspend</td><td style="padding:7px 6px;">Tenant</td><td style="padding:7px 6px;">Success</td><td style="padding:7px 6px;font-weight:700;color:var(--color-accent-700);">High</td><td style="padding:7px 6px;color:var(--color-neutral-500);">COR-9931</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--color-divider);">
+          <td style="padding:7px 6px;">08:40</td><td style="padding:7px 6px;">Hossam</td><td style="padding:7px 6px;">TEN-014</td><td style="padding:7px 6px;">Grant support access</td><td style="padding:7px 6px;">Support session</td><td style="padding:7px 6px;">Success</td><td style="padding:7px 6px;">Medium</td><td style="padding:7px 6px;color:var(--color-neutral-500);">COR-9928</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--color-divider);">
+          <td style="padding:7px 6px;">08:12</td><td style="padding:7px 6px;">N. Amir</td><td style="padding:7px 6px;">TEN-041</td><td style="padding:7px 6px;font-weight:700;color:var(--color-accent-700);">Cross-tenant access attempt</td><td style="padding:7px 6px;">Tenant record</td><td style="padding:7px 6px;font-weight:700;color:var(--color-accent-700);">✕ Denied</td><td style="padding:7px 6px;font-weight:700;color:var(--color-accent-700);">High</td><td style="padding:7px 6px;color:var(--color-neutral-500);">COR-9915</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:14px;border:2px solid var(--color-divider);padding:12px 16px;font-size:11.5px;">
+      <b>Drill-down — COR-9931</b> · Before: Active · After: Suspended · Approver: Hossam (sole — security cause) · Support-access indicator: none · Export indicator: none · Lifecycle transition: Active → Suspended
+    </div>
+  </div>
+  <p class="wf-note">Annotations — 1. A denied cross-tenant attempt shows here without revealing which other Tenant was targeted (AC-028). 2. Exporting audit evidence is itself gated by its own authorization, shown right in the toolbar rather than assumed. 3. Auditor sees the identical screen, read-only.</p>
+
+  <!-- AR MIRRORS (compact) -->
+  <div class="wf-tag">Screens 11–13 (mirrored headers) · العربية · RTL</div>
+  <div class="wf-frame" dir="rtl">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:16px;margin-bottom:10px;">طلب جديد للوصول الداعم</div>
+    <div style="font-size:12px;color:var(--color-neutral-700);margin-bottom:16px;">المستأجر: TEN-014 · رقم الحالة: CASE-4471 · النطاق: المالية (قراءة فقط) · تفويض التصدير: <b>لم يُطلب</b> — لا يمنح هذا الطلب صلاحية التصدير أبدًا.</div>
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:16px;margin-bottom:10px;">مراقبة جلسات الدعم النشطة</div>
+    <div style="font-size:12px;color:var(--color-neutral-700);margin-bottom:16px;">TEN-014 — ن. أمير — المالية (قراءة فقط) — متبقٍ ٦ دقائق ▲ — التنزيلات: ٠ (محظورة تصميميًا) — <span style="color:var(--color-accent-700);font-weight:700;">إنهاء فوري</span></div>
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:16px;margin-bottom:10px;">لوحة تدقيق المنصة</div>
+    <div style="font-size:12px;color:var(--color-neutral-700);">٠٩:١٤ — حسام — TEN-022 — <b>إيقاف</b> — نجاح — خطورة عالية — COR-9931</div>
+  </div>
+  <p class="wf-note">Annotation — session banner, table columns and filter bar all mirror per the same block-reversal and start/end rules already shown across the earlier screens.</p>
+</div>
+
+</x-dc>
+</body>
+</html>

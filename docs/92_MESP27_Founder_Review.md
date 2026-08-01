@@ -74,14 +74,14 @@ I accept that MESP-48 evidence and MESP-50 production decisions remain open at t
 
 | Field | Founder response |
 |---|---|
-| Approve corrected MESP-27 BRD v0.10 | Yes / Request changes |
-| Confirm approved MESP-52 decision | Yes / Request changes |
-| Confirm Trial Tenant exclusion | Yes / Request changes |
-| Confirm Entitlement-override prohibition | Yes / Request changes |
-| Confirm Plan metadata decision | Yes / Request changes |
-| Confirm purge-certificate wording | Yes / Request changes |
-| Confirm multiple-legal-entity decision | Yes / Request changes |
-| Accept remaining MESP-48/MESP-50 gates | Yes / Request changes |
+| Approve corrected MESP-27 BRD v0.10 | Yes |
+| Confirm approved MESP-52 decision | Yes |
+| Confirm Trial Tenant exclusion | Yes |
+| Confirm Entitlement-override prohibition | Yes |
+| Confirm Plan metadata decision | Yes |
+| Confirm purge-certificate wording | Yes |
+| Confirm multiple-legal-entity decision | Yes |
+| Accept remaining MESP-48/MESP-50 gates | Yes |
 | Approved by | Hossam /  |
 | Date |  |
 | Requested changes |  |
