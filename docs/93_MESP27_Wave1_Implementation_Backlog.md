@@ -5,14 +5,20 @@
 | Field | Value |
 |---|---|
 | Artifact | Proposed implementation backlog for SaaS Platform Administration Wave 1 |
-| Status | Backlog proposal for review — not recorded in Jira |
+| Status | Synchronized to Jira — implementation not started |
 | Authority | Approved MESP-27 BRD v0.10 and approved Wave 1 wireframes |
 | Product boundary | Release 1 B2B ERP platform administration only |
 | Owner for approval | Hossam |
-| Jira action | None taken; no Epic, Enabler, Story, or Sprint has been created |
+| Jira Epic | MESP-2 |
+| Technical Enablers | TE-01 through TE-08 mapped to MESP-57 through MESP-64 |
+| User Stories | US-01 through US-21 mapped to MESP-65 through MESP-85 |
+| Sprint | Not created — requires manual Jira setup |
+| Current implementation item | MESP-57 / TE-01 — To Do |
+| MESP-28 | To Do |
+| Jira action | Existing Epic MESP-2 reused; approved Enablers and Stories are synchronized; no Sprint created |
 | Downstream work | MESP-28 and all Procurement, Inventory, Finance, Sales, and Retail POS work remain out of scope |
 
-This is a backlog-authoring artifact. It does not authorize coding, alter the BRD, create implementation Stories in Jira, create a Sprint in Jira, or replace the owning BRDs and decisions named below.
+This is a backlog-authoring and synchronization artifact. It does not authorize coding, create a Sprint in Jira, or replace the owning BRDs and decisions named below.
 
 ## 1. Source map and extraction rules
 
@@ -37,13 +43,15 @@ This is a backlog-authoring artifact. It does not authorize coding, alter the BR
 - MESP-48 remains the owner of reference volumes and supported-volume validation. MESP-50 remains the owner of residency, retention, legal hold, support-access duration, subprocessors, backup treatment, purge timing, and production offboarding policy.
 - Identity and Access, Multi-Tenancy, and Organization details remain dependencies on MESP-28, MESP-29, and MESP-30. Their behavior is not redefined here.
 - No story introduces Retail POS, finance posting, procurement, inventory execution, B2B Sales behavior, or a tenant's ERP workspace.
-- No story is a subtask. The identifiers below are proposal identifiers only and are not Jira keys.
+- No story is a subtask. US-01 through US-21 are the approved backlog identifiers mapped to Jira MESP-65 through MESP-85.
 
-## 2. Proposed implementation Epic
+## 2. Jira Epic mapping
 
-### EPIC-PROPOSED-MESP27 — SaaS Platform Administration Wave 1
+> The proposed documentation Epic was mapped to the existing Jira Epic MESP-2 to prevent duplicate Epic creation.
 
-**Proposed issue type:** Epic (not created)
+### MESP-2 — SaaS Platform Administration Wave 1
+
+**Jira mapping:** Existing Epic MESP-2 (reused; no duplicate Epic created)
 
 **Epic outcome:** A Platform Administrator can operate the approved SaaS administration surface for a Tenant from controlled onboarding through lifecycle management, Plan/Entitlement visibility, support authorization, audit evidence, export, and governed offboarding, with strict tenant isolation and no hidden high-risk shortcuts.
 
@@ -447,8 +455,8 @@ The table below maps every approved MESP-27 functional section, requirement fami
 
 | MESP-27 section or requirement | Backlog item(s) | Coverage status | Deferred owner, when applicable |
 |---|---|---|---|
-| §3 Scope and §4 Out of scope; M27-REQ-001–006; M27-AC-039/041/043 | EPIC-PROPOSED-MESP27; TE-02/03; US-02/03/07/09/10/12 | Covered; B2B administration boundary and exclusions are explicit | MESP-28/29/30 for detailed identity, tenancy, and organization behavior |
-| §5 Source requirements and traceability | Source map; traces on TE-01–08 and US-01–21 | Covered; every item points to BRD and/or approved wireframe evidence | MESP-19 for future Jira traceability recording |
+| §3 Scope and §4 Out of scope; M27-REQ-001–006; M27-AC-039/041/043 | MESP-2; TE-02/03; US-02/03/07/09/10/12 | Covered; B2B administration boundary and exclusions are explicit | MESP-28/29/30 for detailed identity, tenancy, and organization behavior |
+| §5 Source requirements and traceability | Source map; traces on TE-01–08 and US-01–21 | Covered; every item points to BRD and/or approved wireframe evidence | MESP-19 for traceability governance follow-up |
 | §6 Definitions | Source map; TE-02/03/06; all stories use Tenant, Company/Legal Entity, Branch, Warehouse, Plan, Subscription, Entitlement, Permission, and Feature Flag distinctly | Covered; glossary terms are not redefined | MESP-18 / approved glossary owner |
 | §7 Actors and responsibilities; M27-REQ-007/008 | TE-03/06; US-01/02/04/06/12/14/16/17/18/19/20 | Covered; actor, scope, approval, and audit responsibilities remain explicit | MESP-28/38 for final identity, membership, and permission detail |
 | §8 Business assumptions; M27-REQ-009 | Decomposition rules; TE-05/06/07; US-04/07/11/12/18/19/20/21 | Covered — dependency retained; illustrative values are not defaults | MESP-37/48/50 and MESP-30 for unresolved business values |
@@ -483,7 +491,7 @@ The table below maps every approved MESP-27 functional section, requirement fami
 | §37 Decisions M27-DEC-001–005, MESP-52, MESP-56, PD-019 | Epic exclusions; US-07/08/09/10/13; TE-03/07 | Covered; approved Plan, legal-entity boundary, purge truth, and technology constraint are preserved | Hossam for approval/change control; MESP-30/38/50 for detailed decisions |
 | §38 Dependencies | DEP-01–07; story dependency fields | Covered; blocking predecessors and owning BRDs are explicit | Named dependency owner |
 | §39 Risks | Epic completion evidence; TE-02/03/05/06/08; US-09/14/15/16/18/19/20 | Covered; mitigation is represented as a control, evidence, or explicit deferral | Hossam, Security/Privacy, Wafra, MESP owners as named in BRD |
-| §40 Approval criteria | §7 readiness gates; Pass 1–3 tables; no-Jira/no-code guardrail | Covered; approval remains a human gate before Jira or implementation | Hossam |
+| §40 Approval criteria | §7 readiness gates; Pass 1–3 tables; no-unauthorized-Jira-write/no-code guardrail | Covered; approval remains a human gate before implementation | Hossam |
 
 ## 4B. Mandatory self-review pass 2 — story quality
 
@@ -532,7 +540,7 @@ The following terms may appear in the backlog only as explicit exclusions, safet
 | Final MESP-28 Identity behavior | Pass — TE-03 is contract-only; final behavior remains a dependency | TE-03, DEP-01, US-12/US-16 |
 | Invented MESP-48 volume limits | Pass — no threshold or capacity promise is assigned | TE-08, DEP-03, US-11 |
 | Invented MESP-50 retention or purge durations | Pass — policy values remain unresolved and owned by MESP-50 | DEP-04, US-04/16/18/19/20 |
-| Jira writes | Pass — no Jira issue, comment, or Sprint is created | Document control and §7 readiness gates |
+| Jira writes | Pass — only authorized updates to existing MESP-2 and MESP-57–MESP-85 records; no new issue, comment, or Sprint was created | Document control and §7 readiness gates |
 | Source-code changes | Pass — this is a backlog artifact only | Document control and task boundary |
 | Parallel execution recommendations | Pass — only dependency-ordered sequencing is proposed; no parallel work recommendation appears | §4 sequence and Sprint 1 candidate scope |
 
@@ -546,7 +554,7 @@ The following terms may appear in the backlog only as explicit exclusions, safet
 | DEP-04 | MESP-50 residency/hosting, cross-border support, subprocessors, retention, legal hold, support duration, backup treatment, export expiry, and purge timing | Blocks production provisioning/offboarding/purge policy | Capture fields and pending states; do not activate unresolved production policy |
 | DEP-05 | MESP-37 Saudi Country Pack and document/numbering rules | Affects locale defaults, statutory document identity, templates, and numbering | Use explicit configuration contracts; defer detailed compliance behavior |
 | DEP-06 | Wireframes are schematic and the seven wizard steps are provisional | Exact component behavior and grouping may change | Preserve required fields and invariants; refine visual/component detail during implementation design without changing BRD behavior |
-| DEP-07 | MESP-19 traceability and Jira recording are not yet updated for this proposed backlog | Jira references are not evidence of creation or approval | Keep this artifact local; record Jira only after Hossam approves the backlog and the required Jira workflow is authorized |
+| DEP-07 | MESP-19 traceability governance follow-up remains after synchronization | Existing Jira keys are recorded here; formal traceability approval remains a follow-up | Keep this artifact and Jira mapping aligned; no new issue or Sprint is required |
 
 ## 6. Proposed Development Sprint 1
 
@@ -557,6 +565,8 @@ The following terms may appear in the backlog only as explicit exclusions, safet
 **Sprint goal:** Prove a tenant-isolated, authorized, bilingual Platform shell → Overview → Tenant Catalogue → Tenant Workspace read-only journey, with auditable API calls and denial behavior, before onboarding or high-risk mutations are attempted.
 
 **Duration/capacity:** Not specified in the approved sources. Confirm the team’s sprint length and one-developer capacity before scheduling. This is a scope proposal, not a Jira Sprint.
+
+**Jira status:** Not created — requires manual Jira setup.
 
 ### Candidate Sprint 1 scope
 
@@ -595,9 +605,9 @@ The following terms may appear in the backlog only as explicit exclusions, safet
 
 ## 7. Backlog readiness and approval gates
 
-Before any Jira recording or implementation start:
+Before implementation starts or a Jira Sprint is created:
 
-1. Hossam approves this backlog proposal and confirms whether the proposed local issue hierarchy matches the Jira project’s available issue types.
+1. Hossam confirms the synchronized Jira mapping (MESP-2, MESP-57 through MESP-85) and the proposed Sprint 1 capacity/setup.
 2. MESP-27 BRD remains approved and its Founder Review approval evidence is recorded according to the existing workflow.
 3. TE-03, DEP-01, and the boundary with MESP-28 are explicitly accepted as a contract-only seam.
 4. MESP-48 and MESP-50 remain visible as blockers for the affected later stories; no illustrative wireframe number is promoted to a production value.
@@ -605,14 +615,14 @@ Before any Jira recording or implementation start:
 
 ## 8. Scope and quality check
 
-- One proposed implementation Epic is defined.
+- The approved implementation backlog is mapped to the existing Jira Epic MESP-2; no duplicate Epic was created.
 - Eight minimum technical enablers are defined with 32 provisional planning points in total.
 - Twenty-one sequenced User Stories are defined without subtasks; their provisional estimates total 119 points and the maximum is 8.
 - One proposed Sprint 1 is defined and limited to a read-only, tenant-isolated vertical slice; its provisional total is 40 points including enablers and the US-21 shell slice.
 - Pass 1 — Coverage: **PASS**. Every approved MESP-27 section, requirement family, decision, and acceptance-scenario family maps to at least one enabler or Story; unresolved values retain a named owner.
 - Pass 2 — Story quality: **PASS**. All twenty-one Stories deliver one demonstrable outcome, use testable acceptance criteria, have explicit dependencies and design references, remain within estimate 8, and are dependency-sequenced. US-12 was added to close the Feature Rollout gap, and the former combined Export/offboarding Story was split into US-18 and US-19.
-- Pass 3 — Scope protection: **PASS**. No prohibited transaction scope, final MESP-28 behavior, invented MESP-48/MESP-50 values, Jira write, source-code change, production purge execution in Sprint 1, or parallel-execution recommendation is present as a deliverable.
-- No application code, Jira issue, Jira comment, Jira Sprint, test-case document, MESP-28 implementation, downstream ERP module work, or Retail POS work was created.
+- Pass 3 — Scope protection: **PASS**. No prohibited transaction scope, final MESP-28 behavior, invented MESP-48/MESP-50 values, unauthorized Jira artifact, source-code change, production purge execution in Sprint 1, or parallel-execution recommendation is present as a deliverable.
+- No application code, new Jira issue, new Jira comment, Jira Sprint, test-case document, MESP-28 implementation, downstream ERP module work, or Retail POS work was created; existing MESP-2 and MESP-57–MESP-85 records were synchronized only.
 - BRD NFRs, Trial exclusion, no-override rule, Restricted Validation Plan, support/export separation, purge truthfulness, multiple legal entities, and MESP-48/MESP-50 gates are preserved.
 
 ## 9. Final recalculated order and Sprint 1 estimate
