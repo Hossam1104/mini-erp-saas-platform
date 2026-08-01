@@ -241,8 +241,8 @@ Define the business meaning of each domain before technical implementation. Each
 
 ## Phase 2 exit criteria per domain
 
-- [x] BRD approved with a recorded founder/business-owner decision record.
-- [ ] BPMN diagrams approved.
+- [ ] Applicable BRD approved with a recorded founder/business-owner decision record.
+- [ ] BPMN diagrams approved where they are required to remove material workflow ambiguity.
 - [ ] All critical business rules are explicit.
 - [ ] State transitions are unambiguous.
 - [ ] Exceptions and negative paths are covered.
@@ -711,7 +711,7 @@ The next activity will be selected based on founder review and approved dependen
 - [ ] Demonstration completed.
 - [ ] Documentation updated only where necessary.
 
-**Phase 8 status: MESP-57 AND SPRINT 1 DONE; NO ACTIVE IMPLEMENTATION ITEM. MESP-28 IS REQUIREMENTS-ONLY.**
+**Phase 8 status: MESP-28 approved and Done; no active implementation item.**
 
 ---
 
