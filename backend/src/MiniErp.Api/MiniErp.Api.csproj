@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>MiniErp.Api</AssemblyName>
+    <RootNamespace>MiniErp.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiniErp.App\MiniErp.App.csproj" />
+    <ProjectReference Include="..\MiniErp.Contracts\MiniErp.Contracts.csproj" />
+  </ItemGroup>
+</Project>

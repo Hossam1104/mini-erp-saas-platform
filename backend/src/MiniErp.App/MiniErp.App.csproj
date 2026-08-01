@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MiniErp.App</AssemblyName>
+    <RootNamespace>MiniErp.App</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiniErp.Contracts\MiniErp.Contracts.csproj" />
+  </ItemGroup>
+</Project>
