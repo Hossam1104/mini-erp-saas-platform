@@ -1,90 +1,89 @@
-# MESP-27 Founder Review — SaaS Platform Administration
+# MESP-27 Founder Review — Corrected SaaS Platform Administration BRD v0.10
 
-| Field | Value |
-|---|---|
-| Review time | Approximately five minutes |
-| BRD | `docs/11_SaaS_Platform_Administration_BRD.md` |
-| Jira | MESP-27 — currently In Progress |
-| Recommendation | Approve after accepting the proposed MESP-52 decision below |
-| Implementation authority | None — this review creates no Stories and authorizes no code |
+## 1. Independent audit correction confirmation
 
-## 1. Can MESP-27 be approved?
+All 16 Claude Opus Independent Approval Audit corrections have been applied to `docs/11_SaaS_Platform_Administration_BRD.md`. The corrected BRD is version **v0.10** with status **Ready for Founder Approval after Independent Audit Corrections**.
 
-**Yes, with one founder decision:** approve the simple Release 1 Plan model in section 2. The BRD is complete enough to baseline Platform Administration: it defines the full tenant lifecycle, operating roles, Plan/Subscription/Entitlement boundaries, provisioning, modules, limits, branding, support access, feature rollout, suspension/reactivation, export/retention/purge coordination, audit, reports, exceptions, and 40 acceptance scenarios.
+The corrections restore the PRD NFR targets, complete traceability, tighten provisioning/configuration/module/support/export/purge controls, add the non-production Restricted Validation Plan, close undefined Entitlement-override behavior, and update the controlled glossary and Founder Decision Pack. No application code, implementation Story, MESP-28 work, or Retail POS scope was created.
 
-Approval does not approve production thresholds, retention periods, legal interpretations, provider choices, implementation Stories, or application code.
+## 2. Approved MESP-52 decision
 
-## 2. Recommended MESP-52 decision
+Hossam has approved:
 
-Approve this Release 1 default:
+- One production Release 1 Plan containing all approved B2B ERP modules.
+- Simple configurable limits.
+- Manual Plan assignment by the Platform Administrator.
+- Effective-dated and audited Plan, Subscription, and Entitlement changes.
+- No metered billing, automated subscription invoice, automated pricing engine, overage billing, payment, or accounting transaction.
+- One non-production Restricted Validation Plan solely for Entitlement-denial evidence; it cannot be sold or assigned in production.
 
-- One Plan containing every approved B2B ERP module.
-- Retail POS is unavailable.
-- Simple configurable limits for capacity and service protection.
-- Platform/Commercial Administrator assigns the Plan manually.
-- Plan and Subscription changes are effective-dated and audited.
-- No metered billing, automatic subscription invoices, automated price/tier selection, or overage billing.
-- Entitlement remains Tenant-wide commercial availability; Permission remains User-level security. Both must allow an action.
+## 3. Approved Trial exclusion
 
-This is the smallest commercially coherent model for the first cohort and avoids building billing complexity before real customer evidence exists.
+Trial Tenants and a Trial lifecycle state are excluded from Release 1. The Restricted Validation Plan is a non-production control and is not a Trial offering.
 
-## 3. Information needed from Wafra for MESP-48
+## 4. Approved prohibition of Entitlement override
 
-Request current, 12-month expected, and credible peak values plus evidence/source for:
+Per-Tenant Entitlement override is prohibited. Entitlements change only through a versioned Plan change or effective-dated Subscription change. A security or operational-safety restriction may temporarily block access but cannot grant a capability absent from the effective Plan and Subscription.
 
-- Active users; companies/legal entities; branches; warehouses.
-- Products; suppliers; Business Customers.
-- Monthly documents by type; maximum and typical lines per document; peak day/hour.
-- Attachment count, common/max file size, and expected total storage.
-- Import size/frequency; export/report size/frequency; long-running jobs.
-- Integrations/API use, concurrent users/sessions, and seasonal peaks.
-- Any known SLA-critical periods and acceptable delay for reports, exports, and jobs.
+## 5. Approved Plan metadata
 
-Use Wafra as evidence, then add one conservative SME reference profile. Do not publish production thresholds until the profile is approved and validated.
+Each Plan records its service/support tier, non-calculating price metadata, and effective dates. These attributes generate no charge, payment, subscription invoice, or accounting transaction.
 
-## 4. Decisions Hossam must approve
+## 6. Approved purge-certificate wording
 
-1. Approve MESP-27 as the business baseline.
-2. Approve the proposed MESP-52 one-Plan decision.
-3. Accept the MESP-48 evidence plan and the rule against invented thresholds.
-4. Confirm MESP-50 remains mandatory before production retention, legal hold, backup deletion, or purge.
-5. Accept that Grace Period duration, cause-specific read-only suspension, and emergency support access remain open until their owners validate them.
+The purge certificate states:
 
-## 5. Risks
+- Certified purge scope.
+- Systems and data included and excluded.
+- Residual backups or retained copies.
+- Legal-hold or retention restrictions.
+- Whether restoration remains possible outside the certified purge scope.
 
-- Confusing Entitlement with Permission could create a commercial or security bypass.
-- Arbitrary limits without Wafra evidence could block normal work or create false capacity promises.
-- Suspension/reactivation could duplicate or lose interrupted jobs unless each item is reviewed.
-- Standing support privilege would create a serious cross-Tenant and privacy risk.
-- Retention or purge without MESP-50/external review could create irreversible legal or contractual harm.
-- Hossam currently holds several approval roles; system dual control and external specialists remain necessary before production.
+It must not claim that restoration is universally impossible unless all residual copies are demonstrably removed. Purge execution also requires the MESP-50-controlled cooling-off interval and final notice.
 
-## 6. Requested changes
+## 7. Approved multiple-legal-entity decision
 
-None recommended. Record any requested change below and keep MESP-27 In Progress until incorporated and re-reviewed.
+A Tenant may contain multiple legal entities. Each legal entity owns its legal and accounting boundary. Release 1 excludes financial consolidation, intercompany automation, elimination entries, transfer pricing, and consolidated statements. MESP-30 retains the detailed operating rules.
 
-Requested changes:
+## 8. Remaining MESP-48 evidence
 
-_None / enter changes here._
+Wafra must provide current, expected 12-month, and credible peak values with sources for users, legal entities, branches, warehouses, products, suppliers, Business Customers, documents by type, lines per document, monthly/peak transactions, attachments/storage, imports, exports, reports, jobs, integrations/API use, concurrent sessions, and seasonal peaks.
 
-## 7. Approval block
+The approved PRD targets remain: 99.9% monthly availability; RPO no more than 15 minutes; RTO no more than 4 hours; common-read p95 no more than 2 seconds; and common-command p95 no more than 3 seconds. MESP-48 supplies the reference load used to validate them; it does not weaken them.
 
-I approve `docs/11_SaaS_Platform_Administration_BRD.md` as the MESP-27 business baseline.
+## 9. Remaining MESP-50 production decisions
 
-I approve the recommended MESP-52 Release 1 decision: one all-approved-B2B-module Plan, no POS, simple configurable limits, manual effective-dated assignment, and no metered or automated subscription billing.
+Before production, qualified owners must approve hosting/data region, permitted cross-border support access, subprocessor consent/restrictions, retention periods, legal-hold authority, backup/residual-copy treatment, purge scope, purge cooling-off duration, final-notice method, certificate retention, and whether/when restoration is possible outside the certified purge scope.
 
-I accept the MESP-48 evidence plan and confirm that no production thresholds are approved yet.
+## 10. Risks
 
-I confirm MESP-50 and qualified external validation remain mandatory before production retention and irreversible purge.
+- Missing MESP-48 evidence could produce arbitrary limits or unvalidated capacity.
+- Standing or export-capable support access could create a cross-Tenant/privacy incident; separate Tenant-approved export authority is mandatory.
+- Export waiver plus artifact expiry could leave no accepted recoverable Tenant copy before purge.
+- Residual backups could make an absolute “restoration impossible” certificate untrue.
+- Single-founder role concentration requires immutable evidence, dual control for purge, and external specialist validation before production.
+- Trial or Retail POS scope could leak through packaging unless the explicit exclusions remain enforced.
+
+## 11. Founder approval block
+
+I confirm that the corrected MESP-27 BRD v0.10 applies all 16 Independent Approval Audit corrections.
+
+I confirm the approved MESP-52 decision, Trial exclusion, Entitlement-override prohibition, Plan metadata, purge-certificate wording, and multiple-legal-entity decision exactly as summarized above.
+
+I accept that MESP-48 evidence and MESP-50 production decisions remain open at their stated gates.
 
 | Field | Founder response |
 |---|---|
-| Approve MESP-27 | Yes / Request changes |
-| Approve MESP-52 recommendation | Yes / Request changes |
-| Accept MESP-48 evidence plan | Yes / Request changes |
-| Keep MESP-50 as production gate | Yes / Request changes |
+| Approve corrected MESP-27 BRD v0.10 | Yes / Request changes |
+| Confirm approved MESP-52 decision | Yes / Request changes |
+| Confirm Trial Tenant exclusion | Yes / Request changes |
+| Confirm Entitlement-override prohibition | Yes / Request changes |
+| Confirm Plan metadata decision | Yes / Request changes |
+| Confirm purge-certificate wording | Yes / Request changes |
+| Confirm multiple-legal-entity decision | Yes / Request changes |
+| Accept remaining MESP-48/MESP-50 gates | Yes / Request changes |
 | Approved by | Hossam /  |
 | Date |  |
 | Requested changes |  |
 
-**Jira after approval:** update MESP-27 from review state to Done only after recording the signed approval, the approved MESP-52 decision under the next immutable PD-NNN, and traceability. Until then, keep MESP-27 In Progress with `status-in-review`. Do not start MESP-28 and do not create implementation Stories.
+MESP-27 remains **In Progress** with `status-in-review` until this block is signed. Do not start MESP-28 and do not create implementation Stories.

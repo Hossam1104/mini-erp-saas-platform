@@ -14,7 +14,7 @@
 
 MESP-26 is ready for Hossam's approval now, subject to one governance decision: accept the solo-founder operating model and the decision-timing classifications in this pack. After that approval, Claude may close the BRD Foundation items identified in `docs/91_Jira_Simplification_Update.md`, move MESP-26 to Done, and move only MESP-27 to In Progress.
 
-There are **no unresolved product-scope, domain, architecture-provider, or production-compliance decisions that genuinely block the start of MESP-27**. MESP-52 is intentionally resolved while writing MESP-27. Production hosting, ZATCA, Saudi VAT, PDPL, residency, retention, penetration testing, backup topology, and vendor choices remain mandatory gates at their stated times; they do not block business analysis.
+There are **no unresolved product-scope, domain, architecture-provider, or production-compliance decisions that genuinely block the start of MESP-27**. MESP-52 was resolved while writing MESP-27 and is incorporated into BRD v0.10. Production hosting, ZATCA, Saudi VAT, PDPL, residency, retention, penetration testing, backup topology, and vendor choices remain mandatory gates at their stated times; they do not block business analysis.
 
 True entry controls that remain:
 
@@ -28,7 +28,7 @@ True entry controls that remain:
 |---|---|---|---|---|
 | Approve solo-founder BRD governance, accept the timing plan for all open decisions, approve MESP-26, and start only MESP-27 | **Approve**. Hossam temporarily holds Product Owner, Business Sponsor, Business Analysis Lead, Architecture Owner, QA Lead, and Implementation Lead accountability. Preserve system separation-of-duties controls and require external specialist validation before production where stated. | This is the minimum human authorization needed to replace the former all-TBD and all-decisions-first gate without weakening product or production controls. | Without written approval, Jira has no human evidence that the foundation gate changed and MESP-27 must remain To Do. | Approve / Request changes |
 
-No MESP-41 through MESP-56 answer is being approved by this decision. Recommended defaults below are starting positions for the owning BRD or later gate, not approved product requirements.
+No MESP-41 through MESP-56 answer was approved by the original MESP-26 decision. **Subsequent controlled update, 1 August 2026:** Hossam approved MESP-52 and MESP-56 during the MESP-27 correction cycle. Their rows below now record approved product decisions; all other defaults remain unapproved starting positions for the owning BRD or later gate.
 
 ## 3. Governance items accepted without detailed reading
 
@@ -48,9 +48,9 @@ MESP-26 is **Accept with a small correction**: replace the former "15 of 17 crit
 
 ## 4. Decisions resolved during domain BRDs
 
-Legend: **H** = Hossam approval required; **W** = Wafra validation required as evidence only; **E** = external specialist validation. Every row has timing category **Must decide during its owning domain BRD**.
+Legend: **H** = Hossam approval required; **W** = Wafra validation required as evidence only; **E** = external specialist validation. Unless explicitly marked **APPROVED**, each row has timing category **Must decide during its owning domain BRD**.
 
-| Jira | Decision and owning domain / BRD | Recommended MVP default - not yet approved | Validators | Risk of delaying beyond the owning BRD |
+| Jira | Decision and owning domain / BRD | Decision/default and current status | Validators | Risk of delaying beyond the owning BRD |
 |---|---|---|---|---|
 | MESP-41 | Batch, lot, serial, and expiry scope - Master Data / Inventory; MESP-31 and MESP-33 | Configurable per product or category; disabled by default; enforce end-to-end when enabled. | H: Yes; W: Yes; E: only if regulated products enter scope | Product identity, receipt, issue, return, count, migration, and ledger requirements remain ambiguous. |
 | MESP-42 | Purchase approval workflow - Procurement; MESP-32 | Purchase Request required; quotation comparison optional; one configurable amount threshold; no self-approval. | H: Yes; W: Yes; E: Finance/control review before production | Approval states, permissions, and audit evidence cannot be finalized. |
@@ -60,11 +60,11 @@ Legend: **H** = Hossam approval required; **W** = Wafra validation required as e
 | MESP-46 | B2B credit control - B2B Sales with Finance; MESP-35 | Hard check at Sales Order confirmation with an audited Finance override; define exposure components in the BRD. | H: Yes; W: Yes; E: Finance/accounting | Sales states, permissions, and receivables risk controls remain incomplete. |
 | MESP-47 | Payment and receipt methods - Finance; MESP-34 | Manual bank transfer and cash recording; support partial allocation and on-account balances; defer gateways and bank feeds. | H: Yes; W: Yes; E: Finance/accounting | Settlement, reconciliation, evidence, and cash/bank controls remain incomplete. |
 | MESP-51 | Migration and opening balances - Data Migration; MESP-40, informed by MESP-33/MESP-34 | Migrate master data plus reconciled stock, GL, AP, and AR opening balances; include open documents only where Wafra evidence proves a launch need; no full history. | H: Yes; W: Yes; E: Finance/accounting | Cutover scope, data templates, reconciliation, and go-live acceptance remain undefined. |
-| MESP-52 | Plans, modules, limits, and entitlements - Platform Administration; MESP-27 | One Release 1 plan containing all approved modules; simple configurable limits; no metered billing or tier automation. | H: Yes; W: No requirement authority; E: No | MESP-27 cannot finish its provisioning, entitlement, suspension, and limit rules. |
+| MESP-52 | Plans, modules, limits, and entitlements - Platform Administration; MESP-27 | **APPROVED by Hossam, 1 August 2026.** One production Release 1 Plan contains all approved B2B ERP Modules and configurable limits. It records service/support tier, non-calculating price metadata, and effective dates. Assignment is manual, effective-dated, and audited. Trial tenants, metered billing, automated subscription invoicing, and pricing-engine behavior are excluded. Entitlements cannot be overridden per Tenant; they change only through a versioned Plan or effective-dated Subscription change. A separate Restricted Validation Plan may exist only in non-production for denial testing. | H: Approved; W: No requirement authority; E: No | Closed for MESP-27. MESP-48 still supplies measurable reference volumes for limits and performance validation. |
 | MESP-53 | Report catalogue and reconciliation ownership - Reporting; MESP-36 | Minimum statutory and core operational set; Finance owns subledger-to-GL reconciliation and Inventory/Finance jointly own quantity-to-value reconciliation. | H: Yes; W: Yes; E: Finance/accounting and Saudi tax where statutory | Report scope can grow without control and close evidence remains undefined. |
 | MESP-54 | Exchange-rate source and process - Finance; MESP-34 | Manual, effective-dated rates maintained and approved by Finance; preserve the applied rate on documents; defer automated feeds. | H: Yes; W: Yes; E: Finance/accounting | Multi-currency posting, revaluation, realized differences, and audit evidence remain ambiguous. |
 | MESP-55 | Delegation, escalation, and out-of-office behavior - Identity and Access; MESP-28, applied by later domains | One named approver with controlled administrator reassignment; prevent self-approval; defer parallel approval and automatic escalation. | H: Yes; W: Yes; E: Security/control review | Approval workflows may become inconsistent or unauditable across modules. |
-| MESP-56 | Legal entity support and consolidation exclusion - Organization; MESP-30 with MESP-34 validation | One legal entity per tenant for MVP, with multiple branches and warehouses; no intercompany automation and no consolidation. | H: Yes; W: Yes; E: Finance/accounting | Organization scope, numbering, calendars, posting boundaries, and reporting scope remain ambiguous. |
+| MESP-56 | Legal entity support and consolidation exclusion - Organization; MESP-30 with MESP-34 validation | **APPROVED by Hossam, 1 August 2026.** A Tenant may contain multiple Companies / Legal Entities. Each is a separate legal and accounting boundary. Release 1 excludes financial consolidation, intercompany automation, elimination entries, transfer pricing, and consolidated financial statements. Detailed operating rules remain owned by MESP-30, with Finance validation in MESP-34. | H: Approved; W: Evidence during MESP-30; E: Finance/accounting validation | Closed as a scope decision; MESP-30 must still define numbering, calendars, posting boundaries, permissions, and organization behavior. |
 
 ## 5. Decisions required before implementation
 
@@ -97,7 +97,7 @@ The production gate must also validate:
 - Encrypted backups, tested restoration, disaster recovery, approved RPO/RTO, and operational ownership.
 - Performance at the approved reference volumes, including noisy-tenant, reports, exports, background jobs, and attachments.
 
-There are **no decisions classified Must approve before the first detailed BRD** and none of MESP-41 through MESP-56 is classified **Defer to post-MVP**. Individual advanced options such as automated rate feeds, bank feeds, gateways, parallel approvals, automated escalation, metered billing, intercompany automation, and consolidation are recommended post-MVP exclusions inside their owning decisions.
+There are **no decisions classified Must approve before the first detailed BRD** and none of the still-open MESP-41 through MESP-56 decisions is classified **Defer to post-MVP**. MESP-52 and MESP-56 are now approved. Individual advanced options such as automated rate feeds, bank feeds, gateways, parallel approvals, automated escalation, metered billing, intercompany automation, and consolidation remain Release 1 exclusions inside their owning decisions.
 
 ## 7. Verified corrections
 
@@ -131,7 +131,7 @@ Start exactly one Jira Task after MESP-26 is approved:
 
 **MESP-27 - Produce SaaS Platform Administration BRD**
 
-During MESP-27, resolve MESP-52 as a product decision and gather MESP-48 volume evidence without blocking the opening of the BRD. Do not start MESP-28 through MESP-40.
+MESP-52 is resolved and incorporated into MESP-27 BRD v0.10. Complete Hossam's review of the corrected MESP-27 package and gather MESP-48 volume evidence without blocking BRD approval. Do not start MESP-28 through MESP-40.
 
 ## 10. Hossam approval block
 

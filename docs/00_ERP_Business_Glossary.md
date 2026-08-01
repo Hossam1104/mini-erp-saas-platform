@@ -6,7 +6,7 @@
 | **Jira Task** | MESP-18 |
 | **Epic** | MESP-1 — EPIC 01 Product Governance and BRD Foundation |
 | **Release** | R0 — BRD and Product Foundation |
-| **Source baseline** | `MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx` — PRD v1.2, Final Approved Baseline, approved 31 July 2026 |
+| **Source baseline** | `MiniERPSaaSPlatform_PRD_v1.2.docx` — PRD v1.2, Final Approved Baseline, approved 31 July 2026 |
 | **Status** | Draft — ready for Product Owner and Business Owner review |
 | **Prepared** | 31 July 2026 |
 
@@ -117,11 +117,11 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 ## Subscription
 
-**Approved definition:** The commercial agreement that links a Tenant to a Plan for a defined period and determines which Modules and limits that Tenant may use.
+**Approved definition:** The effective-dated commercial agreement that links a Tenant to a versioned Plan for a defined period and determines the Entitlements and limits available to that Tenant.
 
-**Business meaning:** Controls what the tenant has paid for and therefore what the tenant is entitled to use. Drives activation, suspension, and termination of tenant access.
+**Business meaning:** Selects the approved Plan version and dates from which its Entitlements apply. Release 1 assignment is manual and audited; Subscription metadata does not calculate a charge or create a subscription invoice, payment, or accounting transaction.
 
-**What it is not:** Not a Sales Order and not a Sales Invoice in the tenant's own ERP data. A Subscription is a platform-level commercial record between the Platform Owner and the Tenant; it is not tenant business data.
+**What it is not:** Not a Sales Order or Sales Invoice in the tenant's ERP data, not a Trial, and not a direct Entitlement override. An Entitlement change requires a versioned Plan change or an effective-dated Subscription change.
 
 **Owning module:** SaaS Platform Administration.
 
@@ -129,35 +129,35 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** Tenant #1 holds an active subscription to the standard plan covering Procurement, Inventory, Sales, and Finance.
 
-**Approval status:** Requires Business Decision
+**Approval status:** Approved Product Baseline
 
-**Source:** PRD v1.2 — subscription and plan requirements. Plan structure, limits, and billing model are open in **MESP-52 — Confirm subscription plans, modules, limits, and entitlements**.
+**Source:** PRD v1.2 — subscription and plan requirements; MESP-52 decision approved by Hossam on 1 August 2026 and specified in MESP-27 BRD v0.10.
 
 ## Plan
 
-**Approved definition:** A named, reusable commercial package that defines the set of Modules, functional limits, and usage limits available to any Tenant subscribed to it.
+**Approved definition:** A named, reusable, versioned commercial package that defines Modules, features, configurable limits, service/support tier, non-calculating price metadata, and effective dates.
 
-**Business meaning:** Standardises what the Platform Owner sells so that tenants are not configured one by one.
+**Business meaning:** Standardises what the Platform Owner makes available. Release 1 has one production Plan containing all approved B2B ERP Modules. A separate Restricted Validation Plan exists only in non-production to prove Entitlement denial and cannot be sold, assigned in production, or treated as a Trial.
 
-**What it is not:** Not a per-tenant customisation. Not a Role. Not a Permission. A Plan governs what is *available*; Roles and Permissions govern what a *user* may do with what is available.
+**What it is not:** Not a per-Tenant customization, Trial offering, Role, Permission, pricing engine, invoice, payment, or accounting transaction. Price metadata is descriptive and non-calculating. A Plan governs what is *available*; Roles and Permissions govern what a *User* may do.
 
 **Owning module:** SaaS Platform Administration.
 
 **Related entities or documents:** Subscription, Entitlement, Module, Tenant.
 
-**Example:** A plan that enables Procurement, Inventory, Sales, and Finance but excludes advanced analytics.
+**Example:** The production Release 1 Plan enables all approved B2B ERP Modules, carries a named support tier and price metadata, and excludes Retail POS.
 
-**Approval status:** Requires Business Decision
+**Approval status:** Approved Product Baseline
 
-**Source:** PRD v1.2 — subscription and plan requirements. Open in **MESP-52**.
+**Source:** PRD v1.2 — subscription and plan requirements; MESP-52 decision approved by Hossam on 1 August 2026 and specified in MESP-27 BRD v0.10.
 
 ## Entitlement
 
 **Approved definition:** The effective, evaluated right of a Tenant to use a specific Module, feature, or capacity, derived from its Subscription and Plan.
 
-**Business meaning:** The runtime answer to "is this capability switched on for this tenant?" — a commercial gate, not a security gate.
+**Business meaning:** The evaluated answer to "is this capability available to this Tenant now?" — a commercial gate derived from the effective Plan and Subscription, not a security Permission.
 
-**What it is not:** **Not a Permission.** Entitlement is commercial and tenant-wide; Permission is security and user-specific. A user may hold a permission for a module the tenant is not entitled to, and access is still denied. See clarification 18.
+**What it is not:** **Not a Permission and not a per-Tenant override.** Entitlement is commercial and Tenant-wide; Permission is security and User-specific. Entitlement changes use a versioned Plan or effective-dated Subscription change. A security or safety restriction may temporarily block an Entitlement but cannot grant an unapproved one. See clarification 18.
 
 **Owning module:** SaaS Platform Administration.
 
@@ -165,9 +165,9 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** A tenant is entitled to the Inventory module; within it, only users holding the stock-adjustment permission may post an adjustment.
 
-**Approval status:** Requires Business Decision
+**Approval status:** Approved Product Baseline
 
-**Source:** PRD v1.2 — entitlement model. Open in **MESP-52**.
+**Source:** PRD v1.2 — entitlement model; MESP-52 decision approved by Hossam on 1 August 2026 and specified in MESP-27 BRD v0.10.
 
 ## Module
 
@@ -191,9 +191,9 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Approved definition:** An operating business unit inside a Tenant that owns its own chart of accounts, fiscal calendar, accounting books, and business documents.
 
-**Business meaning:** The accounting and reporting boundary. Financial statements are produced at Company level.
+**Business meaning:** The legal and accounting boundary. A Tenant may contain multiple Companies / Legal Entities, each with its own books and financial statements.
 
-**What it is not:** Not a Tenant — a Tenant may hold several Companies. Not a Branch — a Company contains Branches. Not a Department or Cost Center.
+**What it is not:** Not a Tenant — a Tenant may hold several Companies. Not a Branch, Department, or Cost Center. Multiple Companies do not imply financial consolidation, intercompany automation, elimination entries, transfer pricing, or consolidated statements in Release 1.
 
 **Owning module:** Organization Structure.
 
@@ -203,15 +203,15 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Approval status:** Approved Product Baseline
 
-**Source:** PRD v1.2 — organization hierarchy; approved decision list (MESP-16).
+**Source:** PRD v1.2 — organization hierarchy; approved decision list (MESP-16); MESP-56 decision approved by Hossam on 1 August 2026. Detailed operating rules remain in MESP-30.
 
 ## Legal Entity
 
 **Approved definition:** The legally registered identity of a Company, carrying its registration identifiers, tax identifiers, legal name, and statutory reporting obligations.
 
-**Business meaning:** Determines who is legally liable, which tax registration applies, and what appears on legally binding documents such as tax invoices.
+**Business meaning:** Determines who is legally liable, which accounting boundary and tax registration apply, and what appears on legally binding documents. One Tenant may contain multiple Legal Entities.
 
-**What it is not:** Not a Branch. Not a separate hierarchy level — in Release 1 Company and Legal Entity are the same level of the approved hierarchy. Multi-entity **consolidation** is not implied by supporting multiple legal entities.
+**What it is not:** Not a Branch. Not a separate hierarchy level — Company and Legal Entity are the same level of the approved hierarchy. Release 1 does not provide financial consolidation, intercompany automation, elimination entries, transfer pricing, or consolidated statements.
 
 **Owning module:** Organization Structure.
 
@@ -219,9 +219,9 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** A Saudi legal entity with its own commercial registration and VAT registration number printed on every tax invoice it issues.
 
-**Approval status:** Requires Business Decision
+**Approval status:** Approved Product Baseline
 
-**Source:** PRD v1.2 — legal entity requirements. Multi-entity scope and the explicit exclusion of consolidation are open in **MESP-56 — Confirm legal entity support and explicitly exclude consolidation from Release 1**.
+**Source:** PRD v1.2 — legal entity requirements; MESP-56 decision approved by Hossam on 1 August 2026. Detailed operating rules remain in MESP-30.
 
 ## Branch
 
@@ -2141,7 +2141,7 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Approval status:** Requires Business Decision
 
-**Source:** PRD v1.2 — multi-currency scope. Whether reporting currency is in Release 1 relates to **MESP-54** and **MESP-56**; consolidation exclusion is open in **MESP-56**.
+**Source:** PRD v1.2 — multi-currency scope. Whether Reporting Currency is in Release 1 remains governed by **MESP-54**; consolidated reporting is excluded by the approved **MESP-56** decision.
 
 ## Exchange Rate
 
@@ -2623,8 +2623,6 @@ These terms cannot be finalised until the linked Jira decision Task is answered 
 
 | Term | Blocking decision |
 |---|---|
-| Subscription, Plan, Entitlement | MESP-52 — subscription plans, modules, limits, entitlements |
-| Legal Entity | MESP-56 — legal entity support and exclusion of consolidation |
 | Country Pack, Tax Category, Sales Invoice, Document Number | MESP-49 — Saudi e-invoicing launch scope |
 | Approval, Approver | MESP-42 — purchase approval workflow; MESP-55 — delegation, escalation, out-of-office |
 | Credit Limit, Credit Exposure | MESP-46 — B2B customer credit-control policy |
@@ -2636,7 +2634,7 @@ These terms cannot be finalised until the linked Jira decision Task is answered 
 | Supplier Payment, Customer Receipt, Cash Account, Bank Account | MESP-47 — supported payment and receipt methods |
 | Reconciliation | MESP-53 — report catalogue and reconciliation ownership |
 | Exchange Rate, Exchange Rate Date, Exchange Rate Source | MESP-54 — exchange-rate source and update process |
-| Reporting Currency | MESP-54 and MESP-56 |
+| Reporting Currency | MESP-54; consolidated reporting remains excluded by the approved MESP-56 decision |
 | Attachment, Audit Event retention | MESP-50 — tenant data residency and retention policy |
 
 ## Draft for BRD Validation — requires workshop confirmation
