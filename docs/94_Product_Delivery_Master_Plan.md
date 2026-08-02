@@ -9,9 +9,9 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 2 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `Combined Foundation Release 1 Lean Implementation Specification — next activity after approved MESP-28, MESP-29, and MESP-30 BRDs` |
+| Current activity | `MESP-86 — Foundation Release 1 Lean Implementation Specification v0.1; design/documentation only; critical review next` |
 | Current implementation item | `None — no active implementation item` |
-| Current branch | `main` |
+| Current branch | `docs/foundation-release1-lean-spec` |
 | Current Sprint | `No active implementation Sprint — S1-Solution Foundation Done` |
 
 ---
@@ -74,12 +74,15 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 - [x] `MESP-29` — Multi-Tenancy BRD approved as the v0.2 Release 1 baseline and moved to **Done**; it remains outside all Sprints.
 - [x] `MESP-5` — Organization and Company Structure Epic moved to **In Progress**; the Epic continues beyond this BRD.
 - [x] `MESP-30` — Organization BRD approved as the v0.2 Release 1 baseline, moved to **Done**, and kept outside all Sprints; approval commit was prepared on `docs/mesp-30-organization-brd` and is verified in the documentation merge to `main`.
+- [x] `MESP-86` — Foundation Release 1 Lean Implementation Specification Task created under `MESP-1`, linked to MESP-3/4/5 and MESP-28/29/30, and moved to **In Progress** for design/documentation only.
+- [x] `MESP-1` — Product Governance and BRD Management Epic moved to **In Progress** for the controlled specification activity.
 - [x] Sprint `S1-Solution Foundation` was created, started, and completed.
 - [x] Sprint contained only `MESP-57`.
 - [x] `MESP-58` through `MESP-85` remain **To Do**; no implementation item was started.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
 - [x] No Sprint is active; MESP-29 documentation was merged to `main` and has no implementation Sprint.
-- [x] Current approved documentation is merged to `main`; no implementation item is active.
+- [ ] MESP-86 draft is on `docs/foundation-release1-lean-spec`; it is not yet approved for implementation.
+- [x] Current approved BRDs are merged to `main`; no implementation item is active.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
 - [x] Implement `MESP-57 / TE-01`.
 - [x] Run the Release build.
@@ -258,7 +261,7 @@ Define the business meaning of each domain before technical implementation. Each
 - [x] Deferred decisions have owners and explicit implementation or production gates.
 - [ ] No technical behavior is invented to fill a business gap.
 
-**Phase 2 status: IN PROGRESS — MESP-28, MESP-29, and MESP-30 are approved and Done; MESP-5 remains In Progress. MESP-31 through MESP-40 remain To Do. The next activity is the combined Foundation Release 1 Lean Implementation Specification for Identity and Access, Multi-Tenancy, and Organization; it has not started.**
+**Phase 2 status: IN PROGRESS — MESP-28, MESP-29, and MESP-30 are approved and Done; MESP-5 remains In Progress. MESP-31 through MESP-40 remain To Do. MESP-86 is In Progress for the combined Foundation Release 1 Lean Implementation Specification; the draft is design/documentation only and awaits critical architecture and security review.**
 
 ---
 
@@ -668,7 +671,7 @@ Implement approved backlog items sequentially, validate them with focused automa
 
 ### After MESP-57
 
-MESP-57 and Sprint 1 are complete. MESP-28, MESP-29, and MESP-30 are approved and Done. No implementation item is active. The next activity is the combined Foundation Release 1 Lean Implementation Specification for Identity and Access, Multi-Tenancy, and Organization; do not start that specification, MESP-31, MESP-58, or implementation work in this documentation handoff.
+MESP-57 and Sprint 1 are complete. MESP-28, MESP-29, and MESP-30 are approved and Done. No implementation item is active. MESP-86 is the single current design/documentation activity for the combined Foundation Release 1 Lean Implementation Specification for Identity and Access, Multi-Tenancy, and Organization; do not start MESP-31, MESP-58, MESP-59, or implementation work.
 
 The next activity is the combined Foundation Release 1 Lean Implementation
 Specification, subject to the controlled start and approved dependencies:
@@ -678,7 +681,8 @@ Specification, subject to the controlled start and approved dependencies:
 - [x] Merge the approved MESP-29 documentation to `main`; no implementation item or Sprint was created.
 - [x] Begin and complete `MESP-30` Organization BRD; approve v0.2 Release 1 Baseline on `docs/mesp-30-organization-brd`.
 - [x] Resolve and record `ORG-OD-001` through `ORG-OD-007`; move `MESP-30` to Done after approval evidence.
-- [ ] Produce the combined Foundation Release 1 Lean Implementation Specification for Identity and Access, Multi-Tenancy, and Organization.
+- [x] Produce the v0.1 draft of the combined Foundation Release 1 Lean Implementation Specification for Identity and Access, Multi-Tenancy, and Organization on `docs/foundation-release1-lean-spec` under MESP-86; keep it Draft and not approved for implementation.
+- [ ] Complete critical architecture and security review of MESP-86 before any implementation readiness decision.
 - [ ] Refine the next Enabler only after its Definition of Ready is met.
 
 ## Testing strategy
@@ -722,7 +726,7 @@ Specification, subject to the controlled start and approved dependencies:
 - [ ] Demonstration completed.
 - [ ] Documentation updated only where necessary.
 
-**Phase 8 status: MESP-28, MESP-29, and MESP-30 approved and Done; no active implementation item.**
+**Phase 8 status: MESP-28 approved and Done; no active implementation item. MESP-29 and MESP-30 are also approved and Done; MESP-86 is documentation-only and no implementation item is active.**
 
 ---
 
@@ -1002,7 +1006,8 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Keep `MESP-31` through `MESP-40` in To Do while the approved foundation requirements remain the current delivery boundary.
 - [x] Keep `MESP-30` outside all Sprints and restrict it to business requirements only.
 - [x] Complete founder approval of the MESP-30 baseline and resolve `ORG-OD-001` through `ORG-OD-007`.
-- [ ] Prepare the combined Foundation Release 1 Lean Implementation Specification for Identity and Access, Multi-Tenancy, and Organization.
+- [x] Start `MESP-86` and prepare the v0.1 combined Foundation Release 1 Lean Implementation Specification on `docs/foundation-release1-lean-spec`; keep the artifact Draft and outside all Sprints.
+- [ ] Complete critical architecture and security review of `MESP-86` before implementation readiness.
 - [ ] Do not start another implementation Enabler until its Definition of Ready is satisfied.
 
 ---
@@ -1028,6 +1033,8 @@ Use this section to record major milestones.
 | 2 August 2026 | Sprint 1 completed | Done | `S1-Solution Foundation` closed with MESP-57 completed |
 | 2 August 2026 | MESP-28 BRD approved | Done | `docs/12_Identity_and_Access_BRD.md` v0.2 Approved Release 1 Baseline; 40 Confirmed rules, 22 historical decision records resolved, no implementation Sprint or Jira implementation work started |
 | 2 August 2026 | MESP-29 BRD approved | Done | `docs/13_Multi_Tenancy_BRD.md` v0.2 Approved Release 1 Baseline; four Tenant-isolation clarifications incorporated; MESP-4 remains In Progress; no Sprint or implementation item started; approval commit merged to `main` |
+| 2 August 2026 | MESP-30 BRD approved | Done | `docs/14_Organization_and_Company_Structure_BRD.md` v0.2 Approved Release 1 Baseline; ORG-OD-001 through ORG-OD-007 resolved; approval merged to `main` at `a1e5eb439bf6723efb5f0638cfc518ad044fce86`; no implementation started |
+| 2 August 2026 | MESP-86 foundation specification started | In Progress | Governance Task under MESP-1; v0.1 draft at `docs/foundation-release1-lean-spec`; design/documentation only; no Sprint or implementation item |
 
 ---
 
@@ -1052,10 +1059,10 @@ Use this section to record major milestones.
 |---|---|
 | Phase 1 — PRD | **Done** |
 | Phase 2 — BRDs and BPMN | **In Progress** |
-| Phase 3 — Lean Implementation Specification: domain and behavior | **Not Started — combined Foundation Release 1 specification pending** |
-| Phase 4 — Lean Implementation Specification: user journeys | **Partial for MESP-27** |
-| Phase 5 — Lean Implementation Specification: logical data | **Baseline Decisions Done; detailed sections pending** |
-| Phase 6 — Lean Implementation Specification: implementation readiness | **High-Level Baseline Done; detailed slices pending** |
+| Phase 3 — Lean Implementation Specification: domain and behavior | **In Progress — MESP-86 v0.1 draft under critical review** |
+| Phase 4 — Lean Implementation Specification: user journeys | **In Progress — MESP-86 route and state inventory drafted** |
+| Phase 5 — Lean Implementation Specification: logical data | **In Progress — MESP-86 logical model and ERD drafted** |
+| Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 slicing recommendation drafted; not Ready** |
 | Phase 7 — Jira Backlog | **Done for MESP-27 Wave 1** |
 | Phase 8 — Implementation and Automated Testing | **MESP-57 and Sprint 1 Done; no active implementation item** |
 | Phase 9 — Integration, UAT, Release, Operations | **Not Started** |
@@ -1064,4 +1071,4 @@ Use this section to record major milestones.
 
 ## Current single next action
 
-> Prepare the combined Foundation Release 1 Lean Implementation Specification for Identity and Access, Multi-Tenancy, and Organization only after its controlled start is authorized. Keep MESP-5 In Progress, MESP-29 and MESP-30 Done, MESP-31 through MESP-40 and MESP-58 through MESP-85 To Do, and no active implementation item or Sprint. Do not start MESP-31, MESP-58, implementation work, or parallel downstream BRDs in this handoff.
+> Complete the critical architecture and security review of `MESP-86` v0.1 at `docs/foundation-release1-lean-spec`. Keep MESP-5 In Progress, MESP-28/29/30 Done, MESP-31 through MESP-40 and MESP-58 through MESP-85 To Do, and no active implementation item or Sprint. Do not start MESP-31, MESP-58, MESP-59, implementation work, or parallel downstream BRDs.
