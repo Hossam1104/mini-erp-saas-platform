@@ -9,9 +9,9 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 2 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `MESP-30 — Organization BRD — next single requirements activity (To Do; not started)` |
+| Current activity | `MESP-30 — Organization BRD — In Progress; v0.1 Draft for Founder Review` |
 | Current implementation item | `None — no active implementation item` |
-| Current branch | `main` |
+| Current branch | `docs/mesp-30-organization-brd` |
 | Current Sprint | `No active implementation Sprint — S1-Solution Foundation Done` |
 
 ---
@@ -59,7 +59,8 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 | MESP-28 Identity and Access BRD | Done — v0.2 Approved Release 1 Baseline (2 August 2026) |
 | MESP-4 Multi-Tenancy and Tenant Lifecycle Epic | In Progress |
 | MESP-29 Multi-Tenancy BRD | Done — v0.2 Approved Release 1 Baseline (2 August 2026) |
-| MESP-30 Organization BRD | Next single activity — To Do; not started |
+| MESP-5 Organization and Company Structure Epic | In Progress |
+| MESP-30 Organization BRD | In Progress — v0.1 Draft for Founder Review; outside all Sprints |
 | Remaining product BRDs | Not Started / To Do |
 
 ### Current Jira and Git state
@@ -71,12 +72,14 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 - [x] `MESP-28` — Identity and Access BRD approved as the v0.2 Release 1 baseline and moved to **Done**.
 - [x] `MESP-4` — Multi-Tenancy and Tenant Lifecycle Epic moved to **In Progress**; the Epic continues beyond this BRD.
 - [x] `MESP-29` — Multi-Tenancy BRD approved as the v0.2 Release 1 baseline and moved to **Done**; it remains outside all Sprints.
+- [x] `MESP-5` — Organization and Company Structure Epic moved to **In Progress**; the Epic continues beyond this BRD.
+- [x] `MESP-30` — Organization BRD moved to **In Progress** for business-requirements work only; the v0.1 draft is on `docs/mesp-30-organization-brd` and remains outside all Sprints.
 - [x] Sprint `S1-Solution Foundation` was created, started, and completed.
 - [x] Sprint contained only `MESP-57`.
 - [x] `MESP-58` through `MESP-85` remain **To Do**; no implementation item was started.
-- [x] `MESP-30` through `MESP-40` remain **To Do**; no downstream BRD was started.
+- [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
 - [x] No Sprint is active; MESP-29 documentation was merged to `main` and has no implementation Sprint.
-- [x] Current branch is `main`; no implementation item is active.
+- [x] Current branch is `docs/mesp-30-organization-brd`; no implementation item is active.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
 - [x] Implement `MESP-57 / TE-01`.
 - [x] Run the Release build.
@@ -214,7 +217,7 @@ Define the business meaning of each domain before technical implementation. Each
 - [ ] BPMN diagrams for all MESP-27 workflows.
 - [x] `MESP-28` — Identity and Access BRD — **Done: v0.2 Approved Release 1 Baseline** (2 August 2026).
 - [x] `MESP-29` — Multi-Tenancy BRD — **Done: v0.2 Approved Release 1 Baseline** (2 August 2026).
-- [ ] `MESP-30` — Organization BRD — **next single activity; not started**.
+- [ ] 🔄 `MESP-30` — Organization BRD — **In Progress: v0.1 Draft for Founder Review; next action is founder review**.
 
 ### Core ERP domains
 
@@ -255,7 +258,7 @@ Define the business meaning of each domain before technical implementation. Each
 - [x] Deferred decisions have owners and explicit implementation or production gates.
 - [ ] No technical behavior is invented to fill a business gap.
 
-**Phase 2 status: IN PROGRESS — MESP-29 v0.2 is approved and Done; MESP-30 is the next single BRD activity and remains To Do. MESP-28 is approved and Done.**
+**Phase 2 status: IN PROGRESS — MESP-28 and MESP-29 are approved and Done; MESP-30 is In Progress as the single current BRD activity with a v0.1 Draft for Founder Review. MESP-5 is In Progress. MESP-31 through MESP-40 remain To Do.**
 
 ---
 
@@ -665,14 +668,15 @@ Implement approved backlog items sequentially, validate them with focused automa
 
 ### After MESP-57
 
-MESP-57 and Sprint 1 are complete. MESP-28 and MESP-29 are approved and Done. The next single requirements activity is MESP-30; do not automatically start MESP-58 or any implementation work.
+MESP-57 and Sprint 1 are complete. MESP-28 and MESP-29 are approved and Done. MESP-30 is now the single active requirements activity for its v0.1 Draft for Founder Review; do not start MESP-31, MESP-58, or any implementation work.
 
 The next activity will be selected based on founder review and approved dependencies:
 
 - [x] Approve `MESP-28` Identity and Access BRD v0.2 on `docs/mesp-28-identity-access-brd`.
 - [x] Begin and complete `MESP-29` Multi-Tenancy BRD as the single requirements activity; v0.2 is approved and Done.
 - [x] Merge the approved MESP-29 documentation to `main`; no implementation item or Sprint was created.
-- [ ] Begin and complete `MESP-30` Organization BRD as the next single requirements activity.
+- [x] Begin `MESP-30` Organization BRD as the single active requirements activity; produce v0.1 Draft for Founder Review on `docs/mesp-30-organization-brd`.
+- [ ] Complete founder review and resolve `ORG-OD-001` through `ORG-OD-007` before moving `MESP-30` to Done.
 - [ ] Produce one Lean Implementation Specification per approved foundation/domain slice.
 - [ ] Refine the next Enabler only after its Definition of Ready is met.
 
@@ -947,7 +951,7 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Approve `MESP-28 — Identity and Access BRD` v0.2 as the Release 1 baseline.
 - [x] Approve `MESP-29 — Multi-Tenancy BRD` v0.2 as the Release 1 baseline, including the four Tenant-isolation clarifications; move MESP-29 to Done.
 - [x] Merge the two approved MESP-29 documentation files to `main`; keep MESP-4 In Progress.
-- [ ] Begin `MESP-30 — Organization BRD` as the next single requirements activity; keep it To Do until its controlled start.
+- [x] Begin `MESP-30 — Organization BRD` as the single active requirements activity; keep it In Progress and outside all Sprints until founder review is complete.
 - [ ] Do not start the Lean Implementation Specification, implementation refinement, MESP-58, or any parallel downstream BRD until the applicable approval gates are satisfied.
 
 ## Completed MESP-57 outputs
@@ -993,9 +997,10 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Resolve the 22 historical IAM-OD records and four source-conflict records in the approved baseline.
 - [x] Begin, approve, and close the single MESP-29 Multi-Tenancy BRD activity; v0.2 is merged to `main`.
 - [x] Record the four Tenant-isolation clarifications and preserve MESP-48/MESP-50 Deferred Gates.
-- [ ] Keep `MESP-58` through `MESP-85` in To Do.
-- [ ] Keep `MESP-30` through `MESP-40` in To Do.
-- [ ] Start `MESP-30` only as the next single requirements activity after the controlled handoff.
+- [x] Keep `MESP-58` through `MESP-85` in To Do.
+- [x] Keep `MESP-31` through `MESP-40` in To Do while `MESP-30` is active.
+- [x] Keep `MESP-30` outside all Sprints and restrict it to business requirements only.
+- [ ] Complete founder review of the MESP-30 draft and resolve `ORG-OD-001` through `ORG-OD-007`.
 - [ ] Do not start another implementation Enabler until its Definition of Ready is satisfied.
 
 ---
@@ -1057,4 +1062,4 @@ Use this section to record major milestones.
 
 ## Current single next action
 
-> Begin `MESP-30 — Organization BRD` as the next single requirements activity when its controlled start is authorized. Keep MESP-4 In Progress, MESP-30 through MESP-40 To Do until their starts, MESP-58 through MESP-85 To Do, and no active Sprint or implementation item. Do not start implementation refinement, MESP-58, or parallel downstream BRDs.
+> Founder review of `docs/14_Organization_and_Company_Structure_BRD.md` only. Keep MESP-5 and MESP-30 In Progress, keep MESP-30 outside all Sprints, keep MESP-31 through MESP-40 and MESP-58 through MESP-85 To Do, and keep no active implementation item. Do not start MESP-31, MESP-58, implementation refinement, a Sprint, or parallel downstream BRDs.
