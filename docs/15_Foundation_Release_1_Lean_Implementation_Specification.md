@@ -2,10 +2,10 @@
 
 **Version:** v0.4 — Approved Release 1 Baseline
 **Status:** Approved for controlled implementation refinement — not production-approved
-**Jira:** MESP-86 - Produce Foundation Release 1 Lean Implementation Specification  
-**Scope:** Identity and Access, Multi-Tenancy and Tenant Lifecycle, Organization and Company Structure  
-**Branch:** `docs/foundation-release1-lean-spec`  
-**Owner:** Hossam / Product Owner  
+**Jira:** MESP-86 - Produce Foundation Release 1 Lean Implementation Specification
+**Scope:** Identity and Access, Multi-Tenancy and Tenant Lifecycle, Organization and Company Structure
+**Branch:** `docs/foundation-release1-lean-spec`
+**Owner:** Hossam / Product Owner
 **Date:** 3 August 2026
 
 This is an approved design and implementation-preparation baseline. It authorizes
