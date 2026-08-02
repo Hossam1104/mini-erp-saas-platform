@@ -1,6 +1,6 @@
 # Current State
 
-- Main SHA: to be recorded after the approved documentation merge.
+- Main SHA: 85c15c75dcc9b775264372df9c7359bd9523f62d (merged MESP-86 documentation baseline).
 - MESP-86: Done; Foundation Release 1 Lean Implementation Specification v0.4
   is approved for controlled implementation refinement, not production.
 - MESP-58: Ready for implementation refinement, status To Do.
