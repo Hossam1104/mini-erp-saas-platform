@@ -5,20 +5,20 @@
 | Field | Value |
 |---|---|
 | Document title | Identity and Access Management Business Requirements Document |
-| Version | v0.2 - Approved Release 1 Baseline |
+| Version | v0.3 - Approved Release 1 Baseline |
 | Status | Approved Release 1 Baseline |
 | Jira | MESP-28 - Produce Identity and Access BRD |
 | Parent Epic | MESP-3 - EPIC 03 - Identity and Access Management |
 | Accountable owner | Hossam |
 | Prepared by | Luna Max, Senior Business Analyst and Product Requirements Lead |
-| Date | 2 August 2026 |
-| Approval status | Approved by Hossam on 2 August 2026 |
+| Date | 3 August 2026 |
+| Approval status | Approved by Hossam on 2 August 2026; founder decision record added 3 August 2026 |
 | Source baseline | PRD v1.2 Final Approved Baseline; canonical repository file is MiniERPSaaSPlatform_PRD_v1.2.docx |
 | Mandatory vocabulary | docs/00_ERP_Business_Glossary.md |
 | Structural reference | docs/11_SaaS_Platform_Administration_BRD.md |
 | Architecture reference | docs/01_Technology_Architecture_Baseline.md (constraint reference only) |
-| Classification summary | 40 explicit IAM business rules: 40 Confirmed, 0 Proposed; 33 founder-approved decision points recorded across 22 historical decision records; 4 resolved/provenance source records; 32 business acceptance scenarios |
-| Change history | v0.1 Draft for Founder Review was approved and fast-tracked by Hossam on 2 August 2026. v0.2 records the approved Release 1 baseline. |
+| Classification summary | 46 explicit IAM business rules: 46 Confirmed, 0 Proposed; 34 founder-approved decision points recorded across 23 decision records; 4 resolved/provenance source records; 40 business acceptance scenarios |
+| Change history | v0.1 Draft for Founder Review was approved and fast-tracked by Hossam on 2 August 2026. v0.2 records the approved Release 1 baseline. v0.3 records the founder-approved global User versus Tenant Membership lifecycle authority decision without changing prior IAM values. |
 
 This document is the approved business-requirements baseline for Release 1. It authorizes downstream requirements/design preparation only; it does not itself authorize implementation code, a Sprint, or implementation Jira work.
 
@@ -29,7 +29,7 @@ This document is the approved business-requirements baseline for Release 1. It a
 - **Deferred gate** - a topic intentionally retained for MESP-50, a later BRD, qualified validation, or a later legal/critical-security decision. It is not an unresolved MESP-28 requirement.
 - **Out of Scope** - explicitly excluded from MESP-28 or owned by another BRD. It is not a hidden requirement.
 
-The counts above count the stable IAM-BR business-rule register, the 22 founder-approved IAM-OD records, the four IAM-SC source records, and the IAM-AC register. Process, validation, report, transition, and coverage rows are independently classified in their own tables.
+The counts above count the stable IAM-BR business-rule register, the 23 founder-approved IAM-OD records, the four IAM-SC source records, and the IAM-AC register. Process, validation, report, transition, and coverage rows are independently classified in their own tables.
 
 ## 2. Executive Summary
 
@@ -112,7 +112,7 @@ The following are explicitly out of scope for this BRD:
 
 | Source | Source requirement or decision | BRD section(s) | Classification | Notes / unresolved gap |
 |---|---|---|---|---|
-| Jira MESP-28 | Required business purpose, actors, triggers, workflows, exceptions, rules, states, data, validation, permissions, approvals, SoD, impacts, reports, audit, integration, migration, GWT scenarios, decisions, and owner approval | 2-30 | Confirmed | This v0.2 document is the approved Release 1 baseline; implementation remains separately gated. |
+| Jira MESP-28 | Required business purpose, actors, triggers, workflows, exceptions, rules, states, data, validation, permissions, approvals, SoD, impacts, reports, audit, integration, migration, GWT scenarios, decisions, and owner approval | 2-30 | Confirmed | This approved v0.3 Release 1 baseline remains separately gated from implementation. |
 | Jira MESP-28 | Authentication, tenant membership, Users, Roles, Permissions, Access Scopes, SoD, session handling, privileged access | 4, 7-16, 19, 22 | Confirmed | Release 1 values are approved in section 27; MESP-50 and later legal/critical-security gates remain protected. |
 | PRD PLT-003 | Authorized Users can create, review, activate, deactivate, import, export, and search shared master data with validation and duplicate detection | 14, 17, 18, 21, 24 | Confirmed | Applied to access administration; domain master-data behavior remains outside this BRD. |
 | PRD PLT-004 | Each business document has a unique human-readable number and immutable internal identity | 9, 23 | Confirmed | Identity and Access controls access to documents; numbering is owned by Organization. |
@@ -150,13 +150,14 @@ The actors below are supported by the PRD, glossary, MESP-27, or the MESP-28 Jir
 | Actor | Business responsibility | Permitted scope | Prohibited or constrained actions | Approval responsibility | Audit responsibility | Classification |
 |---|---|---|---|---|---|---|
 | Hossam / Product Owner and Business Sponsor | Approves the BRD, product decisions, exceptions that require founder authority, and sequencing. | Platform-level governance. | Founder approval is recorded; implementation remains separately gated by the Product Delivery Master Plan. | Approval evidence for this document and its resolved decisions. | Ensures approval evidence is recorded. | Confirmed |
-| Platform Administrator | Coordinates platform-level tenant and lifecycle administration and hands authorized administration to the Tenant. | Platform metadata and explicitly authorized platform operations; no Tenant business data by default. | Cannot grant self-approval, bypass Entitlements, create tenant-specific behavior, or access Tenant business data without approved support. | Platform lifecycle or support approval where policy assigns it. | Accountable for platform administration evidence. | Confirmed |
+| Platform Administrator | Coordinates platform-level Tenant and lifecycle administration and hands authorized administration to the Tenant. | Platform metadata and explicitly authorized platform operations; global User lifecycle only when the specific global User lifecycle Permission is present; no Tenant business data by default. | Cannot grant self-approval, bypass Entitlements, create tenant-specific behavior, suspend a global User without the specific governance Permission, or access Tenant business data without approved support. | Platform lifecycle or support approval where policy assigns it. | Accountable for platform administration and global-lifecycle evidence. | Confirmed |
+| Platform Security Administrator / Platform Administrator with global User lifecycle Permission | Controls the global User identity lifecycle when separately assigned the Platform governance Permission. | Platform/global User identity and all affected User sessions, with no Tenant business-data authority. | May not use the global lifecycle Permission to inspect or mutate Tenant business data, and may not omit active authentication, MFA, fresh authentication, reason, concurrency, idempotency, or immutable audit evidence. | May suspend, reactivate, or offboard a global User only under the approved governance control. | Records the global action, reason, affected sessions, actor, time, outcome, and evidence. | Founder-approved |
 | Platform Operations Owner | Owns operational recovery, notifications, jobs, access evidence, and readiness. | Approved platform operations. | Cannot infer wider Tenant or action scope than the initiating record. | Operational exception or recovery approval where assigned. | Ensures failures and retries remain visible. | Confirmed |
 | Security / Privacy Owner | Reviews privileged access, support boundaries, privacy, retention, export, and production controls. | Security and privacy evidence, not ordinary Tenant business operation. | Must not be the sole requester and approver of an irreversible action where dual control is required. | Privileged/support/security review where policy assigns it. | Reviews security evidence and exceptions. | Confirmed |
-| Tenant Administrator | Manages the Tenant's Users, memberships, Roles, Permissions, organization scope assignments, and tenant-level configuration within governed options. | One authorized Tenant and its Company / Legal Entity, Branch, and Warehouse hierarchy. | Cannot change Platform Plans/Entitlements, edit audit evidence, or cross Tenant boundaries. | Assigns or approves Tenant access where the policy assigns that responsibility. | Reviews Tenant access and confirms support authorization where required. | Confirmed |
+| Tenant Administrator | Manages the Tenant's Users, memberships, Roles, Permissions, organization scope assignments, and tenant-level configuration within governed options. | One authorized Tenant and its Company / Legal Entity, Branch, and Warehouse hierarchy. | May suspend or revoke a Tenant Membership, revoke that Tenant's Role Assignments or AccessScopeGrants, invalidate sessions operating in that Tenant, and block selection of that Tenant; cannot suspend, reactivate, or offboard the global User identity, and cannot affect another Tenant. | Assigns or approves Tenant access where the policy assigns that responsibility. | Reviews Tenant access, membership containment, session invalidation, and support authorization evidence. | Founder-approved |
 | Tenant business User | Performs an approved business function such as requesting, buying, warehouse operation, sales, accounting, finance approval, or audit. | Membership and assigned Role/Permission/Access Scope. | Cannot exceed scope, approve prohibited self-actions, or access another Tenant. | May approve only where an explicit Role/Permission and policy allow it. | Every material action is attributable to the named User. | Confirmed |
 | Auditor / read-only User | Reviews authorized reports, configuration, access, evidence, and audit history. | Assigned read-only scope. | No transactional or access mutation. | No approval unless a separate approved Role grants it. | Records review outcome where applicable. | Confirmed |
-| Authorized Support User | Investigates a named support case under approved Tenant, purpose, scope, and time. | One Tenant and the exact approved support scope. | No shared credential, hidden superuser, unrestricted impersonation, standing access, or export authority from support alone. | Support access and any separate export authorization as required. | All authentication, records/actions accessed, changes, downloads, expiry, revocation, and closure are evidenced. | Confirmed |
+| Authorized Support User | Investigates a named support case under approved Tenant, purpose, scope, and time. | One Tenant and the exact approved support scope. | No shared credential, hidden superuser, unrestricted impersonation, standing access, export authority, or global User suspension/reactivation/offboarding authority from SupportGrant alone. | Support access and any separate export authorization as required. | All authentication, records/actions accessed, changes, downloads, expiry, revocation, and closure are evidenced. | Confirmed |
 | Named Privileged-Access Approver | Performs the business approval role for high-risk or privileged access when assigned. | The decision scope in the approval request. | Cannot self-approve a prohibited request. The detailed Separation of Duties catalogue is deferred to MESP-38 and must not weaken the approved Release 1 controls. | Approves or rejects the named request. | Approval reason, actor, decision, and time are retained. | Confirmed |
 | Background Operator | Executes an already authorized business operation or recovery action. | The Tenant and scope recorded by the initiating business action. | Cannot expand Tenant or action scope. | No independent privilege beyond the approved work. | Records outcome and failure/retry evidence. | Confirmed |
 
@@ -373,6 +374,17 @@ Each narrative is intentionally business-level. Inputs, actors, decisions, outpu
 - **Alternative / exception:** A suspension may permit a policy-approved read-only mode, but this is never assumed.
 - **Output and evidence:** Suspension state, reason, actor, scope, effective time, access mode, session/job outcome, notice, and audit event.
 
+The command is split by ownership. `SuspendUser`, `ReactivateUser`, and
+`OffboardUser` are global User lifecycle actions and require the Platform
+Security Administrator, or a Platform Administrator with the specific global
+User lifecycle Permission, an active authenticated session, MFA, operation-bound
+fresh authentication, a reason, immutable audit evidence, optimistic
+concurrency, and idempotency. A Tenant Administrator must not use these commands
+to change the global identity. A Tenant Administrator instead uses
+`SuspendMembership` or `RevokeMembership` for one Tenant and may revoke that
+Tenant's Role Assignments and AccessScopeGrants and invalidate sessions operating
+in that Tenant.
+
 ### IAM-PR-012 - Revoke Membership or Access
 
 - **Classification:** Confirmed process with immediate authority removal for the affected assignment and sessions.
@@ -381,6 +393,10 @@ Each narrative is intentionally business-level. Inputs, actors, decisions, outpu
 - **Main flow:** Remove or disable the assignment; invalidate affected sessions; prevent future actions; preserve historical evidence and the global User identity where applicable.
 - **Alternative / exception:** A request that would remove the last required administrator is held for approved replacement or controlled reassignment.
 - **Output and evidence:** Revocation outcome, affected sessions, reason, actor, and immutable audit event.
+
+Membership containment is strictly Tenant-scoped. It blocks selection and
+operation in the affected Tenant but does not change the global User, another
+Tenant Membership, Role, scope, or session operating only in another Tenant.
 
 ### IAM-PR-013 - Offboard a User
 
@@ -487,6 +503,12 @@ The following register contains 40 explicit IAM business rules. All 40 are Confi
 | IAM-BR-038 | Release 1 shall exclude emergency or break-glass access; dual approval is excluded unless a later legal or critical-security decision changes that policy. | Confirmed | M27-REQ-049; M27-OQ-005; founder decisions 14, 21 | Avoids an unbounded bypass while preserving a controlled future gate. | Security/Platform/Tenant approvers; PR-009/015 | Later legal/critical-security decision |
 | IAM-BR-039 | Account suspension and deactivation shall use distinguishable business reasons and restoration paths; reactivation requires fresh review and does not automatically restore prior authority. | Confirmed | M27-REQ-054; glossary lifecycle; founder decision 27 | Enables safer recovery and reporting. | Tenant/security administrators; PR-011/013 | MESP-38/MESP-40 |
 | IAM-BR-040 | Historical access evidence shall preserve the decision, effective context, actor, and reason needed to reconstruct past authority; no automated purge is implemented in Release 1. | Confirmed | BR-011; MESP-50; founder decision 28 | Supports audit without inventing retention or legal rules. | Auditors/security; PR-010/013 | MESP-50 production gate |
+| IAM-BR-041 | Only a Platform Security Administrator or a Platform Administrator with the specific global User lifecycle Permission may suspend, reactivate, or offboard a global User; the action requires active authentication, MFA, operation-bound fresh authentication, reason, immutable audit, optimistic concurrency, and idempotency. | Confirmed / Founder-approved | Founder decision 3 August 2026 | Prevents Tenant administration or support from changing a global identity. | Platform governance actor; PR-011/013/014 | MESP-38 / downstream security design |
+| IAM-BR-042 | A Tenant Administrator may suspend or revoke a User's Membership in its own Tenant and revoke that Tenant's Role Assignments and AccessScopeGrants, invalidate sessions operating in that Tenant, and block Tenant selection; it may not suspend, reactivate, or offboard the global User. | Confirmed / Founder-approved | Founder decision 3 August 2026 | Provides bounded Tenant containment without global impact. | Tenant Administrator; PR-012/014 | MESP-29 / MESP-38 |
+| IAM-BR-043 | Tenant-scoped containment shall not affect another Tenant's Membership, Roles, AccessScopeGrants, or sessions operating only in another Tenant. | Confirmed / Founder-approved | Founder decision 3 August 2026 | Preserves independent multi-Tenant operation. | Tenant Administrator; PR-012/014/016 | MESP-29 |
+| IAM-BR-044 | Global User suspension shall revoke all affected User sessions and deny the global identity across every Tenant until reactivation; it shall not be represented as a Membership-only change. | Confirmed / Founder-approved | Founder decision 3 August 2026 | Closes stale-session and mixed-state gaps. | Platform governance actor; PR-011/014 | ADR-004 / MESP-38 |
+| IAM-BR-045 | Global User reactivation shall not automatically restore any Tenant Membership, Role Assignment, AccessScopeGrant, support grant, or privilege; each affected Tenant must be re-evaluated and explicitly restored. | Confirmed / Founder-approved | Founder decision 3 August 2026 | Prevents privilege resurrection after global containment. | Platform governance and Tenant administrators; PR-011/012/013 | MESP-29 / MESP-38 |
+| IAM-BR-046 | A SupportGrant and Support User identity alone shall not authorize global User suspension, reactivation, or offboarding; a separate Platform governance Permission is required. | Confirmed / Founder-approved | Founder decision 3 August 2026 | Keeps support exceptional and purpose-bound. | Support and Platform governance actors; PR-015 | MESP-27 / MESP-38 |
 
 ## 14. Roles, Permissions, and Access Scopes
 
@@ -853,10 +875,21 @@ These are business acceptance scenarios, not automated test instructions or a se
 30. **IAM-AC-030 - Offboarding:** Classification: Confirmed. Given a User is offboarded, when the process completes, then applicable memberships, Roles, scopes, support access, and sessions no longer authorize operations while required evidence remains.
 31. **IAM-AC-031 - Migration exception:** Classification: Confirmed. Given an ambiguous identity, Role, Permission, or scope mapping, when migration validation runs, then activation is quarantined, an accountable owner is assigned, and the decision is reconciled before access is enabled.
 32. **IAM-AC-032 - Audit retrieval:** Classification: Confirmed. Given an auditor or authorized reviewer requests material access evidence, when the evidence is retrieved, then actor, Tenant, scope, action, time, outcome, and safe decision context are available without allowing Tenant-user editing or automated purge.
+33. **IAM-AC-033 - Tenant membership containment:** Classification: Founder-approved. Given a User has active Memberships in Tenant A and Tenant B, when a Tenant A Administrator suspends the User's Membership in Tenant A, then Tenant A selection and operations are denied, Tenant A sessions are invalidated, and the global User and Tenant B remain unchanged.
+34. **IAM-AC-034 - Independent Tenant access:** Classification: Founder-approved. Given Tenant A Membership is suspended while Tenant B Membership remains active, when the User authenticates and selects Tenant B, then the User may access only the currently valid Tenant B scope and no Tenant A data is exposed.
+35. **IAM-AC-035 - Tenant Administrator boundary:** Classification: Founder-approved. Given a Tenant Administrator attempts to suspend, reactivate, or offboard a global User, when the request is evaluated, then it is denied and no global identity state changes.
+36. **IAM-AC-036 - Platform global lifecycle authority:** Classification: Founder-approved. Given a Platform Security Administrator or Platform Administrator has the specific global User lifecycle Permission and completes MFA and operation-bound fresh authentication, when a reasoned global suspension is submitted, then it is accepted only once with optimistic concurrency, idempotency, and immutable evidence.
+37. **IAM-AC-037 - Global suspension session revocation:** Classification: Founder-approved. Given a global User is suspended, when any affected session attempts further work in any Tenant, then the session is denied and the global suspension and session-revocation evidence is retained.
+38. **IAM-AC-038 - Global reactivation does not restore:** Classification: Founder-approved. Given a globally suspended User is reactivated, when the User attempts to select a former Tenant, then no Membership, Role, scope, support grant, or privilege is restored without a separate current Tenant decision.
+39. **IAM-AC-039 - SupportGrant boundary:** Classification: Founder-approved. Given a Support User has an active Tenant-approved SupportGrant but no Platform governance Permission, when the User attempts a global User lifecycle action, then it is denied and the SupportGrant remains limited to its approved Tenant, purpose, scope, and expiry.
+40. **IAM-AC-040 - Cross-Tenant non-impact evidence:** Classification: Founder-approved. Given Tenant A containment occurs, when audit evidence is reviewed, then the action identifies Tenant A and affected sessions without exposing or mutating Tenant B state or session evidence.
 
 ## 27. Founder-Approved Release 1 Decisions
 
-The 22 former open-decision records below are retained for traceability. Hossam approved each decision on 2 August 2026 as part of the Release 1 baseline. The decision IDs are historical references, not outstanding requirements.
+The 22 former open-decision records below are retained for traceability, and
+IAM-OD-023 records the new founder-approved lifecycle authority decision. Hossam
+approved the historical decisions on 2 August 2026 and IAM-OD-023 on 3 August
+2026. The decision IDs are traceability references, not outstanding requirements.
 
 | ID | Founder-approved Release 1 decision | Business impact / downstream gate | Status |
 |---|---|---|---|
@@ -882,6 +915,7 @@ The 22 former open-decision records below are retained for traceability. Hossam 
 | IAM-OD-020 | There is no automated audit-evidence purge in Release 1; MESP-50 is the production gate for retention, privacy, residency, legal hold, and purge. | Historical evidence and production/legal validation gate | Approved — Hossam — 2 August 2026 |
 | IAM-OD-021 | Ambiguous migration mappings are quarantined until accountable owner approval. | MESP-40 migration reconciliation | Approved — Hossam — 2 August 2026 |
 | IAM-OD-022 | Access Scope grants inherit downward from Tenant to Company, Branch, and Warehouse, combine without upward inheritance, and exclude explicit deny rules; parent removal revokes inherited authority and invalidates affected sessions. | MESP-30 scope model and session invalidation | Approved — Hossam — 2 August 2026 |
+| IAM-OD-023 | A global User may belong to many Tenants; only a Platform Security Administrator or Platform Administrator with the specific global User lifecycle Permission may suspend, reactivate, or offboard the global User under active authentication, MFA, operation-bound fresh authentication, reason, immutable audit, optimistic concurrency, and idempotency. A Tenant Administrator may suspend or revoke only the Membership and Tenant grants in its own Tenant and invalidate sessions operating there. Tenant containment must not affect another Tenant; global reactivation never auto-restores Membership, Roles, scopes, support, or privileges; SupportGrant alone has no global lifecycle authority. | Global identity and Tenant Membership ownership, containment, session revocation, and explicit reactivation decisions; implementation remains downstream gated by the Product Delivery Master Plan, MESP-29, MESP-38, and the approved foundation specification. | Approved — Hossam — 3 August 2026 |
 
 ## 28. Source Conflict Register
 
@@ -904,7 +938,7 @@ No unresolved source conflict remains in this baseline. The four records are ret
 | Main process | 11 | Covered | BPMN, if required later, is separate work |
 | Alternative paths | 12 | Covered | Approved behavior is classified; downstream detail remains gated |
 | Exception scenarios | 12 | Covered | Approved behavior is classified; downstream detail remains gated |
-| Business rules | 13 | Covered | 40 stable IAM-BR rules |
+| Business rules | 13 | Covered | 46 stable IAM-BR rules |
 | Document lifecycle | 20 | Covered | Identity/access evidence lifecycle; no commercial document |
 | Status transitions | 19 | Covered | Approved Release 1 states; downstream naming may refine implementation detail |
 | Data requirements | 17 | Covered | Business information only; no structures |
@@ -920,9 +954,9 @@ No unresolved source conflict remains in this baseline. The four records are ret
 | Audit evidence | 22 | Covered | Material event catalogue |
 | Integration requirements | 23 | Covered | Business dependencies, not interface design |
 | Migration requirements | 24 | Covered | Mapping, reconciliation, exceptions, approval |
-| Given/When/Then scenarios | 26 | Covered | 32 business acceptance scenarios |
-| Founder-approved decisions | 27 | Covered | 22 historical IAM-OD records resolved on 2 August 2026 |
-| Business-owner approval | 30 | Approved | Hossam approval recorded for v0.2 on 2 August 2026 |
+| Given/When/Then scenarios | 26 | Covered | 40 business acceptance scenarios |
+| Founder-approved decisions | 27 | Covered | 22 historical IAM-OD records plus IAM-OD-023 resolved on 3 August 2026 (23 total) |
+| Business-owner approval | 30 | Approved | Hossam approval recorded for v0.3 on 3 August 2026; implementation remains separately gated |
 
 ### Coverage result
 
@@ -941,17 +975,18 @@ The following boundaries are approved for Release 1:
 - Suppliers are external business parties and are not system Users.
 - Wafra is validation-only and creates no reusable Tenant-specific behavior.
 - Release 1 is B2B ERP only; Retail POS is excluded.
-- The 22 historical IAM-OD records and four source-conflict records are retained as resolved traceability evidence.
+- The 22 historical IAM-OD records, new IAM-OD-023 decision (23 total), and four source-conflict records are retained as resolved traceability evidence.
+- Global User lifecycle authority and Tenant Membership containment are separate controls. A Tenant Administrator cannot suspend, reactivate, or offboard the global User.
 
 ### 30.2 Founder approval record
 
 | Approval field | Record |
 |---|---|
 | Approver | Hossam |
-| Approval date | 2 August 2026 |
-| Baseline | Identity and Access BRD v0.2 — Approved Release 1 Baseline |
-| Requirement result | 40 explicit IAM business rules: 40 Confirmed, 0 Proposed |
-| Decision result | 22 historical IAM-OD records resolved; 33 founder decisions applied across the baseline |
+| Approval date | 3 August 2026 for v0.3 change-control; original baseline approval was 2 August 2026 |
+| Baseline | Identity and Access BRD v0.3 — Approved Release 1 Baseline |
+| Requirement result | 46 explicit IAM business rules: 46 Confirmed, 0 Proposed |
+| Decision result | 22 historical IAM-OD records plus IAM-OD-023 resolved (23 total); 34 founder-approved decision points applied across the baseline |
 | Source result | IAM-SC-001 retained as a nonblocking provenance note; IAM-SC-002 through IAM-SC-004 resolved |
 | Production boundary | MESP-50 remains the gate for retention, privacy, residency, legal hold, and purge; no automated audit-evidence purge in Release 1 |
 | Delivery boundary | This approval authorizes downstream requirements/design work only; it does not authorize implementation, Sprint creation, or code |
@@ -973,14 +1008,14 @@ No separate DDD, FRS, Data Design, or TDS document is required as a standing gat
 | Approval item | Final status |
 |---|---|
 | Identity and Access business scope and boundaries | Approved |
-| 40-rule classification register (40 Confirmed, 0 Proposed) | Approved |
-| IAM-OD-001 through IAM-OD-022 | Approved and resolved |
+| 46-rule classification register (46 Confirmed, 0 Proposed) | Approved |
+| IAM-OD-001 through IAM-OD-023 | Approved and resolved |
 | IAM-SC-001 through IAM-SC-004 | Resolved / nonblocking provenance retained |
 | Suppliers external and not system Users | Approved |
 | Wafra validation-only treatment | Approved |
 | Release 1 B2B-only and Retail POS exclusion | Approved |
 | No implementation backlog, Sprint, or code starts from this document | Approved |
-| Approver / date | Hossam / 2 August 2026 |
+| Approver / date | Hossam / 3 August 2026 (v0.3 decision record; original baseline approval 2 August 2026) |
 | Requested changes | None recorded |
 
-**This document is the Approved Release 1 Baseline. MESP-28 approval is complete; implementation remains separately gated by the delivery master plan and downstream requirements.**
+**This document is the Approved Release 1 Baseline. MESP-28 remains Done; v0.3 records the founder-approved global User versus Tenant Membership lifecycle decision. Implementation remains separately gated by the Product Delivery Master Plan and downstream requirements.**
