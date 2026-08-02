@@ -1,38 +1,39 @@
 # Foundation Release 1 Lean Implementation Specification
 
-**Version:** v0.3 — Draft for Final Focused Architecture and Security Review
-**Status:** Draft — Not Approved for Implementation
+**Version:** v0.4 — Approved Release 1 Baseline
+**Status:** Approved for controlled implementation refinement — not production-approved
 **Jira:** MESP-86 - Produce Foundation Release 1 Lean Implementation Specification  
 **Scope:** Identity and Access, Multi-Tenancy and Tenant Lifecycle, Organization and Company Structure  
 **Branch:** `docs/foundation-release1-lean-spec`  
 **Owner:** Hossam / Product Owner  
 **Date:** 3 August 2026
 
-This is a design and implementation-preparation document. It does not authorize
+This is an approved design and implementation-preparation baseline. It authorizes
+controlled refinement of the existing Enablers only; it does not itself authorize
 application code, database migrations, API or UI implementation, automated-test
-implementation, a Sprint, or a production release.
+implementation, a Sprint start, or a production release.
 
 ## 1. Document Control
 
 | Field | Value |
 |---|---|
 | Document | Foundation Release 1 Lean Implementation Specification |
-| Version/status | v0.3 / Draft for Final Focused Architecture and Security Review |
-| Governing Jira Task | MESP-86 (In Progress; outside all Sprints) |
+| Version/status | v0.4 / Approved Release 1 Baseline; approved for controlled implementation refinement, not production |
+| Governing Jira Task | MESP-86 (approval task; Done after merge evidence; outside implementation Sprints) |
 | Parent Epic | MESP-1 - Product Governance and BRD Management (In Progress) |
-| Approved BRD baselines | MESP-28, MESP-29, MESP-30, each v0.2 Approved Release 1 Baseline |
+| Approved BRD baselines | MESP-28 v0.3, MESP-29 v0.2 and MESP-30 v0.2 Approved Release 1 Baselines |
 | Technical baseline | `docs/01_Technology_Architecture_Baseline.md` |
-| Planned review | Focused architecture, security, and tenant-isolation delta review |
+| Approval record | Founder-approved architecture/security delta review completed 3 August 2026; implementation remains separately gated |
 | Top-level sections | 55 (sections 1-55) |
 | Relevant context/module boundaries | 8 |
 | Aggregate roots | 13 |
 | Domain entities | 22 |
-| Value objects | 12 |
-| Numbered invariants | 65 |
-| Commands / queries | 64 / 32 |
-| API operations | 94 across 20 named security profiles (catalogue only; no endpoints implemented) |
-| UI journeys/pages | 18 (route and state inventory only) |
-| Mandatory safety tests | 68 (strategy only; no tests created) |
+| Value objects and context types | 12 value objects plus separate PlatformGovernanceContext / PlatformControlPlane context types |
+| Numbered invariants | 72 |
+| Commands / queries | 65 / 32 |
+| API operations | 95 public + 2 internal across 20 named security profiles (catalogue only; no endpoints implemented) |
+| UI journeys/pages | 16 journeys; 21 route/state references (inventory only) |
+| Mandatory safety tests | 75 (strategy only; no tests created) |
 | Open technical decisions | 7 |
 
 ## 2. Executive Summary
@@ -126,7 +127,7 @@ implementation:
 | Data access | Entity Framework Core 10 | One operational context initially; module-owned mappings and transactions |
 | Database | Microsoft SQL Server 2025 | Shared operational database with schema separation and relational integrity |
 | Architecture | Modular Monolith | One deployable boundary for a one-developer team; explicit seams without distributed operations |
-| Contract | REST and OpenAPI | Stable, reviewable application boundary; no endpoint implementation in this draft |
+| Contract | REST and OpenAPI | Stable, reviewable application boundary; no endpoint implementation in this specification |
 | Identity | ASP.NET Core Identity | Password, lockout, MFA capability, and user lifecycle primitives |
 | Browser authentication | Secure HTTP-only first-party cookie | Avoids browser token storage; technical options remain downstream design |
 | Authorization | Server-side policy and resource authorization | Composes membership, permission, organization scope, lifecycle and support checks |
@@ -164,20 +165,22 @@ flowchart LR
   Org --> Audit
   App --> Work["SQL durable work / outbox"]
   App --> Files["Private object storage adapter"]
+  Platform --> GovernanceContext["PlatformGovernanceContext / PlatformControlPlane"]
+  GovernanceContext -. "never a TenantContext" .-> Resolver
 ```
 
 The eight relevant boundaries are Platform Governance, Identity and Access,
 Tenant Lifecycle, Organization, Support Access, Security/Audit, Files, and
 Durable Work/Integration. They share contracts and transaction infrastructure,
-not mutable domain state. `TenantContext` is an immutable technical value
-assembled by the application/security pipeline; it is not a jointly owned
+  not mutable domain state. `TenantContext` is an immutable technical value
+  assembled by the application/security pipeline; it is not a jointly owned
 persisted business aggregate.
 
 ## 8. Module and Ownership Boundaries
 
 | Boundary | Owns | May consume | Must not own |
 |---|---|---|---|
-| Platform Governance | Approved Permission catalogue, governance policy, and approval/seed authority for system Role definitions | Tenant lifecycle status for governance | Role persistence, Tenant business data |
+| Platform Governance / Platform Control Plane | Approved Permission catalogue, governance policy, approval/seed authority for system Role definitions, global User lifecycle governance records, platform metadata, lifecycle evidence, and support-governance records | Tenant lifecycle status and Tenant-approved evidence through purpose-bound contracts | Role persistence, Tenant business data, or a Tenant business authorization path |
 | Identity and Access | User, Credential/ASP.NET Core Identity User, User Session, MFA Enrollment, Tenant Membership, Invitation, Password Recovery Request, Role definitions, Role Permissions, Role Assignments, Access Scope Grants | Tenant lifecycle eligibility and valid organization facts through contracts | Tenant lifecycle or organization tables |
 | Tenant Lifecycle | Tenant identity, lifecycle and status, and lifecycle eligibility facts | Identity references and organization summaries through contracts | Credentials, memberships, roles, or organization tables |
 | Organization | Company/Legal Entity, Branch, Warehouse, Department, hierarchy and organization lifecycle | Tenant identity and authenticated actor through contracts | Users, permissions, memberships, or Tenant tables |
@@ -196,9 +199,14 @@ remains owned by Identity and Access. No module directly mutates another
 module's tables.
 
 The authorization path is explicit. A protected Tenant request records exactly
-one `AuthorizationPath`: `OrdinaryMembership` or `SupportGrant`. A Platform
-Administrator role by itself is neither path and cannot authorize Tenant
-business data.
+one `TenantContext.AuthorizationPath`: `OrdinaryMembership` or `SupportGrant`.
+`PlatformGovernanceContext` and its `PlatformControlPlane` are separate,
+purpose-bound contexts for platform metadata, global lifecycle/governance,
+evidence, and support records. They are not a third Tenant authorization path,
+cannot be embedded in or combined with `TenantContext`, cannot query Tenant
+business data, and cannot bypass ownership or the complete support path. A
+Platform Administrator role by itself is not either Tenant path and cannot
+authorize Tenant business data.
 
 ## 9. Ubiquitous Language
 
@@ -279,13 +287,17 @@ domain root. A root never loads an unbounded Tenant graph.
 
 ## 12. Entities and Value Objects
 
-The 22 entities are the rows in section 10. The twelve value objects are
-immutable, validated at the boundary, and carry no persistence identity:
+The 22 entities are the rows in section 10. The twelve value objects (including
+`TenantContext`) are immutable, validated at the boundary, and carry no
+persistence identity; the separate Platform governance context types are
+purpose-bound and non-persisted:
 
 | Value object | Validation purpose |
 |---|---|
 | NormalizedEmail | Canonical, globally unique login key |
-| TenantContext | Immutable non-persisted request/workspace/session value assembled from User/User Session, exactly one authorization path (`OrdinaryMembership` or `SupportGrant`), Tenant lifecycle, Organization hierarchy, and applicable support grant |
+| TenantContext | Immutable non-persisted request/workspace/session value assembled from User/User Session, exactly one Tenant authorization path (`OrdinaryMembership` or `SupportGrant`), Tenant lifecycle, Organization hierarchy, and applicable support grant; it never contains PlatformGovernanceContext |
+| PlatformGovernanceContext | Immutable purpose-bound platform context for global User lifecycle, platform metadata, governance, evidence, and approved support records; it cannot authorize Tenant business data |
+| PlatformControlPlane | Application boundary for PlatformGovernanceContext operations; it is not a TenantContext authorization path and cannot be combined with one |
 | SessionWindow | Maximum and inactivity timestamps |
 | MfaAssurance | Required level and fresh-auth timestamp |
 | MembershipStatus | Explicit active eligibility |
@@ -303,7 +315,7 @@ auditable domain value objects.
 
 ## 13. Domain Invariants
 
-The following 65 invariants are the non-negotiable Release 1 safety baseline.
+The following 72 invariants are the non-negotiable Release 1 safety baseline.
 
 1. **I-01:** Normalized email is globally unique.
 2. **I-02:** User is a global identity and is not duplicated per Tenant.
@@ -341,16 +353,16 @@ The following 65 invariants are the non-negotiable Release 1 safety baseline.
 34. **I-34:** Background work preserves initiating Tenant and organization scope.
 35. **I-35:** MESP-50 controls retention, legal hold, purge, residency, backup, and restoration; no physical purge is designed here.
 36. **I-36:** MESP-48 controls supported volume and performance evidence; this document invents no limits.
-37. **I-37:** Tenant lifecycle transitions are limited to the approved Draft, Provisioning, Configuration Required, Ready for Activation, Active, Grace Period, Suspended, Reactivated, Export Requested, Termination Pending, Terminated, and Retained states, with no dead-end transition and no Purged Release 1 state.
+37. **I-37:** Release 1 executable Tenant lifecycle transitions end at Retained and include the approved Draft, Provisioning, Configuration Required, Ready for Activation, Active, Grace Period, Suspended, Reactivated, Export Requested, Termination Pending, Terminated, and Retained states; `Purge Approved` and `Purged` are recognized approved future/deferred-gate concepts owned by MESP-50, not executable Release 1 states.
 38. **I-38:** Tenant suspension blocks ordinary interactive and asynchronous business operations; required Platform safety and governance operations may continue.
 39. **I-39:** Tenant reactivation re-evaluates Users, Memberships, sessions, integrations, jobs, descendants, drafts, and pending work and never automatically restores them.
-40. **I-40:** Tenant termination revokes ordinary access while preserving evidence; Retained remains subject to MESP-50 and Purged is not a Release 1 state.
+40. **I-40:** Tenant termination revokes ordinary access while preserving evidence; Retained remains subject to MESP-50, and any future `Purge Approved` or `Purged` activation requires the MESP-50 gates and a separate approved specification.
 41. **I-41:** Valid Tenant A working state remains explicitly owned by Tenant A when switching away, is never automatically deleted, and can return only after current authorization re-evaluation; invalid state is never restored.
 42. **I-42:** A persistence write is rejected when TenantId is missing, inconsistent with trusted context, or changed after a used record is established.
 43. **I-43:** Same-Tenant composite relationships are enforced for hierarchy, membership, assignments, scopes, support records, files, exports, reports, and work metadata.
 44. **I-44:** IgnoreQueryFilters, raw SQL, bulk, Platform maintenance, and migration paths are unavailable to ordinary Tenant application paths and require a named privileged, purpose-bound, authorized, reviewed, audited contract.
 45. **I-45:** Session renewal never extends the original absolute maximum; fresh authentication is bound to the specific protected operation or challenge completion unless a separate security decision approves a reusable window.
-46. **I-46:** `TenantContext.AuthorizationPath` is exactly `OrdinaryMembership` or `SupportGrant`; missing, ambiguous, or mixed paths are denied.
+46. **I-46:** `TenantContext.AuthorizationPath` is exactly `OrdinaryMembership` or `SupportGrant`; missing, ambiguous, or mixed paths are denied. `PlatformGovernanceContext` is separate and is never a third Tenant path or combined context.
 47. **I-47:** A Support Access Grant never creates or requires an ordinary Tenant Membership or normal Tenant Role Assignment, never creates standing access, and never becomes a path into another Tenant.
 48. **I-48:** Platform/system Role definitions are Platform-owned in meaning, persisted by Identity and Access, use only Platform-approved Permissions, and are assignable only through approved governance; the definition alone never grants Tenant business access.
 49. **I-49:** A Tenant custom Role has exactly one non-null Tenant owner, uses only Platform-approved Permissions, is assignable only inside that Tenant, and cannot be made Platform-global by update.
@@ -370,6 +382,13 @@ The following 65 invariants are the non-negotiable Release 1 safety baseline.
 63. **I-63:** Audit evidence distinguishes `OrdinaryMembership` authorization from `SupportGrant` authorization and records the exact Tenant, purpose, scope, actor, decision, and result.
 64. **I-64:** A RoleAssignment without a valid active AccessScopeGrant grants no Tenant authority, even when its Role and Permission are otherwise valid.
 65. **I-65:** Tenant, Company, Branch, and Warehouse lifecycle and scope checks are re-evaluated for every context selection, switch, asynchronous operation, and historical-reference request.
+66. **I-66:** Only the Platform Security Administrator or a Platform Administrator with the specific global User lifecycle Permission may execute `SuspendUser`, `ReactivateUser`, or `OffboardUser`, and each global lifecycle action requires active authentication, MFA, operation-bound fresh authentication, reason, immutable audit, optimistic concurrency, and idempotency.
+67. **I-67:** Tenant Administrators may execute only Tenant-scoped `SuspendMembership` or `RevokeMembership` containment for their authorized Tenant, including Tenant RoleAssignment/AccessScopeGrant revocation and Tenant-session invalidation; they cannot change global User state.
+68. **I-68:** Tenant-scoped containment never changes another Tenant's Membership, Role, AccessScopeGrant, support grant, or sessions operating only in another Tenant.
+69. **I-69:** Global User suspension revokes all affected sessions and denies the global identity across every Tenant; it is not represented as a Membership-only change.
+70. **I-70:** Global User reactivation never auto-restores any Tenant Membership, RoleAssignment, AccessScopeGrant, SupportGrant, support authority, or privilege; each must pass a separate current decision.
+71. **I-71:** A SupportGrant never authorizes global User lifecycle operations without the separate Platform governance Permission and cannot use a Tenant path to reach global User state.
+72. **I-72:** `RecordTenantExportDisposition` records one explicit outcome: `ReturnToPriorEligibleState`, `Suspend`, or `BeginTermination`; rejected or incomplete export remains `Export Requested` with evidence and no implicit transition.
 
 ## 14. Lifecycle and State Models
 
@@ -387,11 +406,14 @@ The following 65 invariants are the non-negotiable Release 1 safety baseline.
 ### Tenant lifecycle transition and access matrix
 
 The Tenant lifecycle is a guarded state machine. `Export Requested` is a
-workflow milestone with a separately recorded `OperationalAccessDecision`
-(continue or stop); it is not a hidden instruction to grant or remove ordinary
-access. The table records the allowed transition and the behavior of every
-access surface. No duration is implied for Grace Period, retention,
-cooling-off, backup, restoration, or purge.
+workflow milestone with a separately recorded `OperationalAccessDecision` and
+an explicit disposition. `RecordTenantExportDisposition` accepts only
+`ReturnToPriorEligibleState`, `Suspend`, or `BeginTermination`; it is not a
+hidden instruction to grant or remove ordinary access. A rejected or incomplete
+export remains `Export Requested` with evidence and no implicit transition. The
+table records the allowed transition and the behavior of every access surface.
+No duration is implied for Grace Period, retention, cooling-off, backup,
+restoration, or purge.
 
 | Current state | Command / trigger | Authorized actor | Required evidence | Resulting state / operational decision | Ordinary interactive access | Asynchronous business work | Historical read | Export | Platform safety / governance | Rejection behavior |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -407,13 +429,21 @@ cooling-off, backup, restoration, or purge.
 | Reactivated | `ReactivateTenant` completion after all revalidation passes | Authorized lifecycle actor | Successful revalidation of all affected access and work | Active | Allowed after ordinary or support path passes current checks | Allowed after current lifecycle and path checks | Allowed to authorized scope | Separate export authorization required | Governance and audit continue | Transition to Suspended; do not restore invalid state |
 | Reactivated | `SuspendTenant` when revalidation fails or remains incomplete | Authorized lifecycle actor | Failed/incomplete revalidation evidence | Suspended | Denied | Denied | Authorized historical reference only | Separately authorized export only | Safety and revalidation evidence may continue | Remain restricted; record failed reactivation |
 | Active, Grace Period, or Suspended eligible state | `RequestTenantExport` | Authorized actor with export Permission and explicit approval | Exact Tenant/scope, purpose, artifact, approval and idempotency evidence plus operational access decision | Export Requested; operational decision is retained without implicit access change | Continue or stop only as explicitly recorded | Continue or stop only as explicitly recorded and revalidated | Allowed to authorized historical scope | Bounded export only for approved scope | Export evidence, audit and MESP-50 controls continue | Keep prior lifecycle state; deny unsafe or ambiguous request |
+| Export Requested | `RecordTenantExportDisposition` with `ReturnToPriorEligibleState` | Authorized lifecycle actor and required approver | Completed/rejected export evidence, preserved prior state, current eligibility, disposition reason and idempotency/concurrency evidence | Prior eligible state only after revalidation; rejected/incomplete export remains Export Requested | According to the revalidated resulting state | According to the revalidated resulting state | Authorized historical reference only when current state permits | No new export authority | Export evidence and audit continue; no purge | Remain Export Requested; record incomplete/rejected disposition |
+| Export Requested | `RecordTenantExportDisposition` with `Suspend` | Authorized lifecycle actor and required approver | Suspension reason, export evidence and current guard | Suspended | Denied | Denied | Authorized historical reference only | Only separately authorized controlled export | Safety, audit and export evidence continue | Remain Export Requested; record failed guard |
+| Export Requested | `RecordTenantExportDisposition` with `BeginTermination` | Authorized lifecycle actor and required approver | Complete bounded export evidence, open-matter/legal-hold guard, termination approval and idempotency/concurrency evidence | Termination Pending only after all guards pass | Denied unless a separately recorded safety exception applies | Denied | Authorized historical reference only | Only bounded approved export | Termination governance and evidence continue | Remain Export Requested; identify missing guard |
 | Eligible offboarding state | `BeginTenantTermination` | Authorized lifecycle actor and required approver | Export disposition, open matters, legal hold and termination evidence | Termination Pending | Denied unless a separately recorded safety exception applies | Denied | Authorized historical reference only | Only bounded approved export | Termination governance and evidence continue | Remain current state; identify missing gate |
 | Termination Pending | `TerminateTenant` | Authorized lifecycle actor and required approver | Complete termination disposition and approval evidence | Terminated | Denied | Denied | Authorized historical reference only | Only separately approved export | Evidence preservation, legal hold and MESP-50 governance continue | Remain Termination Pending; no partial termination |
-| Terminated | `RecordTenantRetainedState` | Authorized Platform governance actor | Retention/legal-hold decision owned by MESP-50 | Retained | Denied | Denied | Authorized historical reference only | MESP-50-governed export only | Retention, legal hold, audit and safety governance continue | Remain Terminated; no Purged Release 1 state |
+| Terminated | `RecordTenantRetainedState` | Authorized Platform governance actor | Retention/legal-hold decision owned by MESP-50 | Retained | Denied | Denied | Authorized historical reference only | MESP-50-governed export only | Retention, legal hold, audit and safety governance continue | Remain Terminated; future purge concepts remain deferred |
 
-The Tenant lifecycle deliberately has no Purged Release 1 state. Purged may only
-be a future MESP-50-gated terminal outcome. No production purge, retention,
-grace, cooling-off, backup, restoration, or purge duration is invented here.
+`Purge Approved` and `Purged` are recognized approved future/deferred-gate
+lifecycle concepts owned by MESP-50, not executable Release 1 states. Release 1
+has no purge command, API, migration, job, or physical purge execution; its
+executable lifecycle ends at `Retained`. Future activation requires MESP-50
+legal/privacy/retention validation, legal-hold and backup-restoration rules,
+deletion and evidence boundaries, founder approval, a separate specification,
+and separate Jira authorization. No production purge, retention, grace,
+cooling-off, backup, restoration, or purge duration is invented here.
 Reactivation re-evaluates Users, Memberships, sessions, integrations, jobs,
 descendants, drafts, and pending work; it does not automatically restore any of
 them. Required Platform safety and governance operations may continue while a
@@ -438,18 +468,18 @@ scope snapshot, occurred-at time, schema version, and sensitivity classification
 | SupportCaseApproved / SupportGrantApproved / SupportGrantRejected / SupportGrantActivated / Expired / Revoked / Closed | Support | Support policy, audit |
 | TenantActivated / Suspended / Reactivated / Terminated | Tenant Lifecycle | Context, work and session guards |
 | TenantDraftCreated / ProvisioningStarted / ConfigurationRequired / ReadyForActivation | Tenant Lifecycle | Lifecycle workspace and activation guards |
-| TenantGracePeriodEntered / ExportRequested / TerminationPending / RetainedRecorded | Tenant Lifecycle | Export, termination and evidence workflows |
+| TenantGracePeriodEntered / ExportRequested / TenantExportDispositionRecorded / TerminationPending / RetainedRecorded | Tenant Lifecycle | Export, termination and evidence workflows |
 | CompanyChanged / BranchChanged / WarehouseChanged / DepartmentChanged | Organization | Scope validation, audit |
 | OutboxDispatched / WorkCompleted / WorkFailed | Durable Work | Observability and retry policy |
 
 ## 16. Commands and Queries
 
 Commands are intent-level application operations; queries are read operations.
-The catalogue contains 64 commands and 32 queries. They do not imply
+The catalogue contains 65 commands and 32 queries. They do not imply
 controllers, database migrations, or implementation work. Every command is
 mapped to a journey and to an API/application entry point in sections 17 and 37.
 
-### Commands (64)
+### Commands (65)
 
 **User, authentication, and recovery:**
 
@@ -467,39 +497,39 @@ mapped to a journey and to an API/application entry point in sections 17 and 37.
 16. `CreateTenantDraft`; 17. `StartTenantProvisioning`;
 18. `MarkTenantConfigurationRequired`; 19. `MarkTenantReadyForActivation`;
 20. `ActivateTenant`; 21. `EnterTenantGracePeriod`; 22. `SuspendTenant`;
-23. `ReactivateTenant`; 24. `RequestTenantExport`;
-25. `BeginTenantTermination`; 26. `TerminateTenant`;
-27. `RecordTenantRetainedState`.
+23. `ReactivateTenant`; 24. `RequestTenantExport`; 25. `RecordTenantExportDisposition`;
+26. `BeginTenantTermination`; 27. `TerminateTenant`;
+28. `RecordTenantRetainedState`.
 
 **Invitation lifecycle:**
 
-28. `IssueInvitation`; 29. `AcceptInvitation`; 30. `WithdrawInvitation`;
-31. `ReissueInvitation` (creates a new invitation; never transfers the old one).
+29. `IssueInvitation`; 30. `AcceptInvitation`; 31. `WithdrawInvitation`;
+32. `ReissueInvitation` (creates a new invitation; never transfers the old one).
 
 **Membership, Roles, scope, and review:**
 
-32. `ActivateMembership`; 33. `SuspendMembership`; 34. `RevokeMembership`;
-35. `CreateRole`; 36. `UpdateRole`; 37. `AssignRole`;
-38. `RecordPrivilegedAssignmentDecision` (approved or rejected outcome);
-39. `RevokeAssignment`; 40. `GrantAccessScope`; 41. `RevokeAccessScope`;
-42. `StartAccessReview`; 43. `RecordAccessReviewDecision`;
-44. `SelectTenantContext`; 45. `SwitchTenantContext`.
+33. `ActivateMembership`; 34. `SuspendMembership`; 35. `RevokeMembership`;
+36. `CreateRole`; 37. `UpdateRole`; 38. `AssignRole`;
+39. `RecordPrivilegedAssignmentDecision` (approved or rejected outcome);
+40. `RevokeAssignment`; 41. `GrantAccessScope`; 42. `RevokeAccessScope`;
+43. `StartAccessReview`; 44. `RecordAccessReviewDecision`;
+45. `SelectTenantContext`; 46. `SwitchTenantContext`.
 
 **Support access:**
 
-46. `OpenSupportCase`; 47. `RecordSupportGrantDecision` (approved or rejected
-   outcome); 48. `ActivateSupportGrant`; 49. `RevokeSupportGrant`;
-50. `CloseSupportCase`.
+47. `OpenSupportCase`; 48. `RecordSupportGrantDecision` (approved or rejected
+   outcome); 49. `ActivateSupportGrant`; 50. `RevokeSupportGrant`;
+51. `CloseSupportCase`.
 
 **Organization management:**
 
-51. `CreateCompany`; 52. `UpdateCompanyConfiguration`;
-53. `ConfirmFiscalCalendar`; 54. `ConfirmOperatingTimeZone`;
-55. `ConfirmFunctionalCurrency`; 56. `ChangeCompanyLifecycle`;
-57. `CreateBranch`; 58. `UpdateDraftBranchParent`;
-59. `ChangeBranchLifecycle`; 60. `CreateWarehouse`;
-61. `UpdateDraftWarehouseParent`; 62. `ChangeWarehouseLifecycle`;
-63. `CreateDepartment`; 64. `ChangeDepartmentLifecycle`.
+52. `CreateCompany`; 53. `UpdateCompanyConfiguration`;
+54. `ConfirmFiscalCalendar`; 55. `ConfirmOperatingTimeZone`;
+56. `ConfirmFunctionalCurrency`; 57. `ChangeCompanyLifecycle`;
+58. `CreateBranch`; 59. `UpdateDraftBranchParent`;
+60. `ChangeBranchLifecycle`; 61. `CreateWarehouse`;
+62. `UpdateDraftWarehouseParent`; 63. `ChangeWarehouseLifecycle`;
+64. `CreateDepartment`; 65. `ChangeDepartmentLifecycle`.
 
 ### Queries (32)
 
@@ -529,12 +559,13 @@ that context.
 |---|---|---|---|
 | Sign in and establish context | User | Authenticated session with one eligible Tenant context | Identity and membership |
 | MFA challenge and fresh auth | Privileged user | Required assurance for protected operation | MFA policy and session evidence |
-| User suspension, reactivation and offboarding | Platform administrator or authorized Tenant administrator | User lifecycle change with affected-session revocation and explicit re-evaluation | Identity policy and approval |
+| Global User suspension, reactivation and offboarding | Platform Security Administrator or Platform Administrator with the specific global User lifecycle Permission | Global identity change with all affected-session revocation, reasoned evidence, and explicit re-evaluation | Platform governance Permission, MFA, fresh authentication and identity policy |
+| Tenant Membership containment | Tenant Administrator | Suspend/revoke one Tenant Membership, revoke that Tenant's grants, invalidate sessions operating there, and block Tenant selection without changing the global User or another Tenant | Tenant Membership authority and Tenant context |
 | Recover password | User | Verified recovery and affected-session revocation | Email delivery adapter decision |
 | Accept invitation | Invitee | User and explicit Membership established | Invitation validity |
-| Tenant lifecycle workspace | Platform administrator or authorized Tenant administrator | Draft through Retained state with guarded transitions | Tenant Lifecycle policy and MESP-50 gate |
+| Tenant lifecycle workspace | Platform administrator or authorized Tenant administrator | Draft through Retained state with guarded transitions, including explicit export disposition | Tenant Lifecycle policy and MESP-50 gate |
 | Select/switch Tenant | Multi-Tenant user or named Support User within an approved grant | Safe context replacement with no state leakage and exactly one recorded authorization path | Application/security TenantContext Resolver |
-| Return to a Tenant | Multi-Tenant user | Previously valid Tenant-owned state is available only after current re-evaluation | Membership, lifecycle, scope, Permission, session and support grant |
+| Return to a Tenant after global reactivation | Re-activated global User and Tenant administrator | No former Membership, Role, scope, support grant, or privilege is restored without a separate current Tenant decision | IAM-OD-023 and Tenant lifecycle re-evaluation |
 | Manage users and memberships | Tenant Admin | Explicit member lifecycle | Tenant and organization scope |
 | Manage Role and Permissions | Tenant Admin / Platform approver | Approved grant without self-approval | Permission catalogue |
 | Review/revoke sessions | User/Admin | Independent session control | Revocation evidence |
@@ -545,7 +576,8 @@ that context.
 
 ## 18. Screen and Route Inventory
 
-The 18 pages/journeys are route-level design references only:
+The 21 route/state references are grouped into 16 journeys and are design
+references only:
 
 1. `/login` Login; 2. `/mfa` MFA challenge; 3. `/password-recovery` password recovery;
 4. `/invitation/accept` invitation acceptance; 5. `/tenant/select` Tenant selection;
@@ -554,7 +586,9 @@ The 18 pages/journeys are route-level design references only:
 10. Role catalogue/editor; 11. Permission catalogue; 12. Role/scope assignment;
 13. session management; 14. Company list/details; 15. Branch list/details;
 16. Warehouse list/details; 17. Department list/details; 18. support approval,
-   monitoring, access-review and audit evidence.
+   monitoring, access-review and audit evidence; 19. global User lifecycle
+   governance; 20. Tenant Membership containment and session impact; 21. export
+   disposition and deferred-gate outcome review.
 
 ## 19. UI States and Validation
 
@@ -565,9 +599,11 @@ hidden input as authority. A valid Tenant A draft, filter, prepared result or
 working state is explicitly owned by Tenant A and is not automatically deleted
 when switching away. It must not be displayed, submitted, reused, interpreted,
 searched, cached, exported, or executed in Tenant B. Returning to Tenant A makes
-it available only after current Membership, Tenant lifecycle, organization
-scope, Permission, session, and support-grant re-evaluation; invalid state is
-never restored merely because the User returns. Mutating controls require
+it available only after the applicable path is re-evaluated: the ordinary path
+checks active Membership, Tenant lifecycle, organization scope, Permission and
+session; the exceptional path checks the complete active SupportGrant
+requirements. Invalid state is never restored merely because the User returns.
+Mutating controls require
 server confirmation and refresh after a lifecycle or permission change.
 
 Arabic and English labels, RTL layout, keyboard navigation, focus order,
@@ -583,9 +619,13 @@ when required, MFA verification. The server resolves the User from the cookie,
 then evaluates active Membership and Tenant context. No password, raw token, or
 cookie value is exposed to the Angular application.
 
-Authentication is distinct from authorization. A valid global User without an
-active Membership cannot access Tenant business data. Identity events are
-correlated with audit evidence without storing raw secrets.
+Authentication is distinct from authorization. A global identity alone never
+authorizes Tenant business data. The ordinary Tenant path requires an active
+Membership, Role, Permission, scope, session and lifecycle eligibility; an
+exceptional support operation may proceed only through the complete active
+`SupportGrant` path with its case, purpose, scope, Permission, MFA, fresh-auth
+and expiry checks. Identity events are correlated with audit evidence without
+storing raw secrets.
 
 ## 21. Session Architecture
 
@@ -638,7 +678,10 @@ Ready.
 
 The application/security TenantContext Resolver owns this operation and
 consumes Identity, Tenant Lifecycle, Organization, and Support Access contracts.
-It never silently relies on Tenant Lifecycle alone. The trusted server pipeline
+It never silently relies on Tenant Lifecycle alone. Global User lifecycle and
+Platform-owned governance operations use a separate `PlatformGovernanceContext`
+through the `PlatformControlPlane`; that context is never a Tenant path and
+cannot be combined with a Tenant context. The trusted server pipeline
 resolves context in this order:
 
 1. Authenticate an active global User and validate a valid active UserSession.
@@ -680,11 +723,11 @@ flowchart TD
 
 `SelectTenantContext` and `SwitchTenantContext` are explicit commands owned by
 the application/security TenantContext Resolver. Switching re-evaluates the
-current authorization path: ordinary access requires active Membership, Role,
-Permission and scope; exceptional access requires the same named active
-Support Case/Grant, exact Tenant/purpose/scope, MFA, fresh authentication and
-expiry. A SupportGrant cannot switch to another Tenant and never creates an
-ordinary Membership.
+current authorization path. The ordinary path requires active Membership, Role,
+Permission and scope; the exceptional path requires the named active Support
+Case/Grant, exact Tenant/purpose/scope, MFA, fresh authentication and expiry.
+These paths are mutually exclusive for the protected operation. A SupportGrant
+cannot switch to another Tenant and never creates an ordinary Membership.
 
 Switching is an explicit command that re-evaluates Membership, Tenant status,
 organization scope, current Permission, session assurance, and support grant.
@@ -695,8 +738,9 @@ state; each remains explicitly owned by Tenant A. The old context is cleared
 from the active request/workspace before the new one is attached.
 
 Returning to Tenant A may expose preserved state only after successful current
-Membership, lifecycle, organization-scope, Permission, session, and support
-grant re-evaluation. Revoked, expired, suspended, terminated, or otherwise
+re-evaluation of the path being used: Membership/Role/Permission/scope/session
+and lifecycle for the ordinary path, or the complete SupportGrant path for
+exceptional support. Revoked, expired, suspended, terminated, or otherwise
 invalid state is never restored merely because the User returns. Separate
 authorized browser sessions/workspaces may operate in different Tenants, but
 their state, caches, and authority remain isolated. Audit records capture the
@@ -796,12 +840,17 @@ unless a later approved requirement adds one.
 ## 29. Platform Administrator Boundary
 
 Platform Administrators may manage Platform governance records, approved
-Permissions, Tenant lifecycle governance, and evidence required for operations.
-The role alone does not grant Tenant business-data access. Ordinary Tenant
-business access requires a separate explicit active Tenant Membership, active
-UserSession, applicable Role and Permission, valid Access Scope and eligible
-lifecycle. Platform records that reference a Tenant are purpose-bound and must
-not become a covert business-data query path.
+Permissions, global User lifecycle governance, Tenant lifecycle metadata, and
+evidence required for operations through the purpose-bound
+`PlatformGovernanceContext` and `PlatformControlPlane`. The role alone does not
+grant Tenant business-data access. `SuspendUser`, `ReactivateUser`, and
+`OffboardUser` are Platform governance actions; a Tenant Administrator instead
+uses `SuspendMembership` or `RevokeMembership` for its own Tenant and cannot
+change global User state. Ordinary Tenant business access requires a separate
+explicit active Tenant Membership, active UserSession, applicable Role and
+Permission, valid Access Scope and eligible lifecycle. Platform records that
+reference a Tenant are purpose-bound administrative metadata and must not
+become a covert business-data query path.
 
 ## 30. Support-Access Boundary
 
@@ -853,7 +902,7 @@ ownership. A used parent cannot be silently reassigned. A Draft parent may only
 change its valid same-Tenant parent before it has been Active and before any
 transactions, stock, documents, files, reports, numbering, integrations, jobs,
 users, or historical references; otherwise a controlled migration or closure is
-required. The physical migration is outside this draft.
+required. The physical migration is outside this specification.
 
 ## 33. Logical Data Model
 
@@ -963,15 +1012,16 @@ and organization lifecycle commands are single-effect operations.
 
 Outbox messages and background work use durable status, deduplication, retry and
 dead-letter evidence while retaining initiating Tenant and scope. A worker
-revalidates Tenant, Membership, lifecycle, support grant, organization scope,
-and record ownership before executing. Missing or mismatched TenantId, a
+revalidates Tenant, then the applicable ordinary Membership path or complete
+SupportGrant path, lifecycle, organization scope and record ownership before
+executing. The paths are mutually exclusive. Missing or mismatched TenantId, a
 cross-Tenant relationship, or an ownership rewrite after use is rejected.
 No new rate, volume, retention, or concurrency limits are invented;
 MESP-48/MESP-50 own those decisions.
 
 ## 37. API Catalogue and operation-level security profiles
 
-The catalogue contains 94 public operation intents. Two internal application
+The catalogue contains 95 public operation intents. Two internal application
 operations (`RegisterUser` and `ConfirmEmail`) are mapped below but are not
 public API operations. Names are illustrative contract identifiers, not
 implemented routes. Every public operation maps to exactly one command or query
@@ -991,22 +1041,22 @@ and response semantics for every operation mapped to it.
 | P02 PasswordRecovery | Identity; anonymous requester or opaque recovery-proof holder | No Tenant path; verified email and single-use recovery proof; no active UserSession required for request/complete | Recovery proof is operation-bound; no reusable assurance is issued | No Tenant, Permission or Access Scope; request/consumed/expired lifecycle | Request and completion are idempotent and single-use | Recovery/session-revocation evidence without token or account existence leakage; safe status response |
 | P03 SessionAdministration | Identity; authenticated active User | No Tenant business path; valid active UserSession | No MFA for ordinary self-session status/logout; fresh authentication is not reused for another operation | No Tenant business Permission or resource scope; active User/UserSession lifecycle | Revoke/logout are repeat-safe; session version conflict is safe | Session issue/status/revocation evidence without cookie value; safe no-session response |
 | P04 MfaAdministration | Identity; authenticated active User | No Tenant business path; valid active UserSession and MFA challenge | MFA factor proof for challenge/enrolment; operation-bound fresh authentication for enrol/revoke | No Tenant business Permission or Access Scope; User/MFA lifecycle guard | Enrollment/revocation are idempotent and concurrency-controlled | MFA challenge/enrollment/revocation evidence without secrets; safe factor/error response |
-| P05 UserLifecycleAdministration | Identity; Platform administrator or authorized Tenant administrator | Exactly one governance path: PlatformGovernance for global User action or OrdinaryMembership for Tenant-scoped action; active UserSession | MFA and operation-bound fresh authentication required | Explicit target Tenant only for Tenant-scoped action; User lifecycle Permission and downward scope apply; suspended/offboarded guards | Lifecycle and affected-session revocation are idempotent and optimistic-concurrency controlled | Decision, revocation and denial evidence; safe target-not-found/no-access response; guarded User state |
+| P05 UserLifecycleAdministration | Identity; Platform Security Administrator or Platform Administrator with the specific global User lifecycle Permission for global actions; Tenant Administrator for own Membership containment | `PlatformGovernanceContext` for `SuspendUser`/`ReactivateUser`/`OffboardUser`, or `OrdinaryMembership` for `SuspendMembership`/`RevokeMembership`; never combined; active UserSession | Global actions require MFA and operation-bound fresh authentication; Membership containment follows the approved Tenant policy | Global actions target the User and all affected sessions; containment targets exactly one Tenant and its Membership/grants/sessions; no global User change through a Tenant path | Global lifecycle and affected-session revocation are idempotent and optimistic-concurrency controlled | Decision, revocation and denial evidence; safe target-not-found/no-access response; guarded User or Membership state |
 | P06 InvitationAdministration | Identity; authorized Tenant administrator | `OrdinaryMembership` with active Membership, Role, Permission and scope | MFA/fresh authentication for invitation administration when policy requires | Exact Tenant and downward scope; Tenant must permit invitation; invitation lifecycle guard | Issue/withdraw/reissue are single-effect; reissue creates a new invitation | Invitation/Membership evidence without token; safe duplicate/expired response; invitation state |
 | P07 InvitationActivation | Identity; invitee during approved activation | InvitationActivation pre-context path; opaque invitation and verified target; no Membership exists until activation succeeds | Email/activation proof; any required MFA is operation-bound | Target Tenant is the invitation's server-owned Tenant; no business Permission/Scope before Membership activation; invitation lifecycle guard | Accept/RegisterUser/ConfirmEmail are single-effect and idempotent | Activation evidence without token; safe invalid/expired response; User and Membership status |
-| P08 TenantLifecycleGovernance | Tenant Lifecycle; Platform administrator or authorized Tenant administrator | Exactly one governance path: PlatformGovernance for Platform lifecycle action or OrdinaryMembership for Tenant administration | MFA and operation-bound fresh authentication for lifecycle, export, termination and retention decisions | Exact Tenant when applicable; lifecycle Permission and organization readiness guard; transition table in section 14 governs | Transitions/export/termination use idempotency and optimistic concurrency | State transition, operational access decision and denial evidence; safe guarded state/next-action response |
+| P08 TenantLifecycleGovernance | Tenant Lifecycle; authorized Platform governance actor or authorized Tenant administrator | `PlatformGovernanceContext` for Platform-owned lifecycle metadata/governance, or `OrdinaryMembership` for Tenant administration; no governance context is a Tenant business path | MFA and operation-bound fresh authentication for lifecycle, export, termination and retention decisions | Exact Tenant when applicable; lifecycle Permission and organization readiness guard; transition table in section 14 governs | Transitions/export/termination use idempotency and optimistic concurrency | State transition, operational access decision and denial evidence; safe guarded state/next-action response |
 | P09 MembershipDiscovery | Identity; authenticated User | Pre-context session path; valid active UserSession | No additional MFA for listing eligible memberships | No Tenant business Permission or Scope; only active membership eligibility is returned | Read-only and correlation-scoped | No cross-Tenant leakage; safe empty/list response |
 | P10 TenantContextResolution | Application/Security TenantContext Resolver; Multi-Tenant User or named Support User | Exactly one `OrdinaryMembership` or `SupportGrant`; active UserSession; SupportGrant additionally requires active Case, exact purpose/scope and unexpired grant | Ordinary path uses current session; SupportGrant requires MFA and operation-bound fresh authentication | Exact Tenant and organization scope; resolver composes Identity, Tenant Lifecycle, Organization and Support facts and applicable Permission; lifecycle is re-evaluated | Select/switch is single-effect, optimistic-concurrency controlled and cannot combine contexts | Context selection/switch/denial evidence records path; safe no-context/no-access response; returns guarded TenantContext |
 | P11 MembershipAdministration | Identity; authorized Tenant administrator | `OrdinaryMembership` with active UserSession, Membership, Role and Permission | MFA/fresh authentication when membership changes are privileged | Exact Tenant and downward scope; active Tenant/organization lifecycle; membership lifecycle guard | Activate/suspend/revoke are idempotent and concurrency-controlled | Membership/session-revocation evidence; safe no-access/conflict response; guarded membership state |
 | P12 RoleScopeAdministration | Identity; Tenant administrator or separate named approver | `OrdinaryMembership`; SupportGrant cannot create or mutate RoleAssignment or AccessScopeGrant | MFA and operation-bound fresh authentication for role, scope, assignment and review changes | Exact Tenant; Role/Permission and downward Scope required; custom Role ownership and same-Tenant grant guards | Role/scope/assignment/review operations are idempotent, concurrency-controlled and single-effect | Approver, decision, grant, revocation and scope evidence; safe denial/conflict; effective authority/version response |
-| P13 PermissionCatalogue | Platform Governance; authorized Platform governance actor or Tenant reviewer of catalogue | PlatformGovernance for mutation/governance; no Tenant business path for catalogue reads | Fresh authentication for governance changes | Platform-owned Permission catalogue; no Tenant business Scope | Catalogue changes are idempotent and versioned | Governance evidence; safe retired/missing response; approved Permission set |
+| P13 PermissionCatalogue | Platform Governance; authorized Platform governance actor or Tenant reviewer of catalogue | `PlatformGovernanceContext` for mutation/governance; an applicable `OrdinaryMembership` only for a Tenant-scoped catalogue review; no Tenant business path is implied | Fresh authentication for governance changes | Platform-owned Permission catalogue; no Tenant business Scope | Catalogue changes are idempotent and versioned | Governance evidence; safe retired/missing response; approved Permission set |
 | P14 OrganizationRead | Organization; authorized Tenant administrator, reviewer or support reader | `OrdinaryMembership` for Tenant reader; SupportGrant uses P19 instead | No additional MFA for read-only references | Exact Tenant and downward Company/Branch/Warehouse Scope; lifecycle and historical-reference guards | Read-only, correlation-scoped | Safe not-found/no-access response; returns only authorized organization state |
 | P15 OrganizationWrite | Organization; authorized Tenant administrator | `OrdinaryMembership` with active session, Role, Permission and downward Scope | MFA and operation-bound fresh authentication for configuration, numbering or lifecycle changes | Exact Tenant and parent hierarchy; lifecycle, unused-Draft parent and numbering boundary guards | Idempotency and optimistic concurrency; parent changes single-effect | Configuration, numbering, lifecycle and audit evidence; safe invalid-parent/conflict; guarded resource/version |
 | P16 SupportCaseRequest | Support Access; named Support User or Tenant requester | SupportCaseRequest pre-grant path; active UserSession; no standing Tenant access is created | MFA and operation-bound fresh authentication | Exact target Tenant, purpose and requested scope; no ordinary Membership or RoleAssignment is created | Case opening is idempotent and concurrency-controlled | Request evidence; safe target/purpose validation; case status without business payload |
 | P17 SupportCaseGovernance | Support Access; Tenant approver or authorized case owner | `OrdinaryMembership` for Tenant approver or SupportCaseRequest for case owner; no business operation is authorized by the decision alone | MFA and operation-bound fresh authentication | Exact Tenant, case, named actor, purpose and scope; approve/reject/close lifecycle | Decisions and closure are idempotent, concurrency-controlled and single-effect | Approval, rejection and closure evidence; safe invalid/duplicate response; case/decision state |
 | P18 SupportGrantLifecycle | Support Access; authorized security/support actor | Approved Support Case and named actor; `SupportGrant` path for active-grant revocation, with no ordinary Membership requirement | MFA and operation-bound fresh authentication | Exact Tenant, purpose, scope, Permission and maximum eight-hour expiry; no export authority | Activation/revocation are idempotent and concurrency-controlled; expiry repeat-safe | Grant lifecycle evidence; safe expired/revoked response; bounded grant state |
 | P19 SupportExceptionalRead | Support Access; authenticated active named Support User | `SupportGrant` only; valid active UserSession, active Case and unexpired Tenant-approved grant | MFA and operation-bound fresh authentication on every protected support operation | Exact Tenant, purpose, scope and applicable Permission; current lifecycle; no cross-Tenant or ordinary business operation | Read-only evidence queries are correlation-scoped and cannot broaden scope | Support path evidence; safe no-access/expired response; only authorized evidence |
-| P20 AuditReview | Security/Audit; authorized Platform, Tenant or support reviewer | Exactly one applicable PlatformGovernance, `OrdinaryMembership`, or `SupportGrant` path for the requested evidence scope | MFA/fresh authentication for privileged evidence export/review | Exact Tenant and scope where applicable; audit Permission and lifecycle guard; no raw secrets/payloads | Read/export is idempotent and scope-bound | Immutable evidence of the review itself; safe no-existence leakage; bounded evidence response |
+| P20 AuditReview | Security/Audit; authorized Platform, Tenant or support reviewer | `PlatformGovernanceContext` for Platform-owned evidence, or exactly one `OrdinaryMembership` or `SupportGrant` path for Tenant-scoped evidence; never combine contexts | MFA/fresh authentication for privileged evidence export/review | Exact Tenant and scope where applicable; audit Permission and lifecycle guard; no raw secrets/payloads | Read/export is idempotent and scope-bound | Immutable evidence of the review itself; safe no-existence leakage; bounded evidence response |
 
 ### Command/query to API/application operation mapping
 
@@ -1041,6 +1091,7 @@ unmapped, and no public API operation is introduced without a command/query row.
 | SuspendTenant | Public | Tenant Lifecycle | Tenant lifecycle workspace | `suspend-tenant` | P08 |
 | ReactivateTenant | Public | Tenant Lifecycle | Tenant lifecycle workspace | `reactivate-tenant` | P08 |
 | RequestTenantExport | Public | Tenant Lifecycle | Tenant export/offboarding | `request-tenant-export` | P08 |
+| RecordTenantExportDisposition | Public | Tenant Lifecycle | Tenant export/offboarding | `record-tenant-export-disposition` | P08 |
 | BeginTenantTermination | Public | Tenant Lifecycle | Tenant lifecycle workspace | `begin-tenant-termination` | P08 |
 | TerminateTenant | Public | Tenant Lifecycle | Tenant lifecycle workspace | `terminate-tenant` | P08 |
 | RecordTenantRetainedState | Public | Tenant Lifecycle | Tenant lifecycle workspace | `record-tenant-retained-state` | P08 |
@@ -1114,7 +1165,7 @@ unmapped, and no public API operation is introduced without a command/query row.
 | ListSupportEvidence | Public | Support Access | Monitor/revoke support | `list-support-evidence` | P19 |
 | ListAuditEvidence | Public | Security/Audit | Review audit/access evidence | `list-audit-evidence` | P20 |
 
-The mapping is the authoritative operation catalogue for this draft. It is
+The mapping is the authoritative operation catalogue for this specification. It is
 design-only: no endpoint, controller, API implementation, or database route is
 created here.
 
@@ -1170,6 +1221,12 @@ Raw passwords, cookies, MFA secrets, recovery tokens, private payloads, and
 unnecessary target data are never recorded. Retention, legal hold, purge,
 residency, and evidence export policy remain MESP-50 gates.
 
+Global User lifecycle evidence identifies the Platform governance actor and
+purpose-bound `PlatformGovernanceContext`. Tenant evidence records exactly one
+`OrdinaryMembership` or `SupportGrant` path with the exact Tenant, purpose,
+scope, actor, decision and result. The contexts are never combined, and a
+Platform governance record cannot become a covert Tenant business-data query.
+
 ## 42. Logging, Metrics, and Tracing
 
 OpenTelemetry-compatible telemetry uses correlation IDs across API requests,
@@ -1187,7 +1244,7 @@ Tenant-safe attributes only and apply access controls to diagnostic views.
 | Forged Tenant ID | Cross-Tenant disclosure/change | Server context, membership, ownership and negative tests |
 | Stale browser state after switch | Data submitted in wrong Tenant | Tenant-bound state ownership, no display/reuse/search/cache/export/execute across contexts, safe revalidation |
 | Destructive context switch | Valid Tenant A drafts or working state lost | State is not automatically deleted; it remains Tenant A-owned and returns only after current authorization re-evaluation |
-| Invalid state restoration | Revoked or terminated state becomes usable after return | Membership, lifecycle, scope, Permission, session and support-grant checks before restore |
+| Invalid state restoration | Revoked or terminated state becomes usable after return | Re-evaluate the applicable ordinary Membership path or complete SupportGrant path, plus lifecycle, scope and session, before restore |
 | Privilege escalation by role/scope | Unauthorized business action | Platform permissions, downward scope, approval, fresh auth |
 | Session theft or stale session | Continued access after change | HTTP-only cookie, server-side UserSession validation on every protected request, affected-session revocation, absolute expiry and inactivity |
 | Support grant overreach | Unbounded operator access | Named case, exact scope, Tenant approval, expiry, no export alone |
@@ -1271,13 +1328,13 @@ boundary, any later-approved Branch subdivision, Warehouse exclusion, and
 non-reuse/auditable gaps. Catalogue tests must prove command/query-to-operation
 and operation-to-command/query completeness and that every API operation has
 all fields required by its named security profile. They must avoid real
-production secrets. No test implementation is included in this draft.
+production secrets. No test implementation is included in this specification.
 
 ## 48. Mandatory Security and Isolation Test Matrix
 
-The corrected matrix has 68 scenarios. Each becomes a targeted automated
+The corrected matrix has 75 scenarios. Each becomes a targeted automated
 assertion across the appropriate domain/application/auth/persistence/API,
-architecture, or Playwright layer; no tests are implemented by this draft.
+architecture, or Playwright layer; no tests are implemented by this specification.
 
 | # | Required assertion |
 |---:|---|
@@ -1287,7 +1344,7 @@ architecture, or Playwright layer; no tests are implemented by this draft.
 | 4 | Client Tenant ID cannot expand authority |
 | 5 | Valid Tenant A working state is not visible in Tenant B |
 | 6 | Valid Tenant A working state is not automatically deleted by a context switch |
-| 7 | Returning to Tenant A requires current Membership, lifecycle, organization scope, Permission, session and support-grant re-evaluation |
+| 7 | Returning to Tenant A re-evaluates the applicable path: Membership/Role/Permission/scope/session/lifecycle for ordinary access, or the complete SupportGrant path for exceptional support |
 | 8 | Separate concurrent Tenant contexts, caches and workspaces remain isolated |
 | 9 | Revoked Membership is denied |
 | 10 | Role/scope revocation invalidates affected sessions |
@@ -1329,7 +1386,7 @@ architecture, or Playwright layer; no tests are implemented by this draft.
 | 46 | Denied cross-Tenant audit/telemetry records do not leak target data |
 | 47 | Tenant-aware alternate/unique keys and architecture dependency direction remain valid |
 | 48 | MESP-48/MESP-50 gates cannot be bypassed and no production purge is authorized |
-| 49 | A Platform administrator without an applicable governance or Tenant authorization path is denied Tenant business data |
+| 49 | A Platform administrator using PlatformGovernanceContext without an applicable Tenant path is denied Tenant business data; Platform governance remains limited to purpose-bound control-plane records |
 | 50 | An ordinary Tenant operation requires an active Membership, applicable Role and Permission, explicit Access Scope, current session, and eligible lifecycle |
 | 51 | Support access requires a named active Support User/session, MFA and operation-bound fresh authentication, active case, Tenant-approved grant, exact Tenant/purpose/scope, applicable Permission, and no more than eight hours |
 | 52 | The SupportGrant path never creates or uses ordinary Membership or RoleAssignment, standing access, export authority, or ordinary Tenant business operations |
@@ -1340,15 +1397,22 @@ architecture, or Playwright layer; no tests are implemented by this draft.
 | 57 | Scope grants flow only downward, never to parents or siblings, and multiple valid grants combine only within the same Tenant |
 | 58 | Revoking a RoleAssignment revokes all child grants and blocks further authority; scope changes are single-effect, concurrent-safe, and audited |
 | 59 | Tenant/User/Membership reactivation requires current revalidation and never automatically restores prior privileges or work |
-| 60 | `Export Requested` stores an explicit operational access decision and never implicitly grants export, stops work, or executes purge |
+| 60 | `Export Requested` stores an explicit operational access decision; `RecordTenantExportDisposition` accepts only ReturnToPriorEligibleState, Suspend, or BeginTermination and never implicitly grants export or executes purge |
 | 61 | MESP-30 numbering is Company/Legal Entity plus Document Type; optional Branch subdivision requires later approved owning-domain/Saudi justification, Warehouse is excluded absent approval, and no automatic reset is assumed |
 | 62 | Numbers are never reused after cancellation, rejection, voiding, or reset; permitted gaps remain attributable and auditable |
 | 63 | Every command/query maps to exactly one public or internal operation and every operation maps back to exactly one command/query; no catalogue row is orphaned |
 | 64 | Every API operation has one named homogeneous security profile with explicit owner, actor, path, authentication, MFA/fresh-auth, context, Permission, scope, lifecycle, concurrency, idempotency, audit, safe errors, and response |
 | 65 | Role, assignment, grant, support-case, and support-grant TenantIds are integrity-consistent; cross-Tenant mutation or lookup is denied |
 | 66 | Support-grant approval/rejection evidence is distinct from revocation evidence, and rejection does not masquerade as revocation of active access |
-| 67 | Each lifecycle command has an approved predecessor/guard or an explicit rejection outcome; no transition creates a dead-end or hidden Purged state |
+| 67 | Each lifecycle command has an approved predecessor/guard or an explicit rejection outcome; no transition creates a dead-end, and deferred `Purge Approved`/`Purged` concepts remain non-executable in Release 1 |
 | 68 | Wafra-specific behavior remains validation-only and Retail POS remains outside the foundation specification and its test scope |
+| 69 | A Tenant Administrator can suspend a Membership in Tenant A while an independently authorized User remains eligible for Tenant B |
+| 70 | A Tenant Administrator cannot execute global `SuspendUser`, `ReactivateUser`, or `OffboardUser` |
+| 71 | A Platform Security Administrator or Platform Administrator with the specific global User lifecycle Permission can execute a global lifecycle action only with active authentication, MFA, fresh authentication, reason, immutable audit, concurrency and idempotency controls |
+| 72 | Global User suspension revokes all affected sessions across the User's Tenant contexts |
+| 73 | Global User reactivation never automatically restores Membership, Role, scope, SupportGrant, support authority or prior privilege |
+| 74 | A SupportGrant alone cannot execute global User lifecycle operations and cannot use a Tenant path to reach global User state |
+| 75 | Export disposition rejection or incompleteness leaves the Tenant in `Export Requested` with safe evidence and no implicit transition |
 
 ## 49. Traceability Matrix
 
@@ -1360,27 +1424,29 @@ for implementation until its evidence exists; no unlisted behavior is implied.
 
 | Source rule / invariant group | Specification section and invariant(s) | Command / query evidence | API operation / security profile | Safety assertion(s) | Deferred owner or gate |
 |---|---|---|---|---|---|
-| MESP-28 authentication, session, MFA and recovery | Sections 9, 13, 39, 44; I-17–I-23, I-45 | `SignIn`, `SignOut`, `RevokeSession`, MFA commands, recovery commands, `GetSessionStatus`, `ListSessions` | `login`, `logout`, `revoke-session`, `begin-mfa`, `verify-mfa`, recovery operations / P01–P04 | 29–36, 47, 64 | Approved business values are fixed; TD-04 and MESP-59 resolve remaining mechanism/deployment detail |
+| MESP-28 authentication, session, MFA and recovery | Sections 9, 13, 20–23, 39, 44; I-17–I-23, I-45 | `SignIn`, `SignOut`, `RevokeSession`, MFA commands, recovery commands, `GetSessionStatus`, `ListSessions` | `login`, `logout`, `revoke-session`, `begin-mfa`, `verify-mfa`, recovery operations / P01–P04 | 29–36, 47, 64, 72–74 | Approved business values are fixed; TD-04 and MESP-59 resolve remaining mechanism/deployment detail |
+| Founder global User versus Tenant Membership authority | Sections 8, 14, 17, 20–22, 27–30, 41; I-66–I-71 | `SuspendUser`, `ReactivateUser`, `OffboardUser`, `SuspendMembership`, `RevokeMembership`, session-revocation evidence | `suspend-user`, `reactivate-user`, `offboard-user` / P05; Membership operations / P11 | 23–25, 69–74 | IAM-OD-023 and MESP-58/MESP-59 readiness; PlatformGovernanceContext is separate from Tenant paths |
 | Ordinary Tenant authorization path | Sections 24, 27–29; I-03, I-04, I-11, I-46 | `SelectTenantContext`, `SwitchTenantContext`, `GetCurrentTenantContext`, `ListEligibleMemberships` | `select-context`, `switch-context`, `current-context`, `eligible-memberships` / P09–P10 | 1, 4, 7–8, 49–50, 63–65 | MESP-58/MESP-59 contract and Definition of Ready |
 | Exceptional SupportGrant path | Section 30 and support journeys; I-24, I-25, I-47, I-58, I-63 | `OpenSupportCase`, `RecordSupportGrantDecision`, `ActivateSupportGrant`, `RevokeSupportGrant`, `CloseSupportCase`, support queries | `open-support-case`, `record-support-grant-decision`, `activate-support-grant`, `revoke-support-grant`, `close-support-case`, support evidence / P16–P19 | 26–28, 46, 51–52, 65–66 | MESP-59/MESP-62 readiness; no standing support access or export authority |
 | Role, Permission, assignment and AccessScopeGrant ownership | Sections 7, 28–30, 33, 35; I-12–I-16, I-48–I-53, I-64 | Role, assignment, decision, scope and review commands; `ListRoles`, `ListPermissions`, `ListAssignments`, `ListAccessScopeGrants` | Role/scope operations / P12–P13 | 10, 22, 53–58, 65 | Identity owns persistence; governance approval and separation-of-duties detail remain policy/ADR gates |
-| Tenant lifecycle state machine | Sections 14, 21, 25; I-27–I-30, I-37–I-40, I-55–I-56 | All Tenant lifecycle commands; `GetTenantLifecycle`, `ListTenantLifecycleHistory`, `GetTenantExportStatus` | Lifecycle operations / P08 | 11–21, 37, 48, 59–60, 67 | MESP-50 owns retention/legal-hold/purge; no production purge or duration is specified |
+| Tenant lifecycle state machine | Sections 14, 21, 25; I-27–I-30, I-37–I-40, I-55–I-56, I-72 | All Tenant lifecycle commands including `RecordTenantExportDisposition`; `GetTenantLifecycle`, `ListTenantLifecycleHistory`, `GetTenantExportStatus` | Lifecycle operations / P08 | 11–21, 37, 48, 59–60, 67, 75 | MESP-50 owns retention/legal-hold/purge; `Purge Approved` and `Purged` remain deferred non-executable concepts and no production purge or duration is specified |
 | Tenant context and preserved working state | Sections 24–27, 40, 43; I-05–I-10, I-41, I-65 | Select/switch/current-context operations and protected application handlers | Resolver operations / P10 | 1–8, 41–46, 50–52 | MESP-58 tenant guard and MESP-59 authorization seam |
 | Organization hierarchy and lifecycle | Sections 31–33; I-26–I-30, I-42–I-44, I-50–I-52 | Company/Branch/Warehouse/Department commands and queries, `GetCompanyConfiguration` | Organization read/write operations / P14–P15 | 22, 37–44, 57, 65 | MESP-30 owns detailed domain implementation; MESP-50 governs historical retention |
 | MESP-30 numbering boundary and non-reuse | Section 31; I-59–I-60 | `UpdateCompanyConfiguration`, configuration commands, later owning-domain numbering commands (not invented here) | `update-company-configuration` / P15; later transaction APIs require later approval | 61–62 | Later owning domain and approved Saudi requirement; no Warehouse numbering or automatic reset is approved |
 | Tenant-owned persistence and same-Tenant integrity | Sections 33–36; I-08, I-42–I-44, I-50 | All Tenant-owned writes, outbox/work and file/export metadata operations | All profiles with Tenant context; P10–P20 | 40–45, 65 | MESP-58 and ADR-016 if RLS is later selected; no migration is authored |
-| API catalogue and operation-level security | Sections 16–18, 37–38; I-61–I-62 | 64 commands + 32 queries; internal registration steps explicitly identified | 94 public operations + 2 named internal operations; P01–P20 | 63–64 | MESP-60 contract review; routes/controllers are not implemented here |
+| API catalogue and operation-level security | Sections 16–18, 37–38; I-61–I-62 | 65 commands + 32 queries; internal registration steps explicitly identified | 95 public operations + 2 named internal operations; P01–P20 | 63–64 | MESP-60 contract review; routes/controllers are not implemented here |
 | Audit, support evidence and observability | Sections 15, 41–42, 44; I-33–I-36, I-58, I-63 | Audit/evidence queries, approval/rejection/closure commands, outbox/work records | Audit and support evidence / P17–P20 | 46, 53, 55, 60, 66 | MESP-50 retention/privacy and MESP-62 observability readiness |
 | Release 1 scope, Wafra and excluded Retail POS | Sections 2–5, 45, 52, 55; I-31–I-36 | No business transaction commands are introduced | No Retail POS profile or operation | 48, 68 | MESP-48 supported-volume and MESP-50 retention gates; Wafra validation-only |
 
 The matrix is intentionally explicit about what is deferred: MESP-48 and
-MESP-50 production gates, later owning-domain numbering behavior, and the
-technical details named in the TD register remain outside this draft. No
+MESP-50 production gates, later owning-domain numbering behavior, deferred
+`Purge Approved`/`Purged` activation, and the technical details named in the TD
+register remain outside this approved baseline. No
 coverage assertion authorizes implementation or changes the approved BRDs.
 
 ## 50. Implementation Slicing Recommendation
 
-This draft recommends an order, not a start authorization. The smallest safe
+This approved baseline recommends an order, not a start authorization. The smallest safe
 first implementation slice is the existing architecture seam plus tenant-aware
 contracts; it must remain gated by this document's approval and MESP-48/MESP-50.
 
@@ -1391,30 +1457,32 @@ contracts; it must remain gated by this document's approval and MESP-48/MESP-50.
 | 3 | MESP-60 REST/OpenAPI/errors/correlation/idempotency | Problem contract, safe errors, correlation and retry semantics | MESP-58/59 contracts |
 | 4 | MESP-62 Immutable audit/OpenTelemetry | Redaction, correlation, denial evidence and audit ownership | MESP-58/59/60 decisions |
 | 5 | MESP-63 Angular shell/components/RTL | Context indicator, safe states, localization/accessibility shell | MESP-59/60 contracts |
-| 6 | MESP-64 local/critical-flow test harness | Isolated Tenant fixtures, xUnit/Playwright harness and 48-case matrix | All preceding seams |
-| 7 | MESP-61 durable work/files/notification adapters | Tenant-carrying work, private storage interface, no provider decision assumed | MESP-58/60; MESP-50 gates |
+| 6 | MESP-61 durable work/files/notification adapters | Tenant-carrying work, private storage interface, no provider decision assumed | MESP-58/60; MESP-50 gates |
+| 7 | MESP-64 local/critical-flow test harness | Isolated Tenant fixtures, xUnit/Playwright harness and 75-scenario safety catalogue | All preceding seams; MESP-48 gates performance thresholds only |
 
-MESP-58 through MESP-64 remain unchanged in Jira by this task. No Enabler is
-marked Ready, placed in a Sprint, or started.
+MESP-58 through MESP-64 are refined in Jira against this approved baseline.
+MESP-58 is the only Enabler marked Ready for implementation refinement and is
+prepared as the sole item in future Sprint 2; MESP-59 through MESP-64 remain To
+Do. No Enabler is In Progress and no implementation has started.
 
 ## 51. Existing Jira Enabler Impact
 
-The refinement table above is the proposed description/acceptance/dependency
-impact for MESP-58 through MESP-64. It preserves the existing issue ownership
-and scope. Before implementation, each issue needs a source link to this
-specification, explicit Tenant-isolation acceptance, and a Definition of Ready
-review. The recommended order is sequential because context and authorization
-contracts are blocking for all later slices.
+The refinement table above is the applied description/acceptance/dependency
+impact for MESP-58 through MESP-64. It preserves existing issue ownership and
+scope while adding source links, explicit Tenant-isolation acceptance and a
+Definition of Ready. The sequence is intentionally controlled: MESP-58 is the
+next authorized implementation item; later Enablers remain blocked by the
+visible chain and are not started in parallel.
 
 ## 52. MESP-48 and MESP-50 Gates
 
-MESP-48 remains the supported-volume and performance evidence gate. This draft
+MESP-48 remains the supported-volume and performance evidence gate. This approved baseline
 defines hooks for telemetry, isolation, and test fixtures but invents no record
 counts, rates, payload limits, concurrency targets, storage limits, or capacity
 claims.
 
 MESP-50 remains the retention, privacy, legal-hold, purge, residency, backup,
-restoration and evidence-governance gate. This draft defines immutable audit and
+restoration and evidence-governance gate. This approved baseline defines immutable audit and
 deactivation hooks but no retention duration, purge schedule, physical purge
 execution, legal policy, region, RPO/RTO, or provider commitment.
 
@@ -1429,7 +1497,7 @@ None changes an approved business value.
 
 | ID / decision | Safe Release 1 recommendation | Blocking status | Owner / latest resolution point | Specialist review |
 |---|---|---|---|---|
-| TD-01 RLS adoption | Keep application and relational ownership guards mandatory; do not depend on RLS. Adopt RLS only through ADR-016 with measured policy behavior. | Blocking before production if selected; not blocking this draft | Security/Architecture; before production | Security and database specialist required |
+| TD-01 RLS adoption | Keep application and relational ownership guards mandatory; do not depend on RLS. Adopt RLS only through ADR-016 with measured policy behavior. | Blocking before production if selected; not blocking this baseline | Security/Architecture; before production | Security and database specialist required |
 | TD-02 Hosting, region, topology | Use Docker/local and a documented single-deployable topology for development; do not imply a production region or capacity. | Blocking before production | Product Owner/Operations; before production and MESP-48/MESP-50 closure | Architecture, operations and privacy review required |
 | TD-03 Object storage provider, scanning, signed downloads | Keep a private adapter with deny-by-default access; defer provider, scanning and signed-download policy. | Blocking before file implementation/production | Architecture/Security; before MESP-61 Ready and production | Security/privacy specialist required |
 | TD-04 Session technical residuals | The Release 1 security baseline is resolved: server-side UserSession, opaque protected-cookie identifier, per-request revocation validation, eight-hour absolute maximum, thirty-minute inactivity, and non-extending renewal. Residual storage, key-management, renewal-write, cookie-detail, and deployment choices remain bounded technical design work. | Blocking before MESP-59 Ready | Security/Architecture; before MESP-59 Ready | Security specialist required |
@@ -1447,24 +1515,27 @@ No separate ownership-reconciliation decision remains open.
 
 ## 54. Definition of Ready
 
-The specification is implementation-ready only after critical architecture and
-security review confirms: all three BRDs remain unchanged; Tenant ownership and
-negative paths are testable; session/MFA technical decisions preserve approved
-values; API and UI contracts are safe; persistence constraints are reviewable;
-MESP-48/MESP-50 gates have explicit owners; and the relevant Enabler description,
-acceptance criteria, dependencies, and scope are refined. Ready does not itself
-start work: a separate controlled authorization, Sprint decision, and Jira
-transition are required.
+The specification is approved for controlled implementation refinement. Before
+production or any wider slice, critical architecture and security review must
+confirm that the approved BRD baselines remain authoritative, including the IAM
+v0.3 change-control update; Tenant ownership and negative paths are testable;
+session/MFA technical decisions preserve approved values; API and UI contracts
+are safe; persistence constraints are reviewable; MESP-48/MESP-50 gates have
+explicit owners; and the relevant Enabler description, acceptance criteria,
+dependencies, and scope are refined. Approval does not itself start work: a
+separate controlled Sprint decision and Jira transition are required.
 
 ## 55. Review and Approval
 
-**Current state:** Draft — Not Approved for Implementation.
-**Required reviewers:** Product Owner, Solution Architect, Security Architect,
-and a critical Tenant-isolation reviewer.  
-**Approval evidence:** Jira MESP-86 comment referencing the reviewed commit and
-document version, followed by explicit founder approval.  
-**Next action:** Focused architecture and security delta review of this v0.3
-draft.
+**Current state:** v0.4 Approved Release 1 Baseline — Approved for controlled
+implementation refinement; not production-approved.
+**Approval evidence:** Founder-approved global User versus Tenant Membership
+decision dated 3 August 2026, IAM BRD v0.3, and Jira MESP-86 approval/merge
+evidence.
+**Next action:** Start only the separately authorized MESP-58 implementation
+item in future Sprint 2 after its Definition of Ready check; MESP-59 through
+MESP-64 remain To Do.
 **Stop condition:** Do not create code, migrations, APIs, Angular pages, tests,
-Sprints, implementation Stories, MESP-31 work, MESP-58/MESP-59 work, Retail POS,
-or Wafra-specific behavior from this draft.
+or begin work outside the authorized MESP-58 item. Preserve MESP-48 and MESP-50
+gates, and keep MESP-31 work, Retail POS, and Wafra-specific behavior out of
+this baseline.
