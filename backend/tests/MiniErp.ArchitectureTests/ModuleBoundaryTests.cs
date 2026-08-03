@@ -1,6 +1,7 @@
 using System.Reflection;
 using MiniErp.App.Modules.Platform;
 using MiniErp.Contracts.Modules.Platform;
+using MiniErp.Infrastructure.Persistence;
 using Xunit;
 
 namespace MiniErp.ArchitectureTests;
@@ -10,6 +11,7 @@ public sealed class ModuleBoundaryTests
     private static readonly Assembly ContractsAssembly = typeof(IPlatformAdministrationModule).Assembly;
     private static readonly Assembly ApplicationAssembly = typeof(PlatformModuleRegistration).Assembly;
     private static readonly Assembly ApiAssembly = Assembly.Load("MiniErp.Api");
+    private static readonly Assembly InfrastructureAssembly = typeof(TenantPersistenceSessionFactory).Assembly;
 
     [Fact]
     public void Contracts_do_not_reference_application()
@@ -25,6 +27,38 @@ public sealed class ModuleBoundaryTests
         Assert.DoesNotContain(
             ApplicationAssembly.GetReferencedAssemblies(),
             reference => string.Equals(reference.Name, ApiAssembly.GetName().Name, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Application_does_not_reference_infrastructure()
+    {
+        Assert.DoesNotContain(
+            ApplicationAssembly.GetReferencedAssemblies(),
+            reference => string.Equals(reference.Name, InfrastructureAssembly.GetName().Name, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Contracts_do_not_reference_infrastructure()
+    {
+        Assert.DoesNotContain(
+            ContractsAssembly.GetReferencedAssemblies(),
+            reference => string.Equals(reference.Name, InfrastructureAssembly.GetName().Name, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Infrastructure_does_not_reference_api()
+    {
+        Assert.DoesNotContain(
+            InfrastructureAssembly.GetReferencedAssemblies(),
+            reference => string.Equals(reference.Name, ApiAssembly.GetName().Name, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Privileged_boundary_is_not_resolvable_from_public_infrastructure_surface()
+    {
+        Assert.DoesNotContain(
+            InfrastructureAssembly.GetExportedTypes(),
+            type => type.Name.Contains("PrivilegedPersistenceBoundary", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -63,7 +97,7 @@ public sealed class ModuleBoundaryTests
     [Fact]
     public void Known_project_dependency_graph_has_no_cycle()
     {
-        var assemblies = new[] { ContractsAssembly, ApplicationAssembly, ApiAssembly };
+        var assemblies = new[] { ContractsAssembly, ApplicationAssembly, InfrastructureAssembly, ApiAssembly };
         var names = assemblies.ToDictionary(
             assembly => assembly.GetName().Name!,
             assembly => assembly);
