@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <ProjectReference Include="..\MiniErp.App\MiniErp.App.csproj" />
     <ProjectReference Include="..\MiniErp.Contracts\MiniErp.Contracts.csproj" />
   </ItemGroup>

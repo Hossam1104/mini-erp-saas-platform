@@ -1,0 +1,535 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using MiniErp.App.BuildingBlocks.Rest;
+using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.Contracts.Modules.Foundation;
+using Xunit;
+
+namespace MiniErp.ArchitectureTests;
+
+public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiFactory>
+{
+    private readonly ApiFactory factory;
+
+    public RestFoundationTests(ApiFactory factory)
+    {
+        this.factory = factory;
+        factory.Reset();
+        factory.Resolver.Context = FoundationRequestContext.Unauthenticated();
+        factory.Targets.Clear();
+    }
+
+    [Fact]
+    public async Task Api_version_route_exists()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/foundation/tenant-context");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.True(response.Headers.Contains(FoundationCorrelation.HeaderName));
+    }
+
+    [Fact]
+    public void Authenticated_session_does_not_claim_a_tenant_or_platform_path()
+    {
+        var context = FoundationRequestContext.ForAuthenticatedSession(factory.ActorA, Guid.NewGuid());
+
+        Assert.Equal(FoundationSecurityProfile.AuthenticatedSession, context.SecurityProfile);
+        Assert.Null(context.TenantContext);
+        Assert.Null(context.PlatformGovernanceContext);
+    }
+
+    [Fact]
+    public async Task OpenApi_document_is_generated()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/openapi/v1.json");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var document = await response.Content.ReadAsStringAsync();
+        Assert.Contains("foundation.probe.write", document, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/foundation/tenant-context", document, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Every_public_endpoint_has_one_operation_identifier()
+    {
+        var endpoints = factory.Services
+            .GetRequiredService<EndpointDataSource>()
+            .Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.Metadata.GetMetadata<FoundationOperationMetadata>() is not null)
+            .ToArray();
+
+        Assert.Equal(FoundationOperationCatalog.PublicOperations.Count, endpoints.Length);
+        Assert.All(endpoints, endpoint =>
+        {
+            var metadata = endpoint.Metadata.GetMetadata<FoundationOperationMetadata>();
+            Assert.NotNull(metadata);
+            Assert.False(string.IsNullOrWhiteSpace(metadata!.OperationId));
+            Assert.Single(endpoint.Metadata.OfType<FoundationOperationMetadata>());
+        });
+
+        var actual = endpoints
+            .Select(endpoint => endpoint.Metadata.GetMetadata<FoundationOperationMetadata>()!.OperationId)
+            .OrderBy(value => value, StringComparer.Ordinal);
+        var expected = FoundationOperationCatalog.PublicOperations
+            .Select(operation => operation.OperationId)
+            .OrderBy(value => value, StringComparer.Ordinal);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void Every_public_endpoint_has_one_security_profile()
+    {
+        var endpoints = factory.Services
+            .GetRequiredService<EndpointDataSource>()
+            .Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.Metadata.GetMetadata<FoundationOperationMetadata>() is not null)
+            .ToArray();
+
+        Assert.All(endpoints, endpoint =>
+        {
+            var metadata = endpoint.Metadata.GetMetadata<FoundationOperationMetadata>()!;
+            Assert.True(Enum.IsDefined(metadata.SecurityProfile));
+            Assert.Single(endpoint.Metadata.OfType<FoundationOperationMetadata>());
+        });
+    }
+
+    [Fact]
+    public void Internal_operations_are_not_public()
+    {
+        var publicIds = factory.Services
+            .GetRequiredService<EndpointDataSource>()
+            .Endpoints
+            .Select(endpoint => endpoint.Metadata.GetMetadata<FoundationOperationMetadata>()?.OperationId)
+            .Where(operationId => operationId is not null)
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.DoesNotContain(
+            FoundationOperationCatalog.InternalOperations,
+            operation => publicIds.Contains(operation.OperationId));
+    }
+
+    [Fact]
+    public async Task Missing_correlation_generates_a_valid_correlation()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/health");
+        var correlation = response.Headers.GetValues(FoundationCorrelation.HeaderName).Single();
+
+        Assert.True(FoundationCorrelation.IsValid(correlation));
+    }
+
+    [Fact]
+    public async Task Valid_correlation_is_preserved()
+    {
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add(FoundationCorrelation.HeaderName, "corr-foundation-001");
+
+        var response = await client.GetAsync("/health");
+
+        Assert.Equal("corr-foundation-001", response.Headers.GetValues(FoundationCorrelation.HeaderName).Single());
+    }
+
+    [Fact]
+    public async Task Malicious_correlation_is_replaced_safely()
+    {
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add(FoundationCorrelation.HeaderName, new string('x', FoundationCorrelation.MaximumLength + 1));
+
+        var response = await client.GetAsync("/health");
+        var correlation = response.Headers.GetValues(FoundationCorrelation.HeaderName).Single();
+
+        Assert.True(FoundationCorrelation.IsValid(correlation));
+        Assert.NotEqual(new string('x', FoundationCorrelation.MaximumLength + 1), correlation);
+    }
+
+    [Fact]
+    public async Task Unauthenticated_failure_is_safe()
+    {
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add(FoundationCorrelation.HeaderName, "corr-unauth");
+
+        var response = await client.GetAsync("/api/v1/foundation/tenant-context");
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("authentication_failed", body.GetProperty("code").GetString());
+        Assert.Equal("corr-unauth", body.GetProperty("correlationId").GetString());
+        Assert.DoesNotContain("stack", body.GetRawText(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Unauthorized_tenant_profile_failure_is_safe()
+    {
+        factory.Resolver.Context = CreateSupportContext("foundation.context.read");
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/foundation/tenant-context");
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal("access_denied", body.GetProperty("code").GetString());
+        Assert.DoesNotContain(factory.TenantB.Value.ToString(), body.GetRawText(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Missing_and_foreign_target_responses_are_equivalent()
+    {
+        var context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.target.read");
+        factory.Resolver.Context = context;
+        var foreignTarget = Guid.NewGuid();
+        factory.Targets.Add(foreignTarget, factory.TenantB);
+        using var client = factory.CreateClient();
+
+        var missingResponse = await client.GetAsync($"/api/v1/foundation/targets/{Guid.NewGuid():D}");
+        var foreignResponse = await client.GetAsync($"/api/v1/foundation/targets/{foreignTarget:D}");
+        var missing = await ReadJsonAsync(missingResponse);
+        var foreign = await ReadJsonAsync(foreignResponse);
+
+        Assert.Equal(HttpStatusCode.NotFound, missingResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, foreignResponse.StatusCode);
+        Assert.Equal(missing.GetProperty("code").GetString(), foreign.GetProperty("code").GetString());
+        Assert.Equal(missing.GetProperty("title").GetString(), foreign.GetProperty("title").GetString());
+        Assert.Equal(missing.GetProperty("detail").GetString(), foreign.GetProperty("detail").GetString());
+        Assert.DoesNotContain(foreignTarget.ToString(), foreign.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(factory.TenantB.Value.ToString(), foreign.GetRawText(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Provider_details_and_stack_traces_are_absent_from_errors()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/foundation/targets/not-a-guid");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.DoesNotContain("Sql", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Exception", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("StackTrace", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Authorized_request_succeeds_with_server_context()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.context.read");
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/foundation/tenant-context");
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(factory.TenantA.Value.ToString("D"), body.GetProperty("tenantId").GetString());
+        Assert.Equal("OrdinaryMembership", body.GetProperty("authorizationPath").GetString());
+    }
+
+    [Fact]
+    public async Task Server_not_client_selects_tenant_authority()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.context.read");
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Tenant-Id", factory.TenantB.Value.ToString("D"));
+
+        var response = await client.GetAsync("/api/v1/foundation/tenant-context");
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(factory.TenantA.Value.ToString("D"), body.GetProperty("tenantId").GetString());
+        Assert.DoesNotContain(factory.TenantB.Value.ToString(), body.GetRawText(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Idempotent_replay_returns_one_safe_result()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        using var client = factory.CreateClient();
+
+        var first = await PostProbeAsync(client, "idem-replay", "alpha", "1", includeAntiforgery: true);
+        var replay = await PostProbeAsync(client, "idem-replay", "alpha", "1", includeAntiforgery: true);
+        var firstBody = await ReadJsonAsync(first);
+        var replayBody = await ReadJsonAsync(replay);
+
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        Assert.Equal(firstBody.GetProperty("version").GetString(), replayBody.GetProperty("version").GetString());
+        Assert.True(replayBody.GetProperty("replayed").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Same_key_with_changed_payload_conflicts()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        using var client = factory.CreateClient();
+
+        _ = await PostProbeAsync(client, "idem-payload", "alpha", "1", includeAntiforgery: true);
+        var response = await PostProbeAsync(client, "idem-payload", "bravo", "2", includeAntiforgery: true);
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("idempotency_conflict", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Cross_tenant_key_replay_is_denied()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        using var client = factory.CreateClient();
+        _ = await PostProbeAsync(client, "idem-tenant", "alpha", "1", includeAntiforgery: true);
+
+        factory.Resolver.Context = CreateTenantContext(factory.TenantB, factory.ActorB, "foundation.probe.write");
+        var response = await PostProbeAsync(client, "idem-tenant", "alpha", "1", includeAntiforgery: true);
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("idempotency_context_conflict", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Cross_user_key_replay_is_denied()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        using var client = factory.CreateClient();
+        _ = await PostProbeAsync(client, "idem-user", "alpha", "1", includeAntiforgery: true);
+
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorB, "foundation.probe.write");
+        var response = await PostProbeAsync(client, "idem-user", "alpha", "1", includeAntiforgery: true);
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("idempotency_context_conflict", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Stale_version_returns_safe_conflict()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        using var client = factory.CreateClient();
+        _ = await PostProbeAsync(client, "idem-current", "alpha", "1", includeAntiforgery: true);
+
+        var response = await PostProbeAsync(client, "idem-stale", "bravo", "1", includeAntiforgery: true);
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("concurrency_conflict", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Missing_required_version_fails_safely()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        using var client = factory.CreateClient();
+
+        var response = await PostProbeAsync(client, "idem-version", "alpha", ifMatch: null, includeAntiforgery: true);
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal((HttpStatusCode)428, response.StatusCode);
+        Assert.Equal("version_required", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Cookie_style_write_without_antiforgery_denies()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        using var client = factory.CreateClient();
+
+        var response = await PostProbeAsync(client, "idem-antiforgery", "alpha", "1", includeAntiforgery: false);
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal("antiforgery_failed", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Valid_antiforgery_compatible_write_succeeds()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        using var client = factory.CreateClient();
+
+        var response = await PostProbeAsync(client, "idem-antiforgery-valid", "alpha", "1", includeAntiforgery: true);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_has_no_state_changing_behavior()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.context.read");
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/foundation/tenant-context");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False(response.Headers.Contains("Set-Cookie"));
+    }
+
+    [Fact]
+    public async Task Platform_governance_context_is_not_tenant_context()
+    {
+        var actor = Guid.NewGuid();
+        factory.Resolver.Context = FoundationRequestContext.ForPlatform(
+            actor,
+            Guid.NewGuid(),
+            new PlatformGovernanceContext(actor, PlatformGovernancePurpose.PlatformMetadata, new CorrelationId("platform")),
+            "foundation.context.read");
+        using var client = factory.CreateClient();
+
+        var platformResponse = await client.GetAsync("/api/v1/foundation/platform-context");
+        var tenantResponse = await client.GetAsync("/api/v1/foundation/tenant-context");
+        var platform = await ReadJsonAsync(platformResponse);
+        var tenant = await ReadJsonAsync(tenantResponse);
+
+        Assert.Equal(HttpStatusCode.OK, platformResponse.StatusCode);
+        Assert.True(platform.GetProperty("platformGovernance").GetBoolean());
+        Assert.False(platform.GetProperty("tenantId").ValueKind is not JsonValueKind.Null);
+        Assert.Equal(HttpStatusCode.Forbidden, tenantResponse.StatusCode);
+        Assert.Equal("access_denied", tenant.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Ordinary_membership_and_support_grant_profiles_are_not_combined()
+    {
+        factory.Resolver.Context = CreateSupportContext("foundation.context.read");
+        using var client = factory.CreateClient();
+
+        var supportResponse = await client.GetAsync("/api/v1/foundation/support-context");
+        var ordinaryResponse = await client.GetAsync("/api/v1/foundation/tenant-context");
+        var support = await ReadJsonAsync(supportResponse);
+        var ordinary = await ReadJsonAsync(ordinaryResponse);
+
+        Assert.Equal(HttpStatusCode.OK, supportResponse.StatusCode);
+        Assert.Equal("SupportGrant", support.GetProperty("authorizationPath").GetString());
+        Assert.Equal(HttpStatusCode.Forbidden, ordinaryResponse.StatusCode);
+        Assert.Equal("access_denied", ordinary.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task OpenApi_contains_no_secret_or_internal_schema()
+    {
+        using var client = factory.CreateClient();
+
+        var document = await client.GetStringAsync("/openapi/v1.json");
+
+        Assert.DoesNotContain("password", document, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("cookie", document, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("IdentityAuthorizationService", document, StringComparison.Ordinal);
+        Assert.DoesNotContain("identity.invitation.issue", document, StringComparison.Ordinal);
+        Assert.DoesNotContain("identity.recovery.consume", document, StringComparison.Ordinal);
+    }
+
+    private async Task<HttpResponseMessage> PostProbeAsync(
+        HttpClient client,
+        string idempotencyKey,
+        string value,
+        string? ifMatch,
+        bool includeAntiforgery)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/foundation/probe")
+        {
+            Content = JsonContent.Create(new FoundationWriteRequest(value))
+        };
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
+        if (ifMatch is not null)
+        {
+            request.Headers.TryAddWithoutValidation("If-Match", $"\"{ifMatch}\"");
+        }
+
+        if (includeAntiforgery)
+        {
+            request.Headers.TryAddWithoutValidation("X-CSRF-TOKEN", "foundation-test-token");
+        }
+
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response)
+    {
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return document.RootElement.Clone();
+    }
+
+    private FoundationRequestContext CreateTenantContext(TenantId tenantId, Guid actorId, string permission) =>
+        FoundationRequestContext.ForTenant(
+            actorId,
+            Guid.NewGuid(),
+            TenantContext.ForOrdinaryMembership(
+                tenantId,
+                new MembershipReference(Guid.NewGuid()),
+                new ScopeReference("tenant"),
+                new CorrelationId("server-correlation"),
+                actorId),
+            permission);
+
+    private FoundationRequestContext CreateSupportContext(string permission) =>
+        FoundationRequestContext.ForTenant(
+            factory.ActorA,
+            Guid.NewGuid(),
+            TenantContext.ForSupportGrant(
+                factory.TenantA,
+                new SupportGrantReference(Guid.NewGuid(), Guid.NewGuid()),
+                new ScopeReference("support-case"),
+                new CorrelationId("server-support"),
+                factory.ActorA),
+            permission);
+
+    public sealed class ApiFactory : WebApplicationFactory<Program>
+    {
+        internal readonly TestResolver Resolver = new();
+        internal readonly TestTargets Targets = new();
+        internal readonly TenantId TenantA = new(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        internal readonly TenantId TenantB = new(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+        internal readonly Guid ActorA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        internal readonly Guid ActorB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
+        internal void Reset()
+        {
+            Resolver.Context = FoundationRequestContext.Unauthenticated();
+            Targets.Clear();
+            Services.GetRequiredService<LocalFoundationIdempotencyStore>().Clear();
+            Services.GetRequiredService<LocalFoundationProbeStore>().Clear();
+        }
+
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<ITrustedRequestContextResolver>();
+                services.AddSingleton<ITrustedRequestContextResolver>(Resolver);
+                services.RemoveAll<IFoundationTargetDirectory>();
+                services.AddSingleton<IFoundationTargetDirectory>(Targets);
+            });
+        }
+    }
+
+    internal sealed class TestResolver : ITrustedRequestContextResolver
+    {
+        internal FoundationRequestContext Context { get; set; } = FoundationRequestContext.Unauthenticated();
+
+        public ValueTask<FoundationRequestContext> ResolveAsync(HttpContext httpContext, CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(Context);
+    }
+
+    internal sealed class TestTargets : IFoundationTargetDirectory
+    {
+        private readonly Dictionary<Guid, TenantId> owners = [];
+
+        internal void Add(Guid targetId, TenantId owner) => owners[targetId] = owner;
+
+        internal void Clear() => owners.Clear();
+
+        public bool TryGetTenant(Guid targetId, out TenantId tenantId) => owners.TryGetValue(targetId, out tenantId);
+    }
+}
