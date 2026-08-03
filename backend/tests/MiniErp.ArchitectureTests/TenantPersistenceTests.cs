@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Tenancy;
@@ -256,6 +257,151 @@ public sealed class TenantPersistenceTests
     }
 
     [Fact]
+    public async Task Legitimate_same_tenant_update_succeeds_synchronously_and_preserves_isolation()
+    {
+        await using var fixture = await PersistenceFixture.CreateAsync();
+        var recordA = new TenantOwnedRecord(fixture.TenantA.TenantId, "sync-update-original");
+        var recordB = new TenantOwnedRecord(fixture.TenantB.TenantId, "sync-update-b-original");
+        await fixture.AddAsync(fixture.TenantA, recordA);
+        await fixture.AddAsync(fixture.TenantB, recordB);
+
+        await using (var session = fixture.Factory.Create(fixture.TenantA))
+        {
+            var typedSession = (TenantPersistenceSession)session;
+            var loaded = await session.Records.FindAsync(recordA.Id);
+            Assert.NotNull(loaded);
+            typedSession.DbContext.Entry(loaded!).Property(nameof(TenantOwnedRecord.BusinessKey)).CurrentValue =
+                "sync-update-success";
+
+            Assert.Equal(1, typedSession.SaveChanges());
+        }
+
+        await using var tenantASession = fixture.Factory.Create(fixture.TenantA);
+        var updated = await tenantASession.Records.FindAsync(recordA.Id);
+        Assert.NotNull(updated);
+        Assert.Equal("sync-update-success", updated!.BusinessKey);
+        Assert.Equal(fixture.TenantA.TenantId, updated.TenantId);
+
+        await using var tenantBSession = fixture.Factory.Create(fixture.TenantB);
+        var untouched = await tenantBSession.Records.FindAsync(recordB.Id);
+        Assert.NotNull(untouched);
+        Assert.Equal("sync-update-b-original", untouched!.BusinessKey);
+        Assert.Equal(fixture.TenantB.TenantId, untouched.TenantId);
+    }
+
+    [Fact]
+    public async Task Legitimate_same_tenant_async_update_and_delete_succeed_without_affecting_tenant_b()
+    {
+        await using var fixture = await PersistenceFixture.CreateAsync();
+        var recordA = new TenantOwnedRecord(fixture.TenantA.TenantId, "async-update-original");
+        var recordB = new TenantOwnedRecord(fixture.TenantB.TenantId, "async-delete-b-original");
+        await fixture.AddAsync(fixture.TenantA, recordA);
+        await fixture.AddAsync(fixture.TenantB, recordB);
+
+        await using (var session = fixture.Factory.Create(fixture.TenantA))
+        {
+            var typedSession = (TenantPersistenceSession)session;
+            var loaded = await session.Records.FindAsync(recordA.Id);
+            Assert.NotNull(loaded);
+            typedSession.DbContext.Entry(loaded!).Property(nameof(TenantOwnedRecord.BusinessKey)).CurrentValue =
+                "async-update-success";
+
+            Assert.Equal(1, await session.SaveChangesAsync());
+        }
+
+        await using (var session = fixture.Factory.Create(fixture.TenantA))
+        {
+            var typedSession = (TenantPersistenceSession)session;
+            var loaded = await session.Records.FindAsync(recordA.Id);
+            Assert.NotNull(loaded);
+            typedSession.DbContext.Entry(loaded!).State = EntityState.Deleted;
+
+            Assert.Equal(1, await session.SaveChangesAsync());
+        }
+
+        await using var tenantASession = fixture.Factory.Create(fixture.TenantA);
+        Assert.Null(await tenantASession.Records.FindAsync(recordA.Id));
+
+        await using var tenantBSession = fixture.Factory.Create(fixture.TenantB);
+        var untouched = await tenantBSession.Records.FindAsync(recordB.Id);
+        Assert.NotNull(untouched);
+        Assert.Equal("async-delete-b-original", untouched!.BusinessKey);
+        Assert.Equal(fixture.TenantB.TenantId, untouched.TenantId);
+    }
+
+    [Fact]
+    public async Task Missing_stored_row_modified_is_denied_without_provider_details()
+    {
+        await using var fixture = await PersistenceFixture.CreateAsync();
+        await using var session = fixture.Factory.Create(fixture.TenantA);
+        var unknownId = Guid.NewGuid();
+        var forged = AttachForgedRecord((TenantPersistenceSession)session, unknownId, fixture.TenantA.TenantId);
+        ((TenantPersistenceSession)session).DbContext.Entry(forged).State = EntityState.Modified;
+
+        var exception = await Assert.ThrowsAsync<TenantPersistenceViolationException>(
+            () => session.SaveChangesAsync());
+
+        Assert.Equal(TenantPersistenceViolationCode.StoredOwnerUnavailable, exception.Code);
+        Assert.Equal(TenantPersistenceInternalReason.StoredOwnerMissing, exception.InternalReason);
+        Assert.Equal(TenantPersistenceOperation.Modify, exception.Operation);
+        Assert.DoesNotContain(unknownId.ToString(), exception.ToString(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("SQLite", exception.ToString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Null(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task Default_key_deleted_is_denied_fail_closed()
+    {
+        await using var fixture = await PersistenceFixture.CreateAsync();
+        await using var session = fixture.Factory.Create(fixture.TenantA);
+        var forged = AttachForgedRecord((TenantPersistenceSession)session, Guid.Empty, fixture.TenantA.TenantId);
+        ((TenantPersistenceSession)session).DbContext.Entry(forged).State = EntityState.Deleted;
+
+        var exception = await Assert.ThrowsAsync<TenantPersistenceViolationException>(
+            () => session.SaveChangesAsync());
+
+        Assert.Equal(TenantPersistenceViolationCode.StoredOwnerUnavailable, exception.Code);
+        Assert.Equal(TenantPersistenceInternalReason.StoredOwnerMissing, exception.InternalReason);
+        Assert.Equal(TenantPersistenceOperation.Delete, exception.Operation);
+    }
+
+    [Fact]
+    public async Task Missing_and_foreign_modified_or_deleted_denials_are_publicly_equivalent()
+    {
+        await using var fixture = await PersistenceFixture.CreateAsync();
+        var recordB = new TenantOwnedRecord(fixture.TenantB.TenantId, "public-equivalence");
+        await fixture.AddAsync(fixture.TenantB, recordB);
+
+        var foreignModified = await CaptureStoredOwnerDenialAsync(
+            fixture,
+            recordB.Id,
+            EntityState.Modified);
+        var missingModified = await CaptureStoredOwnerDenialAsync(
+            fixture,
+            Guid.NewGuid(),
+            EntityState.Modified);
+        AssertPublicDenialsEquivalent(foreignModified, missingModified, recordB, TenantPersistenceOperation.Modify);
+        Assert.Equal(TenantPersistenceInternalReason.StoredOwnerMismatch, foreignModified.InternalReason);
+        Assert.Equal(TenantPersistenceInternalReason.StoredOwnerMissing, missingModified.InternalReason);
+
+        var foreignDeleted = await CaptureStoredOwnerDenialAsync(
+            fixture,
+            recordB.Id,
+            EntityState.Deleted);
+        var missingDeleted = await CaptureStoredOwnerDenialAsync(
+            fixture,
+            Guid.NewGuid(),
+            EntityState.Deleted);
+        AssertPublicDenialsEquivalent(foreignDeleted, missingDeleted, recordB, TenantPersistenceOperation.Delete);
+        Assert.Equal(TenantPersistenceInternalReason.StoredOwnerMismatch, foreignDeleted.InternalReason);
+        Assert.Equal(TenantPersistenceInternalReason.StoredOwnerMissing, missingDeleted.InternalReason);
+
+        Assert.DoesNotContain(
+            typeof(TenantPersistenceViolationException).GetProperties(BindingFlags.Public | BindingFlags.Instance),
+            property => property.Name == nameof(TenantPersistenceViolationException.InternalReason));
+    }
+
+    [Fact]
     public async Task Forged_modified_entity_cannot_overwrite_a_foreign_stored_row()
     {
         await using var fixture = await PersistenceFixture.CreateAsync();
@@ -269,7 +415,7 @@ public sealed class TenantPersistenceTests
         var exception = await Assert.ThrowsAsync<TenantPersistenceViolationException>(
             () => session.SaveChangesAsync());
 
-        Assert.Equal(TenantPersistenceViolationCode.StoredOwnerMismatch, exception.Code);
+        Assert.Equal(TenantPersistenceViolationCode.StoredOwnerUnavailable, exception.Code);
         Assert.Equal(fixture.TenantA.TenantId, exception.TrustedTenantId);
         Assert.Equal(TenantPersistenceOperation.Modify, exception.Operation);
 
@@ -298,7 +444,7 @@ public sealed class TenantPersistenceTests
         var exception = await Assert.ThrowsAsync<TenantPersistenceViolationException>(
             () => session.SaveChangesAsync());
 
-        Assert.Equal(TenantPersistenceViolationCode.StoredOwnerMismatch, exception.Code);
+        Assert.Equal(TenantPersistenceViolationCode.StoredOwnerUnavailable, exception.Code);
         Assert.Equal(TenantPersistenceOperation.Delete, exception.Operation);
 
         await using var tenantBSession = fixture.Factory.Create(fixture.TenantB);
@@ -333,7 +479,7 @@ public sealed class TenantPersistenceTests
             var forged = AttachForgedRecord(typedSession, recordB.Id, fixture.TenantA.TenantId);
             typedSession.DbContext.Entry(forged).State = EntityState.Modified;
             var exception = Assert.Throws<TenantPersistenceViolationException>(() => typedSession.SaveChanges());
-            Assert.Equal(TenantPersistenceViolationCode.StoredOwnerMismatch, exception.Code);
+            Assert.Equal(TenantPersistenceViolationCode.StoredOwnerUnavailable, exception.Code);
         }
 
         await using (var saveChangesBoolSession = fixture.Factory.Create(fixture.TenantA))
@@ -343,7 +489,7 @@ public sealed class TenantPersistenceTests
             typedSession.DbContext.Entry(forged).State = EntityState.Modified;
             var exception = Assert.Throws<TenantPersistenceViolationException>(
                 () => typedSession.SaveChanges(acceptAllChangesOnSuccess: false));
-            Assert.Equal(TenantPersistenceViolationCode.StoredOwnerMismatch, exception.Code);
+            Assert.Equal(TenantPersistenceViolationCode.StoredOwnerUnavailable, exception.Code);
         }
 
         await using (var saveChangesAsyncSession = fixture.Factory.Create(fixture.TenantA))
@@ -353,7 +499,7 @@ public sealed class TenantPersistenceTests
             typedSession.DbContext.Entry(forged).State = EntityState.Deleted;
             var exception = await Assert.ThrowsAsync<TenantPersistenceViolationException>(
                 () => typedSession.SaveChangesAsync());
-            Assert.Equal(TenantPersistenceViolationCode.StoredOwnerMismatch, exception.Code);
+            Assert.Equal(TenantPersistenceViolationCode.StoredOwnerUnavailable, exception.Code);
         }
 
         await using (var saveChangesAsyncBoolSession = fixture.Factory.Create(fixture.TenantA))
@@ -363,7 +509,7 @@ public sealed class TenantPersistenceTests
             typedSession.DbContext.Entry(forged).State = EntityState.Deleted;
             var exception = await Assert.ThrowsAsync<TenantPersistenceViolationException>(
                 () => typedSession.SaveChangesAsync(acceptAllChangesOnSuccess: false));
-            Assert.Equal(TenantPersistenceViolationCode.StoredOwnerMismatch, exception.Code);
+            Assert.Equal(TenantPersistenceViolationCode.StoredOwnerUnavailable, exception.Code);
         }
     }
 
@@ -541,6 +687,80 @@ public sealed class TenantPersistenceTests
     }
 
     [Fact]
+    public void Default_verifier_registry_explicitly_registers_current_record()
+    {
+        var registry = TenantOwnershipVerifierRegistry.CreateDefault();
+
+        Assert.True(registry.TryGet(typeof(TenantOwnedRecord), out var registration));
+        Assert.Equal(typeof(TenantOwnedRecord), registration.EntityType);
+        Assert.False(typeof(TenantOwnershipVerifierRegistry).IsPublic);
+        Assert.False(typeof(TenantOwnershipVerifierRegistration).IsPublic);
+    }
+
+    [Fact]
+    public void Duplicate_verifier_registration_fails_before_model_use()
+    {
+        var baseline = GetDefaultTenantOwnedRegistration();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            new TenantOwnershipVerifierRegistry([baseline, baseline]));
+
+        Assert.Contains(nameof(TenantOwnedRecord), exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Mapped_tenant_owned_type_without_registration_fails_model_validation()
+    {
+        var options = CreateSqliteOptions();
+        using var context = new TestTenantPersistenceDbContext(
+            options,
+            CreateOrdinaryContext(),
+            TenantOwnershipVerifierRegistry.CreateDefault());
+
+        var exception = Assert.Throws<InvalidOperationException>(context.ValidateTenantOwnershipVerifiers);
+
+        Assert.Contains(nameof(TestMappedTenantOwnedRecord), exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Missing", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Registered_additional_mapped_tenant_owned_type_passes_model_validation()
+    {
+        var options = CreateSqliteOptions();
+        var registry = new TenantOwnershipVerifierRegistry(
+        [
+            GetDefaultTenantOwnedRegistration(),
+            CreateTestTenantOwnedRegistration()
+        ]);
+        using var context = new TestTenantPersistenceDbContext(
+            options,
+            CreateOrdinaryContext(),
+            registry);
+
+        context.ValidateTenantOwnershipVerifiers();
+    }
+
+    [Fact]
+    public void Orphaned_verifier_registration_fails_model_validation()
+    {
+        var options = CreateSqliteOptions();
+        var registry = new TenantOwnershipVerifierRegistry(
+        [
+            GetDefaultTenantOwnedRegistration(),
+            CreateTestTenantOwnedRegistration()
+        ]);
+        using var context = new TenantPersistenceDbContext(
+            options,
+            CreateOrdinaryContext(),
+            registry);
+
+        var exception = Assert.Throws<InvalidOperationException>(context.ValidateTenantOwnershipVerifiers);
+
+        Assert.Contains(nameof(TestMappedTenantOwnedRecord), exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Orphaned", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Infrastructure_dependency_direction_is_one_way()
     {
         var infrastructureReferences = typeof(TenantPersistenceSessionFactory).Assembly
@@ -602,6 +822,91 @@ public sealed class TenantPersistenceTests
         new SupportGrantReference(Guid.NewGuid(), Guid.NewGuid()),
         new ScopeReference("case-scope"));
 
+    private static async Task<TenantPersistenceViolationException> CaptureStoredOwnerDenialAsync(
+        PersistenceFixture fixture,
+        Guid recordId,
+        EntityState state)
+    {
+        await using var session = fixture.Factory.Create(fixture.TenantA);
+        var forged = AttachForgedRecord((TenantPersistenceSession)session, recordId, fixture.TenantA.TenantId);
+        ((TenantPersistenceSession)session).DbContext.Entry(forged).State = state;
+        return await Assert.ThrowsAsync<TenantPersistenceViolationException>(
+            () => session.SaveChangesAsync());
+    }
+
+    private static void AssertPublicDenialsEquivalent(
+        TenantPersistenceViolationException left,
+        TenantPersistenceViolationException right,
+        TenantOwnedRecord foreignRecord,
+        TenantPersistenceOperation operation)
+    {
+        Assert.Equal(operation, left.Operation);
+        Assert.Equal(operation, right.Operation);
+        Assert.Equal(left.Code, right.Code);
+        Assert.Equal(left.Message, right.Message);
+        Assert.Equal(left.TrustedTenantId, right.TrustedTenantId);
+        Assert.Equal(left.AuthorizationPath, right.AuthorizationPath);
+        Assert.Equal(left.CorrelationId, right.CorrelationId);
+        Assert.Equal(left.Decision, right.Decision);
+
+        var leftExport = JsonSerializer.Serialize(new
+        {
+            left.Code,
+            left.Message,
+            left.TrustedTenantId,
+            left.AuthorizationPath,
+            left.CorrelationId,
+            left.Operation,
+            left.Decision
+        });
+        var rightExport = JsonSerializer.Serialize(new
+        {
+            right.Code,
+            right.Message,
+            right.TrustedTenantId,
+            right.AuthorizationPath,
+            right.CorrelationId,
+            right.Operation,
+            right.Decision
+        });
+        Assert.Equal(leftExport, rightExport);
+        Assert.DoesNotContain(foreignRecord.Id.ToString(), leftExport, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(foreignRecord.TenantId.Value.ToString(), leftExport, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(left.InnerException);
+        Assert.Null(right.InnerException);
+        Assert.DoesNotContain("SQLite", left.ToString(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("SQLite", right.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static DbContextOptions CreateSqliteOptions()
+    {
+        return new DbContextOptionsBuilder()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+    }
+
+    private static TenantOwnershipVerifierRegistration GetDefaultTenantOwnedRegistration()
+    {
+        var registry = TenantOwnershipVerifierRegistry.CreateDefault();
+        Assert.True(registry.TryGet(typeof(TenantOwnedRecord), out var registration));
+        return registration;
+    }
+
+    private static TenantOwnershipVerifierRegistration CreateTestTenantOwnedRegistration()
+    {
+        return new TenantOwnershipVerifierRegistration(
+            typeof(TestMappedTenantOwnedRecord),
+            static (_, entry) => ReadTestStoredTenantId(entry),
+            static (_, entry, _) => Task.FromResult(ReadTestStoredTenantId(entry)));
+    }
+
+    private static TenantId? ReadTestStoredTenantId(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
+    {
+        return entry.Entity is TestMappedTenantOwnedRecord record && record.TenantId != default
+            ? record.TenantId
+            : null;
+    }
+
     private static TenantOwnedRecord AttachForgedRecord(
         TenantPersistenceSession session,
         Guid foreignRecordId,
@@ -620,6 +925,34 @@ public sealed class TenantPersistenceTests
         entry.Property(nameof(TenantOwnedRecord.RelationshipKind)).CurrentValue = TenantRelationshipKind.None;
         entry.Property(nameof(TenantOwnedRecord.RelatedTenantId)).CurrentValue = null;
         return forged;
+    }
+
+    private sealed class TestMappedTenantOwnedRecord : ITenantOwned
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        public TenantId TenantId { get; set; }
+    }
+
+    private sealed class TestTenantPersistenceDbContext : TenantPersistenceDbContext
+    {
+        public TestTenantPersistenceDbContext(
+            DbContextOptions options,
+            TenantContext tenantContext,
+            TenantOwnershipVerifierRegistry verifierRegistry)
+            : base(options, tenantContext, verifierRegistry)
+        {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            var entity = modelBuilder.Entity<TestMappedTenantOwnedRecord>();
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.TenantId)
+                .HasConversion(item => item.Value, value => new TenantId(value))
+                .IsRequired();
+        }
     }
 
     private sealed class PersistenceFixture : IAsyncDisposable

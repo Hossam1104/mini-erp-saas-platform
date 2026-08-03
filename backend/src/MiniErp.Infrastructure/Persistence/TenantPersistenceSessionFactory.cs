@@ -9,18 +9,36 @@ namespace MiniErp.Infrastructure.Persistence;
 public sealed class TenantPersistenceSessionFactory : ITenantPersistenceSessionFactory
 {
     private readonly DbContextOptions _options;
+    private readonly TenantOwnershipVerifierRegistry _verifierRegistry;
 
     /// <summary>Creates a factory over immutable provider options.</summary>
-    internal TenantPersistenceSessionFactory(DbContextOptions options)
+    internal TenantPersistenceSessionFactory(
+        DbContextOptions options,
+        TenantOwnershipVerifierRegistry? verifierRegistry = null)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        _verifierRegistry = verifierRegistry ?? TenantOwnershipVerifierRegistry.CreateDefault();
     }
 
     /// <summary>Creates one explicitly Tenant-bound persistence session.</summary>
     public ITenantPersistenceSession Create(TenantContext tenantContext)
     {
         ArgumentNullException.ThrowIfNull(tenantContext);
-        return new TenantPersistenceSession(new TenantPersistenceDbContext(_options, tenantContext));
+
+        var dbContext = new TenantPersistenceDbContext(
+            _options,
+            tenantContext,
+            _verifierRegistry);
+        try
+        {
+            dbContext.ValidateTenantOwnershipVerifiers();
+            return new TenantPersistenceSession(dbContext);
+        }
+        catch
+        {
+            dbContext.Dispose();
+            throw;
+        }
     }
 
 }

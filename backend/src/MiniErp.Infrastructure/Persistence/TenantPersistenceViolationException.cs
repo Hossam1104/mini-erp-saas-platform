@@ -33,12 +33,11 @@ public enum TenantPersistenceViolationCode
     MissingTenantId = 1,
     /// <summary>The entity Tenant differs from trusted context on a new record.</summary>
     TenantContextMismatch = 2,
-    /// <summary>No persisted row was found for the metadata primary key.</summary>
-    StoredOwnerMissing = 3,
-    /// <summary>The persisted Tenant identifier was invalid.</summary>
-    StoredOwnerInvalid = 4,
-    /// <summary>The persisted row belongs to a different Tenant.</summary>
-    StoredOwnerMismatch = 5,
+    /// <summary>
+    /// The stored owner could not be safely established. This deliberately
+    /// covers missing, invalid and foreign ownership with one public code.
+    /// </summary>
+    StoredOwnerUnavailable = 3,
     /// <summary>The caller attempted to mutate stored Tenant ownership.</summary>
     TenantOwnershipMutation = 6,
     /// <summary>A relationship did not remain within the trusted Tenant.</summary>
@@ -61,7 +60,8 @@ public sealed class TenantPersistenceViolationException : InvalidOperationExcept
     private TenantPersistenceViolationException(
         TenantPersistenceViolationCode code,
         TenantContext tenantContext,
-        TenantPersistenceOperation operation)
+        TenantPersistenceOperation operation,
+        TenantPersistenceInternalReason? internalReason)
         : base(SafeMessage)
     {
         Code = code;
@@ -70,6 +70,7 @@ public sealed class TenantPersistenceViolationException : InvalidOperationExcept
         CorrelationId = tenantContext.CorrelationId;
         Operation = operation;
         Decision = TenantPersistenceDecision.Denied;
+        InternalReason = internalReason;
     }
 
     /// <summary>Stable violation code safe for later evidence emission.</summary>
@@ -90,12 +91,26 @@ public sealed class TenantPersistenceViolationException : InvalidOperationExcept
     /// <summary>The safe decision/result represented by this exception.</summary>
     public TenantPersistenceDecision Decision { get; }
 
+    // Deliberately internal: precise storage observations are useful for
+    // security diagnostics but must never become a client-facing oracle.
+    internal TenantPersistenceInternalReason? InternalReason { get; }
+
     internal static TenantPersistenceViolationException Deny(
         TenantPersistenceViolationCode code,
         TenantContext tenantContext,
-        TenantPersistenceOperation operation)
+        TenantPersistenceOperation operation,
+        TenantPersistenceInternalReason? internalReason = null)
     {
         ArgumentNullException.ThrowIfNull(tenantContext);
-        return new TenantPersistenceViolationException(code, tenantContext, operation);
+        return new TenantPersistenceViolationException(code, tenantContext, operation, internalReason);
     }
+}
+
+/// <summary>Internal reason retained for diagnostics but never exported.</summary>
+internal enum TenantPersistenceInternalReason
+{
+    StoredOwnerMissing = 1,
+    StoredOwnerInvalid = 2,
+    StoredOwnerMismatch = 3,
+    VerifierUnavailable = 4
 }
