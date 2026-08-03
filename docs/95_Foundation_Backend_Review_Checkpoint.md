@@ -31,7 +31,7 @@ review decision.
 | MESP-59 | Done | [PR #8](https://github.com/Hossam1104/mini-erp-saas-platform/pull/8) | `28dcc2df95f67a7ed3009acb1cd3c971bd3b8252` | `6d5e5fb3d6da7ba12eab1fa4c2c6f9f96594565a` | Authentication/session and authorization seam | Reconciled after MESP-88; no frontend or production identity deployment |
 | MESP-88 | Done | [PR #9](https://github.com/Hossam1104/mini-erp-saas-platform/pull/9) | `b844a7cc780b18bd78e1cd4500ba5b4287cd9de4` | `723dc8e28b0a927750230b51b9d05e26d039038c` | Security correction for authority issuance and authentication evidence | 161-test baseline reported; no new business scope |
 | MESP-60 | Done | [PR #10](https://github.com/Hossam1104/mini-erp-saas-platform/pull/10) | `2f1efeff2a31ebbf02af297931b0de57c3b3bd76` | `2569acbe6dc26223108f7ad539ca7db2bcdf5f93` | Versioned REST/OpenAPI, safe errors, correlation, concurrency, idempotency and antiforgery seam | 188 tests on merged main; no business transaction endpoints |
-| MESP-62 | Done | PR #11 (this delivery) | `ba663bb` | Recorded in the MESP-62 delivery evidence | Immutable path-aware audit evidence, append-before-effect fail-closed coordinator and safe OTel-compatible hooks | 224 tests before merge; local bounded store only, no exporter/provider/migration |
+| MESP-62 | Done | PR #11 (this delivery) | `14ecf65e349d73d7e3ab8d78193056d208a0b44c` | Recorded in the MESP-62 delivery evidence | Immutable path-aware audit evidence, append-before-effect fail-closed coordinator and safe OTel-compatible hooks | 224 tests before merge; local bounded store only, no exporter/provider/migration |
 
 ## Traceability matrix
 
