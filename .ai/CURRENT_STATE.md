@@ -1,13 +1,21 @@
 # Current State
 
-- Main SHA: 85c15c75dcc9b775264372df9c7359bd9523f62d (merged MESP-86 documentation baseline).
+- Approved main baseline: `a4f7295762876e7ff901a634683a5083e5dbc493`.
 - MESP-86: Done; Foundation Release 1 Lean Implementation Specification v0.4
   is approved for controlled implementation refinement, not production.
-- MESP-58: Ready for implementation refinement, status To Do.
-- Sprint 2 `S2-Tenant-Context-Foundation`: prepared with MESP-58 only; not
-  started and no active Sprint exists.
-- Next authorized action: deliberately start Sprint 2 and implement MESP-58.
+- MESP-58: In Progress on
+  `feature/mesp-58-tenant-context-persistence`; the trusted TenantContext and
+  tenant-bound persistence foundation is implemented. The bounded security
+  correction verifies stored ownership before Modified/Deleted writes,
+  includes forged cross-Tenant regressions, and is awaiting focused independent
+  Pull Request review.
+- Sprint 2 `S2-Tenant-Context-Foundation`: no Sprint was created because Jira
+  Sprint management is unavailable; this is an administrative limitation, not
+  a technical blocker. No active Sprint exists.
+- MESP-59 remains To Do and must not start until MESP-58 review and closure.
 - MESP-48 and MESP-50 remain explicit production/performance and
   retention/privacy/legal-hold/purge gates.
-- No implementation is active; no application code was introduced by this
-  correction cycle.
+- No API, Angular, migration, worker, file-storage, deployment, or later ERP
+  implementation was introduced.
+- Validation after the correction: Release build is clean and the complete
+  architecture test project passes 59 tests with no skips.

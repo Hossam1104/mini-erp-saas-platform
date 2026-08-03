@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
@@ -20,5 +22,6 @@
     <ProjectReference Include="..\..\src\MiniErp.Api\MiniErp.Api.csproj" />
     <ProjectReference Include="..\..\src\MiniErp.App\MiniErp.App.csproj" />
     <ProjectReference Include="..\..\src\MiniErp.Contracts\MiniErp.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\MiniErp.Infrastructure\MiniErp.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
