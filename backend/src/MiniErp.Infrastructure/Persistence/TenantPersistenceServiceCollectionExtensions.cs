@@ -12,13 +12,16 @@ public static class TenantPersistenceServiceCollectionExtensions
     /// <summary>Registers a stateless session factory; no context is ambient or singleton.</summary>
     public static IServiceCollection AddTenantPersistence(
         this IServiceCollection services,
-        DbContextOptions options)
+        Action<DbContextOptionsBuilder> configureOptions)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(configureOptions);
+
+        var optionsBuilder = new DbContextOptionsBuilder();
+        configureOptions(optionsBuilder);
 
         services.AddSingleton<ITenantPersistenceSessionFactory>(
-            new TenantPersistenceSessionFactory(options));
+            new TenantPersistenceSessionFactory(optionsBuilder.Options));
         return services;
     }
 }

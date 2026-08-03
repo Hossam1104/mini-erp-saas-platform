@@ -135,6 +135,11 @@ public sealed class TenantWorkMetadata
             throw new ArgumentException("Durable work metadata requires a correlation identifier.", nameof(correlationId));
         }
 
+        if (scope.HasValue && string.IsNullOrWhiteSpace(scope.Value.Value))
+        {
+            throw new ArgumentException("Scope reference must contain a value when supplied.", nameof(scope));
+        }
+
         TenantId = tenantId;
         AuthorizationPath = authorizationPath;
         CorrelationId = correlationId;

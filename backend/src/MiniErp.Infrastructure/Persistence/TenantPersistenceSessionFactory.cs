@@ -11,7 +11,7 @@ public sealed class TenantPersistenceSessionFactory : ITenantPersistenceSessionF
     private readonly DbContextOptions _options;
 
     /// <summary>Creates a factory over immutable provider options.</summary>
-    public TenantPersistenceSessionFactory(DbContextOptions options)
+    internal TenantPersistenceSessionFactory(DbContextOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
@@ -23,12 +23,4 @@ public sealed class TenantPersistenceSessionFactory : ITenantPersistenceSessionF
         return new TenantPersistenceSession(new TenantPersistenceDbContext(_options, tenantContext));
     }
 
-    internal static void EnsureCreatedForTests(DbContextOptions options, TenantContext tenantContext)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(tenantContext);
-
-        using var context = new TenantPersistenceDbContext(options, tenantContext);
-        context.Database.EnsureCreated();
-    }
 }

@@ -149,6 +149,16 @@ public sealed class TenantContext
             throw new ArgumentException("SupportGrant requires a support-grant reference.", nameof(supportGrant));
         }
 
+        if (scope.HasValue && string.IsNullOrWhiteSpace(scope.Value.Value))
+        {
+            throw new ArgumentException("Scope reference must contain a value when supplied.", nameof(scope));
+        }
+
+        if (correlationId.HasValue && string.IsNullOrWhiteSpace(correlationId.Value.Value))
+        {
+            throw new ArgumentException("CorrelationId must contain a value when supplied.", nameof(correlationId));
+        }
+
         TenantId = tenantId;
         AuthorizationPath = authorizationPath;
         Membership = membership;

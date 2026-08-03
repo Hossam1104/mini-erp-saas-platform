@@ -5,7 +5,9 @@
   is approved for controlled implementation refinement, not production.
 - MESP-58: In Progress on
   `feature/mesp-58-tenant-context-persistence`; the trusted TenantContext and
-  tenant-bound persistence foundation is implemented and awaiting independent
+  tenant-bound persistence foundation is implemented. The bounded security
+  correction verifies stored ownership before Modified/Deleted writes,
+  includes forged cross-Tenant regressions, and is awaiting focused independent
   Pull Request review.
 - Sprint 2 `S2-Tenant-Context-Foundation`: no Sprint was created because Jira
   Sprint management is unavailable; this is an administrative limitation, not
@@ -15,3 +17,5 @@
   retention/privacy/legal-hold/purge gates.
 - No API, Angular, migration, worker, file-storage, deployment, or later ERP
   implementation was introduced.
+- Validation after the correction: Release build is clean and the complete
+  architecture test project passes 59 tests with no skips.

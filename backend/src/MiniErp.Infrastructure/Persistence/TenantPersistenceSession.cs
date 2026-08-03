@@ -19,12 +19,80 @@ internal sealed class TenantPersistenceSession : ITenantPersistenceSession
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return _dbContext.SaveChangesAsync(cancellationToken);
+        return SaveChangesAsyncCore(acceptAllChangesOnSuccess: true, cancellationToken);
+    }
+
+    internal Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        return SaveChangesAsyncCore(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    internal int SaveChanges()
+    {
+        return SaveChanges(acceptAllChangesOnSuccess: true);
+    }
+
+    internal int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        try
+        {
+            return _dbContext.SaveChanges(acceptAllChangesOnSuccess);
+        }
+        catch (TenantPersistenceViolationException)
+        {
+            throw;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw TenantPersistenceViolationException.Deny(
+                TenantPersistenceViolationCode.PersistenceConflict,
+                _dbContext.TenantContext,
+                TenantPersistenceOperation.SaveChanges);
+        }
+        catch (DbUpdateException)
+        {
+            throw TenantPersistenceViolationException.Deny(
+                TenantPersistenceViolationCode.PersistenceConflict,
+                _dbContext.TenantContext,
+                TenantPersistenceOperation.SaveChanges);
+        }
     }
 
     public ValueTask DisposeAsync()
     {
         return _dbContext.DisposeAsync();
+    }
+
+    private async Task<int> SaveChangesAsyncCore(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _dbContext.SaveChangesAsync(
+                acceptAllChangesOnSuccess,
+                cancellationToken);
+        }
+        catch (TenantPersistenceViolationException)
+        {
+            throw;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw TenantPersistenceViolationException.Deny(
+                TenantPersistenceViolationCode.PersistenceConflict,
+                _dbContext.TenantContext,
+                TenantPersistenceOperation.SaveChanges);
+        }
+        catch (DbUpdateException)
+        {
+            throw TenantPersistenceViolationException.Deny(
+                TenantPersistenceViolationCode.PersistenceConflict,
+                _dbContext.TenantContext,
+                TenantPersistenceOperation.SaveChanges);
+        }
     }
 
     private sealed class TenantRecordRepository : ITenantRecordRepository

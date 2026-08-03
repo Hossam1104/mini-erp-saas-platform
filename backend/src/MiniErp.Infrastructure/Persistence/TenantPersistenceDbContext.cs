@@ -17,6 +17,8 @@ internal sealed class TenantPersistenceDbContext : DbContext
 
     public DbSet<TenantOwnedRecord> TenantOwnedRecords => Set<TenantOwnedRecord>();
 
+    internal TenantContext TenantContext => _tenantContext;
+
     // EF Core parameterizes context instance properties in model-level query
     // filters, so each explicit session gets its own trusted Tenant boundary.
     private TenantId TrustedTenantId => _tenantContext.TenantId;
@@ -32,12 +34,12 @@ internal sealed class TenantPersistenceDbContext : DbContext
         return SaveChanges(acceptAllChangesOnSuccess: true);
     }
 
-    public override Task<int> SaveChangesAsync(
+    public override async Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
-        _guard.Validate(ChangeTracker);
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        await _guard.ValidateAsync(ChangeTracker, cancellationToken);
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
