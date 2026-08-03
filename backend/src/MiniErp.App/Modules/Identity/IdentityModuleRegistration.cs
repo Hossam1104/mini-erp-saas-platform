@@ -11,6 +11,7 @@ internal static class IdentityModuleRegistration
         services.AddSingleton<IPasswordHasher<GlobalUser>, PasswordHasher<GlobalUser>>();
         services.AddSingleton<IdentityStore>();
         services.AddSingleton<IdentityAuthorizationService>();
+        services.AddSingleton<IAuthenticationAssuranceEvidenceSource, UnavailableAuthenticationAssuranceEvidenceSource>();
         services.AddSingleton(TimeProvider.System);
         return services;
     }

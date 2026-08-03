@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Identity;
 using Xunit;
@@ -289,7 +290,7 @@ public sealed class IdentityAuthorizationTests
         var branchA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var branchB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
         fixture = fixture with { Scope = OrganizationScope.ForBranch(fixture.TenantA, branchA) };
-        fixture.Service.AddScopeGrant(fixture.MembershipA, fixture.Scope, fixture.Approver);
+        SeedScopeGrant(fixture, fixture.MembershipA, fixture.Scope, fixture.Approver);
 
         var decision = fixture.Service.AuthorizeOrdinary(Authenticate(fixture).CookieValue, fixture.TenantA, IdentityPermissions.Read, OrganizationScope.ForBranch(fixture.TenantA, branchB), fixture.Correlation);
 
@@ -302,7 +303,7 @@ public sealed class IdentityAuthorizationTests
         var fixture = CreateFixture(withScope: false);
         var branch = OrganizationScope.ForBranch(fixture.TenantA, Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
         var warehouse = OrganizationScope.ForWarehouse(fixture.TenantA, Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
-        fixture.Service.AddScopeGrant(fixture.MembershipA, branch, fixture.Approver);
+        SeedScopeGrant(fixture, fixture.MembershipA, branch, fixture.Approver);
         fixture.Service.SetOrganizationParent(warehouse, branch);
 
         Assert.True(fixture.Service.AuthorizeOrdinary(Authenticate(fixture).CookieValue, fixture.TenantA, IdentityPermissions.Read, warehouse, fixture.Correlation).Allowed);
@@ -326,8 +327,7 @@ public sealed class IdentityAuthorizationTests
         var fixture = CreateSupportFixture();
         var grant = fixture.SupportGrant;
         var operation = $"support:{grant.Value}:{IdentityPermissions.SupportRead.Value}";
-        fixture.Service.CompleteMfa(fixture.SupportSession.Id);
-        fixture.Service.MarkFreshAuthentication(fixture.SupportSession.Id, operation);
+        PrepareSupport(fixture);
 
         var decision = fixture.Service.AuthorizeSupport(fixture.SupportSession.CookieValue, fixture.TenantA, grant, IdentityPermissions.SupportRead, OrganizationScope.ForTenant(fixture.TenantA), "incident diagnosis", fixture.Correlation);
 
@@ -389,7 +389,8 @@ public sealed class IdentityAuthorizationTests
     {
         var fixture = CreateSupportFixture();
         var operation = $"support:{fixture.SupportGrant.Value}:{IdentityPermissions.SupportRead.Value}";
-        fixture.Service.MarkFreshAuthentication(fixture.SupportSession.Id, operation);
+        var source = fixture.Source;
+        Assert.True(fixture.Service.AcceptFreshAuthenticationEvidence(fixture.SupportSession.CookieValue, operation, source.IssueFresh(fixture.SupportUser, fixture.SupportSession.Id, operation, fixture.Clock.GetUtcNow())));
 
         Assert.False(fixture.Service.AuthorizeSupport(fixture.SupportSession.CookieValue, fixture.TenantA, fixture.SupportGrant, IdentityPermissions.SupportRead, OrganizationScope.ForTenant(fixture.TenantA), "incident diagnosis", fixture.Correlation).Allowed);
     }
@@ -398,7 +399,7 @@ public sealed class IdentityAuthorizationTests
     public void SupportGrantRequiresFreshAuthentication()
     {
         var fixture = CreateSupportFixture();
-        fixture.Service.CompleteMfa(fixture.SupportSession.Id);
+        Assert.True(fixture.Service.AcceptMfaEvidence(fixture.SupportSession.CookieValue, fixture.Source.IssueMfa(fixture.SupportUser, fixture.SupportSession.Id, fixture.Clock.GetUtcNow())));
 
         Assert.False(fixture.Service.AuthorizeSupport(fixture.SupportSession.CookieValue, fixture.TenantA, fixture.SupportGrant, IdentityPermissions.SupportRead, OrganizationScope.ForTenant(fixture.TenantA), "incident diagnosis", fixture.Correlation).Allowed);
     }
@@ -409,8 +410,8 @@ public sealed class IdentityAuthorizationTests
         var fixture = CreateSupportFixture();
         var membership = fixture.Service.AddMembership(fixture.SupportUser, fixture.TenantA);
         var role = fixture.Service.CreateRole("support-ordinary", fixture.TenantA, false, [IdentityPermissions.SupportRead]);
-        fixture.Service.AssignRole(membership, role, fixture.Approver);
-        fixture.Service.AddScopeGrant(membership, OrganizationScope.ForTenant(fixture.TenantA), fixture.Approver);
+        SeedRoleAssignment(fixture, membership, role, fixture.Approver);
+        SeedScopeGrant(fixture, membership, OrganizationScope.ForTenant(fixture.TenantA), fixture.Approver);
         PrepareSupport(fixture);
 
         var ordinary = fixture.Service.AuthorizeOrdinary(fixture.SupportSession.CookieValue, fixture.TenantA, IdentityPermissions.SupportRead, OrganizationScope.ForTenant(fixture.TenantA), fixture.Correlation);
@@ -434,7 +435,8 @@ public sealed class IdentityAuthorizationTests
     {
         var fixture = CreateSupportFixture();
 
-        Assert.Throws<InvalidOperationException>(() => fixture.Service.AddSupportGrant(fixture.SupportUser, fixture.SupportCase, fixture.Approver, fixture.TenantA, "export", OrganizationScope.ForTenant(fixture.TenantA), [IdentityPermissions.Export], TimeSpan.FromHours(1)));
+        var result = fixture.Service.AddSupportGrant(Authenticate(fixture).CookieValue, fixture.TenantA, fixture.SupportUser, fixture.SupportCase, "export", OrganizationScope.ForTenant(fixture.TenantA), [IdentityPermissions.Export], TimeSpan.FromHours(1), "approved", fixture.Service.Store.SupportCases[fixture.SupportCase].Version, "export-support-1", fixture.Correlation);
+        Assert.False(result.Succeeded);
     }
 
     [Fact]
@@ -485,7 +487,7 @@ public sealed class IdentityAuthorizationTests
     {
         var fixture = CreateFixture();
         var platformUser = fixture.Service.CreateUser("platform-no-evidence@example.com", fixture.Password);
-        fixture.Service.GrantPlatformPermission(platformUser, IdentityPermissions.SuspendGlobalUser);
+        SeedPlatformPermission(fixture, platformUser, IdentityPermissions.SuspendGlobalUser, fixture.Approver);
         var session = Authenticate(fixture, platformUser, "platform-no-evidence@example.com");
         var governance = new PlatformGovernanceContext(platformUser.Value, PlatformGovernancePurpose.SecurityEvidence, fixture.Correlation);
 
@@ -512,8 +514,8 @@ public sealed class IdentityAuthorizationTests
         var fixture = CreateFixture();
         var platform = CreatePlatformActor(fixture, IdentityPermissions.SuspendGlobalUser, "platform.user.suspend");
         Assert.True(fixture.Service.SuspendUser(platform.Governance, platform.Session.CookieValue, fixture.Owner, "suspend", fixture.Service.GetUserVersion(fixture.Owner), "reactivation-suspend-1").Succeeded);
-        fixture.Service.GrantPlatformPermission(platform.User, IdentityPermissions.ReactivateGlobalUser);
-        fixture.Service.MarkFreshAuthentication(platform.Session.Id, "platform.user.reactivate");
+        SeedPlatformPermission(fixture, platform.User, IdentityPermissions.ReactivateGlobalUser, fixture.Approver);
+        Assert.True(fixture.Service.AcceptFreshAuthenticationEvidence(platform.Session.CookieValue, "platform.user.reactivate", fixture.Source.IssueFresh(platform.User, platform.Session.Id, "platform.user.reactivate", fixture.Clock.GetUtcNow())));
 
         Assert.True(fixture.Service.ReactivateUser(platform.Governance, platform.Session.CookieValue, fixture.Owner, "reactivate", fixture.Service.GetUserVersion(fixture.Owner), "reactivation-1").Succeeded);
         var newSession = Authenticate(fixture);
@@ -579,8 +581,8 @@ public sealed class IdentityAuthorizationTests
         var tenantB = new TenantId(Guid.Parse("22222222-2222-2222-2222-222222222222"));
         var membershipB = fixture.Service.AddMembership(fixture.Owner, tenantB);
         var roleB = fixture.Service.CreateRole("tenant-b-reader", tenantB, false, [IdentityPermissions.Read]);
-        fixture.Service.AssignRole(membershipB, roleB, fixture.Approver);
-        fixture.Service.AddScopeGrant(membershipB, OrganizationScope.ForTenant(tenantB), fixture.Approver);
+        SeedRoleAssignment(fixture, membershipB, roleB, fixture.Approver);
+        SeedScopeGrant(fixture, membershipB, OrganizationScope.ForTenant(tenantB), fixture.Approver);
         var session = Authenticate(fixture);
         Assert.True(fixture.Service.AuthorizeOrdinary(session.CookieValue, fixture.TenantA, IdentityPermissions.Read, OrganizationScope.ForTenant(fixture.TenantA), fixture.Correlation).Allowed);
         Assert.True(fixture.Service.AuthorizeOrdinary(session.CookieValue, tenantB, IdentityPermissions.Read, OrganizationScope.ForTenant(tenantB), fixture.Correlation).Allowed);
@@ -611,7 +613,7 @@ public sealed class IdentityAuthorizationTests
     public void InvitationIsSingleUse()
     {
         var fixture = CreateFixture();
-        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.Suspended;
+        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.PendingInvitation;
         var invitation = fixture.Service.IssueInvitation(fixture.Owner, fixture.TenantA, fixture.MembershipA, "owner@example.com");
 
         Assert.True(fixture.Service.AcceptInvitation(invitation.TokenValue, fixture.Owner, fixture.TenantA));
@@ -622,7 +624,7 @@ public sealed class IdentityAuthorizationTests
     public void ExpiredInvitationDenies()
     {
         var fixture = CreateFixture();
-        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.Suspended;
+        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.PendingInvitation;
         var invitation = fixture.Service.IssueInvitation(fixture.Owner, fixture.TenantA, fixture.MembershipA, "owner@example.com");
         fixture.Clock.Advance(TimeSpan.FromDays(7));
 
@@ -633,6 +635,7 @@ public sealed class IdentityAuthorizationTests
     public void InvitationCannotCrossTenants()
     {
         var fixture = CreateFixture();
+        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.PendingInvitation;
         var invitation = fixture.Service.IssueInvitation(fixture.Owner, fixture.TenantA, fixture.MembershipA, "owner@example.com");
         var tenantB = new TenantId(Guid.Parse("22222222-2222-2222-2222-222222222222"));
 
@@ -764,7 +767,8 @@ public sealed class IdentityAuthorizationTests
         var fixture = CreateFixture(withRole: false);
         var role = fixture.Service.CreateRole("self-approved", fixture.TenantA, false, [IdentityPermissions.Read]);
 
-        Assert.Throws<InvalidOperationException>(() => fixture.Service.AssignRole(fixture.MembershipA, role, fixture.Owner));
+        var result = fixture.Service.AssignRole(Authenticate(fixture).CookieValue, fixture.TenantA, fixture.MembershipA, role, OrganizationScope.ForTenant(fixture.TenantA), "self", fixture.Service.Store.Memberships[fixture.MembershipA].Version, "self-role-1", fixture.Correlation);
+        Assert.False(result.Succeeded);
     }
 
     [Fact]
@@ -772,7 +776,8 @@ public sealed class IdentityAuthorizationTests
     {
         var fixture = CreateFixture(withScope: false);
 
-        Assert.Throws<InvalidOperationException>(() => fixture.Service.AddScopeGrant(fixture.MembershipA, OrganizationScope.ForTenant(fixture.TenantA), fixture.Owner));
+        var result = fixture.Service.AddScopeGrant(Authenticate(fixture).CookieValue, fixture.TenantA, fixture.MembershipA, OrganizationScope.ForTenant(fixture.TenantA), "self", fixture.Service.Store.Memberships[fixture.MembershipA].Version, "self-scope-1", fixture.Correlation);
+        Assert.False(result.Succeeded);
     }
 
     [Fact]
@@ -782,7 +787,8 @@ public sealed class IdentityAuthorizationTests
         var tenantB = new TenantId(Guid.Parse("22222222-2222-2222-2222-222222222222"));
         var roleB = fixture.Service.CreateRole("tenant-b-role", tenantB, false, [IdentityPermissions.Read]);
 
-        Assert.Throws<InvalidOperationException>(() => fixture.Service.AssignRole(fixture.MembershipA, roleB, fixture.Approver));
+        var result = fixture.Service.AssignRole(Authenticate(fixture).CookieValue, fixture.TenantA, fixture.MembershipA, roleB, OrganizationScope.ForTenant(fixture.TenantA), "cross tenant", fixture.Service.Store.Memberships[fixture.MembershipA].Version, "cross-role-1", fixture.Correlation);
+        Assert.False(result.Succeeded);
     }
 
     [Fact]
@@ -791,7 +797,7 @@ public sealed class IdentityAuthorizationTests
         var fixture = CreateFixture(withScope: false);
         var branchA = OrganizationScope.ForBranch(fixture.TenantA, Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
         var warehouseB = OrganizationScope.ForWarehouse(fixture.TenantA, Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
-        fixture.Service.AddScopeGrant(fixture.MembershipA, branchA, fixture.Approver);
+        SeedScopeGrant(fixture, fixture.MembershipA, branchA, fixture.Approver);
 
         Assert.False(fixture.Service.AuthorizeOrdinary(Authenticate(fixture).CookieValue, fixture.TenantA, IdentityPermissions.Read, warehouseB, fixture.Correlation).Allowed);
     }
@@ -801,7 +807,7 @@ public sealed class IdentityAuthorizationTests
     {
         var fixture = CreateFixture();
         var platformUser = fixture.Service.CreateUser("governance-only@example.com", fixture.Password);
-        fixture.Service.GrantPlatformPermission(platformUser, IdentityPermissions.SuspendGlobalUser);
+        SeedPlatformPermission(fixture, platformUser, IdentityPermissions.SuspendGlobalUser, fixture.Approver);
         var session = Authenticate(fixture, platformUser, "governance-only@example.com");
         var governance = new PlatformGovernanceContext(platformUser.Value, PlatformGovernancePurpose.SecurityEvidence, fixture.Correlation);
 
@@ -811,6 +817,293 @@ public sealed class IdentityAuthorizationTests
         Assert.Equal(PlatformGovernancePurpose.SecurityEvidence, governance.Purpose);
     }
 
+    [Fact]
+    public void RuntimeServiceHasNoUnauthenticatedAuthorityIssuanceMethods()
+    {
+        var methods = typeof(IdentityAuthorizationService).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        Assert.DoesNotContain(methods, method => method.Name == "GrantPlatformPermission");
+        Assert.DoesNotContain(methods, method => method.Name == "CompleteMfa");
+        Assert.DoesNotContain(methods, method => method.Name == "MarkFreshAuthentication");
+        Assert.Contains(methods, method => method.Name == "AssignPlatformPermission");
+        Assert.Contains(methods, method => method.Name == "AssignRole");
+        Assert.Contains(methods, method => method.Name == "AddScopeGrant");
+        Assert.Contains(methods, method => method.Name == "AddSupportGrant");
+    }
+
+    [Fact]
+    public void ProductionIdentityRegistrationUsesUnavailableAssuranceSource()
+    {
+        var services = new ServiceCollection();
+        services.AddIdentityAuthorization();
+        using var provider = services.BuildServiceProvider();
+
+        Assert.IsType<UnavailableAuthenticationAssuranceEvidenceSource>(provider.GetRequiredService<IAuthenticationAssuranceEvidenceSource>());
+        Assert.DoesNotContain(provider.GetServices<IAuthenticationAssuranceEvidenceSource>(), source => source.GetType().Name.Contains("Test", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void UnauthenticatedCallerCannotAssignPlatformPermission()
+    {
+        var fixture = CreateFixture();
+        var platform = CreatePlatformActor(fixture, IdentityPermissions.AssignPlatformPermission, "platform.authority.assign");
+        var result = fixture.Service.AssignPlatformPermission(platform.Governance, "invalid-cookie", fixture.OtherUser, IdentityPermissions.Read, "approved", fixture.Service.GetUserVersion(fixture.OtherUser), "platform-unauth-1");
+
+        Assert.False(result.Succeeded);
+        Assert.False(fixture.Service.Store.PlatformPermissions.TryGetValue(fixture.OtherUser, out var assignments) && assignments.Any(assignment => assignment.IsActive));
+    }
+
+    [Fact]
+    public void OrdinaryTenantAdministratorCannotAssignPlatformPermission()
+    {
+        var fixture = CreateFixture();
+        var session = Authenticate(fixture);
+        var governance = new PlatformGovernanceContext(fixture.Owner.Value, PlatformGovernancePurpose.SecurityEvidence, fixture.Correlation);
+        var result = fixture.Service.AssignPlatformPermission(governance, session.CookieValue, fixture.OtherUser, IdentityPermissions.Read, "ordinary cannot platform", fixture.Service.GetUserVersion(fixture.OtherUser), "platform-ordinary-1");
+
+        Assert.False(result.Succeeded);
+    }
+
+    [Fact]
+    public void AuthorizedPlatformAssignmentIsIdempotentAndDoesNotDuplicate()
+    {
+        var fixture = CreateFixture();
+        var platform = CreatePlatformActor(fixture, IdentityPermissions.AssignPlatformPermission, "platform.authority.assign");
+        var expected = fixture.Service.GetUserVersion(fixture.OtherUser);
+        var first = fixture.Service.AssignPlatformPermission(platform.Governance, platform.Session.CookieValue, fixture.OtherUser, IdentityPermissions.Read, "approved", expected, "platform-idempotent-1");
+        ReassertPlatformEvidence(fixture, platform, "platform.authority.assign");
+        var second = fixture.Service.AssignPlatformPermission(platform.Governance, platform.Session.CookieValue, fixture.OtherUser, IdentityPermissions.Read, "retry", expected, "platform-idempotent-1");
+
+        Assert.True(first.Succeeded);
+        Assert.True(second.Succeeded);
+        Assert.Single(fixture.Service.Store.PlatformPermissions[fixture.OtherUser], assignment => assignment.IsActive && assignment.Permission == IdentityPermissions.Read);
+    }
+
+    [Fact]
+    public void RevokedPlatformPermissionCannotBeResurrected()
+    {
+        var fixture = CreateFixture();
+        var platform = CreatePlatformActor(fixture, IdentityPermissions.AssignPlatformPermission, "platform.authority.assign");
+        SeedPlatformPermission(fixture, fixture.OtherUser, IdentityPermissions.Read, fixture.Approver);
+        fixture.Service.Store.PlatformPermissions[fixture.OtherUser][0].IsActive = false;
+        var result = fixture.Service.AssignPlatformPermission(platform.Governance, platform.Session.CookieValue, fixture.OtherUser, IdentityPermissions.Read, "restore", fixture.Service.GetUserVersion(fixture.OtherUser), "platform-resurrect-1");
+
+        Assert.False(result.Succeeded);
+        Assert.DoesNotContain(fixture.Service.Store.PlatformPermissions[fixture.OtherUser], assignment => assignment.IsActive && assignment.Permission == IdentityPermissions.Read);
+    }
+
+    [Fact]
+    public void AuthorizedRoleAssignmentUsesAuthenticatedActorAndExactTenant()
+    {
+        var fixture = CreateFixture();
+        var targetMembership = fixture.Service.AddMembership(fixture.OtherUser, fixture.TenantA);
+        var role = fixture.Service.CreateRole("target-reader", fixture.TenantA, false, [IdentityPermissions.Read]);
+        var result = fixture.Service.AssignRole(Authenticate(fixture).CookieValue, fixture.TenantA, targetMembership, role, OrganizationScope.ForTenant(fixture.TenantA), "approved role", fixture.Service.Store.Memberships[targetMembership].Version, "role-authorized-1", fixture.Correlation);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(fixture.Owner, fixture.Service.Store.RoleAssignments[targetMembership].Single().ApproverId);
+    }
+
+    [Fact]
+    public void BranchAdministratorCannotGrantCompanyScope()
+    {
+        var branch = OrganizationScope.ForBranch(new TenantId(Guid.Parse("11111111-1111-1111-1111-111111111111")), Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+        var fixture = CreateFixture(scope: branch);
+        var targetMembership = fixture.Service.AddMembership(fixture.OtherUser, fixture.TenantA);
+        var result = fixture.Service.AddScopeGrant(Authenticate(fixture).CookieValue, fixture.TenantA, targetMembership, OrganizationScope.ForCompany(fixture.TenantA, Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc")), "upward scope", fixture.Service.Store.Memberships[targetMembership].Version, "scope-upward-1", fixture.Correlation);
+
+        Assert.False(result.Succeeded);
+    }
+
+    [Fact]
+    public void AuthorizedContainedScopeGrantSucceeds()
+    {
+        var fixture = CreateFixture();
+        var targetMembership = fixture.Service.AddMembership(fixture.OtherUser, fixture.TenantA);
+        var branch = OrganizationScope.ForBranch(fixture.TenantA, Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+        var result = fixture.Service.AddScopeGrant(Authenticate(fixture).CookieValue, fixture.TenantA, targetMembership, branch, "contained scope", fixture.Service.Store.Memberships[targetMembership].Version, "scope-authorized-1", fixture.Correlation);
+
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public void AuthorizedExactTenantSupportApprovalSucceeds()
+    {
+        var fixture = CreateFixture();
+        var supportUser = fixture.Service.CreateUser("approved-support@example.com", fixture.Password);
+        var supportCase = fixture.Service.AddSupportCase(fixture.TenantA);
+        var result = fixture.Service.AddSupportGrant(Authenticate(fixture).CookieValue, fixture.TenantA, supportUser, supportCase, "incident diagnosis", OrganizationScope.ForTenant(fixture.TenantA), [IdentityPermissions.SupportRead], TimeSpan.FromHours(1), "approved support", fixture.Service.Store.SupportCases[supportCase].Version, "support-authorized-1", fixture.Correlation);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.ResourceId);
+        Assert.Equal(fixture.Owner, fixture.Service.Store.SupportGrants[new SupportGrantId(result.ResourceId!.Value)].TenantApproverId);
+    }
+
+    [Fact]
+    public void WrongTenantSupportCaseCannotBeApproved()
+    {
+        var fixture = CreateFixture();
+        var tenantB = new TenantId(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+        var supportUser = fixture.Service.CreateUser("wrong-tenant-support@example.com", fixture.Password);
+        var supportCase = fixture.Service.AddSupportCase(tenantB);
+        var result = fixture.Service.AddSupportGrant(Authenticate(fixture).CookieValue, fixture.TenantA, supportUser, supportCase, "wrong tenant", OrganizationScope.ForTenant(fixture.TenantA), [IdentityPermissions.SupportRead], TimeSpan.FromHours(1), "wrong tenant", fixture.Service.Store.SupportCases[supportCase].Version, "support-cross-tenant-1", fixture.Correlation);
+
+        Assert.False(result.Succeeded);
+    }
+
+    [Fact]
+    public void AssuranceEvidenceIsBoundToUserSessionOperationExpiryAndReplay()
+    {
+        var fixture = CreateFixture();
+        var ownerSession = Authenticate(fixture);
+        var other = fixture.Service.CreateUser("evidence-other@example.com", fixture.Password);
+        var wrongUserToken = fixture.Source.IssueMfa(other, ownerSession.Id, fixture.Clock.GetUtcNow());
+        Assert.False(fixture.Service.AcceptMfaEvidence(ownerSession.CookieValue, wrongUserToken));
+
+        var secondSession = Authenticate(fixture);
+        var wrongSessionToken = fixture.Source.IssueMfa(fixture.Owner, secondSession.Id, fixture.Clock.GetUtcNow());
+        Assert.False(fixture.Service.AcceptMfaEvidence(ownerSession.CookieValue, wrongSessionToken));
+
+        var operation = "platform.authority.assign";
+        var wrongOperationToken = fixture.Source.IssueFresh(fixture.Owner, ownerSession.Id, "other.operation", fixture.Clock.GetUtcNow());
+        Assert.False(fixture.Service.AcceptFreshAuthenticationEvidence(ownerSession.CookieValue, operation, wrongOperationToken));
+
+        var expired = fixture.Source.IssueMfa(fixture.Owner, ownerSession.Id, fixture.Clock.GetUtcNow());
+        fixture.Clock.Advance(TimeSpan.FromMinutes(6));
+        Assert.False(fixture.Service.AcceptMfaEvidence(ownerSession.CookieValue, expired));
+
+        var valid = fixture.Source.IssueMfa(fixture.Owner, ownerSession.Id, fixture.Clock.GetUtcNow());
+        Assert.True(fixture.Service.AcceptMfaEvidence(ownerSession.CookieValue, valid));
+        Assert.False(fixture.Service.AcceptMfaEvidence(ownerSession.CookieValue, valid));
+    }
+
+    [Fact]
+    public void ActiveSuspendedAndRevokedMembershipsCannotIssueInvitations()
+    {
+        var fixture = CreateFixture();
+        Assert.Throws<InvalidOperationException>(() => fixture.Service.IssueInvitation(fixture.Owner, fixture.TenantA, fixture.MembershipA, "owner@example.com"));
+        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.Suspended;
+        Assert.Throws<InvalidOperationException>(() => fixture.Service.IssueInvitation(fixture.Owner, fixture.TenantA, fixture.MembershipA, "owner@example.com"));
+        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.Revoked;
+        Assert.Throws<InvalidOperationException>(() => fixture.Service.IssueInvitation(fixture.Owner, fixture.TenantA, fixture.MembershipA, "owner@example.com"));
+    }
+
+    [Fact]
+    public void MembershipAndUserVersionChangesInvalidateInvitation()
+    {
+        var fixture = CreateFixture();
+        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.PendingInvitation;
+        var invitation = fixture.Service.IssueInvitation(fixture.Owner, fixture.TenantA, fixture.MembershipA, "owner@example.com");
+        fixture.Service.Store.Memberships[fixture.MembershipA].Version++;
+        Assert.False(fixture.Service.AcceptInvitation(invitation.TokenValue, fixture.Owner, fixture.TenantA));
+
+        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.PendingInvitation;
+        fixture.Service.Store.Memberships[fixture.MembershipA].Version++;
+        var second = fixture.Service.IssueInvitation(fixture.Owner, fixture.TenantA, fixture.MembershipA, "owner@example.com");
+        fixture.Service.Store.Users[fixture.Owner].Version++;
+        Assert.False(fixture.Service.AcceptInvitation(second.TokenValue, fixture.Owner, fixture.TenantA));
+    }
+
+    [Fact]
+    public void InvitationAcceptanceDoesNotRestoreRevokedAuthority()
+    {
+        var fixture = CreateFixture();
+        foreach (var assignment in fixture.Service.Store.RoleAssignments[fixture.MembershipA])
+        {
+            assignment.IsActive = false;
+        }
+
+        foreach (var id in fixture.Service.Store.ScopeGrantsByMembership[fixture.MembershipA])
+        {
+            fixture.Service.Store.ScopeGrants[id].IsActive = false;
+        }
+
+        fixture.Service.Store.Memberships[fixture.MembershipA].Status = MembershipStatus.PendingInvitation;
+        var invitation = fixture.Service.IssueInvitation(fixture.Owner, fixture.TenantA, fixture.MembershipA, "owner@example.com");
+        Assert.True(fixture.Service.AcceptInvitation(invitation.TokenValue, fixture.Owner, fixture.TenantA));
+        Assert.Equal(0, fixture.Service.CountRoleAssignments(fixture.MembershipA));
+        Assert.Equal(0, fixture.Service.CountActiveScopeGrants(fixture.MembershipA));
+    }
+
+    [Fact]
+    public void IneligibleSupportGrantDoesNotBlockOrdinaryAuthorization()
+    {
+        var fixture = CreateSupportFixture();
+        var membership = fixture.Service.AddMembership(fixture.SupportUser, fixture.TenantA);
+        var role = fixture.Service.CreateRole("support-ordinary-ineligible", fixture.TenantA, false, [IdentityPermissions.SupportRead]);
+        SeedRoleAssignment(fixture, membership, role, fixture.Approver);
+        SeedScopeGrant(fixture, membership, OrganizationScope.ForTenant(fixture.TenantA), fixture.Approver);
+
+        var ordinary = fixture.Service.AuthorizeOrdinary(fixture.SupportSession.CookieValue, fixture.TenantA, IdentityPermissions.SupportRead, OrganizationScope.ForTenant(fixture.TenantA), fixture.Correlation);
+
+        Assert.True(ordinary.Allowed);
+    }
+
+    [Fact]
+    public void OrdinaryAuthorizationRenewsInactivityWithoutExtendingAbsoluteExpiry()
+    {
+        var fixture = CreateFixture();
+        var session = Authenticate(fixture);
+        var absoluteExpiry = fixture.Service.Store.Sessions[session.Id].AbsoluteExpiresAt;
+        fixture.Clock.Advance(TimeSpan.FromMinutes(29));
+        Assert.True(fixture.Service.AuthorizeOrdinary(session.CookieValue, fixture.TenantA, IdentityPermissions.Read, OrganizationScope.ForTenant(fixture.TenantA), fixture.Correlation).Allowed);
+        fixture.Clock.Advance(TimeSpan.FromMinutes(29));
+        Assert.True(fixture.Service.ValidateSession(session.CookieValue).Valid);
+        Assert.Equal(absoluteExpiry, fixture.Service.Store.Sessions[session.Id].AbsoluteExpiresAt);
+        fixture.Clock.Advance(TimeSpan.FromHours(7));
+        Assert.False(fixture.Service.ValidateSession(session.CookieValue).Valid);
+    }
+
+    [Fact]
+    public void InvalidOperationCannotReviveAnIdleSession()
+    {
+        var fixture = CreateFixture();
+        var session = Authenticate(fixture);
+        fixture.Clock.Advance(TimeSpan.FromMinutes(30));
+        Assert.False(fixture.Service.AuthorizeOrdinary(session.CookieValue, fixture.TenantA, IdentityPermissions.Read, OrganizationScope.ForTenant(fixture.TenantA), fixture.Correlation).Allowed);
+        Assert.False(fixture.Service.ValidateSession(session.CookieValue).Valid);
+    }
+
+    [Fact]
+    public void SupportAuthorizationRenewsInactivityAfterTrustedEvidence()
+    {
+        var fixture = CreateSupportFixture();
+        PrepareSupport(fixture);
+        fixture.Clock.Advance(TimeSpan.FromMinutes(29));
+        PrepareSupport(fixture);
+        Assert.True(fixture.Service.AuthorizeSupport(fixture.SupportSession.CookieValue, fixture.TenantA, fixture.SupportGrant, IdentityPermissions.SupportRead, OrganizationScope.ForTenant(fixture.TenantA), "incident diagnosis", fixture.Correlation).Allowed);
+        fixture.Clock.Advance(TimeSpan.FromMinutes(29));
+
+        Assert.True(fixture.Service.ValidateSession(fixture.SupportSession.CookieValue).Valid);
+    }
+
+    [Fact]
+    public void PlatformLifecycleAuthorizationRenewsInactivity()
+    {
+        var fixture = CreateFixture();
+        var platform = CreatePlatformActor(fixture, IdentityPermissions.SuspendGlobalUser, "platform.user.suspend");
+        fixture.Clock.Advance(TimeSpan.FromMinutes(29));
+        ReassertPlatformEvidence(fixture, platform, "platform.user.suspend");
+        var result = fixture.Service.SuspendUser(platform.Governance, platform.Session.CookieValue, fixture.OtherUser, "approved lifecycle", fixture.Service.GetUserVersion(fixture.OtherUser), "platform-renew-1");
+        fixture.Clock.Advance(TimeSpan.FromMinutes(29));
+
+        Assert.True(result.Succeeded);
+        Assert.True(fixture.Service.ValidateSession(platform.Session.CookieValue).Valid);
+    }
+
+    [Fact]
+    public void TenantLifecycleAuthorizationRenewsInactivity()
+    {
+        var fixture = CreateFixture();
+        var manager = AddTenantManager(fixture, "manager-renew@example.com");
+        fixture.Clock.Advance(TimeSpan.FromMinutes(29));
+        var result = fixture.Service.SuspendMembership(manager.CookieValue, fixture.TenantA, fixture.MembershipA, "approved lifecycle", fixture.Service.Store.Memberships[fixture.MembershipA].Version, "tenant-renew-1", fixture.Correlation);
+        fixture.Clock.Advance(TimeSpan.FromMinutes(29));
+
+        Assert.True(result.Succeeded);
+        Assert.True(fixture.Service.ValidateSession(manager.CookieValue).Valid);
+    }
+
     private static Fixture CreateFixture(
         bool withRole = true,
         bool withScope = true,
@@ -818,7 +1111,8 @@ public sealed class IdentityAuthorizationTests
         OrganizationScope? scope = null)
     {
         var clock = new ManualTimeProvider();
-        var service = new IdentityAuthorizationService(timeProvider: clock);
+        var source = new TestAuthenticationAssuranceEvidenceSource();
+        var service = new IdentityAuthorizationService(timeProvider: clock, assuranceEvidenceSource: source);
         var password = "Correct-horse-battery-1!";
         var tenantA = new TenantId(Guid.Parse("11111111-1111-1111-1111-111111111111"));
         var owner = service.CreateUser("owner@example.com", password);
@@ -828,17 +1122,17 @@ public sealed class IdentityAuthorizationTests
         var selectedPermission = permission ?? IdentityPermissions.Read;
         if (withRole)
         {
-            var role = service.CreateRole("tenant-admin", tenantA, false, [selectedPermission, IdentityPermissions.SuspendMembership, IdentityPermissions.ReactivateMembership, IdentityPermissions.RevokeMembership]);
-            service.AssignRole(membership, role, approver);
+            var role = service.CreateRole("tenant-admin", tenantA, false, [selectedPermission, IdentityPermissions.SuspendMembership, IdentityPermissions.ReactivateMembership, IdentityPermissions.RevokeMembership, IdentityPermissions.AssignRole, IdentityPermissions.AssignScopeGrant, IdentityPermissions.ApproveSupportGrant]);
+            SeedRoleAssignment(service, membership, role, approver);
         }
 
         var selectedScope = scope ?? OrganizationScope.ForTenant(tenantA);
         if (withScope)
         {
-            service.AddScopeGrant(membership, selectedScope, approver);
+            SeedScopeGrant(service, membership, selectedScope, approver);
         }
 
-        return new Fixture(service, clock, tenantA, owner, other, approver, membership, password, new CorrelationId("test-correlation"), selectedScope);
+        return new Fixture(service, clock, source, tenantA, owner, other, approver, membership, password, new CorrelationId("test-correlation"), selectedScope);
     }
 
     private static SupportFixture CreateSupportFixture(TimeSpan? lifetime = null)
@@ -847,20 +1141,20 @@ public sealed class IdentityAuthorizationTests
         var supportUser = baseFixture.Service.CreateUser("support@example.com", baseFixture.Password);
         var supportSession = Authenticate(baseFixture, supportUser, "support@example.com");
         var supportCase = baseFixture.Service.AddSupportCase(baseFixture.TenantA);
-        var supportGrant = baseFixture.Service.AddSupportGrant(
-            supportUser,
-            supportCase,
-            baseFixture.Approver,
-            baseFixture.TenantA,
-            "incident diagnosis",
-            OrganizationScope.ForTenant(baseFixture.TenantA),
-            [IdentityPermissions.SupportRead],
-            lifetime ?? TimeSpan.FromHours(1));
-        return new SupportFixture(baseFixture.Service, baseFixture.Clock, baseFixture.TenantA, baseFixture.Owner, baseFixture.OtherUser, baseFixture.Approver, baseFixture.MembershipA, baseFixture.Password, baseFixture.Correlation, baseFixture.Scope, supportUser, supportSession, supportCase, supportGrant);
+        var supportGrant = new SupportGrant(new SupportGrantId(Guid.NewGuid()), supportCase, supportUser, baseFixture.Approver, baseFixture.TenantA, "incident diagnosis", OrganizationScope.ForTenant(baseFixture.TenantA), [IdentityPermissions.SupportRead], baseFixture.Clock.GetUtcNow().Add(lifetime ?? TimeSpan.FromHours(1)));
+        baseFixture.Service.Store.SupportGrants.Add(supportGrant.Id, supportGrant);
+        return new SupportFixture(baseFixture.Service, baseFixture.Clock, baseFixture.Source, baseFixture.TenantA, baseFixture.Owner, baseFixture.OtherUser, baseFixture.Approver, baseFixture.MembershipA, baseFixture.Password, baseFixture.Correlation, baseFixture.Scope, supportUser, supportSession, supportCase, supportGrant.Id);
     }
 
     private static SessionHandle Authenticate(Fixture fixture) =>
         Authenticate(fixture, fixture.Owner, "owner@example.com");
+
+    private static SessionHandle Authenticate(SupportFixture fixture)
+    {
+        var result = fixture.Service.Authenticate("owner@example.com", fixture.Password);
+        Assert.True(result.Succeeded);
+        return new SessionHandle(result.SessionId!.Value, fixture.Owner, result.CookieValue!);
+    }
 
     private static SessionHandle Authenticate(Fixture fixture, UserId userId, string email)
     {
@@ -871,8 +1165,9 @@ public sealed class IdentityAuthorizationTests
 
     private static void PrepareSupport(SupportFixture fixture)
     {
-        fixture.Service.CompleteMfa(fixture.SupportSession.Id);
-        fixture.Service.MarkFreshAuthentication(fixture.SupportSession.Id, $"support:{fixture.SupportGrant.Value}:{IdentityPermissions.SupportRead.Value}");
+        Assert.True(fixture.Service.AcceptMfaEvidence(fixture.SupportSession.CookieValue, fixture.Source.IssueMfa(fixture.SupportUser, fixture.SupportSession.Id, fixture.Clock.GetUtcNow())));
+        var operation = $"support:{fixture.SupportGrant.Value}:{IdentityPermissions.SupportRead.Value}";
+        Assert.True(fixture.Service.AcceptFreshAuthenticationEvidence(fixture.SupportSession.CookieValue, operation, fixture.Source.IssueFresh(fixture.SupportUser, fixture.SupportSession.Id, operation, fixture.Clock.GetUtcNow())));
     }
 
     private static SessionHandle AddTenantManager(Fixture fixture, string email)
@@ -880,25 +1175,32 @@ public sealed class IdentityAuthorizationTests
         var manager = fixture.Service.CreateUser(email, fixture.Password);
         var membership = fixture.Service.AddMembership(manager, fixture.TenantA);
         var role = fixture.Service.CreateRole($"manager-{email}", fixture.TenantA, false, [IdentityPermissions.Read, IdentityPermissions.SuspendMembership, IdentityPermissions.ReactivateMembership, IdentityPermissions.RevokeMembership]);
-        fixture.Service.AssignRole(membership, role, fixture.Approver);
-        fixture.Service.AddScopeGrant(membership, OrganizationScope.ForTenant(fixture.TenantA), fixture.Approver);
+        SeedRoleAssignment(fixture, membership, role, fixture.Approver);
+        SeedScopeGrant(fixture, membership, OrganizationScope.ForTenant(fixture.TenantA), fixture.Approver);
         return Authenticate(fixture, manager, email);
     }
 
     private static PlatformFixture CreatePlatformActor(Fixture fixture, PermissionCode permission, string operation)
     {
         var platformUser = fixture.Service.CreateUser("platform@example.com", fixture.Password);
-        fixture.Service.GrantPlatformPermission(platformUser, permission);
+        SeedPlatformPermission(fixture, platformUser, permission, fixture.Approver);
         var session = Authenticate(fixture, platformUser, "platform@example.com");
-        fixture.Service.CompleteMfa(session.Id);
-        fixture.Service.MarkFreshAuthentication(session.Id, operation);
+        Assert.True(fixture.Service.AcceptMfaEvidence(session.CookieValue, fixture.Source.IssueMfa(platformUser, session.Id, fixture.Clock.GetUtcNow())));
+        Assert.True(fixture.Service.AcceptFreshAuthenticationEvidence(session.CookieValue, operation, fixture.Source.IssueFresh(platformUser, session.Id, operation, fixture.Clock.GetUtcNow())));
         var governance = new PlatformGovernanceContext(platformUser.Value, PlatformGovernancePurpose.SecurityEvidence, fixture.Correlation);
         return new PlatformFixture(platformUser, session, governance);
+    }
+
+    private static void ReassertPlatformEvidence(Fixture fixture, PlatformFixture platform, string operation)
+    {
+        Assert.True(fixture.Service.AcceptMfaEvidence(platform.Session.CookieValue, fixture.Source.IssueMfa(platform.User, platform.Session.Id, fixture.Clock.GetUtcNow())));
+        Assert.True(fixture.Service.AcceptFreshAuthenticationEvidence(platform.Session.CookieValue, operation, fixture.Source.IssueFresh(platform.User, platform.Session.Id, operation, fixture.Clock.GetUtcNow())));
     }
 
     private sealed record Fixture(
         IdentityAuthorizationService Service,
         ManualTimeProvider Clock,
+        TestAuthenticationAssuranceEvidenceSource Source,
         TenantId TenantA,
         UserId Owner,
         UserId OtherUser,
@@ -911,6 +1213,7 @@ public sealed class IdentityAuthorizationTests
     private sealed record SupportFixture(
         IdentityAuthorizationService Service,
         ManualTimeProvider Clock,
+        TestAuthenticationAssuranceEvidenceSource Source,
         TenantId TenantA,
         UserId Owner,
         UserId OtherUser,
@@ -933,5 +1236,86 @@ public sealed class IdentityAuthorizationTests
         public override DateTimeOffset GetUtcNow() => current;
 
         internal void Advance(TimeSpan duration) => current = current.Add(duration);
+    }
+
+    private static void SeedRoleAssignment(Fixture fixture, MembershipId membershipId, RoleId roleId, UserId approverId) =>
+        SeedRoleAssignment(fixture.Service, membershipId, roleId, approverId);
+
+    private static void SeedRoleAssignment(SupportFixture fixture, MembershipId membershipId, RoleId roleId, UserId approverId) =>
+        SeedRoleAssignment(fixture.Service, membershipId, roleId, approverId);
+
+    private static void SeedRoleAssignment(IdentityAuthorizationService service, MembershipId membershipId, RoleId roleId, UserId approverId)
+    {
+        var membership = service.Store.Memberships[membershipId];
+        service.Store.RoleAssignments[membershipId].Add(new RoleAssignment(roleId, membershipId, membership.UserId, membership.TenantId, approverId));
+    }
+
+    private static void SeedScopeGrant(Fixture fixture, MembershipId membershipId, OrganizationScope scope, UserId approverId) =>
+        SeedScopeGrant(fixture.Service, membershipId, scope, approverId);
+
+    private static void SeedScopeGrant(SupportFixture fixture, MembershipId membershipId, OrganizationScope scope, UserId approverId) =>
+        SeedScopeGrant(fixture.Service, membershipId, scope, approverId);
+
+    private static void SeedScopeGrant(IdentityAuthorizationService service, MembershipId membershipId, OrganizationScope scope, UserId approverId)
+    {
+        var membership = service.Store.Memberships[membershipId];
+        var id = new ScopeGrantId(Guid.NewGuid());
+        service.Store.ScopeGrants.Add(id, new AccessScopeGrant(id, membershipId, membership.UserId, scope, approverId));
+        service.Store.ScopeGrantsByMembership[membershipId].Add(id);
+    }
+
+    private static void SeedPlatformPermission(Fixture fixture, UserId userId, PermissionCode permission, UserId approverId)
+    {
+        if (!fixture.Service.Store.PlatformPermissions.TryGetValue(userId, out var assignments))
+        {
+            assignments = [];
+            fixture.Service.Store.PlatformPermissions.Add(userId, assignments);
+        }
+
+        assignments.Add(new PlatformPermissionAssignment(userId, permission, approverId, "test seed"));
+    }
+
+    private sealed class TestAuthenticationAssuranceEvidenceSource : IAuthenticationAssuranceEvidenceSource
+    {
+        private readonly Dictionary<string, AuthenticationAssuranceEvidence> evidenceByToken = new(StringComparer.Ordinal);
+
+        internal string IssueMfa(UserId userId, SessionId sessionId, DateTimeOffset now) =>
+            Issue(new AuthenticationAssuranceEvidence(userId, sessionId, AuthenticationAssuranceType.Mfa, null, now, now.AddMinutes(5), SourceId, true));
+
+        internal string IssueFresh(UserId userId, SessionId sessionId, string operation, DateTimeOffset now) =>
+            Issue(new AuthenticationAssuranceEvidence(userId, sessionId, AuthenticationAssuranceType.FreshAuthentication, operation, now, now.AddMinutes(5), SourceId, true));
+
+        public string SourceId => "test-assurance";
+
+        public bool TryValidateMfaEvidence(string opaqueEvidence, UserId expectedUserId, SessionId expectedSessionId, DateTimeOffset now, out AuthenticationAssuranceEvidence evidence) =>
+            TryTake(opaqueEvidence, expectedUserId, expectedSessionId, AuthenticationAssuranceType.Mfa, null, now, out evidence);
+
+        public bool TryValidateFreshAuthenticationEvidence(string opaqueEvidence, UserId expectedUserId, SessionId expectedSessionId, string operation, DateTimeOffset now, out AuthenticationAssuranceEvidence evidence) =>
+            TryTake(opaqueEvidence, expectedUserId, expectedSessionId, AuthenticationAssuranceType.FreshAuthentication, operation, now, out evidence);
+
+        private string Issue(AuthenticationAssuranceEvidence evidence)
+        {
+            var token = $"test-evidence-{Guid.NewGuid():N}";
+            evidenceByToken.Add(token, evidence);
+            return token;
+        }
+
+        private bool TryTake(string token, UserId userId, SessionId sessionId, AuthenticationAssuranceType type, string? operation, DateTimeOffset now, out AuthenticationAssuranceEvidence evidence)
+        {
+            if (!evidenceByToken.TryGetValue(token, out evidence!)
+                || evidence.UserId != userId
+                || evidence.SessionId != sessionId
+                || evidence.Type != type
+                || !string.Equals(evidence.Operation, operation, StringComparison.Ordinal)
+                || evidence.IssuedAt > now
+                || evidence.ExpiresAt <= now)
+            {
+                evidence = null!;
+                return false;
+            }
+
+            evidenceByToken.Remove(token);
+            return true;
+        }
     }
 }

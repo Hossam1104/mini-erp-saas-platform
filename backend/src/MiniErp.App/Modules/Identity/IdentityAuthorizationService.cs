@@ -22,18 +22,21 @@ internal sealed class IdentityAuthorizationService
     private readonly IdentitySecurityOptions options;
     private readonly TimeProvider timeProvider;
     private readonly IPasswordHasher<GlobalUser> passwordHasher;
+    private readonly IAuthenticationAssuranceEvidenceSource assuranceEvidenceSource;
 
     internal IdentityAuthorizationService(
         IdentityStore? store = null,
         IdentitySecurityOptions? options = null,
         TimeProvider? timeProvider = null,
-        IPasswordHasher<GlobalUser>? passwordHasher = null)
+        IPasswordHasher<GlobalUser>? passwordHasher = null,
+        IAuthenticationAssuranceEvidenceSource? assuranceEvidenceSource = null)
     {
         this.store = store ?? new IdentityStore();
         this.options = options ?? IdentitySecurityOptions.Default;
         this.options.Validate();
         this.timeProvider = timeProvider ?? TimeProvider.System;
         this.passwordHasher = passwordHasher ?? new PasswordHasher<GlobalUser>();
+        this.assuranceEvidenceSource = assuranceEvidenceSource ?? new UnavailableAuthenticationAssuranceEvidenceSource();
     }
 
     internal IdentityStore Store => store;
@@ -118,62 +121,192 @@ internal sealed class IdentityAuthorizationService
         {
             var permissionSet = permissions.ToHashSet();
             EnsureApprovedPermissionsUnsafe(permissionSet);
+            if (!platformOwned && permissionSet.Contains(IdentityPermissions.AssignPlatformPermission))
+            {
+                throw new InvalidOperationException("Platform authority permissions are configuration-led and cannot be placed in a Tenant-owned role.");
+            }
+
             var id = new RoleId(Guid.NewGuid());
             store.Roles.Add(id, new IdentityRole(id, name, tenantId, platformOwned, permissionSet));
             return id;
         }
     }
 
-    internal void GrantPlatformPermission(UserId userId, PermissionCode permission)
+    internal AuthorityMutationResult AssignPlatformPermission(
+        PlatformGovernanceContext governance,
+        string actorCookieValue,
+        UserId targetUserId,
+        PermissionCode permission,
+        string reason,
+        long expectedVersion,
+        string idempotencyKey)
     {
+        const string operation = "platform.authority.assign";
         lock (store.SyncRoot)
         {
-            RequireUserUnsafe(userId);
-            EnsureApprovedPermissionUnsafe(permission);
-            if (!store.PlatformPermissions.TryGetValue(userId, out var permissions))
+            if (!TryGetPlatformActorUnsafe(
+                    governance,
+                    actorCookieValue,
+                    IdentityPermissions.AssignPlatformPermission,
+                    operation,
+                    reason,
+                    out var actor,
+                    out var actorSession))
             {
-                permissions = [];
-                store.PlatformPermissions.Add(userId, permissions);
+                return AuthorityDenied(governance.ActorId, operation, governance.CorrelationId, "platform_authorization_denied");
             }
 
-            permissions.Add(permission);
+            if (!store.Users.TryGetValue(targetUserId, out var target)
+                || target.Status != GlobalUserStatus.Active
+                || targetUserId == actor.Id)
+            {
+                return AuthorityDenied(actor.Id.Value, operation, governance.CorrelationId, "target_denied");
+            }
+
+            try
+            {
+                EnsureApprovedPermissionUnsafe(permission);
+            }
+            catch (InvalidOperationException)
+            {
+                return AuthorityDenied(actor.Id.Value, operation, governance.CorrelationId, "permission_denied");
+            }
+
+            if (!TryTakeIdempotencyUnsafe(idempotencyKey, operation, $"{targetUserId.Value:N}:{permission.Value}"))
+            {
+                return AuthorityDenied(actor.Id.Value, operation, governance.CorrelationId, "idempotency_conflict");
+            }
+
+            var assignments = store.PlatformPermissions.TryGetValue(targetUserId, out var existing)
+                ? existing
+                : store.PlatformPermissions[targetUserId] = [];
+            var active = assignments.FirstOrDefault(item => item.Permission == permission && item.IsActive);
+            if (active is not null)
+            {
+                TouchSessionUnsafe(actorSession);
+                return AuthorityAllowed(actor.Id.Value, operation, "platform", governance.CorrelationId, actorSession.Id, target.Version, null, "already_applied");
+            }
+
+            if (assignments.Any(item => item.Permission == permission && !item.IsActive)
+                || target.Version != expectedVersion)
+            {
+                return AuthorityDenied(actor.Id.Value, operation, governance.CorrelationId, "concurrency_or_nonresurrection_denied");
+            }
+
+            assignments.Add(new PlatformPermissionAssignment(targetUserId, permission, actor.Id, reason.Trim()));
+            TouchSessionUnsafe(actorSession);
+            return AuthorityAllowed(actor.Id.Value, operation, "platform", governance.CorrelationId, actorSession.Id, target.Version, targetUserId.Value, "authority_assigned");
         }
     }
 
-    internal void AssignRole(MembershipId membershipId, RoleId roleId, UserId approverId)
+    internal AuthorityMutationResult RevokePlatformPermission(
+        PlatformGovernanceContext governance,
+        string actorCookieValue,
+        UserId targetUserId,
+        PermissionCode permission,
+        string reason,
+        long expectedVersion,
+        string idempotencyKey)
     {
+        const string operation = "platform.authority.revoke";
         lock (store.SyncRoot)
         {
-            var membership = RequireMembershipUnsafe(membershipId);
-            var role = RequireRoleUnsafe(roleId);
-            RequireUserUnsafe(approverId);
-            if (role.TenantId.HasValue && role.TenantId.Value != membership.TenantId)
+            if (!TryGetPlatformActorUnsafe(
+                    governance,
+                    actorCookieValue,
+                    IdentityPermissions.AssignPlatformPermission,
+                    operation,
+                    reason,
+                    out var actor,
+                    out var actorSession)
+                || actor.Id == targetUserId)
             {
-                throw new InvalidOperationException("A Tenant-owned role must belong to the membership Tenant.");
+                return AuthorityDenied(governance.ActorId, operation, governance.CorrelationId, "platform_authorization_denied");
             }
 
-            if (!role.PlatformOwned && !role.TenantId.HasValue)
+            if (!store.Users.TryGetValue(targetUserId, out var target)
+                || !TryTakeIdempotencyUnsafe(idempotencyKey, operation, $"{targetUserId.Value:N}:{permission.Value}"))
             {
-                throw new InvalidOperationException("Role ownership is not valid.");
+                return AuthorityDenied(actor.Id.Value, operation, governance.CorrelationId, "target_or_idempotency_denied");
             }
 
-            if (approverId == membership.UserId)
+            var assignment = store.PlatformPermissions.TryGetValue(targetUserId, out var assignments)
+                ? assignments.LastOrDefault(item => item.Permission == permission && item.IsActive)
+                : null;
+            if (assignment is null)
             {
-                throw new InvalidOperationException("A role assignment requires a separate named approver.");
+                TouchSessionUnsafe(actorSession);
+                return AuthorityAllowed(actor.Id.Value, operation, "platform", governance.CorrelationId, actorSession.Id, target.Version, targetUserId.Value, "already_applied");
             }
 
-            var assignments = store.RoleAssignments[membershipId];
-            if (assignments.Any(assignment => assignment.RoleId == roleId && assignment.IsActive))
+            if (target.Version != expectedVersion)
             {
-                return;
+                return AuthorityDenied(actor.Id.Value, operation, governance.CorrelationId, "concurrency_conflict");
             }
 
-            if (assignments.Any(assignment => assignment.RoleId == roleId && !assignment.IsActive))
+            assignment.IsActive = false;
+            assignment.Version++;
+            TouchSessionUnsafe(actorSession);
+            return AuthorityAllowed(actor.Id.Value, operation, "platform", governance.CorrelationId, actorSession.Id, assignment.Version, targetUserId.Value, "authority_revoked");
+        }
+    }
+
+    internal AuthorityMutationResult AssignRole(
+        string actorCookieValue,
+        TenantId tenantId,
+        MembershipId targetMembershipId,
+        RoleId roleId,
+        OrganizationScope targetScope,
+        string reason,
+        long expectedVersion,
+        string idempotencyKey,
+        CorrelationId correlationId)
+    {
+        const string operation = "tenant.role.assign";
+        lock (store.SyncRoot)
+        {
+            var decision = AuthorizeOrdinaryUnsafe(actorCookieValue, tenantId, IdentityPermissions.AssignRole, targetScope, correlationId, false, true, out var actorSession, out var actor);
+            if (!decision.Allowed || string.IsNullOrWhiteSpace(reason))
             {
-                throw new InvalidOperationException("A revoked role assignment cannot be silently resurrected.");
+                return AuthorityDenied(actor?.Id.Value ?? Guid.Empty, operation, correlationId, "tenant_authorization_denied", tenantId);
             }
 
-            assignments.Add(new RoleAssignment(roleId, membershipId, membership.UserId, membership.TenantId, approverId));
+            if (!store.Memberships.TryGetValue(targetMembershipId, out var membership)
+                || membership.TenantId != tenantId
+                || membership.Status != MembershipStatus.Active
+                || !store.Users.TryGetValue(membership.UserId, out var targetUser)
+                || targetUser.Status != GlobalUserStatus.Active
+                || !store.Roles.TryGetValue(roleId, out var role)
+                || (role.TenantId.HasValue && role.TenantId.Value != tenantId)
+                || (!role.PlatformOwned && !role.TenantId.HasValue)
+                || membership.UserId == actor.Id)
+            {
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "target_denied", tenantId);
+            }
+
+            if (!TryTakeIdempotencyUnsafe(idempotencyKey, operation, $"{targetMembershipId.Value:N}:{roleId.Value:N}"))
+            {
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "idempotency_conflict", tenantId);
+            }
+
+            var assignments = store.RoleAssignments[targetMembershipId];
+            var active = assignments.FirstOrDefault(item => item.RoleId == roleId && item.IsActive);
+            if (active is not null)
+            {
+                TouchSessionUnsafe(actorSession);
+                return AuthorityAllowed(actor.Id.Value, operation, "ordinary", correlationId, actorSession.Id, membership.Version, null, "already_applied", tenantId);
+            }
+
+            if (assignments.Any(item => item.RoleId == roleId && !item.IsActive)
+                || membership.Version != expectedVersion)
+            {
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "concurrency_or_nonresurrection_denied", tenantId);
+            }
+
+            assignments.Add(new RoleAssignment(roleId, targetMembershipId, membership.UserId, tenantId, actor.Id));
+            membership.Version++;
+            TouchSessionUnsafe(actorSession);
+            return AuthorityAllowed(actor.Id.Value, operation, "ordinary", correlationId, actorSession.Id, membership.Version, null, "authority_assigned", tenantId);
         }
     }
 
@@ -194,42 +327,69 @@ internal sealed class IdentityAuthorizationService
         }
     }
 
-    internal ScopeGrantId AddScopeGrant(MembershipId membershipId, OrganizationScope scope, UserId approverId)
+    internal AuthorityMutationResult AddScopeGrant(
+        string actorCookieValue,
+        TenantId tenantId,
+        MembershipId targetMembershipId,
+        OrganizationScope scope,
+        string reason,
+        long expectedVersion,
+        string idempotencyKey,
+        CorrelationId correlationId)
     {
         lock (store.SyncRoot)
         {
-            var membership = RequireMembershipUnsafe(membershipId);
-            RequireUserUnsafe(approverId);
-            if (membership.TenantId != scope.TenantId)
+            const string operation = "tenant.scope.grant";
+            var decision = AuthorizeOrdinaryUnsafe(actorCookieValue, tenantId, IdentityPermissions.AssignScopeGrant, scope, correlationId, false, true, out var actorSession, out var actor);
+            if (!decision.Allowed || string.IsNullOrWhiteSpace(reason))
             {
-                throw new InvalidOperationException("A scope grant must remain inside its membership Tenant.");
+                return AuthorityDenied(actor?.Id.Value ?? Guid.Empty, operation, correlationId, "tenant_authorization_denied", tenantId);
             }
 
-            if (membership.UserId == approverId)
+            if (!store.Memberships.TryGetValue(targetMembershipId, out var membership)
+                || membership.TenantId != tenantId
+                || membership.Status != MembershipStatus.Active
+                || !store.Users.TryGetValue(membership.UserId, out var targetUser)
+                || targetUser.Status != GlobalUserStatus.Active
+                || membership.UserId == actor.Id
+                || scope.TenantId != tenantId)
             {
-                throw new InvalidOperationException("A scope grant requires a separate named approver.");
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "target_denied", tenantId);
             }
 
-            var existing = store.ScopeGrantsByMembership[membershipId]
+            if (!TryTakeIdempotencyUnsafe(idempotencyKey, operation, $"{targetMembershipId.Value:N}:{scope.Kind}:{scope.TargetId:N}"))
+            {
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "idempotency_conflict", tenantId);
+            }
+
+            var existing = store.ScopeGrantsByMembership[targetMembershipId]
                 .Select(id => store.ScopeGrants[id])
                 .SingleOrDefault(grant => grant.IsActive && grant.Scope == scope);
             if (existing is not null)
             {
-                return existing.Id;
+                TouchSessionUnsafe(actorSession);
+                return AuthorityAllowed(actor.Id.Value, operation, "ordinary", correlationId, actorSession.Id, membership.Version, existing.Id.Value, "already_applied", tenantId);
             }
 
-            var revoked = store.ScopeGrantsByMembership[membershipId]
+            var revoked = store.ScopeGrantsByMembership[targetMembershipId]
                 .Select(id => store.ScopeGrants[id])
                 .Any(grant => !grant.IsActive && grant.Scope == scope);
             if (revoked)
             {
-                throw new InvalidOperationException("A revoked scope grant cannot be silently resurrected.");
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "nonresurrection_denied", tenantId);
+            }
+
+            if (membership.Version != expectedVersion)
+            {
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "concurrency_conflict", tenantId);
             }
 
             var id = new ScopeGrantId(Guid.NewGuid());
-            store.ScopeGrants.Add(id, new AccessScopeGrant(id, membershipId, membership.UserId, scope, approverId));
-            store.ScopeGrantsByMembership[membershipId].Add(id);
-            return id;
+            store.ScopeGrants.Add(id, new AccessScopeGrant(id, targetMembershipId, membership.UserId, scope, actor.Id));
+            store.ScopeGrantsByMembership[targetMembershipId].Add(id);
+            membership.Version++;
+            TouchSessionUnsafe(actorSession);
+            return AuthorityAllowed(actor.Id.Value, operation, "ordinary", correlationId, actorSession.Id, membership.Version, id.Value, "authority_assigned", tenantId);
         }
     }
 
@@ -281,59 +441,94 @@ internal sealed class IdentityAuthorizationService
         {
             if (store.SupportCases.TryGetValue(caseId, out var supportCase))
             {
-                supportCase.IsActive = false;
+                if (supportCase.IsActive)
+                {
+                    supportCase.IsActive = false;
+                    supportCase.Version++;
+                }
             }
         }
     }
 
-    internal SupportGrantId AddSupportGrant(
+    internal AuthorityMutationResult AddSupportGrant(
+        string actorCookieValue,
+        TenantId tenantId,
         UserId supportUserId,
         SupportCaseId caseId,
-        UserId tenantApproverId,
-        TenantId tenantId,
         string purpose,
         OrganizationScope scope,
         IEnumerable<PermissionCode> permissions,
-        TimeSpan lifetime)
+        TimeSpan lifetime,
+        string reason,
+        long expectedVersion,
+        string idempotencyKey,
+        CorrelationId correlationId)
     {
         ArgumentNullException.ThrowIfNull(permissions);
-        if (lifetime <= TimeSpan.Zero || lifetime > TimeSpan.FromHours(8))
-        {
-            throw new ArgumentOutOfRangeException(nameof(lifetime));
-        }
-
         lock (store.SyncRoot)
         {
-            var user = RequireUserUnsafe(supportUserId);
-            var approver = RequireUserUnsafe(tenantApproverId);
-            var supportCase = RequireSupportCaseUnsafe(caseId);
-            if (supportCase.TenantId != tenantId || scope.TenantId != tenantId)
+            const string operation = "support.grant.approve";
+            var decision = AuthorizeOrdinaryUnsafe(actorCookieValue, tenantId, IdentityPermissions.ApproveSupportGrant, scope, correlationId, false, true, out var actorSession, out var actor);
+            if (!decision.Allowed || string.IsNullOrWhiteSpace(reason) || string.IsNullOrWhiteSpace(purpose))
             {
-                throw new InvalidOperationException("Support access must remain inside the approved Tenant and case.");
+                return AuthorityDenied(actor?.Id.Value ?? Guid.Empty, operation, correlationId, "tenant_authorization_denied", tenantId);
             }
 
-            if (tenantApproverId == supportUserId || approver.Status != GlobalUserStatus.Active)
+            if (!store.Users.TryGetValue(supportUserId, out var user)
+                || !store.SupportCases.TryGetValue(caseId, out var supportCase)
+                || supportCase.TenantId != tenantId
+                || scope.TenantId != tenantId)
             {
-                throw new InvalidOperationException("SupportGrant requires a separate active Tenant approver.");
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "target_denied", tenantId);
+            }
+
+            if (actor.Id == supportUserId || user.Status != GlobalUserStatus.Active || !supportCase.IsActive)
+            {
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "approver_or_target_denied", tenantId);
             }
 
             var permissionSet = permissions.ToHashSet();
-            EnsureApprovedPermissionsUnsafe(permissionSet);
-            if (permissionSet.Contains(IdentityPermissions.Export))
+            try
             {
-                throw new InvalidOperationException("SupportGrant cannot grant export authority.");
+                EnsureApprovedPermissionsUnsafe(permissionSet);
+            }
+            catch (InvalidOperationException)
+            {
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "permission_denied", tenantId);
             }
 
-            if (user.Status != GlobalUserStatus.Active)
+            if (permissionSet.Count == 0
+                || permissionSet.Contains(IdentityPermissions.Export)
+                || lifetime <= TimeSpan.Zero
+                || lifetime > TimeSpan.FromHours(8)
+                || !TryTakeIdempotencyUnsafe(idempotencyKey, operation, $"{caseId.Value:N}:{supportUserId.Value:N}"))
             {
-                throw new InvalidOperationException("Support access requires an active global User.");
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "support_grant_policy_denied", tenantId);
+            }
+
+            var existing = store.SupportGrants.Values.FirstOrDefault(grant =>
+                grant.CaseId == caseId
+                && grant.UserId == supportUserId
+                && grant.TenantApproverId == actor.Id
+                && grant.RevokedAt is null);
+            if (existing is not null)
+            {
+                TouchSessionUnsafe(actorSession);
+                return AuthorityAllowed(actor.Id.Value, operation, "ordinary", correlationId, actorSession.Id, supportCase.Version, existing.Id.Value, "already_applied", tenantId, purpose, $"{scope.Kind}:{scope.TargetId}");
+            }
+
+            if (supportCase.Version != expectedVersion)
+            {
+                return AuthorityDenied(actor.Id.Value, operation, correlationId, "concurrency_conflict", tenantId);
             }
 
             var id = new SupportGrantId(Guid.NewGuid());
             store.SupportGrants.Add(
                 id,
-                new SupportGrant(id, caseId, supportUserId, tenantApproverId, tenantId, purpose, scope, permissionSet, Now.Add(lifetime)));
-            return id;
+                new SupportGrant(id, caseId, supportUserId, actor.Id, tenantId, purpose, scope, permissionSet, Now.Add(lifetime)));
+            supportCase.Version++;
+            TouchSessionUnsafe(actorSession);
+            return AuthorityAllowed(actor.Id.Value, operation, "ordinary", correlationId, actorSession.Id, supportCase.Version, id.Value, "authority_assigned", tenantId, purpose, $"{scope.Kind}:{scope.TargetId}");
         }
     }
 
@@ -411,8 +606,7 @@ internal sealed class IdentityAuthorizationService
                 return new SessionValidation(false, null, null, GenericDeniedCode);
             }
 
-            session.LastActivityAt = Now;
-            session.Version++;
+            TouchSessionUnsafe(session);
             return new SessionValidation(true, user.Id, session.Id, "session_valid");
         }
     }
@@ -435,35 +629,67 @@ internal sealed class IdentityAuthorizationService
         }
     }
 
-    internal void CompleteMfa(SessionId sessionId)
+    internal bool AcceptMfaEvidence(string cookieValue, string opaqueEvidence)
     {
         lock (store.SyncRoot)
         {
-            if (store.Sessions.TryGetValue(sessionId, out var session)
-                && TryGetValidSessionUnsafe(session, out var user)
-                && user.MfaEnabled)
+            if (!TryGetValidSessionUnsafe(cookieValue, out var session, out var user)
+                || !user.MfaEnabled
+                || !assuranceEvidenceSource.TryValidateMfaEvidence(opaqueEvidence, user.Id, session.Id, Now, out var evidence)
+                || evidence.SourceId != assuranceEvidenceSource.SourceId
+                || evidence.Type != AuthenticationAssuranceType.Mfa
+                || evidence.UserId != user.Id
+                || evidence.SessionId != session.Id
+                || evidence.IssuedAt > Now
+                || evidence.ExpiresAt <= Now)
             {
-                session.MfaSatisfiedAt = Now;
-                session.Version++;
+                return false;
             }
+
+            var evidenceHash = HashToken(opaqueEvidence);
+            if (evidence.SingleUse && !store.ConsumedAssuranceEvidence.Add(evidenceHash))
+            {
+                return false;
+            }
+
+            session.MfaSatisfiedAt = Now;
+            TouchSessionUnsafe(session);
+            return true;
         }
     }
 
-    internal void MarkFreshAuthentication(SessionId sessionId, string operation)
+    internal bool AcceptFreshAuthenticationEvidence(string cookieValue, string operation, string opaqueEvidence)
     {
         if (string.IsNullOrWhiteSpace(operation))
         {
-            throw new ArgumentException("An operation-bound fresh-authentication operation is required.", nameof(operation));
+            return false;
         }
 
+        var normalizedOperation = operation.Trim();
         lock (store.SyncRoot)
         {
-            if (store.Sessions.TryGetValue(sessionId, out var session)
-                && TryGetValidSessionUnsafe(session, out _))
+            if (!TryGetValidSessionUnsafe(cookieValue, out var session, out var user)
+                || !assuranceEvidenceSource.TryValidateFreshAuthenticationEvidence(opaqueEvidence, user.Id, session.Id, normalizedOperation, Now, out var evidence)
+                || evidence.SourceId != assuranceEvidenceSource.SourceId
+                || evidence.Type != AuthenticationAssuranceType.FreshAuthentication
+                || evidence.UserId != user.Id
+                || evidence.SessionId != session.Id
+                || !string.Equals(evidence.Operation, normalizedOperation, StringComparison.Ordinal)
+                || evidence.IssuedAt > Now
+                || evidence.ExpiresAt <= Now)
             {
-                session.FreshAuthenticationByOperation[operation.Trim()] = Now;
-                session.Version++;
+                return false;
             }
+
+            var evidenceHash = HashToken(opaqueEvidence);
+            if (evidence.SingleUse && !store.ConsumedAssuranceEvidence.Add(evidenceHash))
+            {
+                return false;
+            }
+
+            session.FreshAuthenticationByOperation[normalizedOperation] = Now;
+            TouchSessionUnsafe(session);
+            return true;
         }
     }
 
@@ -497,7 +723,7 @@ internal sealed class IdentityAuthorizationService
                 return Denied(user.Id, "ordinary", "role_permission_or_scope_denied", correlationId);
             }
 
-            if (HasActiveSupportGrantUnsafe(user.Id, requestedTenant, permission, requestedScope))
+            if (HasActiveSupportGrantUnsafe(session, user.Id, requestedTenant, permission, requestedScope))
             {
                 return Denied(user.Id, "ordinary", "authorization_path_conflict", correlationId);
             }
@@ -509,6 +735,7 @@ internal sealed class IdentityAuthorizationService
                 new ScopeReference($"{requestedScope.Kind}:{requestedScope.TargetId}"),
                 correlationId,
                 user.Id.Value);
+            TouchSessionUnsafe(session);
             return Allowed(user.Id, "ordinary", requestedTenant, session.Id, context, correlationId, "ordinary_authorized");
         }
     }
@@ -559,6 +786,7 @@ internal sealed class IdentityAuthorizationService
                 new ScopeReference($"{requestedScope.Kind}:{requestedScope.TargetId}"),
                 correlationId,
                 user.Id.Value);
+            TouchSessionUnsafe(session);
             return Allowed(user.Id, "support", requestedTenant, session.Id, context, correlationId, "support_authorized", grant.Purpose, $"{requestedScope.Kind}:{requestedScope.TargetId}");
         }
     }
@@ -700,7 +928,10 @@ internal sealed class IdentityAuthorizationService
         {
             var user = RequireUserUnsafe(userId);
             var membership = RequireMembershipUnsafe(membershipId);
-            if (membership.UserId != userId || membership.TenantId != tenantId || user.NormalizedEmail != normalizedEmail)
+            if (membership.UserId != userId
+                || membership.TenantId != tenantId
+                || membership.Status != MembershipStatus.PendingInvitation
+                || user.NormalizedEmail != normalizedEmail)
             {
                 throw new InvalidOperationException("Invitation identity and Tenant ownership must match.");
             }
@@ -709,7 +940,7 @@ internal sealed class IdentityAuthorizationService
             var invitationId = new InvitationId(Guid.NewGuid());
             store.InvitationsByTokenHash.Add(
                 HashToken(token),
-                new Invitation(invitationId, HashToken(token), normalizedEmail, userId, user.Version, tenantId, membershipId, Now.Add(options.InvitationLifetime)));
+                new Invitation(invitationId, HashToken(token), normalizedEmail, userId, user.Version, tenantId, membershipId, membership.Version, Now.Add(options.InvitationLifetime)));
             return new InvitationHandle(invitationId, token);
         }
     }
@@ -726,13 +957,19 @@ internal sealed class IdentityAuthorizationService
                 || !store.Users.TryGetValue(userId, out var user)
                 || user.NormalizedEmail != invitation.NormalizedEmail
                 || user.Version != invitation.UserVersionAtIssue
-                || user.Status != GlobalUserStatus.Active)
+                || user.Status != GlobalUserStatus.Active
+                || !store.Memberships.TryGetValue(invitation.MembershipId, out var membership)
+                || membership.UserId != userId
+                || membership.TenantId != requestedTenant
+                || membership.Version != invitation.MembershipVersionAtIssue
+                || membership.Status != MembershipStatus.PendingInvitation)
             {
                 return false;
             }
 
             invitation.Consumed = true;
-            store.Memberships[invitation.MembershipId].Status = MembershipStatus.Active;
+            membership.Status = MembershipStatus.Active;
+            membership.Version++;
             return true;
         }
     }
@@ -855,6 +1092,7 @@ internal sealed class IdentityAuthorizationService
 
             if (target.Status == desiredStatus)
             {
+                TouchSessionUnsafe(actorSession);
                 return LifecycleAllowed(actor.Id.Value, operation, target, actorSession.Id, correlationId, "already_applied");
             }
 
@@ -876,6 +1114,7 @@ internal sealed class IdentityAuthorizationService
                 RevokeAllSessionsUnsafe(targetUserId, operation);
             }
 
+            TouchSessionUnsafe(actorSession);
             return LifecycleAllowed(actor.Id.Value, operation, target, actorSession.Id, correlationId, "lifecycle_changed");
         }
     }
@@ -900,6 +1139,8 @@ internal sealed class IdentityAuthorizationService
                 permission,
                 OrganizationScope.ForTenant(tenantId),
                 correlationId,
+                false,
+                false,
                 out var actorSession,
                 out var actor);
             if (!actorDecision.Allowed || string.IsNullOrWhiteSpace(reason))
@@ -920,6 +1161,7 @@ internal sealed class IdentityAuthorizationService
 
             if (target.Status == desiredStatus)
             {
+                TouchSessionUnsafe(actorSession);
                 return LifecycleAllowed(actor.Id.Value, operation, target.Version, actorSession.Id, correlationId, "already_applied", tenantId);
             }
 
@@ -950,6 +1192,7 @@ internal sealed class IdentityAuthorizationService
                 RevokeSessionsForMembershipUnsafe(targetMembershipId, operation);
             }
 
+            TouchSessionUnsafe(actorSession);
             return LifecycleAllowed(actor.Id.Value, operation, target.Version, actorSession.Id, correlationId, "lifecycle_changed", tenantId);
         }
     }
@@ -984,6 +1227,8 @@ internal sealed class IdentityAuthorizationService
         PermissionCode permission,
         OrganizationScope requestedScope,
         CorrelationId correlationId,
+        bool renewActivity,
+        bool allowTenantScopeExpansion,
         out UserSession session,
         out GlobalUser user)
     {
@@ -1000,12 +1245,12 @@ internal sealed class IdentityAuthorizationService
             candidate.UserId == authenticatedUser.Id
             && candidate.TenantId == requestedTenant
             && candidate.Status == MembershipStatus.Active);
-        if (membership is null || !HasPermissionUnsafe(membership, permission) || !HasScopeUnsafe(membership, requestedScope))
+        if (membership is null || !HasPermissionUnsafe(membership, permission) || !HasScopeUnsafe(membership, requestedScope, allowTenantScopeExpansion))
         {
             return Denied(user.Id, "ordinary", "role_permission_or_scope_denied", correlationId);
         }
 
-        if (HasActiveSupportGrantUnsafe(user.Id, requestedTenant, permission, requestedScope))
+        if (HasActiveSupportGrantUnsafe(session, user.Id, requestedTenant, permission, requestedScope))
         {
             return Denied(user.Id, "ordinary", "authorization_path_conflict", correlationId);
         }
@@ -1017,6 +1262,11 @@ internal sealed class IdentityAuthorizationService
             new ScopeReference($"{requestedScope.Kind}:{requestedScope.TargetId}"),
             correlationId,
             user.Id.Value);
+        if (renewActivity)
+        {
+            TouchSessionUnsafe(session);
+        }
+
         return Allowed(user.Id, "ordinary", requestedTenant, session.Id, context, correlationId, "ordinary_authorized");
     }
 
@@ -1076,10 +1326,10 @@ internal sealed class IdentityAuthorizationService
                 && role.Permissions.Contains(permission));
     }
 
-    private bool HasScopeUnsafe(TenantMembership membership, OrganizationScope requestedScope)
+    private bool HasScopeUnsafe(TenantMembership membership, OrganizationScope requestedScope, bool allowTenantScopeExpansion = false)
     {
         return store.ScopeGrantsByMembership.TryGetValue(membership.Id, out var ids)
-            && ids.Select(id => store.ScopeGrants[id]).Any(grant => grant.IsActive && ScopeContainsUnsafe(grant.Scope, requestedScope));
+            && ids.Select(id => store.ScopeGrants[id]).Any(grant => grant.IsActive && ScopeContainsUnsafe(grant.Scope, requestedScope, allowTenantScopeExpansion));
     }
 
     private bool HasActiveOrdinaryAuthorizationUnsafe(UserId userId, TenantId tenantId, PermissionCode permission, OrganizationScope requestedScope)
@@ -1089,7 +1339,12 @@ internal sealed class IdentityAuthorizationService
         return membership is not null && HasPermissionUnsafe(membership, permission) && HasScopeUnsafe(membership, requestedScope);
     }
 
-    private bool HasActiveSupportGrantUnsafe(UserId userId, TenantId tenantId, PermissionCode permission, OrganizationScope requestedScope)
+    private bool HasActiveSupportGrantUnsafe(
+        UserSession session,
+        UserId userId,
+        TenantId tenantId,
+        PermissionCode permission,
+        OrganizationScope requestedScope)
     {
         var now = Now;
         return store.SupportGrants.Values.Any(grant =>
@@ -1097,15 +1352,23 @@ internal sealed class IdentityAuthorizationService
             && grant.TenantId == tenantId
             && grant.RevokedAt is null
             && grant.ExpiresAt > now
+            && store.SupportCases.TryGetValue(grant.CaseId, out var supportCase)
+            && supportCase.IsActive
             && grant.Permissions.Contains(permission)
-            && ScopeContainsUnsafe(grant.Scope, requestedScope));
+            && ScopeContainsUnsafe(grant.Scope, requestedScope)
+            && HasMfaAndFreshAuthenticationUnsafe(session, store.Users[userId], $"support:{grant.Id.Value}:{permission.Value}"));
     }
 
-    private bool ScopeContainsUnsafe(OrganizationScope grantScope, OrganizationScope requestedScope)
+    private bool ScopeContainsUnsafe(OrganizationScope grantScope, OrganizationScope requestedScope, bool allowTenantScopeExpansion = false)
     {
         if (grantScope.TenantId != requestedScope.TenantId)
         {
             return false;
+        }
+
+        if (allowTenantScopeExpansion && grantScope.Kind == ScopeKind.Tenant)
+        {
+            return true;
         }
 
         var current = requestedScope;
@@ -1129,7 +1392,8 @@ internal sealed class IdentityAuthorizationService
     }
 
     private bool HasPlatformPermissionUnsafe(UserId userId, PermissionCode permission) =>
-        store.PlatformPermissions.TryGetValue(userId, out var permissions) && permissions.Contains(permission);
+        store.PlatformPermissions.TryGetValue(userId, out var assignments)
+        && assignments.Any(assignment => assignment.Permission == permission && assignment.IsActive);
 
     private bool HasMfaAndFreshAuthenticationUnsafe(UserSession session, GlobalUser user, string operation)
     {
@@ -1148,6 +1412,15 @@ internal sealed class IdentityAuthorizationService
             session.RevocationReason = reason;
             session.Version++;
         }
+    }
+
+    private void TouchSessionUnsafe(UserSession session)
+    {
+        // Inactivity renewal is deliberately independent from absolute expiry.
+        // This method is called only after a valid session and a successful
+        // protected operation have been established.
+        session.LastActivityAt = Now;
+        session.Version++;
     }
 
     private void RevokeSessionsForMembershipUnsafe(MembershipId membershipId, string reason)
@@ -1198,6 +1471,9 @@ internal sealed class IdentityAuthorizationService
     }
 
     private bool TryTakeIdempotencyUnsafe(string idempotencyKey, string operation, Guid targetId)
+        => TryTakeIdempotencyUnsafe(idempotencyKey, operation, targetId.ToString("N"));
+
+    private bool TryTakeIdempotencyUnsafe(string idempotencyKey, string operation, string targetKey)
     {
         if (string.IsNullOrWhiteSpace(idempotencyKey))
         {
@@ -1205,7 +1481,7 @@ internal sealed class IdentityAuthorizationService
         }
 
         var key = idempotencyKey.Trim();
-        var value = $"{operation}:{targetId:N}";
+        var value = $"{operation}:{targetKey}";
         if (store.LifecycleIdempotency.TryGetValue(key, out var existing))
         {
             return existing == value;
@@ -1345,5 +1621,55 @@ internal sealed class IdentityAuthorizationService
         var evidence = new SafeSecurityEvidence(actorId, operation, "ordinary", tenantId.Value, "allowed", reasonCategory, correlationId.Value, sessionId.Value, null, null);
         store.Evidence.Add(evidence);
         return new LifecycleResult(true, "lifecycle_applied", version, evidence);
+    }
+
+    private AuthorityMutationResult AuthorityDenied(
+        Guid actorId,
+        string operation,
+        CorrelationId correlationId,
+        string reasonCategory,
+        TenantId? tenantId = null)
+    {
+        var evidence = new SafeSecurityEvidence(
+            actorId,
+            operation,
+            tenantId.HasValue ? "ordinary" : "platform",
+            tenantId?.Value,
+            "denied",
+            reasonCategory,
+            correlationId.Value,
+            null,
+            null,
+            null);
+        store.Evidence.Add(evidence);
+        return new AuthorityMutationResult(false, GenericDeniedCode, 0, null, evidence);
+    }
+
+    private AuthorityMutationResult AuthorityAllowed(
+        Guid actorId,
+        string operation,
+        string authorizationPath,
+        CorrelationId correlationId,
+        SessionId sessionId,
+        long version,
+        Guid? resourceId,
+        string reasonCategory,
+        TenantId? tenantId = null,
+        string? purpose = null,
+        string? scope = null)
+    {
+        var evidence = new SafeSecurityEvidence(
+            actorId,
+            operation,
+            authorizationPath,
+            tenantId?.Value,
+            "allowed",
+            reasonCategory,
+            correlationId.Value,
+            sessionId.Value,
+            purpose,
+            scope);
+        store.Evidence.Add(evidence);
+        return new AuthorityMutationResult(true, "authority_applied", version, resourceId, evidence);
     }
 }
