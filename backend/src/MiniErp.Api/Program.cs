@@ -1,4 +1,5 @@
 using MiniErp.App.BuildingBlocks.Rest;
+using MiniErp.App.Modules.Audit;
 using MiniErp.App.Modules.Platform;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Platform;
@@ -10,6 +11,18 @@ builder.Services.AddSingleton<ITrustedRequestContextResolver, DefaultTrustedRequ
 builder.Services.AddSingleton<LocalFoundationIdempotencyStore>();
 builder.Services.AddSingleton<LocalFoundationProbeStore>();
 builder.Services.AddSingleton<IFoundationTargetDirectory, EmptyFoundationTargetDirectory>();
+builder.Services.AddSingleton<LocalImmutableAuditEvidenceStore>();
+builder.Services.AddSingleton<IFoundationAuditEvidenceSink>(services =>
+    services.GetRequiredService<LocalImmutableAuditEvidenceStore>());
+builder.Services.AddSingleton<IFoundationAuditEvidenceReader>(services =>
+    services.GetRequiredService<LocalImmutableAuditEvidenceStore>());
+builder.Services.AddSingleton<LocalFoundationAuditTelemetrySink>();
+builder.Services.AddSingleton<IFoundationAuditTelemetrySink>(services =>
+    services.GetRequiredService<LocalFoundationAuditTelemetrySink>());
+builder.Services.AddSingleton<LocalFoundationAuditOperationalSignalSink>();
+builder.Services.AddSingleton<IFoundationAuditOperationalSignalSink>(services =>
+    services.GetRequiredService<LocalFoundationAuditOperationalSignalSink>());
+builder.Services.AddSingleton<FoundationAuditCoordinator>();
 builder.Services.AddSingleton<FoundationRestApplication>();
 builder.Services.AddOpenApi("v1");
 
