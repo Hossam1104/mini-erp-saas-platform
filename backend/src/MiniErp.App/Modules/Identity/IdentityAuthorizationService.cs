@@ -693,6 +693,20 @@ internal sealed class IdentityAuthorizationService
         }
     }
 
+    internal bool HasCurrentAuthenticationAssurance(string cookieValue, string operation)
+    {
+        if (string.IsNullOrWhiteSpace(operation))
+        {
+            return false;
+        }
+
+        lock (store.SyncRoot)
+        {
+            return TryGetValidSessionUnsafe(cookieValue, out var session, out var user)
+                && HasMfaAndFreshAuthenticationUnsafe(session, user, operation.Trim());
+        }
+    }
+
     internal AuthorizationDecision AuthorizeOrdinary(
         string cookieValue,
         TenantId requestedTenant,

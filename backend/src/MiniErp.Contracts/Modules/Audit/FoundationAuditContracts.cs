@@ -21,7 +21,8 @@ public enum FoundationAuditDecision
     Denied = 2,
     Conflict = 3,
     Retry = 4,
-    EvidenceFailure = 5
+    EvidenceFailure = 5,
+    EffectFailed = 6
 }
 
 /// <summary>
@@ -43,7 +44,8 @@ public enum FoundationAuditReason
     IdempotencyConflict = 11,
     RetryAccepted = 12,
     EvidenceAppendFailed = 13,
-    InternalFailure = 14
+    InternalFailure = 14,
+    EffectFailed = 15
 }
 
 /// <summary>

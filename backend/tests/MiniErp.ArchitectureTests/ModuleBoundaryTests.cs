@@ -36,6 +36,27 @@ public sealed class ModuleBoundaryTests
     }
 
     [Fact]
+    public void Application_and_api_do_not_reference_entity_framework_core()
+    {
+        Assert.DoesNotContain(
+            ApplicationAssembly.GetReferencedAssemblies(),
+            reference => reference.Name?.Contains("EntityFrameworkCore", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.DoesNotContain(
+            ApiAssembly.GetReferencedAssemblies(),
+            reference => reference.Name?.Contains("EntityFrameworkCore", StringComparison.OrdinalIgnoreCase) == true);
+
+        var repositoryRoot = FindRepositoryRoot();
+        foreach (var project in new[] { "MiniErp.App", "MiniErp.Api" })
+        {
+            var projectFile = Path.Combine(repositoryRoot, "backend", "src", project, project + ".csproj");
+            Assert.DoesNotContain(
+                "EntityFrameworkCore",
+                File.ReadAllText(projectFile),
+                StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
     public void Application_does_not_reference_infrastructure()
     {
         Assert.DoesNotContain(
@@ -162,6 +183,23 @@ public sealed class ModuleBoundaryTests
 
         var approvedCount = callSites.Count(callSite => IsApprovedUnscopedCall(callSite));
         Assert.Equal(1, approvedCount);
+        Assert.DoesNotContain(callSites, callSite => !IsApprovedUnscopedCall(callSite));
+    }
+
+    [Fact]
+    public void All_backend_projects_are_scanned_for_forbidden_ef_invocations()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var sourceRoot = Path.Combine(repositoryRoot, "backend", "src");
+        var sourceUnits = Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains("\\bin\\", StringComparison.OrdinalIgnoreCase)
+                && !path.Contains("\\obj\\", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (
+                RelativePath: NormalizePath(Path.GetRelativePath(repositoryRoot, path)),
+                Source: File.ReadAllText(path)));
+        var callSites = FindForbiddenEfInvocations(sourceUnits);
+
+        Assert.Equal(1, callSites.Count(IsApprovedUnscopedCall));
         Assert.DoesNotContain(callSites, callSite => !IsApprovedUnscopedCall(callSite));
     }
 

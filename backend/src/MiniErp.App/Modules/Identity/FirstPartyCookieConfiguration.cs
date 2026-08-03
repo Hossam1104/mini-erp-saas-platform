@@ -1,11 +1,16 @@
+#pragma warning disable CS1591
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 
 namespace MiniErp.App.Modules.Identity;
 
-internal static class FirstPartyCookieConfiguration
+public static class FirstPartyCookieConfiguration
 {
-    internal const string Scheme = "MiniErp.Identity";
+    public const string Scheme = "MiniErp.Identity";
+
+    /// <summary>Creates the approved first-party host cookie options.</summary>
+    public static CookieAuthenticationOptions CreateForHost() => Create(IdentitySecurityOptions.Default);
 
     internal static CookieAuthenticationOptions Create(IdentitySecurityOptions options)
     {
@@ -30,3 +35,5 @@ internal static class FirstPartyCookieConfiguration
         };
     }
 }
+
+#pragma warning restore CS1591

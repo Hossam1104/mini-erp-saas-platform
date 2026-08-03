@@ -108,6 +108,66 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     }
 
     [Fact]
+    public void Public_endpoint_metadata_matches_the_approved_catalog_and_unsafe_operations_are_audited()
+    {
+        var endpoints = factory.Services
+            .GetRequiredService<EndpointDataSource>()
+            .Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.Metadata.GetMetadata<FoundationOperationMetadata>() is not null)
+            .ToDictionary(
+                endpoint => endpoint.Metadata.GetMetadata<FoundationOperationMetadata>()!.OperationId,
+                StringComparer.Ordinal);
+
+        foreach (var descriptor in FoundationOperationCatalog.PublicOperations)
+        {
+            Assert.True(endpoints.TryGetValue(descriptor.OperationId, out var endpoint));
+            var metadata = endpoint!.Metadata.GetMetadata<FoundationOperationMetadata>()!;
+            var methods = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Routing.IHttpMethodMetadata>()?.HttpMethods ?? [];
+
+            Assert.Equal(descriptor.Route, endpoint.RoutePattern.RawText);
+            Assert.Contains(descriptor.HttpMethod, methods, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(descriptor.SecurityProfile, metadata.SecurityProfile);
+            Assert.Equal(descriptor.Visibility, metadata.Visibility);
+            Assert.Equal(descriptor.RequiresMandatoryAudit, metadata.RequiresMandatoryAudit);
+            Assert.Equal(descriptor.IsUnsafe, metadata.IsUnsafe);
+        }
+
+        Assert.All(
+            FoundationOperationCatalog.PublicOperations.Where(operation => operation.IsUnsafe && operation.SecurityProfile != FoundationSecurityProfile.Anonymous),
+            operation => Assert.True(operation.RequiresMandatoryAudit));
+        Assert.DoesNotContain(
+            FoundationOperationCatalog.PublicOperations,
+            operation => operation.IsUnsafe
+                && operation.SecurityProfile == FoundationSecurityProfile.Anonymous
+                && operation.OperationId != "auth.sign-in");
+    }
+
+    [Fact]
+    public void Every_non_anonymous_unsafe_operation_is_bound_to_the_protected_coordinator()
+    {
+        var sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "MiniErp.Api", "Program.cs"));
+        var source = File.ReadAllText(sourcePath);
+        var coordinatorBound = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "foundation.probe.write",
+            "auth.sign-out",
+            "auth.context-switch"
+        };
+
+        var required = FoundationOperationCatalog.PublicOperations
+            .Where(operation => operation.IsUnsafe && operation.SecurityProfile != FoundationSecurityProfile.Anonymous)
+            .Select(operation => operation.OperationId)
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(coordinatorBound, required);
+        Assert.All(coordinatorBound, operationId =>
+        {
+            Assert.Contains(operationId, source, StringComparison.Ordinal);
+            Assert.Contains("ExecuteProtectedAsync", source, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
     public void Internal_operations_are_not_public()
     {
         var publicIds = factory.Services
@@ -423,7 +483,6 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
 
         var document = await client.GetStringAsync("/openapi/v1.json");
 
-        Assert.DoesNotContain("password", document, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("cookie", document, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("IdentityAuthorizationService", document, StringComparison.Ordinal);
         Assert.DoesNotContain("identity.invitation.issue", document, StringComparison.Ordinal);
@@ -437,7 +496,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
         string? ifMatch,
         bool includeAntiforgery)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/foundation/probe")
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri("https://localhost/api/v1/foundation/probe"))
         {
             Content = JsonContent.Create(new FoundationWriteRequest(value))
         };
@@ -449,7 +508,9 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
 
         if (includeAntiforgery)
         {
-            request.Headers.TryAddWithoutValidation("X-CSRF-TOKEN", "foundation-test-token");
+            using var tokenResponse = await client.GetAsync(new Uri("https://localhost/api/v1/auth/antiforgery"));
+            var token = tokenResponse.Headers.GetValues("X-CSRF-TOKEN").Single();
+            request.Headers.TryAddWithoutValidation("X-CSRF-TOKEN", token);
         }
 
         return await client.SendAsync(request);
@@ -498,7 +559,6 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
         {
             Resolver.Context = FoundationRequestContext.Unauthenticated();
             Targets.Clear();
-            Services.GetRequiredService<LocalFoundationIdempotencyStore>().Clear();
             Services.GetRequiredService<LocalFoundationProbeStore>().Clear();
         }
 

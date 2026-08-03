@@ -176,8 +176,8 @@ public sealed class AuditObservabilityTests
         Assert.Single(await store.ReadForTenantAsync(TenantContextA()));
         Assert.DoesNotContain(
             typeof(LocalImmutableAuditEvidenceStore)
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance),
-            method => method.Name is "Update" or "Delete" or "Remove" or "Purge");
+                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance),
+            method => method.Name is "Update" or "Delete" or "Remove" or "Purge" or "Clear");
     }
 
     [Fact]
@@ -552,20 +552,52 @@ public sealed class AuditObservabilityTests
         var store = new LocalImmutableAuditEvidenceStore();
         var coordinator = CreateCoordinator(store);
         var effectCalled = false;
-        var denied = await coordinator.RecordAsync(
+        var denied = await coordinator.ExecuteProtectedAsync<string>(
             OrdinaryContext(),
             "foundation.target.read",
             "corr-deny-002",
-            FoundationAuditDecision.Denied,
-            FoundationAuditReason.AuthorizationDenied);
-
-        if (denied.Succeeded)
-        {
-            effectCalled = false;
-        }
+            FoundationAuditReason.AuthorizationDenied,
+            () =>
+            {
+                effectCalled = true;
+                return Task.FromResult("must-not-commit");
+            },
+            decision: FoundationAuditDecision.Denied);
 
         Assert.False(effectCalled);
+        Assert.False(denied.Succeeded);
+        Assert.Equal("authorization_denied", denied.Code);
         Assert.Single(await store.ReadForTenantAsync(TenantContextA()));
+    }
+
+    [Fact]
+    public async Task Effect_failure_preserves_allowed_evidence_and_appends_linked_safe_outcome()
+    {
+        var store = new LocalImmutableAuditEvidenceStore();
+        var coordinator = CreateCoordinator(store);
+
+        var result = await coordinator.ExecuteProtectedAsync<string>(
+            OrdinaryContext(),
+            "foundation.probe.write",
+            "corr-effect-failure-001",
+            FoundationAuditReason.Allowed,
+            async () =>
+            {
+                await Task.Yield();
+                throw new InvalidOperationException("provider secret must not escape");
+            },
+            idempotencyKey: "idem-effect-failure",
+            operationVersion: "1");
+
+        var records = await store.ReadForTenantAsync(TenantContextA());
+        Assert.False(result.Succeeded);
+        Assert.Equal("protected_effect_failed", result.Code);
+        Assert.Equal(2, records.Count);
+        Assert.Equal(FoundationAuditDecision.Allowed, records[0].Decision);
+        Assert.Equal(FoundationAuditDecision.EffectFailed, records[1].Decision);
+        Assert.Equal(records[0].EvidenceId, records[1].RetryOfEvidenceId);
+        Assert.Equal(2, records[1].Attempt);
+        Assert.DoesNotContain("provider secret", JsonSerializer.Serialize(records), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

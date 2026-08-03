@@ -39,7 +39,9 @@ public sealed record FoundationOperationDescriptor(
     string Route,
     string HttpMethod,
     FoundationSecurityProfile SecurityProfile,
-    FoundationOperationVisibility Visibility);
+    FoundationOperationVisibility Visibility,
+    bool RequiresMandatoryAudit = false,
+    bool IsUnsafe = false);
 
 /// <summary>
 /// Metadata attached to every public endpoint.
@@ -47,7 +49,39 @@ public sealed record FoundationOperationDescriptor(
 public sealed record FoundationOperationMetadata(
     string OperationId,
     FoundationSecurityProfile SecurityProfile,
-    FoundationOperationVisibility Visibility = FoundationOperationVisibility.Public);
+    FoundationOperationVisibility Visibility = FoundationOperationVisibility.Public,
+    bool RequiresMandatoryAudit = false,
+    bool IsUnsafe = false);
+
+/// <summary>Safe first-party authentication request.</summary>
+public sealed record FoundationSignInRequest(string? Login, string? Password);
+
+/// <summary>Safe session summary returned to the first-party shell.</summary>
+public sealed record FoundationSessionResponse(
+    bool Authenticated,
+    Guid? ActorId,
+    Guid? SessionId,
+    string LifecycleState,
+    DateTimeOffset? AbsoluteExpiresAt,
+    string? SelectedPath,
+    Guid? SelectedTenantId,
+    Guid? SelectedContextId,
+    long ContextVersion);
+
+/// <summary>One safe server-derived context candidate.</summary>
+public sealed record FoundationContextCandidateResponse(
+    Guid ContextId,
+    string Kind,
+    Guid? TenantId,
+    string DisplayName,
+    long Version);
+
+/// <summary>Authorized-context list response.</summary>
+public sealed record FoundationContextsResponse(
+    IReadOnlyList<FoundationContextCandidateResponse> Contexts);
+
+/// <summary>Server-confirmed context switch request.</summary>
+public sealed record FoundationContextSwitchRequest(Guid ContextId, long ExpectedVersion = 0);
 
 /// <summary>
 /// Stable, safe response for the representative Foundation context operation.
@@ -103,7 +137,13 @@ public static class FoundationOperationCatalog
         new("foundation.support-context.read", "/api/v1/foundation/support-context", "GET", FoundationSecurityProfile.SupportGrant, FoundationOperationVisibility.Public),
         new("foundation.platform-context.read", "/api/v1/foundation/platform-context", "GET", FoundationSecurityProfile.PlatformGovernanceContext, FoundationOperationVisibility.Public),
         new("foundation.target.read", "/api/v1/foundation/targets/{targetId}", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public),
-        new("foundation.probe.write", "/api/v1/foundation/probe", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public)
+        new("foundation.probe.write", "/api/v1/foundation/probe", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, RequiresMandatoryAudit: true, IsUnsafe: true),
+        new("auth.antiforgery.read", "/api/v1/auth/antiforgery", "GET", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public),
+        new("auth.sign-in", "/api/v1/auth/sign-in", "POST", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public, IsUnsafe: true),
+        new("auth.sign-out", "/api/v1/auth/sign-out", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, RequiresMandatoryAudit: true, IsUnsafe: true),
+        new("auth.session.read", "/api/v1/auth/session", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public),
+        new("auth.contexts.read", "/api/v1/auth/contexts", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public),
+        new("auth.context-switch", "/api/v1/auth/context-switch", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, RequiresMandatoryAudit: true, IsUnsafe: true)
     ];
 
     /// <summary>Internal operations deliberately excluded from public routing.</summary>

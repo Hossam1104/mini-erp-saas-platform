@@ -7,13 +7,13 @@
 | Owner | Hossam |
 | Repository | `Hossam1104/mini-erp-saas-platform` |
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
-| Last updated | 3 August 2026 |
+| Last updated | 4 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `Foundation Backend Review Checkpoint — evidence package prepared after MESP-62` |
-| Current implementation item | `None — MESP-60 and MESP-62 are Done; no active implementation item` |
-| Current branch | `main` |
-| Current Sprint | `No active Sprint — founder-authorized fast-track batch; no Sprint required` |
-| Current review checkpoint | `Foundation Backend Review Checkpoint occurs after MESP-62 and before MESP-63` |
+| Current activity | `MESP-89 security integration — host authentication, antiforgery, trusted context and audit evidence` |
+| Current implementation item | `MESP-89 — In Progress; PR awaits focused ChatGPT security review` |
+| Current branch | `feature/mesp-89-foundation-host-security-integration` |
+| Current Sprint | `No active Sprint — MESP-89 is a founder-authorized security checkpoint outside a Sprint` |
+| Current review checkpoint | `MESP-89 correction PR is the gate before MESP-63; merge is held for focused ChatGPT review` |
 
 ---
 
@@ -46,11 +46,11 @@ The project is currently in **Phase 2 — Business Requirements Documents**, bec
 The SaaS Platform Administration domain and the approved Foundation backend slice
 have progressed further than the rest of the product. MESP-57, MESP-58,
 MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are complete and merged. The
-implementation sequence is paused at the Foundation Backend Review Checkpoint;
-MESP-63 remains blocked until that review is complete, while MESP-61 and MESP-64
-remain To Do. Product-wide Phase 2 remains in progress because core ERP BRDs are
-not complete, and Foundation backend completion is not complete ERP backend
-implementation.
+implementation sequence is at the MESP-89 Foundation host security integration
+checkpoint. MESP-63 remains blocked until MESP-89 is independently reviewed and
+merged, while MESP-61 and MESP-64 remain To Do. Product-wide Phase 2 remains in
+progress because core ERP BRDs are not complete, and Foundation backend work is
+not complete ERP backend implementation.
 
 | Area | Current status |
 |---|---|
@@ -69,7 +69,8 @@ implementation.
 | MESP-88 MESP-59 security correction | Done — PR #9 merged; 161 tests passed |
 | MESP-60 REST/OpenAPI foundation | Done — PR #10 merged to `main` |
 | MESP-62 immutable audit and OpenTelemetry evidence | Done — merged with the Foundation Backend Review Checkpoint package |
-| MESP-63 Angular Foundation shell | To Do — blocked by Foundation Backend Review Checkpoint |
+| MESP-89 Foundation host authentication, antiforgery and evidence integration | In Progress — security exception; PR is held for focused ChatGPT review |
+| MESP-63 Angular Foundation shell | To Do — blocked by MESP-89 approval and focused review |
 | MESP-61 background processing foundation | To Do |
 | MESP-64 provider/schema/index validation | To Do; SQL Server/provider validation owner |
 | MESP-3 Identity and Access Epic | In Progress |
@@ -99,10 +100,12 @@ implementation.
 - [x] `MESP-58`, `MESP-87`, `MESP-59` and `MESP-88` are **Done** with merged implementation/security evidence.
 - [x] `MESP-60` is **Done**; PR #10 is merged and merged-main validation passed.
 - [x] `MESP-62` is **Done**; the immutable audit/observability seam and checkpoint package are merged; `MESP-63` remains blocked by the review.
+- [ ] `MESP-89` is **In Progress** on `feature/mesp-89-foundation-host-security-integration`; the non-draft PR is a security exception and remains unmerged pending focused ChatGPT review.
+- [ ] `MESP-63` remains **To Do** and blocked by MESP-89; `MESP-61` and `MESP-64` remain **To Do**.
 - [x] `MESP-61` and `MESP-64` remain **To Do**; no parallel implementation is authorized.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
-- [x] No Sprint is active; the fast-track MESP-60/MESP-62 batch requires no Sprint.
-- [x] No implementation item is active; the next action is the Foundation Backend Review Checkpoint.
+- [x] No Sprint is active; MESP-89 is being delivered as a founder-authorized security checkpoint outside a Sprint.
+- [x] MESP-89 is the single active implementation item; no parallel implementation is authorized.
 - [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; implementation refinement is controlled and is not production readiness.
 - [x] Product-wide Phase 2 remains **In Progress** because core ERP BRDs remain incomplete; Foundation backend work does not imply complete ERP backend implementation.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
@@ -142,7 +145,7 @@ A domain must not move into implementation until its BRD/BPMN and applicable Lea
 - Keep documentation activities sequential: one current BRD or Lean Implementation Specification activity at a time; do not start implementation or a later BRD before the current evidence is committed and reviewed.
 - A living governance register such as `MESP-23` is maintenance work, not a second active BRD/LIS delivery artifact. It is exempt from the one-active-delivery-artifact rule while no separate drafting task is actively being executed.
 - For the founder-authorized fast-track implementation batch, Luna performs bounded implementation, self-review and validation; eligible Pull Requests may merge automatically after all safety gates pass.
-- ChatGPT reviews each execution report using the actual Jira, GitHub, diff, build and test evidence. Independent Opus review is reserved for major checkpoints rather than every Jira item; the next checkpoint is after MESP-62 and before MESP-63.
+- ChatGPT reviews each execution report using the actual Jira, GitHub, diff, build and test evidence. Independent Opus review is reserved for major checkpoints rather than every Jira item. MESP-89 is an explicit security exception: Luna opens the PR and stops; focused ChatGPT review is required before merge, and another full Opus review is not required for this item.
 
 ---
 
@@ -565,7 +568,7 @@ Capture the implementation-readiness decisions for the approved slice across sol
 - [ ] Technical risks and deferred decisions are recorded.
 - [ ] No implementation depends on an unresolved critical decision.
 
-**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are implemented; the Foundation Backend Review Checkpoint is now the gate before MESP-63. Physical provider validation remains assigned to MESP-64.**
+**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are implemented; MESP-89 is integrating those seams into the actual HTTP host and is the current gate before MESP-63. Physical provider validation remains assigned to MESP-64.**
 
 ---
 
@@ -672,7 +675,7 @@ Implement approved backlog items sequentially, validate them with focused automa
     12. Review the complete task-related diff, run `git diff --check`, and correct every finding.
     13. Add implementation evidence to Jira.
     14. Create a non-draft Pull Request.
-    15. Automatically merge only after base/head, build, tests, security, scope and repository gates pass; use a normal merge commit.
+    15. Automatically merge only after base/head, build, tests, security, scope and repository gates pass; use a normal merge commit. MESP-89 is excluded from automatic merge and must stop for focused ChatGPT security review.
     16. Run post-merge validation on synchronized `main`.
     17. Demonstrate the outcome and update the delivery documentation.
     18. Move the Jira item to Done.
@@ -705,7 +708,8 @@ Implement approved backlog items sequentially, validate them with focused automa
 - [x] `MESP-57`, `MESP-58`, `MESP-87`, `MESP-59` and `MESP-88` are complete and merged.
 - [x] `MESP-60` is Done; PR #10 merged at `2569acbe6dc26223108f7ad539ca7db2bcdf5f93` and merged-main validation passed.
 - [x] `MESP-62` is Done; immutable audit/observability evidence and the checkpoint package are complete and merged.
-- [ ] `MESP-63` remains To Do and blocked by the Foundation Backend Review Checkpoint.
+- [ ] `MESP-89` is In Progress on `feature/mesp-89-foundation-host-security-integration`; its PR remains open and unmerged for focused ChatGPT review.
+- [ ] `MESP-63` remains To Do and blocked by MESP-89 and the focused review.
 - [ ] `MESP-61` and `MESP-64` remain To Do; no parallel implementation is authorized.
 
 ### Current sequence after the approved Foundation specification
@@ -725,7 +729,7 @@ MESP-63, MESP-61, MESP-64, MESP-31, or any downstream ERP transaction work.
 - [x] Complete MESP-58, MESP-87, MESP-59 and MESP-88 with merged validation evidence.
 - [x] Complete MESP-60 REST/OpenAPI and safe operation contracts.
 - [x] Complete MESP-62 immutable audit and OpenTelemetry evidence.
-- [ ] Prepare the Foundation Backend Review Checkpoint before MESP-63.
+- [ ] Complete `MESP-89` host authentication, antiforgery, trusted context and audit integration; stop at its unmerged PR for focused ChatGPT review.
 
 ## Testing strategy
 
@@ -769,9 +773,10 @@ MESP-63, MESP-61, MESP-64, MESP-31, or any downstream ERP transaction work.
 - [ ] Documentation updated only where necessary.
 
 **Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and
-MESP-62 are Done; no Sprint is active and no implementation item is active.
-The Foundation Backend Review Checkpoint is prepared, MESP-63 is blocked until
-the review is complete, and MESP-61/MESP-64 remain To Do.**
+MESP-62 are Done; MESP-89 is In Progress on its security-integration branch,
+with its non-draft PR open and unmerged for focused ChatGPT review. No Sprint is
+active. MESP-63 is blocked by MESP-89 and the focused review, while MESP-61 and
+MESP-64 remain To Do.**
 
 ---
 
@@ -1007,7 +1012,7 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Reconcile MESP-59 and close its completed implementation/security correction sequence before starting the next implementation item.
 - [x] Complete MESP-60 REST/OpenAPI foundation implementation and validation; PR #10 merged at `2569acbe6dc26223108f7ad539ca7db2bcdf5f93`.
 - [x] Complete MESP-62 immutable audit and OpenTelemetry evidence; its checkpoint package is included in the merged delivery.
-- [ ] Complete the Foundation Backend Review Checkpoint with the independent Opus 5 review before starting MESP-63.
+- [ ] Complete MESP-89 host authentication, antiforgery, trusted context and evidence integration; keep MESP-89 In Progress and stop at its unmerged PR for focused ChatGPT review before starting MESP-63.
 
 ## Completed MESP-57 outputs
 
@@ -1052,7 +1057,7 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Resolve the 22 historical IAM-OD records plus IAM-OD-023 (23 total) and four source-conflict records in the approved baseline.
 - [x] Begin, approve, and close the single MESP-29 Multi-Tenancy BRD activity; v0.2 is merged to `main`.
 - [x] Record the four Tenant-isolation clarifications and preserve MESP-48/MESP-50 Deferred Gates.
-- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are complete, with no active implementation item.
+- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are complete, with only MESP-89 active.
 - [x] Keep `MESP-31` through `MESP-40` in To Do while the approved foundation requirements remain the current delivery boundary.
 - [x] Keep `MESP-30` outside all Sprints and restrict it to business requirements only.
 - [x] Complete founder approval of the MESP-30 baseline and resolve `ORG-OD-001` through `ORG-OD-007`.
@@ -1060,7 +1065,7 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Refine MESP-58 through MESP-64 and complete the MESP-58 Definition of Ready review.
 - [x] No Sprint is required for the founder-authorized MESP-60/MESP-62 fast-track batch.
 - [x] Start and complete MESP-62 only after MESP-60 was merged, validated and moved to Done; no Sprint was created.
-- [ ] Complete the Foundation Backend Review Checkpoint; do not start MESP-63, MESP-61 or MESP-64 before the review decision.
+- [ ] Complete focused ChatGPT review of the MESP-89 PR; do not merge MESP-89 or start MESP-63, MESP-61 or MESP-64 before review authorization.
 
 ---
 
@@ -1095,6 +1100,7 @@ Use this section to record major milestones.
 | 3 August 2026 | MESP-60 REST/OpenAPI foundation | Done | PR #10 merged at `2569acbe6dc26223108f7ad539ca7db2bcdf5f93`; versioned contracts, trusted context, safe errors, correlation, idempotency, concurrency and antiforgery seam validated with 188 tests |
 | 3 August 2026 | MESP-62 immutable audit and OpenTelemetry evidence | Done | Immutable path-aware evidence, append-before-effect coordinator, safe telemetry hooks and focused tests merged; checkpoint package included in the PR |
 | 3 August 2026 | Foundation Backend Review Checkpoint prepared | Ready for review | `docs/95_Foundation_Backend_Review_Checkpoint.md`; MESP-63 remains blocked pending independent Opus 5 review |
+| 4 August 2026 | MESP-89 foundation host security integration | In Progress | Branch `feature/mesp-89-foundation-host-security-integration`; ADR-004 authored; host authentication, antiforgery, trusted context and audit integration validated by 236 passing tests and a 0-warning/0-error Release build; MESP-63 remains blocked; PR merge is held for focused ChatGPT review |
 
 ---
 
@@ -1131,8 +1137,8 @@ Use this section to record major milestones.
 
 ## Current single next action
 
-> Complete the Foundation Backend Review Checkpoint with the independent Opus 5
-> review before starting `MESP-63`. Keep `MESP-61`, `MESP-64`, `MESP-31` through
-> `MESP-40`, Retail POS and all future ERP transaction work out of scope;
-> preserve `MESP-48` and `MESP-50` as explicit production gates and keep no
-> Sprint active for this founder-authorized fast-track batch.
+> Complete focused ChatGPT security review of the unmerged MESP-89 PR. Keep
+> MESP-89 In Progress and do not merge it or start `MESP-63`, `MESP-61`,
+> `MESP-64`, `MESP-31` through `MESP-40`, Retail POS or future ERP transaction
+> work; preserve `MESP-48` and `MESP-50` as explicit production gates and keep
+> no Sprint active for this security checkpoint.
