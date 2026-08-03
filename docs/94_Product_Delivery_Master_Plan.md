@@ -9,9 +9,9 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 3 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `MESP-60 — REST/OpenAPI, safe errors, correlation, concurrency and idempotency foundation; implementation in progress` |
-| Current implementation item | `MESP-60 — In Progress; no business transaction endpoints` |
-| Current branch | `feature/mesp-60-rest-openapi-foundation` |
+| Current activity | `Foundation Backend Review Checkpoint — evidence package prepared after MESP-62` |
+| Current implementation item | `None — MESP-60 and MESP-62 are Done; no active implementation item` |
+| Current branch | `main` |
 | Current Sprint | `No active Sprint — founder-authorized fast-track batch; no Sprint required` |
 | Current review checkpoint | `Foundation Backend Review Checkpoint occurs after MESP-62 and before MESP-63` |
 
@@ -45,10 +45,12 @@ The project is currently in **Phase 2 — Business Requirements Documents**, bec
 
 The SaaS Platform Administration domain and the approved Foundation backend slice
 have progressed further than the rest of the product. MESP-57, MESP-58,
-MESP-87, MESP-59 and MESP-88 are complete and merged. MESP-60 is the one active
-implementation item in the founder-authorized fast-track batch. MESP-62 may
-start only after MESP-60 is merged and closed. MESP-63 remains blocked until the
-Foundation Backend Review Checkpoint; MESP-61 and MESP-64 remain To Do.
+MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are complete and merged. The
+implementation sequence is paused at the Foundation Backend Review Checkpoint;
+MESP-63 remains blocked until that review is complete, while MESP-61 and MESP-64
+remain To Do. Product-wide Phase 2 remains in progress because core ERP BRDs are
+not complete, and Foundation backend completion is not complete ERP backend
+implementation.
 
 | Area | Current status |
 |---|---|
@@ -65,8 +67,8 @@ Foundation Backend Review Checkpoint; MESP-61 and MESP-64 remain To Do.
 | MESP-87 Tenant persistence guardrail hardening | Done — merged with MESP-58 correction sequence |
 | MESP-59 authentication and authorization seam | Done — PR #8 merged and corrected through MESP-88 |
 | MESP-88 MESP-59 security correction | Done — PR #9 merged; 161 tests passed |
-| MESP-60 REST/OpenAPI foundation | In Progress — branch `feature/mesp-60-rest-openapi-foundation` |
-| MESP-62 immutable audit and OpenTelemetry evidence | To Do — starts only after MESP-60 closure |
+| MESP-60 REST/OpenAPI foundation | Done — PR #10 merged to `main` |
+| MESP-62 immutable audit and OpenTelemetry evidence | Done — merged with the Foundation Backend Review Checkpoint package |
 | MESP-63 Angular Foundation shell | To Do — blocked by Foundation Backend Review Checkpoint |
 | MESP-61 background processing foundation | To Do |
 | MESP-64 provider/schema/index validation | To Do; SQL Server/provider validation owner |
@@ -95,11 +97,12 @@ Foundation Backend Review Checkpoint; MESP-61 and MESP-64 remain To Do.
 - [x] Sprint `S1-Solution Foundation` was created, started, and completed.
 - [x] Sprint contained only `MESP-57`.
 - [x] `MESP-58`, `MESP-87`, `MESP-59` and `MESP-88` are **Done** with merged implementation/security evidence.
-- [x] `MESP-60` is the only active implementation item and is **In Progress** on `feature/mesp-60-rest-openapi-foundation`.
-- [x] `MESP-62` remains **To Do** and is blocked by the MESP-60 dependency; `MESP-63` is blocked by the later checkpoint review.
+- [x] `MESP-60` is **Done**; PR #10 is merged and merged-main validation passed.
+- [x] `MESP-62` is **Done**; the immutable audit/observability seam and checkpoint package are merged; `MESP-63` remains blocked by the review.
 - [x] `MESP-61` and `MESP-64` remain **To Do**; no parallel implementation is authorized.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
 - [x] No Sprint is active; the fast-track MESP-60/MESP-62 batch requires no Sprint.
+- [x] No implementation item is active; the next action is the Foundation Backend Review Checkpoint.
 - [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; implementation refinement is controlled and is not production readiness.
 - [x] Product-wide Phase 2 remains **In Progress** because core ERP BRDs remain incomplete; Foundation backend work does not imply complete ERP backend implementation.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
@@ -468,7 +471,7 @@ Capture the logical data and integrity decisions required to support approved do
 - [ ] Audit, retention, and purge effects are covered.
 - [ ] No table ownership conflict exists between modules.
 
-**Phase 5 status: IN PROGRESS — MESP-86 v0.4 contains the approved logical Foundation data model, ERD and tenant-aware integrity design; the currently implemented persistence is still a bounded foundation seam. Physical migrations remain excluded. MESP-64 owns SQL Server provider/schema/index/collation/rowversion validation, and detailed physical ERDs are required before implementing each future ERP domain. MESP-50 remains a production gate.**
+**Phase 5 status: IN PROGRESS — MESP-86 v0.4 contains the approved logical Foundation data model, ERD and tenant-aware integrity design; the currently implemented persistence and immutable audit seam remain bounded foundation seams. Physical migrations remain excluded. MESP-64 owns SQL Server provider/schema/index/collation/rowversion validation, and detailed physical ERDs are required before implementing each future ERP domain. MESP-50 remains a production gate.**
 
 ---
 
@@ -562,7 +565,7 @@ Capture the implementation-readiness decisions for the approved slice across sol
 - [ ] Technical risks and deferred decisions are recorded.
 - [ ] No implementation depends on an unresolved critical decision.
 
-**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59 and MESP-88 are implemented; MESP-60 is the active REST/OpenAPI refinement; MESP-62 consumes it after closure. Physical provider validation remains assigned to MESP-64.**
+**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are implemented; the Foundation Backend Review Checkpoint is now the gate before MESP-63. Physical provider validation remains assigned to MESP-64.**
 
 ---
 
@@ -700,8 +703,8 @@ Implement approved backlog items sequentially, validate them with focused automa
 
 - [x] No Sprint is required or active for this controlled batch.
 - [x] `MESP-57`, `MESP-58`, `MESP-87`, `MESP-59` and `MESP-88` are complete and merged.
-- [ ] `MESP-60` is the single active item on `feature/mesp-60-rest-openapi-foundation`.
-- [ ] `MESP-62` starts only after MESP-60 is merged, validated and moved to Done.
+- [x] `MESP-60` is Done; PR #10 merged at `2569acbe6dc26223108f7ad539ca7db2bcdf5f93` and merged-main validation passed.
+- [x] `MESP-62` is Done; immutable audit/observability evidence and the checkpoint package are complete and merged.
 - [ ] `MESP-63` remains To Do and blocked by the Foundation Backend Review Checkpoint.
 - [ ] `MESP-61` and `MESP-64` remain To Do; no parallel implementation is authorized.
 
@@ -720,8 +723,8 @@ MESP-63, MESP-61, MESP-64, MESP-31, or any downstream ERP transaction work.
 - [x] Produce and approve v0.4 of the combined Foundation Release 1 Lean Implementation Specification under MESP-86; merge the approved documentation to `main`.
 - [x] Refine MESP-58 through MESP-64 against v0.4 and complete the Definition of Ready checks for the Foundation sequence.
 - [x] Complete MESP-58, MESP-87, MESP-59 and MESP-88 with merged validation evidence.
-- [ ] Complete MESP-60 REST/OpenAPI and safe operation contracts.
-- [ ] Complete MESP-62 immutable audit and OpenTelemetry evidence.
+- [x] Complete MESP-60 REST/OpenAPI and safe operation contracts.
+- [x] Complete MESP-62 immutable audit and OpenTelemetry evidence.
 - [ ] Prepare the Foundation Backend Review Checkpoint before MESP-63.
 
 ## Testing strategy
@@ -765,10 +768,10 @@ MESP-63, MESP-61, MESP-64, MESP-31, or any downstream ERP transaction work.
 - [ ] Demonstration completed.
 - [ ] Documentation updated only where necessary.
 
-**Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59 and MESP-88 are Done;
-MESP-60 is In Progress; no Sprint is active. MESP-62 remains the next
-sequential Foundation item, MESP-63 is blocked by the later checkpoint, and
-MESP-61/MESP-64 remain To Do.**
+**Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and
+MESP-62 are Done; no Sprint is active and no implementation item is active.
+The Foundation Backend Review Checkpoint is prepared, MESP-63 is blocked until
+the review is complete, and MESP-61/MESP-64 remain To Do.**
 
 ---
 
@@ -1002,9 +1005,9 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Approve and merge the v0.4 combined Foundation Release 1 Lean Implementation Specification; no application implementation started in this correction cycle.
 - [x] Refine MESP-58 through MESP-64 against the approved Foundation sequence; no Sprint is required for the founder-authorized fast-track batch.
 - [x] Reconcile MESP-59 and close its completed implementation/security correction sequence before starting the next implementation item.
-- [x] Complete MESP-60 REST/OpenAPI foundation implementation and validation (execution evidence is being finalized on the active branch).
-- [ ] Complete MESP-62 immutable audit and OpenTelemetry evidence after MESP-60 is merged and closed.
-- [ ] Prepare the Foundation Backend Review Checkpoint after MESP-62 and before MESP-63.
+- [x] Complete MESP-60 REST/OpenAPI foundation implementation and validation; PR #10 merged at `2569acbe6dc26223108f7ad539ca7db2bcdf5f93`.
+- [x] Complete MESP-62 immutable audit and OpenTelemetry evidence; its checkpoint package is included in the merged delivery.
+- [ ] Complete the Foundation Backend Review Checkpoint with the independent Opus 5 review before starting MESP-63.
 
 ## Completed MESP-57 outputs
 
@@ -1049,14 +1052,15 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Resolve the 22 historical IAM-OD records plus IAM-OD-023 (23 total) and four source-conflict records in the approved baseline.
 - [x] Begin, approve, and close the single MESP-29 Multi-Tenancy BRD activity; v0.2 is merged to `main`.
 - [x] Record the four Tenant-isolation clarifications and preserve MESP-48/MESP-50 Deferred Gates.
-- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59 and MESP-88 are complete, while MESP-60 is the single active item.
+- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are complete, with no active implementation item.
 - [x] Keep `MESP-31` through `MESP-40` in To Do while the approved foundation requirements remain the current delivery boundary.
 - [x] Keep `MESP-30` outside all Sprints and restrict it to business requirements only.
 - [x] Complete founder approval of the MESP-30 baseline and resolve `ORG-OD-001` through `ORG-OD-007`.
 - [x] Start, approve, and merge `MESP-86` v0.4 combined Foundation Release 1 Lean Implementation Specification on `docs/foundation-release1-lean-spec`; keep it outside all implementation Sprints.
 - [x] Refine MESP-58 through MESP-64 and complete the MESP-58 Definition of Ready review.
 - [x] No Sprint is required for the founder-authorized MESP-60/MESP-62 fast-track batch.
-- [ ] Start MESP-62 only after MESP-60 is merged, validated and moved to Done; do not start MESP-63, MESP-61 or MESP-64 before the Foundation Backend Review Checkpoint.
+- [x] Start and complete MESP-62 only after MESP-60 was merged, validated and moved to Done; no Sprint was created.
+- [ ] Complete the Foundation Backend Review Checkpoint; do not start MESP-63, MESP-61 or MESP-64 before the review decision.
 
 ---
 
@@ -1088,7 +1092,9 @@ Use this section to record major milestones.
 | 3 August 2026 | MESP-87 Tenant persistence guardrail hardening | Done | Completed in the MESP-58 correction sequence; cross-Tenant Modified/Deleted protections validated |
 | 3 August 2026 | MESP-59 authentication and authorization seam | Done | PR #8 merged; status reconciled after MESP-88/PR #9 evidence; Jira reconciliation comment 10274 |
 | 3 August 2026 | MESP-88 MESP-59 security correction | Done | PR #9 merged at `723dc8e28b0a927750230b51b9d05e26d039038c`; 161 tests passed |
-| 3 August 2026 | MESP-60 REST/OpenAPI foundation | In Progress | `feature/mesp-60-rest-openapi-foundation`; versioned contracts, trusted context, safe errors, correlation, idempotency, concurrency and antiforgery seam under validation |
+| 3 August 2026 | MESP-60 REST/OpenAPI foundation | Done | PR #10 merged at `2569acbe6dc26223108f7ad539ca7db2bcdf5f93`; versioned contracts, trusted context, safe errors, correlation, idempotency, concurrency and antiforgery seam validated with 188 tests |
+| 3 August 2026 | MESP-62 immutable audit and OpenTelemetry evidence | Done | Immutable path-aware evidence, append-before-effect coordinator, safe telemetry hooks and focused tests merged; checkpoint package included in the PR |
+| 3 August 2026 | Foundation Backend Review Checkpoint prepared | Ready for review | `docs/95_Foundation_Backend_Review_Checkpoint.md`; MESP-63 remains blocked pending independent Opus 5 review |
 
 ---
 
@@ -1116,18 +1122,17 @@ Use this section to record major milestones.
 | Phase 3 — Lean Implementation Specification: domain and behavior | **In Progress — MESP-86 v0.4 approved combined lean domain/behavior baseline; implementation refinement is limited to the approved Foundation sequence** |
 | Phase 4 — Lean Implementation Specification: user journeys | **In Progress — MESP-86 v0.4 approved journeys, states and acceptance baseline** |
 | Phase 5 — Lean Implementation Specification: logical data | **In Progress — MESP-86 v0.4 approved logical model, ERD and integrity baseline; physical design remains gated** |
-| Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-57 through MESP-59 and MESP-88 completed; MESP-60 active; MESP-62 follows sequentially; MESP-63 remains checkpoint-gated** |
+| Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-57 through MESP-60 and MESP-62 completed; Foundation Backend Review Checkpoint is ready; MESP-63 remains checkpoint-gated** |
 | Phase 7 — Jira Backlog | **Done for MESP-27 Wave 1** |
-| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59 and MESP-88 Done; MESP-60 In Progress; no Sprint active; MESP-62 follows sequentially** |
+| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 Done; no Sprint active; checkpoint review is next** |
 | Phase 9 — Integration, UAT, Release, Operations | **Not Started** |
 
 ---
 
 ## Current single next action
 
-> Complete the active `MESP-60` REST/OpenAPI slice, then complete `MESP-62`
-> sequentially and prepare the Foundation Backend Review Checkpoint before
-> starting `MESP-63`. Keep `MESP-61`, `MESP-64`, `MESP-31` through `MESP-40`,
-> Retail POS and all future ERP transaction work out of scope; preserve
-> `MESP-48` and `MESP-50` as explicit production gates and keep no Sprint active
-> for this founder-authorized fast-track batch.
+> Complete the Foundation Backend Review Checkpoint with the independent Opus 5
+> review before starting `MESP-63`. Keep `MESP-61`, `MESP-64`, `MESP-31` through
+> `MESP-40`, Retail POS and all future ERP transaction work out of scope;
+> preserve `MESP-48` and `MESP-50` as explicit production gates and keep no
+> Sprint active for this founder-authorized fast-track batch.
