@@ -174,4 +174,3 @@ public sealed record FoundationAuditOperationalSignal(
     string OperationId,
     string CorrelationId,
     FoundationAuditDecision Decision);
-
