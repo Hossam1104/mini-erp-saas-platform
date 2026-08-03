@@ -13,7 +13,8 @@ internal enum MembershipStatus
 {
     Active = 1,
     Suspended = 2,
-    Revoked = 3
+    Revoked = 3,
+    PendingInvitation = 4
 }
 
 internal enum ScopeKind
@@ -185,6 +186,12 @@ internal static class IdentityPermissions
     internal static readonly PermissionCode ReactivateMembership = new("tenant.membership.reactivate");
     internal static readonly PermissionCode RevokeMembership = new("tenant.membership.revoke");
     internal static readonly PermissionCode SupportRead = new("support.tenant.read");
+    // Configuration-led Platform authority; this is not a customer-specific role permission.
+    internal static readonly PermissionCode AssignPlatformPermission = new("platform.authority.assign");
+    // Configuration-led Tenant authority permissions used by the approved seam.
+    internal static readonly PermissionCode AssignRole = new("tenant.role.assign");
+    internal static readonly PermissionCode AssignScopeGrant = new("tenant.scope.grant");
+    internal static readonly PermissionCode ApproveSupportGrant = new("support.grant.approve");
 }
 
 internal readonly record struct OrganizationScope
@@ -446,6 +453,7 @@ internal sealed class SupportCase
         Id = id;
         TenantId = tenantId;
         IsActive = true;
+        Version = 1;
     }
 
     internal SupportCaseId Id { get; }
@@ -453,6 +461,8 @@ internal sealed class SupportCase
     internal TenantId TenantId { get; }
 
     internal bool IsActive { get; set; }
+
+    internal long Version { get; set; }
 }
 
 internal sealed class SupportGrant
@@ -515,7 +525,7 @@ internal sealed class SupportGrant
 
 internal sealed class Invitation
 {
-    internal Invitation(InvitationId id, string tokenHash, string normalizedEmail, UserId userId, long userVersionAtIssue, TenantId tenantId, MembershipId membershipId, DateTimeOffset expiresAt)
+    internal Invitation(InvitationId id, string tokenHash, string normalizedEmail, UserId userId, long userVersionAtIssue, TenantId tenantId, MembershipId membershipId, long membershipVersionAtIssue, DateTimeOffset expiresAt)
     {
         Id = id;
         TokenHash = tokenHash;
@@ -524,6 +534,7 @@ internal sealed class Invitation
         UserVersionAtIssue = userVersionAtIssue;
         TenantId = tenantId;
         MembershipId = membershipId;
+        MembershipVersionAtIssue = membershipVersionAtIssue;
         ExpiresAt = expiresAt;
     }
 
@@ -540,6 +551,8 @@ internal sealed class Invitation
     internal TenantId TenantId { get; }
 
     internal MembershipId MembershipId { get; }
+
+    internal long MembershipVersionAtIssue { get; }
 
     internal DateTimeOffset ExpiresAt { get; }
 
@@ -602,6 +615,47 @@ internal sealed record SafeSecurityEvidence(
     string? Scope);
 
 internal sealed record LifecycleResult(bool Succeeded, string PublicCode, long Version, SafeSecurityEvidence Evidence);
+
+internal sealed record AuthorityMutationResult(
+    bool Succeeded,
+    string PublicCode,
+    long Version,
+    Guid? ResourceId,
+    SafeSecurityEvidence Evidence);
+
+internal sealed class PlatformPermissionAssignment
+{
+    internal PlatformPermissionAssignment(
+        UserId userId,
+        PermissionCode permission,
+        UserId approverId,
+        string reason)
+    {
+        if (approverId == userId)
+        {
+            throw new ArgumentException("Platform permission assignment requires a separate approver.", nameof(approverId));
+        }
+
+        UserId = userId;
+        Permission = permission;
+        ApproverId = approverId;
+        Reason = reason;
+        IsActive = true;
+        Version = 1;
+    }
+
+    internal UserId UserId { get; }
+
+    internal PermissionCode Permission { get; }
+
+    internal UserId ApproverId { get; }
+
+    internal string Reason { get; }
+
+    internal bool IsActive { get; set; }
+
+    internal long Version { get; set; }
+}
 
 internal sealed record InvitationHandle(InvitationId Id, string TokenValue);
 

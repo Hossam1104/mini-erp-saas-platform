@@ -32,11 +32,13 @@ internal sealed class IdentityStore
 
     internal Dictionary<(TenantId TenantId, ScopeKind Kind, Guid TargetId), OrganizationScope?> ParentScopes { get; } = [];
 
-    internal Dictionary<UserId, HashSet<PermissionCode>> PlatformPermissions { get; } = [];
+    internal Dictionary<UserId, List<PlatformPermissionAssignment>> PlatformPermissions { get; } = [];
 
     internal Dictionary<string, string> LifecycleIdempotency { get; } = new(StringComparer.Ordinal);
 
     internal List<SafeSecurityEvidence> Evidence { get; } = [];
+
+    internal HashSet<string> ConsumedAssuranceEvidence { get; } = new(StringComparer.Ordinal);
 
     internal HashSet<PermissionCode> ApprovedPermissions { get; } =
     [
@@ -48,6 +50,10 @@ internal sealed class IdentityStore
         IdentityPermissions.SuspendMembership,
         IdentityPermissions.ReactivateMembership,
         IdentityPermissions.RevokeMembership,
-        IdentityPermissions.SupportRead
+        IdentityPermissions.SupportRead,
+        IdentityPermissions.AssignPlatformPermission,
+        IdentityPermissions.AssignRole,
+        IdentityPermissions.AssignScopeGrant,
+        IdentityPermissions.ApproveSupportGrant
     ];
 }
