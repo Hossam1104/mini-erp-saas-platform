@@ -34,8 +34,7 @@ internal static class TenantOwnershipStoreVerifier
 
         // Projection avoids tracked values and payload retrieval. This is the
         // narrow allow-listed ownership check, not an ordinary read path.
-        var storedTenantIds = dbContext.TenantOwnedRecords
-            .IgnoreQueryFilters()
+        var storedTenantIds = UnscopedTenantOwnedRecords(dbContext)
             .Where(record => record.Id == recordId)
             .Select(record => record.TenantId)
             .ToList();
@@ -66,12 +65,19 @@ internal static class TenantOwnershipStoreVerifier
         }
 
         // Keep the asynchronous check equally narrow and store-backed.
-        var storedTenantIds = await dbContext.TenantOwnedRecords
-            .IgnoreQueryFilters()
+        var storedTenantIds = await UnscopedTenantOwnedRecords(dbContext)
             .Where(record => record.Id == recordId)
             .Select(record => record.TenantId)
             .ToListAsync(cancellationToken);
 
         return storedTenantIds.Count == 0 ? null : storedTenantIds[0];
+    }
+
+    private static IQueryable<TenantOwnedRecord> UnscopedTenantOwnedRecords(
+        TenantPersistenceDbContext dbContext)
+    {
+        // This is the single syntax-level unscoped EF operation in the
+        // repository. Both sync and async verification share this path.
+        return dbContext.TenantOwnedRecords.IgnoreQueryFilters();
     }
 }

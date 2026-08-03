@@ -3,21 +3,31 @@ using MiniErp.App.BuildingBlocks.Tenancy;
 
 namespace MiniErp.Infrastructure.Persistence;
 
-internal sealed class TenantPersistenceDbContext : DbContext
+internal class TenantPersistenceDbContext : DbContext
 {
     private readonly TenantContext _tenantContext;
     private readonly TenantPersistenceGuard _guard;
+    private readonly TenantOwnershipVerifierRegistry _verifierRegistry;
 
-    public TenantPersistenceDbContext(DbContextOptions options, TenantContext tenantContext)
+    public TenantPersistenceDbContext(
+        DbContextOptions options,
+        TenantContext tenantContext,
+        TenantOwnershipVerifierRegistry? verifierRegistry = null)
         : base(options)
     {
         _tenantContext = tenantContext ?? throw new ArgumentNullException(nameof(tenantContext));
-        _guard = new TenantPersistenceGuard(_tenantContext);
+        _verifierRegistry = verifierRegistry ?? TenantOwnershipVerifierRegistry.CreateDefault();
+        _guard = new TenantPersistenceGuard(_tenantContext, _verifierRegistry);
     }
 
     public DbSet<TenantOwnedRecord> TenantOwnedRecords => Set<TenantOwnedRecord>();
 
     internal TenantContext TenantContext => _tenantContext;
+
+    internal void ValidateTenantOwnershipVerifiers()
+    {
+        _verifierRegistry.ValidateModel(Model);
+    }
 
     // EF Core parameterizes context instance properties in model-level query
     // filters, so each explicit session gets its own trusted Tenant boundary.
@@ -25,6 +35,7 @@ internal sealed class TenantPersistenceDbContext : DbContext
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
+        ValidateTenantOwnershipVerifiers();
         _guard.Validate(ChangeTracker);
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
@@ -38,6 +49,7 @@ internal sealed class TenantPersistenceDbContext : DbContext
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
+        ValidateTenantOwnershipVerifiers();
         await _guard.ValidateAsync(ChangeTracker, cancellationToken);
         return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }

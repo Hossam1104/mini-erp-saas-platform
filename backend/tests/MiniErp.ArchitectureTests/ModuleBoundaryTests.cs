@@ -1,5 +1,8 @@
 using System.Collections;
 using System.Reflection;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Platform;
@@ -149,30 +152,145 @@ public sealed class ModuleBoundaryTests
             "backend",
             "src",
             "MiniErp.Infrastructure");
-        var forbiddenTokens = new[]
-        {
-            "IgnoreQueryFilters(",
-            "ExecuteUpdate(",
-            "ExecuteUpdateAsync(",
-            "ExecuteDelete(",
-            "ExecuteDeleteAsync(",
-            "FromSqlRaw(",
-            "FromSqlInterpolated("
-        };
-        var callSites = Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
+        var sourceUnits = Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
             .Where(path => !path.Contains("\\bin\\", StringComparison.OrdinalIgnoreCase)
                 && !path.Contains("\\obj\\", StringComparison.OrdinalIgnoreCase))
-            .SelectMany(path => forbiddenTokens
-                .Where(token => File.ReadAllText(path).Contains(token, StringComparison.Ordinal))
-                .Select(token => (File: Path.GetFileName(path), Token: token)))
-            .ToArray();
+            .Select(path => (
+                RelativePath: NormalizePath(Path.GetRelativePath(repositoryRoot, path)),
+                Source: File.ReadAllText(path)));
+        var callSites = FindForbiddenEfInvocations(sourceUnits);
 
-        Assert.Contains(callSites, callSite =>
-            callSite.File == "TenantOwnershipStoreVerifier.cs"
-            && callSite.Token == "IgnoreQueryFilters(");
-        Assert.All(callSites, callSite =>
-            Assert.Equal("TenantOwnershipStoreVerifier.cs", callSite.File));
+        var approvedCount = callSites.Count(callSite => IsApprovedUnscopedCall(callSite));
+        Assert.Equal(1, approvedCount);
+        Assert.DoesNotContain(callSites, callSite => !IsApprovedUnscopedCall(callSite));
     }
+
+    [Fact]
+    public void Duplicate_verifier_filename_in_another_path_is_rejected()
+    {
+        var calls = FindForbiddenEfInvocations(
+        [
+            (ApprovedVerifierPath, "query.IgnoreQueryFilters();"),
+            ("backend/src/Another.Persistence/Persistence/TenantOwnershipStoreVerifier.cs", "query.IgnoreQueryFilters();")
+        ]);
+
+        Assert.Contains(calls, callSite => !IsApprovedUnscopedCall(callSite));
+    }
+
+    [Fact]
+    public void Every_forbidden_ef_api_is_detected_as_a_syntax_invocation()
+    {
+        var source = """
+            query.IgnoreQueryFilters();
+            EntityFrameworkQueryableExtensions.ExecuteUpdate(query, x => x.SetProperty(item => item.Id, item => item.Id));
+            query.ExecuteUpdateAsync(x => x.SetProperty(item => item.Id, item => item.Id));
+            EntityFrameworkQueryableExtensions.ExecuteDelete(query);
+            query.ExecuteDeleteAsync();
+            query.FromSql($"select 1");
+            query.FromSqlRaw("select 1");
+            query.FromSqlInterpolated($"select 1");
+            context.Database.ExecuteSqlRaw("select 1");
+            context.Database.ExecuteSqlRawAsync("select 1");
+            context.Database.ExecuteSqlInterpolated($"select 1");
+            context.Database.ExecuteSqlInterpolatedAsync($"select 1");
+            context.Database.SqlQuery<int>($"select 1");
+            context.Database.SqlQueryRaw<int>("select 1");
+            """;
+
+        var calls = FindForbiddenEfInvocations([(ApprovedVerifierPath, source)]);
+
+        Assert.Equal(ForbiddenEfMethodNames.Count, calls.Count);
+        Assert.Equal(
+            ForbiddenEfMethodNames.OrderBy(name => name, StringComparer.Ordinal),
+            calls.Select(callSite => callSite.Method).OrderBy(name => name, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Comments_and_strings_do_not_create_false_positive_ef_calls()
+    {
+        var source = """
+            // query.IgnoreQueryFilters();
+            var text = "query.ExecuteDeleteAsync()";
+            query.AsNoTracking();
+            """;
+
+        Assert.Empty(FindForbiddenEfInvocations([(ApprovedVerifierPath, source)]));
+    }
+
+    private const string ApprovedVerifierPath =
+        "backend/src/MiniErp.Infrastructure/Persistence/TenantOwnershipStoreVerifier.cs";
+
+    private static readonly IReadOnlySet<string> ForbiddenEfMethodNames = new HashSet<string>(
+    [
+        "IgnoreQueryFilters",
+        "ExecuteUpdate",
+        "ExecuteUpdateAsync",
+        "ExecuteDelete",
+        "ExecuteDeleteAsync",
+        "FromSql",
+        "FromSqlRaw",
+        "FromSqlInterpolated",
+        "ExecuteSqlRaw",
+        "ExecuteSqlRawAsync",
+        "ExecuteSqlInterpolated",
+        "ExecuteSqlInterpolatedAsync",
+        "SqlQuery",
+        "SqlQueryRaw"
+    ],
+    StringComparer.Ordinal);
+
+    private sealed record ForbiddenEfInvocation(string RelativePath, string Method, int Line);
+
+    private static IReadOnlyList<ForbiddenEfInvocation> FindForbiddenEfInvocations(
+        IEnumerable<(string RelativePath, string Source)> sourceUnits)
+    {
+        var calls = new List<ForbiddenEfInvocation>();
+        foreach (var sourceUnit in sourceUnits)
+        {
+            var tree = CSharpSyntaxTree.ParseText(sourceUnit.Source, path: sourceUnit.RelativePath);
+            var root = tree.GetRoot();
+            foreach (var invocation in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                var method = ResolveInvokedMethodName(invocation);
+                if (method is null || !ForbiddenEfMethodNames.Contains(method))
+                {
+                    continue;
+                }
+
+                var line = tree.GetLineSpan(invocation.Span).StartLinePosition.Line + 1;
+                calls.Add(new ForbiddenEfInvocation(
+                    NormalizePath(sourceUnit.RelativePath),
+                    method,
+                    line));
+            }
+        }
+
+        return calls;
+    }
+
+    private static string? ResolveInvokedMethodName(InvocationExpressionSyntax invocation)
+    {
+        return invocation.Expression switch
+        {
+            MemberAccessExpressionSyntax memberAccess => memberAccess.Name switch
+            {
+                IdentifierNameSyntax identifier => identifier.Identifier.ValueText,
+                GenericNameSyntax generic => generic.Identifier.ValueText,
+                _ => null
+            },
+            IdentifierNameSyntax identifier => identifier.Identifier.ValueText,
+            GenericNameSyntax generic => generic.Identifier.ValueText,
+            _ => null
+        };
+    }
+
+    private static bool IsApprovedUnscopedCall(ForbiddenEfInvocation callSite)
+    {
+        return callSite.RelativePath == ApprovedVerifierPath
+            && callSite.Method == "IgnoreQueryFilters";
+    }
+
+    private static string NormalizePath(string path) => path.Replace('\\', '/');
 
     private static bool IsUnscopedEfShape(Type type)
     {

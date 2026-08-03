@@ -7,10 +7,14 @@ namespace MiniErp.Infrastructure.Persistence;
 internal sealed class TenantPersistenceGuard
 {
     private readonly TenantContext _tenantContext;
+    private readonly TenantOwnershipVerifierRegistry _verifierRegistry;
 
-    public TenantPersistenceGuard(TenantContext tenantContext)
+    public TenantPersistenceGuard(
+        TenantContext tenantContext,
+        TenantOwnershipVerifierRegistry verifierRegistry)
     {
         _tenantContext = tenantContext ?? throw new ArgumentNullException(nameof(tenantContext));
+        _verifierRegistry = verifierRegistry ?? throw new ArgumentNullException(nameof(verifierRegistry));
     }
 
     public void Validate(ChangeTracker changeTracker)
@@ -52,9 +56,16 @@ internal sealed class TenantPersistenceGuard
 
         if (entry.State is EntityState.Modified or EntityState.Deleted)
         {
-            var storedTenant = TenantOwnershipStoreVerifier.ReadStoredTenantId(
-                (TenantPersistenceDbContext)entry.Context,
-                entry);
+            var dbContext = (TenantPersistenceDbContext)entry.Context;
+            if (!_verifierRegistry.TryGet(entry.Metadata.ClrType, out var verifier))
+            {
+                throw Deny(
+                    TenantPersistenceViolationCode.StoredOwnerUnavailable,
+                    OperationFor(entry.State),
+                    TenantPersistenceInternalReason.VerifierUnavailable);
+            }
+
+            var storedTenant = verifier.ReadStoredTenantId(dbContext, entry);
             ValidateStoredOwnership(entry, currentTenant, storedTenant);
         }
         else if (currentTenant != _tenantContext.TenantId)
@@ -84,8 +95,17 @@ internal sealed class TenantPersistenceGuard
 
         if (entry.State is EntityState.Modified or EntityState.Deleted)
         {
-            var storedTenant = await TenantOwnershipStoreVerifier.ReadStoredTenantIdAsync(
-                (TenantPersistenceDbContext)entry.Context,
+            var dbContext = (TenantPersistenceDbContext)entry.Context;
+            if (!_verifierRegistry.TryGet(entry.Metadata.ClrType, out var verifier))
+            {
+                throw Deny(
+                    TenantPersistenceViolationCode.StoredOwnerUnavailable,
+                    OperationFor(entry.State),
+                    TenantPersistenceInternalReason.VerifierUnavailable);
+            }
+
+            var storedTenant = await verifier.ReadStoredTenantIdAsync(
+                dbContext,
                 entry,
                 cancellationToken);
             ValidateStoredOwnership(entry, currentTenant, storedTenant);
@@ -108,22 +128,25 @@ internal sealed class TenantPersistenceGuard
         if (!storedTenant.HasValue)
         {
             throw Deny(
-                TenantPersistenceViolationCode.StoredOwnerMissing,
-                OperationFor(entry.State));
+                TenantPersistenceViolationCode.StoredOwnerUnavailable,
+                OperationFor(entry.State),
+                TenantPersistenceInternalReason.StoredOwnerMissing);
         }
 
         if (storedTenant.Value == default)
         {
             throw Deny(
-                TenantPersistenceViolationCode.StoredOwnerInvalid,
-                OperationFor(entry.State));
+                TenantPersistenceViolationCode.StoredOwnerUnavailable,
+                OperationFor(entry.State),
+                TenantPersistenceInternalReason.StoredOwnerInvalid);
         }
 
         if (storedTenant.Value != _tenantContext.TenantId)
         {
             throw Deny(
-                TenantPersistenceViolationCode.StoredOwnerMismatch,
-                OperationFor(entry.State));
+                TenantPersistenceViolationCode.StoredOwnerUnavailable,
+                OperationFor(entry.State),
+                TenantPersistenceInternalReason.StoredOwnerMismatch);
         }
 
         if (currentTenant != storedTenant.Value)
@@ -166,9 +189,14 @@ internal sealed class TenantPersistenceGuard
 
     private TenantPersistenceViolationException Deny(
         TenantPersistenceViolationCode code,
-        TenantPersistenceOperation operation)
+        TenantPersistenceOperation operation,
+        TenantPersistenceInternalReason? internalReason = null)
     {
-        return TenantPersistenceViolationException.Deny(code, _tenantContext, operation);
+        return TenantPersistenceViolationException.Deny(
+            code,
+            _tenantContext,
+            operation,
+            internalReason);
     }
 
     private static TenantPersistenceOperation OperationFor(EntityState state) => state switch
