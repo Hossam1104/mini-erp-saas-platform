@@ -9,10 +9,11 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 3 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `MESP-86 — Foundation Release 1 Lean Implementation Specification v0.4 Approved Release 1 Baseline; approved for controlled implementation refinement, not production` |
-| Current implementation item | `MESP-58 — Ready for implementation refinement; To Do; not started` |
-| Current branch | `docs/foundation-release1-lean-spec` |
-| Current Sprint | `No active implementation Sprint — Sprint 2 prepared with MESP-58 only; not started` |
+| Current activity | `MESP-60 — REST/OpenAPI, safe errors, correlation, concurrency and idempotency foundation; implementation in progress` |
+| Current implementation item | `MESP-60 — In Progress; no business transaction endpoints` |
+| Current branch | `feature/mesp-60-rest-openapi-foundation` |
+| Current Sprint | `No active Sprint — founder-authorized fast-track batch; no Sprint required` |
+| Current review checkpoint | `Foundation Backend Review Checkpoint occurs after MESP-62 and before MESP-63` |
 
 ---
 
@@ -40,9 +41,14 @@ It is a living progress tracker. Completed work is marked as **Done**, the curre
 
 The project is currently in **Phase 2 — Business Requirements Documents**, because the full set of business-domain BRDs has not yet been completed.
 
-### Platform Administration slice
+### Foundation backend slice
 
-The SaaS Platform Administration domain has progressed further than the rest of the product. Its first implementation item, `MESP-57 / TE-01`, has been implemented, reviewed, merged through Pull Request #1, validated on `main`, and closed. Sprint 1 is complete.
+The SaaS Platform Administration domain and the approved Foundation backend slice
+have progressed further than the rest of the product. MESP-57, MESP-58,
+MESP-87, MESP-59 and MESP-88 are complete and merged. MESP-60 is the one active
+implementation item in the founder-authorized fast-track batch. MESP-62 may
+start only after MESP-60 is merged and closed. MESP-63 remains blocked until the
+Foundation Backend Review Checkpoint; MESP-61 and MESP-64 remain To Do.
 
 | Area | Current status |
 |---|---|
@@ -55,6 +61,15 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 | MESP-57 development branch | Done |
 | MESP-57 implementation | Done — implemented, reviewed, merged through PR #1, validated on `main`, and closed in Jira |
 | Sprint 1 | Done — `S1-Solution Foundation` completed |
+| MESP-58 trusted TenantContext and persistence isolation | Done — PR #6 merged; corrective hardening included in final main |
+| MESP-87 Tenant persistence guardrail hardening | Done — merged with MESP-58 correction sequence |
+| MESP-59 authentication and authorization seam | Done — PR #8 merged and corrected through MESP-88 |
+| MESP-88 MESP-59 security correction | Done — PR #9 merged; 161 tests passed |
+| MESP-60 REST/OpenAPI foundation | In Progress — branch `feature/mesp-60-rest-openapi-foundation` |
+| MESP-62 immutable audit and OpenTelemetry evidence | To Do — starts only after MESP-60 closure |
+| MESP-63 Angular Foundation shell | To Do — blocked by Foundation Backend Review Checkpoint |
+| MESP-61 background processing foundation | To Do |
+| MESP-64 provider/schema/index validation | To Do; SQL Server/provider validation owner |
 | MESP-3 Identity and Access Epic | In Progress |
 | MESP-28 Identity and Access BRD | Done — v0.3 Approved Release 1 Baseline (founder change-control approval 3 August 2026) |
 | MESP-4 Multi-Tenancy and Tenant Lifecycle Epic | In Progress |
@@ -79,11 +94,14 @@ The SaaS Platform Administration domain has progressed further than the rest of 
 - [x] `MESP-23` — Open Questions Register remains **In Progress** as a living governance register; its current working deliverable is maintained in Jira comments, not as a second BRD/LIS delivery artifact.
 - [x] Sprint `S1-Solution Foundation` was created, started, and completed.
 - [x] Sprint contained only `MESP-57`.
-- [x] `MESP-58` is refined, labeled **Ready for implementation**, remains **To Do**, and is the only planned next item; MESP-59 through MESP-85 remain **To Do**.
+- [x] `MESP-58`, `MESP-87`, `MESP-59` and `MESP-88` are **Done** with merged implementation/security evidence.
+- [x] `MESP-60` is the only active implementation item and is **In Progress** on `feature/mesp-60-rest-openapi-foundation`.
+- [x] `MESP-62` remains **To Do** and is blocked by the MESP-60 dependency; `MESP-63` is blocked by the later checkpoint review.
+- [x] `MESP-61` and `MESP-64` remain **To Do**; no parallel implementation is authorized.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
-- [x] No Sprint is active; Sprint 2 is prepared with MESP-58 only and has not started.
-- [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; no application implementation started in this correction cycle.
-- [x] Current approved BRDs are merged to `main`; no implementation item is active.
+- [x] No Sprint is active; the fast-track MESP-60/MESP-62 batch requires no Sprint.
+- [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; implementation refinement is controlled and is not production readiness.
+- [x] Product-wide Phase 2 remains **In Progress** because core ERP BRDs remain incomplete; Foundation backend work does not imply complete ERP backend implementation.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
 - [x] Implement `MESP-57 / TE-01`.
 - [x] Run the Release build.
@@ -120,6 +138,8 @@ A domain must not move into implementation until its BRD/BPMN and applicable Lea
 - Security, tenant-isolation, MESP-48 supported-volume, and MESP-50 retention/privacy/legal-hold/purge gates remain mandatory and are not bypassed by the fast-track policy.
 - Keep documentation activities sequential: one current BRD or Lean Implementation Specification activity at a time; do not start implementation or a later BRD before the current evidence is committed and reviewed.
 - A living governance register such as `MESP-23` is maintenance work, not a second active BRD/LIS delivery artifact. It is exempt from the one-active-delivery-artifact rule while no separate drafting task is actively being executed.
+- For the founder-authorized fast-track implementation batch, Luna performs bounded implementation, self-review and validation; eligible Pull Requests may merge automatically after all safety gates pass.
+- ChatGPT reviews each execution report using the actual Jira, GitHub, diff, build and test evidence. Independent Opus review is reserved for major checkpoints rather than every Jira item; the next checkpoint is after MESP-62 and before MESP-63.
 
 ---
 
@@ -448,7 +468,7 @@ Capture the logical data and integrity decisions required to support approved do
 - [ ] Audit, retention, and purge effects are covered.
 - [ ] No table ownership conflict exists between modules.
 
-**Phase 5 status: IN PROGRESS — MESP-86 v0.4 contains the approved combined logical data model, ERD and tenant-aware integrity design for MESP-28/29/30; physical migrations remain out of scope and MESP-50 remains a production gate.**
+**Phase 5 status: IN PROGRESS — MESP-86 v0.4 contains the approved logical Foundation data model, ERD and tenant-aware integrity design; the currently implemented persistence is still a bounded foundation seam. Physical migrations remain excluded. MESP-64 owns SQL Server provider/schema/index/collation/rowversion validation, and detailed physical ERDs are required before implementing each future ERP domain. MESP-50 remains a production gate.**
 
 ---
 
@@ -542,7 +562,7 @@ Capture the implementation-readiness decisions for the approved slice across sol
 - [ ] Technical risks and deferred decisions are recorded.
 - [ ] No implementation depends on an unresolved critical decision.
 
-**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design; MESP-58 is refined and Ready while later Enablers remain To Do and no implementation is active.**
+**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59 and MESP-88 are implemented; MESP-60 is the active REST/OpenAPI refinement; MESP-62 consumes it after closure. Physical provider validation remains assigned to MESP-64.**
 
 ---
 
@@ -587,7 +607,7 @@ Convert approved specifications into a controlled, traceable, sequenced backlog 
 - [x] Dependency graph confirmed acyclic.
 - [x] Jira descriptions repaired for encoding issues.
 - [x] MESP-57 refined for implementation.
-- [x] MESP-58 through MESP-64 descriptions refined against MESP-86 v0.4; MESP-58 is the only Enabler marked Ready for implementation refinement.
+- [x] MESP-58 through MESP-64 descriptions refined against MESP-86 v0.4; the founder-authorized fast-track sequence is MESP-60 followed by MESP-62, with the later items gated by the checkpoint.
 - [x] Sprint `S1-Solution Foundation` created with MESP-57 only.
 - [ ] Refine each future Enabler or Story immediately before implementation.
 - [ ] Populate native estimation fields when Jira configuration supports them.
@@ -646,15 +666,15 @@ Implement approved backlog items sequentially, validate them with focused automa
 9. Review the complete task-related diff.
 10. Commit with the Jira key.
 11. Push the branch.
-12. Add implementation evidence to Jira.
-13. Perform independent review.
-14. Create Pull Request.
-15. Resolve review findings.
-16. Merge into `main`.
-17. Run post-merge validation.
-18. Demonstrate the outcome.
-19. Move the Jira item to Done.
-20. Select the next approved item.
+    12. Review the complete task-related diff, run `git diff --check`, and correct every finding.
+    13. Add implementation evidence to Jira.
+    14. Create a non-draft Pull Request.
+    15. Automatically merge only after base/head, build, tests, security, scope and repository gates pass; use a normal merge commit.
+    16. Run post-merge validation on synchronized `main`.
+    17. Demonstrate the outcome and update the delivery documentation.
+    18. Move the Jira item to Done.
+    19. Delete the completed local and remote branch.
+    20. Select the next explicitly authorized item only.
 
 ## Current implementation sequence
 
@@ -676,27 +696,21 @@ Implement approved backlog items sequentially, validate them with focused automa
 - [x] Move MESP-57 to Done.
 - [x] Complete Sprint 1.
 
-### Sprint 2 — Tenant Context Foundation (prepared, not started)
+### Founder-authorized fast-track Foundation batch (no Sprint)
 
-- [x] Sprint `S2-Tenant-Context-Foundation` prepared.
-- [x] Sprint goal: implement the minimum trusted TenantContext, Tenant-owned
-  persistence guard and cross-Tenant isolation foundation.
-- [x] Planned item: `MESP-58` only.
-- [ ] Sprint started.
-- [ ] `MESP-58` moved to In Progress.
-- [ ] Any other Enabler or Story added.
+- [x] No Sprint is required or active for this controlled batch.
+- [x] `MESP-57`, `MESP-58`, `MESP-87`, `MESP-59` and `MESP-88` are complete and merged.
+- [ ] `MESP-60` is the single active item on `feature/mesp-60-rest-openapi-foundation`.
+- [ ] `MESP-62` starts only after MESP-60 is merged, validated and moved to Done.
+- [ ] `MESP-63` remains To Do and blocked by the Foundation Backend Review Checkpoint.
+- [ ] `MESP-61` and `MESP-64` remain To Do; no parallel implementation is authorized.
 
-### After MESP-57 and MESP-86
+### Current sequence after the approved Foundation specification
 
-MESP-57 and Sprint 1 are complete. MESP-28 v0.3, MESP-29 v0.2, and MESP-30
-v0.2 are approved and Done. MESP-86 v0.4 is approved and Done. MESP-58 is
-Ready for implementation refinement but remains To Do; MESP-59 through MESP-64
-and MESP-65 through MESP-85 remain To Do. No implementation item is active.
-Do not start MESP-31 or any downstream BRD, and do not start MESP-58 until the
-future Sprint 2 is deliberately started.
-
-The next activity is the combined Foundation Release 1 Lean Implementation
-Specification, subject to the controlled start and approved dependencies:
+The product-wide Phase 2 BRD stream remains in progress because core ERP BRDs
+remain incomplete. The Foundation slice is in Phase 8 implementation; that
+does not mean complete ERP backend implementation has started. Do not start
+MESP-63, MESP-61, MESP-64, MESP-31, or any downstream ERP transaction work.
 
 - [x] Approve `MESP-28` Identity and Access BRD v0.3 change-control baseline on `docs/foundation-release1-lean-spec`.
 - [x] Begin and complete `MESP-29` Multi-Tenancy BRD as the single requirements activity; v0.2 is approved and Done.
@@ -704,9 +718,11 @@ Specification, subject to the controlled start and approved dependencies:
 - [x] Begin and complete `MESP-30` Organization BRD; approve v0.2 Release 1 Baseline on `docs/mesp-30-organization-brd`.
 - [x] Resolve and record `ORG-OD-001` through `ORG-OD-007`; move `MESP-30` to Done after approval evidence.
 - [x] Produce and approve v0.4 of the combined Foundation Release 1 Lean Implementation Specification under MESP-86; merge the approved documentation to `main`.
-- [x] Refine MESP-58 through MESP-64 against v0.4 and complete the Definition of Ready check for MESP-58.
-- [x] Prepare future Sprint 2 with MESP-58 only; do not start the Sprint or implementation.
-- [ ] Start Sprint 2 and implement MESP-58 as the next authorized action.
+- [x] Refine MESP-58 through MESP-64 against v0.4 and complete the Definition of Ready checks for the Foundation sequence.
+- [x] Complete MESP-58, MESP-87, MESP-59 and MESP-88 with merged validation evidence.
+- [ ] Complete MESP-60 REST/OpenAPI and safe operation contracts.
+- [ ] Complete MESP-62 immutable audit and OpenTelemetry evidence.
+- [ ] Prepare the Foundation Backend Review Checkpoint before MESP-63.
 
 ## Testing strategy
 
@@ -749,10 +765,10 @@ Specification, subject to the controlled start and approved dependencies:
 - [ ] Demonstration completed.
 - [ ] Documentation updated only where necessary.
 
-**Phase 8 status: MESP-28 approved and Done; no active implementation item.**
-MESP-29 and MESP-30 are also approved and Done; MESP-86 is v0.4 Approved and
-Done; MESP-58 is Ready but remains To Do; Sprint 2 is prepared with MESP-58
-only and is not started.
+**Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59 and MESP-88 are Done;
+MESP-60 is In Progress; no Sprint is active. MESP-62 remains the next
+sequential Foundation item, MESP-63 is blocked by the later checkpoint, and
+MESP-61/MESP-64 remain To Do.**
 
 ---
 
@@ -984,8 +1000,11 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Merge the two approved MESP-29 documentation files to `main`; keep MESP-4 In Progress.
 - [x] Complete `MESP-30 — Organization BRD` as the sequential requirements activity; v0.2 is Approved Release 1 Baseline and MESP-30 is Done outside all Sprints.
 - [x] Approve and merge the v0.4 combined Foundation Release 1 Lean Implementation Specification; no application implementation started in this correction cycle.
-- [x] Refine MESP-58 through MESP-64; mark only MESP-58 Ready while keeping it To Do.
-- [x] Prepare Sprint 2 with MESP-58 only; do not start it.
+- [x] Refine MESP-58 through MESP-64 against the approved Foundation sequence; no Sprint is required for the founder-authorized fast-track batch.
+- [x] Reconcile MESP-59 and close its completed implementation/security correction sequence before starting the next implementation item.
+- [x] Complete MESP-60 REST/OpenAPI foundation implementation and validation (execution evidence is being finalized on the active branch).
+- [ ] Complete MESP-62 immutable audit and OpenTelemetry evidence after MESP-60 is merged and closed.
+- [ ] Prepare the Foundation Backend Review Checkpoint after MESP-62 and before MESP-63.
 
 ## Completed MESP-57 outputs
 
@@ -1030,14 +1049,14 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Resolve the 22 historical IAM-OD records plus IAM-OD-023 (23 total) and four source-conflict records in the approved baseline.
 - [x] Begin, approve, and close the single MESP-29 Multi-Tenancy BRD activity; v0.2 is merged to `main`.
 - [x] Record the four Tenant-isolation clarifications and preserve MESP-48/MESP-50 Deferred Gates.
-- [x] Keep `MESP-58` through `MESP-85` in To Do.
+- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59 and MESP-88 are complete, while MESP-60 is the single active item.
 - [x] Keep `MESP-31` through `MESP-40` in To Do while the approved foundation requirements remain the current delivery boundary.
 - [x] Keep `MESP-30` outside all Sprints and restrict it to business requirements only.
 - [x] Complete founder approval of the MESP-30 baseline and resolve `ORG-OD-001` through `ORG-OD-007`.
 - [x] Start, approve, and merge `MESP-86` v0.4 combined Foundation Release 1 Lean Implementation Specification on `docs/foundation-release1-lean-spec`; keep it outside all implementation Sprints.
 - [x] Refine MESP-58 through MESP-64 and complete the MESP-58 Definition of Ready review.
-- [x] Prepare Sprint 2 with MESP-58 only; do not start the Sprint.
-- [ ] Start Sprint 2 and implement MESP-58 as the next authorized action.
+- [x] No Sprint is required for the founder-authorized MESP-60/MESP-62 fast-track batch.
+- [ ] Start MESP-62 only after MESP-60 is merged, validated and moved to Done; do not start MESP-63, MESP-61 or MESP-64 before the Foundation Backend Review Checkpoint.
 
 ---
 
@@ -1065,7 +1084,11 @@ Use this section to record major milestones.
 | 2 August 2026 | MESP-30 BRD approved | Done | `docs/14_Organization_and_Company_Structure_BRD.md` v0.2 Approved Release 1 Baseline; ORG-OD-001 through ORG-OD-007 resolved; approval merged to `main` at `a1e5eb439bf6723efb5f0638cfc518ad044fce86`; no implementation started |
 | 2 August 2026 | MESP-86 foundation specification started | In Progress | Governance Task under MESP-1; design/documentation only; no Sprint or implementation item |
 | 3 August 2026 | MESP-28 IAM change-control and MESP-86 approval | Done | IAM BRD v0.3 records the founder global User/Membership decision; MESP-86 v0.4 approved and merged; no application code or implementation started |
-| 3 August 2026 | Sprint 2 preparation | Prepared, not started | `S2-Tenant-Context-Foundation` contains MESP-58 only; MESP-58 remains To Do with readiness labels |
+| 3 August 2026 | MESP-58 trusted TenantContext and persistence isolation | Done | PR #6 merged; security correction and merged-main validation completed |
+| 3 August 2026 | MESP-87 Tenant persistence guardrail hardening | Done | Completed in the MESP-58 correction sequence; cross-Tenant Modified/Deleted protections validated |
+| 3 August 2026 | MESP-59 authentication and authorization seam | Done | PR #8 merged; status reconciled after MESP-88/PR #9 evidence; Jira reconciliation comment 10274 |
+| 3 August 2026 | MESP-88 MESP-59 security correction | Done | PR #9 merged at `723dc8e28b0a927750230b51b9d05e26d039038c`; 161 tests passed |
+| 3 August 2026 | MESP-60 REST/OpenAPI foundation | In Progress | `feature/mesp-60-rest-openapi-foundation`; versioned contracts, trusted context, safe errors, correlation, idempotency, concurrency and antiforgery seam under validation |
 
 ---
 
@@ -1090,21 +1113,21 @@ Use this section to record major milestones.
 |---|---|
 | Phase 1 — PRD | **Done** |
 | Phase 2 — BRDs and BPMN | **In Progress** |
-| Phase 3 — Lean Implementation Specification: domain and behavior | **In Progress — MESP-86 v0.4 approved combined lean domain/behavior baseline; implementation refinement begins with MESP-58** |
+| Phase 3 — Lean Implementation Specification: domain and behavior | **In Progress — MESP-86 v0.4 approved combined lean domain/behavior baseline; implementation refinement is limited to the approved Foundation sequence** |
 | Phase 4 — Lean Implementation Specification: user journeys | **In Progress — MESP-86 v0.4 approved journeys, states and acceptance baseline** |
 | Phase 5 — Lean Implementation Specification: logical data | **In Progress — MESP-86 v0.4 approved logical model, ERD and integrity baseline; physical design remains gated** |
-| Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-58 Ready, later Enablers To Do, no implementation active** |
+| Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-57 through MESP-59 and MESP-88 completed; MESP-60 active; MESP-62 follows sequentially; MESP-63 remains checkpoint-gated** |
 | Phase 7 — Jira Backlog | **Done for MESP-27 Wave 1** |
-| Phase 8 — Implementation and Automated Testing | **MESP-57 and Sprint 1 Done; no active implementation item** |
+| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59 and MESP-88 Done; MESP-60 In Progress; no Sprint active; MESP-62 follows sequentially** |
 | Phase 9 — Integration, UAT, Release, Operations | **Not Started** |
 
 ---
 
 ## Current single next action
 
-> Start future Sprint 2 and implement `MESP-58` only after the controlled Sprint
-> activation decision. Keep MESP-86 Done, MESP-5 In Progress, MESP-28/29/30
-> Done, MESP-31 through MESP-40 and MESP-59 through MESP-85 To Do, MESP-48 and
-> MESP-50 as explicit gates, and no active Sprint until Sprint 2 is deliberately
-> started. Do not start MESP-31, MESP-59, parallel downstream BRDs, Retail POS,
-> or any implementation item other than the authorized MESP-58 slice.
+> Complete the active `MESP-60` REST/OpenAPI slice, then complete `MESP-62`
+> sequentially and prepare the Foundation Backend Review Checkpoint before
+> starting `MESP-63`. Keep `MESP-61`, `MESP-64`, `MESP-31` through `MESP-40`,
+> Retail POS and all future ERP transaction work out of scope; preserve
+> `MESP-48` and `MESP-50` as explicit production gates and keep no Sprint active
+> for this founder-authorized fast-track batch.
