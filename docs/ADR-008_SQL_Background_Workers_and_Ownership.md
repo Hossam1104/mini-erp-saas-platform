@@ -1,0 +1,60 @@
+# ADR-008 — SQL-backed job execution and worker ownership
+
+| Field | Decision |
+|---|---|
+| Status | Foundation worker seam; deployment topology deferred |
+| Date | 4 August 2026 |
+| Owners | Solution Architecture / Background Processing |
+| Related Jira | MESP-61, MESP-64, MESP-48, MESP-50 |
+| Supersedes | None |
+
+## Context
+
+Background work must not lose Tenant identity when execution is detached from
+the request that created it. It must also avoid a privileged global scan of
+business repositories and must provide bounded retry, lease ownership and
+safe failure evidence.
+
+## Decision
+
+1. Work is claimed from an owned durable-work store using an atomic lease and
+   optimistic concurrency version. Only one worker can hold an active lease.
+2. The worker reconstructs a trusted execution context from the stored Tenant,
+   authorization path, scope, actor/session and correlation facts. Missing,
+   mismatched or unauthorized context fails closed; there is no fallback Tenant.
+3. A dispatcher resolves one typed handler by work type. It may inspect only
+   the module-owned envelope needed to claim/execute that work and must not
+   enumerate Tenant business data globally.
+4. Handler outcomes are success, bounded retry or safe dead letter. Expired
+   leases can be reclaimed; an active lease cannot be stolen.
+5. MESP-61 implements this seam with a deterministic local adapter. The
+   production SQL-backed worker store and hosting topology remain implementation
+   and deployment decisions validated by MESP-64 and later operational review.
+
+## Alternatives considered
+
+- A hosted worker that trusts request/client Tenant input was rejected because
+  it permits context confusion and cross-Tenant execution.
+- A global platform governance context was rejected as a Tenant execution path;
+  governance remains purpose-bound control-plane work.
+- An unbounded retry loop was rejected because it can amplify provider failure
+  and hide dead-letter conditions.
+
+## Consequences and guardrails
+
+- Stored owner verification is required on read, claim and completion. The
+  worker never mutates ownership or scope.
+- Lease duration, maximum attempts and backoff are bounded by code-level
+  contracts; production values require an approved operational decision.
+- The host may later run a dedicated worker process or the same deployable
+  application, but this ADR does not select production topology, capacity,
+  scheduler, region or provider.
+- Worker telemetry and audit are allow-listed and redacted; payloads, tokens,
+  cookies, private bytes and provider exception text are excluded.
+
+## Gates
+
+MESP-48 owns supported-volume, queue depth, throughput, lease and recovery
+evidence. MESP-50 owns retention, privacy, legal hold, purge, residency,
+backup and restoration requirements for durable records. No production worker
+deployment or retention claim is authorized by this ADR.
