@@ -179,6 +179,13 @@ internal static class IdentityPermissions
 {
     internal static readonly PermissionCode Read = new("tenant.business.read");
     internal static readonly PermissionCode Export = new("tenant.business.export");
+    // Technical permissions are neutral, configuration-led permissions owned
+    // by the Foundation operation catalogue rather than by a role name.
+    internal static readonly PermissionCode ContextRead = new("tenant.foundation.context.read");
+    internal static readonly PermissionCode TargetRead = new("tenant.foundation.target.read");
+    internal static readonly PermissionCode ProbeWrite = new("tenant.foundation.probe.write");
+    internal static readonly PermissionCode ContextSwitch = new("foundation.context.switch");
+    internal static readonly PermissionCode PlatformMetadataRead = new("platform.metadata.read");
     internal static readonly PermissionCode SuspendGlobalUser = new("platform.user.suspend");
     internal static readonly PermissionCode ReactivateGlobalUser = new("platform.user.reactivate");
     internal static readonly PermissionCode OffboardGlobalUser = new("platform.user.offboard");
@@ -192,6 +199,41 @@ internal static class IdentityPermissions
     internal static readonly PermissionCode AssignRole = new("tenant.role.assign");
     internal static readonly PermissionCode AssignScopeGrant = new("tenant.scope.grant");
     internal static readonly PermissionCode ApproveSupportGrant = new("support.grant.approve");
+
+    internal static bool TryResolve(string? value, out PermissionCode permission)
+    {
+        permission = default;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var normalized = value.Trim().ToLowerInvariant();
+        permission = normalized switch
+        {
+            "tenant.business.read" => Read,
+            "tenant.business.export" => Export,
+            "tenant.foundation.context.read" => ContextRead,
+            "tenant.foundation.target.read" => TargetRead,
+            "tenant.foundation.probe.write" => ProbeWrite,
+            "foundation.context.switch" => ContextSwitch,
+            "platform.metadata.read" => PlatformMetadataRead,
+            "platform.user.suspend" => SuspendGlobalUser,
+            "platform.user.reactivate" => ReactivateGlobalUser,
+            "platform.user.offboard" => OffboardGlobalUser,
+            "tenant.membership.suspend" => SuspendMembership,
+            "tenant.membership.reactivate" => ReactivateMembership,
+            "tenant.membership.revoke" => RevokeMembership,
+            "support.tenant.read" => SupportRead,
+            "platform.authority.assign" => AssignPlatformPermission,
+            "tenant.role.assign" => AssignRole,
+            "tenant.scope.grant" => AssignScopeGrant,
+            "support.grant.approve" => ApproveSupportGrant,
+            _ => default
+        };
+
+        return !permission.Equals(default(PermissionCode));
+    }
 }
 
 internal readonly record struct OrganizationScope

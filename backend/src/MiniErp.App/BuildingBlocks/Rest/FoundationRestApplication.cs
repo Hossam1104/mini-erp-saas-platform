@@ -4,6 +4,9 @@ using System.Collections.Concurrent;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.App.Modules.Audit;
+using MiniErp.App.Modules.Identity;
+using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.Foundation;
 
 namespace MiniErp.App.BuildingBlocks.Rest;
@@ -96,7 +99,7 @@ public sealed class FoundationRequestContext
 
     public string LifecycleState { get; }
 
-    public static FoundationRequestContext Unauthenticated() => new(
+    internal static FoundationRequestContext Unauthenticated() => new(
         FoundationSecurityProfile.Anonymous,
         actorId: null,
         sessionId: null,
@@ -105,16 +108,16 @@ public sealed class FoundationRequestContext
         permission: string.Empty,
         lifecycleState: "Unauthenticated");
 
-    public static FoundationRequestContext ForAuthenticatedSession(Guid actorId, Guid sessionId, string lifecycleState = "Active") => new(
+    internal static FoundationRequestContext ForAuthenticatedSession(Guid actorId, Guid sessionId, string permission = "authenticated.session", string lifecycleState = "Active") => new(
         FoundationSecurityProfile.AuthenticatedSession,
         actorId,
         sessionId,
         tenantContext: null,
         platformGovernanceContext: null,
-        permission: "authenticated.session",
+        permission,
         lifecycleState);
 
-    public static FoundationRequestContext ForTenant(
+    internal static FoundationRequestContext ForTenant(
         Guid actorId,
         Guid sessionId,
         TenantContext tenantContext,
@@ -139,7 +142,7 @@ public sealed class FoundationRequestContext
             lifecycleState);
     }
 
-    public static FoundationRequestContext ForPlatform(
+    internal static FoundationRequestContext ForPlatform(
         Guid actorId,
         Guid sessionId,
         PlatformGovernanceContext governanceContext,
@@ -175,25 +178,31 @@ public interface ITrustedRequestContextResolver
 /// </summary>
 public sealed class DefaultTrustedRequestContextResolver : ITrustedRequestContextResolver
 {
+    private readonly IFoundationIdentityHost identityHost;
+
+    public DefaultTrustedRequestContextResolver(IFoundationIdentityHost identityHost)
+    {
+        this.identityHost = identityHost ?? throw new ArgumentNullException(nameof(identityHost));
+    }
+
     public ValueTask<FoundationRequestContext> ResolveAsync(HttpContext httpContext, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
-
-        if (httpContext.User.Identity?.IsAuthenticated == true
-            && TryReadGuidClaim(httpContext.User, ClaimTypes.NameIdentifier, out var actorId)
-            && TryReadGuidClaim(httpContext.User, "session_id", out var sessionId))
+        var correlationId = httpContext.Items.TryGetValue("MiniErp.Foundation.CorrelationId", out var rawCorrelation)
+            && rawCorrelation is string correlation
+            ? correlation
+            : FoundationCorrelation.Resolve(httpContext.Request);
+        var metadata = httpContext.GetEndpoint()?.Metadata.GetMetadata<FoundationOperationMetadata>();
+        if (metadata is null || !FoundationOperationCatalog.TryGet(metadata.OperationId, out var descriptor)
+            || descriptor.Visibility != FoundationOperationVisibility.Public
+            || !ReferenceEquals(metadata.Descriptor, descriptor) && metadata.Descriptor != descriptor)
         {
-            return ValueTask.FromResult(
-                FoundationRequestContext.ForAuthenticatedSession(actorId, sessionId));
+            // An operation without an approved descriptor is not allowed to
+            // manufacture a permission or fall back to context-read semantics.
+            return ValueTask.FromResult(FoundationRequestContext.Unauthenticated());
         }
 
-        return ValueTask.FromResult(FoundationRequestContext.Unauthenticated());
-    }
-
-    private static bool TryReadGuidClaim(ClaimsPrincipal principal, string type, out Guid value)
-    {
-        var raw = principal.FindFirst(type)?.Value;
-        return Guid.TryParse(raw, out value) && value != Guid.Empty;
+        return ValueTask.FromResult(identityHost.ResolveContext(httpContext.User, correlationId, descriptor));
     }
 }
 
@@ -208,8 +217,9 @@ public static class FoundationCorrelation
     public static string Resolve(HttpRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var candidate = request.Headers[HeaderName].FirstOrDefault();
-        return IsValid(candidate)
+        var values = request.Headers[HeaderName];
+        var candidate = values.Count == 1 ? values[0] : null;
+        return values.Count == 1 && IsValid(candidate)
             ? candidate!.Trim()
             : Guid.NewGuid().ToString("N");
     }
@@ -223,7 +233,7 @@ public static class FoundationCorrelation
 
         foreach (var character in value)
         {
-            if (char.IsControl(character) || character is '\r' or '\n')
+            if (char.IsControl(character) || character is '\r' or '\n' or '\u2028' or '\u2029')
             {
                 return false;
             }
@@ -292,13 +302,12 @@ public enum FoundationIdempotencyDecision
     New = 1,
     Replay = 2,
     RequestConflict = 3,
-    ContextConflict = 4,
-    InProgress = 5
+    InProgress = 4
 }
 
 public sealed record FoundationIdempotencyCheck(
     FoundationIdempotencyDecision Decision,
-    FoundationWriteResponse? Response = null);
+    FoundationIdempotencyResponse? Response = null);
 
 /// <summary>
 /// Bounded local idempotency seam. Durable production storage is intentionally
@@ -310,10 +319,10 @@ public sealed class LocalFoundationIdempotencyStore
         FoundationIdempotencyBinding Binding,
         string Fingerprint,
         DateTimeOffset ExpiresAt,
-        FoundationWriteResponse? Response);
+        FoundationIdempotencyResponse? Response);
 
     private readonly object syncRoot = new();
-    private readonly Dictionary<string, Entry> entries = new(StringComparer.Ordinal);
+    private readonly Dictionary<(FoundationIdempotencyBinding Binding, string Key), Entry> entries = [];
 
     public FoundationIdempotencyCheck Begin(
         string key,
@@ -330,15 +339,12 @@ public sealed class LocalFoundationIdempotencyStore
         lock (syncRoot)
         {
             RemoveExpiredUnsafe(now);
-            if (!entries.TryGetValue(key.Trim(), out var existing))
+            var normalizedKey = key.Trim();
+            var compositeKey = (binding, normalizedKey);
+            if (!entries.TryGetValue(compositeKey, out var existing))
             {
-                entries[key.Trim()] = new Entry(binding, fingerprint, now.Add(validity), Response: null);
+                entries[compositeKey] = new Entry(binding, fingerprint, now.Add(validity), Response: null);
                 return new FoundationIdempotencyCheck(FoundationIdempotencyDecision.New);
-            }
-
-            if (existing.Binding != binding)
-            {
-                return new FoundationIdempotencyCheck(FoundationIdempotencyDecision.ContextConflict);
             }
 
             if (!string.Equals(existing.Fingerprint, fingerprint, StringComparison.Ordinal))
@@ -352,34 +358,27 @@ public sealed class LocalFoundationIdempotencyStore
         }
     }
 
-    public void Commit(string key, FoundationWriteResponse response)
+    public void Commit(string key, FoundationIdempotencyBinding binding, FoundationIdempotencyResponse response)
     {
         lock (syncRoot)
         {
-            if (entries.TryGetValue(key.Trim(), out var existing))
+            var compositeKey = (binding, key.Trim());
+            if (entries.TryGetValue(compositeKey, out var existing))
             {
-                entries[key.Trim()] = existing with { Response = response };
+                entries[compositeKey] = existing with { Response = response };
             }
         }
     }
 
-    public void Release(string key)
+    public void Release(string key, FoundationIdempotencyBinding binding)
     {
         lock (syncRoot)
         {
-            if (entries.TryGetValue(key.Trim(), out var existing) && existing.Response is null)
+            var compositeKey = (binding, key.Trim());
+            if (entries.TryGetValue(compositeKey, out var existing) && existing.Response is null)
             {
-                entries.Remove(key.Trim());
+                entries.Remove(compositeKey);
             }
-        }
-    }
-
-    /// <summary>Clears local evidence for an isolated test host.</summary>
-    public void Clear()
-    {
-        lock (syncRoot)
-        {
-            entries.Clear();
         }
     }
 
@@ -466,13 +465,16 @@ public sealed class FoundationRestApplication
     private readonly LocalFoundationProbeStore probeStore;
     private readonly IFoundationTargetDirectory targetDirectory;
     private readonly TimeProvider timeProvider;
+    private readonly FoundationAuditCoordinator auditCoordinator;
 
     public FoundationRestApplication(
+        FoundationAuditCoordinator auditCoordinator,
         LocalFoundationIdempotencyStore? idempotencyStore = null,
         LocalFoundationProbeStore? probeStore = null,
         IFoundationTargetDirectory? targetDirectory = null,
         TimeProvider? timeProvider = null)
     {
+        this.auditCoordinator = auditCoordinator ?? throw new ArgumentNullException(nameof(auditCoordinator));
         this.idempotencyStore = idempotencyStore ?? new LocalFoundationIdempotencyStore();
         this.probeStore = probeStore ?? new LocalFoundationProbeStore();
         this.targetDirectory = targetDirectory ?? new EmptyFoundationTargetDirectory();
@@ -484,7 +486,7 @@ public sealed class FoundationRestApplication
         string correlationId) => ReadContext(
         context,
         FoundationSecurityProfile.OrdinaryMembership,
-        "foundation.context.read",
+        FoundationOperationCatalog.GetRequired("foundation.tenant-context.read").ExactPermissionCode!,
         "foundation.tenant-context.read",
         correlationId);
 
@@ -493,7 +495,7 @@ public sealed class FoundationRestApplication
         string correlationId) => ReadContext(
         context,
         FoundationSecurityProfile.SupportGrant,
-        "foundation.context.read",
+        FoundationOperationCatalog.GetRequired("foundation.support-context.read").ExactPermissionCode!,
         "foundation.support-context.read",
         correlationId);
 
@@ -502,7 +504,7 @@ public sealed class FoundationRestApplication
         string correlationId) => ReadContext(
         context,
         FoundationSecurityProfile.PlatformGovernanceContext,
-        "foundation.context.read",
+        FoundationOperationCatalog.GetRequired("foundation.platform-context.read").ExactPermissionCode!,
         "foundation.platform-context.read",
         correlationId);
 
@@ -515,7 +517,7 @@ public sealed class FoundationRestApplication
         var profileFailure = ValidateContext<FoundationTargetResponse>(
             context,
             FoundationSecurityProfile.OrdinaryMembership,
-            "foundation.target.read",
+            FoundationOperationCatalog.GetRequired(operationId).ExactPermissionCode!,
             operationId,
             correlationId);
         if (profileFailure is not null)
@@ -543,7 +545,7 @@ public sealed class FoundationRestApplication
             correlationId);
     }
 
-    public FoundationOperationResult<FoundationWriteResponse> WriteProbe(
+    public async Task<FoundationOperationResult<FoundationWriteResponse>> WriteProbeAsync(
         FoundationRequestContext context,
         FoundationWriteRequest request,
         string? idempotencyKey,
@@ -555,7 +557,7 @@ public sealed class FoundationRestApplication
         var profileFailure = ValidateContext<FoundationWriteResponse>(
             context,
             FoundationSecurityProfile.OrdinaryMembership,
-            "foundation.probe.write",
+            FoundationOperationCatalog.GetRequired(operationId).ExactPermissionCode!,
             operationId,
             correlationId);
         if (profileFailure is not null)
@@ -636,57 +638,111 @@ public sealed class FoundationRestApplication
             timeProvider.GetUtcNow(),
             IdempotencyValidity);
 
-        if (check.Decision is FoundationIdempotencyDecision.Replay && check.Response is not null)
+        switch (check.Decision)
         {
-            return FoundationOperationResult<FoundationWriteResponse>.Success(
-                check.Response with { Replayed = true },
+            case FoundationIdempotencyDecision.Replay when check.Response?.WriteResponse is { } original:
+                return FoundationOperationResult<FoundationWriteResponse>.Success(
+                    original with { Replayed = true },
+                    operationId,
+                    correlationId,
+                    replayed: true);
+            case FoundationIdempotencyDecision.Replay:
+                return Failure<FoundationWriteResponse>(
+                    StatusCodes.Status409Conflict,
+                    "idempotency_conflict",
+                    "Idempotency conflict",
+                    "The stored idempotency response is unavailable.",
+                    operationId,
+                    correlationId);
+            case FoundationIdempotencyDecision.RequestConflict:
+            case FoundationIdempotencyDecision.InProgress:
+                return Failure<FoundationWriteResponse>(
+                    StatusCodes.Status409Conflict,
+                    "idempotency_conflict",
+                    "Idempotency conflict",
+                    "The request cannot be replayed with different or incomplete input.",
+                    operationId,
+                    correlationId);
+            case FoundationIdempotencyDecision.New:
+                break;
+            default:
+                idempotencyStore.Release(idempotencyKey!, binding);
+                return Failure<FoundationWriteResponse>(
+                    StatusCodes.Status409Conflict,
+                    "idempotency_conflict",
+                    "Idempotency conflict",
+                    "The idempotency decision is not recognized.",
+                    operationId,
+                    correlationId);
+        }
+
+        var committed = false;
+        try
+        {
+            async Task<(bool Advanced, long Version)> AdvanceAsync()
+            {
+                var advanced = probeStore.TryAdvance(tenantId, expectedVersion, out var version);
+                return await Task.FromResult((advanced, version));
+            }
+
+            var execution = await auditCoordinator.ExecuteProtectedAsync(
+                context,
                 operationId,
                 correlationId,
-                replayed: true);
-        }
+                FoundationAuditReason.Allowed,
+                AdvanceAsync,
+                idempotencyKey,
+                expectedVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
-        if (check.Decision is FoundationIdempotencyDecision.ContextConflict)
+            if (execution.Succeeded && execution.Value is { Advanced: false } stale)
+            {
+                return Failure<FoundationWriteResponse>(
+                    StatusCodes.Status409Conflict,
+                    "concurrency_conflict",
+                    "Concurrency conflict",
+                    "The resource version is stale.",
+                    operationId,
+                    correlationId);
+            }
+
+            if (!execution.Succeeded || execution.Value is not { Advanced: true } advance)
+            {
+                return Failure<FoundationWriteResponse>(
+                    execution.Code == "concurrency_conflict" ? StatusCodes.Status409Conflict : StatusCodes.Status503ServiceUnavailable,
+                    execution.Code == "concurrency_conflict" ? "concurrency_conflict" : "audit_unavailable",
+                    execution.Code == "concurrency_conflict" ? "Concurrency conflict" : "Operation unavailable",
+                    execution.Code == "concurrency_conflict" ? "The resource version is stale." : "The operation could not be completed.",
+                    operationId,
+                    correlationId);
+            }
+
+            var response = new FoundationWriteResponse(
+                operationId,
+                correlationId,
+                "accepted",
+                advance.Version.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                Replayed: false);
+            idempotencyStore.Commit(idempotencyKey!, binding, FoundationIdempotencyResponse.ForWrite(response));
+            committed = true;
+            return FoundationOperationResult<FoundationWriteResponse>.Success(response, operationId, correlationId);
+        }
+        catch
         {
             return Failure<FoundationWriteResponse>(
-                StatusCodes.Status409Conflict,
-                "idempotency_context_conflict",
-                "Idempotency conflict",
-                "The request cannot be replayed in this security context.",
+                StatusCodes.Status503ServiceUnavailable,
+                "audit_unavailable",
+                "Operation unavailable",
+                "The operation could not be completed.",
                 operationId,
                 correlationId);
         }
-
-        if (check.Decision is FoundationIdempotencyDecision.RequestConflict or FoundationIdempotencyDecision.InProgress)
+        finally
         {
-            return Failure<FoundationWriteResponse>(
-                StatusCodes.Status409Conflict,
-                "idempotency_conflict",
-                "Idempotency conflict",
-                "The request cannot be replayed with different or incomplete input.",
-                operationId,
-                correlationId);
+            if (!committed)
+            {
+                idempotencyStore.Release(idempotencyKey!, binding);
+            }
         }
-
-        if (!probeStore.TryAdvance(tenantId, expectedVersion, out var newVersion))
-        {
-            idempotencyStore.Release(idempotencyKey!);
-            return Failure<FoundationWriteResponse>(
-                StatusCodes.Status409Conflict,
-                "concurrency_conflict",
-                "Concurrency conflict",
-                "The resource version is stale.",
-                operationId,
-                correlationId);
-        }
-
-        var response = new FoundationWriteResponse(
-            operationId,
-            correlationId,
-            "accepted",
-            newVersion.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            Replayed: false);
-        idempotencyStore.Commit(idempotencyKey!, response);
-        return FoundationOperationResult<FoundationWriteResponse>.Success(response, operationId, correlationId);
     }
 
     private FoundationOperationResult<FoundationContextResponse> ReadContext(

@@ -44,6 +44,11 @@ internal sealed class IdentityStore
     [
         IdentityPermissions.Read,
         IdentityPermissions.Export,
+        IdentityPermissions.ContextRead,
+        IdentityPermissions.TargetRead,
+        IdentityPermissions.ProbeWrite,
+        IdentityPermissions.ContextSwitch,
+        IdentityPermissions.PlatformMetadataRead,
         IdentityPermissions.SuspendGlobalUser,
         IdentityPermissions.ReactivateGlobalUser,
         IdentityPermissions.OffboardGlobalUser,

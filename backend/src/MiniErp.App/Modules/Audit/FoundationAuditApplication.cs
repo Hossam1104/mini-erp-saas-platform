@@ -96,7 +96,8 @@ public static class FoundationAuditEvidenceFactory
             throw new ArgumentException("A retry must identify its prior evidence.", nameof(retryOfEvidenceId));
         }
 
-        if (decision != FoundationAuditDecision.Retry && retryOfEvidenceId is not null)
+        if (decision is not (FoundationAuditDecision.Retry or FoundationAuditDecision.EffectFailed)
+            && retryOfEvidenceId is not null)
         {
             throw new ArgumentException("Only retry evidence may reference prior evidence.", nameof(retryOfEvidenceId));
         }
@@ -343,7 +344,9 @@ internal static class FoundationAuditEvidenceMapping
 
         if (evidence.Decision == FoundationAuditDecision.Retry
             ? evidence.RetryOfEvidenceId is null || evidence.Attempt < 2
-            : evidence.RetryOfEvidenceId is not null)
+            : evidence.Decision == FoundationAuditDecision.EffectFailed
+                ? evidence.RetryOfEvidenceId is null || evidence.Attempt < 2
+                : evidence.RetryOfEvidenceId is not null)
         {
             throw new FoundationAuditAppendException("retry_relationship_invalid");
         }
@@ -466,15 +469,6 @@ public sealed class LocalImmutableAuditEvidenceStore : IFoundationAuditEvidenceS
                     && string.Equals(item.Purpose, purpose, StringComparison.Ordinal))
                 .ToArray();
             return ValueTask.FromResult(result);
-        }
-    }
-
-    /// <summary>Test-only reset for a new isolated local host.</summary>
-    internal void Clear()
-    {
-        lock (syncRoot)
-        {
-            evidence.Clear();
         }
     }
 
@@ -779,14 +773,15 @@ public sealed class FoundationAuditCoordinator
         string? operationVersion = null,
         string? supportPurpose = null,
         DateTimeOffset? supportGrantExpiresAt = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        FoundationAuditDecision decision = FoundationAuditDecision.Allowed)
     {
         ArgumentNullException.ThrowIfNull(protectedEffect);
         var record = await RecordAsync(
             context,
             operationId,
             correlationId,
-            FoundationAuditDecision.Allowed,
+            decision,
             reason,
             idempotencyKey,
             operationVersion,
@@ -798,6 +793,11 @@ public sealed class FoundationAuditCoordinator
             return FoundationAuditExecutionResult<T>.Failure(record.Code);
         }
 
+        if (decision != FoundationAuditDecision.Allowed)
+        {
+            return FoundationAuditExecutionResult<T>.Failure("authorization_denied");
+        }
+
         try
         {
             var value = await protectedEffect();
@@ -805,7 +805,21 @@ public sealed class FoundationAuditCoordinator
         }
         catch
         {
-            return FoundationAuditExecutionResult<T>.Failure("protected_effect_failed");
+            var failureRecord = await RecordAsync(
+                context,
+                operationId,
+                correlationId,
+                FoundationAuditDecision.EffectFailed,
+                FoundationAuditReason.EffectFailed,
+                idempotencyKey,
+                operationVersion,
+                supportPurpose,
+                supportGrantExpiresAt,
+                retryOfEvidenceId: record.Evidence.EvidenceId,
+                attempt: 2,
+                cancellationToken: cancellationToken);
+            return FoundationAuditExecutionResult<T>.Failure(
+                failureRecord.Succeeded ? "protected_effect_failed" : "protected_effect_failed_evidence_unavailable");
         }
     }
 

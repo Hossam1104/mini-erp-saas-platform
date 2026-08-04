@@ -14,3 +14,6 @@
 - Stop and escalate on Tenant leakage, authentication/authorization weakness,
   data loss or purge, accounting-integrity risk, or a legal/privacy decision
   that cannot be safely deferred.
+- MESP-89 is an explicit security exception to automatic merge: open the
+  non-draft PR, keep it unmerged and In Progress, and stop for focused ChatGPT
+  review before starting MESP-63, MESP-61 or MESP-64.
