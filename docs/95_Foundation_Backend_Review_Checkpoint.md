@@ -1,13 +1,15 @@
 # Foundation Backend Review Checkpoint
 
-Status: MESP-89 correction in progress; do not start MESP-63 before the
-MESP-89 PR receives focused ChatGPT security review and merge authorization.
+Status: MESP-89 is Done. PR #12 was approved by focused ChatGPT review and
+merged to `main`; MESP-63 is the next authorized implementation item.
 
 ## Baseline
 
-- Review date: 3 August 2026; correction update: 4 August 2026.
+- Review date: 3 August 2026; correction and merge reconciliation: 4 August 2026.
 - Verified final reviewed baseline before MESP-89: `ff4741392e593b298fc220fcf822352656cc6fc1`.
 - MESP-89 correction branch: `feature/mesp-89-foundation-host-security-integration`.
+- PR #12 merged with normal merge commit `a1c5627b40e11b14a50736663c6da56cf11c9ef8`;
+  merged-main validation passed with 247 tests, 0 failures and 0 skips.
 - Product boundary: Release 1 B2B ERP only. Retail POS and Wafra-specific core
   behavior remain excluded; Wafra is validation-only.
 - Approved sources: PRD v1.2; `docs/01_Technology_Architecture_Baseline.md`;
@@ -16,9 +18,9 @@ MESP-89 PR receives focused ChatGPT security review and merge authorization.
   `docs/15_Foundation_Release_1_Lean_Implementation_Specification.md`;
   `docs/00_ERP_Business_Glossary.md`; ADR-001 through ADR-018 as applicable;
   and `docs/94_Product_Delivery_Master_Plan.md`.
-- Current Jira state: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and
-  MESP-62 Done; MESP-89 In Progress; MESP-63, MESP-61 and MESP-64 To Do; no
-  Sprint active. MESP-63 is blocked by MESP-89 and its focused review.
+- Current Jira state: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60,
+  MESP-62 and MESP-89 Done; MESP-63 is the next authorized item and remains To
+  Do until started; MESP-61 and MESP-64 remain To Do; no Sprint is active.
 
 ## Completed implementation
 
@@ -31,7 +33,7 @@ MESP-89 PR receives focused ChatGPT security review and merge authorization.
 | MESP-88 | Done | [PR #9](https://github.com/Hossam1104/mini-erp-saas-platform/pull/9) | `b844a7cc780b18bd78e1cd4500ba5b4287cd9de4` | `723dc8e28b0a927750230b51b9d05e26d039038c` | Security correction for authority issuance and authentication evidence | 161-test baseline reported; no new business scope |
 | MESP-60 | Done | [PR #10](https://github.com/Hossam1104/mini-erp-saas-platform/pull/10) | `2f1efeff2a31ebbf02af297931b0de57c3b3bd76` | `2569acbe6dc26223108f7ad539ca7db2bcdf5f93` | Versioned REST/OpenAPI, safe errors, correlation, concurrency, idempotency and antiforgery seam | 188 tests on merged main; no business transaction endpoints |
 | MESP-62 | Done | PR #11 (this delivery) | `14ecf65e349d73d7e3ab8d78193056d208a0b44c` | Recorded in the MESP-62 delivery evidence | Immutable path-aware audit evidence, append-before-effect fail-closed coordinator and safe OTel-compatible hooks | 224 tests before merge; local bounded store only, no exporter/provider/migration |
-| MESP-89 | In Progress | [PR #12](https://github.com/Hossam1104/mini-erp-saas-platform/pull/12) | Original `8bfcf42dbeaf6db8fc347bb087a04705dc39c71d`; correction commits on the same branch | Not merged by policy | Connects Identity/session to the API host, real antiforgery, catalog-backed exact permissions, trusted context resolution, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions; ADR-004 reconciled | Correction validation passed with 247 tests; PR remains open and unmerged for focused ChatGPT review |
+| MESP-89 | Done | [PR #12](https://github.com/Hossam1104/mini-erp-saas-platform/pull/12) | Original `8bfcf42dbeaf6db8fc347bb087a04705dc39c71d`; corrections `492e80f8d85e5228ce98163bc58da54a221c9c45`, `a57f1e6888aed4a94b41ef69a73f86eab8d1a8c7`, `57574e13193e6d67daf9c5ab55e1ea6f304d16b6` | `a1c5627b40e11b14a50736663c6da56cf11c9ef8` | Connects Identity/session to the API host, real antiforgery, catalog-backed exact permissions, trusted context resolution, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions; ADR-004 reconciled | Focused ChatGPT approval; merged-main Release build 0 warnings/0 errors and 247 tests passed, 0 failed, 0 skipped; production providers remain deferred |
 
 ## Traceability matrix
 
@@ -42,7 +44,7 @@ MESP-89 PR receives focused ChatGPT security review and merge authorization.
 | Global User, session and authorization path | Identity and Access BRD | LIS v0.4, ADR-004/005 | MESP-59, MESP-88 | `Modules/Identity` | Identity/session/authorization tests | PR #8/#9 / `6d5e5fb3`, `723dc8e2` |
 | Versioned safe API boundary | Foundation LIS v0.4 | Architecture baseline, ADR-002/010 | MESP-60 | `FoundationRestContracts`, `FoundationRestApplication`, `MiniErp.Api/Program.cs` | REST/OpenAPI foundation tests | PR #10 / `2569acbe` |
 | Authorization-path evidence and observability | Identity, Multi-Tenancy and Organization BRDs | Foundation LIS v0.4, ADR-010/014 | MESP-62 | `Contracts/Modules/Audit`, `App/Modules/Audit`, `AuditObservabilityTests` | Immutable evidence, path, redaction, retry, fail-closed and hook tests | PR #11 / merge SHA recorded in delivery evidence |
-| Host authentication, antiforgery and server-owned context | Identity and Access BRD, Multi-Tenancy BRD | ADR-004, Foundation LIS v0.4 | MESP-89 | `MiniErp.Api/Program.cs`, `Modules/Identity/IdentityHostIntegration.cs`, REST application | Host integration tests, resolver coverage and endpoint metadata checks | MESP-89 branch/PR; merge intentionally held |
+| Host authentication, antiforgery and server-owned context | Identity and Access BRD, Multi-Tenancy BRD | ADR-004, Foundation LIS v0.4 | MESP-89 | `MiniErp.Api/Program.cs`, `Modules/Identity/IdentityHostIntegration.cs`, REST application | Host integration tests, resolver coverage and endpoint metadata checks | PR #12 merged at `a1c5627b`; MESP-89 Done |
 
 ## Architecture status
 
@@ -76,8 +78,8 @@ MESP-89 PR receives focused ChatGPT security review and merge authorization.
   antiforgery-protected lifecycle revocation with no Tenant/Platform business
   effect under its documented conditional evidence policy. Context switching
   validates the server `SelectionVersion` separately from candidate
-  `EligibilityVersion`. The correction remains under review and does not make
-  the local provider production-ready.
+  `EligibilityVersion`. The merged slice remains bounded and does not make the
+  local provider production-ready.
 
 ## Security status
 
@@ -119,30 +121,27 @@ MESP-89 PR receives focused ChatGPT security review and merge authorization.
 ## UI readiness
 
 The backend now exposes stable foundation contracts that can inform detailed
-Foundation UI drawings. MESP-63 Angular implementation must remain blocked until
-MESP-89 is approved and its focused review is complete. The eventual UI must support EN/AR, RTL/LTR
-handling, safe anonymous/authenticated/expired/revoked states, and
+Foundation UI drawings. MESP-89 is approved, merged and Done, so MESP-63 may
+start as the next sequential implementation item. The UI must support EN/AR,
+RTL/LTR handling, safe anonymous/authenticated/expired/revoked states, and
 server-confirmed context switching; no client-selected Tenant authority is
-implied by these contracts. Angular implementation remains blocked by MESP-89
-approval and the focused review.
+implied by these contracts.
 
-## MESP-89 correction status
+## MESP-89 completion status
 
-- The independent Opus checkpoint remains a **CHANGES REQUIRED BEFORE MESP-63**
-  decision with 0 Critical, 6 High, 8 Medium and 6 Low findings. It has not
-  been rewritten as an approval of MESP-63.
-- MESP-89 is the bounded correction item for F-01 through F-06 and the directly
-  related findings. It authors ADR-004 before the host changes, connects the
-  existing Identity, REST and Audit libraries, and adds the minimum host
-  endpoints required for later MESP-63 readiness.
+- The focused ChatGPT security re-review approved the corrected PR with 0
+  Critical, 0 High and 0 Medium blockers.
+- PR #12 merged to `main` at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` and
+  MESP-89 is Done in Jira.
+- The completed correction covers F-01 through F-06 and the related exact
+  permission, mandatory evidence, idempotency and context-version findings.
+- Merged-main validation records 247 passing tests, 0 failures, 0 skips, and a
+  Release build with 0 warnings and 0 errors.
 - Production Identity persistence, external IdP, MFA/email/SMS providers,
   durable idempotency, durable audit/export, migrations and deployment remain
   explicitly absent. Provider/schema validation remains assigned to MESP-64.
-- Final correction-branch validation currently records 247 passing tests, 0
-  failures, 0 skips, and a Release build with 0 warnings and 0 errors; this is
-  branch evidence only until the focused ChatGPT review and merge decision.
-- MESP-89 must be reviewed from its actual PR diff by ChatGPT before merge;
-  MESP-89 remains In Progress and MESP-63 remains To Do.
+- MESP-63 is now authorized as the next sequential implementation item;
+  MESP-61 and MESP-64 remain To Do and must not run in parallel.
 
 ## Plan variance
 
@@ -152,9 +151,8 @@ approval and the focused review.
   changing the approved business scope.
 - MESP-60 and MESP-62 ran sequentially in the founder-authorized fast-track
   without a Sprint; automatic merge was allowed only after the documented gates.
-- MESP-89 is a security exception: Luna may create the non-draft PR but must
-  not merge it; focused ChatGPT review is required first and another full Opus
-  review is not required for this correction.
+- MESP-89 was a security exception: the corrected PR required focused ChatGPT
+  review before merge; that review approved the change and the PR is now merged.
 - The delivery plan and `.ai/CURRENT_STATE.md` were corrected from stale
   MESP-58/MESP-60 instructions to the verified current state.
 - No unapproved ERP transaction, Retail POS, Wafra-specific, migration,
@@ -163,29 +161,18 @@ approval and the focused review.
 ## Remaining Foundation work
 
 - MESP-89 — Foundation host authentication, antiforgery and evidence integration
-  (In Progress; PR review hold).
-- MESP-63 — Angular Foundation shell (blocked by MESP-89 and focused review).
+  (Done; PR #12 merged at `a1c5627b`).
+- MESP-63 — Angular Foundation shell (next authorized sequential item).
 - MESP-61 — background processing foundation (To Do).
 - MESP-64 — provider/schema/index validation (To Do).
 - MESP-48 — supported-volume production gate.
 - MESP-50 — retention/privacy/legal-hold/purge/residency/backup/restoration
   production gate.
 
-## Opus review questions
+## Review disposition
 
-Before any MESP-63 work, Opus should determine:
-
-1. Whether implementation matches the approved plan.
-2. Whether Tenant isolation remains safe.
-3. Whether authentication and authorization are coherent.
-4. Whether REST and audit seams are safe and sufficient.
-5. Whether tests are trustworthy.
-6. Whether documentation is accurate.
-7. Whether detailed UI design and MESP-63 may start.
-8. What corrections are required before MESP-63.
-9. Whether any requirement was silently omitted.
-10. Whether the remaining sequence should change.
-
-Stop before MESP-63 until MESP-89 receives focused ChatGPT review and merge
-authorization. The Opus checkpoint remains the independent finding baseline;
-MESP-89 must not be merged automatically.
+The focused ChatGPT security re-review completed the required MESP-89 gate and
+approved PR #12 for merge. The merged-main evidence is recorded above. MESP-63
+may now begin from the approved backend contracts; no additional Opus review is
+required for this transition. MESP-48 and MESP-50 remain production gates, and
+MESP-61/MESP-64 remain pending.
