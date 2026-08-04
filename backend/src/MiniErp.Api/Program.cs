@@ -108,7 +108,7 @@ app.Use(async (httpContext, next) =>
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("platform.health")
-    .WithMetadata(new FoundationOperationMetadata("platform.health", FoundationSecurityProfile.Anonymous));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("platform.health")));
 
 app.MapGet("/api/v1/module-registration", (IPlatformAdministrationModule platformModule) =>
     Results.Ok(new
@@ -119,7 +119,7 @@ app.MapGet("/api/v1/module-registration", (IPlatformAdministrationModule platfor
         registered = platformModule.RegistrationEvidence.IsRegistered
     }))
     .WithName("platform.module-registration")
-    .WithMetadata(new FoundationOperationMetadata("platform.module-registration", FoundationSecurityProfile.Anonymous));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("platform.module-registration")));
 
 app.MapGet("/api/v1/auth/antiforgery", async (HttpContext httpContext, IAntiforgery antiforgery) =>
 {
@@ -130,7 +130,7 @@ app.MapGet("/api/v1/auth/antiforgery", async (HttpContext httpContext, IAntiforg
     await httpContext.Response.WriteAsJsonAsync(new { status = "issued" });
 })
     .WithName("auth.antiforgery.read")
-    .WithMetadata(new FoundationOperationMetadata("auth.antiforgery.read", FoundationSecurityProfile.Anonymous));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.antiforgery.read")));
 
 app.MapPost("/api/v1/auth/sign-in", async (
     FoundationSignInRequest? request,
@@ -153,7 +153,7 @@ app.MapPost("/api/v1/auth/sign-in", async (
     return Results.Json(ToSessionResponse(result.State!), statusCode: StatusCodes.Status200OK);
 })
     .WithName("auth.sign-in")
-    .WithMetadata(new FoundationOperationMetadata("auth.sign-in", FoundationSecurityProfile.Anonymous, RequiresMandatoryAudit: false, IsUnsafe: true));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.sign-in")));
 
 app.MapPost("/api/v1/auth/sign-out", async (
     HttpContext httpContext,
@@ -200,7 +200,7 @@ app.MapPost("/api/v1/auth/sign-out", async (
     return Results.NoContent();
 })
     .WithName("auth.sign-out")
-    .WithMetadata(new FoundationOperationMetadata("auth.sign-out", FoundationSecurityProfile.AuthenticatedSession, RequiresMandatoryAudit: true, IsUnsafe: true));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.sign-out")));
 
 app.MapGet("/api/v1/auth/session", (
     HttpContext httpContext,
@@ -212,7 +212,7 @@ app.MapGet("/api/v1/auth/session", (
         : Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Authentication required", detail: "Authentication is required.", type: "https://api.minierp.local/problems/authentication_failed");
 })
     .WithName("auth.session.read")
-    .WithMetadata(new FoundationOperationMetadata("auth.session.read", FoundationSecurityProfile.AuthenticatedSession));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.session.read")));
 
 app.MapGet("/api/v1/auth/contexts", (
     HttpContext httpContext,
@@ -228,7 +228,7 @@ app.MapGet("/api/v1/auth/contexts", (
         identityHost.ListContexts(httpContext.User).Select(ToContextResponse).ToArray()));
 })
     .WithName("auth.contexts.read")
-    .WithMetadata(new FoundationOperationMetadata("auth.contexts.read", FoundationSecurityProfile.AuthenticatedSession));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.contexts.read")));
 
 app.MapPost("/api/v1/auth/context-switch", async (
     FoundationContextSwitchRequest? request,
@@ -250,7 +250,9 @@ app.MapPost("/api/v1/auth/context-switch", async (
         return await WriteProblemAsync(httpContext, StatusCodes.Status401Unauthorized, "authentication_failed", "Authentication required", "Authentication is required.", operationId);
     }
 
-    if (request is null || request.ContextId == Guid.Empty || request.ExpectedVersion < 0)
+    if (request is null || request.ContextId == Guid.Empty
+        || request.ExpectedSelectionVersion < 0
+        || request.ExpectedEligibilityVersion < 0)
     {
         return await WriteProblemAsync(httpContext, StatusCodes.Status400BadRequest, "validation_failed", "Validation failed", "The request is invalid.", operationId);
     }
@@ -277,45 +279,62 @@ app.MapPost("/api/v1/auth/context-switch", async (
         return await WriteProblemAsync(httpContext, StatusCodes.Status400BadRequest, "idempotency_key_invalid", "Invalid idempotency key", "The request is invalid.", operationId);
     }
 
-    var fingerprint = $"{request.ContextId:N}|v{request.ExpectedVersion}";
+    var fingerprint = $"{request.ContextId:N}|selection:{request.ExpectedSelectionVersion}|eligibility:{request.ExpectedEligibilityVersion}";
     var check = idempotencyStore.Begin(key!, binding, fingerprint, DateTimeOffset.UtcNow, TimeSpan.FromMinutes(10));
-    if (check.Decision == FoundationIdempotencyDecision.Replay && check.Response is not null)
+    switch (check.Decision)
     {
-        return Results.Json(ToSessionResponse(identityHost.GetSession(httpContext.User), replayed: true));
+        case FoundationIdempotencyDecision.Replay when check.Response?.SessionResponse is { } original:
+            return Results.Json(original with { Replayed = true });
+        case FoundationIdempotencyDecision.Replay:
+        case FoundationIdempotencyDecision.RequestConflict:
+        case FoundationIdempotencyDecision.InProgress:
+            return await WriteProblemAsync(httpContext, StatusCodes.Status409Conflict, "idempotency_conflict", "Idempotency conflict", "The request cannot be replayed with different or incomplete input.", operationId);
+        case FoundationIdempotencyDecision.New:
+            break;
+        default:
+            idempotencyStore.Release(key!, binding);
+            return await WriteProblemAsync(httpContext, StatusCodes.Status409Conflict, "idempotency_conflict", "Idempotency conflict", "The idempotency decision is not recognized.", operationId);
     }
 
-    if (check.Decision is FoundationIdempotencyDecision.RequestConflict or FoundationIdempotencyDecision.InProgress)
+    var descriptor = FoundationOperationCatalog.GetRequired(operationId);
+    var committed = false;
+    try
     {
-        return await WriteProblemAsync(httpContext, StatusCodes.Status409Conflict, "idempotency_conflict", "Idempotency conflict", "The request cannot be replayed with different or incomplete input.", operationId);
-    }
+        var candidateContext = identityHost.ResolveCandidateContext(httpContext.User, request.ContextId, descriptor, GetCorrelation(httpContext));
+        if (candidateContext is null)
+        {
+            return await WriteProblemAsync(httpContext, StatusCodes.Status403Forbidden, "access_denied", "Access denied", "The requested context is not available.", operationId);
+        }
 
-    var candidateContext = identityHost.ResolveCandidateContext(httpContext.User, request.ContextId, GetCorrelation(httpContext));
-    if (candidateContext is null)
+        var execution = await auditCoordinator.ExecuteProtectedAsync(
+            candidateContext,
+            operationId,
+            GetCorrelation(httpContext),
+            FoundationAuditReason.Allowed,
+            () => Task.FromResult(identityHost.SwitchContext(httpContext.User, request.ContextId, request.ExpectedSelectionVersion, request.ExpectedEligibilityVersion)),
+            key,
+            request.ExpectedSelectionVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        if (!execution.Succeeded || execution.Value is not { Succeeded: true })
+        {
+            return await WriteProblemAsync(httpContext, StatusCodes.Status409Conflict, "context_version_conflict", "Context selection conflict", "The context selection is stale or unavailable.", operationId);
+        }
+
+        var switched = execution.Value.State ?? identityHost.GetSession(httpContext.User);
+        var sessionResponse = ToSessionResponse(switched);
+        idempotencyStore.Commit(key!, binding, FoundationIdempotencyResponse.ForSession(sessionResponse));
+        committed = true;
+        return Results.Json(sessionResponse);
+    }
+    finally
     {
-        idempotencyStore.Release(key!, binding);
-        return await WriteProblemAsync(httpContext, StatusCodes.Status403Forbidden, "access_denied", "Access denied", "The requested context is not available.", operationId);
+        if (!committed)
+        {
+            idempotencyStore.Release(key!, binding);
+        }
     }
-
-    var execution = await auditCoordinator.ExecuteProtectedAsync(
-        candidateContext,
-        operationId,
-        GetCorrelation(httpContext),
-        FoundationAuditReason.Allowed,
-        () => Task.FromResult(identityHost.SwitchContext(httpContext.User, request.ContextId, request.ExpectedVersion)),
-        key,
-        request.ExpectedVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
-    if (!execution.Succeeded || execution.Value is not { Succeeded: true })
-    {
-        idempotencyStore.Release(key!, binding);
-        return await WriteProblemAsync(httpContext, StatusCodes.Status409Conflict, "context_version_conflict", "Context selection conflict", "The context selection is stale or unavailable.", operationId);
-    }
-
-    var switched = execution.Value.State ?? identityHost.GetSession(httpContext.User);
-    idempotencyStore.Commit(key!, binding, new FoundationWriteResponse(operationId, GetCorrelation(httpContext), "context_selected", switched.SelectedContext?.Version.ToString() ?? "0", false));
-    return Results.Json(ToSessionResponse(switched));
 })
     .WithName("auth.context-switch")
-    .WithMetadata(new FoundationOperationMetadata("auth.context-switch", FoundationSecurityProfile.AuthenticatedSession, RequiresMandatoryAudit: true, IsUnsafe: true));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.context-switch")));
 
 app.MapGet("/api/v1/foundation/tenant-context", async (
         HttpContext httpContext,
@@ -327,7 +346,7 @@ app.MapGet("/api/v1/foundation/tenant-context", async (
         context => Task.FromResult(application.ReadTenantContext(context, GetCorrelation(httpContext))),
         StatusCodes.Status200OK))
     .WithName("foundation.tenant-context.read")
-    .WithMetadata(new FoundationOperationMetadata("foundation.tenant-context.read", FoundationSecurityProfile.OrdinaryMembership));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("foundation.tenant-context.read")));
 
 app.MapGet("/api/v1/foundation/support-context", async (
         HttpContext httpContext,
@@ -339,7 +358,7 @@ app.MapGet("/api/v1/foundation/support-context", async (
         context => Task.FromResult(application.ReadSupportContext(context, GetCorrelation(httpContext))),
         StatusCodes.Status200OK))
     .WithName("foundation.support-context.read")
-    .WithMetadata(new FoundationOperationMetadata("foundation.support-context.read", FoundationSecurityProfile.SupportGrant));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("foundation.support-context.read")));
 
 app.MapGet("/api/v1/foundation/platform-context", async (
         HttpContext httpContext,
@@ -351,7 +370,7 @@ app.MapGet("/api/v1/foundation/platform-context", async (
         context => Task.FromResult(application.ReadPlatformContext(context, GetCorrelation(httpContext))),
         StatusCodes.Status200OK))
     .WithName("foundation.platform-context.read")
-    .WithMetadata(new FoundationOperationMetadata("foundation.platform-context.read", FoundationSecurityProfile.PlatformGovernanceContext));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("foundation.platform-context.read")));
 
 app.MapGet("/api/v1/foundation/targets/{targetId}", async (
         string targetId,
@@ -371,7 +390,7 @@ app.MapGet("/api/v1/foundation/targets/{targetId}", async (
             StatusCodes.Status200OK);
     })
     .WithName("foundation.target.read")
-    .WithMetadata(new FoundationOperationMetadata("foundation.target.read", FoundationSecurityProfile.OrdinaryMembership));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("foundation.target.read")));
 
 app.MapPost("/api/v1/foundation/probe", async (
         FoundationWriteRequest request,
@@ -397,11 +416,11 @@ app.MapPost("/api/v1/foundation/probe", async (
             StatusCodes.Status200OK);
     })
     .WithName("foundation.probe.write")
-    .WithMetadata(new FoundationOperationMetadata("foundation.probe.write", FoundationSecurityProfile.OrdinaryMembership, RequiresMandatoryAudit: true, IsUnsafe: true));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("foundation.probe.write")));
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")
-    .WithMetadata(new FoundationOperationMetadata("platform.openapi", FoundationSecurityProfile.Anonymous));
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("platform.openapi")));
 
 app.Run();
 
@@ -430,7 +449,11 @@ static async Task<IResult> ExecuteAsync<T>(HttpContext httpContext, ITrustedRequ
 {
     var context = await resolver.ResolveAsync(httpContext, httpContext.RequestAborted);
     var metadata = httpContext.GetEndpoint()?.Metadata.GetMetadata<FoundationOperationMetadata>();
-    if (metadata is null || !MatchesSecurityProfile(metadata.SecurityProfile, context.SecurityProfile))
+    if (metadata is null
+        || !FoundationOperationCatalog.TryGet(metadata.OperationId, out var descriptor)
+        || descriptor.Visibility != FoundationOperationVisibility.Public
+        || metadata.Descriptor != descriptor
+        || !MatchesSecurityProfile(metadata.SecurityProfile, context.SecurityProfile))
     {
         var code = context.SecurityProfile == FoundationSecurityProfile.Anonymous
             ? "authentication_failed"
@@ -497,10 +520,11 @@ static FoundationSessionResponse ToSessionResponse(FoundationHostSessionState st
         state.SelectedContext?.Kind.ToString(),
         state.SelectedContext?.TenantId,
         state.SelectedContext?.ContextId,
-        state.SelectedContext?.Version ?? 0);
+        state.SelectionVersion,
+        replayed);
 
 static FoundationContextCandidateResponse ToContextResponse(FoundationHostContextCandidate candidate) =>
-    new(candidate.ContextId, candidate.Kind.ToString(), candidate.TenantId, candidate.DisplayName, candidate.Version);
+    new(candidate.ContextId, candidate.Kind.ToString(), candidate.TenantId, candidate.DisplayName, candidate.EligibilityVersion);
 
 /// <summary>Entry point exposed for API integration tests.</summary>
 public partial class Program;

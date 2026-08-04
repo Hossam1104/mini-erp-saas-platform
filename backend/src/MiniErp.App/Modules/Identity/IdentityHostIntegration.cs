@@ -21,7 +21,7 @@ public sealed record FoundationHostContextCandidate(
     FoundationHostContextKind Kind,
     Guid? TenantId,
     string DisplayName,
-    long Version);
+    long EligibilityVersion);
 
 /// <summary>Safe session facts returned by the Foundation host.</summary>
 public sealed record FoundationHostSessionState(
@@ -30,6 +30,7 @@ public sealed record FoundationHostSessionState(
     Guid? SessionId,
     string LifecycleState,
     DateTimeOffset? AbsoluteExpiresAt,
+    long SelectionVersion,
     FoundationHostContextCandidate? SelectedContext,
     IReadOnlyList<FoundationHostContextCandidate> Contexts);
 
@@ -53,15 +54,10 @@ public sealed class FoundationHostSignInResult
     }
 
     public bool Succeeded { get; }
-
     public string Code { get; }
-
     public Guid? ActorId { get; }
-
     public Guid? SessionId { get; }
-
     internal ClaimsPrincipal? Principal { get; }
-
     public FoundationHostSessionState? State { get; }
 }
 
@@ -72,9 +68,8 @@ public sealed record FoundationHostContextSwitchResult(
     FoundationHostSessionState? State);
 
 /// <summary>
-/// Public host adapter over the internal MESP-59 identity authority. The
-/// adapter is the only API-facing seam; it never exposes mutation/bootstrap
-/// objects or accepts a client-selected authorization path.
+/// Public host adapter over the internal MESP identity authority. Operations are
+/// resolved from an approved descriptor; callers cannot supply permission text.
 /// </summary>
 public interface IFoundationIdentityHost
 {
@@ -82,7 +77,10 @@ public interface IFoundationIdentityHost
 
     bool ValidatePrincipal(ClaimsPrincipal principal);
 
-    FoundationRequestContext ResolveContext(ClaimsPrincipal principal, string correlationId, string? operationId = null);
+    FoundationRequestContext ResolveContext(
+        ClaimsPrincipal principal,
+        string correlationId,
+        FoundationOperationDescriptor descriptor);
 
     FoundationHostSessionState GetSession(ClaimsPrincipal principal);
 
@@ -91,11 +89,13 @@ public interface IFoundationIdentityHost
     FoundationHostContextSwitchResult SwitchContext(
         ClaimsPrincipal principal,
         Guid contextId,
-        long expectedVersion);
+        long expectedSelectionVersion,
+        long expectedEligibilityVersion);
 
     FoundationRequestContext? ResolveCandidateContext(
         ClaimsPrincipal principal,
         Guid contextId,
+        FoundationOperationDescriptor descriptor,
         string correlationId);
 
     bool Revoke(ClaimsPrincipal principal, string reason);
@@ -111,7 +111,6 @@ public static class FoundationIdentityClaims
 internal sealed class FoundationIdentityHost : IFoundationIdentityHost
 {
     private static readonly Guid PlatformContextId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    private const string PlatformContextOperation = "platform.context.read";
     private readonly IdentityAuthorizationService identity;
     private readonly object selectionLock = new();
     private readonly Dictionary<SessionId, SelectedContext> selectedContexts = [];
@@ -119,7 +118,8 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
     private sealed record SelectedContext(
         FoundationHostContextKind Kind,
         Guid ContextId,
-        long Version);
+        long SelectionVersion,
+        long EligibilityVersion);
 
     internal FoundationIdentityHost(IdentityAuthorizationService identity)
     {
@@ -157,16 +157,25 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         }
     }
 
-    public bool ValidatePrincipal(ClaimsPrincipal principal)
-    {
-        return TryReadSession(principal, out var token, out var claimedSessionId, out var claimedActorId)
-            && identity.ValidateSession(token) is { Valid: true, SessionId: { } sessionId, UserId: { } userId }
-            && sessionId.Value == claimedSessionId
-            && userId.Value == claimedActorId;
-    }
+    public bool ValidatePrincipal(ClaimsPrincipal principal) =>
+        TryReadSession(principal, out var token, out var claimedSessionId, out var claimedActorId)
+        && identity.ValidateSession(token) is { Valid: true, SessionId: { } sessionId, UserId: { } userId }
+        && sessionId.Value == claimedSessionId
+        && userId.Value == claimedActorId;
 
-    public FoundationRequestContext ResolveContext(ClaimsPrincipal principal, string correlationId, string? operationId = null)
+    public FoundationRequestContext ResolveContext(
+        ClaimsPrincipal principal,
+        string correlationId,
+        FoundationOperationDescriptor descriptor)
     {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        if (!FoundationOperationCatalog.TryGet(descriptor.OperationId, out var catalogDescriptor)
+            || catalogDescriptor.Visibility != FoundationOperationVisibility.Public
+            || catalogDescriptor != descriptor)
+        {
+            return FoundationRequestContext.Unauthenticated();
+        }
+
         if (!TryReadSession(principal, out var token, out _, out _))
         {
             return FoundationRequestContext.Unauthenticated();
@@ -186,13 +195,26 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
             selectedContexts.TryGetValue(sessionId, out selected);
         }
 
+        // Session-only operations remain session-scoped until a selected path
+        // is needed for conditional lifecycle evidence (for example sign-out).
         if (selected is null)
         {
-            return FoundationRequestContext.ForAuthenticatedSession(actorId, sessionId.Value);
+            return FoundationRequestContext.ForAuthenticatedSession(
+                actorId,
+                sessionId.Value,
+                descriptor.ExactPermissionCode ?? "authenticated.session");
         }
 
+        var effectiveDescriptor = descriptor.OperationId == "auth.sign-out"
+            ? selected.Kind switch
+            {
+                FoundationHostContextKind.OrdinaryMembership => FoundationOperationCatalog.GetRequired("foundation.tenant-context.read"),
+                FoundationHostContextKind.SupportGrant => FoundationOperationCatalog.GetRequired("foundation.support-context.read"),
+                _ => FoundationOperationCatalog.GetRequired("foundation.platform-context.read")
+            }
+            : descriptor;
         var correlation = new CorrelationId(string.IsNullOrWhiteSpace(correlationId) ? Guid.NewGuid().ToString("N") : correlationId);
-        var permission = string.IsNullOrWhiteSpace(operationId) ? "foundation.context.read" : operationId.Trim();
+
         lock (identity.Store.SyncRoot)
         {
             if (!identity.Store.Users.TryGetValue(validation.UserId.Value, out var user)
@@ -206,10 +228,16 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                 && membership.UserId == validation.UserId.Value
                 && membership.Status == MembershipStatus.Active)
             {
+                if (!IdentityPermissions.TryResolve(effectiveDescriptor.ExactPermissionCode, out var permission)
+                    || effectiveDescriptor.ScopePolicy is not (FoundationScopePolicy.Tenant or FoundationScopePolicy.None))
+                {
+                    return FoundationRequestContext.Unauthenticated();
+                }
+
                 var decision = identity.AuthorizeOrdinary(
                     token,
                     membership.TenantId,
-                    IdentityPermissions.Read,
+                    permission,
                     OrganizationScope.ForTenant(membership.TenantId),
                     correlation);
                 if (decision.Allowed && decision.TenantContext is not null)
@@ -218,7 +246,7 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                         actorId,
                         sessionId.Value,
                         decision.TenantContext,
-                        permission);
+                        permission.Value);
                 }
             }
 
@@ -230,11 +258,17 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                 && identity.Store.SupportCases.TryGetValue(grant.CaseId, out var supportCase)
                 && supportCase.IsActive)
             {
+                if (!IdentityPermissions.TryResolve(effectiveDescriptor.ExactPermissionCode, out var permission)
+                    || effectiveDescriptor.ScopePolicy is not (FoundationScopePolicy.SupportGrant or FoundationScopePolicy.None))
+                {
+                    return FoundationRequestContext.Unauthenticated();
+                }
+
                 var decision = identity.AuthorizeSupport(
                     token,
                     grant.TenantId,
                     grant.Id,
-                    IdentityPermissions.SupportRead,
+                    permission,
                     grant.Scope,
                     grant.Purpose,
                     correlation);
@@ -244,30 +278,33 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                         actorId,
                         sessionId.Value,
                         decision.TenantContext,
-                        permission);
+                        permission.Value);
                 }
             }
 
-            // Platform context is intentionally fail-closed when the approved
-            // production assurance provider is unavailable.
             if (selected.Kind == FoundationHostContextKind.PlatformGovernanceContext
-                && HasPlatformAuthorityUnsafe(validation.UserId.Value, token))
+                && IdentityPermissions.TryResolve(effectiveDescriptor.ExactPermissionCode, out var platformPermission)
+                && effectiveDescriptor.ScopePolicy is FoundationScopePolicy.PlatformGovernance
+                && identity.AuthorizePlatformOperation(
+                    token,
+                    validation.UserId.Value,
+                    platformPermission,
+                    effectiveDescriptor.OperationId,
+                    effectiveDescriptor.RequiresMfa,
+                    effectiveDescriptor.RequiresFreshAuthentication))
             {
                 return FoundationRequestContext.ForPlatform(
                     actorId,
                     sessionId.Value,
                     new PlatformGovernanceContext(actorId, PlatformGovernancePurpose.PlatformMetadata, correlation),
-                    permission);
+                    platformPermission.Value);
             }
         }
 
-        // A stale or revoked selection cannot retain authority.
-        lock (selectionLock)
-        {
-            selectedContexts.Remove(sessionId);
-        }
-
-        return FoundationRequestContext.ForAuthenticatedSession(actorId, sessionId.Value);
+        RemoveSelection(sessionId);
+        return descriptor.SecurityProfile is FoundationSecurityProfile.AuthenticatedSession
+            ? FoundationRequestContext.ForAuthenticatedSession(actorId, sessionId.Value)
+            : FoundationRequestContext.Unauthenticated();
     }
 
     public FoundationHostSessionState GetSession(ClaimsPrincipal principal)
@@ -278,12 +315,9 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         }
 
         var validation = identity.ValidateSession(token);
-        if (!validation.Valid || validation.SessionId is null || validation.UserId is null)
-        {
-            return AnonymousState();
-        }
-
-            return BuildState(validation.UserId.Value, validation.SessionId.Value, token);
+        return !validation.Valid || validation.SessionId is null || validation.UserId is null
+            ? AnonymousState()
+            : BuildState(validation.UserId.Value, validation.SessionId.Value, token);
     }
 
     public IReadOnlyList<FoundationHostContextCandidate> ListContexts(ClaimsPrincipal principal)
@@ -294,18 +328,16 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         }
 
         var validation = identity.ValidateSession(token);
-        if (!validation.Valid || validation.UserId is null)
-        {
-            return [];
-        }
-
-        return ListContexts(validation.UserId.Value, token);
+        return !validation.Valid || validation.UserId is null
+            ? []
+            : ListContexts(validation.UserId.Value, token);
     }
 
     public FoundationHostContextSwitchResult SwitchContext(
         ClaimsPrincipal principal,
         Guid contextId,
-        long expectedVersion)
+        long expectedSelectionVersion,
+        long expectedEligibilityVersion)
     {
         if (!TryReadSession(principal, out var token, out _, out _))
         {
@@ -318,24 +350,35 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
             return new FoundationHostContextSwitchResult(false, "access_denied", null);
         }
 
-        var available = ListContexts(validation.UserId.Value, token);
-        var candidate = available.SingleOrDefault(item => item.ContextId == contextId);
-        if (candidate is null)
+        var descriptor = FoundationOperationCatalog.GetRequired("auth.context-switch");
+        var candidateContext = ResolveCandidateContext(principal, contextId, descriptor, Guid.NewGuid().ToString("N"));
+        if (candidateContext is null)
         {
             return new FoundationHostContextSwitchResult(false, "access_denied", null);
+        }
+
+        var available = ListContexts(validation.UserId.Value, token);
+        var candidate = available.SingleOrDefault(item => item.ContextId == contextId);
+        if (candidate is null || candidate.EligibilityVersion != expectedEligibilityVersion)
+        {
+            return new FoundationHostContextSwitchResult(false, "context_version_conflict", null);
         }
 
         lock (selectionLock)
         {
             selectedContexts.TryGetValue(validation.SessionId.Value, out var current);
-            var currentVersion = current?.Version ?? 0;
-            if (currentVersion != expectedVersion)
+            var currentSelectionVersion = current?.SelectionVersion ?? 0;
+            if (currentSelectionVersion != expectedSelectionVersion)
             {
                 return new FoundationHostContextSwitchResult(false, "context_version_conflict", null);
             }
 
-            var nextVersion = currentVersion + 1;
-            selectedContexts[validation.SessionId.Value] = new SelectedContext(candidate.Kind, candidate.ContextId, nextVersion);
+            var nextSelectionVersion = currentSelectionVersion + 1;
+            selectedContexts[validation.SessionId.Value] = new SelectedContext(
+                candidate.Kind,
+                candidate.ContextId,
+                nextSelectionVersion,
+                candidate.EligibilityVersion);
         }
 
         return new FoundationHostContextSwitchResult(true, "context_selected", BuildState(validation.UserId.Value, validation.SessionId.Value, token));
@@ -344,9 +387,14 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
     public FoundationRequestContext? ResolveCandidateContext(
         ClaimsPrincipal principal,
         Guid contextId,
+        FoundationOperationDescriptor descriptor,
         string correlationId)
     {
-        if (!TryReadSession(principal, out var token, out _, out _))
+        ArgumentNullException.ThrowIfNull(descriptor);
+        if (!FoundationOperationCatalog.TryGet(descriptor.OperationId, out var catalogDescriptor)
+            || catalogDescriptor.Visibility != FoundationOperationVisibility.Public
+            || catalogDescriptor != descriptor
+            || !TryReadSession(principal, out var token, out _, out _))
         {
             return null;
         }
@@ -364,11 +412,12 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         }
 
         var correlation = new CorrelationId(string.IsNullOrWhiteSpace(correlationId) ? Guid.NewGuid().ToString("N") : correlationId);
-        if (candidate.Kind == FoundationHostContextKind.OrdinaryMembership)
+        lock (identity.Store.SyncRoot)
         {
-            lock (identity.Store.SyncRoot)
+            if (candidate.Kind == FoundationHostContextKind.OrdinaryMembership
+                && identity.Store.Memberships.TryGetValue(new MembershipId(contextId), out var membership))
             {
-                if (!identity.Store.Memberships.TryGetValue(new MembershipId(contextId), out var membership))
+                if (!IdentityPermissions.TryResolve(descriptor.ExactPermissionCode, out var permission))
                 {
                     return null;
                 }
@@ -376,20 +425,25 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                 var decision = identity.AuthorizeOrdinary(
                     token,
                     membership.TenantId,
-                    IdentityPermissions.Read,
+                    permission,
                     OrganizationScope.ForTenant(membership.TenantId),
                     correlation);
                 return decision.Allowed && decision.TenantContext is not null
-                    ? FoundationRequestContext.ForTenant(validation.UserId.Value.Value, validation.SessionId.Value.Value, decision.TenantContext, "foundation.context.read")
+                    ? FoundationRequestContext.ForTenant(validation.UserId.Value.Value, validation.SessionId.Value.Value, decision.TenantContext, permission.Value)
                     : null;
             }
-        }
 
-        if (candidate.Kind == FoundationHostContextKind.SupportGrant)
-        {
-            lock (identity.Store.SyncRoot)
+            if (candidate.Kind == FoundationHostContextKind.SupportGrant
+                && identity.Store.SupportGrants.TryGetValue(new SupportGrantId(contextId), out var grant))
             {
-                if (!identity.Store.SupportGrants.TryGetValue(new SupportGrantId(contextId), out var grant))
+                // Context selection is a session operation; SupportRead is the
+                // exact grant permission required to select and read the case.
+                var supportPermission = descriptor.OperationId == "auth.context-switch"
+                    ? IdentityPermissions.SupportRead
+                    : IdentityPermissions.TryResolve(descriptor.ExactPermissionCode, out var resolved)
+                        ? resolved
+                        : default;
+                if (supportPermission.Equals(default(PermissionCode)))
                 {
                     return null;
                 }
@@ -398,24 +452,38 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                     token,
                     grant.TenantId,
                     grant.Id,
-                    IdentityPermissions.SupportRead,
+                    supportPermission,
                     grant.Scope,
                     grant.Purpose,
                     correlation);
                 return decision.Allowed && decision.TenantContext is not null
-                    ? FoundationRequestContext.ForTenant(validation.UserId.Value.Value, validation.SessionId.Value.Value, decision.TenantContext, "foundation.context.read")
+                    ? FoundationRequestContext.ForTenant(validation.UserId.Value.Value, validation.SessionId.Value.Value, decision.TenantContext, supportPermission.Value)
                     : null;
+            }
+
+            if (candidate.Kind == FoundationHostContextKind.PlatformGovernanceContext
+                && (descriptor.OperationId == "auth.context-switch"
+                    ? IdentityPermissions.TryResolve(
+                        FoundationOperationCatalog.GetRequired("foundation.platform-context.read").ExactPermissionCode,
+                        out var platformPermission)
+                    : IdentityPermissions.TryResolve(descriptor.ExactPermissionCode, out platformPermission))
+                && identity.AuthorizePlatformOperation(
+                    token,
+                    validation.UserId.Value,
+                    platformPermission,
+                    descriptor.OperationId,
+                    descriptor.RequiresMfa,
+                    descriptor.RequiresFreshAuthentication))
+            {
+                return FoundationRequestContext.ForPlatform(
+                    validation.UserId.Value.Value,
+                    validation.SessionId.Value.Value,
+                    new PlatformGovernanceContext(validation.UserId.Value.Value, PlatformGovernancePurpose.PlatformMetadata, correlation),
+                    platformPermission.Value);
             }
         }
 
-        return candidate.Kind == FoundationHostContextKind.PlatformGovernanceContext
-            && HasPlatformAuthorityUnsafe(validation.UserId.Value, token)
-            ? FoundationRequestContext.ForPlatform(
-                validation.UserId.Value.Value,
-                validation.SessionId.Value.Value,
-                new PlatformGovernanceContext(validation.UserId.Value.Value, PlatformGovernancePurpose.PlatformMetadata, correlation),
-                "foundation.context.read")
-            : null;
+        return null;
     }
 
     public bool Revoke(ClaimsPrincipal principal, string reason)
@@ -432,11 +500,7 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         }
 
         identity.RevokeSession(validation.SessionId.Value, string.IsNullOrWhiteSpace(reason) ? "sign-out" : reason);
-        lock (selectionLock)
-        {
-            selectedContexts.Remove(validation.SessionId.Value);
-        }
-
+        RemoveSelection(validation.SessionId.Value);
         return true;
     }
 
@@ -464,13 +528,19 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         var selectedCandidate = selected is null
             ? null
             : contexts.SingleOrDefault(item => item.ContextId == selected.ContextId);
+        if (selected is not null && selectedCandidate is null)
+        {
+            RemoveSelection(sessionId);
+        }
+
         return new FoundationHostSessionState(
             true,
             userId.Value,
             sessionId.Value,
             "Active",
             expiresAt,
-            selectedCandidate is null ? null : selectedCandidate with { Version = selected!.Version },
+            selected?.SelectionVersion ?? 0,
+            selectedCandidate,
             contexts);
     }
 
@@ -488,7 +558,7 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                          .Where(item => item.UserId == userId && item.Status == MembershipStatus.Active)
                          .OrderBy(item => item.TenantId.Value))
             {
-                if (HasOrdinaryAccessUnsafe(membership))
+                if (HasOrdinaryContextReadUnsafe(membership))
                 {
                     results.Add(new FoundationHostContextCandidate(
                         membership.Id.Value,
@@ -505,6 +575,7 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
             {
                 if (identity.Store.SupportCases.TryGetValue(grant.CaseId, out var supportCase)
                     && supportCase.IsActive
+                    && grant.Permissions.Contains(IdentityPermissions.SupportRead)
                     && identity.HasCurrentAuthenticationAssurance(cookieValue, $"support:{grant.Id.Value}:{IdentityPermissions.SupportRead.Value}"))
                 {
                     results.Add(new FoundationHostContextCandidate(
@@ -516,7 +587,15 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                 }
             }
 
-            if (HasPlatformAuthorityUnsafe(userId, cookieValue))
+            var platformDescriptor = FoundationOperationCatalog.GetRequired("foundation.platform-context.read");
+            if (IdentityPermissions.TryResolve(platformDescriptor.ExactPermissionCode, out var platformPermission)
+                && identity.AuthorizePlatformOperation(
+                    cookieValue,
+                    userId,
+                    platformPermission,
+                    platformDescriptor.OperationId,
+                    platformDescriptor.RequiresMfa,
+                    platformDescriptor.RequiresFreshAuthentication))
             {
                 results.Add(new FoundationHostContextCandidate(
                     PlatformContextId,
@@ -530,20 +609,21 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         }
     }
 
-    private bool HasOrdinaryAccessUnsafe(TenantMembership membership)
-    {
-        return identity.Store.RoleAssignments.TryGetValue(membership.Id, out var assignments)
-            && assignments.Any(assignment => assignment.IsActive
-                && identity.Store.Roles.TryGetValue(assignment.RoleId, out var role)
-                && role.Permissions.Contains(IdentityPermissions.Read))
-            && identity.Store.ScopeGrantsByMembership.TryGetValue(membership.Id, out var grants)
-            && grants.Any(id => identity.Store.ScopeGrants.TryGetValue(id, out var grant) && grant.IsActive);
-    }
+    private bool HasOrdinaryContextReadUnsafe(TenantMembership membership) =>
+        identity.Store.RoleAssignments.TryGetValue(membership.Id, out var assignments)
+        && assignments.Any(assignment => assignment.IsActive
+            && identity.Store.Roles.TryGetValue(assignment.RoleId, out var role)
+            && role.Permissions.Contains(IdentityPermissions.ContextRead))
+        && identity.Store.ScopeGrantsByMembership.TryGetValue(membership.Id, out var grants)
+        && grants.Any(id => identity.Store.ScopeGrants.TryGetValue(id, out var grant) && grant.IsActive);
 
-    private bool HasPlatformAuthorityUnsafe(UserId userId, string cookieValue) =>
-        identity.Store.PlatformPermissions.TryGetValue(userId, out var permissions)
-        && permissions.Any(item => item.IsActive)
-        && identity.HasCurrentAuthenticationAssurance(cookieValue, PlatformContextOperation);
+    private void RemoveSelection(SessionId sessionId)
+    {
+        lock (selectionLock)
+        {
+            selectedContexts.Remove(sessionId);
+        }
+    }
 
     private static ClaimsPrincipal CreatePrincipal(AuthenticationResult result, UserId userId)
     {
@@ -575,7 +655,7 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
     }
 
     private static FoundationHostSessionState AnonymousState() =>
-        new(false, null, null, "Unauthenticated", null, null, []);
+        new(false, null, null, "Unauthenticated", null, 0, null, []);
 }
 
 #pragma warning restore CS1591

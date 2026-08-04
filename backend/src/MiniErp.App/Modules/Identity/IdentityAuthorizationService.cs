@@ -707,6 +707,45 @@ internal sealed class IdentityAuthorizationService
         }
     }
 
+    /// <summary>
+    /// Checks one exact, approved Platform permission and its operation-bound
+    /// assurance. The caller cannot substitute an arbitrary active permission.
+    /// </summary>
+    internal bool AuthorizePlatformOperation(
+        string cookieValue,
+        UserId expectedUserId,
+        PermissionCode permission,
+        string operation,
+        bool requireMfa,
+        bool requireFreshAuthentication)
+    {
+        if (string.IsNullOrWhiteSpace(operation))
+        {
+            return false;
+        }
+
+        lock (store.SyncRoot)
+        {
+            if (!TryGetValidSessionUnsafe(cookieValue, out var session, out var user)
+                || user.Id != expectedUserId
+                || !HasPlatformPermissionUnsafe(user.Id, permission))
+            {
+                return false;
+            }
+
+            if (requireMfa && (!user.MfaEnabled
+                || session.MfaSatisfiedAt is not { } mfaAt
+                || mfaAt.Add(options.FreshAuthenticationWindow) <= Now))
+            {
+                return false;
+            }
+
+            return !requireFreshAuthentication
+                || session.FreshAuthenticationByOperation.TryGetValue(operation.Trim(), out var freshAt)
+                    && freshAt.Add(options.FreshAuthenticationWindow) > Now;
+        }
+    }
+
     internal AuthorizationDecision AuthorizeOrdinary(
         string cookieValue,
         TenantId requestedTenant,

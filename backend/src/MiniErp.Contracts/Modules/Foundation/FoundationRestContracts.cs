@@ -32,6 +32,21 @@ public enum FoundationOperationVisibility
 }
 
 /// <summary>
+/// The server-owned authorization scope required by a Foundation operation.
+/// </summary>
+public enum FoundationScopePolicy
+{
+    /// <summary>No business authorization scope is selected.</summary>
+    None = 1,
+    /// <summary>An active ordinary Tenant membership and organization scope.</summary>
+    Tenant = 2,
+    /// <summary>An active case-bound support grant and organization scope.</summary>
+    SupportGrant = 3,
+    /// <summary>A purpose-bound platform governance context.</summary>
+    PlatformGovernance = 4
+}
+
+/// <summary>
 /// Stable mapping between one versioned endpoint and one application operation.
 /// </summary>
 public sealed record FoundationOperationDescriptor(
@@ -40,18 +55,78 @@ public sealed record FoundationOperationDescriptor(
     string HttpMethod,
     FoundationSecurityProfile SecurityProfile,
     FoundationOperationVisibility Visibility,
+    string? ExactPermissionCode = null,
+    FoundationScopePolicy ScopePolicy = FoundationScopePolicy.None,
+    bool RequiresMfa = false,
+    bool RequiresFreshAuthentication = false,
+    bool RequiresAntiforgery = false,
     bool RequiresMandatoryAudit = false,
     bool IsUnsafe = false);
 
 /// <summary>
 /// Metadata attached to every public endpoint.
 /// </summary>
-public sealed record FoundationOperationMetadata(
-    string OperationId,
-    FoundationSecurityProfile SecurityProfile,
-    FoundationOperationVisibility Visibility = FoundationOperationVisibility.Public,
-    bool RequiresMandatoryAudit = false,
-    bool IsUnsafe = false);
+public sealed class FoundationOperationMetadata
+{
+    /// <summary>Creates metadata directly from the approved descriptor.</summary>
+    public FoundationOperationMetadata(FoundationOperationDescriptor descriptor)
+    {
+        Descriptor = descriptor ?? throw new ArgumentNullException(nameof(descriptor));
+    }
+
+    // Compatibility adapter for isolated endpoint tests. Production endpoint
+    // registration uses the catalog-backed constructor above.
+    /// <summary>Creates metadata after verifying the supplied values match the catalogue.</summary>
+    public FoundationOperationMetadata(
+        string operationId,
+        FoundationSecurityProfile securityProfile,
+        FoundationOperationVisibility visibility = FoundationOperationVisibility.Public,
+        bool RequiresMandatoryAudit = false,
+        bool IsUnsafe = false)
+        : this(FoundationOperationCatalog.GetRequired(operationId))
+    {
+        if (Descriptor.SecurityProfile != securityProfile
+            || Descriptor.Visibility != visibility
+            || Descriptor.RequiresMandatoryAudit != RequiresMandatoryAudit
+            || Descriptor.IsUnsafe != IsUnsafe)
+        {
+            throw new ArgumentException("Endpoint metadata must match the approved operation descriptor.", nameof(operationId));
+        }
+    }
+
+    /// <summary>The authoritative operation descriptor.</summary>
+    public FoundationOperationDescriptor Descriptor { get; }
+
+    /// <summary>The stable operation identifier.</summary>
+    public string OperationId => Descriptor.OperationId;
+
+    /// <summary>The operation security profile.</summary>
+    public FoundationSecurityProfile SecurityProfile => Descriptor.SecurityProfile;
+
+    /// <summary>The operation visibility.</summary>
+    public FoundationOperationVisibility Visibility => Descriptor.Visibility;
+
+    /// <summary>The exact permission code, when the operation has one.</summary>
+    public string? ExactPermissionCode => Descriptor.ExactPermissionCode;
+
+    /// <summary>The operation scope policy.</summary>
+    public FoundationScopePolicy ScopePolicy => Descriptor.ScopePolicy;
+
+    /// <summary>Whether MFA is required.</summary>
+    public bool RequiresMfa => Descriptor.RequiresMfa;
+
+    /// <summary>Whether fresh authentication is required.</summary>
+    public bool RequiresFreshAuthentication => Descriptor.RequiresFreshAuthentication;
+
+    /// <summary>Whether ASP.NET Core antiforgery is required.</summary>
+    public bool RequiresAntiforgery => Descriptor.RequiresAntiforgery;
+
+    /// <summary>Whether mandatory evidence is required.</summary>
+    public bool RequiresMandatoryAudit => Descriptor.RequiresMandatoryAudit;
+
+    /// <summary>Whether the operation is unsafe.</summary>
+    public bool IsUnsafe => Descriptor.IsUnsafe;
+}
 
 /// <summary>Safe first-party authentication request.</summary>
 public sealed record FoundationSignInRequest(string? Login, string? Password);
@@ -66,7 +141,8 @@ public sealed record FoundationSessionResponse(
     string? SelectedPath,
     Guid? SelectedTenantId,
     Guid? SelectedContextId,
-    long ContextVersion);
+    long SelectionVersion,
+    bool Replayed = false);
 
 /// <summary>One safe server-derived context candidate.</summary>
 public sealed record FoundationContextCandidateResponse(
@@ -74,14 +150,17 @@ public sealed record FoundationContextCandidateResponse(
     string Kind,
     Guid? TenantId,
     string DisplayName,
-    long Version);
+    long EligibilityVersion);
 
 /// <summary>Authorized-context list response.</summary>
 public sealed record FoundationContextsResponse(
     IReadOnlyList<FoundationContextCandidateResponse> Contexts);
 
 /// <summary>Server-confirmed context switch request.</summary>
-public sealed record FoundationContextSwitchRequest(Guid ContextId, long ExpectedVersion = 0);
+public sealed record FoundationContextSwitchRequest(
+    Guid ContextId,
+    long ExpectedSelectionVersion = 0,
+    long ExpectedEligibilityVersion = 0);
 
 /// <summary>
 /// Stable, safe response for the representative Foundation context operation.
@@ -105,6 +184,20 @@ public sealed record FoundationWriteResponse(
     string Result,
     string Version,
     bool Replayed);
+
+/// <summary>Typed safe idempotency response; replay never rebuilds mutable state.</summary>
+public sealed record FoundationIdempotencyResponse(
+    FoundationWriteResponse? WriteResponse = null,
+    FoundationSessionResponse? SessionResponse = null)
+{
+    /// <summary>Wraps a write response for idempotent storage.</summary>
+    public static FoundationIdempotencyResponse ForWrite(FoundationWriteResponse response) =>
+        new(response ?? throw new ArgumentNullException(nameof(response)), null);
+
+    /// <summary>Wraps a session response for idempotent storage.</summary>
+    public static FoundationIdempotencyResponse ForSession(FoundationSessionResponse response) =>
+        new(null, response ?? throw new ArgumentNullException(nameof(response)));
+}
 
 /// <summary>
 /// The allow-listed request body for the non-business Foundation write probe.
@@ -133,17 +226,17 @@ public static class FoundationOperationCatalog
         new("platform.health", "/health", "GET", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public),
         new("platform.openapi", "/openapi/v1.json", "GET", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public),
         new("platform.module-registration", "/api/v1/module-registration", "GET", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public),
-        new("foundation.tenant-context.read", "/api/v1/foundation/tenant-context", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public),
-        new("foundation.support-context.read", "/api/v1/foundation/support-context", "GET", FoundationSecurityProfile.SupportGrant, FoundationOperationVisibility.Public),
-        new("foundation.platform-context.read", "/api/v1/foundation/platform-context", "GET", FoundationSecurityProfile.PlatformGovernanceContext, FoundationOperationVisibility.Public),
-        new("foundation.target.read", "/api/v1/foundation/targets/{targetId}", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public),
-        new("foundation.probe.write", "/api/v1/foundation/probe", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, RequiresMandatoryAudit: true, IsUnsafe: true),
+        new("foundation.tenant-context.read", "/api/v1/foundation/tenant-context", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.foundation.context.read", FoundationScopePolicy.Tenant),
+        new("foundation.support-context.read", "/api/v1/foundation/support-context", "GET", FoundationSecurityProfile.SupportGrant, FoundationOperationVisibility.Public, "support.tenant.read", FoundationScopePolicy.SupportGrant, RequiresMfa: true, RequiresFreshAuthentication: true),
+        new("foundation.platform-context.read", "/api/v1/foundation/platform-context", "GET", FoundationSecurityProfile.PlatformGovernanceContext, FoundationOperationVisibility.Public, "platform.metadata.read", FoundationScopePolicy.PlatformGovernance, RequiresMfa: true, RequiresFreshAuthentication: true),
+        new("foundation.target.read", "/api/v1/foundation/targets/{targetId}", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.foundation.target.read", FoundationScopePolicy.Tenant),
+        new("foundation.probe.write", "/api/v1/foundation/probe", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.foundation.probe.write", FoundationScopePolicy.Tenant, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true),
         new("auth.antiforgery.read", "/api/v1/auth/antiforgery", "GET", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public),
-        new("auth.sign-in", "/api/v1/auth/sign-in", "POST", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public, IsUnsafe: true),
-        new("auth.sign-out", "/api/v1/auth/sign-out", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, RequiresMandatoryAudit: true, IsUnsafe: true),
-        new("auth.session.read", "/api/v1/auth/session", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public),
-        new("auth.contexts.read", "/api/v1/auth/contexts", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public),
-        new("auth.context-switch", "/api/v1/auth/context-switch", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, RequiresMandatoryAudit: true, IsUnsafe: true)
+        new("auth.sign-in", "/api/v1/auth/sign-in", "POST", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public, RequiresAntiforgery: false, IsUnsafe: true),
+        new("auth.sign-out", "/api/v1/auth/sign-out", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session", FoundationScopePolicy.None, RequiresAntiforgery: true, RequiresMandatoryAudit: false, IsUnsafe: true),
+        new("auth.session.read", "/api/v1/auth/session", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session"),
+        new("auth.contexts.read", "/api/v1/auth/contexts", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session"),
+        new("auth.context-switch", "/api/v1/auth/context-switch", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "foundation.context.switch", FoundationScopePolicy.None, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true)
     ];
 
     /// <summary>Internal operations deliberately excluded from public routing.</summary>
@@ -152,4 +245,29 @@ public static class FoundationOperationCatalog
         new("identity.invitation.issue", "", "INTERNAL", FoundationSecurityProfile.HighRisk, FoundationOperationVisibility.Internal),
         new("identity.recovery.consume", "", "INTERNAL", FoundationSecurityProfile.HighRisk, FoundationOperationVisibility.Internal)
     ];
+
+    /// <summary>Gets one public or internal descriptor or throws when unknown.</summary>
+    public static FoundationOperationDescriptor GetRequired(string operationId) =>
+        PublicOperations.Concat(InternalOperations).SingleOrDefault(item => string.Equals(item.OperationId, operationId, StringComparison.Ordinal))
+        ?? throw new KeyNotFoundException($"Unknown Foundation operation: {operationId}");
+
+    /// <summary>Resolves one public or internal descriptor without throwing.</summary>
+    public static bool TryGet(string? operationId, out FoundationOperationDescriptor descriptor)
+    {
+        descriptor = null!;
+        if (string.IsNullOrWhiteSpace(operationId))
+        {
+            return false;
+        }
+
+        var found = PublicOperations.Concat(InternalOperations)
+            .SingleOrDefault(item => string.Equals(item.OperationId, operationId.Trim(), StringComparison.Ordinal));
+        if (found is null)
+        {
+            return false;
+        }
+
+        descriptor = found;
+        return true;
+    }
 }
