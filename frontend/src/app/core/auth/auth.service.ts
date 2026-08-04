@@ -1,4 +1,4 @@
-import { HttpHeaders } from '@angular/common/http';
+import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -10,17 +10,27 @@ import { SafeUiError, toSafeUiError } from '../api/safe-error';
 
 export type AuthenticationStatus = 'unknown' | 'loading' | 'authenticated' | 'anonymous' | 'expired' | 'error';
 
+export type SignOutResult =
+  | { outcome: 'signed-out' }
+  | { outcome: 'session-already-invalid' }
+  | { outcome: 'not-confirmed'; error: SafeUiError };
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly api = inject(ApiClientService);
   private readonly router = inject(Router);
   private sessionRequest: Promise<boolean> | null = null;
   private antiforgeryRequest: Promise<boolean> | null = null;
+  private signOutRequest: Promise<SignOutResult> | null = null;
+  private signOutGeneration = 0;
   private antiforgeryToken: string | null = null;
 
   readonly session = signal<FoundationSessionResponse | null>(null);
   readonly status = signal<AuthenticationStatus>('unknown');
   readonly lastError = signal<SafeUiError | null>(null);
+  readonly signingOut = signal(false);
+  readonly signOutFailed = signal(false);
+  readonly signOutError = signal<SafeUiError | null>(null);
 
   async ensureSession(): Promise<boolean> {
     if (this.status() === 'authenticated' && this.session()?.authenticated) {
@@ -48,10 +58,12 @@ export class AuthService {
   }
 
   async signIn(login: string, password: string): Promise<boolean> {
+    this.signOutGeneration += 1;
     this.status.set('loading');
     this.lastError.set(null);
     this.session.set(null);
     this.antiforgeryToken = null;
+    this.clearSignOutFailure();
 
     try {
       const response = await firstValueFrom(
@@ -79,7 +91,8 @@ export class AuthService {
       .then((response) => {
         const token = response.headers.get('X-CSRF-TOKEN');
         if (!token) {
-          this.lastError.set({ code: 'request_failed', status: 500, correlationId: null });
+          this.antiforgeryToken = null;
+          this.lastError.set({ code: 'antiforgery_failed', status: 500, correlationId: null });
           return false;
         }
         this.antiforgeryToken = token;
@@ -121,20 +134,112 @@ export class AuthService {
     void this.router.navigate(['/login']);
   }
 
-  async signOut(): Promise<void> {
-    try {
-      if (this.session()) {
-        await this.bootstrapAntiforgery();
-        await firstValueFrom(this.api.post<void>('/auth/sign-out', {}, { headers: this.requestHeaders() }));
-      }
-    } catch (error: unknown) {
-      this.lastError.set(toSafeUiError(error));
-    } finally {
-      this.session.set(null);
+  signOut(): Promise<SignOutResult> {
+    if (this.signOutRequest) {
+      return this.signOutRequest;
+    }
+
+    if (!this.session()) {
       this.antiforgeryToken = null;
       this.status.set('anonymous');
-      await this.router.navigate(['/login']);
+      const result = Promise.resolve<SignOutResult>({ outcome: 'session-already-invalid' });
+      void result.then(() => this.router.navigate(['/login']));
+      return result;
     }
+
+    const generation = ++this.signOutGeneration;
+    this.signingOut.set(true);
+    this.clearSignOutFailure();
+    const request = this.performSignOut(generation);
+    let trackedRequest!: Promise<SignOutResult>;
+    trackedRequest = request.finally(() => {
+      if (this.signOutRequest === trackedRequest) {
+        this.signingOut.set(false);
+        this.signOutRequest = null;
+      }
+    });
+    this.signOutRequest = trackedRequest;
+    return trackedRequest;
+  }
+
+  private async performSignOut(generation: number): Promise<SignOutResult> {
+    let antiforgeryReady = false;
+    try {
+      antiforgeryReady = await this.bootstrapAntiforgery();
+    } catch (error: unknown) {
+      return this.markSignOutUnconfirmed(generation, toSafeUiError(error));
+    }
+
+    if (!antiforgeryReady || !this.requestHeaders().has('X-CSRF-TOKEN')) {
+      return this.markSignOutUnconfirmed(
+        generation,
+        this.lastError() ?? { code: 'antiforgery_failed', status: 400, correlationId: null },
+      );
+    }
+
+    let response: HttpResponse<void>;
+    try {
+      response = await firstValueFrom(this.api.postResponse<void>('/auth/sign-out', {}, { headers: this.requestHeaders() }));
+    } catch (error: unknown) {
+      const safeError = toSafeUiError(error);
+      if (!this.isCurrentSignOut(generation)) {
+        return this.notConfirmedResult(safeError);
+      }
+      if (safeError.code === 'authentication_failed' || safeError.status === 401) {
+        this.markSessionExpired();
+        this.clearSignOutFailure();
+        return { outcome: 'session-already-invalid' };
+      }
+      if (safeError.code === 'antiforgery_failed' || safeError.status === 403) {
+        this.antiforgeryToken = null;
+      }
+      return this.markSignOutUnconfirmed(generation, safeError);
+    }
+
+    if (response.status !== 204) {
+      return this.markSignOutUnconfirmed(generation, {
+        code: 'request_failed',
+        status: response.status,
+        correlationId: null,
+      });
+    }
+    if (!this.isCurrentSignOut(generation)) {
+      return this.notConfirmedResult({ code: 'request_failed', status: 409, correlationId: null });
+    }
+    this.clearConfirmedSession();
+    await this.router.navigate(['/login']);
+    return { outcome: 'signed-out' };
+  }
+
+  private markSignOutUnconfirmed(generation: number, error: SafeUiError): SignOutResult {
+    if (!this.isCurrentSignOut(generation)) {
+      return this.notConfirmedResult(error);
+    }
+    this.lastError.set(error);
+    this.signOutError.set(error);
+    this.signOutFailed.set(true);
+    return this.notConfirmedResult(error);
+  }
+
+  private notConfirmedResult(error: SafeUiError): SignOutResult {
+    return { outcome: 'not-confirmed', error };
+  }
+
+  private clearConfirmedSession(): void {
+    this.session.set(null);
+    this.antiforgeryToken = null;
+    this.status.set('anonymous');
+    this.lastError.set(null);
+    this.clearSignOutFailure();
+  }
+
+  private clearSignOutFailure(): void {
+    this.signOutFailed.set(false);
+    this.signOutError.set(null);
+  }
+
+  private isCurrentSignOut(generation: number): boolean {
+    return this.signOutGeneration === generation;
   }
 
   private markSessionUnavailable(error: unknown): void {

@@ -27,4 +27,12 @@ export class ApiClientService {
   post<T>(path: string, body: unknown, options: ApiRequestOptions = {}): Observable<T> {
     return this.http.post<T>(`${this.baseUrl}${path}`, body, { ...options, withCredentials: true });
   }
+
+  postResponse<T>(path: string, body: unknown, options: ApiRequestOptions = {}): Observable<HttpResponse<T>> {
+    return this.http.post<T>(`${this.baseUrl}${path}`, body, {
+      ...options,
+      withCredentials: true,
+      observe: 'response',
+    });
+  }
 }
