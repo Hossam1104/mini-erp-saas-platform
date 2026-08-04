@@ -758,7 +758,7 @@ transaction work in parallel.
 - [x] AuthService now distinguishes confirmed sign-out, server-confirmed already-invalid sessions and unconfirmed outcomes; it does not clear local state or navigate to login after antiforgery, audit, server, malformed-response or network failure.
 - [x] Cached antiforgery material is cleared after a 403, no sign-out POST is sent without a non-empty in-memory token, concurrent sign-outs coalesce, and stale responses cannot overwrite newer authentication state.
 - [x] The shell keeps the selected context visible, exposes an accessible EN/AR retry message and disables the action only while the request is active; no token or cookie authority is stored in browser storage.
-- [x] Correction validation currently passes 26 Angular unit/component tests and 4 Playwright journeys; backend source and contract remain unchanged and the 247-test/0-warning/0-error backend baseline remains required.
+- [x] Correction validation currently passes 27 Angular unit/component tests and 4 Playwright journeys; backend source and contract remain unchanged and the 247-test/0-warning/0-error backend baseline remains required.
 - [x] Publish non-draft correction PR #16 ([link](https://github.com/Hossam1104/mini-erp-saas-platform/pull/16)); keep it open and unmerged for focused ChatGPT review.
 - [ ] Move `MESP-90` to Done only after the correction PR is approved and merged; do not start `MESP-61` or `MESP-64` before that approval.
 
@@ -808,7 +808,7 @@ MESP-89 and MESP-63 are Done. MESP-90 is the single active correction item and
 remains In Progress under a manual merge hold. PR #12 merged at
 `a1c5627b40e11b14a50736663c6da56cf11c9ef8` and PR #14 merged at
 `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`; the correction currently passes
-26 Angular unit/component tests and 4 Playwright journeys, while the unchanged
+27 Angular unit/component tests and 4 Playwright journeys, while the unchanged
 backend baseline remains 247 tests with 0 warnings and 0 errors. No Sprint is
 active. MESP-61 is blocked until correction approval and MESP-64 remains To Do.**
 

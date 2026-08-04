@@ -26,5 +26,5 @@
 - MESP-90 (`Prevent false logout when server session revocation fails`) is **In Progress** and is the only active implementation item.
 - Branch: `fix/mesp-63-signout-fail-closed`; PR #16 is intentionally non-draft and remains open/unmerged for focused ChatGPT review.
 - The Angular correction preserves the authenticated session, selected context and current route when sign-out is unconfirmed; only confirmed HTTP 204 or server-confirmed HTTP 401 clears local state and navigates to `/login`.
-- Validation record: 26 Angular unit/component tests passed; 4 Playwright journeys passed; backend scope is unchanged and the existing 247-test/0-warning/0-error baseline remains the required regression gate.
+- Validation record: 27 Angular unit/component tests passed; 4 Playwright journeys passed; backend scope is unchanged and the existing 247-test/0-warning/0-error baseline remains the required regression gate.
 - No backend contract, provider, migration, database, business-domain, Retail POS, Wafra-core, MESP-61 or MESP-64 implementation work was introduced. No Sprint is active.
