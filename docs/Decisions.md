@@ -21,13 +21,16 @@ This file is the lightweight ADR index for Release 1. The approved architecture 
 | ADR-015 | Saudi e-invoicing adapter and credential boundary | Required before production | After qualified Saudi VAT/ZATCA validation and before live Saudi invoicing | MESP-49; MESP-37 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
 | ADR-016 | SQL Server Row-Level Security adoption or formal deferral | Required before production | Decide after application-layer isolation design and before production security approval | MESP-29; MESP-38; MESP-50 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
 | ADR-017 | External partner and API authentication | Deferred until approved integration | Only when an approved Release 1 integration requires external authentication | MESP-39 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
-| ADR-018 | Testing environments, SQL Server test containers, and production-like gates | Required before module implementation | Before automated integration testing begins; production-like gates validated before launch | MESP-38; MESP-48 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
+| ADR-018 | Testing environments, SQL Server test containers, and production-like gates | Foundation harness authored and validated; production equivalence deferred | Authored before MESP-64 LocalDB/provider validation; Docker/Testcontainers CI and production-like gates remain separately approved before launch | MESP-64; MESP-38; MESP-48; MESP-50 | [ADR-018](ADR-018_Testing_Environments_SQL_Server_Containers_and_Gates.md) |
 
 ADR-004 is the accepted Foundation Release 1 implementation baseline. ADR-006,
-ADR-007, ADR-008 and ADR-009 are now authored for the MESP-61 Foundation
-implementation timing; they establish bounded contracts and local/test
-decisions, not production provider approval. ADR-002, ADR-011 and ADR-018
-remain required at their stated timing. ADR-016 remains a production decision
-for SQL Server Row-Level Security adoption or formal deferral. The index
-controls when each detailed record becomes mandatory and prevents production
-decisions from blocking business analysis.
+ADR-007, ADR-008, ADR-009 and ADR-018 are authored for the completed MESP-61
+and active MESP-64 Foundation timing; they establish bounded contracts and
+local/test decisions, not production provider approval. ADR-018 evidence is
+recorded in `docs/96_Foundation_Release1_Safety_Validation.md` and includes
+the exact 75-assertion catalogue, 11 SQL Server tests and 296-test backend
+regression. ADR-002 and ADR-011 remain required before their owning module
+work. ADR-016 remains a production decision for SQL Server Row-Level Security
+adoption or formal deferral. The index controls when each detailed record
+becomes mandatory and prevents production decisions from blocking business
+analysis.
