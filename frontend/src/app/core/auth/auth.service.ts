@@ -116,6 +116,9 @@ export class AuthService {
   }
 
   acceptServerSession(response: FoundationSessionResponse): void {
+    if (this.signOutRequest) {
+      this.signOutGeneration += 1;
+    }
     if (!response.authenticated) {
       this.session.set(null);
       this.status.set('anonymous');
@@ -168,6 +171,10 @@ export class AuthService {
       antiforgeryReady = await this.bootstrapAntiforgery();
     } catch (error: unknown) {
       return this.markSignOutUnconfirmed(generation, toSafeUiError(error));
+    }
+
+    if (!this.isCurrentSignOut(generation)) {
+      return this.notConfirmedResult({ code: 'request_failed', status: 409, correlationId: null });
     }
 
     if (!antiforgeryReady || !this.requestHeaders().has('X-CSRF-TOKEN')) {

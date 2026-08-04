@@ -352,6 +352,32 @@ describe('AuthService', () => {
     expect(service.status()).toBe('authenticated');
   });
 
+  it('does not let a stale sign-out response overwrite a newer confirmed sign-in', async () => {
+    const newerSession: FoundationSessionResponse = {
+      ...authenticatedSession,
+      actorId: 'actor-2',
+      sessionId: 'session-2',
+    };
+    service.acceptServerSession(authenticatedSession);
+
+    const signOut = service.signOut();
+    http.expectOne('/api/v1/auth/antiforgery').flush(
+      { status: 'issued' },
+      { headers: new HttpHeaders({ 'X-CSRF-TOKEN': 'logout-token' }) },
+    );
+    await flushSignOutRequest();
+    const signOutRequest = http.expectOne('/api/v1/auth/sign-out');
+
+    const signIn = service.signIn('actor-2', 'password');
+    http.expectOne('/api/v1/auth/sign-in').flush(newerSession);
+    await expect(signIn).resolves.toBe(true);
+    signOutRequest.flush(null, { status: 204, statusText: 'No Content' });
+    await expect(signOut).resolves.toMatchObject({ outcome: 'not-confirmed' });
+
+    expect(service.session()).toEqual(newerSession);
+    expect(service.status()).toBe('authenticated');
+  });
+
   it('does not write authentication material to browser storage', async () => {
     service.acceptServerSession(authenticatedSession);
     expect(localStorage.length).toBe(0);
