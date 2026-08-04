@@ -1,6 +1,6 @@
 # Current State
 
-- Approved merged main baseline after MESP-89: `a1c5627b40e11b14a50736663c6da56cf11c9ef8` (PR #12 normal merge; pre-merge baseline was `ff4741392e593b298fc220fcf822352656cc6fc1`).
+- Approved merged main baseline after MESP-90: `469ab863a5fc20f02d3ba674a97dceb969bbec75` (PR #16 normal merge; MESP-89/PR #12 and MESP-63/PR #14 remain preserved in history).
 - MESP-57: Done; Modular Monolith solution and module seam merged through PR #1.
 - MESP-58: Done; trusted TenantContext and persistence isolation merged through PR #6, including the stored-owner security correction.
 - MESP-87: Done; Tenant persistence guardrail hardening completed in the MESP-58 correction sequence.
@@ -10,21 +10,40 @@
 - MESP-62: Done; immutable path-aware evidence, append-before-effect coordination, safe redaction, bounded telemetry hooks and the Foundation Backend Review Checkpoint package are merged.
 - MESP-89: Done; PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` after focused ChatGPT approval and merged-main validation.
 - MESP-63: Done; Angular 22 Wave 1 shell implementation merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15` after the MESP-89 reconciliation cleanup.
-- MESP-90: In Progress; linked MESP-63 false-logout correction is implemented on `fix/mesp-63-signout-fail-closed` in PR #16 (`https://github.com/Hossam1104/mini-erp-saas-platform/pull/16`) and remains under a manual merge hold pending focused ChatGPT review.
-- MESP-61: Blocked until MESP-90 correction approval; MESP-64: To Do. No parallel implementation is authorized.
+- MESP-90: Done; the exact approved head was merged through PR #16 at `469ab863a5fc20f02d3ba674a97dceb969bbec75` after focused ChatGPT approval. MESP-63 remains Done and was not reopened.
+- MESP-61: In Progress on `feature/mesp-61-durable-work-private-files`; MESP-64 remains To Do. No parallel implementation is authorized and no Sprint is active.
 - No Sprint is active; MESP-63 was delivered outside a Sprint.
 - MESP-48 and MESP-50 remain explicit performance, retention, privacy, legal-hold, purge, residency, backup and restoration production gates.
 - No physical migration, production/shared database, durable audit provider, OpenTelemetry exporter, worker, file-storage provider, deployment, Retail POS or future ERP transaction implementation was introduced. MESP-63 is limited to the Angular shell and does not implement business transactions.
-- Current state: MESP-89 and MESP-63 are merged and closed in the repository baseline; MESP-90 is the only active implementation item, while MESP-61 is blocked pending correction approval and MESP-64 remains pending.
+- Current state: MESP-89, MESP-63 and MESP-90 are merged and closed in the repository baseline; MESP-61 is the only active implementation item, while MESP-64 remains pending.
 - MESP-63 implementation baseline: commits `798d15d1aa1e53781df3a2683305e95ac3143890` and `46bf2d30f91ef00e9e450b59b8de0b3a2d34dbab` were merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`. The Angular 22/TypeScript standalone workspace provides modular core/features/shared structure, server-issued cookie session bootstrap, in-memory antiforgery token, server-confirmed context loading/switching, bilingual EN/AR direction switching, responsive accessible shell and safe state components. Focused Angular tests pass 8/8; the mocked Playwright Wave 1 smoke journey passes 1/1; production deployment and provider work remain excluded.
 - MESP-89 merged-main validation: Release build passed with 0 warnings and 0 errors; the complete solution suite passed 247 tests with 0 failures and 0 skips, including 17 direct/HTTP production-graph host-security tests and the endpoint metadata/coordinator guard. The merged correction covers catalog-backed exact operation permissions, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions.
 - Production limitations remain explicit: in-memory Identity/session, local append-only audit seam, local idempotency, unavailable MFA/fresh-auth provider, no SQL migration/provider validation, no durable exporter, no deployment work. MESP-64 owns provider/schema validation; MESP-48 and MESP-50 remain production gates.
 
-## Active MESP-63 security correction
+## Completed MESP-90 security correction
 
 - MESP-63 remains **Done**; it is not reopened.
-- MESP-90 (`Prevent false logout when server session revocation fails`) is **In Progress** and is the only active implementation item.
-- Branch: `fix/mesp-63-signout-fail-closed`; PR #16 is intentionally non-draft and remains open/unmerged for focused ChatGPT review.
+- MESP-90 (`Prevent false logout when server session revocation fails`) is **Done** and is no longer active.
+- Branch: `fix/mesp-63-signout-fail-closed`; PR #16 is merged to `main` at `469ab863a5fc20f02d3ba674a97dceb969bbec75` by normal merge after focused ChatGPT approval.
 - The Angular correction preserves the authenticated session, selected context and current route when sign-out is unconfirmed; only confirmed HTTP 204 or server-confirmed HTTP 401 clears local state and navigates to `/login`.
 - Validation record: 27 Angular unit/component tests passed; 4 Playwright journeys passed; backend scope is unchanged and the existing 247-test/0-warning/0-error baseline remains the required regression gate.
-- No backend contract, provider, migration, database, business-domain, Retail POS, Wafra-core, MESP-61 or MESP-64 implementation work was introduced. No Sprint is active.
+- No backend contract, provider, migration, database, business-domain, Retail POS, Wafra-core, MESP-61 or MESP-64 implementation work was introduced by MESP-90. No Sprint is active.
+
+## Active MESP-61 durable-work foundation
+
+- MESP-61 is **In Progress** and is the only active implementation item. The
+  branch is `feature/mesp-61-durable-work-private-files`, based on merged main
+  `469ab863a5fc20f02d3ba674a97dceb969bbec75`.
+- The bounded scope adds typed Tenant-aware durable-work identity, organization
+  scope, initiator, lifecycle, lease, retry, dead-letter and optimistic
+  concurrency contracts; a deterministic local relational outbox/inbox store;
+  a typed dispatcher and one-item worker seam; provider-neutral notification
+  intents/local adapter; and a private-file metadata/access/local adapter
+  boundary.
+- Local adapters are test/development seams only. No broker, production
+  notification provider, object-storage provider, production SQL provider,
+  migration, retention, residency, legal-hold, purge, scanning or deployment
+  behavior is selected. MESP-48 and MESP-50 remain explicit gates.
+- Focused MESP-61 tests and the complete backend/frontend regression suite must
+  pass before one non-draft PR is merged. MESP-64 remains To Do and must not
+  start until MESP-61 is merged, validated on `main` and closed in Jira.

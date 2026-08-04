@@ -1,0 +1,76 @@
+# ADR-006 — Module schemas, EF Core contexts, migrations, and cross-module transactions
+
+| Field | Decision |
+|---|---|
+| Status | Foundation implementation baseline; production validation remains gated |
+| Date | 4 August 2026 |
+| Owners | Solution Architecture / Persistence Engineering |
+| Related Jira | MESP-61, MESP-64, MESP-48, MESP-50 |
+| Supersedes | None |
+
+## Context
+
+Release 1 uses a shared SQL Server database with strict application-layer
+Tenant isolation and database schemas separated by business module. The
+Foundation work needs a bounded persistence seam for durable work, outbox and
+inbox records without turning the modular monolith into a collection of
+microservices or granting a worker a global business-data query path.
+
+## Decision
+
+1. Each module owns its EF Core model, mappings, repositories and schema
+   namespace. A module may reference shared contracts/building blocks only
+   through the approved dependency direction; it must not reach another
+   module's DbContext or tables directly.
+2. The shared SQL Server database remains the Release 1 deployment shape. A
+   Tenant-owned row carries an immutable TenantId and the persistence guard
+   verifies stored ownership on modified and deleted entities before saving.
+3. Cross-module business effects are coordinated in the application layer and
+   use one explicit transaction boundary when the owning module requires it.
+   A transaction is not an excuse to bypass Tenant checks, query filters or
+   authorization evidence.
+4. MESP-61 may provide provider-neutral contracts and a deterministic local
+   adapter. It does not add a production migration, choose a SQL deployment
+   topology, or claim provider validation.
+5. MESP-64 owns disposable SQL Server provider validation, schema/index/
+   concurrency probes and the evidence report. Production migrations remain a
+   separately reviewed delivery step.
+
+## Alternatives considered
+
+- A database per Tenant was rejected because the approved direction is one
+  shared database with strict isolation.
+- Microservices and a distributed transaction coordinator were rejected for
+  the one-developer modular-monolith scope.
+- A single unrestricted shared DbContext was rejected because it obscures
+  module ownership and makes cross-Tenant access easier to introduce.
+- SQLite-only evidence is insufficient for SQL Server-specific semantics and
+  is therefore limited to fast local contract tests.
+
+## Consequences and guardrails
+
+- New module entities require an owning module, Tenant ownership decision,
+  schema mapping, index/unique-key review and targeted tests.
+- `IgnoreQueryFilters`, raw SQL, bulk operations and maintenance paths remain
+  restricted to an explicit privileged boundary and are not available to
+  ordinary Tenant calls.
+- The first production migration must be reviewed against the approved BRDs,
+  MESP-48 supported-volume evidence and MESP-50 retention/privacy/legal-hold/
+  purge requirements.
+- SQL Server Row-Level Security is not selected here. ADR-016 remains the
+  production decision record for adoption or formal deferral.
+
+## Explicitly deferred
+
+This ADR does not decide production region, provider/vendor, backup or restore
+targets, retention durations, legal hold, purge execution, residency, or RLS.
+Those decisions remain owned by the approved MESP-48/MESP-50 gates and the
+applicable production ADRs.
+
+## Evidence expected from MESP-64
+
+The final Foundation safety report must identify which assertions are covered
+by architecture tests, local provider tests and disposable SQL Server tests.
+It must show stored-owner update/delete denial, same-Tenant relationship
+integrity, unique/index behavior, rowversion/stale-write behavior and
+transaction atomicity without touching a production or shared database.
