@@ -735,7 +735,7 @@ downstream ERP transaction work in parallel.
 ### MESP-63 active delivery evidence
 
 - [x] Jira MESP-63 moved to **In Progress** with the approved scope and exclusion comment; MESP-61 and MESP-64 remain **To Do**.
-- [x] Branch `feature/mesp-63-angular-wave-1-shell-rtl` created from synchronized `main`.
+- [x] Branch `feature/mesp-63-angular-wave-1-shell-rtl` created from synchronized `main`; implementation commit `798d15d1aa1e53781df3a2683305e95ac3143890` is published.
 - [x] Angular 22/TypeScript standalone workspace and modular `core`, `features`, and `shared` structure created.
 - [x] EN/AR translations, runtime direction switching, responsive shell, navigation, header, context rail and accessible focus baseline implemented.
 - [x] Session bootstrap, secure-cookie `withCredentials`, in-memory antiforgery bootstrap, safe expiry handling and server-confirmed context switching implemented against the merged `/api/v1/auth/*` contracts.
@@ -1116,7 +1116,7 @@ Use this section to record major milestones.
 | 3 August 2026 | MESP-62 immutable audit and OpenTelemetry evidence | Done | Immutable path-aware evidence, append-before-effect coordinator, safe telemetry hooks and focused tests merged; checkpoint package included in the PR |
 | 4 August 2026 | Foundation Backend Review Checkpoint reconciled | Done | `docs/95_Foundation_Backend_Review_Checkpoint.md`; PR #12 merged and MESP-63 authorized next after focused ChatGPT approval |
 | 4 August 2026 | MESP-89 foundation host security integration | Done | PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` after focused ChatGPT approval; ADR-004 reconciled for catalog-backed exact permissions, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions; merged-main validation passed with 247 tests and a 0-warning/0-error Release build; MESP-63 is authorized next |
-| 4 August 2026 | MESP-63 Angular Wave 1 shell | In Progress | Branch `feature/mesp-63-angular-wave-1-shell-rtl`; Angular 22 shell, EN/AR RTL foundation, server session/antiforgery/context integration, safe states and accessibility baseline implemented; focused Angular tests 8/8 and mocked Playwright smoke 1/1 passed; no Sprint active |
+| 4 August 2026 | MESP-63 Angular Wave 1 shell | In Progress | Commit `798d15d1aa1e53781df3a2683305e95ac3143890` on `feature/mesp-63-angular-wave-1-shell-rtl`; Angular 22 shell, EN/AR RTL foundation, server session/antiforgery/context integration, safe states and accessibility baseline implemented; focused Angular tests 8/8 and mocked Playwright smoke 1/1 passed; no Sprint active |
 
 ---
 
