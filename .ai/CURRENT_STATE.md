@@ -10,7 +10,7 @@
 - MESP-62: Done; immutable path-aware evidence, append-before-effect coordination, safe redaction, bounded telemetry hooks and the Foundation Backend Review Checkpoint package are merged.
 - MESP-89: Done; PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` after focused ChatGPT approval and merged-main validation.
 - MESP-63: Done; Angular 22 Wave 1 shell implementation merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15` after the MESP-89 reconciliation cleanup.
-- MESP-90: In Progress; linked MESP-63 false-logout correction is being implemented on `fix/mesp-63-signout-fail-closed` and remains under a manual merge hold pending focused ChatGPT review.
+- MESP-90: In Progress; linked MESP-63 false-logout correction is implemented on `fix/mesp-63-signout-fail-closed` in PR #16 (`https://github.com/Hossam1104/mini-erp-saas-platform/pull/16`) and remains under a manual merge hold pending focused ChatGPT review.
 - MESP-61: Blocked until MESP-90 correction approval; MESP-64: To Do. No parallel implementation is authorized.
 - No Sprint is active; MESP-63 was delivered outside a Sprint.
 - MESP-48 and MESP-50 remain explicit performance, retention, privacy, legal-hold, purge, residency, backup and restoration production gates.
@@ -24,7 +24,7 @@
 
 - MESP-63 remains **Done**; it is not reopened.
 - MESP-90 (`Prevent false logout when server session revocation fails`) is **In Progress** and is the only active implementation item.
-- Branch: `fix/mesp-63-signout-fail-closed`; the correction PR is intentionally non-draft and remains open/unmerged for focused ChatGPT review.
+- Branch: `fix/mesp-63-signout-fail-closed`; PR #16 is intentionally non-draft and remains open/unmerged for focused ChatGPT review.
 - The Angular correction preserves the authenticated session, selected context and current route when sign-out is unconfirmed; only confirmed HTTP 204 or server-confirmed HTTP 401 clears local state and navigates to `/login`.
 - Validation record: 26 Angular unit/component tests passed; 4 Playwright journeys passed; backend scope is unchanged and the existing 247-test/0-warning/0-error baseline remains the required regression gate.
 - No backend contract, provider, migration, database, business-domain, Retail POS, Wafra-core, MESP-61 or MESP-64 implementation work was introduced. No Sprint is active.

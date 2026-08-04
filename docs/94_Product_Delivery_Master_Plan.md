@@ -13,7 +13,7 @@
 | Current implementation item | `MESP-90 — In Progress; MESP-63 remains Done` |
 | Current branch | `fix/mesp-63-signout-fail-closed` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `MESP-63 remains Done; MESP-90 correction PR is under manual merge hold for focused ChatGPT review; MESP-61 is blocked until approval and MESP-64 remains To Do` |
+| Current review checkpoint | `MESP-63 remains Done; MESP-90 / PR #16 is under manual merge hold for focused ChatGPT review; MESP-61 is blocked until approval and MESP-64 remains To Do` |
 
 ---
 
@@ -53,8 +53,9 @@ backend implementation.
 The single active implementation item is the linked MESP-90 security correction
 for the MESP-63 false-logout finding. MESP-63 remains Done and is not reopened.
 MESP-61 is blocked until the correction is approved; MESP-64 remains To Do.
-The correction branch is `fix/mesp-63-signout-fail-closed`, and its non-draft PR
-must remain open and unmerged for focused ChatGPT review. No Sprint is active.
+The correction branch is `fix/mesp-63-signout-fail-closed`; non-draft PR #16
+([link](https://github.com/Hossam1104/mini-erp-saas-platform/pull/16)) must
+remain open and unmerged for focused ChatGPT review. No Sprint is active.
 
 | Area | Current status |
 |---|---|
@@ -758,7 +759,7 @@ transaction work in parallel.
 - [x] Cached antiforgery material is cleared after a 403, no sign-out POST is sent without a non-empty in-memory token, concurrent sign-outs coalesce, and stale responses cannot overwrite newer authentication state.
 - [x] The shell keeps the selected context visible, exposes an accessible EN/AR retry message and disables the action only while the request is active; no token or cookie authority is stored in browser storage.
 - [x] Correction validation currently passes 26 Angular unit/component tests and 4 Playwright journeys; backend source and contract remain unchanged and the 247-test/0-warning/0-error backend baseline remains required.
-- [ ] Publish the non-draft correction PR and record its number/URL here; keep it open and unmerged for focused ChatGPT review.
+- [x] Publish non-draft correction PR #16 ([link](https://github.com/Hossam1104/mini-erp-saas-platform/pull/16)); keep it open and unmerged for focused ChatGPT review.
 - [ ] Move `MESP-90` to Done only after the correction PR is approved and merged; do not start `MESP-61` or `MESP-64` before that approval.
 
 ## Testing strategy
