@@ -10,11 +10,21 @@
 - MESP-62: Done; immutable path-aware evidence, append-before-effect coordination, safe redaction, bounded telemetry hooks and the Foundation Backend Review Checkpoint package are merged.
 - MESP-89: Done; PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` after focused ChatGPT approval and merged-main validation.
 - MESP-63: Done; Angular 22 Wave 1 shell implementation merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15` after the MESP-89 reconciliation cleanup.
-- MESP-61 and MESP-64: To Do; no parallel implementation is authorized.
+- MESP-90: In Progress; linked MESP-63 false-logout correction is being implemented on `fix/mesp-63-signout-fail-closed` and remains under a manual merge hold pending focused ChatGPT review.
+- MESP-61: Blocked until MESP-90 correction approval; MESP-64: To Do. No parallel implementation is authorized.
 - No Sprint is active; MESP-63 was delivered outside a Sprint.
 - MESP-48 and MESP-50 remain explicit performance, retention, privacy, legal-hold, purge, residency, backup and restoration production gates.
 - No physical migration, production/shared database, durable audit provider, OpenTelemetry exporter, worker, file-storage provider, deployment, Retail POS or future ERP transaction implementation was introduced. MESP-63 is limited to the Angular shell and does not implement business transactions.
-- Current state: MESP-89 and MESP-63 are merged and closed in the repository baseline; MESP-61 and MESP-64 remain pending and no implementation item is active.
+- Current state: MESP-89 and MESP-63 are merged and closed in the repository baseline; MESP-90 is the only active implementation item, while MESP-61 is blocked pending correction approval and MESP-64 remains pending.
 - MESP-63 implementation baseline: commits `798d15d1aa1e53781df3a2683305e95ac3143890` and `46bf2d30f91ef00e9e450b59b8de0b3a2d34dbab` were merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`. The Angular 22/TypeScript standalone workspace provides modular core/features/shared structure, server-issued cookie session bootstrap, in-memory antiforgery token, server-confirmed context loading/switching, bilingual EN/AR direction switching, responsive accessible shell and safe state components. Focused Angular tests pass 8/8; the mocked Playwright Wave 1 smoke journey passes 1/1; production deployment and provider work remain excluded.
 - MESP-89 merged-main validation: Release build passed with 0 warnings and 0 errors; the complete solution suite passed 247 tests with 0 failures and 0 skips, including 17 direct/HTTP production-graph host-security tests and the endpoint metadata/coordinator guard. The merged correction covers catalog-backed exact operation permissions, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions.
 - Production limitations remain explicit: in-memory Identity/session, local append-only audit seam, local idempotency, unavailable MFA/fresh-auth provider, no SQL migration/provider validation, no durable exporter, no deployment work. MESP-64 owns provider/schema validation; MESP-48 and MESP-50 remain production gates.
+
+## Active MESP-63 security correction
+
+- MESP-63 remains **Done**; it is not reopened.
+- MESP-90 (`Prevent false logout when server session revocation fails`) is **In Progress** and is the only active implementation item.
+- Branch: `fix/mesp-63-signout-fail-closed`; the correction PR is intentionally non-draft and remains open/unmerged for focused ChatGPT review.
+- The Angular correction preserves the authenticated session, selected context and current route when sign-out is unconfirmed; only confirmed HTTP 204 or server-confirmed HTTP 401 clears local state and navigates to `/login`.
+- Validation record: 26 Angular unit/component tests passed; 4 Playwright journeys passed; backend scope is unchanged and the existing 247-test/0-warning/0-error baseline remains the required regression gate.
+- No backend contract, provider, migration, database, business-domain, Retail POS, Wafra-core, MESP-61 or MESP-64 implementation work was introduced. No Sprint is active.

@@ -9,11 +9,11 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 4 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `MESP-63 Angular Wave 1 shell implementation completed` |
-| Current implementation item | `MESP-63 — Done; no active implementation item` |
-| Current branch | `main` |
+| Current activity | `MESP-90 false-logout security correction for MESP-63` |
+| Current implementation item | `MESP-90 — In Progress; MESP-63 remains Done` |
+| Current branch | `fix/mesp-63-signout-fail-closed` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `MESP-89 and MESP-63 are approved, merged and Done; MESP-61 and MESP-64 remain To Do` |
+| Current review checkpoint | `MESP-63 remains Done; MESP-90 correction PR is under manual merge hold for focused ChatGPT review; MESP-61 is blocked until approval and MESP-64 remains To Do` |
 
 ---
 
@@ -50,6 +50,12 @@ MESP-63 is complete, while MESP-61 and MESP-64 remain To Do. Product-wide Phase 
 ERP BRDs are not complete, and Foundation backend work is not complete ERP
 backend implementation.
 
+The single active implementation item is the linked MESP-90 security correction
+for the MESP-63 false-logout finding. MESP-63 remains Done and is not reopened.
+MESP-61 is blocked until the correction is approved; MESP-64 remains To Do.
+The correction branch is `fix/mesp-63-signout-fail-closed`, and its non-draft PR
+must remain open and unmerged for focused ChatGPT review. No Sprint is active.
+
 | Area | Current status |
 |---|---|
 | Product PRD | Done |
@@ -69,6 +75,7 @@ backend implementation.
 | MESP-62 immutable audit and OpenTelemetry evidence | Done — merged with the Foundation Backend Review Checkpoint package |
 | MESP-89 Foundation host authentication, antiforgery and evidence integration | Done — PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8`; focused ChatGPT review approved; merged-main validation passed with 247 tests |
 | MESP-63 Angular Foundation shell | Done — PR #14 merged at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`; Wave 1 shell, session/context integration, bilingual RTL and safe states validated |
+| MESP-90 MESP-63 false-logout security correction | In Progress — preserves authenticated state until server-confirmed revocation; correction PR remains under manual merge hold |
 | MESP-61 background processing foundation | To Do |
 | MESP-64 provider/schema/index validation | To Do; SQL Server/provider validation owner |
 | MESP-3 Identity and Access Epic | In Progress |
@@ -100,7 +107,8 @@ backend implementation.
 - [x] `MESP-62` is **Done**; the immutable audit/observability seam and checkpoint package are merged.
 - [x] `MESP-89` is **Done**; PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` after focused ChatGPT approval; merged-main validation passed with 247 tests.
 - [x] `MESP-63` moved to **In Progress**, implemented and merged through PR #14; it is now **Done** and `MESP-61` and `MESP-64` remain **To Do**.
-- [x] `MESP-61` and `MESP-64` remain **To Do**; no parallel implementation is authorized.
+- [ ] `MESP-90` false-logout correction is **In Progress** on `fix/mesp-63-signout-fail-closed`; MESP-63 remains **Done** and the correction PR is held open for focused ChatGPT review.
+- [ ] `MESP-61` is blocked until MESP-90 approval; `MESP-64` remains **To Do**; no parallel implementation is authorized.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
 - [x] No Sprint is active; MESP-89 and MESP-63 were delivered outside a Sprint.
 - [x] MESP-63 was the single active implementation item; no parallel implementation was authorized.
@@ -742,6 +750,17 @@ transaction work in parallel.
 - [x] Focused Angular tests pass (8/8); mocked Playwright TypeScript Wave 1 smoke journey passes (1/1); production/shared provider and database work is excluded.
 - [x] Review the complete diff, publish the non-draft Pull Request #14, merge after all gates passed, validate merged `main`, record Jira closure evidence and delete the completed branch.
 
+### MESP-90 — MESP-63 false-logout security correction (active)
+
+- [x] Jira correction task `MESP-90` is **In Progress**, relates to MESP-63 and blocks MESP-61; MESP-63 remains **Done**.
+- [x] Branch `fix/mesp-63-signout-fail-closed` was created from the verified `main` baseline `7efb9e76e3bd12d8c97a48cb882efd238ea93373`.
+- [x] AuthService now distinguishes confirmed sign-out, server-confirmed already-invalid sessions and unconfirmed outcomes; it does not clear local state or navigate to login after antiforgery, audit, server, malformed-response or network failure.
+- [x] Cached antiforgery material is cleared after a 403, no sign-out POST is sent without a non-empty in-memory token, concurrent sign-outs coalesce, and stale responses cannot overwrite newer authentication state.
+- [x] The shell keeps the selected context visible, exposes an accessible EN/AR retry message and disables the action only while the request is active; no token or cookie authority is stored in browser storage.
+- [x] Correction validation currently passes 26 Angular unit/component tests and 4 Playwright journeys; backend source and contract remain unchanged and the 247-test/0-warning/0-error backend baseline remains required.
+- [ ] Publish the non-draft correction PR and record its number/URL here; keep it open and unmerged for focused ChatGPT review.
+- [ ] Move `MESP-90` to Done only after the correction PR is approved and merged; do not start `MESP-61` or `MESP-64` before that approval.
+
 ## Testing strategy
 
 - xUnit for:
@@ -784,11 +803,13 @@ transaction work in parallel.
 - [ ] Documentation updated only where necessary.
 
 **Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62,
-MESP-89 and MESP-63 are Done. PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8`
-and PR #14 merged at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`; MESP-89 merged-main
-validation passed with 247 backend tests, while MESP-63 passed Angular 8/8 tests,
-mocked Playwright 1/1, and merged-main frontend/backend validation. No Sprint is
-active. MESP-61 and MESP-64 remain To Do.**
+MESP-89 and MESP-63 are Done. MESP-90 is the single active correction item and
+remains In Progress under a manual merge hold. PR #12 merged at
+`a1c5627b40e11b14a50736663c6da56cf11c9ef8` and PR #14 merged at
+`ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`; the correction currently passes
+26 Angular unit/component tests and 4 Playwright journeys, while the unchanged
+backend baseline remains 247 tests with 0 warnings and 0 errors. No Sprint is
+active. MESP-61 is blocked until correction approval and MESP-64 remains To Do.**
 
 ---
 
@@ -1152,7 +1173,8 @@ Use this section to record major milestones.
 
 ## Current next action
 
-> Keep `MESP-61`, `MESP-64`,
+> Keep `MESP-61` blocked pending MESP-90 correction approval and keep `MESP-64`,
 > `MESP-31` through `MESP-40`, Retail POS and future ERP transaction work out
 > of scope; preserve `MESP-48` and `MESP-50` as explicit production gates and
-> keep no Sprint active.
+> keep no Sprint active. The MESP-90 correction PR must remain open and
+> unmerged for focused ChatGPT review.
