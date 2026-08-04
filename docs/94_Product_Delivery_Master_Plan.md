@@ -568,7 +568,7 @@ Capture the implementation-readiness decisions for the approved slice across sol
 - [ ] Technical risks and deferred decisions are recorded.
 - [ ] No implementation depends on an unresolved critical decision.
 
-**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are implemented; MESP-89 is integrating those seams into the actual HTTP host and is the current gate before MESP-63. Physical provider validation remains assigned to MESP-64.**
+**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59, MESP-88, MESP-60 and MESP-62 are implemented; MESP-89 is integrating those seams into the actual HTTP host with catalog-backed exact operation authorization, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions, and is the current gate before MESP-63. Physical provider validation remains assigned to MESP-64.**
 
 ---
 
@@ -729,7 +729,7 @@ MESP-63, MESP-61, MESP-64, MESP-31, or any downstream ERP transaction work.
 - [x] Complete MESP-58, MESP-87, MESP-59 and MESP-88 with merged validation evidence.
 - [x] Complete MESP-60 REST/OpenAPI and safe operation contracts.
 - [x] Complete MESP-62 immutable audit and OpenTelemetry evidence.
-- [ ] Complete `MESP-89` host authentication, antiforgery, trusted context and audit integration; stop at its unmerged PR for focused ChatGPT review.
+- [ ] Complete `MESP-89` host authentication, antiforgery, catalog-backed exact permissions, trusted context, mandatory protected-write evidence, composite idempotency replay and separate context eligibility/selection versions; stop at its unmerged PR for focused ChatGPT review.
 
 ## Testing strategy
 
@@ -1100,7 +1100,7 @@ Use this section to record major milestones.
 | 3 August 2026 | MESP-60 REST/OpenAPI foundation | Done | PR #10 merged at `2569acbe6dc26223108f7ad539ca7db2bcdf5f93`; versioned contracts, trusted context, safe errors, correlation, idempotency, concurrency and antiforgery seam validated with 188 tests |
 | 3 August 2026 | MESP-62 immutable audit and OpenTelemetry evidence | Done | Immutable path-aware evidence, append-before-effect coordinator, safe telemetry hooks and focused tests merged; checkpoint package included in the PR |
 | 3 August 2026 | Foundation Backend Review Checkpoint prepared | Ready for review | `docs/95_Foundation_Backend_Review_Checkpoint.md`; MESP-63 remains blocked pending independent Opus 5 review |
-| 4 August 2026 | MESP-89 foundation host security integration | In Progress | Branch `feature/mesp-89-foundation-host-security-integration`; ADR-004 authored; host authentication, antiforgery, trusted context and audit integration validated by 236 passing tests and a 0-warning/0-error Release build; MESP-63 remains blocked; PR merge is held for focused ChatGPT review |
+| 4 August 2026 | MESP-89 foundation host security integration | In Progress | Branch `feature/mesp-89-foundation-host-security-integration`; PR #12 remains open and unmerged; ADR-004 reconciled for catalog-backed exact permissions, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions; correction branch validated by 247 passing tests and a 0-warning/0-error Release build; MESP-63 remains blocked |
 
 ---
 

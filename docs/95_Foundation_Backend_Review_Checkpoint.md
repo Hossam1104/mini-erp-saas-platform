@@ -31,7 +31,7 @@ MESP-89 PR receives focused ChatGPT security review and merge authorization.
 | MESP-88 | Done | [PR #9](https://github.com/Hossam1104/mini-erp-saas-platform/pull/9) | `b844a7cc780b18bd78e1cd4500ba5b4287cd9de4` | `723dc8e28b0a927750230b51b9d05e26d039038c` | Security correction for authority issuance and authentication evidence | 161-test baseline reported; no new business scope |
 | MESP-60 | Done | [PR #10](https://github.com/Hossam1104/mini-erp-saas-platform/pull/10) | `2f1efeff2a31ebbf02af297931b0de57c3b3bd76` | `2569acbe6dc26223108f7ad539ca7db2bcdf5f93` | Versioned REST/OpenAPI, safe errors, correlation, concurrency, idempotency and antiforgery seam | 188 tests on merged main; no business transaction endpoints |
 | MESP-62 | Done | PR #11 (this delivery) | `14ecf65e349d73d7e3ab8d78193056d208a0b44c` | Recorded in the MESP-62 delivery evidence | Immutable path-aware audit evidence, append-before-effect fail-closed coordinator and safe OTel-compatible hooks | 224 tests before merge; local bounded store only, no exporter/provider/migration |
-| MESP-89 | In Progress | Pending PR creation | Branch `feature/mesp-89-foundation-host-security-integration` | Not merged by policy | Connects Identity/session to the API host, real antiforgery, trusted context resolution, minimum auth/context endpoints and mandatory audit integration; ADR-004 authored | Correction validation in progress; PR must remain open and unmerged for focused ChatGPT review |
+| MESP-89 | In Progress | [PR #12](https://github.com/Hossam1104/mini-erp-saas-platform/pull/12) | Original `8bfcf42dbeaf6db8fc347bb087a04705dc39c71d`; correction commits on the same branch | Not merged by policy | Connects Identity/session to the API host, real antiforgery, catalog-backed exact permissions, trusted context resolution, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions; ADR-004 reconciled | Correction validation passed with 247 tests; PR remains open and unmerged for focused ChatGPT review |
 
 ## Traceability matrix
 
@@ -55,22 +55,29 @@ MESP-89 PR receives focused ChatGPT security review and merge authorization.
   host. MESP-89 supplies that host integration using the bounded in-memory
   provider, while production persistence, assurance and deployment remain
   downstream.
-- REST/OpenAPI is versioned under `/api/v1`; public operations have one stable
-  identifier and one security profile.
+- REST/OpenAPI is versioned under `/api/v1`; every public operation has one
+  catalog-backed descriptor carrying its stable identifier, security profile,
+  exact permission, scope and assurance/evidence policy. Endpoint metadata,
+  OpenAPI, the trusted resolver and downstream validation use that same
+  descriptor; operation text cannot manufacture permission.
 - Safe Problem Details errors exclude stack traces, provider details, foreign
   Tenant identifiers and unauthorized target identifiers.
 - Correlation, optimistic concurrency and bounded idempotency are carried by
-  the MESP-60 contracts.
+  the MESP-60 contracts. The implementation uses a composite
+  `(authorized-binding, normalized-key)` namespace, explicit decisions,
+  typed original-response replay and `finally` reservation cleanup.
 - MESP-62 adds immutable evidence construction from trusted context, append
   before protected effect, retry linkage, and bounded structured-log,
   metric and trace hooks. No exporter is selected.
 - MESP-89 adds the host cookie/session adapter, antiforgery bootstrap and
   validation, resolver integration, context selection endpoints, and routes
-  protected writes through the coordinator. Selected-path sign-out is
-  evidenced before revocation; session-only sign-out is an antiforgery-
-  protected lifecycle revocation with no Tenant/Platform business effect.
-  The correction remains under review and does not make the local provider
-  production-ready.
+  every protected write through the non-nullable coordinator. Selected-path
+  sign-out is evidenced before revocation; session-only sign-out is an
+  antiforgery-protected lifecycle revocation with no Tenant/Platform business
+  effect under its documented conditional evidence policy. Context switching
+  validates the server `SelectionVersion` separately from candidate
+  `EligibilityVersion`. The correction remains under review and does not make
+  the local provider production-ready.
 
 ## Security status
 
@@ -82,6 +89,12 @@ MESP-89 PR receives focused ChatGPT security review and merge authorization.
 - PlatformGovernanceContext evidence has no Tenant and is purpose-bound.
 - Session expiry/revocation, MFA and fresh-auth requirements remain represented
   by the approved identity seam and are not weakened by this slice.
+- A Tenant read permission cannot authorize the probe write; SupportRead cannot
+  substitute for another Support operation; and an unrelated active Platform
+  permission cannot obtain Platform context.
+- Mandatory evidence failure prevents the protected effect and successful
+  idempotency commit; replay returns the original typed safe response rather
+  than rebuilding mutable session state.
 - Errors and evidence use allow-listed safe categories.
 - Evidence contains no password, hash, token, cookie, raw authorization header,
   opaque MFA/recovery/invitation value, provider error, request/response payload,
@@ -125,9 +138,9 @@ approval and the focused review.
 - Production Identity persistence, external IdP, MFA/email/SMS providers,
   durable idempotency, durable audit/export, migrations and deployment remain
   explicitly absent. Provider/schema validation remains assigned to MESP-64.
-- Final branch validation currently records 236 passing tests, 0 failures,
-  0 skips, and a Release build with 0 warnings and 0 errors; this is branch
-  evidence only until the focused ChatGPT review and merge decision.
+- Final correction-branch validation currently records 247 passing tests, 0
+  failures, 0 skips, and a Release build with 0 warnings and 0 errors; this is
+  branch evidence only until the focused ChatGPT review and merge decision.
 - MESP-89 must be reviewed from its actual PR diff by ChatGPT before merge;
   MESP-89 remains In Progress and MESP-63 remains To Do.
 

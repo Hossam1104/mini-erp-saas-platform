@@ -32,22 +32,45 @@ The server owns exactly one authorization path for a request:
 
 Platform governance is not a Tenant path. The server lists eligible contexts,
 stores the selected context in trusted session state, and confirms every
-context switch against current eligibility and an optimistic version. A
-client-supplied Tenant, path, role, permission, scope or grant cannot create or
-change authority. Cross-Tenant, stale and mixed-path selections fail closed.
-MFA and fresh-authentication evidence remain server-validated; the unavailable
+context switch against the server's `SelectionVersion` and the candidate's
+`EligibilityVersion`. These are separate values: the former is the optimistic
+version of the selected session path, while the latter is the current
+membership, support-grant or platform eligibility version. A client-supplied
+Tenant, path, role, permission, scope or grant cannot create or change
+authority. Cross-Tenant, stale and mixed-path selections fail closed. MFA and
+fresh-authentication evidence remain server-validated; the unavailable
 production assurance provider fails closed whenever that assurance is required.
 
-Successful protected writes append immutable safe evidence through
-`FoundationAuditCoordinator` before applying their effect. Evidence append
-failure prevents the effect. If an effect fails after an allowed evidence
-record, the original record is preserved and a linked neutral `EffectFailed`
-outcome is appended without exception or provider details. No Tenant-,
-SupportGrant- or Platform-authorized write may bypass the coordinator. A
-session-only sign-out with no selected authorization path is a lifecycle
-revocation (not a Tenant or Platform business effect); it still requires
-antiforgery and is idempotent, while a sign-out from a selected path is
-evidenced before revocation.
+Every public operation is represented by one catalog-backed
+`FoundationOperationDescriptor`. The descriptor carries the operation ID,
+security profile, exact permission code, scope policy, assurance requirements,
+antiforgery requirement and mandatory-evidence policy. Endpoint metadata,
+OpenAPI, trusted context resolution, Identity authorization and downstream
+validation all consume that same descriptor. The operation ID is never treated
+as a granted permission; `FoundationRequestContext.Permission` contains only
+the exact permission that the server successfully authorized. Unknown or
+tampered descriptors fail closed, and unrelated Support or Platform
+permissions cannot substitute for the operation's exact permission.
+
+Successful protected writes append immutable safe evidence through the
+non-nullable `FoundationAuditCoordinator` before applying their effect.
+Protected endpoint registration and the architecture tests require every
+unsafe non-anonymous handler to invoke this centralized executor; there is no
+nullable executor or unaudited fallback. Evidence append failure prevents the
+effect. If an effect fails after an allowed evidence record, the original
+record is preserved and a linked neutral `EffectFailed` outcome is appended
+without exception or provider details. A session-only sign-out with no
+selected authorization path is a lifecycle revocation (not a Tenant or
+Platform business effect); it still requires antiforgery and follows the
+documented conditional evidence policy, while a sign-out from a selected path
+is evidenced before revocation.
+
+The local idempotency namespace is the composite of the authorized binding and
+normalized opaque key. Tenant and User bindings therefore do not interfere
+with one another. Every decision is handled explicitly; successful effects
+commit a typed safe response, replays return that original response (including
+its original selection version), and reservations are released in `finally`
+unless a success commit completed.
 
 ## Scope and provider levels
 
@@ -84,6 +107,8 @@ integration.
 - client-selected Tenant/path headers;
 - static antiforgery tokens;
 - a global raw idempotency-key namespace;
+- treating a Membership or SupportGrant eligibility version as the session
+  context-selection version;
 - applying a protected effect before evidence is appended;
 - treating Platform governance as a Tenant authorization path.
 
