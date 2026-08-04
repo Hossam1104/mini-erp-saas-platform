@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
@@ -129,13 +131,19 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
             Assert.Contains(descriptor.HttpMethod, methods, StringComparer.OrdinalIgnoreCase);
             Assert.Equal(descriptor.SecurityProfile, metadata.SecurityProfile);
             Assert.Equal(descriptor.Visibility, metadata.Visibility);
+            Assert.Equal(descriptor.ExactPermissionCode, metadata.ExactPermissionCode);
+            Assert.Equal(descriptor.ScopePolicy, metadata.ScopePolicy);
+            Assert.Equal(descriptor.RequiresMfa, metadata.RequiresMfa);
+            Assert.Equal(descriptor.RequiresFreshAuthentication, metadata.RequiresFreshAuthentication);
+            Assert.Equal(descriptor.RequiresAntiforgery, metadata.RequiresAntiforgery);
             Assert.Equal(descriptor.RequiresMandatoryAudit, metadata.RequiresMandatoryAudit);
             Assert.Equal(descriptor.IsUnsafe, metadata.IsUnsafe);
         }
 
         Assert.All(
-            FoundationOperationCatalog.PublicOperations.Where(operation => operation.IsUnsafe && operation.SecurityProfile != FoundationSecurityProfile.Anonymous),
-            operation => Assert.True(operation.RequiresMandatoryAudit));
+            FoundationOperationCatalog.PublicOperations.Where(operation => operation.RequiresMandatoryAudit),
+            operation => Assert.True(operation.IsUnsafe));
+        Assert.False(FoundationOperationCatalog.GetRequired("auth.sign-out").RequiresMandatoryAudit);
         Assert.DoesNotContain(
             FoundationOperationCatalog.PublicOperations,
             operation => operation.IsUnsafe
@@ -144,27 +152,39 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     }
 
     [Fact]
-    public void Every_non_anonymous_unsafe_operation_is_bound_to_the_protected_coordinator()
+    public void Every_non_anonymous_unsafe_handler_is_structurally_bound_to_protected_evidence()
     {
         var sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "MiniErp.Api", "Program.cs"));
         var source = File.ReadAllText(sourcePath);
-        var coordinatorBound = new HashSet<string>(StringComparer.Ordinal)
-        {
-            "foundation.probe.write",
-            "auth.sign-out",
-            "auth.context-switch"
-        };
+        var tree = CSharpSyntaxTree.ParseText(source);
+        var root = tree.GetRoot();
+        var mapPosts = root.DescendantNodes()
+            .OfType<InvocationExpressionSyntax>()
+            .Where(invocation => invocation.Expression.ToString().EndsWith("MapPost", StringComparison.Ordinal))
+            .ToArray();
 
-        var required = FoundationOperationCatalog.PublicOperations
-            .Where(operation => operation.IsUnsafe && operation.SecurityProfile != FoundationSecurityProfile.Anonymous)
-            .Select(operation => operation.OperationId)
-            .ToHashSet(StringComparer.Ordinal);
-        Assert.Equal(coordinatorBound, required);
-        Assert.All(coordinatorBound, operationId =>
+        foreach (var descriptor in FoundationOperationCatalog.PublicOperations
+                     .Where(operation => operation.IsUnsafe && operation.SecurityProfile != FoundationSecurityProfile.Anonymous))
         {
-            Assert.Contains(operationId, source, StringComparison.Ordinal);
-            Assert.Contains("ExecuteProtectedAsync", source, StringComparison.Ordinal);
-        });
+            var route = Assert.Single(mapPosts, invocation =>
+                invocation.ArgumentList.Arguments.FirstOrDefault()?.Expression is LiteralExpressionSyntax literal
+                && literal.Token.ValueText == descriptor.Route);
+            var handler = route.ArgumentList.Arguments.Skip(1).FirstOrDefault()?.Expression?.ToString() ?? string.Empty;
+            if (descriptor.OperationId == "foundation.probe.write")
+            {
+                Assert.Contains("WriteProbeAsync", handler, StringComparison.Ordinal);
+                var applicationSourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "MiniErp.App", "BuildingBlocks", "Rest", "FoundationRestApplication.cs"));
+                var applicationSource = File.ReadAllText(applicationSourcePath);
+                Assert.Contains("FoundationAuditCoordinator auditCoordinator", applicationSource, StringComparison.Ordinal);
+                Assert.Contains("ExecuteProtectedAsync", applicationSource, StringComparison.Ordinal);
+                Assert.DoesNotContain("auditCoordinator is null", applicationSource, StringComparison.Ordinal);
+                Assert.DoesNotContain("fallback", applicationSource, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                Assert.Contains("ExecuteProtectedAsync", handler, StringComparison.Ordinal);
+            }
+        }
     }
 
     [Fact]
@@ -235,7 +255,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Unauthorized_tenant_profile_failure_is_safe()
     {
-        factory.Resolver.Context = CreateSupportContext("foundation.context.read");
+        factory.Resolver.Context = CreateSupportContext("support.tenant.read");
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/api/v1/foundation/tenant-context");
@@ -249,7 +269,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Missing_and_foreign_target_responses_are_equivalent()
     {
-        var context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.target.read");
+        var context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.target.read");
         factory.Resolver.Context = context;
         var foreignTarget = Guid.NewGuid();
         factory.Targets.Add(foreignTarget, factory.TenantB);
@@ -286,7 +306,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Authorized_request_succeeds_with_server_context()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.context.read");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.context.read");
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/api/v1/foundation/tenant-context");
@@ -300,7 +320,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Server_not_client_selects_tenant_authority()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.context.read");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.context.read");
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-Tenant-Id", factory.TenantB.Value.ToString("D"));
 
@@ -315,7 +335,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Idempotent_replay_returns_one_safe_result()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.probe.write");
         using var client = factory.CreateClient();
 
         var first = await PostProbeAsync(client, "idem-replay", "alpha", "1", includeAntiforgery: true);
@@ -332,7 +352,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Same_key_with_changed_payload_conflicts()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.probe.write");
         using var client = factory.CreateClient();
 
         _ = await PostProbeAsync(client, "idem-payload", "alpha", "1", includeAntiforgery: true);
@@ -344,39 +364,60 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     }
 
     [Fact]
-    public async Task Cross_tenant_key_replay_is_denied()
+    public async Task Concurrent_first_requests_produce_one_effect_and_no_abandoned_reservation()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.probe.write");
         using var client = factory.CreateClient();
-        _ = await PostProbeAsync(client, "idem-tenant", "alpha", "1", includeAntiforgery: true);
 
-        factory.Resolver.Context = CreateTenantContext(factory.TenantB, factory.ActorB, "foundation.probe.write");
-        var response = await PostProbeAsync(client, "idem-tenant", "alpha", "1", includeAntiforgery: true);
-        var body = await ReadJsonAsync(response);
+        using var antiResponse = await client.GetAsync(new Uri("https://localhost/api/v1/auth/antiforgery"));
+        var antiToken = antiResponse.Headers.GetValues("X-CSRF-TOKEN").Single();
+        var responses = await Task.WhenAll(
+            PostProbeAsync(client, "idem-concurrent", "alpha", "1", includeAntiforgery: true, antiforgeryToken: antiToken),
+            PostProbeAsync(client, "idem-concurrent", "alpha", "1", includeAntiforgery: true, antiforgeryToken: antiToken));
+        var bodies = await Task.WhenAll(responses.Select(ReadJsonAsync));
 
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        Assert.Equal("idempotency_context_conflict", body.GetProperty("code").GetString());
+        Assert.Equal(2, factory.Services.GetRequiredService<LocalFoundationProbeStore>().CurrentVersion(factory.TenantA));
+        var successfulBodies = bodies.Where(body => body.TryGetProperty("result", out var result) && result.GetString() == "accepted").ToArray();
+        Assert.Single(successfulBodies, body => !body.GetProperty("replayed").GetBoolean());
+        Assert.All(responses, response => Assert.True(response.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict));
     }
 
     [Fact]
-    public async Task Cross_user_key_replay_is_denied()
+    public async Task Cross_tenant_key_is_independent()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.probe.write");
+        using var client = factory.CreateClient();
+        _ = await PostProbeAsync(client, "idem-tenant", "alpha", "1", includeAntiforgery: true);
+
+        // Keep the actor constant so the Tenant component of the composite
+        // binding is the only changed namespace dimension.
+        factory.Resolver.Context = CreateTenantContext(factory.TenantB, factory.ActorA, "tenant.foundation.probe.write");
+        var response = await PostProbeAsync(client, "idem-tenant", "alpha", "1", includeAntiforgery: true);
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("accepted", body.GetProperty("result").GetString());
+    }
+
+    [Fact]
+    public async Task Cross_user_key_is_independent()
+    {
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.probe.write");
         using var client = factory.CreateClient();
         _ = await PostProbeAsync(client, "idem-user", "alpha", "1", includeAntiforgery: true);
 
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorB, "foundation.probe.write");
-        var response = await PostProbeAsync(client, "idem-user", "alpha", "1", includeAntiforgery: true);
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorB, "tenant.foundation.probe.write");
+        var response = await PostProbeAsync(client, "idem-user", "alpha", "2", includeAntiforgery: true);
         var body = await ReadJsonAsync(response);
 
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        Assert.Equal("idempotency_context_conflict", body.GetProperty("code").GetString());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("accepted", body.GetProperty("result").GetString());
     }
 
     [Fact]
     public async Task Stale_version_returns_safe_conflict()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.probe.write");
         using var client = factory.CreateClient();
         _ = await PostProbeAsync(client, "idem-current", "alpha", "1", includeAntiforgery: true);
 
@@ -390,7 +431,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Missing_required_version_fails_safely()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.probe.write");
         using var client = factory.CreateClient();
 
         var response = await PostProbeAsync(client, "idem-version", "alpha", ifMatch: null, includeAntiforgery: true);
@@ -403,7 +444,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Cookie_style_write_without_antiforgery_denies()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.probe.write");
         using var client = factory.CreateClient();
 
         var response = await PostProbeAsync(client, "idem-antiforgery", "alpha", "1", includeAntiforgery: false);
@@ -416,7 +457,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Valid_antiforgery_compatible_write_succeeds()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.probe.write");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.probe.write");
         using var client = factory.CreateClient();
 
         var response = await PostProbeAsync(client, "idem-antiforgery-valid", "alpha", "1", includeAntiforgery: true);
@@ -427,7 +468,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Get_has_no_state_changing_behavior()
     {
-        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "foundation.context.read");
+        factory.Resolver.Context = CreateTenantContext(factory.TenantA, factory.ActorA, "tenant.foundation.context.read");
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/api/v1/foundation/tenant-context");
@@ -444,7 +485,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
             actor,
             Guid.NewGuid(),
             new PlatformGovernanceContext(actor, PlatformGovernancePurpose.PlatformMetadata, new CorrelationId("platform")),
-            "foundation.context.read");
+            "platform.metadata.read");
         using var client = factory.CreateClient();
 
         var platformResponse = await client.GetAsync("/api/v1/foundation/platform-context");
@@ -462,7 +503,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public async Task Ordinary_membership_and_support_grant_profiles_are_not_combined()
     {
-        factory.Resolver.Context = CreateSupportContext("foundation.context.read");
+        factory.Resolver.Context = CreateSupportContext("support.tenant.read");
         using var client = factory.CreateClient();
 
         var supportResponse = await client.GetAsync("/api/v1/foundation/support-context");
@@ -494,7 +535,8 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
         string idempotencyKey,
         string value,
         string? ifMatch,
-        bool includeAntiforgery)
+        bool includeAntiforgery,
+        string? antiforgeryToken = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri("https://localhost/api/v1/foundation/probe"))
         {
@@ -508,8 +550,13 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
 
         if (includeAntiforgery)
         {
-            using var tokenResponse = await client.GetAsync(new Uri("https://localhost/api/v1/auth/antiforgery"));
-            var token = tokenResponse.Headers.GetValues("X-CSRF-TOKEN").Single();
+            var token = antiforgeryToken;
+            if (token is null)
+            {
+                using var tokenResponse = await client.GetAsync(new Uri("https://localhost/api/v1/auth/antiforgery"));
+                token = tokenResponse.Headers.GetValues("X-CSRF-TOKEN").Single();
+            }
+
             request.Headers.TryAddWithoutValidation("X-CSRF-TOKEN", token);
         }
 
