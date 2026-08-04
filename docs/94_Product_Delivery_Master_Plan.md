@@ -9,11 +9,11 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 4 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `MESP-63 Angular Wave 1 shell implementation` |
-| Current implementation item | `MESP-63 — In Progress; single active implementation item` |
-| Current branch | `feature/mesp-63-angular-wave-1-shell-rtl` |
-| Current Sprint | `No active Sprint — MESP-63 remains outside a Sprint until its delivery plan requires one` |
-| Current review checkpoint | `MESP-89 is approved, merged and Done; MESP-63 is active sequentially` |
+| Current activity | `MESP-63 Angular Wave 1 shell implementation completed` |
+| Current implementation item | `MESP-63 — Done; no active implementation item` |
+| Current branch | `main` |
+| Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
+| Current review checkpoint | `MESP-89 and MESP-63 are approved, merged and Done; MESP-61 and MESP-64 remain To Do` |
 
 ---
 
@@ -46,8 +46,7 @@ The project is currently in **Phase 2 — Business Requirements Documents**, bec
 The SaaS Platform Administration domain and the approved Foundation backend slice
 have progressed further than the rest of the product. MESP-57, MESP-58,
 MESP-87, MESP-59, MESP-88, MESP-60, MESP-62 and MESP-89 are complete and merged.
-MESP-63 is the next authorized sequential implementation item, while MESP-61
-and MESP-64 remain To Do. Product-wide Phase 2 remains in progress because core
+MESP-63 is complete, while MESP-61 and MESP-64 remain To Do. Product-wide Phase 2 remains in progress because core
 ERP BRDs are not complete, and Foundation backend work is not complete ERP
 backend implementation.
 
@@ -69,7 +68,7 @@ backend implementation.
 | MESP-60 REST/OpenAPI foundation | Done — PR #10 merged to `main` |
 | MESP-62 immutable audit and OpenTelemetry evidence | Done — merged with the Foundation Backend Review Checkpoint package |
 | MESP-89 Foundation host authentication, antiforgery and evidence integration | Done — PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8`; focused ChatGPT review approved; merged-main validation passed with 247 tests |
-| MESP-63 Angular Foundation shell | In Progress — Wave 1 shell, session/context integration, bilingual RTL and safe states |
+| MESP-63 Angular Foundation shell | Done — PR #14 merged at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`; Wave 1 shell, session/context integration, bilingual RTL and safe states validated |
 | MESP-61 background processing foundation | To Do |
 | MESP-64 provider/schema/index validation | To Do; SQL Server/provider validation owner |
 | MESP-3 Identity and Access Epic | In Progress |
@@ -100,11 +99,11 @@ backend implementation.
 - [x] `MESP-60` is **Done**; PR #10 is merged and merged-main validation passed.
 - [x] `MESP-62` is **Done**; the immutable audit/observability seam and checkpoint package are merged.
 - [x] `MESP-89` is **Done**; PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` after focused ChatGPT approval; merged-main validation passed with 247 tests.
-- [x] `MESP-63` moved to **In Progress** as the single authorized sequential implementation item on `feature/mesp-63-angular-wave-1-shell-rtl`; `MESP-61` and `MESP-64` remain **To Do**.
+- [x] `MESP-63` moved to **In Progress**, implemented and merged through PR #14; it is now **Done** and `MESP-61` and `MESP-64` remain **To Do**.
 - [x] `MESP-61` and `MESP-64` remain **To Do**; no parallel implementation is authorized.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
-- [x] No Sprint is active; MESP-89 completed outside a Sprint and MESP-63 is authorized sequentially.
-- [x] MESP-89 was the single active implementation item; no parallel implementation was authorized.
+- [x] No Sprint is active; MESP-89 and MESP-63 were delivered outside a Sprint.
+- [x] MESP-63 was the single active implementation item; no parallel implementation was authorized.
 - [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; implementation refinement is controlled and is not production readiness.
 - [x] Product-wide Phase 2 remains **In Progress** because core ERP BRDs remain incomplete; Foundation backend work does not imply complete ERP backend implementation.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
@@ -567,7 +566,7 @@ Capture the implementation-readiness decisions for the approved slice across sol
 - [ ] Technical risks and deferred decisions are recorded.
 - [ ] No implementation depends on an unresolved critical decision.
 
-**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62 and MESP-89 are implemented; MESP-89 merged the catalog-backed exact operation authorization, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions. MESP-63 is the active bounded Angular implementation item. Physical provider validation remains assigned to MESP-64.**
+**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89 and MESP-63 are implemented; MESP-89 merged the catalog-backed exact operation authorization, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions. Physical provider validation remains assigned to MESP-64.**
 
 ---
 
@@ -708,16 +707,16 @@ Implement approved backlog items sequentially, validate them with focused automa
 - [x] `MESP-60` is Done; PR #10 merged at `2569acbe6dc26223108f7ad539ca7db2bcdf5f93` and merged-main validation passed.
 - [x] `MESP-62` is Done; immutable audit/observability evidence and the checkpoint package are complete and merged.
 - [x] `MESP-89` is Done; PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` after focused ChatGPT approval and 247-test merged-main validation.
-- [x] `MESP-63` moved to In Progress and its bounded Angular Wave 1 implementation is active on `feature/mesp-63-angular-wave-1-shell-rtl`.
+- [x] `MESP-63` moved to In Progress, completed its bounded Angular Wave 1 implementation, and merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`.
 - [ ] `MESP-61` and `MESP-64` remain To Do; no parallel implementation is authorized.
 
 ### Current sequence after the approved Foundation specification
 
 The product-wide Phase 2 BRD stream remains in progress because core ERP BRDs
-remain incomplete. The Foundation slice is in Phase 8 implementation; that
-does not mean complete ERP backend implementation has started. MESP-63 is now
-authorized as the next item; do not start MESP-61, MESP-64, MESP-31, or any
-downstream ERP transaction work in parallel.
+remain incomplete. The Foundation slice has completed the approved MESP-63
+frontend baseline; that does not mean complete ERP backend implementation has
+started. Do not start MESP-61, MESP-64, MESP-31, or any downstream ERP
+transaction work in parallel.
 
 - [x] Approve `MESP-28` Identity and Access BRD v0.3 change-control baseline on `docs/foundation-release1-lean-spec`.
 - [x] Begin and complete `MESP-29` Multi-Tenancy BRD as the single requirements activity; v0.2 is approved and Done.
@@ -732,16 +731,16 @@ downstream ERP transaction work in parallel.
 - [x] Complete `MESP-89` host authentication, antiforgery, catalog-backed exact permissions, trusted context, mandatory protected-write evidence, composite idempotency replay and separate context eligibility/selection versions; PR #12 merged after focused ChatGPT approval.
 - [x] Start `MESP-63` Angular Foundation shell sequentially after the MESP-89 Jira closure and reconciliation evidence.
 
-### MESP-63 active delivery evidence
+### MESP-63 completed delivery evidence
 
-- [x] Jira MESP-63 moved to **In Progress** with the approved scope and exclusion comment; MESP-61 and MESP-64 remain **To Do**.
-- [x] Branch `feature/mesp-63-angular-wave-1-shell-rtl` created from synchronized `main`; implementation commit `798d15d1aa1e53781df3a2683305e95ac3143890` is published.
+- [x] Jira MESP-63 moved to **In Progress**, completed, and has its implementation evidence recorded; MESP-61 and MESP-64 remain **To Do**.
+- [x] Branch `feature/mesp-63-angular-wave-1-shell-rtl` was created from synchronized `main`; implementation commits `798d15d1aa1e53781df3a2683305e95ac3143890` and `46bf2d30f91ef00e9e450b59b8de0b3a2d34dbab` were merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`.
 - [x] Angular 22/TypeScript standalone workspace and modular `core`, `features`, and `shared` structure created.
 - [x] EN/AR translations, runtime direction switching, responsive shell, navigation, header, context rail and accessible focus baseline implemented.
 - [x] Session bootstrap, secure-cookie `withCredentials`, in-memory antiforgery bootstrap, safe expiry handling and server-confirmed context switching implemented against the merged `/api/v1/auth/*` contracts.
 - [x] Loading, empty, restricted, denied, expired-session and safe-error presentation states included; no token or Tenant authority is stored in browser storage.
 - [x] Focused Angular tests pass (8/8); mocked Playwright TypeScript Wave 1 smoke journey passes (1/1); production/shared provider and database work is excluded.
-- [ ] Review the complete diff, publish the non-draft Pull Request, merge after all gates pass, validate merged `main`, record Jira closure evidence and delete the completed branch.
+- [x] Review the complete diff, publish the non-draft Pull Request #14, merge after all gates passed, validate merged `main`, record Jira closure evidence and delete the completed branch.
 
 ## Testing strategy
 
@@ -784,12 +783,12 @@ downstream ERP transaction work in parallel.
 - [ ] Demonstration completed.
 - [ ] Documentation updated only where necessary.
 
-**Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62
-and MESP-89 are Done; PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8`
-after focused ChatGPT approval and merged-main validation of 247 tests. MESP-63
-is In Progress on its dedicated feature branch with focused Angular (8/8) and
-mocked Playwright (1/1) validation; no Sprint is active. MESP-61 and MESP-64
-remain To Do.**
+**Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62,
+MESP-89 and MESP-63 are Done. PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8`
+and PR #14 merged at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`; MESP-89 merged-main
+validation passed with 247 backend tests, while MESP-63 passed Angular 8/8 tests,
+mocked Playwright 1/1, and merged-main frontend/backend validation. No Sprint is
+active. MESP-61 and MESP-64 remain To Do.**
 
 ---
 
@@ -1026,8 +1025,8 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Complete MESP-60 REST/OpenAPI foundation implementation and validation; PR #10 merged at `2569acbe6dc26223108f7ad539ca7db2bcdf5f93`.
 - [x] Complete MESP-62 immutable audit and OpenTelemetry evidence; its checkpoint package is included in the merged delivery.
 - [x] Complete MESP-89 host authentication, antiforgery, trusted context and evidence integration; PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` and MESP-89 is Done after focused ChatGPT approval.
-- [x] Close the MESP-89 Jira/reconciliation record, then begin the authorized MESP-63 Angular Foundation shell; keep MESP-61 and MESP-64 To Do.
-- [x] Start MESP-63 as the single active implementation item on `feature/mesp-63-angular-wave-1-shell-rtl`; no Sprint is active and no MESP-61/MESP-64 work has started.
+- [x] Close the MESP-89 Jira/reconciliation record, complete the authorized MESP-63 Angular Foundation shell, and keep MESP-61 and MESP-64 To Do.
+- [x] Implement, merge and close MESP-63 through PR #14 on `feature/mesp-63-angular-wave-1-shell-rtl`; no Sprint is active and no MESP-61/MESP-64 work has started.
 
 ## Completed MESP-57 outputs
 
@@ -1080,7 +1079,7 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Refine MESP-58 through MESP-64 and complete the MESP-58 Definition of Ready review.
 - [x] No Sprint is required for the founder-authorized MESP-60/MESP-62 fast-track batch.
 - [x] Start and complete MESP-62 only after MESP-60 was merged, validated and moved to Done; no Sprint was created.
-- [x] Complete focused ChatGPT review of the MESP-89 PR, merge PR #12, validate merged `main`, and record the MESP-89 Done state; MESP-63 is now In Progress as the single active item, while MESP-61 and MESP-64 remain To Do.
+- [x] Complete focused ChatGPT review of the MESP-89 PR, merge PR #12, validate merged `main`, and record the MESP-89 Done state; MESP-63 subsequently completed as the single authorized implementation item, while MESP-61 and MESP-64 remain To Do.
 
 ---
 
@@ -1116,7 +1115,7 @@ Use this section to record major milestones.
 | 3 August 2026 | MESP-62 immutable audit and OpenTelemetry evidence | Done | Immutable path-aware evidence, append-before-effect coordinator, safe telemetry hooks and focused tests merged; checkpoint package included in the PR |
 | 4 August 2026 | Foundation Backend Review Checkpoint reconciled | Done | `docs/95_Foundation_Backend_Review_Checkpoint.md`; PR #12 merged and MESP-63 authorized next after focused ChatGPT approval |
 | 4 August 2026 | MESP-89 foundation host security integration | Done | PR #12 merged at `a1c5627b40e11b14a50736663c6da56cf11c9ef8` after focused ChatGPT approval; ADR-004 reconciled for catalog-backed exact permissions, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions; merged-main validation passed with 247 tests and a 0-warning/0-error Release build; MESP-63 is authorized next |
-| 4 August 2026 | MESP-63 Angular Wave 1 shell | In Progress | Commit `798d15d1aa1e53781df3a2683305e95ac3143890` on `feature/mesp-63-angular-wave-1-shell-rtl`; Angular 22 shell, EN/AR RTL foundation, server session/antiforgery/context integration, safe states and accessibility baseline implemented; focused Angular tests 8/8 and mocked Playwright smoke 1/1 passed; no Sprint active |
+| 4 August 2026 | MESP-63 Angular Wave 1 shell | Done | Commits `798d15d1aa1e53781df3a2683305e95ac3143890` and `46bf2d30f91ef00e9e450b59b8de0b3a2d34dbab` merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`; Angular 22 shell, EN/AR RTL foundation, server session/antiforgery/context integration, safe states and accessibility baseline implemented; focused Angular tests 8/8, mocked Playwright smoke 1/1, backend regression 247/0/0 and Release build 0/0 passed; no Sprint active |
 
 ---
 
@@ -1144,17 +1143,16 @@ Use this section to record major milestones.
 | Phase 3 — Lean Implementation Specification: domain and behavior | **In Progress — MESP-86 v0.4 approved combined lean domain/behavior baseline; implementation refinement is limited to the approved Foundation sequence** |
 | Phase 4 — Lean Implementation Specification: user journeys | **In Progress — MESP-86 v0.4 approved journeys, states and acceptance baseline** |
 | Phase 5 — Lean Implementation Specification: logical data | **In Progress — MESP-86 v0.4 approved logical model, ERD and integrity baseline; physical design remains gated** |
-| Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-57 through MESP-60, MESP-62 and MESP-89 completed; MESP-63 is the active bounded implementation item** |
+| Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-57 through MESP-60, MESP-62, MESP-63 and MESP-89 completed; MESP-64 remains the provider/schema validation gate** |
 | Phase 7 — Jira Backlog | **Done for MESP-27 Wave 1** |
-| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62 and MESP-89 Done; MESP-63 In Progress; no Sprint active** |
+| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-63 and MESP-89 Done; no Sprint active** |
 | Phase 9 — Integration, UAT, Release, Operations | **Not Started** |
 
 ---
 
-## Current single next action
+## Current next action
 
-> Complete the bounded `MESP-63` Angular Wave 1 shell, review and merge its
-> delivery, then close the Jira item with evidence. Keep `MESP-61`, `MESP-64`,
+> Keep `MESP-61`, `MESP-64`,
 > `MESP-31` through `MESP-40`, Retail POS and future ERP transaction work out
 > of scope; preserve `MESP-48` and `MESP-50` as explicit production gates and
 > keep no Sprint active.
