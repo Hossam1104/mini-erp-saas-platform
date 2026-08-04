@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ContextService } from '../../core/context/context.service';
 import { LanguageService } from '../../core/i18n/language.service';
@@ -44,9 +44,23 @@ import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.compo
             <button class="language-button" type="button" (click)="language.toggle()" [attr.aria-label]="language.text('language')">
               <span aria-hidden="true">◐</span>{{ language.language() === 'en' ? language.text('switchToArabic') : language.text('switchToEnglish') }}
             </button>
-            <button class="sign-out" type="button" (click)="signOut()">{{ language.text('signOut') }}</button>
+            <button
+              class="sign-out"
+              type="button"
+              (click)="signOut()"
+              [disabled]="auth.signingOut()"
+              [attr.aria-describedby]="auth.signOutFailed() ? 'sign-out-feedback' : null"
+            >
+              {{ auth.signingOut() ? language.text('signingOut') : language.text('signOut') }}
+            </button>
           </div>
         </header>
+
+        @if (auth.signOutFailed()) {
+          <div id="sign-out-feedback" class="sign-out-feedback" role="alert" aria-live="assertive">
+            {{ language.text('signOutFailed') }}
+          </div>
+        }
 
         <main id="main-content" class="shell__content">
           <div class="content-grid">
@@ -88,6 +102,8 @@ import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.compo
     .language-button, .sign-out { border: 0; color: var(--ink-muted); background: transparent; font: 700 0.78rem/1 var(--font-sans); cursor: pointer; }
     .sign-out { border-inline-start: 1px solid var(--line); padding-inline-start: 1rem; }
     .language-button:hover, .sign-out:hover { color: var(--accent-strong); }
+    .sign-out:disabled { color: var(--ink-muted); cursor: wait; opacity: 0.65; }
+    .sign-out-feedback { margin: 1rem 2.5rem 0; border: 1px solid color-mix(in srgb, var(--danger) 38%, var(--line)); border-radius: 0.7rem; padding: 0.8rem 1rem; color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface-raised)); font-size: 0.85rem; line-height: 1.5; }
     .shell__content { padding: clamp(1.25rem, 3vw, 2.5rem); }
     .content-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem); gap: clamp(1.25rem, 3vw, 2.5rem); max-width: 76rem; margin: 0 auto; }
     .context-rail { align-self: start; border: 1px solid var(--line); border-radius: 1.2rem; padding: 1.1rem; background: var(--surface-raised); box-shadow: var(--shadow-soft); }
@@ -99,7 +115,6 @@ export class ApplicationShellComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly context = inject(ContextService);
   readonly language = inject(LanguageService);
-  private readonly router = inject(Router);
 
   ngOnInit(): void {
     if (this.context.contexts().length === 0) {
@@ -116,6 +131,5 @@ export class ApplicationShellComponent implements OnInit {
 
   async signOut(): Promise<void> {
     await this.auth.signOut();
-    await this.router.navigate(['/login']);
   }
 }

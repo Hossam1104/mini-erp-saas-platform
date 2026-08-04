@@ -7,6 +7,8 @@ export type SafeErrorCode =
   | 'context_version_conflict'
   | 'validation_failed'
   | 'network_error'
+  | 'antiforgery_failed'
+  | 'audit_unavailable'
   | 'request_failed';
 
 export interface SafeUiError {
@@ -21,6 +23,8 @@ const knownCodes = new Set<SafeErrorCode>([
   'context_version_conflict',
   'validation_failed',
   'network_error',
+  'antiforgery_failed',
+  'audit_unavailable',
   'request_failed',
 ]);
 
