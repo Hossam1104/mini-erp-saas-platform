@@ -1,5 +1,13 @@
 # Current State
 
+## Active MESP-91 correction overlay
+
+- MESP-91 (`Enforce verified organization scope and worker authority revalidation in durable work`) is **In Progress** as the sole active implementation item.
+- Branch: `fix/MESP-91-verified-work-scope-authority`, based on expected merged-main baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`; source is not merged.
+- The correction adds an Identity-owned verified Tenant -> Company -> Branch -> Warehouse resolver, authorization-context-bound scopes, and live worker/outbox authority revalidation immediately before handler/effect dispatch. Authority failure is a safe terminal `AuthorizationDenied` dead letter.
+- A non-draft PR is required to remain open and unmerged for focused ChatGPT security review. MESP-31, MESP-92 and MESP-93 remain To Do; no Sprint is active and no next item may start.
+- No production provider, migration, broker, deployment, Retail POS, Wafra-core or ERP domain behavior is introduced. MESP-48 and MESP-50 remain explicit gates.
+
 - Approved merged main baseline after MESP-64: `2002d1c25d39022b227e89b3d70f41a53de0408c` (PR #18 normal merge; MESP-61/PR #17, MESP-90/PR #16, MESP-89/PR #12 and MESP-63/PR #14 remain preserved in history).
 - MESP-57: Done; Modular Monolith solution and module seam merged through PR #1.
 - MESP-58: Done; trusted TenantContext and persistence isolation merged through PR #6, including the stored-owner security correction.
@@ -12,11 +20,11 @@
 - MESP-63: Done; Angular 22 Wave 1 shell implementation merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15` after the MESP-89 reconciliation cleanup.
 - MESP-90: Done; the exact approved head was merged through PR #16 at `469ab863a5fc20f02d3ba674a97dceb969bbec75` after focused ChatGPT approval. MESP-63 remains Done and was not reopened.
 - MESP-61: Done; PR #17 merged to `main` at `7db49a88e11232f055c2016b8bb033a61de629ec` after the typed durable-work/private-file foundation and merged-main validation.
-- MESP-64: Done; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c` after disposable SQL Server LocalDB validation and merged-main regression. No implementation item is active and no Sprint is active.
+- MESP-64: Done; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c` after disposable SQL Server LocalDB validation and merged-main regression. The historical merged-main baseline has no active item; the current MESP-91 correction is the sole active overlay and no Sprint is active.
 - No Sprint is active; MESP-63 was delivered outside a Sprint.
 - MESP-48 and MESP-50 remain explicit performance, retention, privacy, legal-hold, purge, residency, backup and restoration production gates.
 - No physical migration, production/shared database, durable audit provider, OpenTelemetry exporter, production worker, file-storage provider, deployment, Retail POS or future ERP transaction implementation was introduced. MESP-63 is limited to the Angular shell and does not implement business transactions.
-- Current state: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are merged and closed in the repository baseline; no implementation item is active.
+- Current state: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are merged and closed in the repository baseline; MESP-91 is the sole active correction overlay and remains unmerged.
 - MESP-63 implementation baseline: commits `798d15d1aa1e53781df3a2683305e95ac3143890` and `46bf2d30f91ef00e9e450b59b8de0b3a2d34dbab` were merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`. The Angular 22/TypeScript standalone workspace provides modular core/features/shared structure, server-issued cookie session bootstrap, in-memory antiforgery token, server-confirmed context loading/switching, bilingual EN/AR direction switching, responsive accessible shell and safe state components. Focused Angular tests pass 8/8; the mocked Playwright Wave 1 smoke journey passes 1/1; production deployment and provider work remain excluded.
 - MESP-89 merged-main validation: Release build passed with 0 warnings and 0 errors; the complete solution suite passed 247 tests with 0 failures and 0 skips, including 17 direct/HTTP production-graph host-security tests and the endpoint metadata/coordinator guard. The merged correction covers catalog-backed exact operation permissions, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions.
 - Production limitations remain explicit: in-memory Identity/session, local append-only audit seam, local idempotency, unavailable MFA/fresh-auth provider, no SQL migration or production provider selection, no durable exporter, no deployment work. MESP-64 provides disposable LocalDB/provider evidence only; MESP-48 and MESP-50 remain production gates.
@@ -41,6 +49,9 @@
   a typed dispatcher and one-item worker seam; provider-neutral notification
   intents/local adapter; and a private-file metadata/access/local adapter
   boundary.
+- MESP-91 extends this merged seam on its unmerged correction branch with
+  Identity-issued verified organization scope and live worker/outbox authority
+  revalidation. This correction is not yet a merged-main capability.
 - Local adapters are test/development seams only. No broker, production
   notification provider, object-storage provider, production SQL provider,
   migration, retention, residency, legal-hold, purge, scanning or deployment
@@ -74,8 +85,10 @@
   sequential Foundation chain from MESP-57 through MESP-64, its PR/merge
   evidence, test totals, capability status, exact maturity boundaries and
   remaining production gates.
-- The checkpoint is documentation-only and is ready for Opus 5 review. It does
-  not authorize MESP-31, Master Data/Catalog work, a Sprint, MESP-48/MESP-50
-  implementation or production deployment.
-- MESP-48 and MESP-50 remain explicit production gates; no core ERP BRD or
-  implementation item is active.
+- The checkpoint is the historical documentation baseline. MESP-91 is the
+  active correction and its non-draft PR must remain open and unmerged pending
+  focused ChatGPT review; it does not authorize MESP-31, packages 2/3,
+  Master Data/Catalog work, a Sprint, MESP-48/MESP-50 implementation or
+  production deployment.
+- MESP-48 and MESP-50 remain explicit production gates; no core ERP BRD is
+  implemented and MESP-91 is the only active implementation item.

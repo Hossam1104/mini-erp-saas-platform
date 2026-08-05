@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.App.BuildingBlocks.Work;
 
 namespace MiniErp.App.Modules.Identity;
 
@@ -14,7 +15,9 @@ namespace MiniErp.App.Modules.Identity;
 /// explicitly sequenced work. The security rules and contracts are kept here
 /// so those later adapters cannot bypass the approved policy.
 /// </remarks>
-internal sealed class IdentityAuthorizationService
+internal sealed class IdentityAuthorizationService :
+    IOrganizationScopeOwnershipResolver,
+    IDurableWorkAuthorityRevalidator
 {
     private const string GenericDeniedCode = "access_denied";
     private const string GenericAuthenticationCode = "authentication_failed";
@@ -44,6 +47,56 @@ internal sealed class IdentityAuthorizationService
     internal IdentitySecurityOptions Options => options;
 
     internal DateTimeOffset Now => timeProvider.GetUtcNow();
+
+    /// <summary>
+    /// Resolves a requested work target through the Identity-owned organization
+    /// graph and the currently selected Tenant authorization path.
+    /// </summary>
+    public TenantWorkScopeResolution Resolve(
+        TenantContext trustedTenantContext,
+        TenantWorkScopeRequest requestedScope)
+    {
+        ArgumentNullException.ThrowIfNull(trustedTenantContext);
+        ArgumentNullException.ThrowIfNull(requestedScope);
+
+        lock (store.SyncRoot)
+        {
+            if (!TryResolveOrganizationScopeUnsafe(
+                    trustedTenantContext.TenantId,
+                    requestedScope,
+                    out var organizationScope)
+                || !IsCurrentScopeContainedUnsafe(trustedTenantContext, organizationScope))
+            {
+                return TenantWorkScopeResolution.Denied("scope_not_authorized");
+            }
+
+            return TenantWorkScopeResolution.Resolved(
+                TenantWorkScope.FromVerifiedOwnership(trustedTenantContext, requestedScope));
+        }
+    }
+
+    /// <summary>
+    /// Re-resolves all durable-work authority facts immediately before a handler
+    /// can be reached. No submission-time snapshot is used as current authority.
+    /// </summary>
+    public ValueTask<DurableWorkAuthorityValidationResult> RevalidateAsync(
+        DurableWorkItem workItem,
+        TenantContext currentTenantContext,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(workItem);
+        ArgumentNullException.ThrowIfNull(currentTenantContext);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        DurableWorkAuthorityValidationResult result;
+        lock (store.SyncRoot)
+        {
+            result = RevalidateDurableWorkUnsafe(workItem, currentTenantContext, now);
+        }
+
+        return ValueTask.FromResult(result);
+    }
 
     internal UserId CreateUser(string email, string password, bool mfaEnabled = true)
     {
@@ -1377,6 +1430,311 @@ internal sealed class IdentityAuthorizationService
                 assignment.IsActive
                 && store.Roles.TryGetValue(assignment.RoleId, out var role)
                 && role.Permissions.Contains(permission));
+    }
+
+    private DurableWorkAuthorityValidationResult RevalidateDurableWorkUnsafe(
+        DurableWorkItem workItem,
+        TenantContext currentTenantContext,
+        DateTimeOffset now)
+    {
+        var sameTenant = workItem.TenantId == currentTenantContext.TenantId
+            && workItem.Initiator.TenantId == currentTenantContext.TenantId;
+        if (!sameTenant)
+        {
+            return DurableWorkDenied(workItem, currentTenantContext, "tenant_mismatch", includeTenant: false);
+        }
+
+        if (workItem.Initiator.AuthorizationPath != currentTenantContext.AuthorizationPath
+            || workItem.Initiator.RequiredPermission != workItem.Identity.RequiredPermission)
+        {
+            return DurableWorkDenied(workItem, currentTenantContext, "authorization_path_conflict", includeTenant: true);
+        }
+
+        if (workItem.Initiator.ActorId is not { } actorId
+            || currentTenantContext.ActorId != actorId
+            || actorId == Guid.Empty
+            || workItem.Initiator.SessionId is not { } sessionId
+            || sessionId == Guid.Empty)
+        {
+            return DurableWorkDenied(workItem, currentTenantContext, "actor_or_session_denied", includeTenant: true);
+        }
+
+        if (!store.Users.TryGetValue(new UserId(actorId), out var user)
+            || user.Status != GlobalUserStatus.Active
+            || user.LockoutEnd is { } lockoutEnd && lockoutEnd > now)
+        {
+            return DurableWorkDenied(workItem, currentTenantContext, "user_inactive", includeTenant: true, actorId, sessionId);
+        }
+
+        if (!store.Sessions.TryGetValue(new SessionId(sessionId), out var session)
+            || session.UserId != user.Id
+            || !IsCurrentSessionUnsafe(session, now))
+        {
+            return DurableWorkDenied(workItem, currentTenantContext, "session_denied", includeTenant: true, actorId, sessionId);
+        }
+
+        if (!IdentityPermissions.TryResolve(workItem.Identity.RequiredPermission, out var permission))
+        {
+            return DurableWorkDenied(workItem, currentTenantContext, "permission_denied", includeTenant: true, actorId, sessionId);
+        }
+
+        if (!TryResolveOrganizationScopeUnsafe(
+                workItem.TenantId,
+                new TenantWorkScopeRequest(workItem.Scope.CompanyId, workItem.Scope.BranchId, workItem.Scope.WarehouseId),
+                out var organizationScope)
+            || !IsCurrentScopeContainedUnsafe(currentTenantContext, organizationScope, now))
+        {
+            return DurableWorkDenied(workItem, currentTenantContext, "scope_ownership_denied", includeTenant: true, actorId, sessionId);
+        }
+
+        switch (currentTenantContext.AuthorizationPath)
+        {
+            case TenantAuthorizationPath.OrdinaryMembership:
+                if (currentTenantContext.Membership != workItem.Initiator.Membership
+                    || workItem.Initiator.SupportGrant.HasValue
+                    || !currentTenantContext.Membership.HasValue
+                    || !store.Memberships.TryGetValue(
+                        new MembershipId(currentTenantContext.Membership.Value.Value),
+                        out var membership)
+                    || membership.UserId != user.Id
+                    || membership.TenantId != workItem.TenantId
+                    || membership.Status != MembershipStatus.Active
+                    || !session.MembershipReferences.Contains(membership.Id)
+                    || !HasPermissionUnsafe(membership, permission)
+                    || !HasScopeUnsafe(membership, organizationScope))
+                {
+                    return DurableWorkDenied(workItem, currentTenantContext, "membership_authority_denied", includeTenant: true, actorId, sessionId);
+                }
+
+                break;
+
+            case TenantAuthorizationPath.SupportGrant:
+                if (currentTenantContext.Membership.HasValue
+                    || !workItem.Initiator.SupportGrant.HasValue
+                    || currentTenantContext.SupportGrant != workItem.Initiator.SupportGrant
+                    || !currentTenantContext.SupportGrant.HasValue
+                    || !store.SupportGrants.TryGetValue(
+                        new SupportGrantId(currentTenantContext.SupportGrant.Value.GrantId),
+                        out var supportGrant)
+                    || supportGrant.CaseId.Value != currentTenantContext.SupportGrant.Value.CaseId
+                    || supportGrant.UserId != user.Id
+                    || supportGrant.TenantId != workItem.TenantId
+                    || supportGrant.RevokedAt.HasValue
+                    || supportGrant.ExpiresAt <= now
+                    || !store.SupportCases.TryGetValue(supportGrant.CaseId, out var supportCase)
+                    || !supportCase.IsActive
+                    || permission == IdentityPermissions.Export
+                    || !supportGrant.Permissions.Contains(permission)
+                    || !session.SupportGrantReferences.Contains(supportGrant.Id)
+                    || !ScopeContainsUnsafe(supportGrant.Scope, organizationScope))
+                {
+                    return DurableWorkDenied(workItem, currentTenantContext, "support_authority_denied", includeTenant: true, actorId, sessionId);
+                }
+
+                break;
+
+            default:
+                return DurableWorkDenied(workItem, currentTenantContext, "authorization_path_conflict", includeTenant: true, actorId, sessionId);
+        }
+
+        return DurableWorkAuthorityValidationResult.Approved();
+    }
+
+    private DurableWorkAuthorityValidationResult DurableWorkDenied(
+        DurableWorkItem workItem,
+        TenantContext currentTenantContext,
+        string reason,
+        bool includeTenant,
+        Guid? actorId = null,
+        Guid? sessionId = null)
+    {
+        var evidence = new SafeSecurityEvidence(
+            actorId ?? currentTenantContext.ActorId ?? Guid.Empty,
+            "durable-work.dispatch",
+            currentTenantContext.AuthorizationPath == TenantAuthorizationPath.OrdinaryMembership
+                ? "ordinary"
+                : "support",
+            includeTenant ? currentTenantContext.TenantId.Value : null,
+            "denied",
+            reason,
+            workItem.Identity.CorrelationId.Value,
+            sessionId,
+            null,
+            null);
+        store.Evidence.Add(evidence);
+        return DurableWorkAuthorityValidationResult.Denied(reason);
+    }
+
+    private bool IsCurrentScopeContainedUnsafe(
+        TenantContext tenantContext,
+        OrganizationScope requestedScope,
+        DateTimeOffset? authorityNow = null)
+    {
+        if (tenantContext.TenantId != requestedScope.TenantId
+            || !TryResolveContextScopeUnsafe(tenantContext, out var selectedScope))
+        {
+            // A support context may intentionally use a non-scope display
+            // marker; its current SupportGrant scope is checked below.
+            if (tenantContext.Scope is { } suppliedScope
+                && !string.Equals(suppliedScope.Value, "support", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+        else if (!ScopeContainsUnsafe(selectedScope, requestedScope))
+        {
+            return false;
+        }
+
+        if (tenantContext.AuthorizationPath == TenantAuthorizationPath.OrdinaryMembership)
+        {
+            if (!tenantContext.Membership.HasValue
+                || !store.Memberships.TryGetValue(
+                    new MembershipId(tenantContext.Membership.Value.Value),
+                    out var membership)
+                || !tenantContext.ActorId.HasValue
+                || membership.UserId.Value != tenantContext.ActorId.Value
+                || membership.TenantId != tenantContext.TenantId
+                || membership.Status != MembershipStatus.Active)
+            {
+                return false;
+            }
+
+            return HasScopeUnsafe(membership, requestedScope);
+        }
+
+        if (tenantContext.AuthorizationPath == TenantAuthorizationPath.SupportGrant
+            && tenantContext.SupportGrant is { } supportReference
+            && store.SupportGrants.TryGetValue(new SupportGrantId(supportReference.GrantId), out var supportGrant)
+            && supportGrant.CaseId.Value == supportReference.CaseId
+            && supportGrant.UserId.Value == tenantContext.ActorId
+            && supportGrant.TenantId == tenantContext.TenantId
+            && supportGrant.RevokedAt is null
+            && supportGrant.ExpiresAt > (authorityNow ?? Now)
+            && store.SupportCases.TryGetValue(supportGrant.CaseId, out var supportCase)
+            && supportCase.IsActive)
+        {
+            return ScopeContainsUnsafe(supportGrant.Scope, requestedScope);
+        }
+
+        return false;
+    }
+
+    private bool TryResolveOrganizationScopeUnsafe(
+        TenantId tenantId,
+        TenantWorkScopeRequest requestedScope,
+        out OrganizationScope organizationScope)
+    {
+        organizationScope = requestedScope.WarehouseId is { } warehouseId
+            ? OrganizationScope.ForWarehouse(tenantId, warehouseId)
+            : requestedScope.BranchId is { } branchId
+                ? OrganizationScope.ForBranch(tenantId, branchId)
+                : requestedScope.CompanyId is { } companyId
+                    ? OrganizationScope.ForCompany(tenantId, companyId)
+                    : OrganizationScope.ForTenant(tenantId);
+
+        if (!IsOrganizationOwnershipValidUnsafe(organizationScope, requestedScope))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool IsOrganizationOwnershipValidUnsafe(
+        OrganizationScope requestedScope,
+        TenantWorkScopeRequest requestedTarget)
+    {
+        if (requestedScope.Kind == ScopeKind.Tenant)
+        {
+            return requestedScope.TargetId == requestedScope.TenantId.Value;
+        }
+
+        var current = requestedScope;
+        for (var depth = 0; depth < 4; depth++)
+        {
+            if (!store.ParentScopes.TryGetValue(
+                    (current.TenantId, current.Kind, current.TargetId),
+                    out var parent)
+                || parent is null)
+            {
+                return false;
+            }
+
+            var expectedParentKind = current.Kind switch
+            {
+                ScopeKind.Company => ScopeKind.Tenant,
+                ScopeKind.Branch => ScopeKind.Company,
+                ScopeKind.Warehouse => ScopeKind.Branch,
+                _ => (ScopeKind?)null
+            };
+            if (!expectedParentKind.HasValue
+                || parent.Value.TenantId != requestedScope.TenantId
+                || parent.Value.Kind != expectedParentKind.Value)
+            {
+                return false;
+            }
+
+            if (current.Kind == ScopeKind.Warehouse
+                && requestedTarget.BranchId != parent.Value.TargetId)
+            {
+                return false;
+            }
+
+            if (current.Kind == ScopeKind.Branch
+                && requestedTarget.CompanyId != parent.Value.TargetId)
+            {
+                return false;
+            }
+
+            current = parent.Value;
+            if (current.Kind == ScopeKind.Tenant)
+            {
+                return current.TargetId == requestedScope.TenantId.Value;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryResolveContextScopeUnsafe(
+        TenantContext tenantContext,
+        out OrganizationScope selectedScope)
+    {
+        selectedScope = default;
+        if (!tenantContext.Scope.HasValue)
+        {
+            return false;
+        }
+
+        var value = tenantContext.Scope.Value.Value;
+        if (string.Equals(value, "tenant", StringComparison.OrdinalIgnoreCase))
+        {
+            selectedScope = OrganizationScope.ForTenant(tenantContext.TenantId);
+            return true;
+        }
+
+        var parts = value.Split(':', 2, StringSplitOptions.TrimEntries);
+        if (parts.Length != 2
+            || !Enum.TryParse<ScopeKind>(parts[0], ignoreCase: true, out var kind)
+            || !Guid.TryParse(parts[1], out var targetId)
+            || targetId == Guid.Empty)
+        {
+            return false;
+        }
+
+        selectedScope = new OrganizationScope(tenantContext.TenantId, kind, targetId);
+        return kind == ScopeKind.Tenant
+            ? targetId == tenantContext.TenantId.Value
+            : true;
+    }
+
+    private bool IsCurrentSessionUnsafe(UserSession session, DateTimeOffset now)
+    {
+        return session.IssuedAt <= now
+            && session.RevokedAt is null
+            && session.AbsoluteExpiresAt > now
+            && session.LastActivityAt.Add(options.InactivityTimeout) > now;
     }
 
     private bool HasScopeUnsafe(TenantMembership membership, OrganizationScope requestedScope, bool allowTenantScopeExpansion = false)

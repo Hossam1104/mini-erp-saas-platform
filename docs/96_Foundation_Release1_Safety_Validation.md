@@ -25,6 +25,38 @@ checkpoint, and **1 production gate DEFERRED**. No assertion failed. Not
 Applicable is a scope boundary, not evidence that the later workflow is safe;
 the owning implementation must add executable evidence before authorization.
 
+## MESP-91 correction overlay
+
+The original MESP-64 checkpoint remains the merged-main foundation baseline.
+MESP-91 Correction Package 1 adds the missing durable-work authority boundary
+on top of that baseline: Identity now exposes a narrow organization ownership
+resolver that converts an untrusted `TenantWorkScopeRequest` into a
+resolver-issued, authorization-context-bound `TenantWorkScope`. The resolver
+validates the exact Tenant -> Company -> Branch -> Warehouse ownership chain
+and downward authorized-scope containment; missing ownership and foreign or
+sibling targets fail closed.
+
+The worker and outbox dispatch paths now call a narrow live authority
+revalidator immediately before a handler or protected outbox effect. It
+rechecks the initiating Tenant and authorization path, current User/session,
+ordinary Membership or SupportGrant/SupportCase, exact Permission and current
+scope/ownership. A failed check produces a terminal `AuthorizationDenied`
+dead-letter and safe evidence; no handler or outbox effect is reached. The
+correction evidence is in `DurableWorkAuthorityRevalidationTests` and
+`DurableWorkTests`. The SQL probes remain persistence, lease, transaction and
+idempotency evidence only; they are not worker-authorization evidence.
+
+The current correction validation passes the focused durable-work suite 63/63,
+the complete backend suite 321/321, the targeted SQL Server suite 11/11, the
+Angular suite 27/27 and four Playwright journeys. The Release build has zero
+warnings and zero errors, and the production dependency audit reports zero
+vulnerabilities; the `npm ci` development install reports three moderate
+development-only advisories outside that production audit.
+
+MESP-48 supported-volume/capacity and MESP-50 retention, privacy, legal-hold,
+purge, residency, backup and restoration gates remain unchanged and are not
+authorized by this correction.
+
 ## SQL Server evidence
 
 - The Tenant query filter was evaluated repeatedly and concurrently for Tenant B after Tenant A model initialization; Tenant A data was not visible.
@@ -88,7 +120,7 @@ DEFERRED row is reserved for the MESP-48/MESP-50 production decisions.
 | 42 | Missing TenantId is rejected by the write pipeline | `TenantPersistenceTests`, `SqlServerSafetyTests` | PASS | Foundation evidence in this checkpoint |
 | 43 | Mismatched TenantId versus trusted context is rejected | `TenantPersistenceTests`, `SqlServerSafetyTests` | PASS | Foundation evidence in this checkpoint |
 | 44 | Restricted IgnoreQueryFilters/raw SQL/bulk/maintenance paths are unavailable to ordinary Tenant calls | `ModuleBoundaryTests`, `TenantPersistenceTests` | PASS | Foundation evidence in this checkpoint |
-| 45 | Background/outbox work revalidates initiating Tenant, scope, lifecycle and ownership | `DurableWorkTests`, `SqlServerSafetyTests` durable-work probe | PASS | Foundation evidence in this checkpoint |
+| 45 | Background/worker/outbox work revalidates exact initiating Tenant ownership, verified organization ownership and authorized scope, plus live User/session/Membership/SupportGrant/SupportCase/Permission lifecycle | `DurableWorkAuthorityRevalidationTests`, `DurableWorkTests` | PASS | MESP-91 correction evidence; SQL probes remain persistence/lease/transaction/idempotency evidence only |
 | 46 | Denied cross-Tenant audit/telemetry records do not leak target data | `AuditObservabilityTests`, `DurableWorkTests`, `RestFoundationTests` | PASS | Foundation evidence in this checkpoint |
 | 47 | Tenant-aware alternate/unique keys and architecture dependency direction remain valid | `ModuleBoundaryTests`, `SqlServerSafetyTests` schema/index evidence | PASS | Foundation evidence in this checkpoint |
 | 48 | MESP-48/MESP-50 gates cannot be bypassed and no production purge is authorized | Scope gate recorded; no production threshold or purge test is authorized | DEFERRED | MESP-48 performance/volume and MESP-50 retention, residency, privacy, legal-hold, purge and provider gates |

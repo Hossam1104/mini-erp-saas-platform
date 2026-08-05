@@ -140,17 +140,23 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
         }
     }
 
-    /// <summary>Dispatches one Tenant-owned outbox message with inbox deduplication.</summary>
+    /// <summary>
+    /// Dispatches one Tenant-owned outbox message with inbox deduplication and
+    /// live authority revalidation immediately before the protected effect.
+    /// </summary>
     public async ValueTask<OutboxDispatchResult> DispatchOutboxAsync(
         TenantContext tenantContext,
+        IDurableWorkAuthorityRevalidator authorityRevalidator,
         DateTimeOffset now,
         Func<TenantOutboxMessage, CancellationToken, ValueTask> effect,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(tenantContext);
+        ArgumentNullException.ThrowIfNull(authorityRevalidator);
         ArgumentNullException.ThrowIfNull(effect);
         cancellationToken.ThrowIfCancellationRequested();
         TenantOutboxMessage? message;
+        DurableWorkItem? workItem;
         lock (syncRoot)
         {
             message = outbox.Values
@@ -164,6 +170,61 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
                 return new OutboxDispatchResult(false, false, false, false, DurableWorkFailureCategory.None);
             }
 
+            // Claim before leaving the lock so a concurrent dispatcher cannot
+            // run the authority check or protected effect twice.
+            message.DeliveryState = DurableWorkLifecycle.Claimed;
+            message.AttemptCount++;
+            workItems.TryGetValue(message.WorkItemId, out workItem);
+
+            if (inbox.Contains((tenantContext.TenantId, message.EventId)))
+            {
+                message.DeliveryState = DurableWorkLifecycle.Completed;
+                AddAuditForMessage(message, "outbox.duplicate", DurableWorkFailureCategory.None);
+                return new OutboxDispatchResult(true, true, false, false, DurableWorkFailureCategory.None);
+            }
+        }
+
+        DurableWorkAuthorityValidationResult authority;
+        try
+        {
+            authority = workItem is null
+                ? DurableWorkAuthorityValidationResult.Denied("stored_owner_missing")
+                : await authorityRevalidator.RevalidateAsync(
+                    workItem,
+                    tenantContext,
+                    now,
+                    cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            authority = DurableWorkAuthorityValidationResult.Denied("authority_validation_cancelled");
+        }
+        catch (Exception)
+        {
+            authority = DurableWorkAuthorityValidationResult.Denied("authority_validation_failed");
+        }
+
+        if (!authority.Allowed)
+        {
+            lock (syncRoot)
+            {
+                message.DeliveryState = DurableWorkLifecycle.DeadLetter;
+                message.FailureCategory = DurableWorkFailureCategory.AuthorizationDenied;
+                AddAuditForMessage(message, "outbox.dead-letter", DurableWorkFailureCategory.AuthorizationDenied);
+            }
+
+            return new OutboxDispatchResult(
+                false,
+                false,
+                false,
+                true,
+                DurableWorkFailureCategory.AuthorizationDenied);
+        }
+
+        lock (syncRoot)
+        {
+            // The authority check is complete; only now establish the inbox
+            // marker that protects the effect from redelivery.
             if (!inbox.Add((tenantContext.TenantId, message.EventId)))
             {
                 message.DeliveryState = DurableWorkLifecycle.Completed;
@@ -171,8 +232,6 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
                 return new OutboxDispatchResult(true, true, false, false, DurableWorkFailureCategory.None);
             }
 
-            message.DeliveryState = DurableWorkLifecycle.Claimed;
-            message.AttemptCount++;
             AddAuditForMessage(message, "outbox.dispatch", DurableWorkFailureCategory.None);
         }
 
@@ -364,13 +423,16 @@ public sealed class TenantDurableWorkWorker
 {
     private readonly IRelationalDurableWorkStore store;
     private readonly DurableWorkDispatcher dispatcher;
+    private readonly IDurableWorkAuthorityRevalidator authorityRevalidator;
 
     public TenantDurableWorkWorker(
         IRelationalDurableWorkStore store,
-        DurableWorkDispatcher dispatcher)
+        DurableWorkDispatcher dispatcher,
+        IDurableWorkAuthorityRevalidator authorityRevalidator)
     {
         this.store = store ?? throw new ArgumentNullException(nameof(store));
         this.dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        this.authorityRevalidator = authorityRevalidator ?? throw new ArgumentNullException(nameof(authorityRevalidator));
     }
 
     /// <summary>Processes one item for the supplied trusted Tenant only.</summary>
@@ -399,30 +461,61 @@ public sealed class TenantDurableWorkWorker
                 cancellationToken);
         }
 
-        DurableWorkHandlerResult result;
         var completionCancellation = cancellationToken;
+        DurableWorkAuthorityValidationResult authority;
         try
         {
-            var executionContext = new DurableWorkExecutionContext(item, tenantContext);
-            result = await dispatcher.DispatchAsync(item, executionContext, cancellationToken);
+            authority = await authorityRevalidator.RevalidateAsync(
+                item,
+                tenantContext,
+                now,
+                cancellationToken);
         }
         catch (OperationCanceledException)
         {
-            // Persist the bounded retry even when the handler observed request
-            // cancellation; otherwise the lease would remain active until it
-            // expires and the work would have no durable outcome.
             completionCancellation = CancellationToken.None;
-            result = DurableWorkHandlerResult.Retry(
-                DurableWorkFailureCategory.ProviderUnavailable,
-                TimeSpan.FromSeconds(1),
-                "execution_cancelled");
+            authority = DurableWorkAuthorityValidationResult.Denied("authority_validation_cancelled");
         }
         catch (Exception)
         {
-            result = DurableWorkHandlerResult.Retry(
-                DurableWorkFailureCategory.HandlerFailed,
-                TimeSpan.FromSeconds(1),
-                "handler_failed");
+            completionCancellation = CancellationToken.None;
+            authority = DurableWorkAuthorityValidationResult.Denied("authority_validation_failed");
+        }
+
+        DurableWorkHandlerResult result;
+        if (!authority.Allowed)
+        {
+            // Authority failures are permanent for this stored submission. No
+            // handler or protected effect is reachable after this branch.
+            result = DurableWorkHandlerResult.DeadLettered(
+                DurableWorkFailureCategory.AuthorizationDenied,
+                authority.SafeReason);
+        }
+        else
+        {
+            try
+            {
+                var executionContext = new DurableWorkExecutionContext(item, tenantContext);
+                result = await dispatcher.DispatchAsync(item, executionContext, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // Persist the bounded retry even when the handler observed request
+                // cancellation; otherwise the lease would remain active until it
+                // expires and the work would have no durable outcome.
+                completionCancellation = CancellationToken.None;
+                result = DurableWorkHandlerResult.Retry(
+                    DurableWorkFailureCategory.ProviderUnavailable,
+                    TimeSpan.FromSeconds(1),
+                    "execution_cancelled");
+            }
+            catch (Exception)
+            {
+                result = DurableWorkHandlerResult.Retry(
+                    DurableWorkFailureCategory.HandlerFailed,
+                    TimeSpan.FromSeconds(1),
+                    "handler_failed");
+            }
         }
 
         return await store.CompleteAsync(tenantContext, lease, result, now, completionCancellation);

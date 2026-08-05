@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using MiniErp.App.BuildingBlocks.Work;
 
 namespace MiniErp.App.Modules.Identity;
 
@@ -18,6 +19,10 @@ public static class IdentityModuleRegistration
                 timeProvider: serviceProvider.GetRequiredService<TimeProvider>(),
                 passwordHasher: serviceProvider.GetRequiredService<IPasswordHasher<GlobalUser>>(),
                 assuranceEvidenceSource: serviceProvider.GetRequiredService<IAuthenticationAssuranceEvidenceSource>()));
+        services.AddSingleton<IOrganizationScopeOwnershipResolver>(serviceProvider =>
+            serviceProvider.GetRequiredService<IdentityAuthorizationService>());
+        services.AddSingleton<IDurableWorkAuthorityRevalidator>(serviceProvider =>
+            serviceProvider.GetRequiredService<IdentityAuthorizationService>());
         services.AddSingleton<IAuthenticationAssuranceEvidenceSource, UnavailableAuthenticationAssuranceEvidenceSource>();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IFoundationIdentityHost>(serviceProvider =>

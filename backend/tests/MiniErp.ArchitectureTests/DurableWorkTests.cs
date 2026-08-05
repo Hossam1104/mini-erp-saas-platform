@@ -19,7 +19,8 @@ public sealed class DurableWorkTests
             null!,
             scope,
             Identity(context),
-            new DemoPayload("x")));
+            new DemoPayload("x"),
+            Guid.NewGuid()));
     }
 
     [Fact]
@@ -65,20 +66,22 @@ public sealed class DurableWorkTests
             foreign,
             scope,
             Identity(foreign),
-            new DemoPayload("forged")));
+            new DemoPayload("forged"),
+            Guid.NewGuid()));
     }
 
     [Fact]
     public void Organization_scope_must_belong_to_tenant_and_follow_hierarchy()
     {
         var context = CreateContext();
-        Assert.Throws<ArgumentException>(() => TenantWorkScope.ForServerContext(context, branchId: Guid.NewGuid()));
+        Assert.Throws<ArgumentException>(() => new TenantWorkScopeRequest(branchId: Guid.NewGuid()));
         var foreignScope = TenantWorkScope.ForServerContext(CreateContext());
         Assert.Throws<ArgumentException>(() => DurableWorkItem.Create(
             context,
             foreignScope,
             Identity(context),
-            new DemoPayload("scope")));
+            new DemoPayload("scope"),
+            Guid.NewGuid()));
     }
 
     [Fact]
@@ -90,12 +93,12 @@ public sealed class DurableWorkTests
         Assert.True(await store.SubmitAsync(work));
         Assert.True(await store.SubmitAsync(work));
         var effects = 0;
-        var first = await store.DispatchOutboxAsync(context, Clock, (_, _) =>
+        var first = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _) =>
         {
             effects++;
             return ValueTask.CompletedTask;
         });
-        var second = await store.DispatchOutboxAsync(context, Clock, (_, _) =>
+        var second = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _) =>
         {
             effects++;
             return ValueTask.CompletedTask;
@@ -113,13 +116,13 @@ public sealed class DurableWorkTests
         var work = Work(context, "inbox-once");
         await store.SubmitAsync(work);
         var calls = 0;
-        await store.DispatchOutboxAsync(context, Clock, (_, _) =>
+        await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _) =>
         {
             calls++;
             return ValueTask.CompletedTask;
         });
         Assert.True(store.ReplayOutboxForValidation(work.Identity.WorkItemId, Clock));
-        var result = await store.DispatchOutboxAsync(context, Clock, (_, _) =>
+        var result = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _) =>
         {
             calls++;
             return ValueTask.CompletedTask;
@@ -233,7 +236,7 @@ public sealed class DurableWorkTests
         var store = new InMemoryRelationalDurableWorkStore();
         var dispatcher = new DurableWorkDispatcher();
         dispatcher.Register(new SuccessfulHandler());
-        var worker = new TenantDurableWorkWorker(store, dispatcher);
+        var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
         await store.SubmitAsync(Work(context, "worker-exact"));
         var result = await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
         Assert.NotNull(result);
@@ -243,7 +246,7 @@ public sealed class DurableWorkTests
     [Fact]
     public async Task Missing_trusted_context_blocks_execution()
     {
-        var worker = new TenantDurableWorkWorker(new InMemoryRelationalDurableWorkStore(), new DurableWorkDispatcher());
+        var worker = new TenantDurableWorkWorker(new InMemoryRelationalDurableWorkStore(), new DurableWorkDispatcher(), new TestAuthorityRevalidator());
         await Assert.ThrowsAsync<ArgumentNullException>(async () => await worker.ProcessOneAsync(
             null!, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(1)));
     }
@@ -436,7 +439,7 @@ public sealed class DurableWorkTests
     public void Work_identity_requires_idempotency_and_stable_event_fields()
     {
         var context = CreateContext();
-        Assert.Throws<ArgumentException>(() => new DurableWorkIdentity(Guid.NewGuid(), "op", context.CorrelationId!.Value, "", "type"));
+        Assert.Throws<ArgumentException>(() => new DurableWorkIdentity(Guid.NewGuid(), "op", context.CorrelationId!.Value, "", "type", "tenant.business.read"));
         var identity = Identity(context);
         Assert.NotEqual(Guid.Empty, identity.WorkItemId);
         Assert.Equal("demo", identity.WorkType);
@@ -452,7 +455,7 @@ public sealed class DurableWorkTests
         dispatcher.Register(handler);
         var item = Work(context, "typed");
         await store.SubmitAsync(item);
-        var worker = new TenantDurableWorkWorker(store, dispatcher);
+        var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
         await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
         Assert.Equal(1, handler.Calls);
         Assert.Contains(await store.ReadAuditAsync(context), item => item.EventType == "work.completed");
@@ -465,7 +468,7 @@ public sealed class DurableWorkTests
         var store = new InMemoryRelationalDurableWorkStore();
         var item = Work(context, "unregistered");
         await store.SubmitAsync(item);
-        var worker = new TenantDurableWorkWorker(store, new DurableWorkDispatcher());
+        var worker = new TenantDurableWorkWorker(store, new DurableWorkDispatcher(), new TestAuthorityRevalidator());
         var result = await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
         Assert.Equal(DurableWorkLifecycle.DeadLetter, result!.Lifecycle);
         Assert.Equal(DurableWorkFailureCategory.ValidationFailed, result.FailureCategory);
@@ -488,11 +491,12 @@ public sealed class DurableWorkTests
             TenantWorkScope.ForServerContext(context),
             Identity(context, key),
             new DemoPayload(payload),
+            Guid.NewGuid(),
             maximumAttempts,
             Clock);
 
     private static DurableWorkIdentity Identity(TenantContext context, string key = "key") =>
-        new(Guid.NewGuid(), "foundation.work", context.CorrelationId!.Value, key, "demo");
+        new(Guid.NewGuid(), "foundation.work", context.CorrelationId!.Value, key, "demo", "tenant.business.read");
 
     private static TenantContext CreateContext(TenantId? tenantId = null) =>
         TenantContext.ForOrdinaryMembership(
@@ -530,5 +534,15 @@ public sealed class DurableWorkTests
             Assert.Equal(context.TenantContext.TenantId, context.Scope.TenantId);
             return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
         }
+    }
+
+    private sealed class TestAuthorityRevalidator : IDurableWorkAuthorityRevalidator
+    {
+        public ValueTask<DurableWorkAuthorityValidationResult> RevalidateAsync(
+            DurableWorkItem workItem,
+            TenantContext currentTenantContext,
+            DateTimeOffset now,
+            CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(DurableWorkAuthorityValidationResult.Approved());
     }
 }

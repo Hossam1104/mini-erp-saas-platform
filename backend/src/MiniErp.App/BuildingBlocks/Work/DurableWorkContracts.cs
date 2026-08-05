@@ -63,37 +63,18 @@ public interface IWorkPayload
 {
 }
 
-/// <summary>Validated organization scope derived by trusted server code.</summary>
-public sealed class TenantWorkScope
+/// <summary>
+/// An untrusted, client/request-level organization target. It is deliberately
+/// separate from <see cref="TenantWorkScope"/> so raw identifiers cannot be
+/// mistaken for verified ownership evidence.
+/// </summary>
+public sealed class TenantWorkScopeRequest
 {
-    private TenantWorkScope(
-        TenantId tenantId,
-        Guid? companyId,
-        Guid? branchId,
-        Guid? warehouseId)
-    {
-        TenantId = tenantId;
-        CompanyId = companyId;
-        BranchId = branchId;
-        WarehouseId = warehouseId;
-    }
-
-    public TenantId TenantId { get; }
-
-    public Guid? CompanyId { get; }
-
-    public Guid? BranchId { get; }
-
-    public Guid? WarehouseId { get; }
-
-    /// <summary>Creates a scope only from a trusted TenantContext.</summary>
-    public static TenantWorkScope ForServerContext(
-        TenantContext tenantContext,
+    public TenantWorkScopeRequest(
         Guid? companyId = null,
         Guid? branchId = null,
         Guid? warehouseId = null)
     {
-        ArgumentNullException.ThrowIfNull(tenantContext);
         ValidateIdentifiers(companyId, branchId, warehouseId);
         if (branchId.HasValue && !companyId.HasValue)
         {
@@ -105,8 +86,26 @@ public sealed class TenantWorkScope
             throw new ArgumentException("A warehouse scope requires its branch scope.", nameof(branchId));
         }
 
-        return new TenantWorkScope(tenantContext.TenantId, companyId, branchId, warehouseId);
+        CompanyId = companyId;
+        BranchId = branchId;
+        WarehouseId = warehouseId;
     }
+
+    public Guid? CompanyId { get; }
+
+    public Guid? BranchId { get; }
+
+    public Guid? WarehouseId { get; }
+
+    public static TenantWorkScopeRequest TenantWide() => new();
+
+    public static TenantWorkScopeRequest ForCompany(Guid companyId) => new(companyId: companyId);
+
+    public static TenantWorkScopeRequest ForBranch(Guid companyId, Guid branchId) =>
+        new(companyId, branchId);
+
+    public static TenantWorkScopeRequest ForWarehouse(Guid companyId, Guid branchId, Guid warehouseId) =>
+        new(companyId, branchId, warehouseId);
 
     private static void ValidateIdentifiers(Guid? companyId, Guid? branchId, Guid? warehouseId)
     {
@@ -114,6 +113,128 @@ public sealed class TenantWorkScope
         {
             throw new ArgumentException("Organization scope identifiers must not be empty.");
         }
+    }
+}
+
+/// <summary>Safe result returned by an organization ownership resolver.</summary>
+public sealed class TenantWorkScopeResolution
+{
+    private TenantWorkScopeResolution(bool allowed, TenantWorkScope? scope, string safeReason)
+    {
+        Allowed = allowed;
+        Scope = scope;
+        SafeReason = safeReason;
+    }
+
+    public bool Allowed { get; }
+
+    public TenantWorkScope? Scope { get; }
+
+    public string SafeReason { get; }
+
+    public static TenantWorkScopeResolution Resolved(TenantWorkScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        return new TenantWorkScopeResolution(true, scope, "scope_verified");
+    }
+
+    public static TenantWorkScopeResolution Denied(string safeReason) =>
+        new(false, null, SafeReasonValue(safeReason));
+
+    private static string SafeReasonValue(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length > 64 || value.Any(char.IsControl))
+        {
+            throw new ArgumentException("A bounded safe reason is required.", nameof(value));
+        }
+
+        return value.Trim();
+    }
+}
+
+/// <summary>
+/// Narrow, read-only organization ownership port. Identity owns the graph and
+/// issues the resulting verified work scope; callers never receive the graph.
+/// </summary>
+public interface IOrganizationScopeOwnershipResolver
+{
+    TenantWorkScopeResolution Resolve(
+        TenantContext trustedTenantContext,
+        TenantWorkScopeRequest requestedScope);
+}
+
+/// <summary>Verified organization scope derived by the ownership resolver.</summary>
+public sealed class TenantWorkScope
+{
+    private TenantWorkScope(
+        TenantId tenantId,
+        Guid? companyId,
+        Guid? branchId,
+        Guid? warehouseId,
+        TenantContext authorityContext)
+    {
+        TenantId = tenantId;
+        CompanyId = companyId;
+        BranchId = branchId;
+        WarehouseId = warehouseId;
+        AuthorizationPath = authorityContext.AuthorizationPath;
+        Membership = authorityContext.Membership;
+        SupportGrant = authorityContext.SupportGrant;
+        ActorId = authorityContext.ActorId;
+        AuthorizationScope = authorityContext.Scope;
+    }
+
+    public TenantId TenantId { get; }
+
+    public Guid? CompanyId { get; }
+
+    public Guid? BranchId { get; }
+
+    public Guid? WarehouseId { get; }
+
+    private TenantAuthorizationPath AuthorizationPath { get; }
+
+    private MembershipReference? Membership { get; }
+
+    private SupportGrantReference? SupportGrant { get; }
+
+    private Guid? ActorId { get; }
+
+    private ScopeReference? AuthorizationScope { get; }
+
+    /// <summary>
+    /// Test/local root-scope seam. Descendant scopes must be issued by
+    /// <see cref="IOrganizationScopeOwnershipResolver"/>.
+    /// </summary>
+    internal static TenantWorkScope ForServerContext(TenantContext tenantContext)
+    {
+        ArgumentNullException.ThrowIfNull(tenantContext);
+        return new TenantWorkScope(tenantContext.TenantId, null, null, null, tenantContext);
+    }
+
+    internal static TenantWorkScope FromVerifiedOwnership(
+        TenantContext authorityContext,
+        TenantWorkScopeRequest requestedScope)
+    {
+        ArgumentNullException.ThrowIfNull(authorityContext);
+        ArgumentNullException.ThrowIfNull(requestedScope);
+        return new TenantWorkScope(
+            authorityContext.TenantId,
+            requestedScope.CompanyId,
+            requestedScope.BranchId,
+            requestedScope.WarehouseId,
+            authorityContext);
+    }
+
+    internal bool IsBoundTo(TenantContext authorityContext)
+    {
+        ArgumentNullException.ThrowIfNull(authorityContext);
+        return TenantId == authorityContext.TenantId
+            && AuthorizationPath == authorityContext.AuthorizationPath
+            && Membership == authorityContext.Membership
+            && SupportGrant == authorityContext.SupportGrant
+            && ActorId == authorityContext.ActorId
+            && AuthorizationScope == authorityContext.Scope;
     }
 }
 
@@ -128,6 +249,7 @@ public sealed class DurableWorkInitiator
         ScopeReference? scope,
         Guid? actorId,
         Guid? sessionId,
+        string requiredPermission,
         CorrelationId correlationId)
     {
         TenantId = tenantId;
@@ -137,6 +259,7 @@ public sealed class DurableWorkInitiator
         Scope = scope;
         ActorId = actorId;
         SessionId = sessionId;
+        RequiredPermission = requiredPermission;
         CorrelationId = correlationId;
     }
 
@@ -154,17 +277,32 @@ public sealed class DurableWorkInitiator
 
     public Guid? SessionId { get; }
 
+    public string RequiredPermission { get; }
+
     public CorrelationId CorrelationId { get; }
 
     /// <summary>Captures only server-derived authorization facts.</summary>
     public static DurableWorkInitiator FromServerContext(
         TenantContext tenantContext,
-        Guid? sessionId = null)
+        string requiredPermission,
+        Guid sessionId)
     {
         ArgumentNullException.ThrowIfNull(tenantContext);
+        if (string.IsNullOrWhiteSpace(requiredPermission)
+            || requiredPermission.Trim().Length > 128
+            || requiredPermission.Any(char.IsControl))
+        {
+            throw new ArgumentException("A durable-work permission is required and bounded.", nameof(requiredPermission));
+        }
+
         if (sessionId == Guid.Empty)
         {
             throw new ArgumentException("Session identifier must not be empty.", nameof(sessionId));
+        }
+
+        if (!tenantContext.ActorId.HasValue || tenantContext.ActorId.Value == Guid.Empty)
+        {
+            throw new ArgumentException("Durable work requires a trusted actor identifier.", nameof(tenantContext));
         }
 
         return new DurableWorkInitiator(
@@ -175,6 +313,7 @@ public sealed class DurableWorkInitiator
             tenantContext.Scope,
             tenantContext.ActorId,
             sessionId,
+            requiredPermission.Trim().ToLowerInvariant(),
             tenantContext.CorrelationId
                 ?? throw new ArgumentException("Durable work requires a trusted correlation identifier.", nameof(tenantContext)));
     }
@@ -188,7 +327,8 @@ public sealed class DurableWorkIdentity
         string operationId,
         CorrelationId correlationId,
         string idempotencyKey,
-        string workType)
+        string workType,
+        string requiredPermission)
     {
         if (workItemId == Guid.Empty)
         {
@@ -202,6 +342,7 @@ public sealed class DurableWorkIdentity
             : throw new ArgumentException("Correlation identifier is required.", nameof(correlationId));
         IdempotencyKey = Required(idempotencyKey, nameof(idempotencyKey));
         WorkType = Required(workType, nameof(workType));
+        RequiredPermission = Required(requiredPermission, nameof(requiredPermission)).ToLowerInvariant();
     }
 
     public Guid WorkItemId { get; }
@@ -213,6 +354,8 @@ public sealed class DurableWorkIdentity
     public string IdempotencyKey { get; }
 
     public string WorkType { get; }
+
+    public string RequiredPermission { get; }
 
     private static string Required(string value, string name)
     {
@@ -293,6 +436,7 @@ public sealed class DurableWorkItem : ITenantOwned
         TenantWorkScope scope,
         DurableWorkIdentity identity,
         TPayload payload,
+        Guid initiatingSessionId,
         int maximumAttempts = 3,
         DateTimeOffset? createdAt = null)
         where TPayload : IWorkPayload
@@ -301,9 +445,10 @@ public sealed class DurableWorkItem : ITenantOwned
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(payload);
-        if (scope.TenantId != trustedTenantContext.TenantId)
+        if (scope.TenantId != trustedTenantContext.TenantId
+            || !scope.IsBoundTo(trustedTenantContext))
         {
-            throw new ArgumentException("Organization scope must belong to the trusted Tenant.", nameof(scope));
+            throw new ArgumentException("Organization scope must be verified for the trusted authorization context.", nameof(scope));
         }
 
         if (maximumAttempts is < 1 or > 20)
@@ -311,7 +456,10 @@ public sealed class DurableWorkItem : ITenantOwned
             throw new ArgumentOutOfRangeException(nameof(maximumAttempts));
         }
 
-        var initiator = DurableWorkInitiator.FromServerContext(trustedTenantContext);
+        var initiator = DurableWorkInitiator.FromServerContext(
+            trustedTenantContext,
+            identity.RequiredPermission,
+            initiatingSessionId);
         if (!string.Equals(identity.CorrelationId.Value, initiator.CorrelationId.Value, StringComparison.Ordinal))
         {
             throw new ArgumentException("Work correlation must match the trusted context.", nameof(identity));
@@ -521,6 +669,56 @@ public interface IDurableWorkHandler<TPayload>
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>Safe outcome of live durable-work authority revalidation.</summary>
+public sealed class DurableWorkAuthorityValidationResult
+{
+    private DurableWorkAuthorityValidationResult(
+        bool allowed,
+        DurableWorkFailureCategory failureCategory,
+        string safeReason)
+    {
+        Allowed = allowed;
+        FailureCategory = failureCategory;
+        SafeReason = safeReason;
+    }
+
+    public bool Allowed { get; }
+
+    public DurableWorkFailureCategory FailureCategory { get; }
+
+    public string SafeReason { get; }
+
+    public static DurableWorkAuthorityValidationResult Approved() =>
+        new(true, DurableWorkFailureCategory.None, "authority_verified");
+
+    public static DurableWorkAuthorityValidationResult Denied(string safeReason) =>
+        new(false, DurableWorkFailureCategory.AuthorizationDenied, SafeReasonValue(safeReason));
+
+    private static string SafeReasonValue(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length > 64 || value.Any(char.IsControl))
+        {
+            throw new ArgumentException("A bounded safe reason is required.", nameof(value));
+        }
+
+        return value.Trim();
+    }
+}
+
+/// <summary>
+/// Narrow live-authority port used immediately before durable-work dispatch.
+/// The implementation re-resolves Identity state; stored work facts are not
+/// treated as current permission or lifecycle evidence.
+/// </summary>
+public interface IDurableWorkAuthorityRevalidator
+{
+    ValueTask<DurableWorkAuthorityValidationResult> RevalidateAsync(
+        DurableWorkItem workItem,
+        TenantContext currentTenantContext,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default);
+}
+
 /// <summary>Stable, Tenant-owned outbox envelope.</summary>
 public sealed class TenantOutboxMessage : ITenantOwned
 {
@@ -600,6 +798,7 @@ public interface IRelationalDurableWorkStore
 
     ValueTask<OutboxDispatchResult> DispatchOutboxAsync(
         TenantContext tenantContext,
+        IDurableWorkAuthorityRevalidator authorityRevalidator,
         DateTimeOffset now,
         Func<TenantOutboxMessage, CancellationToken, ValueTask> effect,
         CancellationToken cancellationToken = default);
