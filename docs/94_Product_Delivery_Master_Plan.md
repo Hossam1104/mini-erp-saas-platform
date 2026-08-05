@@ -9,11 +9,11 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 4 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `MESP-64 foundation safety harness and SQL Server validation` |
-| Current implementation item | `MESP-64 — In Progress; MESP-61 and MESP-90 are Done` |
-| Current branch | `feature/mesp-64-foundation-safety-harness` |
+| Current activity | `Foundation Completion Opus 5 review checkpoint` |
+| Current implementation item | `None — MESP-57 through MESP-64 Foundation sequence is Done` |
+| Current branch | `docs/foundation-completion-checkpoint` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `MESP-61 / PR #17 is merged to main at 7db49a88e11232f055c2016b8bb033a61de629ec; MESP-64 is the only active implementation item; no Sprint is active` |
+| Current review checkpoint | `MESP-64 / PR #18 is merged to main at 2002d1c25d39022b227e89b3d70f41a53de0408c; Foundation Completion Opus 5 checkpoint is documentation-only; no implementation item or Sprint is active` |
 
 ---
 
@@ -46,16 +46,15 @@ The project is currently in **Phase 2 — Business Requirements Documents**, bec
 The SaaS Platform Administration domain and the approved Foundation backend slice
 have progressed further than the rest of the product. MESP-57, MESP-58,
 MESP-87, MESP-59, MESP-88, MESP-60, MESP-62 and MESP-89 are complete and merged.
-MESP-63, MESP-90 and MESP-61 are complete, while MESP-64 is the only active
-implementation item. Product-wide Phase 2 remains in progress because core ERP
-BRDs are not complete, and Foundation backend work is not complete ERP backend
-implementation.
+MESP-63, MESP-90, MESP-61 and MESP-64 are complete. Product-wide Phase 2
+remains in progress because core ERP BRDs are not complete, and Foundation
+backend work is not complete ERP backend implementation.
 
-PR #17 ([link](https://github.com/Hossam1104/mini-erp-saas-platform/pull/17))
-merged MESP-61 to `main` at
-`7db49a88e11232f055c2016b8bb033a61de629ec`. MESP-64 is being implemented on
-`feature/mesp-64-foundation-safety-harness`; it is the only active item. No
-Sprint is active.
+PR #18 ([link](https://github.com/Hossam1104/mini-erp-saas-platform/pull/18))
+merged MESP-64 to `main` at
+`2002d1c25d39022b227e89b3d70f41a53de0408c`. The next step is the
+documentation-only Foundation Completion Opus 5 checkpoint. No implementation
+item or Sprint is active.
 
 | Area | Current status |
 |---|---|
@@ -78,7 +77,7 @@ Sprint is active.
 | MESP-63 Angular Foundation shell | Done — PR #14 merged at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`; Wave 1 shell, session/context integration, bilingual RTL and safe states validated |
 | MESP-90 MESP-63 false-logout security correction | Done — PR #16 merged at `469ab863a5fc20f02d3ba674a97dceb969bbec75`; preserves authenticated state until server-confirmed revocation |
 | MESP-61 background processing foundation | Done — PR #17 merged at `7db49a88e11232f055c2016b8bb033a61de629ec`; typed Tenant-bound durable work/outbox/inbox, bounded worker, notification contracts and private-file adapter |
-| MESP-64 provider/schema/index validation | In Progress — ADR-018, disposable LocalDB SQL Server harness and exact 75-assertion evidence; no production provider or migration |
+| MESP-64 provider/schema/index validation | Done — PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`; ADR-018, disposable LocalDB SQL Server harness, exact 75-assertion evidence and merged-main validation complete; no production provider or migration |
 | MESP-3 Identity and Access Epic | In Progress |
 | MESP-28 Identity and Access BRD | Done — v0.3 Approved Release 1 Baseline (founder change-control approval 3 August 2026) |
 | MESP-4 Multi-Tenancy and Tenant Lifecycle Epic | In Progress |
@@ -110,10 +109,10 @@ Sprint is active.
 - [x] `MESP-63` moved to **In Progress**, implemented and merged through PR #14; it is now **Done** and the sequence advanced to MESP-61, then MESP-64.
 - [x] `MESP-90` false-logout correction is **Done**; approved PR #16 merged to `main` at `469ab863a5fc20f02d3ba674a97dceb969bbec75`; MESP-63 remains **Done**.
 - [x] `MESP-61` is **Done**; PR #17 merged to `main` at `7db49a88e11232f055c2016b8bb033a61de629ec` and merged-main validation passed.
-- [ ] `MESP-64` is **In Progress** on `feature/mesp-64-foundation-safety-harness`; it is the only active implementation item and no parallel implementation is authorized.
+- [x] `MESP-64` is **Done**; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`, merged-main validation passed, and its branch was deleted.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
 - [x] No Sprint is active; MESP-89 and MESP-63 were delivered outside a Sprint.
-- [x] MESP-63, MESP-90 and MESP-61 completed sequentially; MESP-64 is now the single active implementation item and no parallel implementation is authorized.
+- [x] MESP-63, MESP-90, MESP-61 and MESP-64 completed sequentially; no implementation item is active and no parallel implementation is authorized.
 - [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; implementation refinement is controlled and is not production readiness.
 - [x] Product-wide Phase 2 remains **In Progress** because core ERP BRDs remain incomplete; Foundation backend work does not imply complete ERP backend implementation.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
@@ -482,7 +481,7 @@ Capture the logical data and integrity decisions required to support approved do
 - [ ] Audit, retention, and purge effects are covered.
 - [ ] No table ownership conflict exists between modules.
 
-**Phase 5 status: IN PROGRESS — MESP-86 v0.4 contains the approved logical Foundation data model, ERD and tenant-aware integrity design; the currently implemented persistence and immutable audit seam remain bounded foundation seams. Physical migrations remain excluded. MESP-64 owns SQL Server provider/schema/index/collation/rowversion validation, and detailed physical ERDs are required before implementing each future ERP domain. MESP-50 remains a production gate.**
+**Phase 5 status: IN PROGRESS — MESP-86 v0.4 contains the approved logical Foundation data model, ERD and tenant-aware integrity design; the implemented persistence, immutable audit seam and MESP-64 SQL Server provider/schema/index/collation/rowversion validation remain bounded foundation seams. Physical migrations remain excluded, and detailed physical ERDs are required before implementing each future ERP domain. MESP-50 remains a production gate.**
 
 ---
 
@@ -576,7 +575,7 @@ Capture the implementation-readiness decisions for the approved slice across sol
 - [ ] Technical risks and deferred decisions are recorded.
 - [ ] No implementation depends on an unresolved critical decision.
 
-**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89 and MESP-63 are implemented; MESP-89 merged the catalog-backed exact operation authorization, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions. Physical provider validation remains assigned to MESP-64.**
+**Phase 6 status: IN PROGRESS — MESP-86 v0.4 contains the approved authorization, API, persistence, security, observability and slicing design. MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are implemented as bounded Foundation seams; MESP-89 merged the catalog-backed exact operation authorization, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions. Production provider validation remains separately gated.**
 
 ---
 
@@ -720,17 +719,19 @@ Implement approved backlog items sequentially, validate them with focused automa
 - [x] `MESP-63` moved to In Progress, completed its bounded Angular Wave 1 implementation, and merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`.
 - [x] `MESP-61` is **Done**; PR #17 merged to `main` at
   `7db49a88e11232f055c2016b8bb033a61de629ec` and merged-main validation passed.
-- [ ] `MESP-64` is **In Progress** as the single active implementation item;
-  no parallel implementation is authorized.
+- [x] `MESP-64` is **Done**; PR #18 merged to `main` at
+  `2002d1c25d39022b227e89b3d70f41a53de0408c`, merged-main validation passed,
+  and no implementation item is active.
 
 ### Current sequence after the approved Foundation specification
 
 The product-wide Phase 2 BRD stream remains in progress because core ERP BRDs
 remain incomplete. The Foundation slice has completed the approved MESP-63
 frontend baseline and MESP-61 durable-work foundation; that does not mean
-complete ERP backend implementation has started. MESP-64 is the only active
-implementation item. Do not start MESP-31 or any downstream ERP transaction
-work in parallel.
+complete ERP backend implementation has started. No implementation item is
+active. The Foundation Completion Opus 5 checkpoint is now the only active
+delivery activity. Do not start MESP-31 or any downstream ERP transaction work
+before that review.
 
 - [x] Approve `MESP-28` Identity and Access BRD v0.3 change-control baseline on `docs/foundation-release1-lean-spec`.
 - [x] Begin and complete `MESP-29` Multi-Tenancy BRD as the single requirements activity; v0.2 is approved and Done.
@@ -747,7 +748,7 @@ work in parallel.
 
 ### MESP-63 completed delivery evidence
 
-- [x] Jira MESP-63 moved to **In Progress**, completed, and has its implementation evidence recorded; MESP-61 is **Done** and MESP-64 is the only active item.
+- [x] Jira MESP-63 moved to **In Progress**, completed, and has its implementation evidence recorded; MESP-61 and MESP-64 are **Done**.
 - [x] Branch `feature/mesp-63-angular-wave-1-shell-rtl` was created from synchronized `main`; implementation commits `798d15d1aa1e53781df3a2683305e95ac3143890` and `46bf2d30f91ef00e9e450b59b8de0b3a2d34dbab` were merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`.
 - [x] Angular 22/TypeScript standalone workspace and modular `core`, `features`, and `shared` structure created.
 - [x] EN/AR translations, runtime direction switching, responsive shell, navigation, header, context rail and accessible focus baseline implemented.
@@ -795,7 +796,7 @@ MESP-48 supported-volume/performance evidence and MESP-50 retention, privacy,
 legal-hold, purge, residency, backup and restoration decisions remain gates;
 MESP-61 does not select production providers or execute purge.
 
-### MESP-64 — Foundation safety harness and SQL Server validation (active)
+### MESP-64 — Foundation safety harness and SQL Server validation (completed)
 
 - [x] Confirm MESP-61 is Done on merged `main` at
   `7db49a88e11232f055c2016b8bb033a61de629ec`; no Sprint is active.
@@ -810,13 +811,25 @@ MESP-61 does not select production providers or execute purge.
 - [x] Add the exact 75-assertion report at
   `docs/96_Foundation_Release1_Safety_Validation.md`; record 53 PASS, 21 NOT
   APPLICABLE scope-boundary rows and one MESP-48/MESP-50 DEFERRED production gate.
-- [ ] Run the complete diff/self-review, publish one non-draft PR, merge only
-  after targeted SQL, backend/frontend regression, security and scope gates
-  pass; validate merged `main`, post Jira evidence and close MESP-64.
+- [x] Run the complete diff/self-review, publish and merge PR #18 after
+  targeted SQL, backend/frontend regression, security and scope gates passed;
+  validate merged `main`, post Jira evidence, move MESP-64 to Done and delete
+  the branch.
 
-MESP-48 and MESP-50 remain production gates; MESP-64 does not select a
+MESP-48 and MESP-50 remain production gates; MESP-64 did not select a
 production provider, create a migration, execute purge or authorize later ERP
 work.
+
+### Foundation Completion Opus 5 checkpoint (documentation-only)
+
+- [x] Confirm MESP-90, MESP-61 and MESP-64 are Done on merged `main` and no
+  implementation item or Sprint is active.
+- [x] Create `docs/97_Foundation_Completion_Review_Checkpoint.md` with the
+  complete Foundation sequence, traceability, capabilities, maturity
+  boundaries, remaining gates and Opus 5 questions.
+- [ ] Submit the documentation-only checkpoint for Opus 5 review; do not start
+  MESP-31, Master Data/Catalog work, MESP-48/MESP-50 implementation or any
+  other Jira item before review disposition.
 
 ## Testing strategy
 
@@ -860,10 +873,9 @@ work.
 - [ ] Documentation updated only where necessary.
 
 **Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62,
-MESP-89, MESP-63, MESP-90 and MESP-61 are Done. MESP-64 is the single active
-implementation item on `feature/mesp-64-foundation-safety-harness`; its
-disposable SQL Server LocalDB validation and all frontend/backend regression
-gates have passed, with the PR/merge gate remaining. No Sprint is active.**
+MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are Done. The complete
+Foundation implementation checkpoint is ready for Opus 5 review; no
+implementation item or Sprint is active.**
 
 ---
 
@@ -1104,7 +1116,8 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Implement, merge and close MESP-63 through PR #14 on `feature/mesp-63-angular-wave-1-shell-rtl`; no Sprint is active.
 - [x] Merge and close MESP-90 through PR #16 at `469ab863a5fc20f02d3ba674a97dceb969bbec75` after focused ChatGPT approval.
 - [x] Implement and close MESP-61 on `feature/mesp-61-durable-work-private-files`; PR #17 merged at `7db49a88e11232f055c2016b8bb033a61de629ec` and the ADR index/Foundation evidence were updated for the bounded scope.
-- [ ] Implement and close MESP-64 on `feature/mesp-64-foundation-safety-harness`; update ADR-018 and the exact 75-assertion safety evidence without production/provider or later ERP scope.
+- [x] Implement and close MESP-64 on `feature/mesp-64-foundation-safety-harness`; PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`, ADR-018 and the exact 75-assertion safety evidence were updated without production/provider or later ERP scope.
+- [x] Prepare the documentation-only Foundation Completion Opus 5 checkpoint at `docs/97_Foundation_Completion_Review_Checkpoint.md`; stop before MESP-31 or any later implementation.
 
 ## Completed MESP-57 outputs
 
@@ -1149,7 +1162,7 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Resolve the 22 historical IAM-OD records plus IAM-OD-023 (23 total) and four source-conflict records in the approved baseline.
 - [x] Begin, approve, and close the single MESP-29 Multi-Tenancy BRD activity; v0.2 is merged to `main`.
 - [x] Record the four Tenant-isolation clarifications and preserve MESP-48/MESP-50 Deferred Gates.
-- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-90 and MESP-61 are complete, with only MESP-64 active.
+- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-90, MESP-61 and MESP-64 are complete, with no implementation item active.
 - [x] Keep `MESP-31` through `MESP-40` in To Do while the approved foundation requirements remain the current delivery boundary.
 - [x] Keep `MESP-30` outside all Sprints and restrict it to business requirements only.
 - [x] Complete founder approval of the MESP-30 baseline and resolve `ORG-OD-001` through `ORG-OD-007`.
@@ -1160,7 +1173,8 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Complete focused ChatGPT review of the MESP-89 PR, merge PR #12, validate merged `main`, and record the MESP-89 Done state; MESP-63 and MESP-90 subsequently completed sequentially.
 - [x] Complete focused ChatGPT review of MESP-90 PR #16, merge the exact approved head, validate merged `main`, post Jira closure evidence and move MESP-90 to Done.
 - [x] Complete the MESP-61 durable-work/private-file implementation and merged-main validation before starting MESP-64.
-- [ ] Complete the MESP-64 foundation safety harness PR, merged-main validation and Jira closure before creating the documentation-only Foundation Completion Opus 5 checkpoint.
+- [x] Complete the MESP-64 foundation safety harness PR, merged-main validation and Jira closure before creating the documentation-only Foundation Completion Opus 5 checkpoint.
+- [ ] Obtain Opus 5 disposition of the complete Foundation checkpoint before starting Master Data and Catalog or any other core ERP BRD/implementation item.
 
 ---
 
@@ -1199,7 +1213,8 @@ Use this section to record major milestones.
 | 4 August 2026 | MESP-63 Angular Wave 1 shell | Done | Commits `798d15d1aa1e53781df3a2683305e95ac3143890` and `46bf2d30f91ef00e9e450b59b8de0b3a2d34dbab` merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`; Angular 22 shell, EN/AR RTL foundation, server session/antiforgery/context integration, safe states and accessibility baseline implemented; focused Angular tests 8/8, mocked Playwright smoke 1/1, backend regression 247/0/0 and Release build 0/0 passed; no Sprint active |
 | 4 August 2026 | MESP-90 false-logout correction | Done | PR #16 merged by normal merge at `469ab863a5fc20f02d3ba674a97dceb969bbec75`; approved head preserved; 27 Angular tests, 4 Playwright journeys, backend 247-test regression, Release build and production dependency audit passed; MESP-63 remains Done and MESP-61 started only after closure |
 | 4 August 2026 | MESP-61 durable work foundation | Done | PR #17 merged at `7db49a88e11232f055c2016b8bb033a61de629ec`; typed Tenant-bound work/outbox/inbox/worker, notification and private-file contracts; backend 285/0/0, Angular 27/0/0, Playwright 4/0/0 and production audit passed |
-| 4 August 2026 | MESP-64 foundation safety harness | In Progress | Branch `feature/mesp-64-foundation-safety-harness`; ADR-018, disposable LocalDB SQL Server probes and exact 75-assertion report; targeted SQL 11/11 and full backend 296/0/0 passed; frontend gates remain part of the merge gate |
+| 4 August 2026 | MESP-64 foundation safety harness | Done | PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`; ADR-018, disposable LocalDB SQL Server probes and exact 75-assertion report; targeted SQL 11/11, backend 296/0/0, Angular 27, Playwright 4 and production audit 0 vulnerabilities passed |
+| 4 August 2026 | Foundation Completion Opus 5 checkpoint | Ready for review | Documentation-only `docs/97_Foundation_Completion_Review_Checkpoint.md`; no implementation item or Sprint active; MESP-48 and MESP-50 remain production gates |
 
 ---
 
@@ -1227,20 +1242,18 @@ Use this section to record major milestones.
 | Phase 3 — Lean Implementation Specification: domain and behavior | **In Progress — MESP-86 v0.4 approved combined lean domain/behavior baseline; implementation refinement is limited to the approved Foundation sequence** |
 | Phase 4 — Lean Implementation Specification: user journeys | **In Progress — MESP-86 v0.4 approved journeys, states and acceptance baseline** |
 | Phase 5 — Lean Implementation Specification: logical data | **In Progress — MESP-86 v0.4 approved logical model, ERD and integrity baseline; physical design remains gated** |
-| Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-57 through MESP-63, MESP-89, MESP-90 and MESP-61 completed; MESP-64 is the active safety-harness gate** |
+| Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-57 through MESP-64 completed; the Foundation Completion checkpoint is ready for Opus 5 review** |
 | Phase 7 — Jira Backlog | **Done for MESP-27 Wave 1** |
-| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-63, MESP-89, MESP-90 and MESP-61 Done; MESP-64 In Progress; no Sprint active** |
+| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-63, MESP-89, MESP-90, MESP-61 and MESP-64 Done; no implementation item or Sprint active; Opus 5 checkpoint ready** |
 | Phase 9 — Integration, UAT, Release, Operations | **Not Started** |
 
 ---
 
 ## Current next action
 
-> Complete the bounded `MESP-64` foundation safety harness on
-> `feature/mesp-64-foundation-safety-harness`, validate the exact 75-assertion
-> matrix and all backend/frontend regression gates, then publish one non-draft
-> PR and merge only after security and scope review. Keep `MESP-31` through
-> `MESP-40`, Retail POS and future ERP transaction work out of scope; preserve
-> `MESP-48` and `MESP-50` as explicit production gates and keep no Sprint
-> active. After MESP-64 is merged and closed, create the documentation-only
-> Foundation Completion Opus 5 checkpoint and stop.
+> Submit `docs/97_Foundation_Completion_Review_Checkpoint.md` for Opus 5
+> Foundation completion review. Keep `MESP-31` through `MESP-40`, Master Data
+> and Catalog, Retail POS and future ERP transaction work out of scope; preserve
+> `MESP-48` and `MESP-50` as explicit production gates and keep no Sprint or
+> implementation item active. Do not start another Jira item until Opus 5 gives
+> a reviewed disposition.

@@ -1,6 +1,6 @@
 # Current State
 
-- Approved merged main baseline after MESP-61: `7db49a88e11232f055c2016b8bb033a61de629ec` (PR #17 normal merge; MESP-90/PR #16, MESP-89/PR #12 and MESP-63/PR #14 remain preserved in history).
+- Approved merged main baseline after MESP-64: `2002d1c25d39022b227e89b3d70f41a53de0408c` (PR #18 normal merge; MESP-61/PR #17, MESP-90/PR #16, MESP-89/PR #12 and MESP-63/PR #14 remain preserved in history).
 - MESP-57: Done; Modular Monolith solution and module seam merged through PR #1.
 - MESP-58: Done; trusted TenantContext and persistence isolation merged through PR #6, including the stored-owner security correction.
 - MESP-87: Done; Tenant persistence guardrail hardening completed in the MESP-58 correction sequence.
@@ -12,14 +12,14 @@
 - MESP-63: Done; Angular 22 Wave 1 shell implementation merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15` after the MESP-89 reconciliation cleanup.
 - MESP-90: Done; the exact approved head was merged through PR #16 at `469ab863a5fc20f02d3ba674a97dceb969bbec75` after focused ChatGPT approval. MESP-63 remains Done and was not reopened.
 - MESP-61: Done; PR #17 merged to `main` at `7db49a88e11232f055c2016b8bb033a61de629ec` after the typed durable-work/private-file foundation and merged-main validation.
-- MESP-64: In Progress on `feature/mesp-64-foundation-safety-harness`; it is the only active implementation item. No parallel implementation is authorized and no Sprint is active.
+- MESP-64: Done; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c` after disposable SQL Server LocalDB validation and merged-main regression. No implementation item is active and no Sprint is active.
 - No Sprint is active; MESP-63 was delivered outside a Sprint.
 - MESP-48 and MESP-50 remain explicit performance, retention, privacy, legal-hold, purge, residency, backup and restoration production gates.
 - No physical migration, production/shared database, durable audit provider, OpenTelemetry exporter, production worker, file-storage provider, deployment, Retail POS or future ERP transaction implementation was introduced. MESP-63 is limited to the Angular shell and does not implement business transactions.
-- Current state: MESP-89, MESP-63, MESP-90 and MESP-61 are merged and closed in the repository baseline; MESP-64 is the only active implementation item.
+- Current state: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are merged and closed in the repository baseline; no implementation item is active.
 - MESP-63 implementation baseline: commits `798d15d1aa1e53781df3a2683305e95ac3143890` and `46bf2d30f91ef00e9e450b59b8de0b3a2d34dbab` were merged through PR #14 at `ad9e6a7c40d229b564a7232ca62b3d70ec1fdc15`. The Angular 22/TypeScript standalone workspace provides modular core/features/shared structure, server-issued cookie session bootstrap, in-memory antiforgery token, server-confirmed context loading/switching, bilingual EN/AR direction switching, responsive accessible shell and safe state components. Focused Angular tests pass 8/8; the mocked Playwright Wave 1 smoke journey passes 1/1; production deployment and provider work remain excluded.
 - MESP-89 merged-main validation: Release build passed with 0 warnings and 0 errors; the complete solution suite passed 247 tests with 0 failures and 0 skips, including 17 direct/HTTP production-graph host-security tests and the endpoint metadata/coordinator guard. The merged correction covers catalog-backed exact operation permissions, mandatory protected-write evidence, composite idempotency replay and separate eligibility/selection versions.
-- Production limitations remain explicit: in-memory Identity/session, local append-only audit seam, local idempotency, unavailable MFA/fresh-auth provider, no SQL migration or production provider selection, no durable exporter, no deployment work. MESP-64 owns disposable LocalDB/provider evidence; MESP-48 and MESP-50 remain production gates.
+- Production limitations remain explicit: in-memory Identity/session, local append-only audit seam, local idempotency, unavailable MFA/fresh-auth provider, no SQL migration or production provider selection, no durable exporter, no deployment work. MESP-64 provides disposable LocalDB/provider evidence only; MESP-48 and MESP-50 remain production gates.
 
 ## Completed MESP-90 security correction
 
@@ -50,11 +50,11 @@
   dependency audit also passed. No production provider, migration, purge or
   later ERP work was introduced.
 
-## Active MESP-64 foundation safety harness
+## Completed MESP-64 foundation safety harness
 
-- MESP-64 is **In Progress** and is the only active implementation item on
-  `feature/mesp-64-foundation-safety-harness`, based on merged main
-  `7db49a88e11232f055c2016b8bb033a61de629ec`.
+- MESP-64 is **Done**. Branch `feature/mesp-64-foundation-safety-harness` was
+  based on merged main `7db49a88e11232f055c2016b8bb033a61de629ec`; PR #18
+  merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`.
 - ADR-018 defines the current-machine SQL Server LocalDB strategy: one
   disposable `MiniErpFoundation_*` database, Windows integrated authentication,
   fixture cleanup, no committed secret and no production/shared database.
@@ -64,5 +64,18 @@
   `docs/96_Foundation_Release1_Safety_Validation.md`.
 - Docker/Testcontainers CI compatibility, production sizing, migrations,
   retention, residency, legal hold, purge, provider selection and deployment
-  remain deferred. MESP-48 and MESP-50 are explicit production gates. No Sprint
-  is active and MESP-31 through MESP-40 remain outside scope.
+  remain deferred. MESP-48 and MESP-50 are explicit production gates. No
+  implementation item or Sprint is active and MESP-31 through MESP-40 remain
+  outside scope.
+
+## Foundation Completion Opus 5 checkpoint
+
+- `docs/97_Foundation_Completion_Review_Checkpoint.md` records the complete
+  sequential Foundation chain from MESP-57 through MESP-64, its PR/merge
+  evidence, test totals, capability status, exact maturity boundaries and
+  remaining production gates.
+- The checkpoint is documentation-only and is ready for Opus 5 review. It does
+  not authorize MESP-31, Master Data/Catalog work, a Sprint, MESP-48/MESP-50
+  implementation or production deployment.
+- MESP-48 and MESP-50 remain explicit production gates; no core ERP BRD or
+  implementation item is active.

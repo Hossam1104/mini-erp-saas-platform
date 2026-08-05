@@ -24,13 +24,14 @@ This file is the lightweight ADR index for Release 1. The approved architecture 
 | ADR-018 | Testing environments, SQL Server test containers, and production-like gates | Foundation harness authored and validated; production equivalence deferred | Authored before MESP-64 LocalDB/provider validation; Docker/Testcontainers CI and production-like gates remain separately approved before launch | MESP-64; MESP-38; MESP-48; MESP-50 | [ADR-018](ADR-018_Testing_Environments_SQL_Server_Containers_and_Gates.md) |
 
 ADR-004 is the accepted Foundation Release 1 implementation baseline. ADR-006,
-ADR-007, ADR-008, ADR-009 and ADR-018 are authored for the completed MESP-61
-and active MESP-64 Foundation timing; they establish bounded contracts and
-local/test decisions, not production provider approval. ADR-018 evidence is
-recorded in `docs/96_Foundation_Release1_Safety_Validation.md` and includes
-the exact 75-assertion catalogue, 11 SQL Server tests and 296-test backend
-regression. ADR-002 and ADR-011 remain required before their owning module
-work. ADR-016 remains a production decision for SQL Server Row-Level Security
-adoption or formal deferral. The index controls when each detailed record
-becomes mandatory and prevents production decisions from blocking business
-analysis.
+ADR-007, ADR-008, ADR-009 and ADR-018 were authored for the completed MESP-61
+and MESP-64 Foundation timing; they establish bounded contracts and local/test
+decisions, not production provider approval. ADR-018 evidence is recorded in
+`docs/96_Foundation_Release1_Safety_Validation.md` and includes the exact
+75-assertion catalogue, 11 SQL Server tests and 296-test backend regression.
+The complete sequence and its maturity boundary are recorded in
+`docs/97_Foundation_Completion_Review_Checkpoint.md`. ADR-002 and ADR-011
+remain required before their owning module work. ADR-016 remains a production
+decision for SQL Server Row-Level Security adoption or formal deferral. The
+index controls when each detailed record becomes mandatory and prevents
+production decisions from blocking business analysis.
