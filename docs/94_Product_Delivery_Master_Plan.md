@@ -828,7 +828,7 @@ work.
 ### MESP-91 — Verified work scope and worker authority correction (active, Package 1)
 
 - [x] Confirm MESP-91 is the sole active implementation item; move it to
-  **In Progress** and keep MESP-31, MESP-92 and MESP-93 **To Do**.
+  **In Progress** and keep MESP-31, MESP-92, MESP-93 and MESP-94 **To Do**.
 - [x] Create `fix/MESP-91-verified-work-scope-authority` from the verified
   baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`; keep no Sprint active.
 - [x] Add the narrow Identity-owned organization resolver for an untrusted
@@ -841,16 +841,26 @@ work.
 - [x] Terminally dead-letter authority failures with safe
   `AuthorizationDenied` evidence and never call the handler or protected
   outbox effect after a failed check.
+- [x] Close H91-03: require canonical explicit ordinary `Kind:GUID` scope,
+  reject missing/malformed/marker/broader/sibling scope, and use the current
+  case-bound stored SupportGrant scope as the only SupportGrant authority.
+- [x] Close H91-04: use one exact binding for WorkItemId, Tenant, operation,
+  correlation, Company/Branch/Warehouse boundary, execution TenantContext,
+  path, Membership/SupportGrant, actor and session; defensively recheck it
+  before handler/outbox execution.
+- [x] Add the Identity-only structural issuer allow-list and make mandatory
+  security evidence an operation-descriptor requirement enforced at creation,
+  handler registration, dispatch and live revalidation.
 - [x] Add focused organization-boundary, lifecycle, permission, support-path,
   dead-letter and no-effect regression tests; reconcile the safety catalogue
   and ADR/checkpoint/current-state documentation without changing MESP-48 or
   MESP-50 gates.
 - [x] Complete full validation and review the complete task-related diff:
-  focused durable-work 63/63, backend 321/321 including SQL 11/11, Angular
+  focused durable-work 102/102, backend 360/360 including SQL 11/11, Angular
   27/27, Playwright 4/4, Release build 0 warnings/0 errors and production
   audit 0 vulnerabilities.
-- [ ] Commit and push the correction branch, publish a non-draft PR and leave
-  it open/unmerged for focused ChatGPT security review.
+- [x] Commit and push the correction branch and update the existing non-draft
+  PR #20; leave it open/unmerged for focused ChatGPT security review.
 - [ ] Do not merge, close MESP-91, start MESP-31, start packages 2/3 or begin
   another implementation item until review disposition is recorded.
 
@@ -1332,13 +1342,15 @@ exceptions/timeouts are `ProviderUnavailable` bounded retries, and cancellation
 is a distinct recoverable `Cancelled` outcome. No handler or protected outbox
 effect runs after a failed authority check.
 
-Validation evidence for this correction is **329/329** complete backend tests,
+Validation evidence for this correction is **360/360** complete backend tests,
 **11/11** SQL Server LocalDB probes, **27/27** Angular tests, **4/4** Playwright
 journeys, Release build 0 warnings/0 errors, and production dependency audit 0
 vulnerabilities. The disposable LocalDB/model collation observed was
 `SQL_Latin1_General_CP1_CI_AS`; no disposable Foundation database remained
 after cleanup.
 
+Source/test correction commit `4ed4b0588b613d492ce6c446ae963001b28f0eca` is
+on the dedicated branch against `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`.
 PR #20 remains open, non-draft and unmerged. MESP-91 remains **In Progress**;
 MESP-92, MESP-93, MESP-94 and MESP-31 remain **To Do**. No Sprint, Master Data
 implementation, production provider, migration, Retail POS, Wafra-core,

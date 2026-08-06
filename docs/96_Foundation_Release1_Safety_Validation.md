@@ -43,11 +43,17 @@ ordinary Membership or SupportGrant/SupportCase, exact Permission and current
 scope/ownership. A failed check produces a terminal `AuthorizationDenied`
 dead-letter and safe evidence; no handler or outbox effect is reached. The
 correction evidence is in `DurableWorkAuthorityRevalidationTests` and
-`DurableWorkTests`. The SQL probes remain persistence, lease, transaction and
-idempotency evidence only; they are not worker-authorization evidence.
+`DurableWorkTests`. Ordinary revalidation requires the canonical explicit
+selected scope and never falls back to a Tenant-wide membership grant; a
+SupportGrant revalidation uses the current case-bound stored grant scope rather
+than a context marker. Verified authority binds the exact work, Tenant,
+operation, correlation, organization boundary, execution context, path,
+Membership/SupportGrant, actor and session. The SQL probes remain persistence,
+lease, transaction and idempotency evidence only; they are not
+worker-authorization evidence.
 
-The current correction validation passes the focused durable-work suite 63/63,
-the complete backend suite 321/321, the targeted SQL Server suite 11/11, the
+The current correction validation passes the focused durable-work suite 102/102,
+the complete backend suite 360/360, the targeted SQL Server suite 11/11, the
 Angular suite 27/27 and four Playwright journeys. The Release build has zero
 warnings and zero errors, and the production dependency audit reports zero
 vulnerabilities; the `npm ci` development install reports three moderate
@@ -181,22 +187,23 @@ CI execution remains deferred by ADR-018.
 
 ## MESP-91 focused correction validation overlay
 
-The MESP-91 correction was validated on commit
-`7d3524d42e9ef6501c374dc22bb5cef7482cbdb0` from the dedicated correction
+The MESP-91 correction was validated on source/test commit
+`4ed4b0588b613d492ce6c446ae963001b28f0eca` from the dedicated correction
 branch, against merged-main baseline
 `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. This is an unmerged review
 overlay; it does not change the maturity or production-provider claims above.
 
 | Validation | Exact result | Command/evidence |
 |---|---:|---|
-| Focused durable-work/authority regression | 71 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~DurableWork` |
-| Complete backend suite | 329 passed, 0 failed, 0 skipped | `powershell -ExecutionPolicy Bypass -File .\scripts\validate-foundation.ps1` |
+| Focused durable-work/authority regression | 102 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~DurableWork` |
+| Complete backend suite | 360 passed, 0 failed, 0 skipped | `powershell -ExecutionPolicy Bypass -File .\scripts\validate-foundation.ps1` |
 | SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
 | Backend Release build | 0 warnings, 0 errors | Same validation command |
 | Angular suite | 27 passed, 0 failed, 0 skipped | `npm test -- --watch=false --no-progress` |
 | Angular production build | Passed | `npm run build` |
 | Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
 | Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Structural issuer and mandatory-evidence architecture checks | Passed in focused suite | `DurableWorkTests` syntax-tree allow-list and descriptor policy tests |
 | Safety catalogue | 53 PASS, 21 NOT APPLICABLE, 1 DEFERRED, 0 failed | Existing 75-assertion catalogue; no scope claim changed |
 | Diff check | Passed | `git diff --check` |
 

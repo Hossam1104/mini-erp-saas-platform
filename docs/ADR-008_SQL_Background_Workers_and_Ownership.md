@@ -21,18 +21,27 @@ safe failure evidence.
    optimistic concurrency version. Only one worker can hold an active lease.
 2. The worker/outbox consumer reconstructs a trusted execution context only
    from a server-issued `VerifiedDurableWorkAuthorization`. That result binds
-   the stored Tenant, exact operation descriptor, authorization path,
-   exact organization scope, actor/session and correlation facts after live
-   Identity revalidation through narrow ports. Stored expiry, permission and
-   scope snapshots are evidence only; they are not current authorization.
+   the exact stored WorkItemId and Tenant, operation descriptor, correlation,
+   organization boundary, execution TenantContext, authorization path,
+   Membership or SupportGrant, actor and session after live Identity
+   revalidation through narrow ports. `DurableWorkExecutionContext` defensively
+   repeats the same exact-binding check. Stored expiry, permission and scope
+   snapshots are evidence only; they are not current authorization.
    Identity-owned hierarchy resolution proves Tenant -> Company -> Branch ->
    Warehouse ownership and downward containment. Missing, mismatched or
-   unauthorized context fails closed; there is no fallback Tenant.
+   unauthorized context fails closed; an ordinary context requires a canonical
+   explicit selected scope, while a SupportGrant uses the current case-bound
+   stored grant scope rather than a context marker. There is no fallback Tenant.
    `PlatformGovernanceContext` cannot execute Tenant work.
 3. A dispatcher resolves one typed handler by the authoritative operation
    descriptor, including its exact permission, allowed authorization paths and
-   scope policy. It may inspect only the module-owned envelope needed to
-   claim/execute that work and must not enumerate Tenant business data globally.
+   scope policy and mandatory security-evidence requirement. A descriptor that
+   opts out of mandatory evidence cannot create work, register a handler,
+   dispatch, or produce verified authority. Only the Identity issuer may issue
+   shipping verified authority; a structural architecture test allow-lists that
+   issuer and keeps test-only fixtures in the test project. The dispatcher may
+   inspect only the module-owned envelope needed to claim/execute that work and
+   must not enumerate Tenant business data globally.
 4. Handler outcomes are success, bounded retry or safe dead letter. Expired
    leases can be reclaimed; an active lease cannot be stolen.
 5. MESP-61 implements this seam with a deterministic local adapter. The
@@ -49,7 +58,10 @@ cancellation is a distinct recoverable `Cancelled` outcome. Neither is
 converted into an authorization denial, and the lease/outbox state transition
 uses the minimal detached cancellation token needed to preserve recovery.
 The operation catalogue is the only source of the exact permission and
-handler binding; unknown or mismatched descriptors fail closed. The
+handler binding; unknown, mismatched or non-evidenced descriptors fail closed.
+The focused H91-03/H91-04 regression suite covers missing/malformed ordinary
+scope, support-grant authority, broader/sibling scope and every exact stored
+binding. The
 SQL/MESP-64 probes validate persistence, lease, transaction and idempotency
 behavior only; they are not worker-authorization evidence.
 

@@ -5,7 +5,7 @@
 - MESP-91 (`Enforce verified organization scope and worker authority revalidation in durable work`) is **In Progress** as the sole active implementation item.
 - Branch: `fix/MESP-91-verified-work-scope-authority`, based on expected merged-main baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`; source is not merged.
 - The correction adds an Identity-owned verified Tenant -> Company -> Branch -> Warehouse resolver, authorization-context-bound scopes, and live worker/outbox authority revalidation immediately before handler/effect dispatch. Authority failure is a safe terminal `AuthorizationDenied` dead letter.
-- A non-draft PR is required to remain open and unmerged for focused ChatGPT security review. MESP-31, MESP-92 and MESP-93 remain To Do; no Sprint is active and no next item may start.
+- A non-draft PR is required to remain open and unmerged for focused ChatGPT security review. MESP-31, MESP-92, MESP-93 and MESP-94 remain To Do; no Sprint is active and no next item may start.
 - No production provider, migration, broker, deployment, Retail POS, Wafra-core or ERP domain behavior is introduced. MESP-48 and MESP-50 remain explicit gates.
 
 - Approved merged main baseline after MESP-64: `2002d1c25d39022b227e89b3d70f41a53de0408c` (PR #18 normal merge; MESP-61/PR #17, MESP-90/PR #16, MESP-89/PR #12 and MESP-63/PR #14 remain preserved in history).
@@ -95,16 +95,25 @@
 
 ## MESP-91 focused correction overlay
 
-- The focused correction is implemented in commit
-  `7d3524d42e9ef6501c374dc22bb5cef7482cbdb0` on
-  `fix/MESP-91-verified-work-scope-authority`. It adds the authoritative
-  durable-operation descriptor catalogue, exact permission/path/scope-policy
-  binding, server-issued verified execution authorization, exact-scope worker
-  and outbox dispatch, and distinct denial/provider-unavailable/cancellation
-  outcomes with bounded recovery.
-- The focused durable-work and authority regression set passes **71/71** with
+- The focused correction is implemented in source/test commit
+  `4ed4b0588b613d492ce6c446ae963001b28f0eca` on
+  `fix/MESP-91-verified-work-scope-authority`. It closes H91-03 by requiring
+  OrdinaryMembership revalidation to receive a canonical explicit
+  `Tenant:GUID`, `Company:GUID`, `Branch:GUID` or `Warehouse:GUID` scope;
+  missing, malformed, marker, broader and sibling scopes fail closed. A
+  SupportGrant context does not authorize from its display marker; its current
+  case-bound stored SupportGrant scope remains authoritative.
+- H91-04 is closed by one reusable exact-binding validator covering WorkItemId,
+  Tenant, operation descriptor, correlation, exact Company/Branch/Warehouse
+  boundary, execution TenantContext scope, authorization path, Membership or
+  SupportGrant, actor and session. DurableWorkExecutionContext repeats the
+  same defensive check. Only the Identity issuer is allowed by the structural
+  architecture test to issue shipping verified authority, and the operation
+  descriptor's mandatory security-evidence flag cannot be bypassed at work
+  creation, handler registration, dispatch or live revalidation.
+- The focused durable-work and authority regression set passes **102/102** with
   zero skips. The complete Foundation validation on this overlay passes
-  **329/329** backend tests, **11/11** SQL Server LocalDB probes, **27/27**
+  **360/360** backend tests, **11/11** SQL Server LocalDB probes, **27/27**
   Angular tests, **4/4** Playwright journeys, Release build with 0 warnings
   and 0 errors, and production dependency audit with 0 vulnerabilities.
 - SQL evidence used the disposable `MSSQLLocalDB` instance with Windows

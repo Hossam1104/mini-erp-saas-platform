@@ -22,14 +22,19 @@ downward containment, authorization-context binding for issued scopes, and
 live worker/outbox authority revalidation immediately before handler/effect
 dispatch. Failed current User/session, Membership or SupportGrant/SupportCase,
 Permission, scope or ownership checks terminally dead-letter with safe
-`AuthorizationDenied` evidence. MESP-31 and packages 2/3 (MESP-92/MESP-93)
+`AuthorizationDenied` evidence. MESP-31 and packages 2/3 (MESP-92, MESP-93
+and MESP-94)
 remain To Do and untouched; no Sprint, migration, production provider or
 business-domain implementation is authorized.
 
-Current correction validation is 63/63 focused durable-work tests, 321/321
+Current correction validation is 102/102 focused durable-work tests, 360/360
 backend tests including 11/11 disposable LocalDB SQL tests, 27/27 Angular
 tests and four Playwright journeys. The Release build has zero warnings and
 zero errors; the production dependency audit reports zero vulnerabilities.
+H91-03 now requires canonical explicit ordinary scope and keeps the stored
+case-bound SupportGrant scope authoritative; H91-04 applies one exact binding
+to work, Tenant, operation, correlation, organization scope, execution
+context, path, Membership/SupportGrant, actor and session.
 
 ## Verified baseline
 
@@ -240,14 +245,17 @@ correction closes the focused authorization findings by:
 - removing the unrestricted shipping `ForServerContext` scope factory while
   retaining a test-only fixture issuer through the architecture-test assembly.
 
-The correction validation record is **329/329** complete backend tests,
+The correction validation record is **360/360** complete backend tests,
 **11/11** SQL Server LocalDB probes, **27/27** Angular tests, **4/4** Playwright
 journeys, Release build 0 warnings/0 errors, and production dependency audit 0
 vulnerabilities. The disposable LocalDB/model collation was
 `SQL_Latin1_General_CP1_CI_AS`, and teardown left no `MiniErpFoundation_*`
 database.
 
-This overlay does not close the merge hold: PR #20 remains open, non-draft and
+Source/test correction commit `4ed4b0588b613d492ce6c446ae963001b28f0eca`
+is on the dedicated branch against baseline
+`4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. This overlay does not close the
+merge hold: PR #20 remains open, non-draft and
 unmerged; MESP-91 remains **In Progress**; MESP-92, MESP-93, MESP-94 and
 MESP-31 remain **To Do**. No Sprint, Master Data implementation, production
 provider, migration, MESP-48 or MESP-50 work was started.
