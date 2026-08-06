@@ -421,21 +421,21 @@ public sealed class DurableWorkIdentity
     }
 }
 
-/// <summary>Tenant-owned work item with immutable ownership and typed payload.</summary>
+/// <summary>Tenant-owned work item with immutable ownership and an immutable typed payload envelope.</summary>
 public sealed class DurableWorkItem : ITenantOwned
 {
     private DurableWorkItem(
         DurableWorkIdentity identity,
         DurableWorkInitiator initiator,
         TenantWorkScope scope,
-        IWorkPayload payload,
+        DurableWorkPayloadEnvelope payloadEnvelope,
         int maximumAttempts,
         DateTimeOffset createdAt)
     {
         Identity = identity;
         Initiator = initiator;
         Scope = scope;
-        Payload = payload;
+        PayloadEnvelope = payloadEnvelope;
         MaximumAttempts = maximumAttempts;
         CreatedAt = createdAt;
         UpdatedAt = createdAt;
@@ -452,7 +452,12 @@ public sealed class DurableWorkItem : ITenantOwned
 
     public TenantWorkScope Scope { get; }
 
-    public IWorkPayload Payload { get; }
+    /// <summary>
+    /// Immutable, checksummed snapshot captured at submission time. No original
+    /// caller payload reference is retained; a typed instance is produced only
+    /// by decoding this envelope through the registered payload registry.
+    /// </summary>
+    public DurableWorkPayloadEnvelope PayloadEnvelope { get; }
 
     public int MaximumAttempts { get; }
 
@@ -483,6 +488,7 @@ public sealed class DurableWorkItem : ITenantOwned
         TenantWorkScope scope,
         DurableWorkIdentity identity,
         TPayload payload,
+        IDurableWorkPayloadRegistry payloadRegistry,
         Guid initiatingSessionId,
         int maximumAttempts = 3,
         DateTimeOffset? createdAt = null)
@@ -492,6 +498,7 @@ public sealed class DurableWorkItem : ITenantOwned
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(payload);
+        ArgumentNullException.ThrowIfNull(payloadRegistry);
         if (scope.TenantId != trustedTenantContext.TenantId
             || !scope.IsBoundTo(trustedTenantContext))
         {
@@ -530,7 +537,10 @@ public sealed class DurableWorkItem : ITenantOwned
             throw new ArgumentException("Work correlation must match the trusted context.", nameof(identity));
         }
 
-        return new DurableWorkItem(identity, initiator, scope, payload, maximumAttempts, createdAt ?? DateTimeOffset.UtcNow);
+        // Snapshot immediately: only the immutable encoded envelope is stored.
+        // The caller's original payload reference is never retained.
+        var envelope = payloadRegistry.Capture(payload);
+        return new DurableWorkItem(identity, initiator, scope, envelope, maximumAttempts, createdAt ?? DateTimeOffset.UtcNow);
     }
 
     internal bool IsEligible(TenantContext context, DateTimeOffset now)
@@ -1027,8 +1037,12 @@ public sealed record DurableWorkAuditRecord(
     DurableWorkFailureCategory FailureCategory,
     int AttemptCount);
 
-/// <summary>Transactional, Tenant-bound durable-work seam.</summary>
-public interface IRelationalDurableWorkStore
+/// <summary>
+/// Transactional, Tenant-bound durable-work seam. The Foundation implementation
+/// is a deterministic in-memory local adapter; it is not a relational, SQL-backed,
+/// process-crash-durable, production-ready or distributed exactly-once store.
+/// </summary>
+public interface IDurableWorkStore
 {
     ValueTask<bool> SubmitAsync(DurableWorkItem workItem, CancellationToken cancellationToken = default);
 
@@ -1063,10 +1077,34 @@ public interface IRelationalDurableWorkStore
         CancellationToken cancellationToken = default);
 }
 
-/// <summary>Safe outbox delivery result.</summary>
+/// <summary>
+/// Safe outbox delivery result. <see cref="Delivered"/> means the protected
+/// effect was Applied and will never automatically repeat. <see cref="RetryScheduled"/>
+/// means the effect was proven NotAppliedRetryable and bounded retry may run.
+/// <see cref="OutcomeUnknown"/> means the effect boundary was reached but its
+/// completion could not be proven; it is never automatically repeated and
+/// requires reconciliation.
+/// </summary>
 public sealed record OutboxDispatchResult(
     bool Delivered,
     bool Duplicate,
     bool RetryScheduled,
     bool DeadLettered,
-    DurableWorkFailureCategory FailureCategory);
+    bool OutcomeUnknown,
+    DurableWorkFailureCategory FailureCategory)
+{
+    internal static OutboxDispatchResult NoMessage() =>
+        new(false, false, false, false, false, DurableWorkFailureCategory.None);
+
+    internal static OutboxDispatchResult Applied(bool duplicate) =>
+        new(true, duplicate, false, false, false, DurableWorkFailureCategory.None);
+
+    internal static OutboxDispatchResult NotAppliedRetryable(DurableWorkFailureCategory category) =>
+        new(false, false, true, false, false, category);
+
+    internal static OutboxDispatchResult AsDeadLettered(DurableWorkFailureCategory category) =>
+        new(false, false, false, true, false, category);
+
+    internal static OutboxDispatchResult OutcomeUnknownResult() =>
+        new(false, false, false, false, true, DurableWorkFailureCategory.Unknown);
+}
