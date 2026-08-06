@@ -256,3 +256,28 @@ genuine concurrency, validated alongside the unchanged SQL probes:
 No `MiniErpFoundation_*` database remained after teardown. MESP-92 is **not**
 marked Done by this validation overlay; the PR is opened non-draft and held
 unmerged pending focused ChatGPT security review.
+
+## MESP-92 focused ChatGPT re-review corrections — In Progress
+
+A focused ChatGPT security review of PR #22 raised four further findings —
+H92-01 (effect-purpose/EventId keying), H92-02 (explicit protected-effect
+outcome contract), M92-01 (uncertain reconciliation state) and M92-02
+(payload mutation-hook removal) — corrected on the same branch. This overlay
+is backend-only: no Angular, Playwright or `npm` evidence changed, so the
+frontend rows above remain the prior overlay's evidence and were not re-run
+for this correction. Updated backend evidence:
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused durable-work regression (baseline + all corrections) | 159 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~DurableWork` |
+| Complete backend suite | 417 passed, 0 failed, 0 skipped | `powershell -ExecutionPolicy Bypass -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Architecture enforcement (effect-guard bypass + no bare generic retry) | Passed | `Handler_invocation_is_reachable_only_through_the_effect_executor`, `Protected_effect_boundary_cannot_return_a_bare_generic_retry` |
+| Diff check | Passed | `git diff --check` |
+
+No `MiniErpFoundation_*` database remained after teardown. No PRD file
+appears in the branch diff and the unrelated `local-prd-rename-before-MESP-92`
+stash remains untouched. MESP-92 is **not** marked Done by this overlay; PR
+#22 remains open, non-draft and held unmerged pending a focused ChatGPT
+re-review.

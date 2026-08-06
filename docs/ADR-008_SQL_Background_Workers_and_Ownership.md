@@ -70,20 +70,46 @@ submitted payload is captured immediately into an immutable, checksummed
 envelope through an explicit `IDurableWorkPayloadRegistry`; no original
 caller payload reference is retained, and unknown types, handler/payload
 mismatches, checksum tampering and oversized payloads fail closed before a
-handler runs. The dispatcher resolves a stable `DurableWorkEffectKey`
-(Tenant, WorkItemId, OperationId) and every registered handler invocation is
-routed exclusively through `IDurableWorkEffectExecutor.ExecuteHandlerEffectAsync`
-(architecture-enforced; a handler cannot bypass this while remaining a
-protected durable-work handler). Reservation of that key is the single
-non-reversible boundary: an interruption before it permits bounded retry, and
-any crash, cancellation or completion-recording failure discovered after it
-is recorded `OutcomeUnknown` and never automatically repeated. A duplicate
-dispatch of an already-Completed effect replays the exact recorded safe
-result instead of re-invoking the handler. `InMemoryRelationalDurableWorkStore`/
+handler runs. A focused ChatGPT re-review of PR #22 requires production code
+to expose no payload-mutation fault-injection hook; checksum-corruption is
+exercised only through bounded test-project reflection, and a custom codec's
+encode/decode exception is always wrapped in the safe
+`DurableWorkPayloadException`.
+
+The dispatcher resolves a stable, purpose-qualified `DurableWorkEffectKey`
+(Tenant, `DurableWorkEffectPurpose.Handler`, WorkItemId, OperationId — an
+outbox-purpose key additionally carries the immutable `EventId`), and every
+registered handler invocation is routed exclusively through
+`IDurableWorkEffectExecutor.ExecuteHandlerEffectAsync` (architecture-enforced;
+a handler cannot bypass this while remaining a protected durable-work
+handler). The store's outbox dispatch and the dispatcher's handler execution
+share one authoritative executor
+(`DurableWorkEffectComposition.CreateSharedExecutor()`); the purpose and
+EventId in the key keep the two effect categories independent within that one
+shared guard. Reservation of that key is the single non-reversible boundary:
+an interruption before it permits bounded retry, and the protected callback
+must return an explicit `DurableWorkProtectedEffectResult` outcome —
+`Applied`, `NotAppliedRetryable`, `OutcomeUnknown` or `TerminalNotApplied` —
+so a bare generic retry can never release a reservation after an effect may
+already have run. A caught exception or cancellation observed inside the
+running process after that boundary is recorded `OutcomeUnknown` — a
+dedicated, Tenant-scoped reconciliation lifecycle state, never automatically
+repeated and readable only through
+`IDurableWorkStore.ReadUncertainEffectsAsync` for the exact owning Tenant. A
+duplicate dispatch of an already-Completed effect replays the exact recorded
+safe result instead of re-invoking the handler. `InMemoryRelationalDurableWorkStore`/
 `IRelationalDurableWorkStore` are renamed to `InMemoryDurableWorkStore`/
 `IDurableWorkStore` to remove the misleading relational/SQL-backed
-implication; the local adapter remains an in-memory, non-crash-durable
-Foundation seam only.
+implication.
+
+**Maturity boundary, corrected:** this in-memory adapter preserves only a
+caught post-boundary interruption (an exception or cancellation observed
+inside the running process) as `OutcomeUnknown`. An actual process crash
+loses the adapter's in-memory guard and lifecycle state entirely; that state
+loss is **not** represented as `OutcomeUnknown` or any other recorded
+outcome. Production durable crash recovery remains deferred to a future
+SQL/durable provider; this adapter remains a non-crash-durable Foundation
+seam only.
 
 ## Alternatives considered
 

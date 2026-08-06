@@ -1327,21 +1327,25 @@ Use this section to record major milestones.
 
 > MESP-92 (`Guarantee single-effect durable work execution and immutable
 > typed payloads`) is **In Progress** on branch
-> `fix/MESP-92-single-effect-immutable-payloads`. Its PR is opened non-draft
-> and held unmerged pending focused ChatGPT security review. MESP-93,
-> MESP-94 and MESP-31 remain To Do. Master Data and Catalog, Retail POS and
-> future ERP transaction work remain out of scope. `MESP-48` and `MESP-50`
-> remain explicit production gates. No Sprint is active, and MESP-93,
-> MESP-94 and MESP-31 must not start before MESP-92 closes.
+> `fix/MESP-92-single-effect-immutable-payloads`. PR #22 received a focused
+> ChatGPT security review (H92-01, H92-02, M92-01, M92-02); this overlay
+> records the corrections. PR #22 remains open, non-draft and held unmerged
+> pending a focused ChatGPT re-review. MESP-93, MESP-94 and MESP-31 remain
+> To Do. Master Data and Catalog, Retail POS and future ERP transaction work
+> remain out of scope. `MESP-48` and `MESP-50` remain explicit production
+> gates. No Sprint is active, and MESP-93, MESP-94 and MESP-31 must not
+> start before MESP-92 closes.
 
 ## MESP-92 In Progress — single-effect durable work and immutable payloads
 
 MESP-92 corrects four MESP-91-review findings in the merged durable-work
 seam: H-5 (mutable stored payload references), H-6 (duplicate protected
-effect after crash, cancellation or uncertain completion), M-2 (sequential
-tests presented as concurrency evidence) and L-1 (misleading Relational store
-naming). Branch `fix/MESP-92-single-effect-immutable-payloads` is based on
-merged-main baseline `32a91f27bc162685fc0db0f38b031d02ffbc99d2`.
+effect after a caught post-boundary interruption or uncertain completion),
+M-2 (sequential tests presented as concurrency evidence) and L-1 (misleading
+Relational store naming). Branch `fix/MESP-92-single-effect-immutable-payloads`
+is based on merged-main baseline `32a91f27bc162685fc0db0f38b031d02ffbc99d2`.
+A subsequent focused ChatGPT security review of PR #22 raised four further
+findings — H92-01, H92-02, M92-01 and M92-02 — corrected below.
 
 An explicitly registered `IDurableWorkPayloadRegistry`/`IDurableWorkPayloadCodec<TPayload>`
 pair converts every submitted payload immediately into an immutable,
@@ -1350,20 +1354,46 @@ caller's original payload reference; every external byte access and every
 handler decode returns an independent defensive copy. Unknown payload types,
 handler/payload mismatches, checksum tampering and oversized or malformed
 payloads fail closed before a handler executes, and payload bytes never
-appear in audit or evidence.
+appear in audit or evidence. M92-02 removes the production
+`TamperForValidation()` fault-injection hook; checksum-corruption tests use
+bounded reflection in the test project instead, and a custom codec's
+encode/decode exception is always wrapped in the safe
+`DurableWorkPayloadException` with no original message, CLR type name or
+payload-controlled data exposed.
 
-A server-owned `DurableWorkEffectKey` (Tenant, WorkItemId, OperationId) is
-guarded by `IDurableWorkEffectGuard`/`IDurableWorkEffectExecutor`.
-Reservation is the single non-reversible boundary: every registered handler
+A server-owned `DurableWorkEffectKey` guards one protected effect.
+H92-01 namespaces that key with an explicit `DurableWorkEffectPurpose`
+(`Handler` or `Outbox`) and, for an outbox effect, the immutable `EventId`,
+so a handler effect and an outbox effect for the identical
+Tenant/WorkItemId/OperationId can never suppress each other even when both
+are guarded by the same shared `IDurableWorkEffectExecutor` — the one
+application-level authoritative composition seam is
+`DurableWorkEffectComposition.CreateSharedExecutor()`. Reservation of that
+key remains the single non-reversible boundary: every registered handler
 invocation and every outbox effect is routed exclusively through
 `ExecuteHandlerEffectAsync`, which a normal handler cannot bypass
-(architecture-enforced). An interruption discovered before that boundary
-permits bounded retry; any crash, cancellation or state-recording failure
-discovered after it yields `OutcomeUnknown` and is never automatically
-retried. Completed effects replay their exact recorded safe result on
-duplicate dispatch. Outbox delivery now reports explicit `Delivered`
-(Applied), `RetryScheduled` (NotAppliedRetryable) or `OutcomeUnknown`
-outcomes.
+(architecture-enforced). H92-02 replaces the generic `DurableWorkHandlerResult`
+returned from inside that boundary with an explicit
+`DurableWorkProtectedEffectResult` outcome — `Applied`, `NotAppliedRetryable`,
+`OutcomeUnknown` or `TerminalNotApplied` — so a bare generic retry can no
+longer release a reservation after an effect may already have run; only an
+explicit `NotAppliedRetryable` outcome releases it. An interruption
+discovered before the reservation boundary permits bounded retry; a caught
+exception or cancellation observed inside the running process after that
+boundary yields `OutcomeUnknown` and is never automatically retried.
+Completed effects replay their exact recorded safe result on duplicate
+dispatch. Outbox delivery now reports explicit `Delivered` (Applied),
+`RetryScheduled` (NotAppliedRetryable), `DeadLettered` (TerminalNotApplied or
+an exhausted retry budget) or `OutcomeUnknown` outcomes.
+
+M92-01 makes `DurableWorkLifecycle.OutcomeUnknown` a dedicated, Tenant-scoped
+reconciliation state for both handler work items and outbox messages: normal
+polling never selects it, the generic outbox redelivery/replay hook refuses
+to restart it, and audit records the safe `work.outcome-unknown`/
+`outbox.outcome-unknown` events with no payload or provider exception text.
+`IDurableWorkStore.ReadUncertainEffectsAsync` is a read-only, Tenant-scoped
+reconciliation port; another Tenant cannot read or reconcile it, and no
+production reconciliation UI or provider decision is implemented.
 
 Genuine concurrency evidence uses `Barrier`-synchronized concurrent Tasks to
 prove: one lease winner under active and expired-lease contention; one
@@ -1373,21 +1403,23 @@ lease reclaim; and one effect from concurrent duplicate submissions.
 `IRelationalDurableWorkStore`/`InMemoryRelationalDurableWorkStore` are
 renamed to `IDurableWorkStore`/`InMemoryDurableWorkStore`; the type no longer
 implies relational, SQL-backed, process-crash-durable, production-ready or
-distributed exactly-once behavior.
+distributed exactly-once behavior. This adapter preserves only a caught
+post-boundary interruption as `OutcomeUnknown`; an actual process crash loses
+its in-memory guard and lifecycle state entirely and is not represented as
+`OutcomeUnknown` or any other recorded outcome. Production durable crash
+recovery remains deferred to a future SQL/durable provider.
 
 Validation on this branch: Release build **0 warnings/0 errors**; focused
-DurableWork suite **136/136** passed; full backend regression **394/394**
+DurableWork suite **159/159** passed; full backend regression **417/417**
 passed including **11/11** SQL Server LocalDB probes with no
-`MiniErpFoundation_*` database remaining after teardown; Angular **27/27**
-passed and the production build passed; Playwright **4/4** journeys passed;
-production dependency audit **0 vulnerabilities**.
+`MiniErpFoundation_*` database remaining after teardown.
 
-MESP-92 is **not** marked Done by this update. The PR is opened non-draft and
-held unmerged for focused ChatGPT security review of payload immutability,
-protected-effect idempotency, uncertain-completion handling and genuine
-concurrent execution. No broker, production SQL work store, production
-worker deployment, migration, Master Data implementation, MESP-48 or MESP-50
-work was introduced.
+MESP-92 is **not** marked Done by this update. PR #22 is opened non-draft and
+held unmerged for a focused ChatGPT re-review of the effect-purpose keying,
+the explicit protected-effect outcome contract, the uncertain reconciliation
+state and the payload mutation-hook removal. No broker, production SQL work
+store, production worker deployment, migration, Master Data implementation,
+MESP-48 or MESP-50 work was introduced.
 
 ## MESP-91 Correction Package 1 — merged and Done
 

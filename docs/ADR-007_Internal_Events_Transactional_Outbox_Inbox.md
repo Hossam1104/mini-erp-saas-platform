@@ -44,29 +44,50 @@ scope, survive duplicate delivery, and remain practical for a single developer.
 ## MESP-92 single-effect correction (In Progress)
 
 The inbox uniqueness marker described in point 2 is superseded by a
-server-owned `DurableWorkEffectKey` (Tenant, WorkItemId, OperationId) guarded
-by `IDurableWorkEffectGuard`/`IDurableWorkEffectExecutor`. Reservation of
-that key is the single non-reversible boundary; a protected effect is
-acknowledged as `Applied` (recorded Completed, never repeats) only after the
-effect callback returns normally. Outbox dispatch now reports one of three
-explicit outcomes:
+server-owned `DurableWorkEffectKey` guarded by
+`IDurableWorkEffectGuard`/`IDurableWorkEffectExecutor`. Reservation of that
+key is the single non-reversible boundary; a protected effect is acknowledged
+as `Applied` (recorded Completed, never repeats) only after the effect
+callback returns an explicit `DurableWorkProtectedEffectResult.Applied`
+outcome. Outbox dispatch now reports one of four explicit outcomes:
 
 - **Applied** — the effect ran (or was proven already Completed) and is
   recorded so duplicate delivery safely replays the same result without
   repeating the effect.
-- **NotAppliedRetryable** — the effect is proven not to have started (for
-  example, a live-authority provider outage or cancellation before the
-  reservation boundary); bounded retry may run.
-- **OutcomeUnknown** — the effect boundary was reached but a crash,
-  cancellation or completion-recording failure means its outcome cannot be
-  proven; delivery is never automatically repeated and requires
-  reconciliation.
+- **NotAppliedRetryable** — the provider/handler positively confirms the
+  effect did not occur (for example, a live-authority provider outage or
+  cancellation before the reservation boundary, or an explicit provider
+  report after it); bounded retry may run. A generic retry alone is never
+  sufficient: only this explicit outcome may release a reservation.
+- **TerminalNotApplied** — the effect is proven not to have started and will
+  never succeed; a safe terminal result is recorded and never repeated.
+- **OutcomeUnknown** — the effect boundary was reached but a caught
+  exception, cancellation or completion-recording failure observed inside
+  the running process means its outcome cannot be proven; delivery moves to
+  the dedicated, Tenant-scoped `DurableWorkLifecycle.OutcomeUnknown`
+  reconciliation state, is never automatically repeated by normal polling or
+  generic redelivery, and requires explicit reconciliation through
+  `IDurableWorkStore.ReadUncertainEffectsAsync`. An actual process crash
+  loses this in-memory adapter's guard and lifecycle state entirely and is
+  **not** represented as `OutcomeUnknown` or any other recorded outcome;
+  production durable crash recovery remains deferred to a future SQL/durable
+  provider.
 
-The same effect key and guard protect both the outbox effect path and the
-direct worker/dispatcher handler path, so a duplicate submission or a
-concurrent redelivery across either path still produces exactly one effect
-invocation. Provider exception text is never persisted in outbox or audit
-evidence; only a safe, bounded category and reason are recorded.
+### H92-01 — effect-purpose and EventId keying
+
+`DurableWorkEffectKey` carries a server-owned `DurableWorkEffectPurpose`
+(`Handler` or `Outbox`) in addition to Tenant, WorkItemId and OperationId; an
+outbox-purpose key also carries the immutable `EventId`. This keeps a handler
+effect and an outbox effect for the identical Tenant/WorkItemId/OperationId
+independent even when both are guarded by the same shared executor, while
+redelivery of the same outbox `EventId` still resolves to the same key and
+two different `EventId`s remain independent. The same effect key and one
+shared guard (`DurableWorkEffectComposition.CreateSharedExecutor()`) protect
+both the outbox effect path and the direct worker/dispatcher handler path, so
+a duplicate submission or a concurrent redelivery across either path still
+produces exactly one effect invocation per purpose. Provider exception text
+is never persisted in outbox or audit evidence; only a safe, bounded category
+and reason are recorded.
 
 ## Consequences and guardrails
 

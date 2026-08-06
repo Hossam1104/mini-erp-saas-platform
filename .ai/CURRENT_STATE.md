@@ -6,6 +6,9 @@
   payloads`) is **In Progress** on branch
   `fix/MESP-92-single-effect-immutable-payloads`, based on merged-main baseline
   `32a91f27bc162685fc0db0f38b031d02ffbc99d2` (MESP-91 Done through PR #20/#21).
+  PR #22 received a focused ChatGPT security review that raised H92-01,
+  H92-02, M92-01 and M92-02; this overlay records the corrections. PR #22
+  remains open, non-draft and unmerged pending a focused ChatGPT re-review.
 - H-5 is closed: submission immediately snapshots every payload into an
   immutable, checksummed `DurableWorkPayloadEnvelope` through an explicit
   `IDurableWorkPayloadRegistry`/`IDurableWorkPayloadCodec<TPayload>` pair. No
@@ -16,16 +19,40 @@
   handler runs. Payload type selection is a bounded registry-table lookup, not
   CLR reflection over payload-controlled data, and payload bytes never appear
   in audit or evidence.
-- H-6 is closed: a server-owned `DurableWorkEffectKey` (Tenant, WorkItemId,
-  OperationId) is guarded by `IDurableWorkEffectGuard`/`IDurableWorkEffectExecutor`.
-  Reservation is the single non-reversible boundary — every registered handler
+- H-6 is closed and H92-01/H92-02 correct it further: `DurableWorkEffectKey`
+  now carries a server-owned `DurableWorkEffectPurpose` (`Handler` or
+  `Outbox`) plus, for an outbox effect, the immutable `EventId`, so a handler
+  effect and an outbox effect for the identical Tenant/WorkItemId/OperationId
+  never collide even when both are guarded by the same shared
+  `IDurableWorkEffectExecutor` (`DurableWorkEffectComposition.CreateSharedExecutor()`
+  is the one application-level authoritative composition seam). Reservation
+  remains the single non-reversible boundary — every registered handler
   invocation and every outbox effect is routed exclusively through
-  `ExecuteHandlerEffectAsync` (architecture-enforced; a handler cannot bypass
-  the guard while remaining a protected durable-work handler). A crash,
-  cancellation or state-recording failure discovered after that boundary
-  yields `OutcomeUnknown` and is never automatically retried; only an
-  interruption provably before the boundary permits bounded retry. Completed
-  effects replay their exact recorded safe result on duplicate dispatch.
+  `ExecuteHandlerEffectAsync` (architecture-enforced). The protected callback
+  now returns an explicit `DurableWorkProtectedEffectResult` outcome —
+  `Applied`, `NotAppliedRetryable`, `OutcomeUnknown` or `TerminalNotApplied` —
+  instead of a generic `DurableWorkHandlerResult`; a bare generic retry can no
+  longer release a reservation after an effect may already have run. A
+  caught exception or cancellation observed inside the running process after
+  the reservation boundary yields `OutcomeUnknown` and is never automatically
+  retried; only an interruption provably before the boundary permits bounded
+  retry. Completed effects replay their exact recorded safe result on
+  duplicate dispatch.
+- M92-01 is closed: `DurableWorkLifecycle.OutcomeUnknown` is a dedicated,
+  Tenant-scoped reconciliation state for both handler work items and outbox
+  messages — normal polling never selects it, the generic outbox
+  redelivery/replay hook refuses to restart it, and audit records the safe
+  `work.outcome-unknown`/`outbox.outcome-unknown` events with no payload or
+  provider exception text. `IDurableWorkStore.ReadUncertainEffectsAsync`
+  is a read-only, Tenant-scoped reconciliation port; another Tenant cannot
+  read or reconcile it. No production reconciliation UI or provider decision
+  is implemented.
+- M92-02 is closed: the production `DurableWorkPayloadEnvelope.TamperForValidation()`
+  fault-injection hook is removed; checksum-corruption tests use bounded
+  reflection over the private backing field in the test project instead. A
+  custom payload codec's encode/decode exception is always wrapped in the
+  safe `DurableWorkPayloadException`; the original message, CLR type name and
+  any payload-controlled data are never surfaced or audited.
 - M-2 is closed: `Barrier`-synchronized genuinely concurrent Tasks prove one
   lease winner under active/expired-lease contention, one effect winner under
   concurrent reservation, stale-completion rejection after reclaim, and one
@@ -35,26 +62,28 @@
   its documentation no longer imply relational, SQL-backed, process-crash
   durable, production-ready or distributed exactly-once behavior.
 - Outbox delivery now reports explicit `Delivered` (Applied — never repeats),
-  `RetryScheduled` (NotAppliedRetryable — bounded retry) or `OutcomeUnknown`
-  (never automatically repeats; requires reconciliation) outcomes on
-  `OutboxDispatchResult`.
-- Maturity boundary (unchanged scope, restated): immutable payload snapshot
-  and stable work/effect identities are Foundation-local guarantees; one
-  automatic protected-effect execution is guaranteed only within this local,
-  in-memory, non-crash-durable seam; production distributed exactly-once
-  delivery remains deferred; no production SQL work store, broker or
+  `RetryScheduled` (NotAppliedRetryable — bounded retry), `DeadLettered`
+  (TerminalNotApplied or an exhausted retry budget — never repeats) or
+  `OutcomeUnknown` (never automatically repeats; requires reconciliation)
+  outcomes on `OutboxDispatchResult`.
+- Maturity boundary, corrected: this Foundation adapter preserves a caught
+  post-boundary interruption (an exception or cancellation observed inside
+  the running process) as `OutcomeUnknown`. An actual process crash loses
+  this adapter's in-memory guard and lifecycle state entirely — it is not
+  represented as `OutcomeUnknown` or any other recorded outcome. Immutable
+  payload snapshot and stable work/effect identities are Foundation-local
+  guarantees; one automatic protected-effect execution is guaranteed only
+  within this local, in-memory, non-crash-durable seam; production durable
+  crash recovery and distributed exactly-once delivery remain deferred to a
+  future SQL/durable provider; no production SQL work store, broker or
   production worker exists.
 - Validation on this branch: Release build **0 warnings/0 errors**; focused
-  DurableWork suite **136/136** passed (102 MESP-91-baseline + 34 new
-  payload/effect/concurrency/outbox tests); full backend regression
-  **394/394** passed, including **11/11** SQL Server LocalDB probes (no
-  `MiniErpFoundation_*` database remained after teardown); Angular **27/27**
-  passed and the production build passed; Playwright **4/4** journeys passed;
-  `npm audit --omit=dev --audit-level=high` reported **0 vulnerabilities**.
-  MESP-92 is not marked Done; the PR is opened non-draft and held unmerged
-  for focused ChatGPT security review. MESP-93, MESP-94 and MESP-31 remain
-  To Do; no Sprint is active; MESP-48 and MESP-50 remain explicit production
-  gates.
+  DurableWork suite **159/159** passed; full backend regression **417/417**
+  passed, including **11/11** SQL Server LocalDB probes (no
+  `MiniErpFoundation_*` database remained after teardown). MESP-92 is not
+  marked Done; PR #22 is open, non-draft and held unmerged for a focused
+  ChatGPT re-review. MESP-93, MESP-94 and MESP-31 remain To Do; no Sprint is
+  active; MESP-48 and MESP-50 remain explicit production gates.
 
 ## MESP-91 correction overlay — merged and Done
 

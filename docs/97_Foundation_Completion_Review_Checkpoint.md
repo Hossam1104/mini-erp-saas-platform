@@ -18,27 +18,50 @@ MESP-92 is **In Progress** on branch
 `fix/MESP-92-single-effect-immutable-payloads`, based on merged-main baseline
 `32a91f27bc162685fc0db0f38b031d02ffbc99d2`. It corrects four MESP-91-review
 findings: H-5 (mutable stored payload references), H-6 (duplicate protected
-effect after crash, cancellation or uncertain completion), M-2 (sequential
-tests presented as concurrency evidence) and L-1 (misleading Relational store
-naming). It does not reopen or change the disposition of MESP-91.
+effect after a caught post-boundary interruption or uncertain completion),
+M-2 (sequential tests presented as concurrency evidence) and L-1 (misleading
+Relational store naming). It does not reopen or change the disposition of
+MESP-91.
 
-Required maturity boundary for this correction: immutable payload snapshot
-and stable work/effect identities are guaranteed; one automatic
+A focused ChatGPT security review of PR #22 raised four further findings,
+now corrected on this branch: H92-01 (effect keys collided across handler and
+outbox purposes — the key now carries an explicit purpose and, for outbox,
+the immutable EventId, and one shared `IDurableWorkEffectExecutor` is the
+single application-level authoritative guard); H92-02 (a generic retry
+returned after reservation could release a guard whose effect may already
+have run — the protected callback now returns an explicit
+`DurableWorkProtectedEffectResult` outcome: Applied, NotAppliedRetryable,
+OutcomeUnknown or TerminalNotApplied); M92-01 (uncertain effects now enter
+the dedicated, Tenant-scoped `DurableWorkLifecycle.OutcomeUnknown`
+reconciliation state, excluded from normal polling and generic
+redelivery/replay, readable only through the Tenant-scoped
+`ReadUncertainEffectsAsync` port); and M92-02 (the production
+`TamperForValidation()` payload-mutation hook is removed, checksum-corruption
+testing moved to bounded test-project reflection, and custom codec
+exceptions are always wrapped in the safe `DurableWorkPayloadException`).
+PR #22 remains open, non-draft and unmerged pending a focused ChatGPT
+re-review of these corrections.
+
+Required maturity boundary for this correction, corrected: immutable payload
+snapshot and stable work/effect identities are guaranteed; one automatic
 protected-effect execution is guaranteed only within the local, in-memory,
-non-crash-durable Foundation seam; uncertain effects are recorded
-`OutcomeUnknown` and are never automatically repeated; production
-distributed exactly-once delivery remains deferred; no production SQL work
-store, broker or production worker exists.
+non-crash-durable Foundation seam. This adapter preserves a caught
+post-boundary interruption — an exception or cancellation observed inside
+the running process after the reservation boundary — as `OutcomeUnknown`,
+never automatically repeated. An actual process crash loses this adapter's
+in-memory guard and lifecycle state entirely; that state loss is **not**
+represented as `OutcomeUnknown` or any other recorded outcome. Production
+durable crash recovery and distributed exactly-once delivery remain deferred
+to a future SQL/durable provider; no production SQL work store, broker or
+production worker exists.
 
 Validation on this branch: Release build **0 warnings/0 errors**; focused
-DurableWork suite **136/136** passed; full backend regression **394/394**
+DurableWork suite **159/159** passed; full backend regression **417/417**
 passed including **11/11** SQL Server LocalDB probes with no
-`MiniErpFoundation_*` database remaining after teardown; Angular **27/27**
-passed and the production build passed; Playwright **4/4** journeys passed;
-production dependency audit **0 vulnerabilities**.
+`MiniErpFoundation_*` database remaining after teardown.
 
-MESP-92 is not marked Done by this checkpoint update. The PR is opened
-non-draft and held unmerged pending focused ChatGPT security review.
+MESP-92 is not marked Done by this checkpoint update. PR #22 is opened
+non-draft and held unmerged pending a focused ChatGPT re-review.
 
 ## MESP-91 correction overlay — merged and Done
 
