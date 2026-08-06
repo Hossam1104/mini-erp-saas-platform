@@ -39,8 +39,33 @@ redelivery/replay, readable only through the Tenant-scoped
 `TamperForValidation()` payload-mutation hook is removed, checksum-corruption
 testing moved to bounded test-project reflection, and custom codec
 exceptions are always wrapped in the safe `DurableWorkPayloadException`).
-PR #22 remains open, non-draft and unmerged pending a focused ChatGPT
-re-review of these corrections.
+
+A second focused ChatGPT security review of PR #22 raised five further
+findings, now corrected on this branch: H92-03 (the production API still
+permitted the store, the dispatcher and a second dispatcher to each receive
+an independent effect executor — `DurableWorkLocalRuntime.Create(...)` is now
+the single approved composition entry point, the guard/executor/store/
+dispatcher constructors are all `internal`, and a syntax-tree architecture
+test proves no other shipping construction site exists); H92-04
+(`ReadUncertainEffectsAsync` filtered only by TenantId, so a same-Tenant
+context could read a sibling Company's, Branch's or Warehouse's uncertain
+effects — it now requires a server-issued
+`VerifiedDurableWorkReconciliationAuthorization` that live-revalidates actor,
+session, Membership-or-SupportGrant validity and a dedicated
+`work.reconciliation.read` permission, reusing the identical
+organization-scope containment logic as MESP-91 dispatch revalidation);
+M92-03 (`DurableWorkUncertainEffectRecord` now carries the exact
+`DurableWorkEffectKey`, verified `TenantWorkScope`, actual `OutcomeUnknownAt`
+and a preserved safe reason, instead of reusing `NextAttemptAt` and a
+hard-coded reason); M92-04 (every codec exception, including one raised as
+`DurableWorkPayloadException` itself, is normalized to the registry's own
+fixed safe message, and the exception's constructor is now `internal`); and
+L92-01 (the `OutcomeUnknown`/`IDurableWorkEffectExecutor` documentation now
+distinguishes a caught post-boundary exception, cancellation, provider
+uncertainty or completion-recording failure from an actual process crash,
+which is not represented as any recorded outcome). PR #22 remains open,
+non-draft and unmerged pending a further focused ChatGPT re-review of these
+corrections.
 
 Required maturity boundary for this correction, corrected: immutable payload
 snapshot and stable work/effect identities are guaranteed; one automatic
@@ -55,13 +80,16 @@ durable crash recovery and distributed exactly-once delivery remain deferred
 to a future SQL/durable provider; no production SQL work store, broker or
 production worker exists.
 
-Validation on this branch: Release build **0 warnings/0 errors**; focused
-DurableWork suite **159/159** passed; full backend regression **417/417**
-passed including **11/11** SQL Server LocalDB probes with no
-`MiniErpFoundation_*` database remaining after teardown.
+Validation on this branch after the second focused-review correction: Release
+build **0 warnings/0 errors**; focused DurableWork suite **199/199** passed;
+full backend regression **457/457** passed including **11/11** SQL Server
+LocalDB probes with no `MiniErpFoundation_*` database remaining after
+teardown; Angular unit tests **27/27** passed; Angular production build
+succeeded; Playwright **4/4** passed; `npm audit --omit=dev
+--audit-level=high` reported **0** vulnerabilities.
 
 MESP-92 is not marked Done by this checkpoint update. PR #22 is opened
-non-draft and held unmerged pending a focused ChatGPT re-review.
+non-draft and held unmerged pending a further focused ChatGPT re-review.
 
 ## MESP-91 correction overlay — merged and Done
 

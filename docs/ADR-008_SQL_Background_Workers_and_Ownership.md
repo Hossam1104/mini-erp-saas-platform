@@ -83,8 +83,12 @@ registered handler invocation is routed exclusively through
 `IDurableWorkEffectExecutor.ExecuteHandlerEffectAsync` (architecture-enforced;
 a handler cannot bypass this while remaining a protected durable-work
 handler). The store's outbox dispatch and the dispatcher's handler execution
-share one authoritative executor
-(`DurableWorkEffectComposition.CreateSharedExecutor()`); the purpose and
+share one authoritative executor, obtained only through the single approved
+composition entry point `DurableWorkLocalRuntime.Create(operationCatalogue,
+payloadRegistry)` (H92-03 focused review correction: it is the only place
+shipping code may construct the guard, executor, store or dispatcher, all
+four constructors now being `internal`, and a syntax-tree architecture test
+proves no other shipping construction site exists); the purpose and
 EventId in the key keep the two effect categories independent within that one
 shared guard. Reservation of that key is the single non-reversible boundary:
 an interruption before it permits bounded retry, and the protected callback
@@ -95,8 +99,11 @@ already have run. A caught exception or cancellation observed inside the
 running process after that boundary is recorded `OutcomeUnknown` — a
 dedicated, Tenant-scoped reconciliation lifecycle state, never automatically
 repeated and readable only through
-`IDurableWorkStore.ReadUncertainEffectsAsync` for the exact owning Tenant. A
-duplicate dispatch of an already-Completed effect replays the exact recorded
+`IDurableWorkStore.ReadUncertainEffectsAsync`, which requires a server-issued
+`VerifiedDurableWorkReconciliationAuthorization` scoped to the exact
+Tenant/Company/Branch/Warehouse boundary and its verified descendants only
+(H92-04 focused review correction; a sibling organization is never visible).
+A duplicate dispatch of an already-Completed effect replays the exact recorded
 safe result instead of re-invoking the handler. `InMemoryRelationalDurableWorkStore`/
 `IRelationalDurableWorkStore` are renamed to `InMemoryDurableWorkStore`/
 `IDurableWorkStore` to remove the misleading relational/SQL-backed

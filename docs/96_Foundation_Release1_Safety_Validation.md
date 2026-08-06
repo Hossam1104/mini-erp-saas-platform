@@ -281,3 +281,45 @@ appears in the branch diff and the unrelated `local-prd-rename-before-MESP-92`
 stash remains untouched. MESP-92 is **not** marked Done by this overlay; PR
 #22 remains open, non-draft and held unmerged pending a focused ChatGPT
 re-review.
+
+## MESP-92 second focused ChatGPT re-review corrections — In Progress
+
+A second focused ChatGPT security review of PR #22 raised five further
+findings — H92-03 (structurally enforced single effect ledger via
+`DurableWorkLocalRuntime`), H92-04 (exact-scope reconciliation-read
+authorization via `VerifiedDurableWorkReconciliationAuthorization`), M92-03
+(exact uncertain-effect identity via `DurableWorkEffectKey`/`TenantWorkScope`),
+M92-04 (custom codec exception normalization) and L92-01 (crash terminology
+correction) — corrected on the same branch. This round re-ran the complete
+backend and frontend validation pipeline:
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused durable-work regression (baseline + all corrections) | 199 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~DurableWork` |
+| Complete backend suite | 457 passed, 0 failed, 0 skipped | `powershell -ExecutionPolicy Bypass -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped | `npm test -- --watch=false` |
+| Angular production build | Passed | `npm run build` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Architecture enforcement (single-ledger composition allow-list) | Passed | `Shipping_construction_of_the_ledger_types_occurs_only_inside_the_approved_composition` |
+| Diff check | Passed | `git diff --check` |
+
+New focused evidence lives in `DurableWorkLocalRuntimeCompositionTests`
+(H92-03: structural construction restriction, one-shared-executor and
+one-ledger-per-composition-call proof) and
+`DurableWorkReconciliationAuthorizationTests` (H92-04 exact-scope
+authorization matrix across Tenant/Company/Branch/Warehouse siblings, missing
+permission, expired session, suspended Membership, expired/revoked
+SupportGrant and missing selected scope; M92-03 exact identity, safe-reason
+preservation and immutability). M92-04 evidence extends
+`DurableWorkPayloadAndEffectTests`. No new SQL Server schema, index,
+transaction or lease probe was introduced; the existing 75-assertion safety
+catalogue disposition is unchanged.
+
+No `MiniErpFoundation_*` database remained after teardown. No PRD file
+appears in the branch diff and the unrelated `local-prd-rename-before-MESP-92`
+stash remains untouched. MESP-92 is **not** marked Done by this overlay; PR
+#22 remains open, non-draft and held unmerged pending a further focused
+ChatGPT re-review.

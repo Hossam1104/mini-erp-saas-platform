@@ -82,12 +82,47 @@ effect and an outbox effect for the identical Tenant/WorkItemId/OperationId
 independent even when both are guarded by the same shared executor, while
 redelivery of the same outbox `EventId` still resolves to the same key and
 two different `EventId`s remain independent. The same effect key and one
-shared guard (`DurableWorkEffectComposition.CreateSharedExecutor()`) protect
-both the outbox effect path and the direct worker/dispatcher handler path, so
-a duplicate submission or a concurrent redelivery across either path still
-produces exactly one effect invocation per purpose. Provider exception text
-is never persisted in outbox or audit evidence; only a safe, bounded category
-and reason are recorded.
+shared guard protect both the outbox effect path and the direct
+worker/dispatcher handler path, so a duplicate submission or a concurrent
+redelivery across either path still produces exactly one effect invocation
+per purpose. Provider exception text is never persisted in outbox or audit
+evidence; only a safe, bounded category and reason are recorded.
+
+### H92-03 — one structurally enforced composition (focused review correction)
+
+`DurableWorkEffectComposition.CreateSharedExecutor()` produced a new,
+independent ledger on every call, so the production API previously permitted
+the store, the dispatcher and a second dispatcher to each receive a different
+executor. `DurableWorkLocalRuntime.Create(operationCatalogue, payloadRegistry)`
+is now the single approved composition entry point: it is the only place
+shipping code may construct `InMemoryDurableWorkEffectGuard`,
+`DurableWorkEffectExecutor`, `InMemoryDurableWorkStore` or
+`DurableWorkDispatcher` (all four constructors are `internal`), and it
+supplies the identical executor instance to the store and dispatcher it
+returns. A syntax-tree architecture test scans all of `src/MiniErp.App` and
+fails if any of those four types is constructed anywhere outside
+`DurableWorkLocalRuntime.cs`.
+
+### H92-04 — exact-scope reconciliation authorization (focused review correction)
+
+`ReadUncertainEffectsAsync(TenantContext)` previously filtered only by
+TenantId, so any same-Tenant context could see uncertain-effect records
+belonging to a sibling Company, Branch or Warehouse. The port now takes a
+server-issued `VerifiedDurableWorkReconciliationAuthorization`, issued only by
+`IDurableWorkReconciliationAuthorizer` after live-revalidating actor, session,
+Membership-or-SupportGrant validity and a dedicated catalogue-backed
+`work.reconciliation.read` permission, reusing the identical
+organization-scope ownership/containment logic as MESP-91 dispatch
+revalidation. A missing or malformed selected scope fails closed, and
+`PlatformGovernanceContext` has no path into this authorizer.
+
+### M92-03 — exact uncertain-effect identity (focused review correction)
+
+`DurableWorkUncertainEffectRecord` now carries the exact
+`DurableWorkEffectKey` (so `OperationId` is always present and `EventId` is
+present only for an Outbox-purpose record), the exact verified
+`TenantWorkScope`, the actual `OutcomeUnknownAt` transition time and a
+preserved safe reason, instead of `NextAttemptAt` and a hard-coded reason.
 
 ## Consequences and guardrails
 

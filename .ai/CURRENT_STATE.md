@@ -6,9 +6,57 @@
   payloads`) is **In Progress** on branch
   `fix/MESP-92-single-effect-immutable-payloads`, based on merged-main baseline
   `32a91f27bc162685fc0db0f38b031d02ffbc99d2` (MESP-91 Done through PR #20/#21).
-  PR #22 received a focused ChatGPT security review that raised H92-01,
-  H92-02, M92-01 and M92-02; this overlay records the corrections. PR #22
-  remains open, non-draft and unmerged pending a focused ChatGPT re-review.
+  PR #22 received a first focused ChatGPT security review that raised H92-01,
+  H92-02, M92-01 and M92-02 (closed in the prior overlay entry below), then a
+  second focused ChatGPT review that raised H92-03, H92-04, M92-03, M92-04 and
+  L92-01; this entry records that second round of corrections. PR #22 remains
+  open, non-draft and unmerged pending a further focused ChatGPT re-review.
+- H92-03 is closed: `DurableWorkEffectComposition.CreateSharedExecutor()` is
+  removed. `DurableWorkLocalRuntime.Create(operationCatalogue, payloadRegistry)`
+  is the single approved composition entry point; it is the only place
+  allowed to construct `InMemoryDurableWorkEffectGuard`,
+  `DurableWorkEffectExecutor`, `InMemoryDurableWorkStore` and
+  `DurableWorkDispatcher` (all four constructors are now `internal`), and it
+  supplies the identical executor instance to the store and the dispatcher.
+  `InMemoryDurableWorkStore`'s optional self-creating executor parameter is
+  removed; an executor is always required. A syntax-tree architecture test
+  scans all of `src/MiniErp.App` and fails if any of the four types is
+  constructed anywhere outside `DurableWorkLocalRuntime.cs`.
+- H92-04 is closed: `IDurableWorkStore.ReadUncertainEffectsAsync` now takes a
+  server-issued `VerifiedDurableWorkReconciliationAuthorization` instead of a
+  raw `TenantContext`. `IdentityAuthorizationService` (as the new
+  `IDurableWorkReconciliationAuthorizer`) live-revalidates actor, session,
+  Membership-or-SupportGrant validity and the dedicated catalogue-backed
+  `work.reconciliation.read` permission, and reuses the same
+  organization-scope ownership/containment logic as MESP-91 dispatch
+  revalidation (`IsCurrentScopeContainedUnsafe`) so a missing or malformed
+  selected scope fails closed. `TenantWorkScope.ContainsDescendant` then
+  filters returned records to the authorized Tenant/Company/Branch/Warehouse
+  boundary and its verified descendants only; a sibling organization and
+  another Tenant are never visible. `PlatformGovernanceContext` has no path
+  into this authorizer.
+- M92-03 is closed: `DurableWorkUncertainEffectRecord` now carries the exact
+  `DurableWorkEffectKey` (so `OperationId` is always present and `EventId` is
+  present only for an Outbox-purpose record), the exact verified
+  `TenantWorkScope`, `OutcomeUnknownAt` and a preserved safe reason.
+  `TenantOutboxMessage` gained explicit `OutcomeUnknownAt`/`SafeFailureReason`
+  fields; the prior reuse of `NextAttemptAt` as the occurrence time and the
+  hard-coded `"outcome_unknown"` outbox reason are both removed.
+- M92-04 is closed: every exception a registered payload codec raises --
+  including one raised as `DurableWorkPayloadException` itself -- is
+  normalized by `DurableWorkPayloadRegistry` to one of its own fixed, safe
+  messages; the original exception is never attached as `InnerException`.
+  `DurableWorkPayloadException`'s constructor is `internal`, so only the
+  envelope/registry seam can raise one with a trusted message.
+  `OperationCanceledException` still propagates unwrapped; checksum-mismatch
+  and oversized-payload rejections keep their own approved fixed messages.
+- L92-01 is closed: `DurableWorkLifecycle.OutcomeUnknown` and
+  `IDurableWorkEffectExecutor` documentation now say a caught post-boundary
+  exception, a caught cancellation, provider-reported uncertainty or a
+  completion-recording failure observed by the running process -- never an
+  actual process crash, which instead loses this in-memory ledger entirely
+  and is not represented as any recorded outcome. Production durable crash
+  recovery for this local Foundation seam remains explicitly deferred.
 - H-5 is closed: submission immediately snapshots every payload into an
   immutable, checksummed `DurableWorkPayloadEnvelope` through an explicit
   `IDurableWorkPayloadRegistry`/`IDurableWorkPayloadCodec<TPayload>` pair. No
@@ -24,8 +72,9 @@
   `Outbox`) plus, for an outbox effect, the immutable `EventId`, so a handler
   effect and an outbox effect for the identical Tenant/WorkItemId/OperationId
   never collide even when both are guarded by the same shared
-  `IDurableWorkEffectExecutor` (`DurableWorkEffectComposition.CreateSharedExecutor()`
-  is the one application-level authoritative composition seam). Reservation
+  `IDurableWorkEffectExecutor` (`DurableWorkLocalRuntime.Create()` is now the
+  one application-level authoritative composition seam; see the H92-03 entry
+  above). Reservation
   remains the single non-reversible boundary — every registered handler
   invocation and every outbox effect is routed exclusively through
   `ExecuteHandlerEffectAsync` (architecture-enforced). The protected callback
@@ -44,9 +93,9 @@
   redelivery/replay hook refuses to restart it, and audit records the safe
   `work.outcome-unknown`/`outbox.outcome-unknown` events with no payload or
   provider exception text. `IDurableWorkStore.ReadUncertainEffectsAsync`
-  is a read-only, Tenant-scoped reconciliation port; another Tenant cannot
-  read or reconcile it. No production reconciliation UI or provider decision
-  is implemented.
+  is a read-only, scope-authorized reconciliation port (see the H92-04 entry
+  above for the exact-scope authorization added on top of it). No production
+  reconciliation UI or provider decision is implemented.
 - M92-02 is closed: the production `DurableWorkPayloadEnvelope.TamperForValidation()`
   fault-injection hook is removed; checksum-corruption tests use bounded
   reflection over the private backing field in the test project instead. A
@@ -77,11 +126,14 @@
   crash recovery and distributed exactly-once delivery remain deferred to a
   future SQL/durable provider; no production SQL work store, broker or
   production worker exists.
-- Validation on this branch: Release build **0 warnings/0 errors**; focused
-  DurableWork suite **159/159** passed; full backend regression **417/417**
-  passed, including **11/11** SQL Server LocalDB probes (no
-  `MiniErpFoundation_*` database remained after teardown). MESP-92 is not
-  marked Done; PR #22 is open, non-draft and held unmerged for a focused
+- Validation on this branch after the second focused-review correction:
+  Release build **0 warnings/0 errors**; focused DurableWork suite
+  **199/199** passed; full backend regression **457/457** passed, including
+  **11/11** SQL Server LocalDB probes (no `MiniErpFoundation_*` database
+  remained after teardown); Angular unit tests **27/27** passed; Angular
+  production build succeeded; Playwright **4/4** passed; `npm audit
+  --omit=dev --audit-level=high` reported **0** vulnerabilities. MESP-92 is
+  not marked Done; PR #22 is open, non-draft and held unmerged for a focused
   ChatGPT re-review. MESP-93, MESP-94 and MESP-31 remain To Do; no Sprint is
   active; MESP-48 and MESP-50 remain explicit production gates.
 

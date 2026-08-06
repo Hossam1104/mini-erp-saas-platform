@@ -1366,9 +1366,17 @@ H92-01 namespaces that key with an explicit `DurableWorkEffectPurpose`
 (`Handler` or `Outbox`) and, for an outbox effect, the immutable `EventId`,
 so a handler effect and an outbox effect for the identical
 Tenant/WorkItemId/OperationId can never suppress each other even when both
-are guarded by the same shared `IDurableWorkEffectExecutor` — the one
-application-level authoritative composition seam is
-`DurableWorkEffectComposition.CreateSharedExecutor()`. Reservation of that
+are guarded by the same shared `IDurableWorkEffectExecutor`. H92-03 replaces
+the removed `DurableWorkEffectComposition.CreateSharedExecutor()` (which
+produced a new, independent ledger on every call) with
+`DurableWorkLocalRuntime.Create(operationCatalogue, payloadRegistry)`, the one
+approved composition entry point; it is the only place shipping code may
+construct `InMemoryDurableWorkEffectGuard`, `DurableWorkEffectExecutor`,
+`InMemoryDurableWorkStore` or `DurableWorkDispatcher` (all four constructors
+are `internal`), and it supplies the identical executor instance to the store
+and the dispatcher it returns. A syntax-tree architecture test scans all of
+`src/MiniErp.App` and fails if any of those four types is constructed
+anywhere outside `DurableWorkLocalRuntime.cs`. Reservation of that
 key remains the single non-reversible boundary: every registered handler
 invocation and every outbox effect is routed exclusively through
 `ExecuteHandlerEffectAsync`, which a normal handler cannot bypass
@@ -1391,9 +1399,42 @@ reconciliation state for both handler work items and outbox messages: normal
 polling never selects it, the generic outbox redelivery/replay hook refuses
 to restart it, and audit records the safe `work.outcome-unknown`/
 `outbox.outcome-unknown` events with no payload or provider exception text.
-`IDurableWorkStore.ReadUncertainEffectsAsync` is a read-only, Tenant-scoped
-reconciliation port; another Tenant cannot read or reconcile it, and no
+`IDurableWorkStore.ReadUncertainEffectsAsync` is a read-only reconciliation
+port; H92-04 replaces its raw `TenantContext` parameter with a server-issued
+`VerifiedDurableWorkReconciliationAuthorization`. `IdentityAuthorizationService`
+(as the new `IDurableWorkReconciliationAuthorizer`) live-revalidates actor,
+session, Membership-or-SupportGrant validity and a dedicated catalogue-backed
+`work.reconciliation.read` permission, reusing the identical
+organization-scope ownership/containment logic as MESP-91 dispatch
+revalidation so a missing or malformed selected scope fails closed;
+`TenantWorkScope.ContainsDescendant` then filters returned records to the
+authorized Tenant/Company/Branch/Warehouse boundary and its verified
+descendants only. A sibling organization and another Tenant are never
+visible, and `PlatformGovernanceContext` has no path into this authorizer. No
 production reconciliation UI or provider decision is implemented.
+
+M92-03 gives every returned record an exact, safe identity: it now carries
+the exact `DurableWorkEffectKey` (so `OperationId` is always present and
+`EventId` is present only for an Outbox-purpose record) plus the exact
+verified `TenantWorkScope`, the actual `OutcomeUnknownAt` transition time and
+a preserved safe reason. `TenantOutboxMessage` gained explicit
+`OutcomeUnknownAt`/`SafeFailureReason` fields, removing the prior reuse of
+`NextAttemptAt` as the occurrence time and the hard-coded outbox reason.
+
+M92-04 normalizes every exception a registered payload codec raises --
+including one raised as `DurableWorkPayloadException` itself -- to one of
+`DurableWorkPayloadRegistry`'s own fixed, safe messages, never attaching the
+original exception as `InnerException`; `DurableWorkPayloadException`'s
+constructor is now `internal` so only the envelope/registry seam can raise a
+trusted one. `OperationCanceledException` still propagates unwrapped, and
+checksum-mismatch/oversized-payload rejections keep their own fixed messages.
+
+L92-01 corrects the `OutcomeUnknown`/`IDurableWorkEffectExecutor` documentation:
+a caught post-boundary exception, a caught cancellation, provider-reported
+uncertainty or a completion-recording failure observed by the running process
+-- never an actual process crash, which instead loses this in-memory ledger
+entirely and is never represented as a recorded outcome. Production durable
+crash recovery for this local Foundation seam remains explicitly deferred.
 
 Genuine concurrency evidence uses `Barrier`-synchronized concurrent Tasks to
 prove: one lease winner under active and expired-lease contention; one
@@ -1409,17 +1450,21 @@ its in-memory guard and lifecycle state entirely and is not represented as
 `OutcomeUnknown` or any other recorded outcome. Production durable crash
 recovery remains deferred to a future SQL/durable provider.
 
-Validation on this branch: Release build **0 warnings/0 errors**; focused
-DurableWork suite **159/159** passed; full backend regression **417/417**
-passed including **11/11** SQL Server LocalDB probes with no
-`MiniErpFoundation_*` database remaining after teardown.
+Validation on this branch after the second focused-review correction: Release
+build **0 warnings/0 errors**; focused DurableWork suite **199/199** passed;
+full backend regression **457/457** passed including **11/11** SQL Server
+LocalDB probes with no `MiniErpFoundation_*` database remaining after
+teardown; Angular unit tests **27/27** passed; Angular production build
+succeeded; Playwright **4/4** passed; `npm audit --omit=dev
+--audit-level=high` reported **0** vulnerabilities.
 
 MESP-92 is **not** marked Done by this update. PR #22 is opened non-draft and
-held unmerged for a focused ChatGPT re-review of the effect-purpose keying,
-the explicit protected-effect outcome contract, the uncertain reconciliation
-state and the payload mutation-hook removal. No broker, production SQL work
-store, production worker deployment, migration, Master Data implementation,
-MESP-48 or MESP-50 work was introduced.
+held unmerged for a further focused ChatGPT re-review of the structurally
+enforced single effect ledger, the scope-authorized reconciliation read port,
+the exact uncertain-effect identity, the custom codec exception
+normalization and the corrected crash terminology. No broker, production SQL
+work store, production worker deployment, migration, Master Data
+implementation, MESP-48 or MESP-50 work was introduced.
 
 ## MESP-91 Correction Package 1 — merged and Done
 
