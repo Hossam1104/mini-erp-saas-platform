@@ -149,11 +149,21 @@ public interface IDurableWorkEffectGuard
     void Release(DurableWorkEffectKey key);
 }
 
-/// <summary>Deterministic in-memory effect guard. A local Foundation seam only; not crash-durable.</summary>
+/// <summary>
+/// Deterministic in-memory effect guard. A local Foundation seam only; not
+/// crash-durable. The constructor is internal: shipping code obtains the one
+/// approved instance only through <see cref="DurableWorkLocalRuntime"/>, so a
+/// second, independent production effect ledger cannot be created. Tests use
+/// this constructor directly through InternalsVisibleTo.
+/// </summary>
 public sealed class InMemoryDurableWorkEffectGuard : IDurableWorkEffectGuard
 {
     private readonly object syncRoot = new();
     private readonly Dictionary<DurableWorkEffectKey, EffectRecord> records = [];
+
+    internal InMemoryDurableWorkEffectGuard()
+    {
+    }
 
     public DurableWorkEffectState GetState(DurableWorkEffectKey key)
     {
@@ -311,11 +321,15 @@ public sealed record DurableWorkEffectExecution(
 
 /// <summary>
 /// Orchestrates one protected durable-work effect through the effect guard.
-/// A crash, cancellation or state-recording failure after the reservation
-/// boundary never causes automatic effect repetition. The protected callback
-/// must return an explicit <see cref="DurableWorkProtectedEffectResult"/>; a
-/// bare generic retry is not a representable outcome once the boundary has
-/// been crossed.
+/// A caught post-boundary exception, a caught cancellation, or a
+/// completion-recording failure observed by the running process, after the
+/// reservation boundary, never causes automatic effect repetition -- it
+/// records OutcomeUnknown instead. The protected callback must return an
+/// explicit <see cref="DurableWorkProtectedEffectResult"/>; a bare generic
+/// retry is not a representable outcome once the boundary has been crossed.
+/// An actual process crash is a distinct, unhandled failure mode: it loses
+/// this in-memory guard's state entirely rather than recording
+/// OutcomeUnknown. Production durable crash recovery remains deferred.
 /// </summary>
 public interface IDurableWorkEffectExecutor
 {
@@ -325,12 +339,17 @@ public interface IDurableWorkEffectExecutor
         CancellationToken cancellationToken = default);
 }
 
-/// <summary>Default effect executor bound to one <see cref="IDurableWorkEffectGuard"/>.</summary>
+/// <summary>
+/// Default effect executor bound to one <see cref="IDurableWorkEffectGuard"/>.
+/// The constructor is internal: shipping code obtains the one approved
+/// instance only through <see cref="DurableWorkLocalRuntime"/>. Tests use this
+/// constructor directly through InternalsVisibleTo.
+/// </summary>
 public sealed class DurableWorkEffectExecutor : IDurableWorkEffectExecutor
 {
     private readonly IDurableWorkEffectGuard guard;
 
-    public DurableWorkEffectExecutor(IDurableWorkEffectGuard guard)
+    internal DurableWorkEffectExecutor(IDurableWorkEffectGuard guard)
     {
         this.guard = guard ?? throw new ArgumentNullException(nameof(guard));
     }
@@ -428,18 +447,4 @@ public sealed class DurableWorkEffectExecutor : IDurableWorkEffectExecutor
             // automatic re-execution of this effect key.
         }
     }
-}
-
-/// <summary>
-/// Single authoritative composition seam for the durable-work effect guard.
-/// The store's outbox dispatch and the dispatcher's handler execution must
-/// share one <see cref="IDurableWorkEffectExecutor"/> instance so every
-/// protected effect for a Tenant is guarded by one ledger; the purpose and
-/// EventId inside <see cref="DurableWorkEffectKey"/> keep handler and outbox
-/// effects independent within that one shared authority.
-/// </summary>
-public static class DurableWorkEffectComposition
-{
-    public static IDurableWorkEffectExecutor CreateSharedExecutor() =>
-        new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
 }
