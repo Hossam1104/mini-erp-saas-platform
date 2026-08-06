@@ -7,13 +7,13 @@
 | Owner | Hossam |
 | Repository | `Hossam1104/mini-erp-saas-platform` |
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
-| Last updated | 4 August 2026 |
+| Last updated | 6 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `Foundation Completion Opus 5 review checkpoint` |
-| Current implementation item | `None — MESP-57 through MESP-64 Foundation sequence is Done` |
-| Current branch | `docs/foundation-completion-checkpoint` |
+| Current activity | `MESP-91 Correction Package 1 — verified work scope and worker authority revalidation` |
+| Current implementation item | `MESP-91 — In Progress; sole active implementation item` |
+| Current branch | `fix/MESP-91-verified-work-scope-authority` (baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `MESP-64 / PR #18 is merged to main at 2002d1c25d39022b227e89b3d70f41a53de0408c; Foundation Completion Opus 5 checkpoint is documentation-only; no implementation item or Sprint is active` |
+| Current review checkpoint | `MESP-91 corrected non-draft PR must remain open and unmerged for focused ChatGPT security review; MESP-31/MESP-92/MESP-93/MESP-94 remain To Do` |
 
 ---
 
@@ -52,9 +52,10 @@ backend work is not complete ERP backend implementation.
 
 PR #18 ([link](https://github.com/Hossam1104/mini-erp-saas-platform/pull/18))
 merged MESP-64 to `main` at
-`2002d1c25d39022b227e89b3d70f41a53de0408c`. The next step is the
-documentation-only Foundation Completion Opus 5 checkpoint. No implementation
-item or Sprint is active.
+`2002d1c25d39022b227e89b3d70f41a53de0408c`, which remains the historical
+Foundation baseline. The current sole implementation item is MESP-91
+Correction Package 1 on the branch recorded above; its non-draft PR remains
+open and unmerged pending focused ChatGPT security review. No Sprint is active.
 
 | Area | Current status |
 |---|---|
@@ -78,6 +79,7 @@ item or Sprint is active.
 | MESP-90 MESP-63 false-logout security correction | Done — PR #16 merged at `469ab863a5fc20f02d3ba674a97dceb969bbec75`; preserves authenticated state until server-confirmed revocation |
 | MESP-61 background processing foundation | Done — PR #17 merged at `7db49a88e11232f055c2016b8bb033a61de629ec`; typed Tenant-bound durable work/outbox/inbox, bounded worker, notification contracts and private-file adapter |
 | MESP-64 provider/schema/index validation | Done — PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`; ADR-018, disposable LocalDB SQL Server harness, exact 75-assertion evidence and merged-main validation complete; no production provider or migration |
+| MESP-91 verified work scope and worker authority correction | In Progress — Correction Package 1; Identity-owned organization resolver, authorization-context-bound scopes, live worker/outbox revalidation and safe authority dead-letter are being implemented on the dedicated correction branch; PR must remain open and unmerged for focused ChatGPT review |
 | MESP-3 Identity and Access Epic | In Progress |
 | MESP-28 Identity and Access BRD | Done — v0.3 Approved Release 1 Baseline (founder change-control approval 3 August 2026) |
 | MESP-4 Multi-Tenancy and Tenant Lifecycle Epic | In Progress |
@@ -110,9 +112,11 @@ item or Sprint is active.
 - [x] `MESP-90` false-logout correction is **Done**; approved PR #16 merged to `main` at `469ab863a5fc20f02d3ba674a97dceb969bbec75`; MESP-63 remains **Done**.
 - [x] `MESP-61` is **Done**; PR #17 merged to `main` at `7db49a88e11232f055c2016b8bb033a61de629ec` and merged-main validation passed.
 - [x] `MESP-64` is **Done**; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`, merged-main validation passed, and its branch was deleted.
+- [ ] `MESP-91` is **In Progress** as the sole active implementation item; its correction branch is based on `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`, and the non-draft PR must remain open and unmerged for focused ChatGPT security review.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
+- [x] `MESP-92` and `MESP-93` remain **To Do**; Correction Package 2/3 work is untouched.
 - [x] No Sprint is active; MESP-89 and MESP-63 were delivered outside a Sprint.
-- [x] MESP-63, MESP-90, MESP-61 and MESP-64 completed sequentially; no implementation item is active and no parallel implementation is authorized.
+- [x] MESP-63, MESP-90, MESP-61 and MESP-64 completed sequentially; MESP-91 is now the sole active correction and no parallel implementation is authorized.
 - [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; implementation refinement is controlled and is not production readiness.
 - [x] Product-wide Phase 2 remains **In Progress** because core ERP BRDs remain incomplete; Foundation backend work does not imply complete ERP backend implementation.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
@@ -728,10 +732,11 @@ Implement approved backlog items sequentially, validate them with focused automa
 The product-wide Phase 2 BRD stream remains in progress because core ERP BRDs
 remain incomplete. The Foundation slice has completed the approved MESP-63
 frontend baseline and MESP-61 durable-work foundation; that does not mean
-complete ERP backend implementation has started. No implementation item is
-active. The Foundation Completion Opus 5 checkpoint is now the only active
-delivery activity. Do not start MESP-31 or any downstream ERP transaction work
-before that review.
+complete ERP backend implementation has started. MESP-91 Correction Package 1
+is now the sole active implementation item and the Foundation Completion
+checkpoint is its historical baseline. Do not start MESP-31, MESP-92/MESP-93 or
+any downstream ERP transaction work before the open correction PR receives
+focused ChatGPT security review.
 
 - [x] Approve `MESP-28` Identity and Access BRD v0.3 change-control baseline on `docs/foundation-release1-lean-spec`.
 - [x] Begin and complete `MESP-29` Multi-Tenancy BRD as the single requirements activity; v0.2 is approved and Done.
@@ -820,6 +825,45 @@ MESP-48 and MESP-50 remain production gates; MESP-64 did not select a
 production provider, create a migration, execute purge or authorize later ERP
 work.
 
+### MESP-91 — Verified work scope and worker authority correction (active, Package 1)
+
+- [x] Confirm MESP-91 is the sole active implementation item; move it to
+  **In Progress** and keep MESP-31, MESP-92, MESP-93 and MESP-94 **To Do**.
+- [x] Create `fix/MESP-91-verified-work-scope-authority` from the verified
+  baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`; keep no Sprint active.
+- [x] Add the narrow Identity-owned organization resolver for an untrusted
+  scope request, exact Tenant -> Company -> Branch -> Warehouse ownership,
+  downward containment and authorization-context-bound verified scopes.
+- [x] Add live worker and outbox authority revalidation immediately before
+  handler/effect dispatch, covering current User/session, authorization path,
+  Membership or SupportGrant/SupportCase, exact Permission, scope and
+  ownership.
+- [x] Terminally dead-letter authority failures with safe
+  `AuthorizationDenied` evidence and never call the handler or protected
+  outbox effect after a failed check.
+- [x] Close H91-03: require canonical explicit ordinary `Kind:GUID` scope,
+  reject missing/malformed/marker/broader/sibling scope, and use the current
+  case-bound stored SupportGrant scope as the only SupportGrant authority.
+- [x] Close H91-04: use one exact binding for WorkItemId, Tenant, operation,
+  correlation, Company/Branch/Warehouse boundary, execution TenantContext,
+  path, Membership/SupportGrant, actor and session; defensively recheck it
+  before handler/outbox execution.
+- [x] Add the Identity-only structural issuer allow-list and make mandatory
+  security evidence an operation-descriptor requirement enforced at creation,
+  handler registration, dispatch and live revalidation.
+- [x] Add focused organization-boundary, lifecycle, permission, support-path,
+  dead-letter and no-effect regression tests; reconcile the safety catalogue
+  and ADR/checkpoint/current-state documentation without changing MESP-48 or
+  MESP-50 gates.
+- [x] Complete full validation and review the complete task-related diff:
+  focused durable-work 102/102, backend 360/360 including SQL 11/11, Angular
+  27/27, Playwright 4/4, Release build 0 warnings/0 errors and production
+  audit 0 vulnerabilities.
+- [x] Commit and push the correction branch and update the existing non-draft
+  PR #20; leave it open/unmerged for focused ChatGPT security review.
+- [ ] Do not merge, close MESP-91, start MESP-31, start packages 2/3 or begin
+  another implementation item until review disposition is recorded.
+
 ### Foundation Completion Opus 5 checkpoint (documentation-only)
 
 - [x] Confirm MESP-90, MESP-61 and MESP-64 are Done on merged `main` and no
@@ -873,9 +917,11 @@ work.
 - [ ] Documentation updated only where necessary.
 
 **Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62,
-MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are Done. The complete
-Foundation implementation checkpoint is ready for Opus 5 review; no
-implementation item or Sprint is active.**
+MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are Done on the merged-main
+Foundation baseline. MESP-91 Correction Package 1 is In Progress as the sole
+active implementation item; its non-draft PR must remain open and unmerged for
+focused ChatGPT security review. No Sprint is active and MESP-31/MESP-92/
+MESP-93 remain To Do.**
 
 ---
 
@@ -1119,6 +1165,21 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Implement and close MESP-64 on `feature/mesp-64-foundation-safety-harness`; PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`, ADR-018 and the exact 75-assertion safety evidence were updated without production/provider or later ERP scope.
 - [x] Prepare the documentation-only Foundation Completion Opus 5 checkpoint at `docs/97_Foundation_Completion_Review_Checkpoint.md`; stop before MESP-31 or any later implementation.
 
+### MESP-91 current correction activity
+
+- [x] Move Jira MESP-91 to **In Progress** after confirming no other
+  implementation item or Sprint is active.
+- [x] Implement the verified organization-scope resolver, context binding,
+  authorized-scope containment and current worker/outbox authority
+  revalidation in Correction Package 1.
+- [x] Add focused regression tests and reconcile `docs/96`, `docs/97`,
+  `docs/ADR-008_SQL_Background_Workers_and_Ownership.md` and `.ai/CURRENT_STATE.md`.
+- [x] Complete final validation: focused durable-work 63/63, backend 321/321
+  including SQL 11/11, Angular 27/27, Playwright 4/4, Release build 0
+  warnings/0 errors and production audit 0 vulnerabilities.
+- [ ] Commit/push, publish the non-draft PR and stop with MESP-91 In Progress
+  and the PR open/unmerged for focused ChatGPT security review.
+
 ## Completed MESP-57 outputs
 
 - [x] `backend/MiniErp.sln`.
@@ -1162,7 +1223,7 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Resolve the 22 historical IAM-OD records plus IAM-OD-023 (23 total) and four source-conflict records in the approved baseline.
 - [x] Begin, approve, and close the single MESP-29 Multi-Tenancy BRD activity; v0.2 is merged to `main`.
 - [x] Record the four Tenant-isolation clarifications and preserve MESP-48/MESP-50 Deferred Gates.
-- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-90, MESP-61 and MESP-64 are complete, with no implementation item active.
+- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-90, MESP-61 and MESP-64 are complete; MESP-91 is the sole active correction overlay.
 - [x] Keep `MESP-31` through `MESP-40` in To Do while the approved foundation requirements remain the current delivery boundary.
 - [x] Keep `MESP-30` outside all Sprints and restrict it to business requirements only.
 - [x] Complete founder approval of the MESP-30 baseline and resolve `ORG-OD-001` through `ORG-OD-007`.
@@ -1251,9 +1312,46 @@ Use this section to record major milestones.
 
 ## Current next action
 
-> Submit `docs/97_Foundation_Completion_Review_Checkpoint.md` for Opus 5
-> Foundation completion review. Keep `MESP-31` through `MESP-40`, Master Data
-> and Catalog, Retail POS and future ERP transaction work out of scope; preserve
-> `MESP-48` and `MESP-50` as explicit production gates and keep no Sprint or
-> implementation item active. Do not start another Jira item until Opus 5 gives
-> a reviewed disposition.
+> Complete and publish the MESP-91 Correction Package 1 validation record.
+> Keep its non-draft PR open and unmerged for focused ChatGPT security review;
+> keep MESP-91 In Progress, MESP-31 through MESP-40 and MESP-92/MESP-93/MESP-94 To Do,
+> Master Data and Catalog, Retail POS and future ERP transaction work out of
+> scope. Preserve `MESP-48` and `MESP-50` as explicit production gates, keep no
+> Sprint active, and do not start another Jira item until review disposition is
+> recorded.
+
+## MESP-91 Correction Package 1 — focused ChatGPT correction evidence
+
+The MESP-91 correction overlay remains the sole active implementation item on
+`fix/MESP-91-verified-work-scope-authority`, based on the expected merged-main
+baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. Source and regression
+corrections are recorded in commit
+`7d3524d42e9ef6501c374dc22bb5cef7482cbdb0`.
+
+The durable-work contract now selects an operation from an authoritative
+descriptor catalogue. The descriptor owns the exact permission code, allowed
+authorization paths and scope policy; the same immutable descriptor is used by
+submission identity, stored initiator facts, handler registration, live
+Identity revalidation and worker/verified outbox dispatch. Unknown or
+mismatched operation descriptors fail closed. Approved revalidation returns a
+server-issued exact-scope execution authorization; the worker and outbox effect
+receive that verified context rather than the broad caller context.
+
+True authority denials remain terminal `AuthorizationDenied` outcomes. Provider
+exceptions/timeouts are `ProviderUnavailable` bounded retries, and cancellation
+is a distinct recoverable `Cancelled` outcome. No handler or protected outbox
+effect runs after a failed authority check.
+
+Validation evidence for this correction is **360/360** complete backend tests,
+**11/11** SQL Server LocalDB probes, **27/27** Angular tests, **4/4** Playwright
+journeys, Release build 0 warnings/0 errors, and production dependency audit 0
+vulnerabilities. The disposable LocalDB/model collation observed was
+`SQL_Latin1_General_CP1_CI_AS`; no disposable Foundation database remained
+after cleanup.
+
+Source/test correction commit `4ed4b0588b613d492ce6c446ae963001b28f0eca` is
+on the dedicated branch against `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`.
+PR #20 remains open, non-draft and unmerged. MESP-91 remains **In Progress**;
+MESP-92, MESP-93, MESP-94 and MESP-31 remain **To Do**. No Sprint, Master Data
+implementation, production provider, migration, Retail POS, Wafra-core,
+MESP-48 or MESP-50 work was started.

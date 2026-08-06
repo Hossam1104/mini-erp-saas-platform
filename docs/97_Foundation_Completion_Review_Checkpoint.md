@@ -2,21 +2,49 @@
 
 | Field | Value |
 |---|---|
-| Status | Ready for Opus 5 Foundation completion review; not production-readiness approval |
+| Status | Foundation checkpoint baseline preserved; MESP-91 correction active and awaiting focused ChatGPT security review; not production-readiness approval |
 | Review date | 4 August 2026 |
 | Product boundary | Release 1 B2B ERP only; Retail POS and Wafra-specific core behavior remain excluded |
 | Final merged main | `2002d1c25d39022b227e89b3d70f41a53de0408c` |
 | Jira state | MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are Done; MESP-48 and MESP-50 remain To Do |
 | Sprint state | No active Sprint |
-| Active implementation item | None |
+| Active implementation item | MESP-91 — Enforce verified organization scope and worker authority revalidation in durable work (In Progress) |
+| Current correction branch | `fix/MESP-91-verified-work-scope-authority`, based on `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d` |
+| Current review hold | Non-draft PR is required to remain open and unmerged pending focused ChatGPT security review |
+
+## MESP-91 correction overlay
+
+The MESP-64 merged-main checkpoint above is the historical Foundation baseline;
+this overlay is the active Correction Package 1. MESP-91 is the sole active
+implementation item. It adds an Identity-owned verified organization-scope
+resolver, exact Tenant -> Company -> Branch -> Warehouse ownership and
+downward containment, authorization-context binding for issued scopes, and
+live worker/outbox authority revalidation immediately before handler/effect
+dispatch. Failed current User/session, Membership or SupportGrant/SupportCase,
+Permission, scope or ownership checks terminally dead-letter with safe
+`AuthorizationDenied` evidence. MESP-31 and packages 2/3 (MESP-92, MESP-93
+and MESP-94)
+remain To Do and untouched; no Sprint, migration, production provider or
+business-domain implementation is authorized.
+
+Current correction validation is 102/102 focused durable-work tests, 360/360
+backend tests including 11/11 disposable LocalDB SQL tests, 27/27 Angular
+tests and four Playwright journeys. The Release build has zero warnings and
+zero errors; the production dependency audit reports zero vulnerabilities.
+H91-03 now requires canonical explicit ordinary scope and keeps the stored
+case-bound SupportGrant scope authoritative; H91-04 applies one exact binding
+to work, Tenant, operation, correlation, organization scope, execution
+context, path, Membership/SupportGrant, actor and session.
 
 ## Verified baseline
 
 The Foundation implementation sequence is merged to `main` and Jira is
 reconciled. The repository was clean after merged-main validation, and local
 `main` matched `origin/main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`.
-The only changes on this documentation branch are the completion checkpoint
-and the required delivery-state updates; no source code is being changed.
+The active MESP-91 correction branch is separate from that historical merged
+baseline. Its source and tests are not represented as merged-main capability
+until the open PR receives focused ChatGPT review and an explicit merge
+decision.
 
 ### Foundation sequence evidence
 
@@ -113,7 +141,7 @@ Jira and production gates.
 | Angular shell | Angular 22 standalone modular shell with server-confirmed session/context handling, safe anonymous/expired/revoked states and accessible responsive layout. |
 | Bilingual RTL | EN/AR resources and runtime LTR/RTL switching are implemented in the Wave 1 shell; localized business documents/search remain future module scope. |
 | Sign-out correction | MESP-90 preserves authenticated state until server-confirmed 204 or 401; failed/unconfirmed revocation does not falsely clear the browser session. |
-| Durable work | Typed Tenant-bound work/outbox/inbox contracts, bounded worker seam, lease/retry/dead-letter and optimistic version controls; no broker or production worker deployment. |
+| Durable work | Typed Tenant-bound work/outbox/inbox contracts, verified organization-scope resolver, live worker/outbox authority revalidation, bounded lease/retry/dead-letter and optimistic version controls; no broker or production worker deployment. |
 | Notifications | Provider-neutral Tenant-owned notification intents and deterministic local adapter; no email/SMS/push vendor or delivery policy selected. |
 | Private files | Tenant-owned metadata, opaque object identity, checksum and safe authorization/local adapter boundary; no public URL, signed download, provider, scanning or purge. |
 | SQL Server validation | SQL Server LocalDB provider-specific schema/index/rowversion/collation, transaction, relationship, idempotency and lease probes passed; LocalDB is disposable and not production-equivalent. |
@@ -159,8 +187,10 @@ Opus 5 should determine:
    notification and private-file paths, including forged and concurrent cases?
 3. Are Identity/session, authorization, context selection and Angular behavior
    coherent, including the MESP-90 false-logout correction?
-4. Is durable work genuinely single-effect, Tenant-bound, ownership-verified
-   and safely retried/dead-lettered?
+4. Is durable work genuinely single-effect, Tenant-bound, organization-
+   ownership-verified, revalidated against current User/session/permission and
+   Membership or SupportGrant authority immediately before handler/effect
+   dispatch, and safely retried/dead-lettered?
 5. Are private-file metadata, checksum, ownership and access boundaries safe
    without public access or purge behavior?
 6. Is the SQL Server LocalDB evidence trustworthy for the claims it makes, and
@@ -179,17 +209,53 @@ Opus 5 should determine:
 At this checkpoint:
 
 - MESP-90, MESP-61 and MESP-64 are Done and merged.
-- No implementation item is active and no Sprint is active.
-- The Foundation implementation checkpoint is ready for Opus 5 review.
+- MESP-91 is the sole active implementation item, and no Sprint is active.
+- The historical Foundation implementation checkpoint remains ready for
+  review, but the MESP-91 correction overlay blocks closure until focused
+  ChatGPT security review is complete.
 - Product-wide core ERP BRDs remain incomplete; complete ERP backend
   implementation is not complete.
 - MESP-48 and MESP-50 remain production gates.
 - Master Data and Catalog must not start until Opus 5 review authorizes it.
-- No MESP-31 or later domain, MESP-48/MESP-50 implementation, Sprint,
+- No MESP-31 or later domain, MESP-48/MESP-50 implementation, package 2/3,
+  Sprint,
   production deployment, migration or business transaction work is started by
   this documentation checkpoint.
 
-**Final state:** MESP-90, MESP-61 and MESP-64 are merged and Done. The complete
-Foundation implementation checkpoint is ready for Opus 5 review. MESP-48 and
-MESP-50 remain production gates. No core ERP BRD or implementation item was
-started.
+**Final state:** MESP-90, MESP-61 and MESP-64 remain merged and Done on the
+Foundation baseline. MESP-91 Correction Package 1 is active on its branch with
+an open, unmerged PR pending focused ChatGPT security review. MESP-48 and
+MESP-50 remain production gates; no core ERP BRD, MESP-31, package 2/3 or
+production implementation was started.
+
+## MESP-91 correction overlay disposition
+
+The historical checkpoint above remains the Foundation baseline. Its MESP-91
+overlay is corrected by commit
+`7d3524d42e9ef6501c374dc22bb5cef7482cbdb0` on the dedicated branch. The
+correction closes the focused authorization findings by:
+
+- binding durable operations to one authoritative descriptor containing the
+  exact permission code, authorization paths and scope policy;
+- returning a server-issued exact-scope execution authorization from live
+  revalidation and requiring both worker and outbox effects to consume it;
+- separating true `AuthorizationDenied` from recoverable
+  `ProviderUnavailable` and `Cancelled` outcomes, with bounded retry and safe
+  lease/outbox recovery; and
+- removing the unrestricted shipping `ForServerContext` scope factory while
+  retaining a test-only fixture issuer through the architecture-test assembly.
+
+The correction validation record is **360/360** complete backend tests,
+**11/11** SQL Server LocalDB probes, **27/27** Angular tests, **4/4** Playwright
+journeys, Release build 0 warnings/0 errors, and production dependency audit 0
+vulnerabilities. The disposable LocalDB/model collation was
+`SQL_Latin1_General_CP1_CI_AS`, and teardown left no `MiniErpFoundation_*`
+database.
+
+Source/test correction commit `4ed4b0588b613d492ce6c446ae963001b28f0eca`
+is on the dedicated branch against baseline
+`4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. This overlay does not close the
+merge hold: PR #20 remains open, non-draft and
+unmerged; MESP-91 remains **In Progress**; MESP-92, MESP-93, MESP-94 and
+MESP-31 remain **To Do**. No Sprint, Master Data implementation, production
+provider, migration, MESP-48 or MESP-50 work was started.

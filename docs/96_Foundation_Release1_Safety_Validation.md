@@ -25,6 +25,44 @@ checkpoint, and **1 production gate DEFERRED**. No assertion failed. Not
 Applicable is a scope boundary, not evidence that the later workflow is safe;
 the owning implementation must add executable evidence before authorization.
 
+## MESP-91 correction overlay
+
+The original MESP-64 checkpoint remains the merged-main foundation baseline.
+MESP-91 Correction Package 1 adds the missing durable-work authority boundary
+on top of that baseline: Identity now exposes a narrow organization ownership
+resolver that converts an untrusted `TenantWorkScopeRequest` into a
+resolver-issued, authorization-context-bound `TenantWorkScope`. The resolver
+validates the exact Tenant -> Company -> Branch -> Warehouse ownership chain
+and downward authorized-scope containment; missing ownership and foreign or
+sibling targets fail closed.
+
+The worker and outbox dispatch paths now call a narrow live authority
+revalidator immediately before a handler or protected outbox effect. It
+rechecks the initiating Tenant and authorization path, current User/session,
+ordinary Membership or SupportGrant/SupportCase, exact Permission and current
+scope/ownership. A failed check produces a terminal `AuthorizationDenied`
+dead-letter and safe evidence; no handler or outbox effect is reached. The
+correction evidence is in `DurableWorkAuthorityRevalidationTests` and
+`DurableWorkTests`. Ordinary revalidation requires the canonical explicit
+selected scope and never falls back to a Tenant-wide membership grant; a
+SupportGrant revalidation uses the current case-bound stored grant scope rather
+than a context marker. Verified authority binds the exact work, Tenant,
+operation, correlation, organization boundary, execution context, path,
+Membership/SupportGrant, actor and session. The SQL probes remain persistence,
+lease, transaction and idempotency evidence only; they are not
+worker-authorization evidence.
+
+The current correction validation passes the focused durable-work suite 102/102,
+the complete backend suite 360/360, the targeted SQL Server suite 11/11, the
+Angular suite 27/27 and four Playwright journeys. The Release build has zero
+warnings and zero errors, and the production dependency audit reports zero
+vulnerabilities; the `npm ci` development install reports three moderate
+development-only advisories outside that production audit.
+
+MESP-48 supported-volume/capacity and MESP-50 retention, privacy, legal-hold,
+purge, residency, backup and restoration gates remain unchanged and are not
+authorized by this correction.
+
 ## SQL Server evidence
 
 - The Tenant query filter was evaluated repeatedly and concurrently for Tenant B after Tenant A model initialization; Tenant A data was not visible.
@@ -88,7 +126,7 @@ DEFERRED row is reserved for the MESP-48/MESP-50 production decisions.
 | 42 | Missing TenantId is rejected by the write pipeline | `TenantPersistenceTests`, `SqlServerSafetyTests` | PASS | Foundation evidence in this checkpoint |
 | 43 | Mismatched TenantId versus trusted context is rejected | `TenantPersistenceTests`, `SqlServerSafetyTests` | PASS | Foundation evidence in this checkpoint |
 | 44 | Restricted IgnoreQueryFilters/raw SQL/bulk/maintenance paths are unavailable to ordinary Tenant calls | `ModuleBoundaryTests`, `TenantPersistenceTests` | PASS | Foundation evidence in this checkpoint |
-| 45 | Background/outbox work revalidates initiating Tenant, scope, lifecycle and ownership | `DurableWorkTests`, `SqlServerSafetyTests` durable-work probe | PASS | Foundation evidence in this checkpoint |
+| 45 | Background/worker/outbox work revalidates exact initiating Tenant ownership, verified organization ownership and authorized scope, plus live User/session/Membership/SupportGrant/SupportCase/Permission lifecycle | `DurableWorkAuthorityRevalidationTests`, `DurableWorkTests` | PASS | MESP-91 correction evidence; SQL probes remain persistence/lease/transaction/idempotency evidence only |
 | 46 | Denied cross-Tenant audit/telemetry records do not leak target data | `AuditObservabilityTests`, `DurableWorkTests`, `RestFoundationTests` | PASS | Foundation evidence in this checkpoint |
 | 47 | Tenant-aware alternate/unique keys and architecture dependency direction remain valid | `ModuleBoundaryTests`, `SqlServerSafetyTests` schema/index evidence | PASS | Foundation evidence in this checkpoint |
 | 48 | MESP-48/MESP-50 gates cannot be bypassed and no production purge is authorized | Scope gate recorded; no production threshold or purge test is authorized | DEFERRED | MESP-48 performance/volume and MESP-50 retention, residency, privacy, legal-hold, purge and provider gates |
@@ -146,3 +184,39 @@ From the repository root on the supported developer machine:
 The command fails closed when LocalDB is missing, the connection is unset or
 unsafe, any assertion fails, or cleanup cannot complete. Docker/Testcontainers
 CI execution remains deferred by ADR-018.
+
+## MESP-91 focused correction validation overlay
+
+The MESP-91 correction was validated on source/test commit
+`4ed4b0588b613d492ce6c446ae963001b28f0eca` from the dedicated correction
+branch, against merged-main baseline
+`4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. This is an unmerged review
+overlay; it does not change the maturity or production-provider claims above.
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused durable-work/authority regression | 102 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~DurableWork` |
+| Complete backend suite | 360 passed, 0 failed, 0 skipped | `powershell -ExecutionPolicy Bypass -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped | `npm test -- --watch=false --no-progress` |
+| Angular production build | Passed | `npm run build` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Structural issuer and mandatory-evidence architecture checks | Passed in focused suite | `DurableWorkTests` syntax-tree allow-list and descriptor policy tests |
+| Safety catalogue | 53 PASS, 21 NOT APPLICABLE, 1 DEFERRED, 0 failed | Existing 75-assertion catalogue; no scope claim changed |
+| Diff check | Passed | `git diff --check` |
+
+The LocalDB validation used the approved `MSSQLLocalDB` instance and Windows
+integrated authentication only. The actual LocalDB/model collation observed
+for the disposable run was `SQL_Latin1_General_CP1_CI_AS`; no case-sensitivity
+policy was inferred from that value. The test database name used the
+`MiniErpFoundation_` prefix and teardown was verified with a server query:
+zero `MiniErpFoundation_*` databases remained. No production or shared
+database was accessed.
+
+The `npm ci` development install reported three moderate development-tree
+advisories and four blocked optional install scripts; these do not affect the
+production audit result and were not force-fixed as part of this focused
+correction. No migration, provider selection, production worker, notification
+provider, object-storage provider or purge behavior was introduced.

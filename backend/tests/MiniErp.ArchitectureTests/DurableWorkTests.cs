@@ -1,5 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.BuildingBlocks.Work;
 using Xunit;
@@ -9,17 +11,26 @@ namespace MiniErp.ArchitectureTests;
 public sealed class DurableWorkTests
 {
     private static readonly DateTimeOffset Clock = new(2026, 8, 4, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DurableWorkOperationCatalogue OperationCatalogue =
+        new([
+            new DurableWorkOperationDescriptor(
+                "foundation.work",
+                "demo",
+                "tenant.business.read",
+                [TenantAuthorizationPath.OrdinaryMembership, TenantAuthorizationPath.SupportGrant])
+        ]);
 
     [Fact]
     public void Work_item_rejects_missing_tenant()
     {
         var context = CreateContext();
-        var scope = TenantWorkScope.ForServerContext(context);
+        var scope = DurableWorkTestSupport.TenantWideScope(context);
         Assert.Throws<ArgumentNullException>(() => DurableWorkItem.Create(
             null!,
             scope,
             Identity(context),
-            new DemoPayload("x")));
+            new DemoPayload("x"),
+            Guid.NewGuid()));
     }
 
     [Fact]
@@ -60,25 +71,27 @@ public sealed class DurableWorkTests
     {
         var trusted = CreateContext();
         var foreign = CreateContext();
-        var scope = TenantWorkScope.ForServerContext(trusted);
+        var scope = DurableWorkTestSupport.TenantWideScope(trusted);
         Assert.Throws<ArgumentException>(() => DurableWorkItem.Create(
             foreign,
             scope,
             Identity(foreign),
-            new DemoPayload("forged")));
+            new DemoPayload("forged"),
+            Guid.NewGuid()));
     }
 
     [Fact]
     public void Organization_scope_must_belong_to_tenant_and_follow_hierarchy()
     {
         var context = CreateContext();
-        Assert.Throws<ArgumentException>(() => TenantWorkScope.ForServerContext(context, branchId: Guid.NewGuid()));
-        var foreignScope = TenantWorkScope.ForServerContext(CreateContext());
+        Assert.Throws<ArgumentException>(() => new TenantWorkScopeRequest(branchId: Guid.NewGuid()));
+        var foreignScope = DurableWorkTestSupport.TenantWideScope(CreateContext());
         Assert.Throws<ArgumentException>(() => DurableWorkItem.Create(
             context,
             foreignScope,
             Identity(context),
-            new DemoPayload("scope")));
+            new DemoPayload("scope"),
+            Guid.NewGuid()));
     }
 
     [Fact]
@@ -90,12 +103,12 @@ public sealed class DurableWorkTests
         Assert.True(await store.SubmitAsync(work));
         Assert.True(await store.SubmitAsync(work));
         var effects = 0;
-        var first = await store.DispatchOutboxAsync(context, Clock, (_, _) =>
+        var first = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             effects++;
             return ValueTask.CompletedTask;
         });
-        var second = await store.DispatchOutboxAsync(context, Clock, (_, _) =>
+        var second = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             effects++;
             return ValueTask.CompletedTask;
@@ -113,13 +126,13 @@ public sealed class DurableWorkTests
         var work = Work(context, "inbox-once");
         await store.SubmitAsync(work);
         var calls = 0;
-        await store.DispatchOutboxAsync(context, Clock, (_, _) =>
+        await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             calls++;
             return ValueTask.CompletedTask;
         });
         Assert.True(store.ReplayOutboxForValidation(work.Identity.WorkItemId, Clock));
-        var result = await store.DispatchOutboxAsync(context, Clock, (_, _) =>
+        var result = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             calls++;
             return ValueTask.CompletedTask;
@@ -231,9 +244,9 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var store = new InMemoryRelationalDurableWorkStore();
-        var dispatcher = new DurableWorkDispatcher();
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue);
         dispatcher.Register(new SuccessfulHandler());
-        var worker = new TenantDurableWorkWorker(store, dispatcher);
+        var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
         await store.SubmitAsync(Work(context, "worker-exact"));
         var result = await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
         Assert.NotNull(result);
@@ -241,9 +254,142 @@ public sealed class DurableWorkTests
     }
 
     [Fact]
+    public async Task Worker_uses_only_the_server_issued_exact_scope_after_revalidation()
+    {
+        var context = CreateContext();
+        var requestedScope = TenantWorkScopeRequest.ForCompany(Guid.NewGuid());
+        var work = DurableWorkItem.Create(
+            context,
+            TenantWorkScope.IssueFromVerifiedAuthority(context, requestedScope),
+            Identity(context, "exact-execution-scope"),
+            new DemoPayload("scope"),
+            Guid.NewGuid(),
+            createdAt: Clock);
+        var store = new InMemoryRelationalDurableWorkStore();
+        var handler = new ScopeCaptureHandler();
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue);
+        dispatcher.Register(handler);
+        var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
+        Assert.True(await store.SubmitAsync(work));
+
+        var result = await worker.ProcessOneAsync(
+            context,
+            Guid.NewGuid(),
+            Clock,
+            TimeSpan.FromMinutes(5));
+
+        Assert.Equal(DurableWorkLifecycle.Completed, result!.Lifecycle);
+        Assert.NotNull(handler.SeenContext);
+        Assert.Equal($"Company:{work.Scope.CompanyId}", handler.SeenContext!.Scope!.Value.Value);
+        Assert.Equal(work.Scope.CompanyId, handler.SeenScope!.CompanyId);
+    }
+
+    [Fact]
+    public async Task Worker_revalidation_cancellation_is_recoverable_and_not_authorization_denied()
+    {
+        var context = CreateContext();
+        var store = new InMemoryRelationalDurableWorkStore();
+        Assert.True(await store.SubmitAsync(Work(context, "authority-cancel")));
+        var handler = new SuccessfulHandler();
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue);
+        dispatcher.Register(handler);
+        var worker = new TenantDurableWorkWorker(
+            store,
+            dispatcher,
+            new ControlledAuthorityRevalidator(AuthorityBehavior.Cancelled));
+
+        var result = await worker.ProcessOneAsync(
+            context,
+            Guid.NewGuid(),
+            Clock,
+            TimeSpan.FromMinutes(5));
+
+        Assert.Equal(DurableWorkLifecycle.RetryScheduled, result!.Lifecycle);
+        Assert.Equal(DurableWorkFailureCategory.Cancelled, result.FailureCategory);
+        Assert.Equal(0, handler.Calls);
+    }
+
+    [Fact]
+    public async Task Worker_revalidation_provider_failure_is_bounded_retry_not_authorization_denied()
+    {
+        var context = CreateContext();
+        var store = new InMemoryRelationalDurableWorkStore();
+        Assert.True(await store.SubmitAsync(Work(context, "authority-provider")));
+        var handler = new SuccessfulHandler();
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue);
+        dispatcher.Register(handler);
+        var worker = new TenantDurableWorkWorker(
+            store,
+            dispatcher,
+            new ControlledAuthorityRevalidator(AuthorityBehavior.ProviderUnavailable));
+
+        var result = await worker.ProcessOneAsync(
+            context,
+            Guid.NewGuid(),
+            Clock,
+            TimeSpan.FromMinutes(5));
+
+        Assert.Equal(DurableWorkLifecycle.RetryScheduled, result!.Lifecycle);
+        Assert.Equal(DurableWorkFailureCategory.ProviderUnavailable, result.FailureCategory);
+        Assert.NotEqual(DurableWorkFailureCategory.AuthorizationDenied, result.FailureCategory);
+        Assert.Equal(0, handler.Calls);
+    }
+
+    [Fact]
+    public async Task Outbox_revalidation_cancellation_retries_without_running_effect()
+    {
+        var context = CreateContext();
+        var store = new InMemoryRelationalDurableWorkStore();
+        var work = Work(context, "outbox-authority-cancel");
+        Assert.True(await store.SubmitAsync(work));
+        var effects = 0;
+
+        var result = await store.DispatchOutboxAsync(
+            context,
+            new ControlledAuthorityRevalidator(AuthorityBehavior.Cancelled),
+            Clock,
+            (_, _, _) =>
+            {
+                effects++;
+                return ValueTask.CompletedTask;
+            });
+
+        Assert.True(result.RetryScheduled);
+        Assert.False(result.DeadLettered);
+        Assert.Equal(DurableWorkFailureCategory.Cancelled, result.FailureCategory);
+        Assert.Equal(0, effects);
+    }
+
+    [Fact]
+    public async Task Outbox_revalidation_provider_failure_retries_without_authorization_denial()
+    {
+        var context = CreateContext();
+        var store = new InMemoryRelationalDurableWorkStore();
+        var work = Work(context, "outbox-authority-provider");
+        Assert.True(await store.SubmitAsync(work));
+        var effects = 0;
+
+        var result = await store.DispatchOutboxAsync(
+            context,
+            new ControlledAuthorityRevalidator(AuthorityBehavior.ProviderUnavailable),
+            Clock,
+            (_, _, _) =>
+            {
+                effects++;
+                return ValueTask.CompletedTask;
+            });
+
+        Assert.True(result.RetryScheduled);
+        Assert.False(result.DeadLettered);
+        Assert.Equal(DurableWorkFailureCategory.ProviderUnavailable, result.FailureCategory);
+        Assert.NotEqual(DurableWorkFailureCategory.AuthorizationDenied, result.FailureCategory);
+        Assert.Equal(0, effects);
+    }
+
+    [Fact]
     public async Task Missing_trusted_context_blocks_execution()
     {
-        var worker = new TenantDurableWorkWorker(new InMemoryRelationalDurableWorkStore(), new DurableWorkDispatcher());
+        var worker = new TenantDurableWorkWorker(new InMemoryRelationalDurableWorkStore(), new DurableWorkDispatcher(OperationCatalogue), new TestAuthorityRevalidator());
         await Assert.ThrowsAsync<ArgumentNullException>(async () => await worker.ProcessOneAsync(
             null!, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(1)));
     }
@@ -271,7 +417,7 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var adapter = new InMemoryNotificationAdapter();
-        var intent = TenantNotificationIntent.Create(context, TenantWorkScope.ForServerContext(context), new NotificationRecipientReference(Guid.NewGuid()), "welcome", "en", "notify-1");
+        var intent = TenantNotificationIntent.Create(context, DurableWorkTestSupport.TenantWideScope(context), new NotificationRecipientReference(Guid.NewGuid()), "welcome", "en", "notify-1");
         var first = await adapter.DeliverAsync(context, intent);
         var second = await adapter.DeliverAsync(context, intent);
         Assert.True(first.Delivered);
@@ -283,7 +429,7 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var adapter = new InMemoryNotificationAdapter(_ => DurableWorkFailureCategory.ProviderUnavailable);
-        var intent = TenantNotificationIntent.Create(context, TenantWorkScope.ForServerContext(context), new NotificationRecipientReference(Guid.NewGuid()), "welcome", "en", "notify-failure");
+        var intent = TenantNotificationIntent.Create(context, DurableWorkTestSupport.TenantWideScope(context), new NotificationRecipientReference(Guid.NewGuid()), "welcome", "en", "notify-failure");
         var result = await adapter.DeliverAsync(context, intent);
         Assert.Equal(DurableWorkFailureCategory.ProviderUnavailable, result.FailureCategory);
         Assert.Equal("provider_unavailable", result.SafeOutcome);
@@ -294,7 +440,7 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var adapter = new InMemoryNotificationAdapter();
-        var intent = TenantNotificationIntent.Create(context, TenantWorkScope.ForServerContext(context), new NotificationRecipientReference(Guid.NewGuid()), "welcome", "en", "notify-safe");
+        var intent = TenantNotificationIntent.Create(context, DurableWorkTestSupport.TenantWideScope(context), new NotificationRecipientReference(Guid.NewGuid()), "welcome", "en", "notify-safe");
         await adapter.DeliverAsync(context, intent);
         Assert.DoesNotContain("@", string.Join("|", adapter.Decisions));
         Assert.DoesNotContain(typeof(TenantNotificationIntent).GetProperties(), property => property.Name.Contains("Email", StringComparison.OrdinalIgnoreCase));
@@ -304,7 +450,7 @@ public sealed class DurableWorkTests
     public async Task File_metadata_requires_exact_tenant()
     {
         var context = CreateContext();
-        var foreignScope = TenantWorkScope.ForServerContext(CreateContext());
+        var foreignScope = DurableWorkTestSupport.TenantWideScope(CreateContext());
         var storage = new InMemoryPrivateObjectStorage();
         await Assert.ThrowsAsync<ArgumentException>(() => storage.StoreAsync(
             context,
@@ -319,7 +465,7 @@ public sealed class DurableWorkTests
     {
         var tenantB = CreateContext();
         var storage = new InMemoryPrivateObjectStorage();
-        var metadata = await storage.StoreAsync(tenantB, TenantWorkScope.ForServerContext(tenantB), "private.txt", "text/plain", Content("secret"));
+        var metadata = await storage.StoreAsync(tenantB, DurableWorkTestSupport.TenantWideScope(tenantB), "private.txt", "text/plain", Content("secret"));
         var result = await storage.ReadAsync(CreateContext(), metadata.ObjectId);
         Assert.Equal(PrivateFileAccessOutcome.TenantDenied, result.Outcome);
         Assert.Null(result.Metadata);
@@ -331,7 +477,7 @@ public sealed class DurableWorkTests
     {
         var tenantB = CreateContext();
         var storage = new InMemoryPrivateObjectStorage();
-        var metadata = await storage.StoreAsync(tenantB, TenantWorkScope.ForServerContext(tenantB), "private.txt", "text/plain", Content("secret"));
+        var metadata = await storage.StoreAsync(tenantB, DurableWorkTestSupport.TenantWideScope(tenantB), "private.txt", "text/plain", Content("secret"));
         var result = await storage.OverwriteAsync(CreateContext(), metadata.ObjectId, metadata.ConcurrencyVersion, Content("forged"));
         Assert.Equal(PrivateFileAccessOutcome.TenantDenied, result.Outcome);
     }
@@ -341,7 +487,7 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var storage = new InMemoryPrivateObjectStorage();
-        var metadata = await storage.StoreAsync(context, TenantWorkScope.ForServerContext(context), "private.txt", "text/plain", Content("safe"));
+        var metadata = await storage.StoreAsync(context, DurableWorkTestSupport.TenantWideScope(context), "private.txt", "text/plain", Content("safe"));
         storage.TamperForValidation(metadata.ObjectId, "tampered"u8.ToArray());
         var result = await storage.ReadAsync(context, metadata.ObjectId);
         Assert.Equal(PrivateFileAccessOutcome.ChecksumFailed, result.Outcome);
@@ -352,7 +498,7 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var storage = new InMemoryPrivateObjectStorage();
-        var metadata = await storage.StoreAsync(context, TenantWorkScope.ForServerContext(context), "old.txt", "text/plain", Content("old"), Clock.AddMinutes(-1));
+        var metadata = await storage.StoreAsync(context, DurableWorkTestSupport.TenantWideScope(context), "old.txt", "text/plain", Content("old"), Clock.AddMinutes(-1));
         var result = await storage.ReadAsync(context, metadata.ObjectId);
         Assert.Equal(PrivateFileAccessOutcome.Expired, result.Outcome);
         Assert.True(storage.ExistsForValidation(metadata.ObjectId));
@@ -377,7 +523,7 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var storage = new InMemoryPrivateObjectStorage();
-        var metadata = await storage.StoreAsync(context, TenantWorkScope.ForServerContext(context), "versioned.txt", "text/plain", Content("v1"));
+        var metadata = await storage.StoreAsync(context, DurableWorkTestSupport.TenantWideScope(context), "versioned.txt", "text/plain", Content("v1"));
         var staleVersion = metadata.ConcurrencyVersion;
         var first = await storage.OverwriteAsync(context, metadata.ObjectId, staleVersion, Content("v2"));
         var stale = await storage.OverwriteAsync(context, metadata.ObjectId, staleVersion, Content("stale"));
@@ -436,10 +582,146 @@ public sealed class DurableWorkTests
     public void Work_identity_requires_idempotency_and_stable_event_fields()
     {
         var context = CreateContext();
-        Assert.Throws<ArgumentException>(() => new DurableWorkIdentity(Guid.NewGuid(), "op", context.CorrelationId!.Value, "", "type"));
+        Assert.Throws<ArgumentException>(() => DurableWorkIdentity.Create(Guid.NewGuid(), OperationCatalogue, "foundation.work", context.CorrelationId!.Value, ""));
         var identity = Identity(context);
         Assert.NotEqual(Guid.Empty, identity.WorkItemId);
         Assert.Equal("demo", identity.WorkType);
+    }
+
+    [Fact]
+    public void Operation_catalogue_owns_permission_and_handler_binding()
+    {
+        Assert.Empty(typeof(DurableWorkIdentity).GetConstructors(BindingFlags.Public | BindingFlags.Instance));
+        Assert.DoesNotContain(
+            typeof(TenantWorkScope).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static),
+            method => method.Name == "ForServerContext");
+
+        var wrongPermissionHandler = new WrongPermissionHandler();
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue);
+        Assert.Throws<ArgumentException>(() => dispatcher.Register(wrongPermissionHandler));
+    }
+
+    [Fact]
+    public void Protected_durable_effects_cannot_bypass_mandatory_security_evidence()
+    {
+        var registered = OperationCatalogue.TryGet("foundation.work", out var operation)
+            ? operation
+            : throw new InvalidOperationException("The test operation is not registered.");
+        Assert.True(registered.RequiresMandatorySecurityEvidence);
+
+        var optionalDescriptor = new DurableWorkOperationDescriptor(
+            registered.OperationId,
+            registered.WorkType,
+            registered.ExactPermissionCode,
+            registered.AllowedAuthorizationPaths,
+            registered.ScopePolicy,
+            registered.RequiresCurrentSession,
+            requiresMandatorySecurityEvidence: false);
+        var optionalCatalogue = new DurableWorkOperationCatalogue([optionalDescriptor]);
+        var context = CreateContext();
+        var identity = DurableWorkIdentity.Create(
+            Guid.NewGuid(),
+            optionalCatalogue,
+            registered.OperationId,
+            context.CorrelationId!.Value,
+            "mandatory-evidence-policy");
+
+        Assert.Throws<ArgumentException>(() => DurableWorkItem.Create(
+            context,
+            DurableWorkTestSupport.TenantWideScope(context),
+            identity,
+            new DemoPayload("protected"),
+            Guid.NewGuid()));
+
+        var dispatcher = new DurableWorkDispatcher(optionalCatalogue);
+        Assert.Throws<ArgumentException>(() => dispatcher.Register(new MissingMandatoryEvidenceHandler(optionalDescriptor)));
+    }
+
+    [Fact]
+    public void Verified_authority_issuers_are_syntax_tree_allow_listed()
+    {
+        var sourceRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "src",
+            "MiniErp.App"));
+        var testRoot = Path.GetFullPath(Path.Combine(sourceRoot, "..", "..", "tests"));
+        var approvedIdentityIssuer = Path.GetFullPath(Path.Combine(
+            sourceRoot,
+            "Modules",
+            "Identity",
+            "IdentityAuthorizationService.cs"));
+        var productionScopeIssuers = new List<string>();
+        var productionAuthorizationIssuers = new List<string>();
+        var testScopeIssuers = new List<string>();
+        var testAuthorizationIssuers = new List<string>();
+
+        foreach (var path in Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            CollectIssuerCallSites(
+                path,
+                productionScopeIssuers,
+                productionAuthorizationIssuers);
+        }
+
+        foreach (var path in Directory.GetFiles(testRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            CollectIssuerCallSites(
+                path,
+                testScopeIssuers,
+                testAuthorizationIssuers);
+        }
+
+        Assert.NotEmpty(productionScopeIssuers);
+        Assert.NotEmpty(productionAuthorizationIssuers);
+        Assert.All(productionScopeIssuers, path =>
+            Assert.Equal(
+                approvedIdentityIssuer,
+                Path.GetFullPath(path),
+                StringComparer.OrdinalIgnoreCase));
+        Assert.All(productionAuthorizationIssuers, path =>
+            Assert.Equal(
+                approvedIdentityIssuer,
+                Path.GetFullPath(path),
+                StringComparer.OrdinalIgnoreCase));
+        Assert.All(testScopeIssuers, path =>
+            Assert.StartsWith(testRoot, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase));
+        Assert.All(testAuthorizationIssuers, path =>
+            Assert.StartsWith(testRoot, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase));
+
+        static void CollectIssuerCallSites(
+            string path,
+            ICollection<string> scopeIssuers,
+            ICollection<string> authorizationIssuers)
+        {
+            var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path);
+            var root = tree.GetRoot();
+            if (root.DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Any(IsVerifiedScopeIssuance))
+            {
+                scopeIssuers.Add(path);
+            }
+
+            if (root.DescendantNodes()
+                .OfType<ObjectCreationExpressionSyntax>()
+                .Any(IsVerifiedAuthorizationConstruction))
+            {
+                authorizationIssuers.Add(path);
+            }
+        }
+
+        static bool IsVerifiedScopeIssuance(InvocationExpressionSyntax invocation) =>
+            invocation.Expression is MemberAccessExpressionSyntax member
+            && member.Name.Identifier.ValueText == nameof(TenantWorkScope.IssueFromVerifiedAuthority)
+            && member.Expression.ToString() == nameof(TenantWorkScope);
+
+        static bool IsVerifiedAuthorizationConstruction(ObjectCreationExpressionSyntax creation) =>
+            creation.Type.ToString() == nameof(VerifiedDurableWorkAuthorization);
     }
 
     [Fact]
@@ -447,12 +729,12 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var store = new InMemoryRelationalDurableWorkStore();
-        var dispatcher = new DurableWorkDispatcher();
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue);
         var handler = new SuccessfulHandler();
         dispatcher.Register(handler);
         var item = Work(context, "typed");
         await store.SubmitAsync(item);
-        var worker = new TenantDurableWorkWorker(store, dispatcher);
+        var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
         await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
         Assert.Equal(1, handler.Calls);
         Assert.Contains(await store.ReadAuditAsync(context), item => item.EventType == "work.completed");
@@ -465,7 +747,7 @@ public sealed class DurableWorkTests
         var store = new InMemoryRelationalDurableWorkStore();
         var item = Work(context, "unregistered");
         await store.SubmitAsync(item);
-        var worker = new TenantDurableWorkWorker(store, new DurableWorkDispatcher());
+        var worker = new TenantDurableWorkWorker(store, new DurableWorkDispatcher(OperationCatalogue), new TestAuthorityRevalidator());
         var result = await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
         Assert.Equal(DurableWorkLifecycle.DeadLetter, result!.Lifecycle);
         Assert.Equal(DurableWorkFailureCategory.ValidationFailed, result.FailureCategory);
@@ -485,14 +767,20 @@ public sealed class DurableWorkTests
         int maximumAttempts = 3) =>
         DurableWorkItem.Create(
             context,
-            TenantWorkScope.ForServerContext(context),
+            DurableWorkTestSupport.TenantWideScope(context),
             Identity(context, key),
             new DemoPayload(payload),
+            Guid.NewGuid(),
             maximumAttempts,
             Clock);
 
     private static DurableWorkIdentity Identity(TenantContext context, string key = "key") =>
-        new(Guid.NewGuid(), "foundation.work", context.CorrelationId!.Value, key, "demo");
+        DurableWorkIdentity.Create(
+            Guid.NewGuid(),
+            OperationCatalogue,
+            "foundation.work",
+            context.CorrelationId!.Value,
+            key);
 
     private static TenantContext CreateContext(TenantId? tenantId = null) =>
         TenantContext.ForOrdinaryMembership(
@@ -519,7 +807,9 @@ public sealed class DurableWorkTests
     {
         public int Calls { get; private set; }
 
-        public string WorkType => "demo";
+        public DurableWorkOperationDescriptor Operation => OperationCatalogue.TryGet("foundation.work", out var operation)
+            ? operation
+            : throw new InvalidOperationException("The test operation is not registered.");
 
         public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
             DemoPayload payload,
@@ -529,6 +819,99 @@ public sealed class DurableWorkTests
             Calls++;
             Assert.Equal(context.TenantContext.TenantId, context.Scope.TenantId);
             return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+        }
+    }
+
+    private sealed class ScopeCaptureHandler : IDurableWorkHandler<DemoPayload>
+    {
+        internal TenantContext? SeenContext { get; private set; }
+
+        internal TenantWorkScope? SeenScope { get; private set; }
+
+        public DurableWorkOperationDescriptor Operation => OperationCatalogue.TryGet("foundation.work", out var operation)
+            ? operation
+            : throw new InvalidOperationException("The test operation is not registered.");
+
+        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+            DemoPayload payload,
+            DurableWorkExecutionContext context,
+            CancellationToken cancellationToken = default)
+        {
+            SeenContext = context.TenantContext;
+            SeenScope = context.Scope;
+            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+        }
+    }
+
+    private sealed class WrongPermissionHandler : IDurableWorkHandler<DemoPayload>
+    {
+        public DurableWorkOperationDescriptor Operation { get; } =
+            new(
+                "foundation.work",
+                "demo",
+                "tenant.business.export",
+                [TenantAuthorizationPath.OrdinaryMembership]);
+
+        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+            DemoPayload payload,
+            DurableWorkExecutionContext context,
+            CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+    }
+
+    private sealed class MissingMandatoryEvidenceHandler : IDurableWorkHandler<DemoPayload>
+    {
+        internal MissingMandatoryEvidenceHandler(DurableWorkOperationDescriptor operation)
+        {
+            Operation = operation;
+        }
+
+        public DurableWorkOperationDescriptor Operation { get; }
+
+        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+            DemoPayload payload,
+            DurableWorkExecutionContext context,
+            CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+    }
+
+    private sealed class TestAuthorityRevalidator : IDurableWorkAuthorityRevalidator
+    {
+        public ValueTask<DurableWorkAuthorityValidationResult> RevalidateAsync(
+            DurableWorkItem workItem,
+            TenantContext currentTenantContext,
+            DateTimeOffset now,
+            CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(DurableWorkTestSupport.Approve(workItem, currentTenantContext));
+    }
+
+    private enum AuthorityBehavior
+    {
+        Cancelled,
+        ProviderUnavailable
+    }
+
+    private sealed class ControlledAuthorityRevalidator : IDurableWorkAuthorityRevalidator
+    {
+        private readonly AuthorityBehavior behavior;
+
+        internal ControlledAuthorityRevalidator(AuthorityBehavior behavior)
+        {
+            this.behavior = behavior;
+        }
+
+        public ValueTask<DurableWorkAuthorityValidationResult> RevalidateAsync(
+            DurableWorkItem workItem,
+            TenantContext currentTenantContext,
+            DateTimeOffset now,
+            CancellationToken cancellationToken = default)
+        {
+            if (behavior == AuthorityBehavior.Cancelled)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+
+            throw new InvalidOperationException("simulated authority provider failure");
         }
     }
 }
