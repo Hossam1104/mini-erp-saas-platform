@@ -367,3 +367,38 @@ rowversion, collation, Tenant-filter, stored-owner, relationship, transaction,
 idempotency or lease probe was introduced by this review, and the exact
 75-assertion catalogue is untouched. The SQL Server evidence remains a
 disposable-LocalDB probe and is not a production provider selection.
+
+## O92-01/O92-02 focused correction — 7 August 2026
+
+A bounded correction closed the two non-blocking Low findings the Opus 5
+project-wide checkpoint recorded above at head `271e9df`: O92-01 (the effect
+guard discarded its uncertain-effect safe reason) and O92-02 (the
+`NextAttemptAt` fallback that contradicted the documented occurrence-time
+invariant). Both are closed at head `9dc6cb82860b10215d05364f2f6e25f69df3b986`
+on the same branch. No SQL Server schema, index, rowversion, collation,
+Tenant-filter, stored-owner, relationship, transaction, idempotency or lease
+probe changed; the existing 75-assertion safety catalogue is untouched.
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused durable-work regression (baseline + all corrections) | 216 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~DurableWork` |
+| Complete backend suite | 474 passed, 0 failed, 0 skipped | `powershell -ExecutionPolicy Bypass -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped | `npm test -- --watch=false` |
+| Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred | `npm run build` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Diff check | Passed, no whitespace errors | `git diff --check` |
+| Hosted CI | Not available | No hosted workflow is configured in this repository |
+
+No `MiniErpFoundation_*` database remained in `MSSQLLocalDB` after teardown.
+New focused evidence for O92-01 lives in `DurableWorkPayloadAndEffectTests`
+(guard-level reason preservation, duplicate/different-reason overwrite
+rejection, handler/outbox and cross-EventId reason isolation, unsafe/unbounded
+reason rejection); O92-02 evidence in the same file covers exact handler and
+outbox `OutcomeUnknownAt` transition timestamps, the `NextAttemptAt`
+non-substitution proof, and reflection-based corrupted-record fail-closed
+tests (no production member was made public solely for testing). MESP-92 is
+**not** marked Done by this correction; PR #22 remains open, non-draft and
+held unmerged pending a focused ChatGPT security re-review at this head.

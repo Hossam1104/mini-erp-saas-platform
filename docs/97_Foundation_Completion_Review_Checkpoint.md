@@ -137,6 +137,24 @@ Code verdict: **CHANGES REQUIRED BEFORE MERGE** — 0 Critical, 0 High,
 0 Medium, 2 Low. PR #22 remains open, unmerged and **not approved**; the merge
 hold is the standing MESP-92 process gate awaiting focused ChatGPT re-review.
 
+### O92-01/O92-02 closure overlay — 7 August 2026 (current, not a rewrite of the checkpoint above)
+
+The checkpoint text above reflects head `271e9df` exactly as the Opus 5
+project-wide review found it and is preserved unchanged. A bounded correction
+on the same branch, at head `9dc6cb82860b10215d05364f2f6e25f69df3b986`, closes
+both findings the review recorded: the guard now persists and exposes the
+uncertain-effect safe reason it previously discarded (O92-01), and the
+uncertain-effect read port now fails closed on a missing `OutcomeUnknownAt`
+instead of substituting `NextAttemptAt` (O92-02). See
+[`docs/94_Product_Delivery_Master_Plan.md`](94_Product_Delivery_Master_Plan.md#mesp-92-o92-01o92-02-focused-correction--in-progress)
+and
+[`docs/96_Foundation_Release1_Safety_Validation.md`](96_Foundation_Release1_Safety_Validation.md#o92-01o92-02-focused-correction--7-august-2026)
+for the full correction record and re-run validation totals
+(216/216 focused, 474/474 full backend, 11/11 SQL LocalDB, 27/27 Angular,
+Playwright 4/4, 0 audit vulnerabilities). No known MESP-92 code finding
+remains open. PR #22 remains open, non-draft and unmerged pending a focused
+ChatGPT security re-review at this head; MESP-92 is not marked Done.
+
 ## MESP-91 correction overlay — merged and Done
 
 The MESP-64 merged-main checkpoint above is the prior historical Foundation

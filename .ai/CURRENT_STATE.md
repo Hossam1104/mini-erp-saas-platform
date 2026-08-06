@@ -7,7 +7,8 @@ A new agent can begin from this section with no prior chat history.
 | Fact | Verified value |
 |---|---|
 | Current branch | `fix/MESP-92-single-effect-immutable-payloads` |
-| Current branch head | `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4` |
+| Current branch head | `9dc6cb82860b10215d05364f2f6e25f69df3b986` |
+| Previous branch head | `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4` (Opus 5 project-wide review head; PRD `R100` rename) |
 | Merged-main baseline | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` |
 | Open Pull Request | PR #22 — open, non-draft, **unmerged**, **not approved** |
 | Active Jira item | **MESP-92 — In Progress** (the only active bounded implementation item) |
@@ -21,7 +22,7 @@ A new agent can begin from this section with no prior chat history.
 | Hosted CI | None configured — all validation is local only |
 
 **Exact next action:** obtain the focused ChatGPT security review of PR #22 at
-head `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4`. Do not merge PR #22, do not
+head `9dc6cb82860b10215d05364f2f6e25f69df3b986`. Do not merge PR #22, do not
 close MESP-92, and do not start MESP-93, MESP-94 or MESP-31 until that review
 authorizes the next step. The merge hold is a standing process gate.
 
@@ -33,16 +34,27 @@ the move is recorded as a Git `R100` rename in commit
 `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4`. Historical documents may say
 "formerly `<old-name>`, now maintained at `docs/MESP_PRD_v1.2.docx`".
 
-**Open MESP-92 findings after the Opus 5 project-wide review of 6 August 2026:**
-0 Critical, 0 High, 0 Medium, 2 Low, none merge-blocking.
+**MESP-92 findings after the Opus 5 project-wide review of 6 August 2026:**
+0 Critical, 0 High, 0 Medium, 2 Low, none merge-blocking. Both Low findings are
+now **closed** by the bounded correction at head
+`9dc6cb82860b10215d05364f2f6e25f69df3b986` (7 August 2026); no known MESP-92
+code finding remains open.
 
-- **O92-01 (Low)** — `InMemoryDurableWorkEffectGuard.RecordOutcomeUnknown`
-  accepts a `safeReason` and discards it; the guard keeps no reason for an
-  uncertain effect. Evidence-completeness weakness only.
-- **O92-02 (Low)** — `InMemoryDurableWorkStore.ReadUncertainEffectsAsync` still
-  falls back to `message.NextAttemptAt` when `OutcomeUnknownAt` is null, while
-  the adjacent comment says `NextAttemptAt` is never reused as the occurrence
-  time. Currently unreachable; a code/comment contradiction.
+- **O92-01 (Low) — closed.** `InMemoryDurableWorkEffectGuard.RecordOutcomeUnknown`
+  used to accept a `safeReason` and discard it. The guard now persists the
+  sanitized reason on its own `EffectRecord` and exposes it read-only through
+  `IDurableWorkEffectGuard.GetOutcomeUnknownReason`; the existing
+  Reserved-only write guard already makes the transition one-way, so a
+  duplicate or different-reason call cannot replace an already-recorded
+  reason. An unsafe, empty or unbounded reason fails closed with
+  `ArgumentException`. No public mutation surface was added.
+- **O92-02 (Low) — closed.** `InMemoryDurableWorkStore.ReadUncertainEffectsAsync`
+  used to fall back to `message.NextAttemptAt` when `OutcomeUnknownAt` was
+  null. `DurableWorkItem` now carries its own `OutcomeUnknownAt` (set only on
+  the `OutcomeUnknown` transition, mirroring `TenantOutboxMessage`'s existing
+  field), and the read port fails closed with a generic
+  `InvalidOperationException` — no work item id, tenant id or internal type
+  name — instead of substituting `NextAttemptAt` or any other timestamp.
 
 **Verified maturity boundary:** `DurableWorkLocalRuntime`,
 `InMemoryDurableWorkStore`, `DurableWorkDispatcher` and
@@ -202,6 +214,21 @@ not composed into the running host and is not a production capability.
   vulnerabilities. This rerun covered the **complete frontend regression**,
   closing the earlier gap where it had not been rerun after the second MESP-92
   correction.
+- O92-01/O92-02 bounded correction at head
+  `9dc6cb82860b10215d05364f2f6e25f69df3b986` (7 August 2026): both Low findings
+  from the Opus 5 project-wide review are closed (see above). Focused
+  DurableWork suite **216/216** passed; full backend regression via
+  `validate-foundation.ps1` **474/474** passed with 0 failed and 0 skipped,
+  including **11/11** SQL Server LocalDB probes and no `MiniErpFoundation_*`
+  database remaining after teardown; Release build **0 warnings/0 errors**;
+  Angular unit tests **27/27** passed; Angular production build succeeded;
+  Playwright **4/4** passed; `npm audit --omit=dev --audit-level=high`
+  reported **0** vulnerabilities. No known MESP-92 code finding remains open.
+  MESP-92 is **not** marked Done; PR #22 remains open, non-draft and unmerged
+  pending a focused ChatGPT security re-review at this head. MESP-93,
+  MESP-94 and MESP-31 remain To Do; no Sprint is active; MESP-48 and MESP-50
+  remain explicit production gates. The `local-prd-rename-before-MESP-92`
+  stash was preserved untouched throughout this correction.
 
 ## MESP-91 correction overlay — merged and Done
 
