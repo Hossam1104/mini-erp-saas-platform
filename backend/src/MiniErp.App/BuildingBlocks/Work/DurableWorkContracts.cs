@@ -11,7 +11,17 @@ public enum DurableWorkLifecycle
     Claimed = 2,
     Completed = 3,
     RetryScheduled = 4,
-    DeadLetter = 5
+    DeadLetter = 5,
+
+    /// <summary>
+    /// The protected-effect boundary was reached but its completion could not
+    /// be proven (crash, cancellation or a provider-reported OutcomeUnknown).
+    /// This is a dedicated Tenant-scoped reconciliation state: normal polling
+    /// never selects it and ordinary dead-letter/replay handling never
+    /// restarts it. Only explicit, Tenant-scoped reconciliation access may
+    /// read it.
+    /// </summary>
+    OutcomeUnknown = 6
 }
 
 /// <summary>Safe, provider-neutral failure categories.</summary>
@@ -590,6 +600,12 @@ public sealed class DurableWorkItem : ITenantOwned
         {
             Lifecycle = DurableWorkLifecycle.Completed;
         }
+        else if (result.IsOutcomeUnknown)
+        {
+            // Uncertain effects are never auto-retried, regardless of the
+            // remaining attempt budget: only explicit reconciliation applies.
+            Lifecycle = DurableWorkLifecycle.OutcomeUnknown;
+        }
         else if (result.DeadLetter || AttemptCount >= MaximumAttempts)
         {
             Lifecycle = DurableWorkLifecycle.DeadLetter;
@@ -810,12 +826,14 @@ public sealed class DurableWorkHandlerResult
     private DurableWorkHandlerResult(
         bool success,
         bool deadLetter,
+        bool isOutcomeUnknown,
         TimeSpan retryAfter,
         DurableWorkFailureCategory failureCategory,
         string? safeReason)
     {
         Success = success;
         DeadLetter = deadLetter;
+        IsOutcomeUnknown = isOutcomeUnknown;
         RetryAfter = retryAfter;
         FailureCategory = failureCategory;
         SafeReason = safeReason;
@@ -825,6 +843,13 @@ public sealed class DurableWorkHandlerResult
 
     public bool DeadLetter { get; }
 
+    /// <summary>
+    /// The protected-effect boundary was reached but completion could not be
+    /// proven. Distinct from an ordinary <see cref="DeadLetter"/>: it is
+    /// never automatically retried and requires explicit reconciliation.
+    /// </summary>
+    public bool IsOutcomeUnknown { get; }
+
     public TimeSpan RetryAfter { get; }
 
     public DurableWorkFailureCategory FailureCategory { get; }
@@ -832,7 +857,7 @@ public sealed class DurableWorkHandlerResult
     public string? SafeReason { get; }
 
     public static DurableWorkHandlerResult Succeeded() =>
-        new(true, false, TimeSpan.Zero, DurableWorkFailureCategory.None, null);
+        new(true, false, false, TimeSpan.Zero, DurableWorkFailureCategory.None, null);
 
     public static DurableWorkHandlerResult Retry(
         DurableWorkFailureCategory category,
@@ -844,13 +869,20 @@ public sealed class DurableWorkHandlerResult
             throw new ArgumentException("Retry requires a bounded failure category and delay.");
         }
 
-        return new(false, false, retryAfter > TimeSpan.FromHours(1) ? TimeSpan.FromHours(1) : retryAfter, category, SanitizeReason(safeReason));
+        return new(false, false, false, retryAfter > TimeSpan.FromHours(1) ? TimeSpan.FromHours(1) : retryAfter, category, SanitizeReason(safeReason));
     }
 
     public static DurableWorkHandlerResult DeadLettered(
         DurableWorkFailureCategory category,
         string safeReason) =>
-        new(false, true, TimeSpan.Zero, category == DurableWorkFailureCategory.None ? DurableWorkFailureCategory.Unknown : category, SanitizeReason(safeReason));
+        new(false, true, false, TimeSpan.Zero, category == DurableWorkFailureCategory.None ? DurableWorkFailureCategory.Unknown : category, SanitizeReason(safeReason));
+
+    /// <summary>
+    /// Records an explicit uncertain outcome. Never automatically repeats;
+    /// requires reconciliation through the Tenant-scoped reconciliation port.
+    /// </summary>
+    public static DurableWorkHandlerResult OutcomeUnknown(string safeReason) =>
+        new(false, false, true, TimeSpan.Zero, DurableWorkFailureCategory.Unknown, SanitizeReason(safeReason));
 
     private static string SanitizeReason(string value)
     {
@@ -880,13 +912,20 @@ public sealed record DurableWorkCompletion(
         new(false, DurableWorkLifecycle.Claimed, 0, failureCategory);
 }
 
-/// <summary>Handler-specific typed work contract.</summary>
+/// <summary>
+/// Handler-specific typed work contract. <see cref="ExecuteAsync"/> runs only
+/// inside the approved effect executor, after the effect reservation
+/// boundary: it must return an explicit <see cref="DurableWorkProtectedEffectResult"/>
+/// outcome. A bare generic retry is not a representable return value, so a
+/// handler cannot apply an effect and then release its own reservation by
+/// accident.
+/// </summary>
 public interface IDurableWorkHandler<TPayload>
     where TPayload : IWorkPayload
 {
     DurableWorkOperationDescriptor Operation { get; }
 
-    ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+    ValueTask<DurableWorkProtectedEffectResult> ExecuteAsync(
         TPayload payload,
         DurableWorkExecutionContext context,
         CancellationToken cancellationToken = default);
@@ -1038,6 +1077,20 @@ public sealed record DurableWorkAuditRecord(
     int AttemptCount);
 
 /// <summary>
+/// Safe, Tenant-scoped evidence of one effect currently in the explicit
+/// <see cref="DurableWorkLifecycle.OutcomeUnknown"/> reconciliation state.
+/// Never carries payload bytes, provider exception text or any other secret;
+/// only a bounded safe reason and correlation are recorded.
+/// </summary>
+public sealed record DurableWorkUncertainEffectRecord(
+    DateTimeOffset OccurredAt,
+    DurableWorkEffectPurpose Purpose,
+    TenantId TenantId,
+    Guid WorkItemId,
+    CorrelationId CorrelationId,
+    string SafeReason);
+
+/// <summary>
 /// Transactional, Tenant-bound durable-work seam. The Foundation implementation
 /// is a deterministic in-memory local adapter; it is not a relational, SQL-backed,
 /// process-crash-durable, production-ready or distributed exactly-once store.
@@ -1069,10 +1122,21 @@ public interface IDurableWorkStore
         TenantContext tenantContext,
         IDurableWorkAuthorityRevalidator authorityRevalidator,
         DateTimeOffset now,
-        Func<TenantOutboxMessage, VerifiedDurableWorkAuthorization, CancellationToken, ValueTask> effect,
+        Func<TenantOutboxMessage, VerifiedDurableWorkAuthorization, CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> effect,
         CancellationToken cancellationToken = default);
 
     ValueTask<IReadOnlyList<DurableWorkAuditRecord>> ReadAuditAsync(
+        TenantContext tenantContext,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tenant-scoped reconciliation read port. Returns only records currently
+    /// in the explicit <see cref="DurableWorkLifecycle.OutcomeUnknown"/> state
+    /// for the exact trusted Tenant; another Tenant's records are never
+    /// visible. This is a read-only evidence seam: it performs no production
+    /// reconciliation action or provider decision.
+    /// </summary>
+    ValueTask<IReadOnlyList<DurableWorkUncertainEffectRecord>> ReadUncertainEffectsAsync(
         TenantContext tenantContext,
         CancellationToken cancellationToken = default);
 }

@@ -137,6 +137,7 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
                     DurableWorkLifecycle.Completed => "work.completed",
                     DurableWorkLifecycle.RetryScheduled => "work.retry",
                     DurableWorkLifecycle.DeadLetter => "work.dead-letter",
+                    DurableWorkLifecycle.OutcomeUnknown => "work.outcome-unknown",
                     _ => "work.transition"
                 };
                 AddAudit(item, eventName, item.Lifecycle, completion.FailureCategory);
@@ -157,7 +158,7 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
         TenantContext tenantContext,
         IDurableWorkAuthorityRevalidator authorityRevalidator,
         DateTimeOffset now,
-        Func<TenantOutboxMessage, VerifiedDurableWorkAuthorization, CancellationToken, ValueTask> effect,
+        Func<TenantOutboxMessage, VerifiedDurableWorkAuthorization, CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> effect,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(tenantContext);
@@ -238,14 +239,14 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
             }
         }
 
-        var effectKey = new DurableWorkEffectKey(tenantContext.TenantId, message.WorkItemId, message.EventType);
+        var effectKey = DurableWorkEffectKey.ForOutboxEffect(
+            tenantContext.TenantId,
+            message.WorkItemId,
+            message.EventType,
+            message.EventId);
         var execution = await effectExecutor.ExecuteHandlerEffectAsync(
             effectKey,
-            async ct =>
-            {
-                await effect(message, authority.Authorization, ct);
-                return DurableWorkHandlerResult.Succeeded();
-            },
+            ct => effect(message, authority.Authorization, ct),
             cancellationToken);
 
         lock (syncRoot)
@@ -262,15 +263,29 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
             if (execution.Kind == DurableWorkEffectExecutionKind.OutcomeUnknown)
             {
                 // The effect boundary was reached but its completion could not
-                // be proven. DeliveryState stays Claimed so the Pending/RetryScheduled
-                // poll filter never automatically revisits it.
+                // be proven. DeliveryState moves to the explicit OutcomeUnknown
+                // reconciliation state so the Pending/RetryScheduled poll
+                // filter never automatically revisits it and ordinary
+                // dead-letter/replay handling cannot restart it.
+                message.DeliveryState = DurableWorkLifecycle.OutcomeUnknown;
                 message.FailureCategory = DurableWorkFailureCategory.Unknown;
                 AddAuditForMessage(message, "outbox.outcome-unknown", DurableWorkFailureCategory.Unknown);
                 return OutboxDispatchResult.OutcomeUnknownResult();
             }
 
-            // A proven not-applied outcome (for example, a concurrent in-flight
-            // effect) may use bounded retry.
+            if (handlerResult.DeadLetter)
+            {
+                // An explicit TerminalNotApplied outcome (or its replay): a
+                // safe terminal result that must never be retried, regardless
+                // of the remaining attempt budget.
+                message.DeliveryState = DurableWorkLifecycle.DeadLetter;
+                message.FailureCategory = handlerResult.FailureCategory;
+                AddAuditForMessage(message, "outbox.dead-letter", handlerResult.FailureCategory);
+                return OutboxDispatchResult.AsDeadLettered(handlerResult.FailureCategory);
+            }
+
+            // Only an explicit NotAppliedRetryable outcome (or in-flight
+            // contention) reaches this branch: bounded retry is safe.
             var terminalRetry = message.AttemptCount >= 3;
             message.DeliveryState = terminalRetry ? DurableWorkLifecycle.DeadLetter : DurableWorkLifecycle.RetryScheduled;
             message.FailureCategory = handlerResult.FailureCategory;
@@ -296,6 +311,47 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
         }
     }
 
+    /// <summary>
+    /// Tenant-scoped reconciliation read port. Returns handler work items and
+    /// outbox messages currently in the explicit OutcomeUnknown state for the
+    /// exact trusted Tenant only; no payload, exception or provider secret is
+    /// exposed.
+    /// </summary>
+    public ValueTask<IReadOnlyList<DurableWorkUncertainEffectRecord>> ReadUncertainEffectsAsync(
+        TenantContext tenantContext,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(tenantContext);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (syncRoot)
+        {
+            var handlerRecords = workItems.Values
+                .Where(item => item.TenantId == tenantContext.TenantId
+                    && item.Lifecycle == DurableWorkLifecycle.OutcomeUnknown)
+                .Select(item => new DurableWorkUncertainEffectRecord(
+                    item.UpdatedAt,
+                    DurableWorkEffectPurpose.Handler,
+                    item.TenantId,
+                    item.Identity.WorkItemId,
+                    item.Identity.CorrelationId,
+                    item.SafeFailureReason ?? "outcome_unknown"));
+
+            var outboxRecords = outbox.Values
+                .Where(message => message.TenantId == tenantContext.TenantId
+                    && message.DeliveryState == DurableWorkLifecycle.OutcomeUnknown)
+                .Select(message => new DurableWorkUncertainEffectRecord(
+                    message.NextAttemptAt,
+                    DurableWorkEffectPurpose.Outbox,
+                    message.TenantId,
+                    message.WorkItemId,
+                    message.CorrelationId,
+                    "outcome_unknown"));
+
+            return ValueTask.FromResult<IReadOnlyList<DurableWorkUncertainEffectRecord>>(
+                handlerRecords.Concat(outboxRecords).ToArray());
+        }
+    }
+
     /// <summary>Local test hook that expires a lease without changing ownership.</summary>
     internal async ValueTask ExpireLeasesAsync(DateTimeOffset now)
     {
@@ -312,14 +368,16 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
     /// <summary>
     /// Test-only replay hook. It models a redelivered outbox row while the
     /// effect guard retains its own completion record; production callers
-    /// cannot access the local adapter's internal validation hooks.
+    /// cannot access the local adapter's internal validation hooks. A message
+    /// in the explicit OutcomeUnknown reconciliation state is never restarted
+    /// by this generic replay path: only explicit reconciliation applies.
     /// </summary>
     internal bool ReplayOutboxForValidation(Guid workItemId, DateTimeOffset nextAttemptAt)
     {
         lock (syncRoot)
         {
             var message = outbox.Values.FirstOrDefault(item => item.WorkItemId == workItemId);
-            if (message is null)
+            if (message is null || message.DeliveryState == DurableWorkLifecycle.OutcomeUnknown)
             {
                 return false;
             }
@@ -426,7 +484,7 @@ public sealed class DurableWorkDispatcher
                     "typed_payload_mismatch");
             }
 
-            var effectKey = new DurableWorkEffectKey(item.TenantId, item.Identity.WorkItemId, item.Identity.OperationId);
+            var effectKey = DurableWorkEffectKey.ForHandlerEffect(item.TenantId, item.Identity.WorkItemId, item.Identity.OperationId);
             var execution = await effectExecutor.ExecuteHandlerEffectAsync(
                 effectKey,
                 ct => handler.ExecuteAsync(payload, context, ct),

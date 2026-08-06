@@ -4,10 +4,32 @@ using MiniErp.App.BuildingBlocks.Tenancy;
 
 namespace MiniErp.App.BuildingBlocks.Work;
 
-/// <summary>Server-owned identity for one protected durable-work effect.</summary>
+/// <summary>
+/// Server-owned category of one protected durable-work effect. Two effects
+/// with an identical Tenant, work item and operation but a different purpose
+/// are independent authorities and must never suppress each other.
+/// </summary>
+public enum DurableWorkEffectPurpose
+{
+    Handler = 1,
+    Outbox = 2
+}
+
+/// <summary>
+/// Server-owned identity for one protected durable-work effect. The purpose
+/// namespaces the key so a handler effect and an outbox effect for the same
+/// work item can never collide; an outbox effect additionally carries the
+/// immutable <see cref="EventId"/> so redelivery of the same event resolves
+/// to the same key while two different events remain independent.
+/// </summary>
 public sealed class DurableWorkEffectKey : IEquatable<DurableWorkEffectKey>
 {
-    public DurableWorkEffectKey(TenantId tenantId, Guid workItemId, string operationId)
+    private DurableWorkEffectKey(
+        TenantId tenantId,
+        DurableWorkEffectPurpose purpose,
+        Guid workItemId,
+        string operationId,
+        Guid? eventId)
     {
         if (workItemId == Guid.Empty)
         {
@@ -19,26 +41,61 @@ public sealed class DurableWorkEffectKey : IEquatable<DurableWorkEffectKey>
             throw new ArgumentException("Operation identifier is required and bounded.", nameof(operationId));
         }
 
+        if (purpose == DurableWorkEffectPurpose.Outbox && (eventId is null || eventId.Value == Guid.Empty))
+        {
+            throw new ArgumentException(
+                "An outbox effect key requires a non-empty immutable outbox event identifier.",
+                nameof(eventId));
+        }
+
+        if (purpose == DurableWorkEffectPurpose.Handler && eventId is not null)
+        {
+            throw new ArgumentException(
+                "A handler effect key must not carry an outbox event identifier.",
+                nameof(eventId));
+        }
+
         TenantId = tenantId;
+        Purpose = purpose;
         WorkItemId = workItemId;
         OperationId = operationId.Trim();
+        EventId = eventId;
     }
 
     public TenantId TenantId { get; }
+
+    public DurableWorkEffectPurpose Purpose { get; }
 
     public Guid WorkItemId { get; }
 
     public string OperationId { get; }
 
+    /// <summary>Immutable outbox event identifier. Always null for a handler-purpose key.</summary>
+    public Guid? EventId { get; }
+
+    /// <summary>Stable handler-effect identity: WorkItemId + OperationId.</summary>
+    public static DurableWorkEffectKey ForHandlerEffect(TenantId tenantId, Guid workItemId, string operationId) =>
+        new(tenantId, DurableWorkEffectPurpose.Handler, workItemId, operationId, eventId: null);
+
+    /// <summary>Stable outbox-effect identity: the immutable EventId, scoped to the work item and operation.</summary>
+    public static DurableWorkEffectKey ForOutboxEffect(
+        TenantId tenantId,
+        Guid workItemId,
+        string operationId,
+        Guid eventId) =>
+        new(tenantId, DurableWorkEffectPurpose.Outbox, workItemId, operationId, eventId);
+
     public bool Equals(DurableWorkEffectKey? other) =>
         other is not null
         && TenantId == other.TenantId
+        && Purpose == other.Purpose
         && WorkItemId == other.WorkItemId
-        && string.Equals(OperationId, other.OperationId, StringComparison.Ordinal);
+        && string.Equals(OperationId, other.OperationId, StringComparison.Ordinal)
+        && EventId == other.EventId;
 
     public override bool Equals(object? obj) => Equals(obj as DurableWorkEffectKey);
 
-    public override int GetHashCode() => HashCode.Combine(TenantId, WorkItemId, OperationId);
+    public override int GetHashCode() => HashCode.Combine(TenantId, Purpose, WorkItemId, OperationId, EventId);
 }
 
 /// <summary>Required states for one protected durable-work effect.</summary>
@@ -76,6 +133,8 @@ public sealed record DurableWorkEffectReservation(
 /// Narrow port guarding one protected durable-work effect. Reservation is the
 /// single non-reversible boundary: once reserved, only <see cref="RecordCompleted"/>,
 /// <see cref="RecordOutcomeUnknown"/> or <see cref="Release"/> may resolve it.
+/// One shared guard instance is the single authoritative ledger for every
+/// purpose-qualified effect key across the store and the dispatcher.
 /// </summary>
 public interface IDurableWorkEffectGuard
 {
@@ -169,6 +228,73 @@ public sealed class InMemoryDurableWorkEffectGuard : IDurableWorkEffectGuard
     private sealed record EffectRecord(DurableWorkEffectState State, DurableWorkHandlerResult? Result);
 }
 
+/// <summary>Explicit outcome of one protected-effect attempt made after the reservation boundary.</summary>
+public enum DurableWorkProtectedEffectOutcome
+{
+    Applied = 1,
+    NotAppliedRetryable = 2,
+    OutcomeUnknown = 3,
+    TerminalNotApplied = 4
+}
+
+/// <summary>
+/// Explicit, provider-reported result of one protected-effect attempt. A
+/// generic <see cref="DurableWorkHandlerResult"/> retry is never proof that an
+/// effect was not applied; only this contract, returned from inside the
+/// effect executor, may resolve the reservation. <see cref="Applied"/> and
+/// <see cref="TerminalNotApplied"/> record a safe terminal outcome and never
+/// automatically repeat. <see cref="NotAppliedRetryable"/> is the only
+/// outcome that releases the reservation for a bounded retry, and it must be
+/// used only when the provider/handler positively confirms no protected
+/// effect occurred. <see cref="OutcomeUnknown"/> never automatically repeats
+/// and requires reconciliation.
+/// </summary>
+public sealed class DurableWorkProtectedEffectResult
+{
+    private DurableWorkProtectedEffectResult(
+        DurableWorkProtectedEffectOutcome outcome,
+        DurableWorkHandlerResult safeResult)
+    {
+        Outcome = outcome;
+        SafeResult = safeResult;
+    }
+
+    public DurableWorkProtectedEffectOutcome Outcome { get; }
+
+    public DurableWorkHandlerResult SafeResult { get; }
+
+    public static DurableWorkProtectedEffectResult Applied(DurableWorkHandlerResult safeResult)
+    {
+        ArgumentNullException.ThrowIfNull(safeResult);
+        if (!safeResult.Success)
+        {
+            throw new ArgumentException("An Applied protected effect must carry a successful safe result.", nameof(safeResult));
+        }
+
+        return new(DurableWorkProtectedEffectOutcome.Applied, safeResult);
+    }
+
+    public static DurableWorkProtectedEffectResult NotAppliedRetryable(
+        DurableWorkFailureCategory category,
+        TimeSpan retryAfter,
+        string safeReason) =>
+        new(
+            DurableWorkProtectedEffectOutcome.NotAppliedRetryable,
+            DurableWorkHandlerResult.Retry(category, retryAfter, safeReason));
+
+    public static DurableWorkProtectedEffectResult OutcomeUnknown(string safeReason) =>
+        new(
+            DurableWorkProtectedEffectOutcome.OutcomeUnknown,
+            DurableWorkHandlerResult.OutcomeUnknown(safeReason));
+
+    public static DurableWorkProtectedEffectResult TerminalNotApplied(
+        DurableWorkFailureCategory category,
+        string safeReason) =>
+        new(
+            DurableWorkProtectedEffectOutcome.TerminalNotApplied,
+            DurableWorkHandlerResult.DeadLettered(category, safeReason));
+}
+
 /// <summary>Outcome of one attempted protected-effect execution.</summary>
 public enum DurableWorkEffectExecutionKind
 {
@@ -186,13 +312,16 @@ public sealed record DurableWorkEffectExecution(
 /// <summary>
 /// Orchestrates one protected durable-work effect through the effect guard.
 /// A crash, cancellation or state-recording failure after the reservation
-/// boundary never causes automatic effect repetition.
+/// boundary never causes automatic effect repetition. The protected callback
+/// must return an explicit <see cref="DurableWorkProtectedEffectResult"/>; a
+/// bare generic retry is not a representable outcome once the boundary has
+/// been crossed.
 /// </summary>
 public interface IDurableWorkEffectExecutor
 {
     ValueTask<DurableWorkEffectExecution> ExecuteHandlerEffectAsync(
         DurableWorkEffectKey key,
-        Func<CancellationToken, ValueTask<DurableWorkHandlerResult>> protectedEffect,
+        Func<CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> protectedEffect,
         CancellationToken cancellationToken = default);
 }
 
@@ -208,7 +337,7 @@ public sealed class DurableWorkEffectExecutor : IDurableWorkEffectExecutor
 
     public async ValueTask<DurableWorkEffectExecution> ExecuteHandlerEffectAsync(
         DurableWorkEffectKey key,
-        Func<CancellationToken, ValueTask<DurableWorkHandlerResult>> protectedEffect,
+        Func<CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> protectedEffect,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -228,9 +357,7 @@ public sealed class DurableWorkEffectExecutor : IDurableWorkEffectExecutor
             case DurableWorkEffectReservationKind.OutcomeUnknown:
                 return new DurableWorkEffectExecution(
                     DurableWorkEffectExecutionKind.OutcomeUnknown,
-                    DurableWorkHandlerResult.DeadLettered(
-                        DurableWorkFailureCategory.Unknown,
-                        "outcome_unknown_requires_reconciliation"));
+                    DurableWorkHandlerResult.OutcomeUnknown("outcome_unknown_requires_reconciliation"));
             case DurableWorkEffectReservationKind.InFlight:
                 return new DurableWorkEffectExecution(
                     DurableWorkEffectExecutionKind.InFlight,
@@ -242,21 +369,30 @@ public sealed class DurableWorkEffectExecutor : IDurableWorkEffectExecutor
 
         // The reservation is the single non-reversible boundary. From here,
         // any interruption is OutcomeUnknown; nothing may auto-retry.
-        DurableWorkHandlerResult result;
+        DurableWorkProtectedEffectResult protectedResult;
         try
         {
-            result = await protectedEffect(cancellationToken);
+            protectedResult = await protectedEffect(cancellationToken);
         }
         catch (Exception)
         {
             SafeRecordOutcomeUnknown(key, "effect_boundary_interrupted");
             return new DurableWorkEffectExecution(
                 DurableWorkEffectExecutionKind.OutcomeUnknown,
-                DurableWorkHandlerResult.DeadLettered(DurableWorkFailureCategory.Unknown, "effect_outcome_unknown"));
+                DurableWorkHandlerResult.OutcomeUnknown("effect_outcome_unknown"));
         }
 
+        if (protectedResult.Outcome == DurableWorkProtectedEffectOutcome.OutcomeUnknown)
+        {
+            SafeRecordOutcomeUnknown(key, protectedResult.SafeResult.SafeReason ?? "effect_outcome_unknown");
+            return new DurableWorkEffectExecution(DurableWorkEffectExecutionKind.OutcomeUnknown, protectedResult.SafeResult);
+        }
+
+        var result = protectedResult.SafeResult;
         if (result.Success || result.DeadLetter)
         {
+            // Applied or TerminalNotApplied: both are safe terminal outcomes
+            // that must never automatically repeat.
             try
             {
                 guard.RecordCompleted(key, result);
@@ -266,13 +402,14 @@ public sealed class DurableWorkEffectExecutor : IDurableWorkEffectExecutor
                 SafeRecordOutcomeUnknown(key, "completion_recording_failed");
                 return new DurableWorkEffectExecution(
                     DurableWorkEffectExecutionKind.OutcomeUnknown,
-                    DurableWorkHandlerResult.DeadLettered(DurableWorkFailureCategory.Unknown, "completion_recording_failed"));
+                    DurableWorkHandlerResult.OutcomeUnknown("completion_recording_failed"));
             }
         }
         else
         {
-            // A deliberate bounded-retry verdict releases the reservation so a
-            // future legitimate attempt may run the effect again.
+            // Only an explicit NotAppliedRetryable outcome reaches this
+            // branch; it is the sole outcome permitted to release the
+            // reservation for a future bounded retry.
             guard.Release(key);
         }
 
@@ -291,4 +428,18 @@ public sealed class DurableWorkEffectExecutor : IDurableWorkEffectExecutor
             // automatic re-execution of this effect key.
         }
     }
+}
+
+/// <summary>
+/// Single authoritative composition seam for the durable-work effect guard.
+/// The store's outbox dispatch and the dispatcher's handler execution must
+/// share one <see cref="IDurableWorkEffectExecutor"/> instance so every
+/// protected effect for a Tenant is guarded by one ledger; the purpose and
+/// EventId inside <see cref="DurableWorkEffectKey"/> keep handler and outbox
+/// effects independent within that one shared authority.
+/// </summary>
+public static class DurableWorkEffectComposition
+{
+    public static IDurableWorkEffectExecutor CreateSharedExecutor() =>
+        new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
 }
