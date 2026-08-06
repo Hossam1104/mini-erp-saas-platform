@@ -5,17 +5,23 @@ using MiniErp.App.BuildingBlocks.Tenancy;
 namespace MiniErp.App.BuildingBlocks.Work;
 
 /// <summary>
-/// Deterministic local adapter for the relational durable-work seam. It is
-/// intentionally bounded and is never a production database or provider.
+/// Deterministic local, in-memory adapter for the durable-work seam. It is
+/// intentionally bounded and is never a relational, SQL-backed, process-crash
+/// durable, production-ready or distributed exactly-once store or provider.
 /// </summary>
-public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkStore
+public sealed class InMemoryDurableWorkStore : IDurableWorkStore
 {
     private readonly object syncRoot = new();
     private readonly Dictionary<Guid, DurableWorkItem> workItems = [];
     private readonly Dictionary<(TenantId TenantId, string Key), Guid> idempotency = [];
     private readonly Dictionary<Guid, TenantOutboxMessage> outbox = [];
-    private readonly HashSet<(TenantId TenantId, Guid EventId)> inbox = [];
     private readonly List<DurableWorkAuditRecord> audit = [];
+    private readonly IDurableWorkEffectExecutor effectExecutor;
+
+    public InMemoryDurableWorkStore(IDurableWorkEffectExecutor? effectExecutor = null)
+    {
+        this.effectExecutor = effectExecutor ?? new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
+    }
 
     /// <summary>Submits work and its outbox event as one local transaction.</summary>
     public ValueTask<bool> SubmitAsync(
@@ -141,8 +147,11 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
     }
 
     /// <summary>
-    /// Dispatches one Tenant-owned outbox message with inbox deduplication and
-    /// live authority revalidation immediately before the protected effect.
+    /// Dispatches one Tenant-owned outbox message with live authority
+    /// revalidation and single-effect protection immediately before the
+    /// protected effect. Explicit outcomes: Applied (never repeats),
+    /// NotAppliedRetryable (bounded retry) or OutcomeUnknown (never
+    /// automatically repeats; requires reconciliation).
     /// </summary>
     public async ValueTask<OutboxDispatchResult> DispatchOutboxAsync(
         TenantContext tenantContext,
@@ -167,7 +176,7 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
                 .FirstOrDefault();
             if (message is null)
             {
-                return new OutboxDispatchResult(false, false, false, false, DurableWorkFailureCategory.None);
+                return OutboxDispatchResult.NoMessage();
             }
 
             // Claim before leaving the lock so a concurrent dispatcher cannot
@@ -175,13 +184,6 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
             message.DeliveryState = DurableWorkLifecycle.Claimed;
             message.AttemptCount++;
             workItems.TryGetValue(message.WorkItemId, out workItem);
-
-            if (inbox.Contains((tenantContext.TenantId, message.EventId)))
-            {
-                message.DeliveryState = DurableWorkLifecycle.Completed;
-                AddAuditForMessage(message, "outbox.duplicate", DurableWorkFailureCategory.None);
-                return new OutboxDispatchResult(true, true, false, false, DurableWorkFailureCategory.None);
-            }
         }
 
         DurableWorkAuthorityValidationResult authority;
@@ -213,12 +215,7 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
                 AddAuditForMessage(message, "outbox.dead-letter", DurableWorkFailureCategory.AuthorizationDenied);
             }
 
-            return new OutboxDispatchResult(
-                false,
-                false,
-                false,
-                true,
-                DurableWorkFailureCategory.AuthorizationDenied);
+            return OutboxDispatchResult.AsDeadLettered(DurableWorkFailureCategory.AuthorizationDenied);
         }
 
         if (!authority.Allowed || authority.Authorization is null)
@@ -235,63 +232,53 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
                     message,
                     terminal ? "outbox.dead-letter" : "outbox.retry",
                     authority.FailureCategory);
-                return new OutboxDispatchResult(
-                    false,
-                    false,
-                    !terminal,
-                    terminal,
-                    authority.FailureCategory);
+                return terminal
+                    ? OutboxDispatchResult.AsDeadLettered(authority.FailureCategory)
+                    : OutboxDispatchResult.NotAppliedRetryable(authority.FailureCategory);
             }
         }
+
+        var effectKey = new DurableWorkEffectKey(tenantContext.TenantId, message.WorkItemId, message.EventType);
+        var execution = await effectExecutor.ExecuteHandlerEffectAsync(
+            effectKey,
+            async ct =>
+            {
+                await effect(message, authority.Authorization, ct);
+                return DurableWorkHandlerResult.Succeeded();
+            },
+            cancellationToken);
 
         lock (syncRoot)
         {
-            // The authority check is complete; only now establish the inbox
-            // marker that protects the effect from redelivery.
-            if (!inbox.Add((tenantContext.TenantId, message.EventId)))
+            var handlerResult = execution.Result;
+            if (handlerResult.Success)
             {
+                var duplicate = execution.Kind == DurableWorkEffectExecutionKind.Replayed;
                 message.DeliveryState = DurableWorkLifecycle.Completed;
-                AddAuditForMessage(message, "outbox.duplicate", DurableWorkFailureCategory.None);
-                return new OutboxDispatchResult(true, true, false, false, DurableWorkFailureCategory.None);
+                AddAuditForMessage(message, duplicate ? "outbox.duplicate" : "outbox.delivered", DurableWorkFailureCategory.None);
+                return OutboxDispatchResult.Applied(duplicate);
             }
 
-            AddAuditForMessage(message, "outbox.dispatch", DurableWorkFailureCategory.None);
-        }
-
-        try
-        {
-            await effect(message, authority.Authorization, cancellationToken);
-            lock (syncRoot)
+            if (execution.Kind == DurableWorkEffectExecutionKind.OutcomeUnknown)
             {
-                message.DeliveryState = DurableWorkLifecycle.Completed;
-                AddAuditForMessage(message, "outbox.delivered", DurableWorkFailureCategory.None);
+                // The effect boundary was reached but its completion could not
+                // be proven. DeliveryState stays Claimed so the Pending/RetryScheduled
+                // poll filter never automatically revisits it.
+                message.FailureCategory = DurableWorkFailureCategory.Unknown;
+                AddAuditForMessage(message, "outbox.outcome-unknown", DurableWorkFailureCategory.Unknown);
+                return OutboxDispatchResult.OutcomeUnknownResult();
             }
 
-            return new OutboxDispatchResult(true, false, false, false, DurableWorkFailureCategory.None);
-        }
-        catch (OperationCanceledException)
-        {
-            lock (syncRoot)
-            {
-                inbox.Remove((tenantContext.TenantId, message.EventId));
-                message.DeliveryState = DurableWorkLifecycle.RetryScheduled;
-                message.NextAttemptAt = now.Add(BoundedBackoff(message.AttemptCount));
-                AddAuditForMessage(message, "outbox.retry", DurableWorkFailureCategory.ProviderUnavailable);
-            }
-
-            throw;
-        }
-        catch (Exception)
-        {
-            lock (syncRoot)
-            {
-                inbox.Remove((tenantContext.TenantId, message.EventId));
-                var terminal = message.AttemptCount >= 3;
-                message.DeliveryState = terminal ? DurableWorkLifecycle.DeadLetter : DurableWorkLifecycle.RetryScheduled;
-                message.NextAttemptAt = now.Add(BoundedBackoff(message.AttemptCount));
-                AddAuditForMessage(message, terminal ? "outbox.dead-letter" : "outbox.retry", DurableWorkFailureCategory.ProviderUnavailable);
-                return new OutboxDispatchResult(false, false, !terminal, terminal, DurableWorkFailureCategory.ProviderUnavailable);
-            }
+            // A proven not-applied outcome (for example, a concurrent in-flight
+            // effect) may use bounded retry.
+            var terminalRetry = message.AttemptCount >= 3;
+            message.DeliveryState = terminalRetry ? DurableWorkLifecycle.DeadLetter : DurableWorkLifecycle.RetryScheduled;
+            message.FailureCategory = handlerResult.FailureCategory;
+            message.NextAttemptAt = now.Add(BoundedBackoff(message.AttemptCount));
+            AddAuditForMessage(message, terminalRetry ? "outbox.dead-letter" : "outbox.retry", handlerResult.FailureCategory);
+            return terminalRetry
+                ? OutboxDispatchResult.AsDeadLettered(handlerResult.FailureCategory)
+                : OutboxDispatchResult.NotAppliedRetryable(handlerResult.FailureCategory);
         }
     }
 
@@ -323,9 +310,9 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
     }
 
     /// <summary>
-    /// Test-only replay hook. It models a redelivered outbox row while retaining
-    /// the inbox marker; production callers cannot access the local adapter's
-    /// internal validation hooks.
+    /// Test-only replay hook. It models a redelivered outbox row while the
+    /// effect guard retains its own completion record; production callers
+    /// cannot access the local adapter's internal validation hooks.
     /// </summary>
     internal bool ReplayOutboxForValidation(Guid workItemId, DateTimeOffset nextAttemptAt)
     {
@@ -384,14 +371,27 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
 public sealed class DurableWorkDispatcher
 {
     private readonly IDurableWorkOperationCatalogue operationCatalogue;
+    private readonly IDurableWorkPayloadRegistry payloadRegistry;
+    private readonly IDurableWorkEffectExecutor effectExecutor;
     private readonly Dictionary<string, Func<DurableWorkItem, DurableWorkExecutionContext, CancellationToken, ValueTask<DurableWorkHandlerResult>>> handlers =
         new(StringComparer.Ordinal);
 
-    public DurableWorkDispatcher(IDurableWorkOperationCatalogue operationCatalogue)
+    public DurableWorkDispatcher(
+        IDurableWorkOperationCatalogue operationCatalogue,
+        IDurableWorkPayloadRegistry payloadRegistry,
+        IDurableWorkEffectExecutor effectExecutor)
     {
         this.operationCatalogue = operationCatalogue ?? throw new ArgumentNullException(nameof(operationCatalogue));
+        this.payloadRegistry = payloadRegistry ?? throw new ArgumentNullException(nameof(payloadRegistry));
+        this.effectExecutor = effectExecutor ?? throw new ArgumentNullException(nameof(effectExecutor));
     }
 
+    /// <summary>
+    /// Registers one typed handler. Every dispatched call is routed through the
+    /// approved effect executor using a stable (Tenant, WorkItemId, OperationId)
+    /// effect key; a handler cannot bypass that guard while still being treated
+    /// as a protected durable-work handler.
+    /// </summary>
     public void Register<TPayload>(IDurableWorkHandler<TPayload> handler)
         where TPayload : IWorkPayload
     {
@@ -414,14 +414,24 @@ public sealed class DurableWorkDispatcher
             DurableWorkExecutionContext context,
             CancellationToken cancellationToken)
         {
-            if (item.Payload is not TPayload payload)
+            TPayload payload;
+            try
+            {
+                payload = payloadRegistry.Decode<TPayload>(item.PayloadEnvelope);
+            }
+            catch (DurableWorkPayloadException)
             {
                 return DurableWorkHandlerResult.DeadLettered(
                     DurableWorkFailureCategory.ValidationFailed,
                     "typed_payload_mismatch");
             }
 
-            return await handler.ExecuteAsync(payload, context, cancellationToken);
+            var effectKey = new DurableWorkEffectKey(item.TenantId, item.Identity.WorkItemId, item.Identity.OperationId);
+            var execution = await effectExecutor.ExecuteHandlerEffectAsync(
+                effectKey,
+                ct => handler.ExecuteAsync(payload, context, ct),
+                cancellationToken);
+            return execution.Result;
         }
     }
 
@@ -463,12 +473,12 @@ public sealed class DurableWorkDispatcher
 /// <summary>Bounded worker seam that always starts from an explicit Tenant context.</summary>
 public sealed class TenantDurableWorkWorker
 {
-    private readonly IRelationalDurableWorkStore store;
+    private readonly IDurableWorkStore store;
     private readonly DurableWorkDispatcher dispatcher;
     private readonly IDurableWorkAuthorityRevalidator authorityRevalidator;
 
     public TenantDurableWorkWorker(
-        IRelationalDurableWorkStore store,
+        IDurableWorkStore store,
         DurableWorkDispatcher dispatcher,
         IDurableWorkAuthorityRevalidator authorityRevalidator)
     {
@@ -554,8 +564,9 @@ public sealed class TenantDurableWorkWorker
             catch (OperationCanceledException)
             {
                 // Persist the bounded retry even when the handler observed request
-                // cancellation; otherwise the lease would remain active until it
-                // expires and the work would have no durable outcome.
+                // cancellation before the protected effect was reserved; otherwise
+                // the lease would remain active until it expires and the work
+                // would have no durable outcome.
                 completionCancellation = CancellationToken.None;
                 result = DurableWorkHandlerResult.Retry(
                     DurableWorkFailureCategory.ProviderUnavailable,
