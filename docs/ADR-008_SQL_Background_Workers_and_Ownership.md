@@ -2,8 +2,8 @@
 
 | Field | Decision |
 |---|---|
-| Status | Foundation worker seam; deployment topology deferred |
-| Date | 4 August 2026 |
+| Status | Foundation worker seam; MESP-91 live authority correction merged and Done (PR #20, `f2cde57400fed470ab048776e05b56f353b36890`); deployment topology deferred |
+| Date | 4 August 2026; reconciled 6 August 2026 |
 | Owners | Solution Architecture / Background Processing |
 | Related Jira | MESP-61, MESP-64, MESP-91, MESP-48, MESP-50 |
 | Supersedes | None |

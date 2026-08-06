@@ -9,11 +9,11 @@
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
 | Last updated | 6 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
-| Current activity | `MESP-91 Correction Package 1 — verified work scope and worker authority revalidation` |
-| Current implementation item | `MESP-91 — In Progress; sole active implementation item` |
-| Current branch | `fix/MESP-91-verified-work-scope-authority` (baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`) |
+| Current activity | `MESP-91 Correction Package 1 — merged and Done` |
+| Current implementation item | `None — MESP-92 is the next eligible correction; no implementation item is active` |
+| Merged branch | `fix/MESP-91-verified-work-scope-authority` (baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`; deleted after merge) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `MESP-91 corrected non-draft PR must remain open and unmerged for focused ChatGPT security review; MESP-31/MESP-92/MESP-93/MESP-94 remain To Do` |
+| Current review checkpoint | `MESP-91 focused ChatGPT security review APPROVED TO MERGE; PR #20 merged at f2cde57400fed470ab048776e05b56f353b36890; MESP-92/MESP-93/MESP-94/MESP-31 remain To Do` |
 
 ---
 
@@ -53,9 +53,11 @@ backend work is not complete ERP backend implementation.
 PR #18 ([link](https://github.com/Hossam1104/mini-erp-saas-platform/pull/18))
 merged MESP-64 to `main` at
 `2002d1c25d39022b227e89b3d70f41a53de0408c`, which remains the historical
-Foundation baseline. The current sole implementation item is MESP-91
-Correction Package 1 on the branch recorded above; its non-draft PR remains
-open and unmerged pending focused ChatGPT security review. No Sprint is active.
+Foundation baseline. MESP-91 Correction Package 1
+([PR #20](https://github.com/Hossam1104/mini-erp-saas-platform/pull/20)) was
+approved by focused ChatGPT security review and merged to `main` at
+`f2cde57400fed470ab048776e05b56f353b36890`. No implementation item or Sprint
+is active; MESP-92 is the next eligible correction.
 
 | Area | Current status |
 |---|---|
@@ -79,7 +81,7 @@ open and unmerged pending focused ChatGPT security review. No Sprint is active.
 | MESP-90 MESP-63 false-logout security correction | Done — PR #16 merged at `469ab863a5fc20f02d3ba674a97dceb969bbec75`; preserves authenticated state until server-confirmed revocation |
 | MESP-61 background processing foundation | Done — PR #17 merged at `7db49a88e11232f055c2016b8bb033a61de629ec`; typed Tenant-bound durable work/outbox/inbox, bounded worker, notification contracts and private-file adapter |
 | MESP-64 provider/schema/index validation | Done — PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`; ADR-018, disposable LocalDB SQL Server harness, exact 75-assertion evidence and merged-main validation complete; no production provider or migration |
-| MESP-91 verified work scope and worker authority correction | In Progress — Correction Package 1; Identity-owned organization resolver, authorization-context-bound scopes, live worker/outbox revalidation and safe authority dead-letter are being implemented on the dedicated correction branch; PR must remain open and unmerged for focused ChatGPT review |
+| MESP-91 verified work scope and worker authority correction | Done — Correction Package 1; PR #20 merged at `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT approval; Identity-owned organization resolver, authorization-context-bound scopes, live worker/outbox revalidation and safe authority dead-letter are merged to `main` |
 | MESP-3 Identity and Access Epic | In Progress |
 | MESP-28 Identity and Access BRD | Done — v0.3 Approved Release 1 Baseline (founder change-control approval 3 August 2026) |
 | MESP-4 Multi-Tenancy and Tenant Lifecycle Epic | In Progress |
@@ -112,11 +114,11 @@ open and unmerged pending focused ChatGPT security review. No Sprint is active.
 - [x] `MESP-90` false-logout correction is **Done**; approved PR #16 merged to `main` at `469ab863a5fc20f02d3ba674a97dceb969bbec75`; MESP-63 remains **Done**.
 - [x] `MESP-61` is **Done**; PR #17 merged to `main` at `7db49a88e11232f055c2016b8bb033a61de629ec` and merged-main validation passed.
 - [x] `MESP-64` is **Done**; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`, merged-main validation passed, and its branch was deleted.
-- [ ] `MESP-91` is **In Progress** as the sole active implementation item; its correction branch is based on `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`, and the non-draft PR must remain open and unmerged for focused ChatGPT security review.
+- [x] `MESP-91` is **Done**; PR #20 merged at `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT security review approval; branch `fix/MESP-91-verified-work-scope-authority` deleted after merge.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
-- [x] `MESP-92` and `MESP-93` remain **To Do**; Correction Package 2/3 work is untouched.
+- [x] `MESP-92`, `MESP-93` and `MESP-94` remain **To Do**; Correction Package 2/3 work is untouched. MESP-92 is the next eligible correction; it had not started before MESP-91 closure.
 - [x] No Sprint is active; MESP-89 and MESP-63 were delivered outside a Sprint.
-- [x] MESP-63, MESP-90, MESP-61 and MESP-64 completed sequentially; MESP-91 is now the sole active correction and no parallel implementation is authorized.
+- [x] MESP-63, MESP-90, MESP-61, MESP-64 and MESP-91 completed sequentially; no implementation item is currently active and no parallel implementation is authorized.
 - [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; implementation refinement is controlled and is not production readiness.
 - [x] Product-wide Phase 2 remains **In Progress** because core ERP BRDs remain incomplete; Foundation backend work does not imply complete ERP backend implementation.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
@@ -731,12 +733,11 @@ Implement approved backlog items sequentially, validate them with focused automa
 
 The product-wide Phase 2 BRD stream remains in progress because core ERP BRDs
 remain incomplete. The Foundation slice has completed the approved MESP-63
-frontend baseline and MESP-61 durable-work foundation; that does not mean
-complete ERP backend implementation has started. MESP-91 Correction Package 1
-is now the sole active implementation item and the Foundation Completion
-checkpoint is its historical baseline. Do not start MESP-31, MESP-92/MESP-93 or
-any downstream ERP transaction work before the open correction PR receives
-focused ChatGPT security review.
+frontend baseline, MESP-61 durable-work foundation and the MESP-91 Correction
+Package 1 authority hardening; that does not mean complete ERP backend
+implementation has started. MESP-91 is Done and merged; no implementation item
+or Sprint is active. Do not start MESP-31, MESP-92, MESP-93, MESP-94 or any
+downstream ERP transaction work without a separate authorized decision.
 
 - [x] Approve `MESP-28` Identity and Access BRD v0.3 change-control baseline on `docs/foundation-release1-lean-spec`.
 - [x] Begin and complete `MESP-29` Multi-Tenancy BRD as the single requirements activity; v0.2 is approved and Done.
@@ -825,7 +826,7 @@ MESP-48 and MESP-50 remain production gates; MESP-64 did not select a
 production provider, create a migration, execute purge or authorize later ERP
 work.
 
-### MESP-91 — Verified work scope and worker authority correction (active, Package 1)
+### MESP-91 — Verified work scope and worker authority correction (Done, Package 1)
 
 - [x] Confirm MESP-91 is the sole active implementation item; move it to
   **In Progress** and keep MESP-31, MESP-92, MESP-93 and MESP-94 **To Do**.
@@ -860,9 +861,15 @@ work.
   27/27, Playwright 4/4, Release build 0 warnings/0 errors and production
   audit 0 vulnerabilities.
 - [x] Commit and push the correction branch and update the existing non-draft
-  PR #20; leave it open/unmerged for focused ChatGPT security review.
-- [ ] Do not merge, close MESP-91, start MESP-31, start packages 2/3 or begin
-  another implementation item until review disposition is recorded.
+  PR #20 for focused ChatGPT security review.
+- [x] Focused ChatGPT security review returned APPROVED TO MERGE (0 Critical,
+  0 High, 0 Medium blockers); verify the approved head, rerun final
+  validation, and merge PR #20 by normal merge commit at
+  `f2cde57400fed470ab048776e05b56f353b36890`.
+- [x] Validate merged `main`, reconcile documentation to the merged state,
+  post Jira closure evidence, move MESP-91 to Done and delete the completed
+  branch. Do not start MESP-31, MESP-92, MESP-93, MESP-94 or another
+  implementation item in this context.
 
 ### Foundation Completion Opus 5 checkpoint (documentation-only)
 
@@ -917,11 +924,12 @@ work.
 - [ ] Documentation updated only where necessary.
 
 **Phase 8 status: MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62,
-MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are Done on the merged-main
-Foundation baseline. MESP-91 Correction Package 1 is In Progress as the sole
-active implementation item; its non-draft PR must remain open and unmerged for
-focused ChatGPT security review. No Sprint is active and MESP-31/MESP-92/
-MESP-93 remain To Do.**
+MESP-89, MESP-63, MESP-90, MESP-61, MESP-64 and MESP-91 are Done on the
+merged-main Foundation baseline. MESP-91 Correction Package 1 merged through
+PR #20 at `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT
+security review approval. No implementation item or Sprint is active;
+MESP-92 is the next eligible correction, and MESP-93/MESP-94/MESP-31 remain
+To Do.**
 
 ---
 
@@ -1165,7 +1173,7 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Implement and close MESP-64 on `feature/mesp-64-foundation-safety-harness`; PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`, ADR-018 and the exact 75-assertion safety evidence were updated without production/provider or later ERP scope.
 - [x] Prepare the documentation-only Foundation Completion Opus 5 checkpoint at `docs/97_Foundation_Completion_Review_Checkpoint.md`; stop before MESP-31 or any later implementation.
 
-### MESP-91 current correction activity
+### MESP-91 current correction activity (Done)
 
 - [x] Move Jira MESP-91 to **In Progress** after confirming no other
   implementation item or Sprint is active.
@@ -1174,11 +1182,15 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
   revalidation in Correction Package 1.
 - [x] Add focused regression tests and reconcile `docs/96`, `docs/97`,
   `docs/ADR-008_SQL_Background_Workers_and_Ownership.md` and `.ai/CURRENT_STATE.md`.
-- [x] Complete final validation: focused durable-work 63/63, backend 321/321
-  including SQL 11/11, Angular 27/27, Playwright 4/4, Release build 0
+- [x] Complete final validation: focused durable-work 102/102, backend
+  360/360 including SQL 11/11, Angular 27/27, Playwright 4/4, Release build 0
   warnings/0 errors and production audit 0 vulnerabilities.
-- [ ] Commit/push, publish the non-draft PR and stop with MESP-91 In Progress
-  and the PR open/unmerged for focused ChatGPT security review.
+- [x] Commit/push, publish the non-draft PR #20 for focused ChatGPT security
+  review.
+- [x] Focused ChatGPT security review returned APPROVED TO MERGE; merge PR #20
+  by normal merge commit at `f2cde57400fed470ab048776e05b56f353b36890`,
+  validate merged `main`, reconcile documentation, post Jira closure evidence,
+  move MESP-91 to Done and delete the branch.
 
 ## Completed MESP-57 outputs
 
@@ -1223,7 +1235,7 @@ Sonnet is not part of the normal workflow. Use it only when explicitly approved 
 - [x] Resolve the 22 historical IAM-OD records plus IAM-OD-023 (23 total) and four source-conflict records in the approved baseline.
 - [x] Begin, approve, and close the single MESP-29 Multi-Tenancy BRD activity; v0.2 is merged to `main`.
 - [x] Record the four Tenant-isolation clarifications and preserve MESP-48/MESP-50 Deferred Gates.
-- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-90, MESP-61 and MESP-64 are complete; MESP-91 is the sole active correction overlay.
+- [x] Keep future implementation items outside the active sequence in To Do; MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-90, MESP-61, MESP-64 and MESP-91 are complete; no implementation item is currently active.
 - [x] Keep `MESP-31` through `MESP-40` in To Do while the approved foundation requirements remain the current delivery boundary.
 - [x] Keep `MESP-30` outside all Sprints and restrict it to business requirements only.
 - [x] Complete founder approval of the MESP-30 baseline and resolve `ORG-OD-001` through `ORG-OD-007`.
@@ -1276,6 +1288,7 @@ Use this section to record major milestones.
 | 4 August 2026 | MESP-61 durable work foundation | Done | PR #17 merged at `7db49a88e11232f055c2016b8bb033a61de629ec`; typed Tenant-bound work/outbox/inbox/worker, notification and private-file contracts; backend 285/0/0, Angular 27/0/0, Playwright 4/0/0 and production audit passed |
 | 4 August 2026 | MESP-64 foundation safety harness | Done | PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`; ADR-018, disposable LocalDB SQL Server probes and exact 75-assertion report; targeted SQL 11/11, backend 296/0/0, Angular 27, Playwright 4 and production audit 0 vulnerabilities passed |
 | 4 August 2026 | Foundation Completion Opus 5 checkpoint | Ready for review | Documentation-only `docs/97_Foundation_Completion_Review_Checkpoint.md`; no implementation item or Sprint active; MESP-48 and MESP-50 remain production gates |
+| 6 August 2026 | MESP-91 Correction Package 1 merged | Done | Focused ChatGPT security review APPROVED TO MERGE (0 Critical/0 High/0 Medium blockers); PR #20 merged by normal merge commit at `f2cde57400fed470ab048776e05b56f353b36890`; merged-main validation passed 102/102 focused durable-work, 360/360 backend including 11/11 SQL Server LocalDB, 27/27 Angular, 4/4 Playwright, Release build 0 warnings/0 errors, production audit 0 vulnerabilities; implementation branch deleted; MESP-92 is the next eligible correction |
 
 ---
 
@@ -1305,28 +1318,27 @@ Use this section to record major milestones.
 | Phase 5 — Lean Implementation Specification: logical data | **In Progress — MESP-86 v0.4 approved logical model, ERD and integrity baseline; physical design remains gated** |
 | Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-57 through MESP-64 completed; the Foundation Completion checkpoint is ready for Opus 5 review** |
 | Phase 7 — Jira Backlog | **Done for MESP-27 Wave 1** |
-| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-63, MESP-89, MESP-90, MESP-61 and MESP-64 Done; no implementation item or Sprint active; Opus 5 checkpoint ready** |
+| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-63, MESP-89, MESP-90, MESP-61, MESP-64 and MESP-91 Done; no implementation item or Sprint active; MESP-92 is the next eligible correction** |
 | Phase 9 — Integration, UAT, Release, Operations | **Not Started** |
 
 ---
 
 ## Current next action
 
-> Complete and publish the MESP-91 Correction Package 1 validation record.
-> Keep its non-draft PR open and unmerged for focused ChatGPT security review;
-> keep MESP-91 In Progress, MESP-31 through MESP-40 and MESP-92/MESP-93/MESP-94 To Do,
-> Master Data and Catalog, Retail POS and future ERP transaction work out of
-> scope. Preserve `MESP-48` and `MESP-50` as explicit production gates, keep no
-> Sprint active, and do not start another Jira item until review disposition is
-> recorded.
+> MESP-91 Correction Package 1 is merged and Done. MESP-92 is the next
+> eligible correction; MESP-93, MESP-94 and MESP-31 remain To Do. Master Data
+> and Catalog, Retail POS and future ERP transaction work remain out of scope.
+> `MESP-48` and `MESP-50` remain explicit production gates. No Sprint is
+> active, and MESP-92 was not started before MESP-91 closure — do not start it
+> or any other Jira item in this context.
 
-## MESP-91 Correction Package 1 — focused ChatGPT correction evidence
+## MESP-91 Correction Package 1 — merged and Done
 
-The MESP-91 correction overlay remains the sole active implementation item on
-`fix/MESP-91-verified-work-scope-authority`, based on the expected merged-main
-baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. Source and regression
-corrections are recorded in commit
-`7d3524d42e9ef6501c374dc22bb5cef7482cbdb0`.
+The MESP-91 correction overlay was implemented on
+`fix/MESP-91-verified-work-scope-authority`, based on merged-main baseline
+`4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. Source and regression corrections
+are recorded through commit `92bd9fd38912a062cc3723f46867258d54ca8127`
+(approved PR #20 head).
 
 The durable-work contract now selects an operation from an authoritative
 descriptor catalogue. The descriptor owns the exact permission code, allowed
@@ -1342,16 +1354,19 @@ exceptions/timeouts are `ProviderUnavailable` bounded retries, and cancellation
 is a distinct recoverable `Cancelled` outcome. No handler or protected outbox
 effect runs after a failed authority check.
 
-Validation evidence for this correction is **360/360** complete backend tests,
-**11/11** SQL Server LocalDB probes, **27/27** Angular tests, **4/4** Playwright
-journeys, Release build 0 warnings/0 errors, and production dependency audit 0
-vulnerabilities. The disposable LocalDB/model collation observed was
-`SQL_Latin1_General_CP1_CI_AS`; no disposable Foundation database remained
-after cleanup.
+Validation evidence for this correction is **102/102** focused durable-work
+tests, **360/360** complete backend tests, **11/11** SQL Server LocalDB
+probes, **27/27** Angular tests, **4/4** Playwright journeys, Release build 0
+warnings/0 errors, and production dependency audit 0 vulnerabilities — verified
+both pre-merge on the approved head and again against merged `main`. The
+disposable LocalDB/model collation observed was `SQL_Latin1_General_CP1_CI_AS`;
+no disposable Foundation database remained after cleanup.
 
-Source/test correction commit `4ed4b0588b613d492ce6c446ae963001b28f0eca` is
-on the dedicated branch against `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`.
-PR #20 remains open, non-draft and unmerged. MESP-91 remains **In Progress**;
-MESP-92, MESP-93, MESP-94 and MESP-31 remain **To Do**. No Sprint, Master Data
-implementation, production provider, migration, Retail POS, Wafra-core,
-MESP-48 or MESP-50 work was started.
+Approved head `92bd9fd38912a062cc3723f46867258d54ca8127` received a focused
+ChatGPT security review disposition of **APPROVED TO MERGE** (0 Critical, 0
+High, 0 Medium blockers), closing findings H-1, H-2, H-4, H91-01, H91-02,
+H91-03, H91-04, M91-01 and M91-02. PR #20 was merged by normal merge commit at
+`f2cde57400fed470ab048776e05b56f353b36890`. MESP-91 is **Done**; MESP-92 is
+the next eligible correction; MESP-93, MESP-94 and MESP-31 remain **To Do**.
+No Sprint, Master Data implementation, production provider, migration, Retail
+POS, Wafra-core, MESP-48 or MESP-50 work was started.
