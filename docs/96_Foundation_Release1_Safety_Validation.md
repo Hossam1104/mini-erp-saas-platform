@@ -25,11 +25,14 @@ checkpoint, and **1 production gate DEFERRED**. No assertion failed. Not
 Applicable is a scope boundary, not evidence that the later workflow is safe;
 the owning implementation must add executable evidence before authorization.
 
-## MESP-91 correction overlay
+## MESP-91 correction overlay — merged and Done
 
-The original MESP-64 checkpoint remains the merged-main foundation baseline.
-MESP-91 Correction Package 1 adds the missing durable-work authority boundary
-on top of that baseline: Identity now exposes a narrow organization ownership
+MESP-91 Correction Package 1 was approved by focused ChatGPT security review
+(APPROVED TO MERGE; 0 Critical, 0 High, 0 Medium blockers) and merged to
+`main` through PR #20 at commit `f2cde57400fed470ab048776e05b56f353b36890`,
+now the current merged-main foundation baseline. It adds the missing
+durable-work authority boundary on top of the prior MESP-64 checkpoint:
+Identity now exposes a narrow organization ownership
 resolver that converts an untrusted `TenantWorkScopeRequest` into a
 resolver-issued, authorization-context-bound `TenantWorkScope`. The resolver
 validates the exact Tenant -> Company -> Branch -> Warehouse ownership chain
@@ -185,13 +188,17 @@ The command fails closed when LocalDB is missing, the connection is unset or
 unsafe, any assertion fails, or cleanup cannot complete. Docker/Testcontainers
 CI execution remains deferred by ADR-018.
 
-## MESP-91 focused correction validation overlay
+## MESP-91 focused correction validation overlay — merged and Done
 
-The MESP-91 correction was validated on source/test commit
-`4ed4b0588b613d492ce6c446ae963001b28f0eca` from the dedicated correction
-branch, against merged-main baseline
-`4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. This is an unmerged review
-overlay; it does not change the maturity or production-provider claims above.
+The MESP-91 correction was validated on approved head
+`92bd9fd38912a062cc3723f46867258d54ca8127` (source/test commit
+`4ed4b0588b613d492ce6c446ae963001b28f0eca`) from the correction branch,
+against merged-main baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. PR #20
+was approved by focused ChatGPT security review and merged to `main` by normal
+merge commit at `f2cde57400fed470ab048776e05b56f353b36890`; this overlay is now
+the current merged-main capability and does not change the maturity or
+production-provider claims above. The same validation totals below were
+re-verified against merged `main` after the merge.
 
 | Validation | Exact result | Command/evidence |
 |---|---:|---|

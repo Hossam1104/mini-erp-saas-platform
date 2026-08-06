@@ -2,21 +2,23 @@
 
 | Field | Value |
 |---|---|
-| Status | Foundation checkpoint baseline preserved; MESP-91 correction active and awaiting focused ChatGPT security review; not production-readiness approval |
-| Review date | 4 August 2026 |
+| Status | Foundation checkpoint baseline preserved; MESP-91 correction merged and Done; not production-readiness approval |
+| Review date | 6 August 2026 |
 | Product boundary | Release 1 B2B ERP only; Retail POS and Wafra-specific core behavior remain excluded |
-| Final merged main | `2002d1c25d39022b227e89b3d70f41a53de0408c` |
-| Jira state | MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-63, MESP-90, MESP-61 and MESP-64 are Done; MESP-48 and MESP-50 remain To Do |
+| Final merged main | `f2cde57400fed470ab048776e05b56f353b36890` |
+| Jira state | MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-63, MESP-90, MESP-61, MESP-64 and MESP-91 are Done; MESP-48 and MESP-50 remain To Do |
 | Sprint state | No active Sprint |
-| Active implementation item | MESP-91 — Enforce verified organization scope and worker authority revalidation in durable work (In Progress) |
-| Current correction branch | `fix/MESP-91-verified-work-scope-authority`, based on `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d` |
-| Current review hold | Non-draft PR is required to remain open and unmerged pending focused ChatGPT security review |
+| Active implementation item | None — MESP-92 is the next eligible correction; MESP-93, MESP-94 and MESP-31 remain To Do |
+| Merged correction branch | `fix/MESP-91-verified-work-scope-authority`, based on `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d` (deleted after merge) |
+| Review disposition | Focused ChatGPT security review returned APPROVED TO MERGE (0 Critical, 0 High, 0 Medium blockers); PR #20 merged by normal merge commit at `f2cde57400fed470ab048776e05b56f353b36890` |
 
-## MESP-91 correction overlay
+## MESP-91 correction overlay — merged and Done
 
-The MESP-64 merged-main checkpoint above is the historical Foundation baseline;
-this overlay is the active Correction Package 1. MESP-91 is the sole active
-implementation item. It adds an Identity-owned verified organization-scope
+The MESP-64 merged-main checkpoint above is the prior historical Foundation
+baseline; this overlay is Correction Package 1, approved by focused ChatGPT
+security review and merged to `main` through PR #20 at commit
+`f2cde57400fed470ab048776e05b56f353b36890`. MESP-91 is Done; no implementation
+item is currently active. It adds an Identity-owned verified organization-scope
 resolver, exact Tenant -> Company -> Branch -> Warehouse ownership and
 downward containment, authorization-context binding for issued scopes, and
 live worker/outbox authority revalidation immediately before handler/effect
@@ -40,11 +42,10 @@ context, path, Membership/SupportGrant, actor and session.
 
 The Foundation implementation sequence is merged to `main` and Jira is
 reconciled. The repository was clean after merged-main validation, and local
-`main` matched `origin/main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`.
-The active MESP-91 correction branch is separate from that historical merged
-baseline. Its source and tests are not represented as merged-main capability
-until the open PR receives focused ChatGPT review and an explicit merge
-decision.
+`main` matched `origin/main` at `f2cde57400fed470ab048776e05b56f353b36890`
+after the MESP-91 correction merge. The MESP-91 correction branch received
+focused ChatGPT security review, was merged through PR #20, and its source and
+tests are now represented as merged-main capability.
 
 ### Foundation sequence evidence
 
@@ -208,11 +209,12 @@ Opus 5 should determine:
 
 At this checkpoint:
 
-- MESP-90, MESP-61 and MESP-64 are Done and merged.
-- MESP-91 is the sole active implementation item, and no Sprint is active.
-- The historical Foundation implementation checkpoint remains ready for
-  review, but the MESP-91 correction overlay blocks closure until focused
-  ChatGPT security review is complete.
+- MESP-90, MESP-61, MESP-64 and MESP-91 are Done and merged.
+- No implementation item is currently active, and no Sprint is active.
+  MESP-92 is the next eligible correction.
+- The historical Foundation implementation checkpoint is reconciled with the
+  merged MESP-91 correction overlay; focused ChatGPT security review approved
+  PR #20 (APPROVED TO MERGE; 0 Critical, 0 High, 0 Medium blockers) before merge.
 - Product-wide core ERP BRDs remain incomplete; complete ERP backend
   implementation is not complete.
 - MESP-48 and MESP-50 remain production gates.
@@ -222,17 +224,21 @@ At this checkpoint:
   production deployment, migration or business transaction work is started by
   this documentation checkpoint.
 
-**Final state:** MESP-90, MESP-61 and MESP-64 remain merged and Done on the
-Foundation baseline. MESP-91 Correction Package 1 is active on its branch with
-an open, unmerged PR pending focused ChatGPT security review. MESP-48 and
-MESP-50 remain production gates; no core ERP BRD, MESP-31, package 2/3 or
-production implementation was started.
+**Final state:** MESP-90, MESP-61, MESP-64 and MESP-91 remain merged and Done
+on the Foundation baseline. MESP-91 Correction Package 1 was approved by
+focused ChatGPT security review and merged through PR #20 at
+`f2cde57400fed470ab048776e05b56f353b36890`. MESP-48 and MESP-50 remain
+production gates; no core ERP BRD, MESP-31, package 2/3 or production
+implementation was started. MESP-92 is the next eligible correction and had
+not started before MESP-91 closure.
 
-## MESP-91 correction overlay disposition
+## MESP-91 correction overlay disposition — merged and Done
 
-The historical checkpoint above remains the Foundation baseline. Its MESP-91
-overlay is corrected by commit
-`7d3524d42e9ef6501c374dc22bb5cef7482cbdb0` on the dedicated branch. The
+The historical checkpoint above is now reconciled with the merged MESP-91
+overlay. The correction is implemented through commit
+`4ed4b0588b613d492ce6c446ae963001b28f0eca` (approved PR #20 head
+`92bd9fd38912a062cc3723f46867258d54ca8127`) on the merged branch, integrated
+to `main` at `f2cde57400fed470ab048776e05b56f353b36890`. The
 correction closes the focused authorization findings by:
 
 - binding durable operations to one authoritative descriptor containing the
@@ -253,9 +259,11 @@ vulnerabilities. The disposable LocalDB/model collation was
 database.
 
 Source/test correction commit `4ed4b0588b613d492ce6c446ae963001b28f0eca`
-is on the dedicated branch against baseline
-`4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. This overlay does not close the
-merge hold: PR #20 remains open, non-draft and
-unmerged; MESP-91 remains **In Progress**; MESP-92, MESP-93, MESP-94 and
+was on the dedicated branch against baseline
+`4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`, with approved head
+`92bd9fd38912a062cc3723f46867258d54ca8127`. Focused ChatGPT security review
+approved PR #20 to merge; it merged by normal merge commit at
+`f2cde57400fed470ab048776e05b56f353b36890`. MESP-91 is **Done**; MESP-92 is
+the next eligible correction; MESP-93, MESP-94 and
 MESP-31 remain **To Do**. No Sprint, Master Data implementation, production
 provider, migration, MESP-48 or MESP-50 work was started.
