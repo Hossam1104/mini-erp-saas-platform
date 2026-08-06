@@ -122,12 +122,12 @@ public sealed class DurableWorkTests
         var first = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             effects++;
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
         var second = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             effects++;
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
         Assert.True(first.Delivered);
         Assert.False(second.Delivered);
@@ -145,13 +145,13 @@ public sealed class DurableWorkTests
         await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             calls++;
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
         Assert.True(store.ReplayOutboxForValidation(work.Identity.WorkItemId, Clock));
         var result = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             calls++;
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
         Assert.True(result.Duplicate);
         Assert.Equal(1, calls);
@@ -368,7 +368,7 @@ public sealed class DurableWorkTests
             (_, _, _) =>
             {
                 effects++;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(result.RetryScheduled);
@@ -393,7 +393,7 @@ public sealed class DurableWorkTests
             (_, _, _) =>
             {
                 effects++;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(result.RetryScheduled);
@@ -830,14 +830,14 @@ public sealed class DurableWorkTests
             ? operation
             : throw new InvalidOperationException("The test operation is not registered.");
 
-        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+        public ValueTask<DurableWorkProtectedEffectResult> ExecuteAsync(
             DemoPayload payload,
             DurableWorkExecutionContext context,
             CancellationToken cancellationToken = default)
         {
             Calls++;
             Assert.Equal(context.TenantContext.TenantId, context.Scope.TenantId);
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         }
     }
 
@@ -851,14 +851,14 @@ public sealed class DurableWorkTests
             ? operation
             : throw new InvalidOperationException("The test operation is not registered.");
 
-        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+        public ValueTask<DurableWorkProtectedEffectResult> ExecuteAsync(
             DemoPayload payload,
             DurableWorkExecutionContext context,
             CancellationToken cancellationToken = default)
         {
             SeenContext = context.TenantContext;
             SeenScope = context.Scope;
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         }
     }
 
@@ -871,11 +871,11 @@ public sealed class DurableWorkTests
                 "tenant.business.export",
                 [TenantAuthorizationPath.OrdinaryMembership]);
 
-        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+        public ValueTask<DurableWorkProtectedEffectResult> ExecuteAsync(
             DemoPayload payload,
             DurableWorkExecutionContext context,
             CancellationToken cancellationToken = default) =>
-            ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
     }
 
     private sealed class MissingMandatoryEvidenceHandler : IDurableWorkHandler<DemoPayload>
@@ -887,11 +887,11 @@ public sealed class DurableWorkTests
 
         public DurableWorkOperationDescriptor Operation { get; }
 
-        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+        public ValueTask<DurableWorkProtectedEffectResult> ExecuteAsync(
             DemoPayload payload,
             DurableWorkExecutionContext context,
             CancellationToken cancellationToken = default) =>
-            ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
     }
 
     private sealed class TestAuthorityRevalidator : IDurableWorkAuthorityRevalidator

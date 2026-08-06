@@ -253,7 +253,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
             (_, _, _) =>
             {
                 effects++;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(result.DeadLettered);
@@ -646,7 +646,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
             (_, authorization, _) =>
             {
                 seenAuthorization = authorization;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(result.Delivered);
@@ -856,7 +856,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
             (_, _, _) =>
             {
                 effectCalls++;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(result.DeadLettered);
@@ -1264,13 +1264,13 @@ public sealed class DurableWorkAuthorityRevalidationTests
 
         public DurableWorkOperationDescriptor Operation => operation;
 
-        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+        public ValueTask<DurableWorkProtectedEffectResult> ExecuteAsync(
             AuthorityPayload payload,
             DurableWorkExecutionContext context,
             CancellationToken cancellationToken = default)
         {
             Calls++;
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -174,7 +175,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public void Checksum_mismatch_fails_closed()
     {
         var envelope = PayloadRegistry.Capture(new SimplePayload("checksum"));
-        envelope.TamperForValidation();
+        CorruptStoredBytesForTest(envelope);
 
         Assert.Throws<DurableWorkPayloadException>(() => PayloadRegistry.Decode<SimplePayload>(envelope));
     }
@@ -230,7 +231,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         var result = await executor.ExecuteHandlerEffectAsync(key, ct =>
         {
             Interlocked.Increment(ref invocations);
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
 
         Assert.Equal(DurableWorkEffectExecutionKind.Executed, result.Kind);
@@ -244,10 +245,10 @@ public sealed class DurableWorkPayloadAndEffectTests
         var executor = NewExecutor();
         var key = NewKey();
         var invocations = 0;
-        Func<CancellationToken, ValueTask<DurableWorkHandlerResult>> effect = ct =>
+        Func<CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> effect = ct =>
         {
             Interlocked.Increment(ref invocations);
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         };
 
         var first = await executor.ExecuteHandlerEffectAsync(key, effect);
@@ -273,7 +274,7 @@ public sealed class DurableWorkPayloadAndEffectTests
             ct =>
             {
                 Interlocked.Increment(ref invocations);
-                return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             },
             preCancelled.Token).AsTask());
 
@@ -283,7 +284,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         var retry = await executor.ExecuteHandlerEffectAsync(key, ct =>
         {
             Interlocked.Increment(ref invocations);
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
 
         Assert.Equal(DurableWorkEffectExecutionKind.Executed, retry.Kind);
@@ -309,7 +310,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         var second = await executor.ExecuteHandlerEffectAsync(key, ct =>
         {
             Interlocked.Increment(ref invocations);
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
 
         Assert.Equal(DurableWorkEffectExecutionKind.OutcomeUnknown, second.Kind);
@@ -323,10 +324,10 @@ public sealed class DurableWorkPayloadAndEffectTests
         var executor = new DurableWorkEffectExecutor(guard);
         var key = NewKey();
         var invocations = 0;
-        Func<CancellationToken, ValueTask<DurableWorkHandlerResult>> effect = ct =>
+        Func<CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> effect = ct =>
         {
             Interlocked.Increment(ref invocations);
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         };
 
         var first = await executor.ExecuteHandlerEffectAsync(key, effect);
@@ -344,10 +345,10 @@ public sealed class DurableWorkPayloadAndEffectTests
         var executor = NewExecutor();
         var key = NewKey();
         var invocations = 0;
-        Func<CancellationToken, ValueTask<DurableWorkHandlerResult>> effect = ct =>
+        Func<CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> effect = ct =>
         {
             Interlocked.Increment(ref invocations);
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         };
 
         var beforeReclaim = await executor.ExecuteHandlerEffectAsync(key, effect);
@@ -366,19 +367,20 @@ public sealed class DurableWorkPayloadAndEffectTests
         var guard = new FaultInjectingEffectGuard(new InMemoryDurableWorkEffectGuard(), failOnRecordCompleted: true);
         var executor = new DurableWorkEffectExecutor(guard);
         var key = NewKey();
-        await executor.ExecuteHandlerEffectAsync(key, _ => ValueTask.FromResult(DurableWorkHandlerResult.Succeeded()));
+        await executor.ExecuteHandlerEffectAsync(key, _ => ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded())));
         Assert.Equal(DurableWorkEffectState.OutcomeUnknown, guard.GetState(key));
 
         var invoked = false;
         var blocked = await executor.ExecuteHandlerEffectAsync(key, _ =>
         {
             invoked = true;
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
 
         Assert.False(invoked);
         Assert.Equal(DurableWorkEffectExecutionKind.OutcomeUnknown, blocked.Kind);
         Assert.Equal(DurableWorkFailureCategory.Unknown, blocked.Result.FailureCategory);
+        Assert.True(blocked.Result.IsOutcomeUnknown);
     }
 
     [Fact]
@@ -387,7 +389,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         var executor = NewExecutor();
         var key = NewKey();
         var first = await executor.ExecuteHandlerEffectAsync(key, _ =>
-            ValueTask.FromResult(DurableWorkHandlerResult.DeadLettered(DurableWorkFailureCategory.HandlerFailed, "safe_terminal_reason")));
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.TerminalNotApplied(DurableWorkFailureCategory.HandlerFailed, "safe_terminal_reason")));
 
         var second = await executor.ExecuteHandlerEffectAsync(key, _ =>
             throw new InvalidOperationException("must not be invoked on replay"));
@@ -404,13 +406,13 @@ public sealed class DurableWorkPayloadAndEffectTests
     {
         var executor = NewExecutor();
         var workItemId = Guid.NewGuid();
-        var keyA = new DurableWorkEffectKey(new TenantId(Guid.NewGuid()), workItemId, "foundation.effect-work");
-        var keyB = new DurableWorkEffectKey(new TenantId(Guid.NewGuid()), workItemId, "foundation.effect-work");
+        var keyA = DurableWorkEffectKey.ForHandlerEffect(new TenantId(Guid.NewGuid()), workItemId, "foundation.effect-work");
+        var keyB = DurableWorkEffectKey.ForHandlerEffect(new TenantId(Guid.NewGuid()), workItemId, "foundation.effect-work");
         var invocations = 0;
-        Func<CancellationToken, ValueTask<DurableWorkHandlerResult>> effect = ct =>
+        Func<CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> effect = ct =>
         {
             Interlocked.Increment(ref invocations);
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         };
 
         var resultA = await executor.ExecuteHandlerEffectAsync(keyA, effect);
@@ -427,13 +429,13 @@ public sealed class DurableWorkPayloadAndEffectTests
         var executor = NewExecutor();
         var tenantId = new TenantId(Guid.NewGuid());
         var workItemId = Guid.NewGuid();
-        var keyA = new DurableWorkEffectKey(tenantId, workItemId, "foundation.effect-work");
-        var keyB = new DurableWorkEffectKey(tenantId, workItemId, "foundation.other-effect-work");
+        var keyA = DurableWorkEffectKey.ForHandlerEffect(tenantId, workItemId, "foundation.effect-work");
+        var keyB = DurableWorkEffectKey.ForHandlerEffect(tenantId, workItemId, "foundation.other-effect-work");
         var invocations = 0;
-        Func<CancellationToken, ValueTask<DurableWorkHandlerResult>> effect = ct =>
+        Func<CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> effect = ct =>
         {
             Interlocked.Increment(ref invocations);
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         };
 
         var resultA = await executor.ExecuteHandlerEffectAsync(keyA, effect);
@@ -442,6 +444,71 @@ public sealed class DurableWorkPayloadAndEffectTests
         Assert.Equal(DurableWorkEffectExecutionKind.Executed, resultA.Kind);
         Assert.Equal(DurableWorkEffectExecutionKind.Executed, resultB.Kind);
         Assert.Equal(2, invocations);
+    }
+
+    [Fact]
+    public async Task Cross_purpose_effect_keys_are_isolated_on_one_shared_guard()
+    {
+        // A single shared guard is the application's one authoritative effect
+        // ledger (H92-01). Handler and outbox purposes for the identical
+        // Tenant, work item and operation must remain independent within it;
+        // if the purpose were dropped from the key, the second call would
+        // incorrectly observe AlreadyCompleted/Replayed instead of Executed.
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var executor = new DurableWorkEffectExecutor(guard);
+        var tenantId = new TenantId(Guid.NewGuid());
+        var workItemId = Guid.NewGuid();
+        const string operationId = "foundation.effect-work";
+        var handlerKey = DurableWorkEffectKey.ForHandlerEffect(tenantId, workItemId, operationId);
+        var outboxKey = DurableWorkEffectKey.ForOutboxEffect(tenantId, workItemId, operationId, Guid.NewGuid());
+        var invocations = 0;
+        Func<CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> effect = ct =>
+        {
+            Interlocked.Increment(ref invocations);
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
+        };
+
+        var handlerResult = await executor.ExecuteHandlerEffectAsync(handlerKey, effect);
+        var outboxResult = await executor.ExecuteHandlerEffectAsync(outboxKey, effect);
+
+        Assert.Equal(DurableWorkEffectExecutionKind.Executed, handlerResult.Kind);
+        Assert.Equal(DurableWorkEffectExecutionKind.Executed, outboxResult.Kind);
+        Assert.Equal(2, invocations);
+        Assert.Equal(DurableWorkEffectState.Completed, guard.GetState(handlerKey));
+        Assert.Equal(DurableWorkEffectState.Completed, guard.GetState(outboxKey));
+    }
+
+    [Fact]
+    public void Outbox_effect_key_requires_a_non_empty_event_identifier()
+    {
+        Assert.Throws<ArgumentException>(() => DurableWorkEffectKey.ForOutboxEffect(
+            new TenantId(Guid.NewGuid()),
+            Guid.NewGuid(),
+            "foundation.effect-work",
+            Guid.Empty));
+    }
+
+    [Fact]
+    public void Different_outbox_event_ids_for_the_same_work_item_are_independent_keys()
+    {
+        var tenantId = new TenantId(Guid.NewGuid());
+        var workItemId = Guid.NewGuid();
+        var keyA = DurableWorkEffectKey.ForOutboxEffect(tenantId, workItemId, "foundation.effect-work", Guid.NewGuid());
+        var keyB = DurableWorkEffectKey.ForOutboxEffect(tenantId, workItemId, "foundation.effect-work", Guid.NewGuid());
+
+        Assert.NotEqual(keyA, keyB);
+    }
+
+    [Fact]
+    public void Same_outbox_event_id_redelivery_resolves_to_the_same_key()
+    {
+        var tenantId = new TenantId(Guid.NewGuid());
+        var workItemId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var keyA = DurableWorkEffectKey.ForOutboxEffect(tenantId, workItemId, "foundation.effect-work", eventId);
+        var keyB = DurableWorkEffectKey.ForOutboxEffect(tenantId, workItemId, "foundation.effect-work", eventId);
+
+        Assert.Equal(keyA, keyB);
     }
 
     // ---------------------------------------------------------------------
@@ -473,7 +540,7 @@ public sealed class DurableWorkPayloadAndEffectTests
             {
                 Interlocked.Increment(ref invocations);
                 await Task.Delay(15, ct);
-                return DurableWorkHandlerResult.Succeeded();
+                return DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded());
             });
             return execution.Kind;
         });
@@ -558,7 +625,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         var dispatchResult = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             Interlocked.Increment(ref effects);
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
 
         Assert.True(dispatchResult.Delivered);
@@ -566,7 +633,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     }
 
     // ---------------------------------------------------------------------
-    // Outbox explicit Applied / NotAppliedRetryable / OutcomeUnknown outcomes
+    // Outbox explicit Applied / NotAppliedRetryable / OutcomeUnknown / TerminalNotApplied outcomes
     // ---------------------------------------------------------------------
 
     [Fact]
@@ -581,7 +648,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         var result = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             effects++;
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
 
         Assert.True(result.Delivered);
@@ -592,7 +659,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         var next = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
         {
             effects++;
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
 
         Assert.False(next.Delivered);
@@ -615,7 +682,7 @@ public sealed class DurableWorkPayloadAndEffectTests
             (_, _, _) =>
             {
                 effects++;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(failed.RetryScheduled);
@@ -629,10 +696,108 @@ public sealed class DurableWorkPayloadAndEffectTests
             (_, _, _) =>
             {
                 effects++;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(succeeded.Delivered);
+        Assert.Equal(1, effects);
+    }
+
+    [Fact]
+    public async Task Outbox_provider_explicit_not_applied_retryable_releases_and_later_succeeds()
+    {
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore();
+        var work = Work(context, "outbox-provider-not-applied-retry");
+        await store.SubmitAsync(work);
+        var effects = 0;
+
+        var failed = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
+        {
+            effects++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.NotAppliedRetryable(
+                DurableWorkFailureCategory.ProviderUnavailable,
+                TimeSpan.FromSeconds(1),
+                "provider_reported_not_applied"));
+        });
+
+        Assert.True(failed.RetryScheduled);
+        Assert.False(failed.OutcomeUnknown);
+        Assert.False(failed.DeadLettered);
+        Assert.Equal(1, effects);
+
+        var succeeded = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock.AddSeconds(2), (_, _, _) =>
+        {
+            effects++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
+        });
+
+        Assert.True(succeeded.Delivered);
+        Assert.Equal(2, effects);
+    }
+
+    [Fact]
+    public async Task Outbox_provider_explicit_terminal_not_applied_dead_letters_immediately()
+    {
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore();
+        var work = Work(context, "outbox-provider-terminal-not-applied");
+        await store.SubmitAsync(work);
+        var effects = 0;
+
+        var result = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
+        {
+            effects++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.TerminalNotApplied(
+                DurableWorkFailureCategory.ValidationFailed,
+                "provider_reported_terminal_not_applied"));
+        });
+
+        Assert.True(result.DeadLettered);
+        Assert.False(result.RetryScheduled);
+        Assert.False(result.OutcomeUnknown);
+        Assert.Equal(1, effects);
+
+        // A terminal outcome is completed in the guard and must never repeat,
+        // even though the attempt-count-based retry budget was never spent.
+        var next = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock.AddMinutes(1), (_, _, _) =>
+        {
+            effects++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
+        });
+
+        Assert.False(next.Delivered);
+        Assert.Equal(1, effects);
+    }
+
+    [Fact]
+    public async Task Outbox_provider_explicit_outcome_unknown_is_never_automatically_repeated()
+    {
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore();
+        var work = Work(context, "outbox-provider-outcome-unknown");
+        await store.SubmitAsync(work);
+        var effects = 0;
+
+        var result = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
+        {
+            effects++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("provider_reported_outcome_unknown"));
+        });
+
+        Assert.True(result.OutcomeUnknown);
+        Assert.False(result.Delivered);
+        Assert.False(result.RetryScheduled);
+        Assert.False(result.DeadLettered);
+        Assert.Equal(1, effects);
+
+        var next = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock.AddMinutes(1), (_, _, _) =>
+        {
+            effects++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
+        });
+
+        Assert.False(next.Delivered);
         Assert.Equal(1, effects);
     }
 
@@ -661,7 +826,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         var next = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock.AddMinutes(1), (_, _, _) =>
         {
             effects++;
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         });
 
         Assert.False(next.Delivered);
@@ -676,10 +841,10 @@ public sealed class DurableWorkPayloadAndEffectTests
         var work = Work(context, "outbox-duplicate-replay");
         await store.SubmitAsync(work);
         var effects = 0;
-        Func<TenantOutboxMessage, VerifiedDurableWorkAuthorization, CancellationToken, ValueTask> effect = (_, _, _) =>
+        Func<TenantOutboxMessage, VerifiedDurableWorkAuthorization, CancellationToken, ValueTask<DurableWorkProtectedEffectResult>> effect = (_, _, _) =>
         {
             effects++;
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         };
 
         await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, effect);
@@ -689,6 +854,23 @@ public sealed class DurableWorkPayloadAndEffectTests
         Assert.True(replay.Delivered);
         Assert.True(replay.Duplicate);
         Assert.Equal(1, effects);
+    }
+
+    [Fact]
+    public async Task Generic_replay_cannot_restart_an_outcome_unknown_outbox_message()
+    {
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore();
+        var work = Work(context, "outbox-uncertain-no-generic-replay");
+        await store.SubmitAsync(work);
+
+        await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("boundary_interrupted")));
+
+        // The generic redelivery/replay path must refuse to restart a message
+        // in the explicit uncertain-reconciliation state; only explicit
+        // reconciliation may act on it.
+        Assert.False(store.ReplayOutboxForValidation(work.Identity.WorkItemId, Clock));
     }
 
     [Fact]
@@ -709,14 +891,318 @@ public sealed class DurableWorkPayloadAndEffectTests
     }
 
     // ---------------------------------------------------------------------
+    // One shared authoritative effect guard across store and dispatcher (H92-01)
+    // ---------------------------------------------------------------------
+
+    [Fact]
+    public async Task Shared_composition_executor_guards_handler_and_outbox_effects_independently()
+    {
+        var sharedExecutor = DurableWorkEffectComposition.CreateSharedExecutor();
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore(sharedExecutor);
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue, PayloadRegistry, sharedExecutor);
+        var handler = new CountingEffectHandler();
+        dispatcher.Register(handler);
+        var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
+        var work = Work(context, "shared-executor-cross-purpose");
+        await store.SubmitAsync(work);
+
+        // The handler effect and the outbox effect share the identical Tenant,
+        // work item and operation, but only differ by purpose. Both must
+        // execute exactly once on the one shared guard.
+        var handlerCompletion = await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
+        Assert.Equal(DurableWorkLifecycle.Completed, handlerCompletion!.Lifecycle);
+        Assert.Equal(1, handler.Calls);
+
+        var outboxEffects = 0;
+        var outboxResult = await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
+        {
+            outboxEffects++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
+        });
+
+        Assert.True(outboxResult.Delivered);
+        Assert.False(outboxResult.Duplicate);
+        Assert.Equal(1, outboxEffects);
+
+        // A duplicate handler dispatch for the identical effect key replays
+        // the completed result instead of invoking the handler again.
+        var authority = await new TestAuthorityRevalidator().RevalidateAsync(work, context, Clock);
+        var executionContext = new DurableWorkExecutionContext(work, authority.Authorization!);
+        var duplicateHandlerResult = await dispatcher.DispatchAsync(work, executionContext, CancellationToken.None);
+        Assert.True(duplicateHandlerResult.Success);
+        Assert.Equal(1, handler.Calls);
+    }
+
+    // ---------------------------------------------------------------------
+    // Explicit protected-effect outcome contract (H92-02)
+    // ---------------------------------------------------------------------
+
+    [Fact]
+    public void Protected_effect_boundary_cannot_return_a_bare_generic_retry()
+    {
+        var executorMethod = typeof(IDurableWorkEffectExecutor).GetMethod(nameof(IDurableWorkEffectExecutor.ExecuteHandlerEffectAsync))!;
+        var protectedEffectParameter = executorMethod.GetParameters()
+            .Single(p => p.ParameterType.IsGenericType && p.ParameterType.Name.StartsWith("Func`", StringComparison.Ordinal));
+        var delegateReturnType = protectedEffectParameter.ParameterType.GetGenericArguments()[1];
+        Assert.Equal(typeof(ValueTask<DurableWorkProtectedEffectResult>), delegateReturnType);
+
+        var handlerMethod = typeof(IDurableWorkHandler<>).GetMethod("ExecuteAsync")!;
+        Assert.Equal(typeof(ValueTask<DurableWorkProtectedEffectResult>), handlerMethod.ReturnType);
+    }
+
+    [Fact]
+    public void Applied_protected_effect_result_requires_a_successful_safe_result()
+    {
+        Assert.Throws<ArgumentException>(() => DurableWorkProtectedEffectResult.Applied(
+            DurableWorkHandlerResult.DeadLettered(DurableWorkFailureCategory.HandlerFailed, "not_success")));
+    }
+
+    [Fact]
+    public async Task Applied_effect_replay_never_invokes_a_second_attempt()
+    {
+        var executor = NewExecutor();
+        var key = NewKey();
+        var first = await executor.ExecuteHandlerEffectAsync(key, _ =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded())));
+
+        var second = await executor.ExecuteHandlerEffectAsync(key, _ =>
+            throw new InvalidOperationException("must not be invoked: the effect already applied"));
+
+        Assert.Equal(DurableWorkEffectExecutionKind.Executed, first.Kind);
+        Assert.Equal(DurableWorkEffectExecutionKind.Replayed, second.Kind);
+        Assert.True(second.Result.Success);
+    }
+
+    [Fact]
+    public async Task Explicit_applied_records_completed_state()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var executor = new DurableWorkEffectExecutor(guard);
+        var key = NewKey();
+
+        await executor.ExecuteHandlerEffectAsync(key, _ =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded())));
+
+        Assert.Equal(DurableWorkEffectState.Completed, guard.GetState(key));
+    }
+
+    [Fact]
+    public async Task Explicit_not_applied_retryable_releases_the_reservation()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var executor = new DurableWorkEffectExecutor(guard);
+        var key = NewKey();
+
+        var result = await executor.ExecuteHandlerEffectAsync(key, _ =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.NotAppliedRetryable(
+                DurableWorkFailureCategory.ProviderUnavailable, TimeSpan.FromSeconds(1), "not_applied")));
+
+        Assert.Equal(DurableWorkEffectExecutionKind.Executed, result.Kind);
+        Assert.False(result.Result.Success);
+        Assert.Equal(DurableWorkEffectState.NotStarted, guard.GetState(key));
+    }
+
+    [Fact]
+    public async Task Explicit_outcome_unknown_prevents_automatic_retry()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var executor = new DurableWorkEffectExecutor(guard);
+        var key = NewKey();
+        var invocations = 0;
+
+        var first = await executor.ExecuteHandlerEffectAsync(key, _ =>
+        {
+            invocations++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("explicit_uncertain"));
+        });
+
+        Assert.Equal(DurableWorkEffectExecutionKind.OutcomeUnknown, first.Kind);
+        Assert.Equal(DurableWorkEffectState.OutcomeUnknown, guard.GetState(key));
+
+        var second = await executor.ExecuteHandlerEffectAsync(key, _ =>
+        {
+            invocations++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
+        });
+
+        Assert.Equal(DurableWorkEffectExecutionKind.OutcomeUnknown, second.Kind);
+        Assert.Equal(1, invocations);
+    }
+
+    [Fact]
+    public async Task Exception_after_reservation_becomes_outcome_unknown()
+    {
+        var executor = NewExecutor();
+        var key = NewKey();
+
+        var result = await executor.ExecuteHandlerEffectAsync(key, _ =>
+            throw new InvalidOperationException("boundary interrupted by an unexpected exception"));
+
+        Assert.Equal(DurableWorkEffectExecutionKind.OutcomeUnknown, result.Kind);
+        Assert.True(result.Result.IsOutcomeUnknown);
+    }
+
+    [Fact]
+    public async Task Pre_reservation_authority_failure_retries_without_touching_the_guard()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var executor = new DurableWorkEffectExecutor(guard);
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore(executor);
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue, PayloadRegistry, executor);
+        var handler = new CountingEffectHandler();
+        dispatcher.Register(handler);
+        var worker = new TenantDurableWorkWorker(
+            store,
+            dispatcher,
+            new ControlledAuthorityRevalidator(AuthorityBehavior.ProviderUnavailable));
+        var work = Work(context, "pre-reservation-retry");
+        await store.SubmitAsync(work);
+        var effectKey = DurableWorkEffectKey.ForHandlerEffect(context.TenantId, work.Identity.WorkItemId, work.Identity.OperationId);
+
+        var completion = await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
+
+        Assert.Equal(DurableWorkLifecycle.RetryScheduled, completion!.Lifecycle);
+        Assert.Equal(0, handler.Calls);
+        Assert.Equal(DurableWorkEffectState.NotStarted, guard.GetState(effectKey));
+    }
+
+    // ---------------------------------------------------------------------
+    // Explicit uncertain reconciliation state (M92-01)
+    // ---------------------------------------------------------------------
+
+    [Fact]
+    public async Task Handler_outcome_unknown_enters_explicit_uncertain_state_and_is_excluded_from_normal_poll()
+    {
+        var sharedExecutor = DurableWorkEffectComposition.CreateSharedExecutor();
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore(sharedExecutor);
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue, PayloadRegistry, sharedExecutor);
+        dispatcher.Register(new OutcomeUnknownHandler());
+        var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
+        var work = Work(context, "handler-outcome-unknown");
+        await store.SubmitAsync(work);
+
+        var completion = await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
+
+        Assert.Equal(DurableWorkLifecycle.OutcomeUnknown, completion!.Lifecycle);
+        Assert.Contains(await store.ReadAuditAsync(context), item => item.EventType == "work.outcome-unknown");
+
+        // Normal polling never selects an OutcomeUnknown item; ordinary
+        // dead-letter/retry handling never applies to it either.
+        var nextClaim = await store.TryClaimAsync(context, Guid.NewGuid(), Clock.AddMinutes(1), TimeSpan.FromMinutes(5));
+        Assert.Null(nextClaim);
+
+        var uncertain = await store.ReadUncertainEffectsAsync(context);
+        var record = Assert.Single(uncertain);
+        Assert.Equal(DurableWorkEffectPurpose.Handler, record.Purpose);
+        Assert.Equal(work.Identity.WorkItemId, record.WorkItemId);
+    }
+
+    [Fact]
+    public async Task Outbox_outcome_unknown_appears_in_the_tenant_scoped_reconciliation_read_port()
+    {
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore();
+        var work = Work(context, "outbox-reconciliation-evidence");
+        await store.SubmitAsync(work);
+
+        await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("boundary_interrupted")));
+
+        var uncertain = await store.ReadUncertainEffectsAsync(context);
+        var record = Assert.Single(uncertain);
+        Assert.Equal(DurableWorkEffectPurpose.Outbox, record.Purpose);
+        Assert.Equal(work.Identity.WorkItemId, record.WorkItemId);
+    }
+
+    [Fact]
+    public async Task Tenant_a_cannot_read_tenant_b_uncertain_effects()
+    {
+        var tenantA = CreateContext();
+        var tenantB = CreateContext();
+        var store = new InMemoryDurableWorkStore();
+        var work = Work(tenantB, "uncertain-cross-tenant");
+        await store.SubmitAsync(work);
+
+        await store.DispatchOutboxAsync(tenantB, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("boundary_interrupted")));
+
+        Assert.Empty(await store.ReadUncertainEffectsAsync(tenantA));
+        Assert.Single(await store.ReadUncertainEffectsAsync(tenantB));
+    }
+
+    [Fact]
+    public async Task Uncertain_effect_evidence_excludes_payload_and_provider_exception_text()
+    {
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore();
+        var secretMarker = $"provider-secret-{Guid.NewGuid():N}";
+        var work = Work(context, "uncertain-evidence-redacted", secretMarker);
+        await store.SubmitAsync(work);
+
+        await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
+            throw new InvalidOperationException(secretMarker));
+
+        var evidenceJson = JsonSerializer.Serialize(await store.ReadUncertainEffectsAsync(context));
+        Assert.DoesNotContain(secretMarker, evidenceJson, StringComparison.Ordinal);
+    }
+
+    // ---------------------------------------------------------------------
+    // Payload codec exception sanitization (M92-02)
+    // ---------------------------------------------------------------------
+
+    [Fact]
+    public void Custom_codec_encode_exception_is_sanitized_and_secret_is_not_exposed()
+    {
+        var registry = new DurableWorkPayloadRegistry();
+        var secretMarker = $"codec-secret-{Guid.NewGuid():N}";
+        registry.Register(new DurableWorkPayloadTypeId("test.throwing-codec"), new ThrowingCodec(secretMarker));
+
+        var thrown = Assert.Throws<DurableWorkPayloadException>(() => registry.Capture(new ThrowingPayload("value")));
+        Assert.DoesNotContain(secretMarker, thrown.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(secretMarker, thrown.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Custom_codec_decode_exception_is_sanitized_and_secret_is_not_exposed()
+    {
+        var registry = new DurableWorkPayloadRegistry();
+        var secretMarker = $"codec-secret-{Guid.NewGuid():N}";
+        registry.Register(new DurableWorkPayloadTypeId("test.throwing-decode-codec"), new ThrowingDecodeCodec(secretMarker));
+        var envelope = DurableWorkPayloadEnvelope.Capture(new DurableWorkPayloadTypeId("test.throwing-decode-codec"), "ok"u8.ToArray());
+
+        var thrown = Assert.Throws<DurableWorkPayloadException>(() => registry.Decode<ThrowingPayload>(envelope));
+        Assert.DoesNotContain(secretMarker, thrown.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(secretMarker, thrown.ToString(), StringComparison.Ordinal);
+    }
+
+    // ---------------------------------------------------------------------
     // Test infrastructure
     // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// Test-only checksum-corruption seam (M92-02): production code exposes no
+    /// method that mutates stored payload bytes, so the test project uses
+    /// bounded reflection over the private backing field instead.
+    /// </summary>
+    private static void CorruptStoredBytesForTest(DurableWorkPayloadEnvelope envelope)
+    {
+        var field = typeof(DurableWorkPayloadEnvelope).GetField("bytes", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("The private payload bytes field was not found.");
+        var bytes = (byte[])field.GetValue(envelope)!;
+        if (bytes.Length > 0)
+        {
+            bytes[0] ^= 0xFF;
+        }
+    }
 
     private static IDurableWorkEffectExecutor NewExecutor() =>
         new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
 
     private static DurableWorkEffectKey NewKey() =>
-        new(new TenantId(Guid.NewGuid()), Guid.NewGuid(), "foundation.effect-work");
+        DurableWorkEffectKey.ForHandlerEffect(new TenantId(Guid.NewGuid()), Guid.NewGuid(), "foundation.effect-work");
 
     private static async Task<TResult[]> RunWithBarrierAsync<TResult>(int contenders, Func<Task<TResult>> action)
     {
@@ -792,6 +1278,70 @@ public sealed class DurableWorkPayloadAndEffectTests
     private sealed class NestedMutablePayload : IWorkPayload
     {
         public NestedMutable Nested { get; set; } = new();
+    }
+
+    private sealed record ThrowingPayload(string Value) : IWorkPayload;
+
+    private sealed class ThrowingCodec : IDurableWorkPayloadCodec<ThrowingPayload>
+    {
+        private readonly string secretMarker;
+
+        internal ThrowingCodec(string secretMarker)
+        {
+            this.secretMarker = secretMarker;
+        }
+
+        public byte[] Encode(ThrowingPayload payload) =>
+            throw new InvalidOperationException($"codec failure containing secret: {secretMarker}");
+
+        public ThrowingPayload Decode(ReadOnlySpan<byte> bytes) =>
+            throw new InvalidOperationException($"codec failure containing secret: {secretMarker}");
+    }
+
+    private sealed class ThrowingDecodeCodec : IDurableWorkPayloadCodec<ThrowingPayload>
+    {
+        private readonly string secretMarker;
+
+        internal ThrowingDecodeCodec(string secretMarker)
+        {
+            this.secretMarker = secretMarker;
+        }
+
+        public byte[] Encode(ThrowingPayload payload) => "ok"u8.ToArray();
+
+        public ThrowingPayload Decode(ReadOnlySpan<byte> bytes) =>
+            throw new InvalidOperationException($"codec failure containing secret: {secretMarker}");
+    }
+
+    private sealed class CountingEffectHandler : IDurableWorkHandler<SimplePayload>
+    {
+        internal int Calls { get; private set; }
+
+        public DurableWorkOperationDescriptor Operation => OperationCatalogue.TryGet("foundation.effect-work", out var operation)
+            ? operation
+            : throw new InvalidOperationException("The test operation is not registered.");
+
+        public ValueTask<DurableWorkProtectedEffectResult> ExecuteAsync(
+            SimplePayload payload,
+            DurableWorkExecutionContext context,
+            CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
+        }
+    }
+
+    private sealed class OutcomeUnknownHandler : IDurableWorkHandler<SimplePayload>
+    {
+        public DurableWorkOperationDescriptor Operation => OperationCatalogue.TryGet("foundation.effect-work", out var operation)
+            ? operation
+            : throw new InvalidOperationException("The test operation is not registered.");
+
+        public ValueTask<DurableWorkProtectedEffectResult> ExecuteAsync(
+            SimplePayload payload,
+            DurableWorkExecutionContext context,
+            CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("handler_reported_uncertain"));
     }
 
     private sealed class FaultInjectingEffectGuard : IDurableWorkEffectGuard
