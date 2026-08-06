@@ -8,6 +8,11 @@ namespace MiniErp.App.BuildingBlocks.Work;
 /// Deterministic local, in-memory adapter for the durable-work seam. It is
 /// intentionally bounded and is never a relational, SQL-backed, process-crash
 /// durable, production-ready or distributed exactly-once store or provider.
+/// The constructor is internal and always requires an explicit effect
+/// executor: shipping code obtains the one approved instance, sharing the
+/// exact same executor as its paired <see cref="DurableWorkDispatcher"/>,
+/// only through <see cref="DurableWorkLocalRuntime"/>. Tests use this
+/// constructor directly through InternalsVisibleTo.
 /// </summary>
 public sealed class InMemoryDurableWorkStore : IDurableWorkStore
 {
@@ -18,9 +23,9 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
     private readonly List<DurableWorkAuditRecord> audit = [];
     private readonly IDurableWorkEffectExecutor effectExecutor;
 
-    public InMemoryDurableWorkStore(IDurableWorkEffectExecutor? effectExecutor = null)
+    internal InMemoryDurableWorkStore(IDurableWorkEffectExecutor effectExecutor)
     {
-        this.effectExecutor = effectExecutor ?? new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
+        this.effectExecutor = effectExecutor ?? throw new ArgumentNullException(nameof(effectExecutor));
     }
 
     /// <summary>Submits work and its outbox event as one local transaction.</summary>
@@ -266,9 +271,14 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
                 // be proven. DeliveryState moves to the explicit OutcomeUnknown
                 // reconciliation state so the Pending/RetryScheduled poll
                 // filter never automatically revisits it and ordinary
-                // dead-letter/replay handling cannot restart it.
+                // dead-letter/replay handling cannot restart it. The actual
+                // transition time and the provider/executor-reported safe
+                // reason are preserved for reconciliation evidence; NextAttemptAt
+                // is never reused as the occurrence time.
                 message.DeliveryState = DurableWorkLifecycle.OutcomeUnknown;
                 message.FailureCategory = DurableWorkFailureCategory.Unknown;
+                message.OutcomeUnknownAt = now;
+                message.SafeFailureReason = handlerResult.SafeReason ?? "effect_outcome_unknown";
                 AddAuditForMessage(message, "outbox.outcome-unknown", DurableWorkFailureCategory.Unknown);
                 return OutboxDispatchResult.OutcomeUnknownResult();
             }
@@ -312,40 +322,45 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
     }
 
     /// <summary>
-    /// Tenant-scoped reconciliation read port. Returns handler work items and
-    /// outbox messages currently in the explicit OutcomeUnknown state for the
-    /// exact trusted Tenant only; no payload, exception or provider secret is
-    /// exposed.
+    /// Scope-authorized reconciliation read port. Returns handler work items
+    /// and outbox messages currently in the explicit OutcomeUnknown state
+    /// whose exact Tenant and organization boundary is contained by
+    /// <paramref name="authorization"/>'s verified scope; a sibling Company,
+    /// Branch or Warehouse and another Tenant's records are filtered out
+    /// before any record is returned. No payload, exception or provider
+    /// secret is exposed.
     /// </summary>
     public ValueTask<IReadOnlyList<DurableWorkUncertainEffectRecord>> ReadUncertainEffectsAsync(
-        TenantContext tenantContext,
+        VerifiedDurableWorkReconciliationAuthorization authorization,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(tenantContext);
+        ArgumentNullException.ThrowIfNull(authorization);
         cancellationToken.ThrowIfCancellationRequested();
         lock (syncRoot)
         {
             var handlerRecords = workItems.Values
-                .Where(item => item.TenantId == tenantContext.TenantId
-                    && item.Lifecycle == DurableWorkLifecycle.OutcomeUnknown)
+                .Where(item => item.Lifecycle == DurableWorkLifecycle.OutcomeUnknown
+                    && authorization.TenantId == item.TenantId
+                    && authorization.Contains(item.Scope))
                 .Select(item => new DurableWorkUncertainEffectRecord(
-                    item.UpdatedAt,
-                    DurableWorkEffectPurpose.Handler,
-                    item.TenantId,
-                    item.Identity.WorkItemId,
+                    DurableWorkEffectKey.ForHandlerEffect(item.TenantId, item.Identity.WorkItemId, item.Identity.OperationId),
+                    item.Scope,
                     item.Identity.CorrelationId,
-                    item.SafeFailureReason ?? "outcome_unknown"));
+                    item.UpdatedAt,
+                    item.SafeFailureReason ?? "outcome_unknown",
+                    item.ConcurrencyVersion));
 
             var outboxRecords = outbox.Values
-                .Where(message => message.TenantId == tenantContext.TenantId
-                    && message.DeliveryState == DurableWorkLifecycle.OutcomeUnknown)
+                .Where(message => message.DeliveryState == DurableWorkLifecycle.OutcomeUnknown
+                    && authorization.TenantId == message.TenantId
+                    && authorization.Contains(message.Scope))
                 .Select(message => new DurableWorkUncertainEffectRecord(
-                    message.NextAttemptAt,
-                    DurableWorkEffectPurpose.Outbox,
-                    message.TenantId,
-                    message.WorkItemId,
+                    DurableWorkEffectKey.ForOutboxEffect(message.TenantId, message.WorkItemId, message.EventType, message.EventId),
+                    message.Scope,
                     message.CorrelationId,
-                    "outcome_unknown"));
+                    message.OutcomeUnknownAt ?? message.NextAttemptAt,
+                    message.SafeFailureReason ?? "outcome_unknown",
+                    message.AttemptCount));
 
             return ValueTask.FromResult<IReadOnlyList<DurableWorkUncertainEffectRecord>>(
                 handlerRecords.Concat(outboxRecords).ToArray());
@@ -425,7 +440,13 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
         TimeSpan.FromSeconds(Math.Min(60, Math.Max(1, attempt * attempt)));
 }
 
-/// <summary>One typed handler invocation; no global Tenant scan is available.</summary>
+/// <summary>
+/// One typed handler invocation; no global Tenant scan is available. The
+/// constructor is internal: shipping code obtains the one approved instance,
+/// sharing the exact same executor as its paired <see cref="InMemoryDurableWorkStore"/>,
+/// only through <see cref="DurableWorkLocalRuntime"/>. Tests use this
+/// constructor directly through InternalsVisibleTo.
+/// </summary>
 public sealed class DurableWorkDispatcher
 {
     private readonly IDurableWorkOperationCatalogue operationCatalogue;
@@ -434,7 +455,7 @@ public sealed class DurableWorkDispatcher
     private readonly Dictionary<string, Func<DurableWorkItem, DurableWorkExecutionContext, CancellationToken, ValueTask<DurableWorkHandlerResult>>> handlers =
         new(StringComparer.Ordinal);
 
-    public DurableWorkDispatcher(
+    internal DurableWorkDispatcher(
         IDurableWorkOperationCatalogue operationCatalogue,
         IDurableWorkPayloadRegistry payloadRegistry,
         IDurableWorkEffectExecutor effectExecutor)

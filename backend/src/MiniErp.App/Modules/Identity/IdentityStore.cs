@@ -59,6 +59,7 @@ internal sealed class IdentityStore
         IdentityPermissions.AssignPlatformPermission,
         IdentityPermissions.AssignRole,
         IdentityPermissions.AssignScopeGrant,
-        IdentityPermissions.ApproveSupportGrant
+        IdentityPermissions.ApproveSupportGrant,
+        IdentityPermissions.DurableWorkReconciliationRead
     ];
 }

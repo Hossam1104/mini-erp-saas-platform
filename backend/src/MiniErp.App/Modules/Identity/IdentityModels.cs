@@ -199,6 +199,9 @@ internal static class IdentityPermissions
     internal static readonly PermissionCode AssignRole = new("tenant.role.assign");
     internal static readonly PermissionCode AssignScopeGrant = new("tenant.scope.grant");
     internal static readonly PermissionCode ApproveSupportGrant = new("support.grant.approve");
+    // Catalogue-backed permission required to read durable-work reconciliation
+    // (uncertain-effect) evidence. Never accepted as a free-form string.
+    internal static readonly PermissionCode DurableWorkReconciliationRead = new("work.reconciliation.read");
 
     internal static bool TryResolve(string? value, out PermissionCode permission)
     {
@@ -229,6 +232,7 @@ internal static class IdentityPermissions
             "tenant.role.assign" => AssignRole,
             "tenant.scope.grant" => AssignScopeGrant,
             "support.grant.approve" => ApproveSupportGrant,
+            "work.reconciliation.read" => DurableWorkReconciliationRead,
             _ => default
         };
 
