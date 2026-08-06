@@ -2,10 +2,10 @@
 
 | Field | Decision |
 |---|---|
-| Status | Foundation worker seam; MESP-91 live authority correction merged and Done (PR #20, `f2cde57400fed470ab048776e05b56f353b36890`); deployment topology deferred |
+| Status | Foundation worker seam; MESP-91 live authority correction merged and Done (PR #20, `f2cde57400fed470ab048776e05b56f353b36890`); MESP-92 single-effect/immutable-payload correction In Progress; deployment topology deferred |
 | Date | 4 August 2026; reconciled 6 August 2026 |
 | Owners | Solution Architecture / Background Processing |
-| Related Jira | MESP-61, MESP-64, MESP-91, MESP-48, MESP-50 |
+| Related Jira | MESP-61, MESP-64, MESP-91, MESP-92, MESP-48, MESP-50 |
 | Supersedes | None |
 
 ## Context
@@ -64,6 +64,26 @@ scope, support-grant authority, broader/sibling scope and every exact stored
 binding. The
 SQL/MESP-64 probes validate persistence, lease, transaction and idempotency
 behavior only; they are not worker-authorization evidence.
+
+MESP-92 adds single-effect and immutable-payload guarantees to this seam. A
+submitted payload is captured immediately into an immutable, checksummed
+envelope through an explicit `IDurableWorkPayloadRegistry`; no original
+caller payload reference is retained, and unknown types, handler/payload
+mismatches, checksum tampering and oversized payloads fail closed before a
+handler runs. The dispatcher resolves a stable `DurableWorkEffectKey`
+(Tenant, WorkItemId, OperationId) and every registered handler invocation is
+routed exclusively through `IDurableWorkEffectExecutor.ExecuteHandlerEffectAsync`
+(architecture-enforced; a handler cannot bypass this while remaining a
+protected durable-work handler). Reservation of that key is the single
+non-reversible boundary: an interruption before it permits bounded retry, and
+any crash, cancellation or completion-recording failure discovered after it
+is recorded `OutcomeUnknown` and never automatically repeated. A duplicate
+dispatch of an already-Completed effect replays the exact recorded safe
+result instead of re-invoking the handler. `InMemoryRelationalDurableWorkStore`/
+`IRelationalDurableWorkStore` are renamed to `InMemoryDurableWorkStore`/
+`IDurableWorkStore` to remove the misleading relational/SQL-backed
+implication; the local adapter remains an in-memory, non-crash-durable
+Foundation seam only.
 
 ## Alternatives considered
 

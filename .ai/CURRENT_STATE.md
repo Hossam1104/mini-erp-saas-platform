@@ -1,5 +1,61 @@
 # Current State
 
+## MESP-92 In Progress — single-effect durable work and immutable payloads
+
+- MESP-92 (`Guarantee single-effect durable work execution and immutable typed
+  payloads`) is **In Progress** on branch
+  `fix/MESP-92-single-effect-immutable-payloads`, based on merged-main baseline
+  `32a91f27bc162685fc0db0f38b031d02ffbc99d2` (MESP-91 Done through PR #20/#21).
+- H-5 is closed: submission immediately snapshots every payload into an
+  immutable, checksummed `DurableWorkPayloadEnvelope` through an explicit
+  `IDurableWorkPayloadRegistry`/`IDurableWorkPayloadCodec<TPayload>` pair. No
+  original caller payload reference is retained by `DurableWorkItem`; every
+  external byte access and every handler decode returns an independent
+  defensive copy. Unknown payload types, handler/payload type mismatches,
+  checksum tampering and oversized/malformed payloads fail closed before a
+  handler runs. Payload type selection is a bounded registry-table lookup, not
+  CLR reflection over payload-controlled data, and payload bytes never appear
+  in audit or evidence.
+- H-6 is closed: a server-owned `DurableWorkEffectKey` (Tenant, WorkItemId,
+  OperationId) is guarded by `IDurableWorkEffectGuard`/`IDurableWorkEffectExecutor`.
+  Reservation is the single non-reversible boundary — every registered handler
+  invocation and every outbox effect is routed exclusively through
+  `ExecuteHandlerEffectAsync` (architecture-enforced; a handler cannot bypass
+  the guard while remaining a protected durable-work handler). A crash,
+  cancellation or state-recording failure discovered after that boundary
+  yields `OutcomeUnknown` and is never automatically retried; only an
+  interruption provably before the boundary permits bounded retry. Completed
+  effects replay their exact recorded safe result on duplicate dispatch.
+- M-2 is closed: `Barrier`-synchronized genuinely concurrent Tasks prove one
+  lease winner under active/expired-lease contention, one effect winner under
+  concurrent reservation, stale-completion rejection after reclaim, and one
+  effect from concurrent duplicate submissions.
+- L-1 is closed: `IRelationalDurableWorkStore`/`InMemoryRelationalDurableWorkStore`
+  are renamed to `IDurableWorkStore`/`InMemoryDurableWorkStore`. The type and
+  its documentation no longer imply relational, SQL-backed, process-crash
+  durable, production-ready or distributed exactly-once behavior.
+- Outbox delivery now reports explicit `Delivered` (Applied — never repeats),
+  `RetryScheduled` (NotAppliedRetryable — bounded retry) or `OutcomeUnknown`
+  (never automatically repeats; requires reconciliation) outcomes on
+  `OutboxDispatchResult`.
+- Maturity boundary (unchanged scope, restated): immutable payload snapshot
+  and stable work/effect identities are Foundation-local guarantees; one
+  automatic protected-effect execution is guaranteed only within this local,
+  in-memory, non-crash-durable seam; production distributed exactly-once
+  delivery remains deferred; no production SQL work store, broker or
+  production worker exists.
+- Validation on this branch: Release build **0 warnings/0 errors**; focused
+  DurableWork suite **136/136** passed (102 MESP-91-baseline + 34 new
+  payload/effect/concurrency/outbox tests); full backend regression
+  **394/394** passed, including **11/11** SQL Server LocalDB probes (no
+  `MiniErpFoundation_*` database remained after teardown); Angular **27/27**
+  passed and the production build passed; Playwright **4/4** journeys passed;
+  `npm audit --omit=dev --audit-level=high` reported **0 vulnerabilities**.
+  MESP-92 is not marked Done; the PR is opened non-draft and held unmerged
+  for focused ChatGPT security review. MESP-93, MESP-94 and MESP-31 remain
+  To Do; no Sprint is active; MESP-48 and MESP-50 remain explicit production
+  gates.
+
 ## MESP-91 correction overlay — merged and Done
 
 - MESP-91 (`Enforce verified organization scope and worker authority revalidation in durable work`) is **Done**. No implementation item is currently active; MESP-92 is the next eligible correction.

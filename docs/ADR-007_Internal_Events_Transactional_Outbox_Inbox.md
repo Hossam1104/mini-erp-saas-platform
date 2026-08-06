@@ -2,10 +2,10 @@
 
 | Field | Decision |
 |---|---|
-| Status | Foundation implementation baseline; production delivery provider deferred |
-| Date | 4 August 2026 |
+| Status | Foundation implementation baseline; MESP-92 single-effect correction In Progress; production delivery provider deferred |
+| Date | 4 August 2026; reconciled 6 August 2026 |
 | Owners | Solution Architecture / Application Engineering |
-| Related Jira | MESP-61, MESP-64, MESP-48, MESP-50 |
+| Related Jira | MESP-61, MESP-64, MESP-91, MESP-92, MESP-48, MESP-50 |
 | Supersedes | None |
 
 ## Context
@@ -40,6 +40,33 @@ scope, survive duplicate delivery, and remain practical for a single developer.
   lose a required protected effect.
 - A global event table or dispatcher query was rejected because it would create
   an unscoped Tenant business-data path.
+
+## MESP-92 single-effect correction (In Progress)
+
+The inbox uniqueness marker described in point 2 is superseded by a
+server-owned `DurableWorkEffectKey` (Tenant, WorkItemId, OperationId) guarded
+by `IDurableWorkEffectGuard`/`IDurableWorkEffectExecutor`. Reservation of
+that key is the single non-reversible boundary; a protected effect is
+acknowledged as `Applied` (recorded Completed, never repeats) only after the
+effect callback returns normally. Outbox dispatch now reports one of three
+explicit outcomes:
+
+- **Applied** — the effect ran (or was proven already Completed) and is
+  recorded so duplicate delivery safely replays the same result without
+  repeating the effect.
+- **NotAppliedRetryable** — the effect is proven not to have started (for
+  example, a live-authority provider outage or cancellation before the
+  reservation boundary); bounded retry may run.
+- **OutcomeUnknown** — the effect boundary was reached but a crash,
+  cancellation or completion-recording failure means its outcome cannot be
+  proven; delivery is never automatically repeated and requires
+  reconciliation.
+
+The same effect key and guard protect both the outbox effect path and the
+direct worker/dispatcher handler path, so a duplicate submission or a
+concurrent redelivery across either path still produces exactly one effect
+invocation. Provider exception text is never persisted in outbox or audit
+evidence; only a safe, bounded category and reason are recorded.
 
 ## Consequences and guardrails
 

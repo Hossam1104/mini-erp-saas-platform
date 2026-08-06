@@ -1318,19 +1318,76 @@ Use this section to record major milestones.
 | Phase 5 — Lean Implementation Specification: logical data | **In Progress — MESP-86 v0.4 approved logical model, ERD and integrity baseline; physical design remains gated** |
 | Phase 6 — Lean Implementation Specification: implementation readiness | **In Progress — MESP-86 v0.4 approved; MESP-57 through MESP-64 completed; the Foundation Completion checkpoint is ready for Opus 5 review** |
 | Phase 7 — Jira Backlog | **Done for MESP-27 Wave 1** |
-| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-63, MESP-89, MESP-90, MESP-61, MESP-64 and MESP-91 Done; no implementation item or Sprint active; MESP-92 is the next eligible correction** |
+| Phase 8 — Implementation and Automated Testing | **MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-63, MESP-89, MESP-90, MESP-61, MESP-64 and MESP-91 Done; MESP-92 In Progress (payload immutability and single-effect correction); MESP-93 and MESP-94 To Do; no Sprint active** |
 | Phase 9 — Integration, UAT, Release, Operations | **Not Started** |
 
 ---
 
 ## Current next action
 
-> MESP-91 Correction Package 1 is merged and Done. MESP-92 is the next
-> eligible correction; MESP-93, MESP-94 and MESP-31 remain To Do. Master Data
-> and Catalog, Retail POS and future ERP transaction work remain out of scope.
-> `MESP-48` and `MESP-50` remain explicit production gates. No Sprint is
-> active, and MESP-92 was not started before MESP-91 closure — do not start it
-> or any other Jira item in this context.
+> MESP-92 (`Guarantee single-effect durable work execution and immutable
+> typed payloads`) is **In Progress** on branch
+> `fix/MESP-92-single-effect-immutable-payloads`. Its PR is opened non-draft
+> and held unmerged pending focused ChatGPT security review. MESP-93,
+> MESP-94 and MESP-31 remain To Do. Master Data and Catalog, Retail POS and
+> future ERP transaction work remain out of scope. `MESP-48` and `MESP-50`
+> remain explicit production gates. No Sprint is active, and MESP-93,
+> MESP-94 and MESP-31 must not start before MESP-92 closes.
+
+## MESP-92 In Progress — single-effect durable work and immutable payloads
+
+MESP-92 corrects four MESP-91-review findings in the merged durable-work
+seam: H-5 (mutable stored payload references), H-6 (duplicate protected
+effect after crash, cancellation or uncertain completion), M-2 (sequential
+tests presented as concurrency evidence) and L-1 (misleading Relational store
+naming). Branch `fix/MESP-92-single-effect-immutable-payloads` is based on
+merged-main baseline `32a91f27bc162685fc0db0f38b031d02ffbc99d2`.
+
+An explicitly registered `IDurableWorkPayloadRegistry`/`IDurableWorkPayloadCodec<TPayload>`
+pair converts every submitted payload immediately into an immutable,
+checksummed `DurableWorkPayloadEnvelope`. `DurableWorkItem` never retains the
+caller's original payload reference; every external byte access and every
+handler decode returns an independent defensive copy. Unknown payload types,
+handler/payload mismatches, checksum tampering and oversized or malformed
+payloads fail closed before a handler executes, and payload bytes never
+appear in audit or evidence.
+
+A server-owned `DurableWorkEffectKey` (Tenant, WorkItemId, OperationId) is
+guarded by `IDurableWorkEffectGuard`/`IDurableWorkEffectExecutor`.
+Reservation is the single non-reversible boundary: every registered handler
+invocation and every outbox effect is routed exclusively through
+`ExecuteHandlerEffectAsync`, which a normal handler cannot bypass
+(architecture-enforced). An interruption discovered before that boundary
+permits bounded retry; any crash, cancellation or state-recording failure
+discovered after it yields `OutcomeUnknown` and is never automatically
+retried. Completed effects replay their exact recorded safe result on
+duplicate dispatch. Outbox delivery now reports explicit `Delivered`
+(Applied), `RetryScheduled` (NotAppliedRetryable) or `OutcomeUnknown`
+outcomes.
+
+Genuine concurrency evidence uses `Barrier`-synchronized concurrent Tasks to
+prove: one lease winner under active and expired-lease contention; one
+effect winner under concurrent reservation; stale-completion rejection after
+lease reclaim; and one effect from concurrent duplicate submissions.
+
+`IRelationalDurableWorkStore`/`InMemoryRelationalDurableWorkStore` are
+renamed to `IDurableWorkStore`/`InMemoryDurableWorkStore`; the type no longer
+implies relational, SQL-backed, process-crash-durable, production-ready or
+distributed exactly-once behavior.
+
+Validation on this branch: Release build **0 warnings/0 errors**; focused
+DurableWork suite **136/136** passed; full backend regression **394/394**
+passed including **11/11** SQL Server LocalDB probes with no
+`MiniErpFoundation_*` database remaining after teardown; Angular **27/27**
+passed and the production build passed; Playwright **4/4** journeys passed;
+production dependency audit **0 vulnerabilities**.
+
+MESP-92 is **not** marked Done by this update. The PR is opened non-draft and
+held unmerged for focused ChatGPT security review of payload immutability,
+protected-effect idempotency, uncertain-completion handling and genuine
+concurrent execution. No broker, production SQL work store, production
+worker deployment, migration, Master Data implementation, MESP-48 or MESP-50
+work was introduced.
 
 ## MESP-91 Correction Package 1 — merged and Done
 

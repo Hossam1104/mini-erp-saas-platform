@@ -227,3 +227,32 @@ advisories and four blocked optional install scripts; these do not affect the
 production audit result and were not force-fixed as part of this focused
 correction. No migration, provider selection, production worker, notification
 provider, object-storage provider or purge behavior was introduced.
+
+## MESP-92 single-effect/immutable-payload validation overlay — In Progress
+
+MESP-92 re-ran the same disposable-LocalDB Foundation validation from branch
+`fix/MESP-92-single-effect-immutable-payloads`, based on merged-main baseline
+`32a91f27bc162685fc0db0f38b031d02ffbc99d2`. It introduces no new SQL Server
+schema, index, transaction or lease probe; the existing 75-assertion safety
+catalogue and its 53 PASS / 21 NOT APPLICABLE / 1 DEFERRED disposition are
+unchanged. The correction's own evidence is new focused DurableWork unit
+coverage for payload immutability, effect single-execution semantics and
+genuine concurrency, validated alongside the unchanged SQL probes:
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused durable-work regression (baseline + new) | 136 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~DurableWork` |
+| Complete backend suite | 394 passed, 0 failed, 0 skipped | `powershell -ExecutionPolicy Bypass -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped | `npm test -- --watch=false` |
+| Angular production build | Passed | `npm run build` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npx playwright test` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Architecture enforcement (effect-guard bypass check) | Passed | `Handler_invocation_is_reachable_only_through_the_effect_executor` |
+| Safety catalogue | 53 PASS, 21 NOT APPLICABLE, 1 DEFERRED, 0 failed | Existing 75-assertion catalogue; no scope claim changed |
+| Diff check | Passed | `git diff --check` |
+
+No `MiniErpFoundation_*` database remained after teardown. MESP-92 is **not**
+marked Done by this validation overlay; the PR is opened non-draft and held
+unmerged pending focused ChatGPT security review.

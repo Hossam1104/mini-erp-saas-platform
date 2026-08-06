@@ -8,9 +8,37 @@
 | Final merged main | `f2cde57400fed470ab048776e05b56f353b36890` |
 | Jira state | MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-63, MESP-90, MESP-61, MESP-64 and MESP-91 are Done; MESP-48 and MESP-50 remain To Do |
 | Sprint state | No active Sprint |
-| Active implementation item | None — MESP-92 is the next eligible correction; MESP-93, MESP-94 and MESP-31 remain To Do |
+| Active implementation item | MESP-92 (single-effect durable work and immutable payloads) — In Progress; MESP-93, MESP-94 and MESP-31 remain To Do |
 | Merged correction branch | `fix/MESP-91-verified-work-scope-authority`, based on `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d` (deleted after merge) |
 | Review disposition | Focused ChatGPT security review returned APPROVED TO MERGE (0 Critical, 0 High, 0 Medium blockers); PR #20 merged by normal merge commit at `f2cde57400fed470ab048776e05b56f353b36890` |
+
+## MESP-92 In Progress — single-effect durable work and immutable payloads
+
+MESP-92 is **In Progress** on branch
+`fix/MESP-92-single-effect-immutable-payloads`, based on merged-main baseline
+`32a91f27bc162685fc0db0f38b031d02ffbc99d2`. It corrects four MESP-91-review
+findings: H-5 (mutable stored payload references), H-6 (duplicate protected
+effect after crash, cancellation or uncertain completion), M-2 (sequential
+tests presented as concurrency evidence) and L-1 (misleading Relational store
+naming). It does not reopen or change the disposition of MESP-91.
+
+Required maturity boundary for this correction: immutable payload snapshot
+and stable work/effect identities are guaranteed; one automatic
+protected-effect execution is guaranteed only within the local, in-memory,
+non-crash-durable Foundation seam; uncertain effects are recorded
+`OutcomeUnknown` and are never automatically repeated; production
+distributed exactly-once delivery remains deferred; no production SQL work
+store, broker or production worker exists.
+
+Validation on this branch: Release build **0 warnings/0 errors**; focused
+DurableWork suite **136/136** passed; full backend regression **394/394**
+passed including **11/11** SQL Server LocalDB probes with no
+`MiniErpFoundation_*` database remaining after teardown; Angular **27/27**
+passed and the production build passed; Playwright **4/4** journeys passed;
+production dependency audit **0 vulnerabilities**.
+
+MESP-92 is not marked Done by this checkpoint update. The PR is opened
+non-draft and held unmerged pending focused ChatGPT security review.
 
 ## MESP-91 correction overlay — merged and Done
 
