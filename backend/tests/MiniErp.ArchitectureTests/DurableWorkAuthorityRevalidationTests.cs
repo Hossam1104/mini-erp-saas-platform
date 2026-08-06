@@ -48,6 +48,226 @@ public sealed class DurableWorkAuthorityRevalidationTests
     }
 
     [Fact]
+    public async Task Ordinary_context_without_selected_scope_is_denied()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var missingScope = OrdinaryContext(fixture, scope: null);
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            missingScope,
+            fixture.Clock.GetUtcNow());
+
+        Assert.False(result.Allowed);
+        Assert.Equal(DurableWorkFailureCategory.AuthorizationDenied, result.FailureCategory);
+    }
+
+    [Theory]
+    [InlineData("not-a-scope")]
+    [InlineData("Company:not-a-guid")]
+    public async Task Ordinary_context_with_malformed_scope_is_denied(string scopeValue)
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var malformedScope = OrdinaryContext(fixture, new ScopeReference(scopeValue));
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            malformedScope,
+            fixture.Clock.GetUtcNow());
+
+        Assert.False(result.Allowed);
+        Assert.Equal(DurableWorkFailureCategory.AuthorizationDenied, result.FailureCategory);
+    }
+
+    [Fact]
+    public async Task Ordinary_context_with_support_marker_is_denied()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var supportMarker = OrdinaryContext(fixture, new ScopeReference("support"));
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            supportMarker,
+            fixture.Clock.GetUtcNow());
+
+        Assert.False(result.Allowed);
+        Assert.Equal(DurableWorkFailureCategory.AuthorizationDenied, result.FailureCategory);
+    }
+
+    [Fact]
+    public async Task Ordinary_context_with_noncanonical_scope_is_denied()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var noncanonicalScope = OrdinaryContext(
+            fixture,
+            new ScopeReference($"tenant:{TenantA.Value}"));
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            noncanonicalScope,
+            fixture.Clock.GetUtcNow());
+
+        Assert.False(result.Allowed);
+        Assert.Equal(DurableWorkFailureCategory.AuthorizationDenied, result.FailureCategory);
+    }
+
+    [Fact]
+    public void Empty_scope_reference_cannot_create_an_ordinary_context()
+    {
+        var fixture = CreateOrdinaryFixture();
+
+        Assert.Throws<ArgumentException>(() => OrdinaryContext(fixture, new ScopeReference("")));
+    }
+
+    [Fact]
+    public async Task Support_grant_scope_remains_authoritative_over_a_support_marker()
+    {
+        var fixture = CreateSupportFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide(), "durable-work.support-test");
+        var markerContext = TenantContext.ForSupportGrant(
+            TenantA,
+            fixture.Context.SupportGrant!.Value,
+            new ScopeReference("support"),
+            fixture.Correlation,
+            fixture.Actor.Value);
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            markerContext,
+            fixture.Clock.GetUtcNow());
+
+        Assert.True(result.Allowed);
+        Assert.Equal($"Tenant:{TenantA.Value}", result.Authorization!.ExecutionTenantContext.Scope!.Value.Value);
+    }
+
+    [Fact]
+    public async Task Tenant_wide_membership_grant_does_not_create_a_missing_selected_scope()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var missingScope = OrdinaryContext(fixture, scope: null);
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            missingScope,
+            fixture.Clock.GetUtcNow());
+
+        Assert.False(result.Allowed);
+    }
+
+    [Fact]
+    public async Task Explicit_canonical_tenant_scope_is_accepted()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var explicitTenantScope = OrdinaryContext(
+            fixture,
+            new ScopeReference($"Tenant:{TenantA.Value}"));
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            explicitTenantScope,
+            fixture.Clock.GetUtcNow());
+
+        Assert.True(result.Allowed);
+        Assert.NotNull(result.Authorization);
+        Assert.Equal($"Tenant:{TenantA.Value}", result.Authorization!.ExecutionTenantContext.Scope!.Value.Value);
+    }
+
+    [Fact]
+    public async Task Explicit_company_scope_cannot_execute_tenant_wide_work()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var companyContext = OrdinaryContext(
+            fixture,
+            new ScopeReference($"Company:{CompanyA}"));
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            companyContext,
+            fixture.Clock.GetUtcNow());
+
+        Assert.False(result.Allowed);
+    }
+
+    [Fact]
+    public async Task Explicit_company_scope_can_execute_only_verified_descendants()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(
+            fixture,
+            TenantWorkScopeRequest.ForWarehouse(CompanyA, BranchA, WarehouseA));
+        var companyContext = OrdinaryContext(
+            fixture,
+            new ScopeReference($"Company:{CompanyA}"));
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            companyContext,
+            fixture.Clock.GetUtcNow());
+
+        Assert.True(result.Allowed);
+        Assert.Equal(WarehouseA, result.Authorization!.Scope.WarehouseId);
+    }
+
+    [Fact]
+    public async Task Missing_ordinary_scope_never_invokes_handler()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var outcome = await ProcessAsync(fixture, work, OrdinaryContext(fixture, scope: null));
+
+        Assert.Equal(0, outcome.HandlerCalls);
+        Assert.Equal(DurableWorkLifecycle.DeadLetter, outcome.Completion.Lifecycle);
+        Assert.Equal(DurableWorkFailureCategory.AuthorizationDenied, outcome.Completion.FailureCategory);
+    }
+
+    [Fact]
+    public async Task Missing_ordinary_scope_never_invokes_outbox_effect()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var store = new InMemoryRelationalDurableWorkStore();
+        Assert.True(await store.SubmitAsync(work));
+        var effects = 0;
+
+        var result = await store.DispatchOutboxAsync(
+            OrdinaryContext(fixture, scope: null),
+            fixture.Service,
+            fixture.Clock.GetUtcNow(),
+            (_, _, _) =>
+            {
+                effects++;
+                return ValueTask.CompletedTask;
+            });
+
+        Assert.True(result.DeadLettered);
+        Assert.Equal(DurableWorkFailureCategory.AuthorizationDenied, result.FailureCategory);
+        Assert.Equal(0, effects);
+    }
+
+    [Fact]
+    public async Task Missing_ordinary_scope_denial_evidence_contains_no_foreign_identifier()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var foreignTenant = TenantB.Value.ToString("D");
+        var outcome = await ProcessAsync(fixture, work, OrdinaryContext(fixture, scope: null));
+        var evidenceJson = JsonSerializer.Serialize(outcome.Evidence);
+        var auditJson = JsonSerializer.Serialize(outcome.Audit);
+
+        AssertDenied(outcome);
+        Assert.DoesNotContain(foreignTenant, evidenceJson, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(foreignTenant, auditJson, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("support", evidenceJson, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Company_outside_the_authorized_scope_is_rejected()
     {
         var fixture = CreateOrdinaryFixture(OrganizationScope.ForCompany(TenantA, CompanyA));
@@ -143,6 +363,311 @@ public sealed class DurableWorkAuthorityRevalidationTests
             $"Warehouse:{WarehouseA}",
             result.Authorization.ExecutionTenantContext.Scope!.Value.Value);
         Assert.Equal(fixture.Actor.Value, result.Authorization.ActorId);
+    }
+
+    [Fact]
+    public async Task Correct_exact_authorization_and_execution_context_succeed()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(
+            fixture,
+            TenantWorkScopeRequest.ForWarehouse(CompanyA, BranchA, WarehouseA));
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            fixture.Context,
+            fixture.Clock.GetUtcNow());
+
+        Assert.True(result.Allowed);
+        var authorization = result.Authorization!;
+        var execution = new DurableWorkExecutionContext(work, authorization);
+
+        Assert.Equal(work.Identity.WorkItemId, authorization.WorkItemId);
+        Assert.Equal(work.TenantId, authorization.TenantId);
+        Assert.Equal(work.Identity.CorrelationId, authorization.CorrelationId);
+        Assert.Equal(work.Scope.CompanyId, authorization.Scope.CompanyId);
+        Assert.Equal(work.Scope.BranchId, authorization.Scope.BranchId);
+        Assert.Equal(work.Scope.WarehouseId, authorization.Scope.WarehouseId);
+        Assert.Equal(work.Identity.WorkItemId, execution.WorkItemId);
+        Assert.Equal(work.Identity.CorrelationId, execution.CorrelationId);
+    }
+
+    [Fact]
+    public async Task Broader_tenant_scope_for_company_work_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.ForCompany(CompanyA));
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+
+        AssertAuthorizationScopeForgeryRejected(
+            work,
+            authorization,
+            TenantWorkScopeRequest.TenantWide(),
+            new ScopeReference($"Tenant:{TenantA.Value}"));
+    }
+
+    [Fact]
+    public async Task Sibling_company_scope_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.ForCompany(CompanyA));
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+
+        AssertAuthorizationScopeForgeryRejected(
+            work,
+            authorization,
+            TenantWorkScopeRequest.ForCompany(CompanyB),
+            new ScopeReference($"Company:{CompanyB}"));
+    }
+
+    [Fact]
+    public async Task Sibling_branch_scope_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.ForBranch(CompanyA, BranchA));
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+
+        AssertAuthorizationScopeForgeryRejected(
+            work,
+            authorization,
+            TenantWorkScopeRequest.ForBranch(CompanyA, BranchB),
+            new ScopeReference($"Branch:{BranchB}"));
+    }
+
+    [Fact]
+    public async Task Sibling_warehouse_scope_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(
+            fixture,
+            TenantWorkScopeRequest.ForWarehouse(CompanyA, BranchA, WarehouseA));
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+
+        AssertAuthorizationScopeForgeryRejected(
+            work,
+            authorization,
+            TenantWorkScopeRequest.ForWarehouse(CompanyA, BranchA, WarehouseB),
+            new ScopeReference($"Warehouse:{WarehouseB}"));
+    }
+
+    [Fact]
+    public async Task Another_membership_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+        var context = OrdinaryContext(
+            fixture,
+            authorization.ExecutionTenantContext.Scope,
+            membership: new MembershipReference(Guid.NewGuid()));
+        var scope = ScopeFor(context, work);
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            context,
+            scope));
+    }
+
+    [Fact]
+    public async Task Another_support_grant_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateSupportFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide(), "durable-work.support-test");
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+        var context = TenantContext.ForSupportGrant(
+            TenantA,
+            new SupportGrantReference(Guid.NewGuid(), Guid.NewGuid()),
+            authorization.ExecutionTenantContext.Scope,
+            authorization.CorrelationId,
+            authorization.ActorId);
+        var scope = ScopeFor(context, work);
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            context,
+            scope));
+    }
+
+    [Fact]
+    public async Task Ordinary_path_substituted_with_support_path_is_rejected()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+        var context = TenantContext.ForSupportGrant(
+            TenantA,
+            new SupportGrantReference(Guid.NewGuid(), Guid.NewGuid()),
+            authorization.ExecutionTenantContext.Scope,
+            authorization.CorrelationId,
+            authorization.ActorId);
+        var scope = ScopeFor(context, work);
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            context,
+            scope));
+    }
+
+    [Fact]
+    public async Task Another_actor_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+        var otherActor = Guid.NewGuid();
+        var context = OrdinaryContext(
+            fixture,
+            authorization.ExecutionTenantContext.Scope,
+            actorId: otherActor);
+        var scope = ScopeFor(context, work);
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            context,
+            scope,
+            actorId: otherActor));
+    }
+
+    [Fact]
+    public async Task Another_session_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            authorization.ExecutionTenantContext,
+            authorization.Scope,
+            sessionId: Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task Correlation_mismatch_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            authorization.ExecutionTenantContext,
+            authorization.Scope,
+            correlationId: new CorrelationId("forged-correlation")));
+    }
+
+    [Fact]
+    public async Task Operation_mismatch_is_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+        var forgedOperation = new DurableWorkOperationDescriptor(
+            authorization.Operation.OperationId,
+            authorization.Operation.WorkType,
+            "tenant.business.export",
+            authorization.Operation.AllowedAuthorizationPaths,
+            authorization.Operation.ScopePolicy,
+            authorization.Operation.RequiresCurrentSession,
+            authorization.Operation.RequiresMandatorySecurityEvidence);
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            authorization.ExecutionTenantContext,
+            authorization.Scope,
+            operation: forgedOperation));
+    }
+
+    [Fact]
+    public async Task Work_item_id_and_tenant_mismatch_are_rejected_by_authorization_constructor()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            authorization.ExecutionTenantContext,
+            authorization.Scope,
+            workItemId: Guid.NewGuid()));
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            authorization.ExecutionTenantContext,
+            authorization.Scope,
+            tenantId: TenantB));
+    }
+
+    [Fact]
+    public async Task Execution_context_defensively_rechecks_exact_scope_and_authority()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
+        var otherWork = CreateWork(
+            fixture,
+            TenantWorkScopeRequest.ForWarehouse(CompanyA, BranchA, WarehouseA));
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+
+        Assert.Throws<ArgumentException>(() => new DurableWorkExecutionContext(otherWork, authorization));
+    }
+
+    [Fact]
+    public async Task Outbox_effect_receives_only_exact_stored_authorization()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(
+            fixture,
+            TenantWorkScopeRequest.ForWarehouse(CompanyA, BranchA, WarehouseA));
+        var store = new InMemoryRelationalDurableWorkStore();
+        Assert.True(await store.SubmitAsync(work));
+        VerifiedDurableWorkAuthorization? seenAuthorization = null;
+
+        var result = await store.DispatchOutboxAsync(
+            fixture.Context,
+            fixture.Service,
+            fixture.Clock.GetUtcNow(),
+            (_, authorization, _) =>
+            {
+                seenAuthorization = authorization;
+                return ValueTask.CompletedTask;
+            });
+
+        Assert.True(result.Delivered);
+        Assert.NotNull(seenAuthorization);
+        Assert.Equal(work.Identity.WorkItemId, seenAuthorization!.WorkItemId);
+        Assert.Equal(work.TenantId, seenAuthorization.TenantId);
+        Assert.Equal(work.Scope.CompanyId, seenAuthorization.Scope.CompanyId);
+        Assert.Equal(work.Scope.BranchId, seenAuthorization.Scope.BranchId);
+        Assert.Equal(work.Scope.WarehouseId, seenAuthorization.Scope.WarehouseId);
+        Assert.Equal(work.Initiator.AuthorizationPath, seenAuthorization.ExecutionTenantContext.AuthorizationPath);
+        Assert.Equal(work.Initiator.Membership, seenAuthorization.ExecutionTenantContext.Membership);
+        Assert.Equal(work.Initiator.ActorId!.Value, seenAuthorization.ActorId);
+        Assert.Equal(work.Initiator.SessionId!.Value, seenAuthorization.SessionId);
+    }
+
+    [Fact]
+    public async Task Fake_revalidator_cannot_construct_a_broader_authorization()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(fixture, TenantWorkScopeRequest.ForCompany(CompanyA));
+        var authorization = await ApprovedAuthorizationAsync(fixture, work);
+        var broaderContext = OrdinaryContext(
+            fixture,
+            new ScopeReference($"Tenant:{TenantA.Value}"));
+        var broaderScope = ScopeFor(broaderContext, work, TenantWorkScopeRequest.TenantWide());
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            broaderContext,
+            broaderScope));
     }
 
     [Fact]
@@ -510,7 +1035,8 @@ public sealed class DurableWorkAuthorityRevalidationTests
 
     private static async Task<ProcessOutcome> ProcessAsync(
         AuthorityFixture fixture,
-        DurableWorkItem work)
+        DurableWorkItem work,
+        TenantContext? currentTenantContext = null)
     {
         var store = new InMemoryRelationalDurableWorkStore();
         Assert.True(await store.SubmitAsync(work));
@@ -518,8 +1044,9 @@ public sealed class DurableWorkAuthorityRevalidationTests
         var dispatcher = new DurableWorkDispatcher(fixture.Service.OperationCatalogue);
         dispatcher.Register(handler);
         var worker = new TenantDurableWorkWorker(store, dispatcher, fixture.Service);
+        var executionContext = currentTenantContext ?? fixture.Context;
         var completion = await worker.ProcessOneAsync(
-            fixture.Context,
+            executionContext,
             Guid.NewGuid(),
             fixture.Clock.GetUtcNow(),
             TimeSpan.FromMinutes(5));
@@ -527,7 +1054,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
         return new ProcessOutcome(
             completion!,
             handler.Calls,
-            await store.ReadAuditAsync(fixture.Context),
+            await store.ReadAuditAsync(executionContext),
             fixture.Service.GetEvidence());
     }
 
@@ -538,6 +1065,101 @@ public sealed class DurableWorkAuthorityRevalidationTests
         Assert.Equal(0, outcome.HandlerCalls);
         Assert.Contains(outcome.Audit, item => item.EventType == "work.dead-letter");
     }
+
+    private static async Task<VerifiedDurableWorkAuthorization> ApprovedAuthorizationAsync(
+        AuthorityFixture fixture,
+        DurableWorkItem work)
+    {
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            fixture.Context,
+            fixture.Clock.GetUtcNow());
+        Assert.True(result.Allowed);
+        return result.Authorization!;
+    }
+
+    private static void AssertAuthorizationScopeForgeryRejected(
+        DurableWorkItem work,
+        VerifiedDurableWorkAuthorization authorization,
+        TenantWorkScopeRequest forgedRequest,
+        ScopeReference forgedContextScope)
+    {
+        var context = ContextWithScope(authorization.ExecutionTenantContext, forgedContextScope);
+        var scope = ScopeFor(context, work, forgedRequest);
+
+        Assert.Throws<ArgumentException>(() => ConstructAuthorization(
+            work,
+            authorization,
+            context,
+            scope));
+    }
+
+    private static VerifiedDurableWorkAuthorization ConstructAuthorization(
+        DurableWorkItem work,
+        VerifiedDurableWorkAuthorization baseline,
+        TenantContext context,
+        TenantWorkScope scope,
+        Guid? workItemId = null,
+        TenantId? tenantId = null,
+        CorrelationId? correlationId = null,
+        DurableWorkOperationDescriptor? operation = null,
+        Guid? actorId = null,
+        Guid? sessionId = null) =>
+        new(
+            work,
+            workItemId ?? baseline.WorkItemId,
+            tenantId ?? baseline.TenantId,
+            correlationId ?? baseline.CorrelationId,
+            operation ?? baseline.Operation,
+            context,
+            scope,
+            actorId ?? baseline.ActorId,
+            sessionId ?? baseline.SessionId);
+
+    private static TenantWorkScope ScopeFor(
+        TenantContext context,
+        DurableWorkItem work,
+        TenantWorkScopeRequest? requestedScope = null) =>
+        TenantWorkScope.IssueFromVerifiedAuthority(
+            context,
+            requestedScope ?? new TenantWorkScopeRequest(
+                work.Scope.CompanyId,
+                work.Scope.BranchId,
+                work.Scope.WarehouseId));
+
+    private static TenantContext OrdinaryContext(
+        AuthorityFixture fixture,
+        ScopeReference? scope,
+        MembershipReference? membership = null,
+        Guid? actorId = null) =>
+        TenantContext.ForOrdinaryMembership(
+            fixture.Tenant,
+            membership ?? new MembershipReference(fixture.Membership!.Value.Value),
+            scope,
+            fixture.Correlation,
+            actorId ?? fixture.Actor.Value);
+
+    private static TenantContext ContextWithScope(
+        TenantContext source,
+        ScopeReference scope) =>
+        source.AuthorizationPath switch
+        {
+            TenantAuthorizationPath.OrdinaryMembership when source.Membership is { } membership =>
+                TenantContext.ForOrdinaryMembership(
+                    source.TenantId,
+                    membership,
+                    scope,
+                    source.CorrelationId,
+                    source.ActorId),
+            TenantAuthorizationPath.SupportGrant when source.SupportGrant is { } supportGrant =>
+                TenantContext.ForSupportGrant(
+                    source.TenantId,
+                    supportGrant,
+                    scope,
+                    source.CorrelationId,
+                    source.ActorId),
+            _ => throw new ArgumentException("The context does not contain one supported authorization path.", nameof(source))
+        };
 
     private static void SeedOrganizationGraph(IdentityAuthorizationService service, TenantId tenantId)
     {

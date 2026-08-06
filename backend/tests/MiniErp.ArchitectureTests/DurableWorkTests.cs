@@ -1,5 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.BuildingBlocks.Work;
 using Xunit;
@@ -600,7 +602,43 @@ public sealed class DurableWorkTests
     }
 
     [Fact]
-    public void Verified_scope_issuer_has_no_unrestricted_production_callsite()
+    public void Protected_durable_effects_cannot_bypass_mandatory_security_evidence()
+    {
+        var registered = OperationCatalogue.TryGet("foundation.work", out var operation)
+            ? operation
+            : throw new InvalidOperationException("The test operation is not registered.");
+        Assert.True(registered.RequiresMandatorySecurityEvidence);
+
+        var optionalDescriptor = new DurableWorkOperationDescriptor(
+            registered.OperationId,
+            registered.WorkType,
+            registered.ExactPermissionCode,
+            registered.AllowedAuthorizationPaths,
+            registered.ScopePolicy,
+            registered.RequiresCurrentSession,
+            requiresMandatorySecurityEvidence: false);
+        var optionalCatalogue = new DurableWorkOperationCatalogue([optionalDescriptor]);
+        var context = CreateContext();
+        var identity = DurableWorkIdentity.Create(
+            Guid.NewGuid(),
+            optionalCatalogue,
+            registered.OperationId,
+            context.CorrelationId!.Value,
+            "mandatory-evidence-policy");
+
+        Assert.Throws<ArgumentException>(() => DurableWorkItem.Create(
+            context,
+            DurableWorkTestSupport.TenantWideScope(context),
+            identity,
+            new DemoPayload("protected"),
+            Guid.NewGuid()));
+
+        var dispatcher = new DurableWorkDispatcher(optionalCatalogue);
+        Assert.Throws<ArgumentException>(() => dispatcher.Register(new MissingMandatoryEvidenceHandler(optionalDescriptor)));
+    }
+
+    [Fact]
+    public void Verified_authority_issuers_are_syntax_tree_allow_listed()
     {
         var sourceRoot = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
@@ -611,15 +649,79 @@ public sealed class DurableWorkTests
             "..",
             "src",
             "MiniErp.App"));
-        var sourceUnits = Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
-            .Select(path => (Path: path, Source: File.ReadAllText(path)))
-            .Where(unit => unit.Source.Contains("IssueFromVerifiedAuthority", StringComparison.Ordinal))
-            .ToArray();
+        var testRoot = Path.GetFullPath(Path.Combine(sourceRoot, "..", "..", "tests"));
+        var approvedIdentityIssuer = Path.GetFullPath(Path.Combine(
+            sourceRoot,
+            "Modules",
+            "Identity",
+            "IdentityAuthorizationService.cs"));
+        var productionScopeIssuers = new List<string>();
+        var productionAuthorizationIssuers = new List<string>();
+        var testScopeIssuers = new List<string>();
+        var testAuthorizationIssuers = new List<string>();
 
-        Assert.DoesNotContain(sourceUnits, unit =>
-            !unit.Path.EndsWith("DurableWorkContracts.cs", StringComparison.OrdinalIgnoreCase)
-            && !unit.Path.EndsWith("IdentityAuthorizationService.cs", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(sourceUnits, unit => unit.Source.Contains("ForServerContext", StringComparison.Ordinal));
+        foreach (var path in Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            CollectIssuerCallSites(
+                path,
+                productionScopeIssuers,
+                productionAuthorizationIssuers);
+        }
+
+        foreach (var path in Directory.GetFiles(testRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            CollectIssuerCallSites(
+                path,
+                testScopeIssuers,
+                testAuthorizationIssuers);
+        }
+
+        Assert.NotEmpty(productionScopeIssuers);
+        Assert.NotEmpty(productionAuthorizationIssuers);
+        Assert.All(productionScopeIssuers, path =>
+            Assert.Equal(
+                approvedIdentityIssuer,
+                Path.GetFullPath(path),
+                StringComparer.OrdinalIgnoreCase));
+        Assert.All(productionAuthorizationIssuers, path =>
+            Assert.Equal(
+                approvedIdentityIssuer,
+                Path.GetFullPath(path),
+                StringComparer.OrdinalIgnoreCase));
+        Assert.All(testScopeIssuers, path =>
+            Assert.StartsWith(testRoot, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase));
+        Assert.All(testAuthorizationIssuers, path =>
+            Assert.StartsWith(testRoot, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase));
+
+        static void CollectIssuerCallSites(
+            string path,
+            ICollection<string> scopeIssuers,
+            ICollection<string> authorizationIssuers)
+        {
+            var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path);
+            var root = tree.GetRoot();
+            if (root.DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Any(IsVerifiedScopeIssuance))
+            {
+                scopeIssuers.Add(path);
+            }
+
+            if (root.DescendantNodes()
+                .OfType<ObjectCreationExpressionSyntax>()
+                .Any(IsVerifiedAuthorizationConstruction))
+            {
+                authorizationIssuers.Add(path);
+            }
+        }
+
+        static bool IsVerifiedScopeIssuance(InvocationExpressionSyntax invocation) =>
+            invocation.Expression is MemberAccessExpressionSyntax member
+            && member.Name.Identifier.ValueText == nameof(TenantWorkScope.IssueFromVerifiedAuthority)
+            && member.Expression.ToString() == nameof(TenantWorkScope);
+
+        static bool IsVerifiedAuthorizationConstruction(ObjectCreationExpressionSyntax creation) =>
+            creation.Type.ToString() == nameof(VerifiedDurableWorkAuthorization);
     }
 
     [Fact]
@@ -749,6 +851,22 @@ public sealed class DurableWorkTests
                 "demo",
                 "tenant.business.export",
                 [TenantAuthorizationPath.OrdinaryMembership]);
+
+        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+            DemoPayload payload,
+            DurableWorkExecutionContext context,
+            CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+    }
+
+    private sealed class MissingMandatoryEvidenceHandler : IDurableWorkHandler<DemoPayload>
+    {
+        internal MissingMandatoryEvidenceHandler(DurableWorkOperationDescriptor operation)
+        {
+            Operation = operation;
+        }
+
+        public DurableWorkOperationDescriptor Operation { get; }
 
         public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
             DemoPayload payload,

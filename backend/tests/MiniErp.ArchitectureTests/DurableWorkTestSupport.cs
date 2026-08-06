@@ -37,6 +37,9 @@ internal static class DurableWorkTestSupport
                 workItem.Scope.WarehouseId));
         var authorization = new VerifiedDurableWorkAuthorization(
             workItem,
+            workItem.Identity.WorkItemId,
+            workItem.TenantId,
+            workItem.Identity.CorrelationId,
             workItem.Identity.Operation,
             executionContext,
             scope,

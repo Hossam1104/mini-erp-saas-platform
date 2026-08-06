@@ -232,6 +232,43 @@ public sealed class TenantWorkScope
             && ActorId == authorityContext.ActorId
             && AuthorizationScope == authorityContext.Scope;
     }
+
+    /// <summary>
+    /// Compares only the organization boundary carried by two verified work
+    /// scopes. Authorization facts are checked separately by the durable-work
+    /// binding validator.
+    /// </summary>
+    internal bool ExactlyMatchesOrganizationScope(TenantWorkScope other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return TenantId == other.TenantId
+            && CompanyId == other.CompanyId
+            && BranchId == other.BranchId
+            && WarehouseId == other.WarehouseId;
+    }
+
+    /// <summary>
+    /// Requires both exact authority identity and the canonical server-issued
+    /// organization scope representation used by Identity revalidation.
+    /// </summary>
+    internal bool IsExactlyBoundTo(TenantContext authorityContext)
+    {
+        ArgumentNullException.ThrowIfNull(authorityContext);
+        return IsBoundTo(authorityContext)
+            && authorityContext.Scope is { } suppliedScope
+            && string.Equals(
+                suppliedScope.Value,
+                CanonicalScopeReferenceValue,
+                StringComparison.Ordinal);
+    }
+
+    private string CanonicalScopeReferenceValue => WarehouseId is { } warehouseId
+        ? $"Warehouse:{warehouseId}"
+        : BranchId is { } branchId
+            ? $"Branch:{branchId}"
+            : CompanyId is { } companyId
+                ? $"Company:{companyId}"
+                : $"Tenant:{TenantId.Value}";
 }
 
 /// <summary>Immutable initiating authorization facts for durable work.</summary>
@@ -466,6 +503,13 @@ public sealed class DurableWorkItem : ITenantOwned
             throw new ArgumentException("The operation is not registered for the trusted authorization path.", nameof(identity));
         }
 
+        if (!identity.Operation.RequiresMandatorySecurityEvidence)
+        {
+            throw new ArgumentException(
+                "Protected durable work requires the mandatory security-evidence policy.",
+                nameof(identity));
+        }
+
         if (identity.Operation.ScopePolicy == DurableWorkScopePolicy.TenantWideOnly
             && (scope.CompanyId.HasValue || scope.BranchId.HasValue || scope.WarehouseId.HasValue))
         {
@@ -573,6 +617,71 @@ public sealed record DurableWorkLease(
     DateTimeOffset LeaseExpiresAt,
     long ConcurrencyVersion);
 
+/// <summary>Reusable exact-binding validator for server-issued work authority.</summary>
+internal static class DurableWorkAuthorizationBinding
+{
+    internal static bool ExactlyMatches(
+        Guid authorizationWorkItemId,
+        TenantId authorizationTenantId,
+        CorrelationId authorizationCorrelationId,
+        DurableWorkItem workItem,
+        DurableWorkOperationDescriptor operation,
+        TenantContext executionTenantContext,
+        TenantWorkScope scope,
+        Guid actorId,
+        Guid sessionId)
+    {
+        var initiator = workItem.Initiator;
+        var executionPathIsConsistent = executionTenantContext.AuthorizationPath switch
+        {
+            TenantAuthorizationPath.OrdinaryMembership =>
+                executionTenantContext.Membership.HasValue
+                && !executionTenantContext.SupportGrant.HasValue,
+            TenantAuthorizationPath.SupportGrant =>
+                !executionTenantContext.Membership.HasValue
+                && executionTenantContext.SupportGrant.HasValue,
+            _ => false
+        };
+        var initiatorPathIsConsistent = initiator.AuthorizationPath switch
+        {
+            TenantAuthorizationPath.OrdinaryMembership =>
+                initiator.Membership.HasValue
+                && !initiator.SupportGrant.HasValue,
+            TenantAuthorizationPath.SupportGrant =>
+                !initiator.Membership.HasValue
+                && initiator.SupportGrant.HasValue,
+            _ => false
+        };
+
+        return authorizationWorkItemId == workItem.Identity.WorkItemId
+            && operation.RequiresMandatorySecurityEvidence
+            && workItem.Identity.Operation.ExactlyMatches(operation)
+            && initiator.Operation.ExactlyMatches(operation)
+            && authorizationCorrelationId == workItem.Identity.CorrelationId
+            && initiator.CorrelationId == authorizationCorrelationId
+            && executionTenantContext.CorrelationId is { } executionCorrelation
+            && executionCorrelation == authorizationCorrelationId
+            && authorizationTenantId == workItem.TenantId
+            && executionTenantContext.TenantId == authorizationTenantId
+            && scope.ExactlyMatchesOrganizationScope(workItem.Scope)
+            && scope.IsExactlyBoundTo(executionTenantContext)
+            && executionPathIsConsistent
+            && initiatorPathIsConsistent
+            && executionTenantContext.AuthorizationPath == initiator.AuthorizationPath
+            && executionTenantContext.Membership == initiator.Membership
+            && executionTenantContext.SupportGrant == initiator.SupportGrant
+            && initiator.ActorId is { } storedActorId
+            && storedActorId != Guid.Empty
+            && actorId != Guid.Empty
+            && actorId == storedActorId
+            && executionTenantContext.ActorId == actorId
+            && initiator.SessionId is { } storedSessionId
+            && storedSessionId != Guid.Empty
+            && sessionId != Guid.Empty
+            && sessionId == storedSessionId;
+    }
+}
+
 /// <summary>
 /// Server-issued authority that binds one work item to the exact current
 /// operation, actor, session, authorization path and organization scope.
@@ -581,6 +690,9 @@ public sealed class VerifiedDurableWorkAuthorization
 {
     internal VerifiedDurableWorkAuthorization(
         DurableWorkItem workItem,
+        Guid workItemId,
+        TenantId tenantId,
+        CorrelationId correlationId,
         DurableWorkOperationDescriptor operation,
         TenantContext executionTenantContext,
         TenantWorkScope scope,
@@ -591,18 +703,23 @@ public sealed class VerifiedDurableWorkAuthorization
         ArgumentNullException.ThrowIfNull(operation);
         ArgumentNullException.ThrowIfNull(executionTenantContext);
         ArgumentNullException.ThrowIfNull(scope);
-        if (!workItem.Identity.Operation.ExactlyMatches(operation)
-            || workItem.TenantId != executionTenantContext.TenantId
-            || workItem.Identity.CorrelationId != executionTenantContext.CorrelationId
-            || !scope.IsBoundTo(executionTenantContext)
-            || scope.TenantId != workItem.TenantId
-            || actorId == Guid.Empty
-            || sessionId == Guid.Empty)
+        if (!DurableWorkAuthorizationBinding.ExactlyMatches(
+                workItemId,
+                tenantId,
+                correlationId,
+                workItem,
+                operation,
+                executionTenantContext,
+                scope,
+                actorId,
+                sessionId))
         {
             throw new ArgumentException("The durable-work authorization is not an exact server-issued match.", nameof(executionTenantContext));
         }
 
-        WorkItemId = workItem.Identity.WorkItemId;
+        WorkItemId = workItemId;
+        TenantId = tenantId;
+        CorrelationId = correlationId;
         Operation = operation;
         ExecutionTenantContext = executionTenantContext;
         Scope = scope;
@@ -611,6 +728,10 @@ public sealed class VerifiedDurableWorkAuthorization
     }
 
     public Guid WorkItemId { get; }
+
+    public TenantId TenantId { get; }
+
+    public CorrelationId CorrelationId { get; }
 
     public DurableWorkOperationDescriptor Operation { get; }
 
@@ -632,10 +753,16 @@ public sealed class DurableWorkExecutionContext
     {
         ArgumentNullException.ThrowIfNull(workItem);
         ArgumentNullException.ThrowIfNull(authorization);
-        if (workItem.Identity.WorkItemId != authorization.WorkItemId
-            || workItem.TenantId != authorization.ExecutionTenantContext.TenantId
-            || !workItem.Identity.Operation.ExactlyMatches(authorization.Operation)
-            || !string.Equals(workItem.Identity.CorrelationId.Value, authorization.ExecutionTenantContext.CorrelationId?.Value, StringComparison.Ordinal))
+        if (!DurableWorkAuthorizationBinding.ExactlyMatches(
+                authorization.WorkItemId,
+                authorization.TenantId,
+                authorization.CorrelationId,
+                workItem,
+                authorization.Operation,
+                authorization.ExecutionTenantContext,
+                authorization.Scope,
+                authorization.ActorId,
+                authorization.SessionId))
         {
             throw new ArgumentException("Execution context does not match the verified work authorization.", nameof(authorization));
         }
@@ -645,7 +772,7 @@ public sealed class DurableWorkExecutionContext
         Scope = authorization.Scope;
         Operation = authorization.Operation;
         OperationId = authorization.Operation.OperationId;
-        CorrelationId = workItem.Identity.CorrelationId;
+        CorrelationId = authorization.CorrelationId;
         ActorId = authorization.ActorId;
         SessionId = authorization.SessionId;
     }

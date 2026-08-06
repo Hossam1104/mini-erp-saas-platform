@@ -398,7 +398,8 @@ public sealed class DurableWorkDispatcher
         ArgumentNullException.ThrowIfNull(handler);
         ArgumentNullException.ThrowIfNull(handler.Operation);
         if (!operationCatalogue.TryGet(handler.Operation.OperationId, out var registeredOperation)
-            || !registeredOperation.ExactlyMatches(handler.Operation))
+            || !registeredOperation.ExactlyMatches(handler.Operation)
+            || !handler.Operation.RequiresMandatorySecurityEvidence)
         {
             throw new ArgumentException("A typed handler must declare an exact registered operation descriptor.", nameof(handler));
         }
@@ -440,7 +441,8 @@ public sealed class DurableWorkDispatcher
 
         if (!operationCatalogue.TryGet(item.Identity.OperationId, out var registeredOperation)
             || !registeredOperation.ExactlyMatches(item.Identity.Operation)
-            || !registeredOperation.ExactlyMatches(context.Operation))
+            || !registeredOperation.ExactlyMatches(context.Operation)
+            || !registeredOperation.RequiresMandatorySecurityEvidence)
         {
             return ValueTask.FromResult(DurableWorkHandlerResult.DeadLettered(
                 DurableWorkFailureCategory.ValidationFailed,

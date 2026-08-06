@@ -28,7 +28,8 @@ public sealed class DurableWorkOperationDescriptor
         string exactPermissionCode,
         IEnumerable<TenantAuthorizationPath> allowedAuthorizationPaths,
         DurableWorkScopePolicy scopePolicy = DurableWorkScopePolicy.ExactRequestedScope,
-        bool requiresCurrentSession = true)
+        bool requiresCurrentSession = true,
+        bool requiresMandatorySecurityEvidence = true)
     {
         OperationId = Required(operationId, nameof(operationId));
         WorkType = Required(workType, nameof(workType));
@@ -55,6 +56,7 @@ public sealed class DurableWorkOperationDescriptor
         AllowedAuthorizationPaths = paths.ToFrozenSet();
         ScopePolicy = scopePolicy;
         RequiresCurrentSession = requiresCurrentSession;
+        RequiresMandatorySecurityEvidence = requiresMandatorySecurityEvidence;
     }
 
     public string OperationId { get; }
@@ -69,6 +71,13 @@ public sealed class DurableWorkOperationDescriptor
 
     public bool RequiresCurrentSession { get; }
 
+    /// <summary>
+    /// Whether the protected durable effect must remain covered by the
+    /// approved mandatory security-evidence policy. Durable work creation and
+    /// dispatch reject descriptors that opt out of this policy.
+    /// </summary>
+    public bool RequiresMandatorySecurityEvidence { get; }
+
     internal bool ExactlyMatches(DurableWorkOperationDescriptor other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -77,6 +86,7 @@ public sealed class DurableWorkOperationDescriptor
             && string.Equals(ExactPermissionCode, other.ExactPermissionCode, StringComparison.Ordinal)
             && ScopePolicy == other.ScopePolicy
             && RequiresCurrentSession == other.RequiresCurrentSession
+            && RequiresMandatorySecurityEvidence == other.RequiresMandatorySecurityEvidence
             && AllowedAuthorizationPaths.SetEquals(other.AllowedAuthorizationPaths);
     }
 

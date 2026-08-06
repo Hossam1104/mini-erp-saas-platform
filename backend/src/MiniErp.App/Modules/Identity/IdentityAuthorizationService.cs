@@ -1456,6 +1456,7 @@ internal sealed class IdentityAuthorizationService :
         if (!operationCatalogue.TryGet(workItem.Identity.OperationId, out var operation)
             || !operation.ExactlyMatches(workItem.Identity.Operation)
             || !workItem.Initiator.Operation.ExactlyMatches(workItem.Identity.Operation)
+            || !operation.RequiresMandatorySecurityEvidence
             || !operation.AllowedAuthorizationPaths.Contains(currentTenantContext.AuthorizationPath)
             || (operation.ScopePolicy == DurableWorkScopePolicy.TenantWideOnly
                 && (workItem.Scope.CompanyId.HasValue
@@ -1592,6 +1593,9 @@ internal sealed class IdentityAuthorizationService :
             exactScopeRequest);
         var authorization = new VerifiedDurableWorkAuthorization(
             workItem,
+            workItem.Identity.WorkItemId,
+            workItem.TenantId,
+            workItem.Identity.CorrelationId,
             operation,
             executionTenantContext,
             exactScope,
@@ -1630,22 +1634,21 @@ internal sealed class IdentityAuthorizationService :
         OrganizationScope requestedScope,
         DateTimeOffset? authorityNow = null)
     {
-        if (tenantContext.TenantId != requestedScope.TenantId
-            || !TryResolveContextScopeUnsafe(tenantContext, out var selectedScope))
-        {
-            // A support context may intentionally use a non-scope display
-            // marker; its current SupportGrant scope is checked below.
-            if (tenantContext.Scope is { } suppliedScope
-                && !string.Equals(suppliedScope.Value, "support", StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-        }
-        else if (!ScopeContainsUnsafe(selectedScope, requestedScope))
+        if (tenantContext.TenantId != requestedScope.TenantId)
         {
             return false;
         }
 
+        if (tenantContext.AuthorizationPath == TenantAuthorizationPath.OrdinaryMembership
+            && (!TryResolveContextScopeUnsafe(tenantContext, out var selectedScope)
+                || !ScopeContainsUnsafe(selectedScope, requestedScope)))
+        {
+            return false;
+        }
+
+        // Support contexts may carry a display marker or stale client-visible
+        // scope. The current case-bound SupportGrant record is authoritative;
+        // never use the context marker as a support authorization fallback.
         if (tenantContext.AuthorizationPath == TenantAuthorizationPath.OrdinaryMembership)
         {
             if (!tenantContext.Membership.HasValue
@@ -1767,26 +1770,39 @@ internal sealed class IdentityAuthorizationService :
             return false;
         }
 
+        // Ordinary execution accepts only the server's canonical Kind:GUID
+        // representation. Missing, marker, aliased or malformed values deny.
         var value = tenantContext.Scope.Value.Value;
-        if (string.Equals(value, "tenant", StringComparison.OrdinalIgnoreCase))
-        {
-            selectedScope = OrganizationScope.ForTenant(tenantContext.TenantId);
-            return true;
-        }
-
-        var parts = value.Split(':', 2, StringSplitOptions.TrimEntries);
-        if (parts.Length != 2
-            || !Enum.TryParse<ScopeKind>(parts[0], ignoreCase: true, out var kind)
-            || !Guid.TryParse(parts[1], out var targetId)
-            || targetId == Guid.Empty)
+        var separatorIndex = value.IndexOf(':');
+        if (separatorIndex <= 0 || separatorIndex == value.Length - 1
+            || separatorIndex != value.LastIndexOf(':'))
         {
             return false;
         }
 
-        selectedScope = new OrganizationScope(tenantContext.TenantId, kind, targetId);
-        return kind == ScopeKind.Tenant
-            ? targetId == tenantContext.TenantId.Value
-            : true;
+        var kind = value[..separatorIndex] switch
+        {
+            "Tenant" => ScopeKind.Tenant,
+            "Company" => ScopeKind.Company,
+            "Branch" => ScopeKind.Branch,
+            "Warehouse" => ScopeKind.Warehouse,
+            _ => (ScopeKind?)null
+        };
+        if (!kind.HasValue
+            || !Guid.TryParseExact(value[(separatorIndex + 1)..], "D", out var targetId)
+            || targetId == Guid.Empty
+            || !string.Equals(value, $"{value[..separatorIndex]}:{targetId}", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (kind == ScopeKind.Tenant && targetId != tenantContext.TenantId.Value)
+        {
+            return false;
+        }
+
+        selectedScope = new OrganizationScope(tenantContext.TenantId, kind.Value, targetId);
+        return true;
     }
 
     private bool IsCurrentSessionUnsafe(UserSession session, DateTimeOffset now)
