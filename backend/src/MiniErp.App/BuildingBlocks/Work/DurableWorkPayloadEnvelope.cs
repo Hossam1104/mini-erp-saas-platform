@@ -5,10 +5,17 @@ using System.Text.Json;
 
 namespace MiniErp.App.BuildingBlocks.Work;
 
-/// <summary>Safe, bounded failure for payload capture/decode. Never carries payload content.</summary>
+/// <summary>
+/// Safe, bounded failure for payload capture/decode. Never carries payload
+/// content. The constructor is internal: only this envelope/registry seam may
+/// raise one, so a message is always a fixed, registry-owned string. A
+/// registered codec's own exception -- including one it raises as this exact
+/// type -- is never trusted or re-surfaced; the registry always normalizes it
+/// to one of these fixed messages instead.
+/// </summary>
 public sealed class DurableWorkPayloadException : Exception
 {
-    public DurableWorkPayloadException(string message) : base(message)
+    internal DurableWorkPayloadException(string message) : base(message)
     {
     }
 }
@@ -225,19 +232,18 @@ public sealed class DurableWorkPayloadRegistry : IDurableWorkPayloadRegistry
         {
             bytes = registered.Encode(payload);
         }
-        catch (DurableWorkPayloadException)
-        {
-            throw;
-        }
         catch (OperationCanceledException)
         {
             throw;
         }
         catch (Exception)
         {
-            // A custom codec's exception message, type name and any payload
-            // value it might carry are never safe to surface; only the
-            // bounded, provider-neutral envelope exception is exposed.
+            // Every exception raised inside a registered codec is untrusted,
+            // including one a codec author raised as DurableWorkPayloadException
+            // itself: its message, CLR type name and any payload value it might
+            // carry are never safe to surface. Only this fixed, registry-owned
+            // message is exposed, and the original exception is never attached
+            // as InnerException.
             throw new DurableWorkPayloadException("The payload could not be encoded safely.");
         }
 
@@ -267,19 +273,18 @@ public sealed class DurableWorkPayloadRegistry : IDurableWorkPayloadRegistry
         {
             return (TPayload)registered.Decode(bytes);
         }
-        catch (DurableWorkPayloadException)
-        {
-            throw;
-        }
         catch (OperationCanceledException)
         {
             throw;
         }
         catch (Exception)
         {
-            // A custom codec's exception message, type name and any payload
-            // value it might carry are never safe to surface; only the
-            // bounded, provider-neutral envelope exception is exposed.
+            // Every exception raised inside a registered codec is untrusted,
+            // including one a codec author raised as DurableWorkPayloadException
+            // itself: its message, CLR type name and any payload value it might
+            // carry are never safe to surface. Only this fixed, registry-owned
+            // message is exposed, and the original exception is never attached
+            // as InnerException.
             throw new DurableWorkPayloadException("The payload could not be decoded safely.");
         }
     }
