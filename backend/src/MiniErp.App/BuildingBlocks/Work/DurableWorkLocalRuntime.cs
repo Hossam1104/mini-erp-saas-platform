@@ -20,6 +20,18 @@ namespace MiniErp.App.BuildingBlocks.Work;
 /// composition root must call it exactly once and reuse the returned
 /// instance.
 /// </summary>
+/// <remarks>
+/// H92-05: the mutable ledger (<see cref="EffectGuard"/>) and the effect
+/// executor (<see cref="EffectExecutor"/>) are internal composition details,
+/// not part of this runtime's public surface. A shipping caller holding this
+/// runtime can reach only <see cref="Store"/> and <see cref="Dispatcher"/>;
+/// it cannot directly reserve, release, complete or mark an effect uncertain,
+/// because doing so through the shared ledger outside
+/// <see cref="DurableWorkEffectExecutor"/> would let a duplicate reservation
+/// or premature release defeat the single-effect guarantee (for example,
+/// releasing an in-flight reservation while its protected effect is still
+/// executing, then reserving and executing it a second time).
+/// </remarks>
 public sealed class DurableWorkLocalRuntime
 {
     private DurableWorkLocalRuntime(
@@ -34,11 +46,22 @@ public sealed class DurableWorkLocalRuntime
         Dispatcher = dispatcher;
     }
 
-    /// <summary>The one authoritative effect ledger shared by <see cref="Store"/> and <see cref="Dispatcher"/>.</summary>
-    public IDurableWorkEffectGuard EffectGuard { get; }
+    /// <summary>
+    /// The one authoritative effect ledger shared by <see cref="Store"/> and
+    /// <see cref="Dispatcher"/>. Internal (H92-05): no shipping caller outside
+    /// this assembly's approved effect executor may reserve, release,
+    /// complete or mark an effect uncertain. Tests reach this only through
+    /// InternalsVisibleTo.
+    /// </summary>
+    internal IDurableWorkEffectGuard EffectGuard { get; }
 
-    /// <summary>The one effect executor bound to <see cref="EffectGuard"/> and shared by <see cref="Store"/> and <see cref="Dispatcher"/>.</summary>
-    public IDurableWorkEffectExecutor EffectExecutor { get; }
+    /// <summary>
+    /// The one effect executor bound to <see cref="EffectGuard"/> and shared
+    /// by <see cref="Store"/> and <see cref="Dispatcher"/>. Internal
+    /// (H92-05): a shipping caller must go through <see cref="Store"/> or
+    /// <see cref="Dispatcher"/>, never invoke a protected effect directly.
+    /// </summary>
+    internal IDurableWorkEffectExecutor EffectExecutor { get; }
 
     /// <summary>The one durable-work store constructed with <see cref="EffectExecutor"/>.</summary>
     public InMemoryDurableWorkStore Store { get; }

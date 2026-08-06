@@ -98,8 +98,14 @@ public sealed class DurableWorkEffectKey : IEquatable<DurableWorkEffectKey>
     public override int GetHashCode() => HashCode.Combine(TenantId, Purpose, WorkItemId, OperationId, EventId);
 }
 
-/// <summary>Required states for one protected durable-work effect.</summary>
-public enum DurableWorkEffectState
+/// <summary>
+/// Required states for one protected durable-work effect. Internal: only the
+/// internal effect guard and executor observe ledger state directly (H92-05);
+/// the only publicly reachable evidence about an uncertain effect is the
+/// scope-authorized <see cref="DurableWorkUncertainEffectRecord"/> returned by
+/// <see cref="IDurableWorkStore.ReadUncertainEffectsAsync"/>.
+/// </summary>
+internal enum DurableWorkEffectState
 {
     NotStarted = 1,
     Reserved = 2,
@@ -107,7 +113,7 @@ public enum DurableWorkEffectState
     OutcomeUnknown = 4
 }
 
-public enum DurableWorkEffectReservationKind
+internal enum DurableWorkEffectReservationKind
 {
     ReservedNow = 1,
     AlreadyCompleted = 2,
@@ -115,7 +121,7 @@ public enum DurableWorkEffectReservationKind
     InFlight = 4
 }
 
-public sealed record DurableWorkEffectReservation(
+internal sealed record DurableWorkEffectReservation(
     DurableWorkEffectReservationKind Kind,
     DurableWorkHandlerResult? CompletedResult)
 {
@@ -135,8 +141,13 @@ public sealed record DurableWorkEffectReservation(
 /// <see cref="RecordOutcomeUnknown"/> or <see cref="Release"/> may resolve it.
 /// One shared guard instance is the single authoritative ledger for every
 /// purpose-qualified effect key across the store and the dispatcher.
+/// Internal to <c>MiniErp.App</c> (H92-05): no shipping caller outside
+/// <see cref="DurableWorkEffectExecutor"/> may reserve, release, complete or
+/// mark an effect uncertain, and <see cref="GetOutcomeUnknownReason"/> is not
+/// a public raw-key evidence path. Tests reach this port only through
+/// <c>InternalsVisibleTo</c>.
 /// </summary>
-public interface IDurableWorkEffectGuard
+internal interface IDurableWorkEffectGuard
 {
     DurableWorkEffectState GetState(DurableWorkEffectKey key);
 
@@ -159,12 +170,14 @@ public interface IDurableWorkEffectGuard
 
 /// <summary>
 /// Deterministic in-memory effect guard. A local Foundation seam only; not
-/// crash-durable. The constructor is internal: shipping code obtains the one
-/// approved instance only through <see cref="DurableWorkLocalRuntime"/>, so a
-/// second, independent production effect ledger cannot be created. Tests use
-/// this constructor directly through InternalsVisibleTo.
+/// crash-durable. The type and its constructor are internal (H92-05):
+/// shipping code obtains the one approved instance only through
+/// <see cref="DurableWorkLocalRuntime"/>, so a second, independent production
+/// effect ledger cannot be created and no shipping caller outside this
+/// assembly's approved effect executor can reach the ledger directly. Tests
+/// use this constructor directly through InternalsVisibleTo.
 /// </summary>
-public sealed class InMemoryDurableWorkEffectGuard : IDurableWorkEffectGuard
+internal sealed class InMemoryDurableWorkEffectGuard : IDurableWorkEffectGuard
 {
     private readonly object syncRoot = new();
     private readonly Dictionary<DurableWorkEffectKey, EffectRecord> records = [];
@@ -340,7 +353,7 @@ public sealed class DurableWorkProtectedEffectResult
 }
 
 /// <summary>Outcome of one attempted protected-effect execution.</summary>
-public enum DurableWorkEffectExecutionKind
+internal enum DurableWorkEffectExecutionKind
 {
     Executed = 1,
     Replayed = 2,
@@ -349,7 +362,7 @@ public enum DurableWorkEffectExecutionKind
 }
 
 /// <summary>Safe outcome returned by the effect executor.</summary>
-public sealed record DurableWorkEffectExecution(
+internal sealed record DurableWorkEffectExecution(
     DurableWorkEffectExecutionKind Kind,
     DurableWorkHandlerResult Result);
 
@@ -364,8 +377,13 @@ public sealed record DurableWorkEffectExecution(
 /// An actual process crash is a distinct, unhandled failure mode: it loses
 /// this in-memory guard's state entirely rather than recording
 /// OutcomeUnknown. Production durable crash recovery remains deferred.
+/// Internal to <c>MiniErp.App</c> (H92-05): every registered handler
+/// invocation and outbox effect is routed through this executor only from
+/// inside <see cref="InMemoryDurableWorkStore"/> and <see cref="DurableWorkDispatcher"/>;
+/// no shipping caller outside this assembly can invoke a protected effect
+/// directly.
 /// </summary>
-public interface IDurableWorkEffectExecutor
+internal interface IDurableWorkEffectExecutor
 {
     ValueTask<DurableWorkEffectExecution> ExecuteHandlerEffectAsync(
         DurableWorkEffectKey key,
@@ -375,11 +393,11 @@ public interface IDurableWorkEffectExecutor
 
 /// <summary>
 /// Default effect executor bound to one <see cref="IDurableWorkEffectGuard"/>.
-/// The constructor is internal: shipping code obtains the one approved
-/// instance only through <see cref="DurableWorkLocalRuntime"/>. Tests use this
-/// constructor directly through InternalsVisibleTo.
+/// The type and its constructor are internal (H92-05): shipping code obtains
+/// the one approved instance only through <see cref="DurableWorkLocalRuntime"/>.
+/// Tests use this constructor directly through InternalsVisibleTo.
 /// </summary>
-public sealed class DurableWorkEffectExecutor : IDurableWorkEffectExecutor
+internal sealed class DurableWorkEffectExecutor : IDurableWorkEffectExecutor
 {
     private readonly IDurableWorkEffectGuard guard;
 
