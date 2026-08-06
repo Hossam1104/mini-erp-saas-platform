@@ -209,7 +209,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Payload_is_absent_from_audit_evidence()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var secretMarker = $"payload-secret-{Guid.NewGuid():N}";
         await store.SubmitAsync(Work(context, "payload-audit", secretMarker));
 
@@ -519,7 +519,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Two_real_concurrent_claimers_produce_one_winner()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(context, "concurrent-claim"));
 
         var results = await RunWithBarrierAsync(8, () => store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5)).AsTask());
@@ -553,7 +553,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Active_lease_blocks_every_concurrent_contender()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(context, "active-lease-contention"));
         var first = await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
         Assert.NotNull(first);
@@ -567,7 +567,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Expired_lease_reclaim_has_exactly_one_winner()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(context, "expired-lease-reclaim"));
         await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(1));
         await store.ExpireLeasesAsync(Clock.AddMinutes(2));
@@ -583,7 +583,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Stale_completion_after_reclaim_is_rejected()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(context, "stale-completion"));
         var staleLease = await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(1));
         Assert.NotNull(staleLease);
@@ -601,7 +601,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Concurrent_duplicate_submissions_produce_one_effect()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var identity = Identity(context, "concurrent-duplicate-submit");
         var items = Enumerable.Range(0, 8)
             .Select(_ => DurableWorkItem.Create(
@@ -640,7 +640,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Applied_outbox_delivery_is_never_repeated()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-applied-once");
         await store.SubmitAsync(work);
         var effects = 0;
@@ -670,7 +670,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Proven_not_applied_outcome_may_retry_and_later_succeed()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-not-applied-retry");
         await store.SubmitAsync(work);
         var effects = 0;
@@ -707,7 +707,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Outbox_provider_explicit_not_applied_retryable_releases_and_later_succeeds()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-provider-not-applied-retry");
         await store.SubmitAsync(work);
         var effects = 0;
@@ -740,7 +740,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Outbox_provider_explicit_terminal_not_applied_dead_letters_immediately()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-provider-terminal-not-applied");
         await store.SubmitAsync(work);
         var effects = 0;
@@ -774,7 +774,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Outbox_provider_explicit_outcome_unknown_is_never_automatically_repeated()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-provider-outcome-unknown");
         await store.SubmitAsync(work);
         var effects = 0;
@@ -805,7 +805,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Unknown_outbox_outcome_is_never_automatically_repeated()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-outcome-unknown");
         await store.SubmitAsync(work);
         var effects = 0;
@@ -837,7 +837,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Completed_duplicate_outbox_delivery_replays_the_safe_result()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-duplicate-replay");
         await store.SubmitAsync(work);
         var effects = 0;
@@ -860,7 +860,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Generic_replay_cannot_restart_an_outcome_unknown_outbox_message()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-uncertain-no-generic-replay");
         await store.SubmitAsync(work);
 
@@ -877,7 +877,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Provider_exception_details_are_redacted_from_evidence()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-redacted-exception");
         await store.SubmitAsync(work);
         const string secretDetail = "connection string password=hunter2";
@@ -897,7 +897,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     [Fact]
     public async Task Shared_composition_executor_guards_handler_and_outbox_effects_independently()
     {
-        var sharedExecutor = DurableWorkEffectComposition.CreateSharedExecutor();
+        var sharedExecutor = new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
         var context = CreateContext();
         var store = new InMemoryDurableWorkStore(sharedExecutor);
         var dispatcher = new DurableWorkDispatcher(OperationCatalogue, PayloadRegistry, sharedExecutor);
@@ -1075,7 +1075,7 @@ public sealed class DurableWorkPayloadAndEffectTests
     [Fact]
     public async Task Handler_outcome_unknown_enters_explicit_uncertain_state_and_is_excluded_from_normal_poll()
     {
-        var sharedExecutor = DurableWorkEffectComposition.CreateSharedExecutor();
+        var sharedExecutor = new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
         var context = CreateContext();
         var store = new InMemoryDurableWorkStore(sharedExecutor);
         var dispatcher = new DurableWorkDispatcher(OperationCatalogue, PayloadRegistry, sharedExecutor);
@@ -1094,7 +1094,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         var nextClaim = await store.TryClaimAsync(context, Guid.NewGuid(), Clock.AddMinutes(1), TimeSpan.FromMinutes(5));
         Assert.Null(nextClaim);
 
-        var uncertain = await store.ReadUncertainEffectsAsync(context);
+        var uncertain = await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(context));
         var record = Assert.Single(uncertain);
         Assert.Equal(DurableWorkEffectPurpose.Handler, record.Purpose);
         Assert.Equal(work.Identity.WorkItemId, record.WorkItemId);
@@ -1104,14 +1104,14 @@ public sealed class DurableWorkPayloadAndEffectTests
     public async Task Outbox_outcome_unknown_appears_in_the_tenant_scoped_reconciliation_read_port()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-reconciliation-evidence");
         await store.SubmitAsync(work);
 
         await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
             ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("boundary_interrupted")));
 
-        var uncertain = await store.ReadUncertainEffectsAsync(context);
+        var uncertain = await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(context));
         var record = Assert.Single(uncertain);
         Assert.Equal(DurableWorkEffectPurpose.Outbox, record.Purpose);
         Assert.Equal(work.Identity.WorkItemId, record.WorkItemId);
@@ -1122,22 +1122,22 @@ public sealed class DurableWorkPayloadAndEffectTests
     {
         var tenantA = CreateContext();
         var tenantB = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(tenantB, "uncertain-cross-tenant");
         await store.SubmitAsync(work);
 
         await store.DispatchOutboxAsync(tenantB, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
             ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("boundary_interrupted")));
 
-        Assert.Empty(await store.ReadUncertainEffectsAsync(tenantA));
-        Assert.Single(await store.ReadUncertainEffectsAsync(tenantB));
+        Assert.Empty(await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(tenantA)));
+        Assert.Single(await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(tenantB)));
     }
 
     [Fact]
     public async Task Uncertain_effect_evidence_excludes_payload_and_provider_exception_text()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var secretMarker = $"provider-secret-{Guid.NewGuid():N}";
         var work = Work(context, "uncertain-evidence-redacted", secretMarker);
         await store.SubmitAsync(work);
@@ -1145,7 +1145,7 @@ public sealed class DurableWorkPayloadAndEffectTests
         await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
             throw new InvalidOperationException(secretMarker));
 
-        var evidenceJson = JsonSerializer.Serialize(await store.ReadUncertainEffectsAsync(context));
+        var evidenceJson = JsonSerializer.Serialize(await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(context)));
         Assert.DoesNotContain(secretMarker, evidenceJson, StringComparison.Ordinal);
     }
 
@@ -1176,6 +1176,100 @@ public sealed class DurableWorkPayloadAndEffectTests
         var thrown = Assert.Throws<DurableWorkPayloadException>(() => registry.Decode<ThrowingPayload>(envelope));
         Assert.DoesNotContain(secretMarker, thrown.Message, StringComparison.Ordinal);
         Assert.DoesNotContain(secretMarker, thrown.ToString(), StringComparison.Ordinal);
+    }
+
+    // ---------------------------------------------------------------------
+    // Custom codec DurableWorkPayloadException is never trusted (M92-04
+    // focused review correction)
+    // ---------------------------------------------------------------------
+
+    [Fact]
+    public void Custom_codec_throwing_DurableWorkPayloadException_with_a_secret_is_normalized()
+    {
+        var registry = new DurableWorkPayloadRegistry();
+        var secretMarker = $"payload-exception-secret-{Guid.NewGuid():N}";
+        registry.Register(
+            new DurableWorkPayloadTypeId("test.rogue-payload-exception-codec"),
+            new RoguePayloadExceptionCodec(secretMarker));
+
+        var thrown = Assert.Throws<DurableWorkPayloadException>(() => registry.Capture(new ThrowingPayload("value")));
+
+        Assert.Equal("The payload could not be encoded safely.", thrown.Message);
+        Assert.DoesNotContain(secretMarker, thrown.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(secretMarker, thrown.ToString(), StringComparison.Ordinal);
+        Assert.Null(thrown.InnerException);
+    }
+
+    [Fact]
+    public void Custom_codec_encode_exception_carrying_the_payload_value_is_normalized()
+    {
+        var registry = new DurableWorkPayloadRegistry();
+        var secretValue = $"secret-payload-value-{Guid.NewGuid():N}";
+        registry.Register(
+            new DurableWorkPayloadTypeId("test.payload-value-leaking-codec"),
+            new PayloadValueLeakingEncodeCodec());
+
+        var thrown = Assert.Throws<DurableWorkPayloadException>(() => registry.Capture(new ThrowingPayload(secretValue)));
+
+        Assert.Equal("The payload could not be encoded safely.", thrown.Message);
+        Assert.DoesNotContain(secretValue, thrown.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(secretValue, thrown.ToString(), StringComparison.Ordinal);
+        Assert.Null(thrown.InnerException);
+    }
+
+    [Fact]
+    public void Custom_codec_decode_exception_carrying_a_clr_type_name_is_normalized()
+    {
+        var registry = new DurableWorkPayloadRegistry();
+        registry.Register(
+            new DurableWorkPayloadTypeId("test.clr-type-leaking-codec"),
+            new ClrTypeLeakingDecodeCodec());
+        var envelope = DurableWorkPayloadEnvelope.Capture(new DurableWorkPayloadTypeId("test.clr-type-leaking-codec"), "ok"u8.ToArray());
+
+        var thrown = Assert.Throws<DurableWorkPayloadException>(() => registry.Decode<ThrowingPayload>(envelope));
+
+        Assert.Equal("The payload could not be decoded safely.", thrown.Message);
+        Assert.DoesNotContain(nameof(ClrTypeLeakingDecodeCodec), thrown.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(nameof(ClrTypeLeakingDecodeCodec), thrown.ToString(), StringComparison.Ordinal);
+        Assert.Null(thrown.InnerException);
+    }
+
+    [Fact]
+    public void OperationCanceledException_from_a_custom_codec_still_propagates_unwrapped()
+    {
+        var registry = new DurableWorkPayloadRegistry();
+        registry.Register(
+            new DurableWorkPayloadTypeId("test.cancelling-codec"),
+            new CancellingCodec());
+
+        Assert.Throws<OperationCanceledException>(() => registry.Capture(new ThrowingPayload("value")));
+    }
+
+    [Fact]
+    public void Checksum_mismatch_reports_its_approved_fixed_safe_reason()
+    {
+        var envelope = PayloadRegistry.Capture(new SimplePayload("checksum"));
+        CorruptStoredBytesForTest(envelope);
+
+        var thrown = Assert.Throws<DurableWorkPayloadException>(() => PayloadRegistry.Decode<SimplePayload>(envelope));
+
+        Assert.Equal("The stored payload checksum does not match.", thrown.Message);
+    }
+
+    [Fact]
+    public void Codec_failure_secret_is_absent_from_serialized_evidence()
+    {
+        var registry = new DurableWorkPayloadRegistry();
+        var secretMarker = $"codec-evidence-secret-{Guid.NewGuid():N}";
+        registry.Register(new DurableWorkPayloadTypeId("test.rogue-evidence-codec"), new RoguePayloadExceptionCodec(secretMarker));
+
+        var thrown = Assert.Throws<DurableWorkPayloadException>(() => registry.Capture(new ThrowingPayload("value")));
+
+        // Represents how a caller would place the safe reason into audit or
+        // reconciliation evidence: only the fixed message, never the codec's
+        // own exception.
+        var evidenceJson = JsonSerializer.Serialize(new { thrown.Message });
+        Assert.DoesNotContain(secretMarker, evidenceJson, StringComparison.Ordinal);
     }
 
     // ---------------------------------------------------------------------
@@ -1311,6 +1405,47 @@ public sealed class DurableWorkPayloadAndEffectTests
 
         public ThrowingPayload Decode(ReadOnlySpan<byte> bytes) =>
             throw new InvalidOperationException($"codec failure containing secret: {secretMarker}");
+    }
+
+    /// <summary>A rogue codec simulating a custom codec that throws the framework's own exception type with a secret.</summary>
+    private sealed class RoguePayloadExceptionCodec : IDurableWorkPayloadCodec<ThrowingPayload>
+    {
+        private readonly string secretMarker;
+
+        internal RoguePayloadExceptionCodec(string secretMarker)
+        {
+            this.secretMarker = secretMarker;
+        }
+
+        public byte[] Encode(ThrowingPayload payload) =>
+            throw new DurableWorkPayloadException($"forged safe-looking message containing secret: {secretMarker}");
+
+        public ThrowingPayload Decode(ReadOnlySpan<byte> bytes) =>
+            throw new DurableWorkPayloadException($"forged safe-looking message containing secret: {secretMarker}");
+    }
+
+    private sealed class PayloadValueLeakingEncodeCodec : IDurableWorkPayloadCodec<ThrowingPayload>
+    {
+        public byte[] Encode(ThrowingPayload payload) =>
+            throw new InvalidOperationException($"encoding failed for payload value: {payload.Value}");
+
+        public ThrowingPayload Decode(ReadOnlySpan<byte> bytes) =>
+            throw new InvalidOperationException("must not decode in this test");
+    }
+
+    private sealed class ClrTypeLeakingDecodeCodec : IDurableWorkPayloadCodec<ThrowingPayload>
+    {
+        public byte[] Encode(ThrowingPayload payload) => "ok"u8.ToArray();
+
+        public ThrowingPayload Decode(ReadOnlySpan<byte> bytes) =>
+            throw new InvalidOperationException($"decode failed inside {nameof(ClrTypeLeakingDecodeCodec)}");
+    }
+
+    private sealed class CancellingCodec : IDurableWorkPayloadCodec<ThrowingPayload>
+    {
+        public byte[] Encode(ThrowingPayload payload) => throw new OperationCanceledException();
+
+        public ThrowingPayload Decode(ReadOnlySpan<byte> bytes) => throw new OperationCanceledException();
     }
 
     private sealed class CountingEffectHandler : IDurableWorkHandler<SimplePayload>

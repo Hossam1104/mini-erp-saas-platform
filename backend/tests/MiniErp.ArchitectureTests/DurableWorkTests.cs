@@ -62,7 +62,7 @@ public sealed class DurableWorkTests
     public async Task Tenant_a_cannot_read_tenant_b_work()
     {
         var tenantB = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(tenantB, "read-b");
         Assert.True(await store.SubmitAsync(work));
 
@@ -73,7 +73,7 @@ public sealed class DurableWorkTests
     public async Task Tenant_a_cannot_claim_tenant_b_work()
     {
         var tenantB = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(tenantB, "claim-b"));
 
         var lease = await store.TryClaimAsync(CreateContext(), Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
@@ -114,7 +114,7 @@ public sealed class DurableWorkTests
     public async Task Duplicate_outbox_event_produces_one_effect()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-once");
         Assert.True(await store.SubmitAsync(work));
         Assert.True(await store.SubmitAsync(work));
@@ -138,7 +138,7 @@ public sealed class DurableWorkTests
     public async Task Inbox_duplicate_is_idempotent()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "inbox-once");
         await store.SubmitAsync(work);
         var calls = 0;
@@ -161,7 +161,7 @@ public sealed class DurableWorkTests
     public async Task Retry_increments_safely()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "retry");
         await store.SubmitAsync(work);
         var lease = await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
@@ -179,7 +179,7 @@ public sealed class DurableWorkTests
     public async Task Retry_does_not_change_tenant()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "retry-owner");
         await store.SubmitAsync(work);
         var lease = await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
@@ -193,7 +193,7 @@ public sealed class DurableWorkTests
     public async Task Bounded_retry_reaches_dead_letter()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "dead-letter", maximumAttempts: 2);
         await store.SubmitAsync(work);
         var firstLease = await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
@@ -210,7 +210,7 @@ public sealed class DurableWorkTests
     public async Task Dead_letter_evidence_is_safe()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "dead-letter-audit");
         await store.SubmitAsync(work);
         var lease = await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
@@ -225,7 +225,7 @@ public sealed class DurableWorkTests
     public async Task Lease_concurrency_allows_one_worker()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(context, "lease-one"));
         var first = await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
         var second = await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
@@ -237,7 +237,7 @@ public sealed class DurableWorkTests
     public async Task Expired_lease_can_be_reclaimed_safely()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(context, "lease-expired"));
         await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(1));
         await store.ExpireLeasesAsync(Clock.AddMinutes(2));
@@ -248,7 +248,7 @@ public sealed class DurableWorkTests
     public async Task Active_lease_cannot_be_stolen()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(context, "lease-active"));
         var first = await store.TryClaimAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
         Assert.NotNull(first);
@@ -259,7 +259,7 @@ public sealed class DurableWorkTests
     public async Task Worker_revalidates_exact_tenant()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var dispatcher = CreateDispatcher();
         dispatcher.Register(new SuccessfulHandler());
         var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
@@ -282,7 +282,7 @@ public sealed class DurableWorkTests
             PayloadRegistry,
             Guid.NewGuid(),
             createdAt: Clock);
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var handler = new ScopeCaptureHandler();
         var dispatcher = CreateDispatcher();
         dispatcher.Register(handler);
@@ -305,7 +305,7 @@ public sealed class DurableWorkTests
     public async Task Worker_revalidation_cancellation_is_recoverable_and_not_authorization_denied()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         Assert.True(await store.SubmitAsync(Work(context, "authority-cancel")));
         var handler = new SuccessfulHandler();
         var dispatcher = CreateDispatcher();
@@ -330,7 +330,7 @@ public sealed class DurableWorkTests
     public async Task Worker_revalidation_provider_failure_is_bounded_retry_not_authorization_denied()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         Assert.True(await store.SubmitAsync(Work(context, "authority-provider")));
         var handler = new SuccessfulHandler();
         var dispatcher = CreateDispatcher();
@@ -356,7 +356,7 @@ public sealed class DurableWorkTests
     public async Task Outbox_revalidation_cancellation_retries_without_running_effect()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-authority-cancel");
         Assert.True(await store.SubmitAsync(work));
         var effects = 0;
@@ -381,7 +381,7 @@ public sealed class DurableWorkTests
     public async Task Outbox_revalidation_provider_failure_retries_without_authorization_denial()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "outbox-authority-provider");
         Assert.True(await store.SubmitAsync(work));
         var effects = 0;
@@ -406,7 +406,7 @@ public sealed class DurableWorkTests
     [Fact]
     public async Task Missing_trusted_context_blocks_execution()
     {
-        var worker = new TenantDurableWorkWorker(new InMemoryDurableWorkStore(), CreateDispatcher(), new TestAuthorityRevalidator());
+        var worker = new TenantDurableWorkWorker(new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard())), CreateDispatcher(), new TestAuthorityRevalidator());
         await Assert.ThrowsAsync<ArgumentNullException>(async () => await worker.ProcessOneAsync(
             null!, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(1)));
     }
@@ -416,7 +416,7 @@ public sealed class DurableWorkTests
     {
         var ordinary = CreateContext();
         var support = CreateSupportContext(ordinary.TenantId);
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(ordinary, "auth-path"));
         Assert.Null(await store.TryClaimAsync(support, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5)));
     }
@@ -552,7 +552,7 @@ public sealed class DurableWorkTests
     public async Task Audit_contains_tenant_correlation_and_work_identity_safely()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var work = Work(context, "audit-safe");
         await store.SubmitAsync(work);
         var evidence = await store.ReadAuditAsync(context);
@@ -566,7 +566,7 @@ public sealed class DurableWorkTests
     public async Task Audit_contains_no_payload_token_cookie_or_private_bytes()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         await store.SubmitAsync(Work(context, "audit-redacted", "do-not-log"));
         var json = JsonSerializer.Serialize(await store.ReadAuditAsync(context));
         Assert.DoesNotContain("do-not-log", json, StringComparison.Ordinal);
@@ -746,7 +746,7 @@ public sealed class DurableWorkTests
     public async Task Worker_executes_one_typed_handler_and_records_success()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var dispatcher = CreateDispatcher();
         var handler = new SuccessfulHandler();
         dispatcher.Register(handler);
@@ -762,7 +762,7 @@ public sealed class DurableWorkTests
     public async Task Missing_handler_reaches_safe_dead_letter()
     {
         var context = CreateContext();
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
         var item = Work(context, "unregistered");
         await store.SubmitAsync(item);
         var worker = new TenantDurableWorkWorker(store, CreateDispatcher(), new TestAuthorityRevalidator());

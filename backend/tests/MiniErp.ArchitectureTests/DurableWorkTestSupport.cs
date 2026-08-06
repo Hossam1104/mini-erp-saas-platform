@@ -48,6 +48,53 @@ internal static class DurableWorkTestSupport
         return DurableWorkAuthorityValidationResult.Approved(authorization);
     }
 
+    /// <summary>
+    /// Fabricates a <see cref="VerifiedDurableWorkReconciliationAuthorization"/>
+    /// directly from a raw context for tests that only need the reconciliation
+    /// read port to work end to end, without exercising the real Identity
+    /// authorization decision path (see DurableWorkAuthorityRevalidationTests
+    /// / the dedicated reconciliation-authorization tests for that).
+    /// </summary>
+    internal static VerifiedDurableWorkReconciliationAuthorization ApproveReconciliation(
+        TenantContext context,
+        TenantWorkScopeRequest? requestedScope = null)
+    {
+        var scopeRequest = requestedScope ?? TenantWorkScopeRequest.TenantWide();
+        var scopeValue = scopeRequest.WarehouseId is { } warehouseId
+            ? $"Warehouse:{warehouseId}"
+            : scopeRequest.BranchId is { } branchId
+                ? $"Branch:{branchId}"
+                : scopeRequest.CompanyId is { } companyId
+                    ? $"Company:{companyId}"
+                    : $"Tenant:{context.TenantId.Value}";
+        var exactScopeReference = new ScopeReference(scopeValue);
+        var executionContext = context.AuthorizationPath switch
+        {
+            TenantAuthorizationPath.OrdinaryMembership when context.Membership is { } membership =>
+                TenantContext.ForOrdinaryMembership(
+                    context.TenantId,
+                    membership,
+                    exactScopeReference,
+                    context.CorrelationId,
+                    context.ActorId),
+            TenantAuthorizationPath.SupportGrant when context.SupportGrant is { } supportGrant =>
+                TenantContext.ForSupportGrant(
+                    context.TenantId,
+                    supportGrant,
+                    exactScopeReference,
+                    context.CorrelationId,
+                    context.ActorId),
+            _ => throw new ArgumentException("The test authority context has no supported authorization path.", nameof(context))
+        };
+        var scope = TenantWorkScope.IssueFromVerifiedAuthority(executionContext, scopeRequest);
+        return new VerifiedDurableWorkReconciliationAuthorization(
+            executionContext,
+            scope,
+            executionContext.ActorId!.Value,
+            Guid.NewGuid(),
+            executionContext.CorrelationId!.Value);
+    }
+
     private static TenantContext ExactContext(
         TenantContext currentTenantContext,
         DurableWorkItem workItem)

@@ -242,7 +242,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
     {
         var fixture = CreateOrdinaryFixture();
         var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(EffectExecutor);
         Assert.True(await store.SubmitAsync(work));
         var effects = 0;
 
@@ -635,7 +635,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
         var work = CreateWork(
             fixture,
             TenantWorkScopeRequest.ForWarehouse(CompanyA, BranchA, WarehouseA));
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(EffectExecutor);
         Assert.True(await store.SubmitAsync(work));
         VerifiedDurableWorkAuthorization? seenAuthorization = null;
 
@@ -845,7 +845,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
         var fixture = CreateOrdinaryFixture();
         var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
         fixture.Service.Store.Users[fixture.Actor].Status = GlobalUserStatus.Suspended;
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(EffectExecutor);
         Assert.True(await store.SubmitAsync(work));
         var effectCalls = 0;
 
@@ -1050,7 +1050,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
         DurableWorkItem work,
         TenantContext? currentTenantContext = null)
     {
-        var store = new InMemoryDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(EffectExecutor);
         Assert.True(await store.SubmitAsync(work));
         var handler = new CountingHandler(work.Identity.Operation);
         var dispatcher = new DurableWorkDispatcher(fixture.Service.OperationCatalogue, PayloadRegistry, EffectExecutor);
