@@ -143,6 +143,19 @@ seam only.
 - Worker telemetry and audit are allow-listed and redacted; payloads, tokens,
   cookies, private bytes and provider exception text are excluded.
 
+## Composition status
+
+Verified on 6 August 2026: `DurableWorkLocalRuntime`,
+`InMemoryDurableWorkStore`, `DurableWorkDispatcher` and
+`TenantDurableWorkWorker` are **not referenced by `MiniErp.Api`**. This ADR
+describes a contract and a local, in-memory, non-crash-durable adapter proven
+by automated tests; **no worker is composed into the running host**, no worker
+is scheduled, and nothing here is a production capability. A future host
+composition root must call `DurableWorkLocalRuntime.Create` exactly once and
+reuse the returned instance — `MiniErp.App` grants
+`InternalsVisibleTo("MiniErp.Api")`, so the `internal` constructors alone do
+not enforce that; the syntax-tree architecture test does.
+
 ## Gates
 
 MESP-48 owns supported-volume, queue depth, throughput, lease and recovery

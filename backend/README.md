@@ -1,9 +1,19 @@
 # Mini ERP backend foundation
 
-This directory contains the first MESP-57 backend seam. It is intentionally a
-small Modular Monolith foundation and does not implement platform business
-workflows, persistence, authentication, tenant selection, or any downstream
-ERP module.
+This directory contains the Foundation backend. It began as the MESP-57
+Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant
+context and persistence guardrails, the MESP-59/MESP-88/MESP-89 identity,
+authorization and host-security seam, the MESP-60 REST/OpenAPI contracts, the
+MESP-62 immutable audit and observability evidence, and the
+MESP-61/MESP-91 durable-work, notification and private-file contracts.
+
+It is still **not** a production system and implements no ERP business
+workflow. Identity, sessions, audit, durable work, notifications and private
+files are bounded in-memory or local seams; there is no production database,
+migration, SQL work provider, broker, object-storage provider, notification
+provider or deployment. The durable-work runtime is not composed into
+`MiniErp.Api` at all. SQL Server evidence comes from disposable LocalDB probes
+only. MESP-48 and MESP-50 remain open production gates.
 
 ## Prerequisites
 

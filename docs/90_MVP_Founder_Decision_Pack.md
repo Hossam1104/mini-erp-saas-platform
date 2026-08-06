@@ -5,7 +5,7 @@
 | Purpose | Minimum founder approvals required to begin the first detailed BRD |
 | Founder and accountable approver | Hossam |
 | Date prepared | 1 August 2026 |
-| Canonical PRD | `D:\AI Tools\Hossam\mini-erp-saas-platform\MiniERPSaaSPlatform_PRD_v1.2.docx` |
+| Canonical PRD | `docs/MESP_PRD_v1.2.docx` (formerly `MiniERPSaaSPlatform_PRD_v1.2.docx`; contents unchanged) |
 | Recommended first BRD | MESP-27 - SaaS Platform Administration |
 
 ## 1. Executive recommendation
@@ -101,7 +101,7 @@ There are **no decisions classified Must approve before the first detailed BRD**
 
 ## 7. Verified corrections
 
-- The canonical PRD is at the repository root: `D:\AI Tools\Hossam\mini-erp-saas-platform\MiniERPSaaSPlatform_PRD_v1.2.docx`.
+- The canonical PRD is `docs/MESP_PRD_v1.2.docx`. It was at the repository root as `MiniERPSaaSPlatform_PRD_v1.2.docx` when this pack was prepared; the file contents are unchanged and only the repository path moved.
 - The Technology Architecture Baseline source path is corrected and its status is Approved Architecture Baseline.
 - Hossam is Architecture Owner.
 - Retail POS, cashier operations, cash drawers, retail shifts, retail checkout, and POS receipt processing remain excluded.

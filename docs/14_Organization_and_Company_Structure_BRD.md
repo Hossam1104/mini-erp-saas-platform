@@ -12,7 +12,7 @@
 | Accountable owner | Hossam, Product Owner and founder approver |
 | Prepared by | Luna Max, Senior Business Analyst and Product Requirements Lead |
 | Date | 2 August 2026 |
-| Canonical product baseline | `MiniERPSaaSPlatform_PRD_v1.2.docx`, PRD v1.2 Final Approved Baseline |
+| Canonical product baseline | `docs/MESP_PRD_v1.2.docx`, PRD v1.2 Final Approved Baseline (formerly `MiniERPSaaSPlatform_PRD_v1.2.docx`; contents unchanged) |
 | Mandatory vocabulary | `docs/00_ERP_Business_Glossary.md` |
 | Related approved BRDs | `docs/11_SaaS_Platform_Administration_BRD.md`; `docs/12_Identity_and_Access_BRD.md`; `docs/13_Multi_Tenancy_BRD.md` |
 | Architecture reference | `docs/01_Technology_Architecture_Baseline.md` — constraint reference only |

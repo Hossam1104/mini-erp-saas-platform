@@ -318,8 +318,52 @@ preservation and immutability). M92-04 evidence extends
 transaction or lease probe was introduced; the existing 75-assertion safety
 catalogue disposition is unchanged.
 
-No `MiniErpFoundation_*` database remained after teardown. No PRD file
-appears in the branch diff and the unrelated `local-prd-rename-before-MESP-92`
-stash remains untouched. MESP-92 is **not** marked Done by this overlay; PR
-#22 remains open, non-draft and held unmerged pending a further focused
-ChatGPT re-review.
+No `MiniErpFoundation_*` database remained after teardown. At the time of this
+overlay no PRD file appeared in the branch diff and the unrelated
+`local-prd-rename-before-MESP-92` stash was untouched; both statements were
+superseded on 6 August 2026 — see the Opus 5 overlay below. MESP-92 is **not**
+marked Done by this overlay; PR #22 remains open, non-draft and held unmerged
+pending a further focused ChatGPT re-review.
+
+## Opus 5 project-wide validation rerun — 6 August 2026
+
+The Opus 5 project-wide checkpoint re-ran the complete validation once against
+branch head `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4`. No source code, test
+code or test data was changed to obtain these results, and no hosted CI exists
+— every figure below is local.
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Backend Release build | 0 warnings, 0 errors | `dotnet build .\backend\MiniErp.sln --configuration Release --no-restore` |
+| Complete backend suite | 457 passed, 0 failed, 0 skipped | `powershell -ExecutionPolicy Bypass -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database `MiniErpFoundation_20260806235236_7add0e49` |
+| Disposable database cleanup | No `MiniErp%` database remained | `SELECT name FROM sys.databases WHERE name LIKE 'MiniErp%'` returned no rows |
+| Angular suite | 27 passed, 0 failed, 0 skipped, across 5 test files | `npm test -- --watch=false` |
+| Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred | `npm run build` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Diff check | Passed, no whitespace errors | `git diff --check` |
+| Hosted CI | Not available | No hosted workflow is configured in this repository |
+
+This rerun covers the **complete frontend regression** (unit tests, production
+build, Playwright journeys and production dependency audit), closing the
+earlier gap where the frontend regression had not been rerun after the second
+MESP-92 correction.
+
+**PRD status correction.** The approved PRD is now tracked at
+`docs/MESP_PRD_v1.2.docx`. The move from `MiniERPSaaSPlatform_PRD_v1.2.docx`
+was committed by the repository owner as `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4`
+on this branch, so a PRD path change **does** now appear in the branch diff —
+recorded by Git as a pure `R100` rename. The binary is unmodified: the original
+`docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`, the
+root-level `MiniERPSaaSPlatform_PRD_v1.2.docx` on `origin/main`, and the current
+`docs/MESP_PRD_v1.2.docx` all resolve to the identical Git blob
+`1f9163b9412cb343a19a98312eb642ad26c1efaa`. The local
+`local-prd-rename-before-MESP-92` stash still exists and was not applied,
+dropped or otherwise altered.
+
+**Safety-catalogue disposition.** Unchanged. No new SQL Server schema, index,
+rowversion, collation, Tenant-filter, stored-owner, relationship, transaction,
+idempotency or lease probe was introduced by this review, and the exact
+75-assertion catalogue is untouched. The SQL Server evidence remains a
+disposable-LocalDB probe and is not a production provider selection.

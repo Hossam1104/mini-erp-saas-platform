@@ -1,5 +1,55 @@
 # Current State
 
+## Start here — verified position on 6 August 2026
+
+A new agent can begin from this section with no prior chat history.
+
+| Fact | Verified value |
+|---|---|
+| Current branch | `fix/MESP-92-single-effect-immutable-payloads` |
+| Current branch head | `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4` |
+| Merged-main baseline | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` |
+| Open Pull Request | PR #22 — open, non-draft, **unmerged**, **not approved** |
+| Active Jira item | **MESP-92 — In Progress** (the only active bounded implementation item) |
+| MESP-91 | Done |
+| MESP-93 / MESP-94 | To Do — must not start before MESP-92 closes |
+| MESP-31 (Master Data BRD) | To Do — not started |
+| MESP-48 / MESP-50 | To Do — open production gates, preserved |
+| Sprint | None active |
+| Parallel implementation | None |
+| Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
+| Hosted CI | None configured — all validation is local only |
+
+**Exact next action:** obtain the focused ChatGPT security review of PR #22 at
+head `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4`. Do not merge PR #22, do not
+close MESP-92, and do not start MESP-93, MESP-94 or MESP-31 until that review
+authorizes the next step. The merge hold is a standing process gate.
+
+**PRD path:** the approved PRD binary is unchanged. It moved from
+`docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx` to
+`MiniERPSaaSPlatform_PRD_v1.2.docx` and now to `docs/MESP_PRD_v1.2.docx`. All
+three paths resolve to the identical Git blob `1f9163b9412cb343a19a98312eb642ad26c1efaa`;
+the move is recorded as a Git `R100` rename in commit
+`271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4`. Historical documents may say
+"formerly `<old-name>`, now maintained at `docs/MESP_PRD_v1.2.docx`".
+
+**Open MESP-92 findings after the Opus 5 project-wide review of 6 August 2026:**
+0 Critical, 0 High, 0 Medium, 2 Low, none merge-blocking.
+
+- **O92-01 (Low)** — `InMemoryDurableWorkEffectGuard.RecordOutcomeUnknown`
+  accepts a `safeReason` and discards it; the guard keeps no reason for an
+  uncertain effect. Evidence-completeness weakness only.
+- **O92-02 (Low)** — `InMemoryDurableWorkStore.ReadUncertainEffectsAsync` still
+  falls back to `message.NextAttemptAt` when `OutcomeUnknownAt` is null, while
+  the adjacent comment says `NextAttemptAt` is never reused as the occurrence
+  time. Currently unreachable; a code/comment contradiction.
+
+**Verified maturity boundary:** `DurableWorkLocalRuntime`,
+`InMemoryDurableWorkStore`, `DurableWorkDispatcher` and
+`TenantDurableWorkWorker` are **not referenced by `MiniErp.Api`**. The
+durable-work seam is a contract plus a local adapter with test coverage; it is
+not composed into the running host and is not a production capability.
+
 ## MESP-92 In Progress — single-effect durable work and immutable payloads
 
 - MESP-92 (`Guarantee single-effect durable work execution and immutable typed
@@ -20,8 +70,13 @@
   supplies the identical executor instance to the store and the dispatcher.
   `InMemoryDurableWorkStore`'s optional self-creating executor parameter is
   removed; an executor is always required. A syntax-tree architecture test
-  scans all of `src/MiniErp.App` and fails if any of the four types is
-  constructed anywhere outside `DurableWorkLocalRuntime.cs`.
+  scans the whole `backend/src` tree — every shipping project, including
+  `MiniErp.Api` — and fails if any of the four types is constructed anywhere
+  outside `DurableWorkLocalRuntime.cs`. That test is load-bearing:
+  `MiniErp.App` grants `InternalsVisibleTo("MiniErp.Api")`, so the `internal`
+  constructors alone do not stop the future host composition root from
+  building an independent ledger, and the test matches only direct `new`
+  expressions.
 - H92-04 is closed: `IDurableWorkStore.ReadUncertainEffectsAsync` now takes a
   server-issued `VerifiedDurableWorkReconciliationAuthorization` instead of a
   raw `TenantContext`. `IdentityAuthorizationService` (as the new
@@ -136,6 +191,17 @@
   not marked Done; PR #22 is open, non-draft and held unmerged for a focused
   ChatGPT re-review. MESP-93, MESP-94 and MESP-31 remain To Do; no Sprint is
   active; MESP-48 and MESP-50 remain explicit production gates.
+- Validation rerun by the Opus 5 project-wide review at head
+  `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4`, local only (no hosted CI exists):
+  Release build **0 warnings/0 errors**; backend regression **457/457** passed
+  with 0 failed and 0 skipped, including **11/11** SQL Server LocalDB probes;
+  no `MiniErp%` database remained in `MSSQLLocalDB` after teardown; Angular
+  unit tests **27/27** passed across 5 files; Angular production build
+  succeeded at 351.02 kB initial / 87.80 kB transferred; Playwright **4/4**
+  passed; `npm audit --omit=dev --audit-level=high` reported **0**
+  vulnerabilities. This rerun covered the **complete frontend regression**,
+  closing the earlier gap where it had not been rerun after the second MESP-92
+  correction.
 
 ## MESP-91 correction overlay — merged and Done
 

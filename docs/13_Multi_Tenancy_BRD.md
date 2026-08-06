@@ -12,7 +12,7 @@
 | Accountable owner | Hossam, Product Owner and founder approver |
 | Prepared by | Luna Max, Senior Business Analyst and Product Requirements Lead |
 | Date | 2 August 2026 |
-| Canonical product baseline | `MiniERPSaaSPlatform_PRD_v1.2.docx`, PRD v1.2 Final Approved Baseline |
+| Canonical product baseline | `docs/MESP_PRD_v1.2.docx`, PRD v1.2 Final Approved Baseline (formerly `MiniERPSaaSPlatform_PRD_v1.2.docx`; contents unchanged) |
 | Mandatory vocabulary | `docs/00_ERP_Business_Glossary.md` |
 | Related approved BRDs | `docs/11_SaaS_Platform_Administration_BRD.md`; `docs/12_Identity_and_Access_BRD.md` |
 | Architecture reference | `docs/01_Technology_Architecture_Baseline.md` (constraint reference only) |
@@ -525,7 +525,7 @@ No other new founder decision is requested by this baseline. MESP-48 and MESP-50
 | ID | Source conflict or ambiguity | Resolution / treatment | Status |
 |---|---|---|---|
 | SC-001 | Jira MESP-29 originally said not to move In Progress before entry criteria, while the later founder authorization explicitly permitted MESP-4 and MESP-29 to move In Progress for the draft. | The later founder authorization permitted the controlled draft; the approval recorded in this baseline closes the requirements task while implementation remains separately gated. | Resolved by founder authorization and approval |
-| SC-002 | Jira/PRD references use a `Final_Approved_Baseline` filename alias while the repository canonical file is `MiniERPSaaSPlatform_PRD_v1.2.docx`. | The repository PRD v1.2 and Founder Decision Pack are the sources used; the alias is retained only for provenance. | Nonblocking |
+| SC-002 | Jira/PRD references use a `Final_Approved_Baseline` filename alias, and older documents use `MiniERPSaaSPlatform_PRD_v1.2.docx`, while the canonical repository path is now `docs/MESP_PRD_v1.2.docx`. | All names resolve to the identical unchanged PRD v1.2 file; only the path moved. The aliases are retained for provenance and the Jira references remain stale. | Nonblocking |
 | SC-003 | MESP-27 contains the broader Platform Administration lifecycle, Plan, support, export, retention, and purge model, while MESP-29 owns Tenant isolation and context. | MESP-29 applies the Tenant boundary and lifecycle consequences without redefining MESP-27 Plan, Entitlement, or production-gate policy. | Resolved boundary |
 | SC-004 | The glossary marks Access Scope and Separation of Duties as Draft for BRD Validation, while MESP-28 records their approved Release 1 access meaning and MESP-38 owns detailed control catalogues. | MESP-29 consumes the approved identity boundary and does not create a new Access Scope or SoD catalogue. | Nonblocking boundary |
 

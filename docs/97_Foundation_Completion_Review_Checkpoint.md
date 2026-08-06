@@ -5,7 +5,11 @@
 | Status | Foundation checkpoint baseline preserved; MESP-91 correction merged and Done; not production-readiness approval |
 | Review date | 6 August 2026 |
 | Product boundary | Release 1 B2B ERP only; Retail POS and Wafra-specific core behavior remain excluded |
-| Final merged main | `f2cde57400fed470ab048776e05b56f353b36890` |
+| Current merged main | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` (PR #21 documentation reconciliation) |
+| MESP-91 implementation merge | `f2cde57400fed470ab048776e05b56f353b36890` (PR #20) |
+| Historical Foundation application baseline | `2002d1c25d39022b227e89b3d70f41a53de0408c` (PR #18, MESP-64) |
+| Open Pull Request | PR #22 — open, non-draft, **unmerged**, head `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4` |
+| Approved PRD | `docs/MESP_PRD_v1.2.docx` (formerly `MiniERPSaaSPlatform_PRD_v1.2.docx`; contents unchanged) |
 | Jira state | MESP-57, MESP-58, MESP-87, MESP-59, MESP-88, MESP-60, MESP-62, MESP-89, MESP-63, MESP-90, MESP-61, MESP-64 and MESP-91 are Done; MESP-48 and MESP-50 remain To Do |
 | Sprint state | No active Sprint |
 | Active implementation item | MESP-92 (single-effect durable work and immutable payloads) — In Progress; MESP-93, MESP-94 and MESP-31 remain To Do |
@@ -90,6 +94,48 @@ succeeded; Playwright **4/4** passed; `npm audit --omit=dev
 
 MESP-92 is not marked Done by this checkpoint update. PR #22 is opened
 non-draft and held unmerged pending a further focused ChatGPT re-review.
+
+### Opus 5 independent verification at head `271e9df` (6 August 2026)
+
+An independent Opus 5 project-wide review inspected the current PR #22 head
+rather than accepting the reported dispositions. It confirmed all ten findings
+from both focused review rounds as **closed**:
+
+| Finding | Independent verdict | Evidence at head `271e9df` |
+|---|---|---|
+| H92-03 one authoritative effect ledger | **Closed** | All four ledger constructors are `internal`; `DurableWorkLocalRuntime.Create` supplies the identical executor instance to store and dispatcher; a syntax-tree test scans the whole `backend/src` tree for any other `new` site |
+| H92-04 reconciliation-read authorization | **Closed** | `AuthorizeReconciliationReadUnsafe` requires a live actor/session, an exact Membership **or** SupportGrant path with no cross-fallback, the dedicated `work.reconciliation.read` permission, and `IsCurrentScopeContainedUnsafe`, which itself re-checks the underlying scope grant |
+| M92-03 uncertain-effect identity and scope | **Closed** | `DurableWorkUncertainEffectRecord` carries the full purpose-qualified `DurableWorkEffectKey` and the exact `TenantWorkScope` |
+| M92-04 codec exception secret retention | **Closed** | `DurableWorkPayloadRegistry.Capture`/`Decode` catch every non-cancellation exception and rethrow a fixed registry-owned message with no `InnerException` |
+| L92-01 crash-behavior comments | **Closed** | `IDurableWorkEffectExecutor` and `DurableWorkLifecycle.OutcomeUnknown` now state that a real process crash loses the in-memory guard entirely and is not a recorded outcome |
+| Frontend regression not rerun | **Closed** | Complete frontend regression rerun at this head: 27/27 unit, production build passed, 4/4 Playwright, 0 audit vulnerabilities |
+
+Two new findings were recorded, both **Low and non-blocking**:
+
+- **O92-01** — `InMemoryDurableWorkEffectGuard.RecordOutcomeUnknown` accepts a
+  `safeReason` and discards it; the guard retains no reason for an uncertain
+  effect, so reconciliation evidence depends entirely on the separately stored
+  work-item/outbox reason.
+- **O92-02** — `InMemoryDurableWorkStore.ReadUncertainEffectsAsync` still falls
+  back to `message.NextAttemptAt` when `OutcomeUnknownAt` is null, while the
+  adjacent comment states `NextAttemptAt` is never reused as the occurrence
+  time. The fallback is currently unreachable, so this is a code/comment
+  contradiction rather than a behavioral defect.
+
+The review also confirmed an important maturity boundary that this checkpoint
+must state plainly: `DurableWorkLocalRuntime`, `InMemoryDurableWorkStore`,
+`DurableWorkDispatcher` and `TenantDurableWorkWorker` are **not referenced by
+`MiniErp.Api`**. The durable-work seam is a contract plus a local adapter with
+test coverage; it is **not composed into the running host** and is not a
+production capability. Separately, `MiniErp.App` grants
+`InternalsVisibleTo("MiniErp.Api")`, so the `internal` constructors alone do
+not prevent a future host composition root from constructing an independent
+ledger — the syntax-tree architecture test is what closes that path, and it
+matches only direct `new` expressions.
+
+Code verdict: **CHANGES REQUIRED BEFORE MERGE** — 0 Critical, 0 High,
+0 Medium, 2 Low. PR #22 remains open, unmerged and **not approved**; the merge
+hold is the standing MESP-92 process gate awaiting focused ChatGPT re-review.
 
 ## MESP-91 correction overlay — merged and Done
 

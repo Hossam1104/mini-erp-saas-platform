@@ -13,7 +13,7 @@
 | Prepared by | Luna Max, Senior Business Analyst and Product Requirements Lead |
 | Date | 3 August 2026 |
 | Approval status | Approved by Hossam on 2 August 2026; founder decision record added 3 August 2026 |
-| Source baseline | PRD v1.2 Final Approved Baseline; canonical repository file is MiniERPSaaSPlatform_PRD_v1.2.docx |
+| Source baseline | PRD v1.2 Final Approved Baseline; canonical repository file is `docs/MESP_PRD_v1.2.docx` (formerly `MiniERPSaaSPlatform_PRD_v1.2.docx`; contents unchanged) |
 | Mandatory vocabulary | docs/00_ERP_Business_Glossary.md |
 | Structural reference | docs/11_SaaS_Platform_Administration_BRD.md |
 | Architecture reference | docs/01_Technology_Architecture_Baseline.md (constraint reference only) |
@@ -921,7 +921,7 @@ approved the historical decisions on 2 August 2026 and IAM-OD-023 on 3 August
 
 | ID | Conflict or ambiguity | Affected sections | Resolution status | Resolution / evidence |
 |---|---|---|---|---|
-| IAM-SC-001 | The Jira prompt and MESP-28 description name MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx, while the repository and Founder Decision Pack identify MiniERPSaaSPlatform_PRD_v1.2.docx as the canonical v1.2 baseline. | 1, 6, 30 | Nonblocking source-provenance note | The repository PRD and Founder Decision Pack are the sources used for this baseline; the filename alias is retained only for traceability. |
+| IAM-SC-001 | The Jira prompt and MESP-28 description name MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx, and older documents name MiniERPSaaSPlatform_PRD_v1.2.docx, while the canonical repository path is now `docs/MESP_PRD_v1.2.docx`. | 1, 6, 30 | Nonblocking source-provenance note | All three names resolve to the identical unchanged PRD v1.2 file; only the repository path moved. The older filenames are retained only for traceability, and the Jira references remain stale. |
 | IAM-SC-002 | An earlier MESP-28 Jira comment required entry-criteria approval before starting, while the later explicit founder authorization fast-tracks approval now. | 1, 6, 30 | Resolved by later founder authorization | Historical Jira evidence is preserved; this v0.2 baseline supersedes the earlier timing instruction. |
 | IAM-SC-003 | The approved MESP-27 review package previously required MESP-27 sequencing before MESP-28, while MESP-27, MESP-57, and Sprint 1 are now complete. | 6, 9, 30 | Resolved by delivery state and founder authorization | The current master plan records MESP-28 Done and MESP-29 as the next single activity. |
 | IAM-SC-004 | The glossary marked Access Scope and Separation of Duties as Draft for BRD Validation, while the PRD/Jira task required them in MESP-28. | 8, 14, 15, 27 | Resolved by founder authorization | Release 1 meaning and boundaries are approved here; later glossary synchronization and detailed SoD catalogue remain downstream work. |

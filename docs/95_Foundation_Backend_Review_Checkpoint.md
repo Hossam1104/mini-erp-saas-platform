@@ -1,7 +1,19 @@
 # Foundation Backend Review Checkpoint
 
-Status: MESP-89 is Done. PR #12 was approved by focused ChatGPT review and
-merged to `main`; MESP-63 is the next authorized implementation item.
+> **Historical checkpoint — not the current state.** This document records the
+> Foundation backend position as reviewed on 3–4 August 2026, at the point
+> MESP-89 closed. Everything below is preserved as the baseline of that
+> moment and is deliberately not rewritten. For the verified current position
+> — merged-main baseline, active Jira item, open Pull Request and open
+> findings — read [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and
+> [`docs/94_Product_Delivery_Master_Plan.md`](94_Product_Delivery_Master_Plan.md).
+> The Foundation sequence continued after this checkpoint through MESP-63,
+> MESP-90, MESP-61, MESP-64 and MESP-91 (all Done) to MESP-92, which is
+> In Progress on an open, unmerged Pull Request.
+
+Status at the time of this checkpoint: MESP-89 is Done. PR #12 was approved by
+focused ChatGPT review and merged to `main`; MESP-63 was the next authorized
+implementation item.
 
 ## Baseline
 
