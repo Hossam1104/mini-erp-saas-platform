@@ -148,7 +148,7 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
         TenantContext tenantContext,
         IDurableWorkAuthorityRevalidator authorityRevalidator,
         DateTimeOffset now,
-        Func<TenantOutboxMessage, CancellationToken, ValueTask> effect,
+        Func<TenantOutboxMessage, VerifiedDurableWorkAuthorization, CancellationToken, ValueTask> effect,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(tenantContext);
@@ -197,14 +197,14 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
         }
         catch (OperationCanceledException)
         {
-            authority = DurableWorkAuthorityValidationResult.Denied("authority_validation_cancelled");
+            authority = DurableWorkAuthorityValidationResult.Cancelled("authority_validation_cancelled");
         }
         catch (Exception)
         {
-            authority = DurableWorkAuthorityValidationResult.Denied("authority_validation_failed");
+            authority = DurableWorkAuthorityValidationResult.TemporarilyUnavailable("authority_validation_unavailable");
         }
 
-        if (!authority.Allowed)
+        if (authority.Outcome == DurableWorkAuthorityValidationOutcome.Denied)
         {
             lock (syncRoot)
             {
@@ -219,6 +219,29 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
                 false,
                 true,
                 DurableWorkFailureCategory.AuthorizationDenied);
+        }
+
+        if (!authority.Allowed || authority.Authorization is null)
+        {
+            lock (syncRoot)
+            {
+                var terminal = message.AttemptCount >= 3;
+                message.DeliveryState = terminal
+                    ? DurableWorkLifecycle.DeadLetter
+                    : DurableWorkLifecycle.RetryScheduled;
+                message.FailureCategory = authority.FailureCategory;
+                message.NextAttemptAt = now.Add(BoundedBackoff(message.AttemptCount));
+                AddAuditForMessage(
+                    message,
+                    terminal ? "outbox.dead-letter" : "outbox.retry",
+                    authority.FailureCategory);
+                return new OutboxDispatchResult(
+                    false,
+                    false,
+                    !terminal,
+                    terminal,
+                    authority.FailureCategory);
+            }
         }
 
         lock (syncRoot)
@@ -237,7 +260,7 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
 
         try
         {
-            await effect(message, cancellationToken);
+            await effect(message, authority.Authorization, cancellationToken);
             lock (syncRoot)
             {
                 message.DeliveryState = DurableWorkLifecycle.Completed;
@@ -360,21 +383,29 @@ public sealed class InMemoryRelationalDurableWorkStore : IRelationalDurableWorkS
 /// <summary>One typed handler invocation; no global Tenant scan is available.</summary>
 public sealed class DurableWorkDispatcher
 {
+    private readonly IDurableWorkOperationCatalogue operationCatalogue;
     private readonly Dictionary<string, Func<DurableWorkItem, DurableWorkExecutionContext, CancellationToken, ValueTask<DurableWorkHandlerResult>>> handlers =
         new(StringComparer.Ordinal);
+
+    public DurableWorkDispatcher(IDurableWorkOperationCatalogue operationCatalogue)
+    {
+        this.operationCatalogue = operationCatalogue ?? throw new ArgumentNullException(nameof(operationCatalogue));
+    }
 
     public void Register<TPayload>(IDurableWorkHandler<TPayload> handler)
         where TPayload : IWorkPayload
     {
         ArgumentNullException.ThrowIfNull(handler);
-        if (string.IsNullOrWhiteSpace(handler.WorkType))
+        ArgumentNullException.ThrowIfNull(handler.Operation);
+        if (!operationCatalogue.TryGet(handler.Operation.OperationId, out var registeredOperation)
+            || !registeredOperation.ExactlyMatches(handler.Operation))
         {
-            throw new ArgumentException("A typed handler requires a work type.", nameof(handler));
+            throw new ArgumentException("A typed handler must declare an exact registered operation descriptor.", nameof(handler));
         }
 
-        if (!handlers.TryAdd(handler.WorkType.Trim(), Invoke))
+        if (!handlers.TryAdd(handler.Operation.OperationId, Invoke))
         {
-            throw new InvalidOperationException("A durable-work handler is already registered for this type.");
+            throw new InvalidOperationException("A durable-work handler is already registered for this operation.");
         }
 
         async ValueTask<DurableWorkHandlerResult> Invoke(
@@ -407,7 +438,16 @@ public sealed class DurableWorkDispatcher
                 "tenant_context_mismatch"));
         }
 
-        if (!handlers.TryGetValue(item.Identity.WorkType, out var handler))
+        if (!operationCatalogue.TryGet(item.Identity.OperationId, out var registeredOperation)
+            || !registeredOperation.ExactlyMatches(item.Identity.Operation)
+            || !registeredOperation.ExactlyMatches(context.Operation))
+        {
+            return ValueTask.FromResult(DurableWorkHandlerResult.DeadLettered(
+                DurableWorkFailureCategory.ValidationFailed,
+                "operation_descriptor_mismatch"));
+        }
+
+        if (!handlers.TryGetValue(item.Identity.OperationId, out var handler))
         {
             return ValueTask.FromResult(DurableWorkHandlerResult.DeadLettered(
                 DurableWorkFailureCategory.ValidationFailed,
@@ -474,28 +514,39 @@ public sealed class TenantDurableWorkWorker
         catch (OperationCanceledException)
         {
             completionCancellation = CancellationToken.None;
-            authority = DurableWorkAuthorityValidationResult.Denied("authority_validation_cancelled");
+            authority = DurableWorkAuthorityValidationResult.Cancelled("authority_validation_cancelled");
         }
         catch (Exception)
         {
             completionCancellation = CancellationToken.None;
-            authority = DurableWorkAuthorityValidationResult.Denied("authority_validation_failed");
+            authority = DurableWorkAuthorityValidationResult.TemporarilyUnavailable("authority_validation_unavailable");
         }
 
         DurableWorkHandlerResult result;
-        if (!authority.Allowed)
+        if (authority.Outcome == DurableWorkAuthorityValidationOutcome.Denied)
         {
-            // Authority failures are permanent for this stored submission. No
-            // handler or protected effect is reachable after this branch.
+            // A true live-authority denial is terminal. No handler or protected
+            // effect is reachable after this branch.
             result = DurableWorkHandlerResult.DeadLettered(
                 DurableWorkFailureCategory.AuthorizationDenied,
+                authority.SafeReason);
+        }
+        else if (!authority.Allowed || authority.Authorization is null)
+        {
+            // Provider outages and cancellation are recoverable outcomes. The
+            // completion token is intentionally detached so the claimed lease
+            // is durably returned to the retry path.
+            completionCancellation = CancellationToken.None;
+            result = DurableWorkHandlerResult.Retry(
+                authority.FailureCategory,
+                TimeSpan.FromSeconds(1),
                 authority.SafeReason);
         }
         else
         {
             try
             {
-                var executionContext = new DurableWorkExecutionContext(item, tenantContext);
+                var executionContext = new DurableWorkExecutionContext(item, authority.Authorization);
                 result = await dispatcher.DispatchAsync(item, executionContext, cancellationToken);
             }
             catch (OperationCanceledException)

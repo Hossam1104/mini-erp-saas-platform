@@ -16,6 +16,26 @@ public sealed class DurableWorkAuthorityRevalidationTests
     private static readonly Guid BranchB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb01");
     private static readonly Guid WarehouseA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa02");
     private static readonly Guid WarehouseB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb02");
+    private static readonly DurableWorkOperationDescriptor ReadOperation =
+        new(
+            "durable-work.test",
+            "authority-test",
+            "tenant.business.read",
+            [TenantAuthorizationPath.OrdinaryMembership]);
+    private static readonly DurableWorkOperationDescriptor SupportOperation =
+        new(
+            "durable-work.support-test",
+            "authority-test",
+            "support.tenant.read",
+            [TenantAuthorizationPath.SupportGrant]);
+    private static readonly DurableWorkOperationDescriptor ExportOperation =
+        new(
+            "durable-work.export-test",
+            "authority-test",
+            "tenant.business.export",
+            [TenantAuthorizationPath.OrdinaryMembership]);
+    private static readonly DurableWorkOperationCatalogue OperationCatalogue =
+        new([ReadOperation, SupportOperation, ExportOperation]);
 
     [Fact]
     public void Foreign_tenant_company_is_rejected_by_the_real_resolver()
@@ -102,6 +122,30 @@ public sealed class DurableWorkAuthorityRevalidationTests
     }
 
     [Fact]
+    public async Task Approved_revalidation_returns_exact_server_issued_execution_scope()
+    {
+        var fixture = CreateOrdinaryFixture();
+        var work = CreateWork(
+            fixture,
+            TenantWorkScopeRequest.ForWarehouse(CompanyA, BranchA, WarehouseA));
+
+        var result = await fixture.Service.RevalidateAsync(
+            work,
+            fixture.Context,
+            fixture.Clock.GetUtcNow());
+
+        Assert.True(result.Allowed);
+        Assert.NotNull(result.Authorization);
+        Assert.Equal(work.Identity.WorkItemId, result.Authorization!.WorkItemId);
+        Assert.Equal(work.Identity.OperationId, result.Authorization.Operation.OperationId);
+        Assert.Equal(WarehouseA, result.Authorization.Scope.WarehouseId);
+        Assert.Equal(
+            $"Warehouse:{WarehouseA}",
+            result.Authorization.ExecutionTenantContext.Scope!.Value.Value);
+        Assert.Equal(fixture.Actor.Value, result.Authorization.ActorId);
+    }
+
+    [Fact]
     public void Verified_scope_cannot_be_rebound_to_another_authorization_context()
     {
         var fixture = CreateOrdinaryFixture();
@@ -114,13 +158,12 @@ public sealed class DurableWorkAuthorityRevalidationTests
             fixture.Context.Scope,
             fixture.Correlation,
             Guid.NewGuid());
-        var identity = new DurableWorkIdentity(
+        var identity = DurableWorkIdentity.Create(
             Guid.NewGuid(),
+            fixture.Service.OperationCatalogue,
             "durable-work.test",
             fixture.Correlation,
-            $"rebind-{Guid.NewGuid():N}",
-            "authority-test",
-            IdentityPermissions.Read.Value);
+            $"rebind-{Guid.NewGuid():N}");
 
         Assert.True(resolution.Allowed);
         Assert.Throws<ArgumentException>(() => DurableWorkItem.Create(
@@ -210,7 +253,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
         var work = CreateWork(
             fixture,
             TenantWorkScopeRequest.TenantWide(),
-            IdentityPermissions.Export.Value);
+            "durable-work.export-test");
 
         var outcome = await ProcessAsync(fixture, work);
 
@@ -274,7 +317,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
             fixture.Context,
             fixture.Service,
             fixture.Clock.GetUtcNow(),
-            (_, _) =>
+            (_, _, _) =>
             {
                 effectCalls++;
                 return ValueTask.CompletedTask;
@@ -309,7 +352,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
     public async Task Expired_support_grant_prevents_dispatch()
     {
         var fixture = CreateSupportFixture(TimeSpan.FromMinutes(5));
-        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide(), IdentityPermissions.SupportRead.Value);
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide(), "durable-work.support-test");
         fixture.Clock.Advance(TimeSpan.FromMinutes(6));
 
         var outcome = await ProcessAsync(fixture, work);
@@ -321,7 +364,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
     public async Task Revoked_support_grant_prevents_dispatch()
     {
         var fixture = CreateSupportFixture();
-        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide(), IdentityPermissions.SupportRead.Value);
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide(), "durable-work.support-test");
         fixture.SupportGrant!.RevokedAt = fixture.Clock.GetUtcNow();
 
         var outcome = await ProcessAsync(fixture, work);
@@ -333,7 +376,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
     public async Task Inactive_support_case_prevents_dispatch()
     {
         var fixture = CreateSupportFixture();
-        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide(), IdentityPermissions.SupportRead.Value);
+        var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide(), "durable-work.support-test");
         fixture.Service.CloseSupportCase(fixture.SupportCase!.Value);
 
         var outcome = await ProcessAsync(fixture, work);
@@ -355,7 +398,9 @@ public sealed class DurableWorkAuthorityRevalidationTests
     private static AuthorityFixture CreateOrdinaryFixture(OrganizationScope? grantedScope = null)
     {
         var clock = new ManualTimeProvider();
-        var service = new IdentityAuthorizationService(timeProvider: clock);
+        var service = new IdentityAuthorizationService(
+            timeProvider: clock,
+            operationCatalogue: OperationCatalogue);
         var password = "Correct-horse-battery-1!";
         var actor = service.CreateUser("durable-owner@example.com", password);
         var approver = service.CreateUser("durable-approver@example.com", password);
@@ -396,7 +441,9 @@ public sealed class DurableWorkAuthorityRevalidationTests
     private static AuthorityFixture CreateSupportFixture(TimeSpan? grantLifetime = null)
     {
         var clock = new ManualTimeProvider();
-        var service = new IdentityAuthorizationService(timeProvider: clock);
+        var service = new IdentityAuthorizationService(
+            timeProvider: clock,
+            operationCatalogue: OperationCatalogue);
         var password = "Correct-horse-battery-1!";
         var supportUser = service.CreateUser("durable-support@example.com", password);
         var approver = service.CreateUser("durable-support-approver@example.com", password);
@@ -441,17 +488,16 @@ public sealed class DurableWorkAuthorityRevalidationTests
     private static DurableWorkItem CreateWork(
         AuthorityFixture fixture,
         TenantWorkScopeRequest requestedScope,
-        string permission = "tenant.business.read")
+        string operationId = "durable-work.test")
     {
         var resolution = fixture.Service.Resolve(fixture.Context, requestedScope);
         Assert.True(resolution.Allowed, resolution.SafeReason);
-        var identity = new DurableWorkIdentity(
+        var identity = DurableWorkIdentity.Create(
             Guid.NewGuid(),
-            "durable-work.test",
+            fixture.Service.OperationCatalogue,
+            operationId,
             fixture.Correlation,
-            $"work-{Guid.NewGuid():N}",
-            "authority-test",
-            permission);
+            $"work-{Guid.NewGuid():N}");
         return DurableWorkItem.Create(
             fixture.Context,
             resolution.Scope!,
@@ -468,8 +514,8 @@ public sealed class DurableWorkAuthorityRevalidationTests
     {
         var store = new InMemoryRelationalDurableWorkStore();
         Assert.True(await store.SubmitAsync(work));
-        var handler = new CountingHandler();
-        var dispatcher = new DurableWorkDispatcher();
+        var handler = new CountingHandler(work.Identity.Operation);
+        var dispatcher = new DurableWorkDispatcher(fixture.Service.OperationCatalogue);
         dispatcher.Register(handler);
         var worker = new TenantDurableWorkWorker(store, dispatcher, fixture.Service);
         var completion = await worker.ProcessOneAsync(
@@ -573,9 +619,16 @@ public sealed class DurableWorkAuthorityRevalidationTests
 
     private sealed class CountingHandler : IDurableWorkHandler<AuthorityPayload>
     {
+        private readonly DurableWorkOperationDescriptor operation;
+
+        internal CountingHandler(DurableWorkOperationDescriptor operation)
+        {
+            this.operation = operation;
+        }
+
         internal int Calls { get; private set; }
 
-        public string WorkType => "authority-test";
+        public DurableWorkOperationDescriptor Operation => operation;
 
         public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
             AuthorityPayload payload,

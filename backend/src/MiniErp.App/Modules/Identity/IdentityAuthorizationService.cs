@@ -26,13 +26,15 @@ internal sealed class IdentityAuthorizationService :
     private readonly TimeProvider timeProvider;
     private readonly IPasswordHasher<GlobalUser> passwordHasher;
     private readonly IAuthenticationAssuranceEvidenceSource assuranceEvidenceSource;
+    private readonly IDurableWorkOperationCatalogue operationCatalogue;
 
     internal IdentityAuthorizationService(
         IdentityStore? store = null,
         IdentitySecurityOptions? options = null,
         TimeProvider? timeProvider = null,
         IPasswordHasher<GlobalUser>? passwordHasher = null,
-        IAuthenticationAssuranceEvidenceSource? assuranceEvidenceSource = null)
+        IAuthenticationAssuranceEvidenceSource? assuranceEvidenceSource = null,
+        IDurableWorkOperationCatalogue? operationCatalogue = null)
     {
         this.store = store ?? new IdentityStore();
         this.options = options ?? IdentitySecurityOptions.Default;
@@ -40,11 +42,14 @@ internal sealed class IdentityAuthorizationService :
         this.timeProvider = timeProvider ?? TimeProvider.System;
         this.passwordHasher = passwordHasher ?? new PasswordHasher<GlobalUser>();
         this.assuranceEvidenceSource = assuranceEvidenceSource ?? new UnavailableAuthenticationAssuranceEvidenceSource();
+        this.operationCatalogue = operationCatalogue ?? DurableWorkOperationCatalogue.Empty;
     }
 
     internal IdentityStore Store => store;
 
     internal IdentitySecurityOptions Options => options;
+
+    internal IDurableWorkOperationCatalogue OperationCatalogue => operationCatalogue;
 
     internal DateTimeOffset Now => timeProvider.GetUtcNow();
 
@@ -71,7 +76,7 @@ internal sealed class IdentityAuthorizationService :
             }
 
             return TenantWorkScopeResolution.Resolved(
-                TenantWorkScope.FromVerifiedOwnership(trustedTenantContext, requestedScope));
+                TenantWorkScope.IssueFromVerifiedAuthority(trustedTenantContext, requestedScope));
         }
     }
 
@@ -87,7 +92,11 @@ internal sealed class IdentityAuthorizationService :
     {
         ArgumentNullException.ThrowIfNull(workItem);
         ArgumentNullException.ThrowIfNull(currentTenantContext);
-        cancellationToken.ThrowIfCancellationRequested();
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromResult(
+                DurableWorkAuthorityValidationResult.Cancelled("authority_validation_cancelled"));
+        }
 
         DurableWorkAuthorityValidationResult result;
         lock (store.SyncRoot)
@@ -1444,8 +1453,20 @@ internal sealed class IdentityAuthorizationService :
             return DurableWorkDenied(workItem, currentTenantContext, "tenant_mismatch", includeTenant: false);
         }
 
+        if (!operationCatalogue.TryGet(workItem.Identity.OperationId, out var operation)
+            || !operation.ExactlyMatches(workItem.Identity.Operation)
+            || !workItem.Initiator.Operation.ExactlyMatches(workItem.Identity.Operation)
+            || !operation.AllowedAuthorizationPaths.Contains(currentTenantContext.AuthorizationPath)
+            || (operation.ScopePolicy == DurableWorkScopePolicy.TenantWideOnly
+                && (workItem.Scope.CompanyId.HasValue
+                    || workItem.Scope.BranchId.HasValue
+                    || workItem.Scope.WarehouseId.HasValue)))
+        {
+            return DurableWorkDenied(workItem, currentTenantContext, "operation_descriptor_denied", includeTenant: true);
+        }
+
         if (workItem.Initiator.AuthorizationPath != currentTenantContext.AuthorizationPath
-            || workItem.Initiator.RequiredPermission != workItem.Identity.RequiredPermission)
+            || !workItem.Initiator.Operation.ExactlyMatches(operation))
         {
             return DurableWorkDenied(workItem, currentTenantContext, "authorization_path_conflict", includeTenant: true);
         }
@@ -1473,7 +1494,7 @@ internal sealed class IdentityAuthorizationService :
             return DurableWorkDenied(workItem, currentTenantContext, "session_denied", includeTenant: true, actorId, sessionId);
         }
 
-        if (!IdentityPermissions.TryResolve(workItem.Identity.RequiredPermission, out var permission))
+        if (!IdentityPermissions.TryResolve(operation.ExactPermissionCode, out var permission))
         {
             return DurableWorkDenied(workItem, currentTenantContext, "permission_denied", includeTenant: true, actorId, sessionId);
         }
@@ -1537,7 +1558,46 @@ internal sealed class IdentityAuthorizationService :
                 return DurableWorkDenied(workItem, currentTenantContext, "authorization_path_conflict", includeTenant: true, actorId, sessionId);
         }
 
-        return DurableWorkAuthorityValidationResult.Approved();
+        var exactScopeRequest = new TenantWorkScopeRequest(
+            workItem.Scope.CompanyId,
+            workItem.Scope.BranchId,
+            workItem.Scope.WarehouseId);
+        var exactScopeReference = new ScopeReference(
+            $"{organizationScope.Kind}:{organizationScope.TargetId}");
+        var executionTenantContext = currentTenantContext.AuthorizationPath switch
+        {
+            TenantAuthorizationPath.OrdinaryMembership when currentTenantContext.Membership is { } membershipReference =>
+                TenantContext.ForOrdinaryMembership(
+                    workItem.TenantId,
+                    membershipReference,
+                    exactScopeReference,
+                    workItem.Identity.CorrelationId,
+                    actorId),
+            TenantAuthorizationPath.SupportGrant when currentTenantContext.SupportGrant is { } supportGrantReference =>
+                TenantContext.ForSupportGrant(
+                    workItem.TenantId,
+                    supportGrantReference,
+                    exactScopeReference,
+                    workItem.Identity.CorrelationId,
+                    actorId),
+            _ => null
+        };
+        if (executionTenantContext is null)
+        {
+            return DurableWorkDenied(workItem, currentTenantContext, "authorization_path_conflict", includeTenant: true, actorId, sessionId);
+        }
+
+        var exactScope = TenantWorkScope.IssueFromVerifiedAuthority(
+            executionTenantContext,
+            exactScopeRequest);
+        var authorization = new VerifiedDurableWorkAuthorization(
+            workItem,
+            operation,
+            executionTenantContext,
+            exactScope,
+            actorId,
+            sessionId);
+        return DurableWorkAuthorityValidationResult.Approved(authorization);
     }
 
     private DurableWorkAuthorityValidationResult DurableWorkDenied(

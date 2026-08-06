@@ -24,7 +24,8 @@ public enum DurableWorkFailureCategory
     ConcurrencyConflict = 4,
     HandlerFailed = 5,
     ProviderUnavailable = 6,
-    Unknown = 7
+    Unknown = 7,
+    Cancelled = 8
 }
 
 /// <summary>Safe notification delivery states.</summary>
@@ -203,16 +204,11 @@ public sealed class TenantWorkScope
     private ScopeReference? AuthorizationScope { get; }
 
     /// <summary>
-    /// Test/local root-scope seam. Descendant scopes must be issued by
-    /// <see cref="IOrganizationScopeOwnershipResolver"/>.
+    /// Issues a scope only from an already verified server authority context.
+    /// The Identity ownership resolver is the shipping issuer; architecture
+    /// tests may use this internal seam for isolated local fixtures.
     /// </summary>
-    internal static TenantWorkScope ForServerContext(TenantContext tenantContext)
-    {
-        ArgumentNullException.ThrowIfNull(tenantContext);
-        return new TenantWorkScope(tenantContext.TenantId, null, null, null, tenantContext);
-    }
-
-    internal static TenantWorkScope FromVerifiedOwnership(
+    internal static TenantWorkScope IssueFromVerifiedAuthority(
         TenantContext authorityContext,
         TenantWorkScopeRequest requestedScope)
     {
@@ -249,17 +245,18 @@ public sealed class DurableWorkInitiator
         ScopeReference? scope,
         Guid? actorId,
         Guid? sessionId,
-        string requiredPermission,
+        DurableWorkOperationDescriptor operation,
         CorrelationId correlationId)
     {
         TenantId = tenantId;
+        ArgumentNullException.ThrowIfNull(operation);
         AuthorizationPath = authorizationPath;
         Membership = membership;
         SupportGrant = supportGrant;
         Scope = scope;
         ActorId = actorId;
         SessionId = sessionId;
-        RequiredPermission = requiredPermission;
+        Operation = operation;
         CorrelationId = correlationId;
     }
 
@@ -277,23 +274,18 @@ public sealed class DurableWorkInitiator
 
     public Guid? SessionId { get; }
 
-    public string RequiredPermission { get; }
+    public DurableWorkOperationDescriptor Operation { get; }
 
     public CorrelationId CorrelationId { get; }
 
     /// <summary>Captures only server-derived authorization facts.</summary>
-    public static DurableWorkInitiator FromServerContext(
+    internal static DurableWorkInitiator FromServerContext(
         TenantContext tenantContext,
-        string requiredPermission,
+        DurableWorkOperationDescriptor operation,
         Guid sessionId)
     {
         ArgumentNullException.ThrowIfNull(tenantContext);
-        if (string.IsNullOrWhiteSpace(requiredPermission)
-            || requiredPermission.Trim().Length > 128
-            || requiredPermission.Any(char.IsControl))
-        {
-            throw new ArgumentException("A durable-work permission is required and bounded.", nameof(requiredPermission));
-        }
+        ArgumentNullException.ThrowIfNull(operation);
 
         if (sessionId == Guid.Empty)
         {
@@ -313,7 +305,7 @@ public sealed class DurableWorkInitiator
             tenantContext.Scope,
             tenantContext.ActorId,
             sessionId,
-            requiredPermission.Trim().ToLowerInvariant(),
+            operation,
             tenantContext.CorrelationId
                 ?? throw new ArgumentException("Durable work requires a trusted correlation identifier.", nameof(tenantContext)));
     }
@@ -322,40 +314,58 @@ public sealed class DurableWorkInitiator
 /// <summary>Stable identity for one durable work item.</summary>
 public sealed class DurableWorkIdentity
 {
-    public DurableWorkIdentity(
+    private DurableWorkIdentity(
         Guid workItemId,
-        string operationId,
+        DurableWorkOperationDescriptor operation,
         CorrelationId correlationId,
-        string idempotencyKey,
-        string workType,
-        string requiredPermission)
+        string idempotencyKey)
     {
         if (workItemId == Guid.Empty)
         {
             throw new ArgumentException("Work item identifier must not be empty.", nameof(workItemId));
         }
 
+        ArgumentNullException.ThrowIfNull(operation);
         WorkItemId = workItemId;
-        OperationId = Required(operationId, nameof(operationId));
+        Operation = operation;
+        OperationId = operation.OperationId;
         CorrelationId = correlationId.Value is { Length: > 0 }
             ? correlationId
             : throw new ArgumentException("Correlation identifier is required.", nameof(correlationId));
         IdempotencyKey = Required(idempotencyKey, nameof(idempotencyKey));
-        WorkType = Required(workType, nameof(workType));
-        RequiredPermission = Required(requiredPermission, nameof(requiredPermission)).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Creates identity from the canonical descriptor selected by operation ID.
+    /// A caller cannot supply or override the permission independently.
+    /// </summary>
+    public static DurableWorkIdentity Create(
+        Guid workItemId,
+        IDurableWorkOperationCatalogue operationCatalogue,
+        string operationId,
+        CorrelationId correlationId,
+        string idempotencyKey)
+    {
+        ArgumentNullException.ThrowIfNull(operationCatalogue);
+        if (!operationCatalogue.TryGet(operationId, out var operation))
+        {
+            throw new ArgumentException("The durable-work operation is not registered.", nameof(operationId));
+        }
+
+        return new DurableWorkIdentity(workItemId, operation, correlationId, idempotencyKey);
     }
 
     public Guid WorkItemId { get; }
 
     public string OperationId { get; }
 
+    public DurableWorkOperationDescriptor Operation { get; }
+
     public CorrelationId CorrelationId { get; }
 
     public string IdempotencyKey { get; }
 
-    public string WorkType { get; }
-
-    public string RequiredPermission { get; }
+    public string WorkType => Operation.WorkType;
 
     private static string Required(string value, string name)
     {
@@ -451,6 +461,17 @@ public sealed class DurableWorkItem : ITenantOwned
             throw new ArgumentException("Organization scope must be verified for the trusted authorization context.", nameof(scope));
         }
 
+        if (!identity.Operation.AllowedAuthorizationPaths.Contains(trustedTenantContext.AuthorizationPath))
+        {
+            throw new ArgumentException("The operation is not registered for the trusted authorization path.", nameof(identity));
+        }
+
+        if (identity.Operation.ScopePolicy == DurableWorkScopePolicy.TenantWideOnly
+            && (scope.CompanyId.HasValue || scope.BranchId.HasValue || scope.WarehouseId.HasValue))
+        {
+            throw new ArgumentException("The operation requires a Tenant-wide verified scope.", nameof(scope));
+        }
+
         if (maximumAttempts is < 1 or > 20)
         {
             throw new ArgumentOutOfRangeException(nameof(maximumAttempts));
@@ -458,7 +479,7 @@ public sealed class DurableWorkItem : ITenantOwned
 
         var initiator = DurableWorkInitiator.FromServerContext(
             trustedTenantContext,
-            identity.RequiredPermission,
+            identity.Operation,
             initiatingSessionId);
         if (!string.Equals(identity.CorrelationId.Value, initiator.CorrelationId.Value, StringComparison.Ordinal))
         {
@@ -552,22 +573,81 @@ public sealed record DurableWorkLease(
     DateTimeOffset LeaseExpiresAt,
     long ConcurrencyVersion);
 
-/// <summary>Typed execution context reconstructed from stored server facts.</summary>
-public sealed class DurableWorkExecutionContext
+/// <summary>
+/// Server-issued authority that binds one work item to the exact current
+/// operation, actor, session, authorization path and organization scope.
+/// </summary>
+public sealed class VerifiedDurableWorkAuthorization
 {
-    internal DurableWorkExecutionContext(DurableWorkItem workItem, TenantContext tenantContext)
+    internal VerifiedDurableWorkAuthorization(
+        DurableWorkItem workItem,
+        DurableWorkOperationDescriptor operation,
+        TenantContext executionTenantContext,
+        TenantWorkScope scope,
+        Guid actorId,
+        Guid sessionId)
     {
-        if (workItem.TenantId != tenantContext.TenantId
-            || workItem.Initiator.AuthorizationPath != tenantContext.AuthorizationPath)
+        ArgumentNullException.ThrowIfNull(workItem);
+        ArgumentNullException.ThrowIfNull(operation);
+        ArgumentNullException.ThrowIfNull(executionTenantContext);
+        ArgumentNullException.ThrowIfNull(scope);
+        if (!workItem.Identity.Operation.ExactlyMatches(operation)
+            || workItem.TenantId != executionTenantContext.TenantId
+            || workItem.Identity.CorrelationId != executionTenantContext.CorrelationId
+            || !scope.IsBoundTo(executionTenantContext)
+            || scope.TenantId != workItem.TenantId
+            || actorId == Guid.Empty
+            || sessionId == Guid.Empty)
         {
-            throw new ArgumentException("Execution context does not match stored work ownership.", nameof(tenantContext));
+            throw new ArgumentException("The durable-work authorization is not an exact server-issued match.", nameof(executionTenantContext));
         }
 
         WorkItemId = workItem.Identity.WorkItemId;
-        TenantContext = tenantContext;
-        Scope = workItem.Scope;
-        OperationId = workItem.Identity.OperationId;
+        Operation = operation;
+        ExecutionTenantContext = executionTenantContext;
+        Scope = scope;
+        ActorId = actorId;
+        SessionId = sessionId;
+    }
+
+    public Guid WorkItemId { get; }
+
+    public DurableWorkOperationDescriptor Operation { get; }
+
+    public TenantContext ExecutionTenantContext { get; }
+
+    public TenantWorkScope Scope { get; }
+
+    public Guid ActorId { get; }
+
+    public Guid SessionId { get; }
+}
+
+/// <summary>Typed execution context reconstructed only from verified authority.</summary>
+public sealed class DurableWorkExecutionContext
+{
+    internal DurableWorkExecutionContext(
+        DurableWorkItem workItem,
+        VerifiedDurableWorkAuthorization authorization)
+    {
+        ArgumentNullException.ThrowIfNull(workItem);
+        ArgumentNullException.ThrowIfNull(authorization);
+        if (workItem.Identity.WorkItemId != authorization.WorkItemId
+            || workItem.TenantId != authorization.ExecutionTenantContext.TenantId
+            || !workItem.Identity.Operation.ExactlyMatches(authorization.Operation)
+            || !string.Equals(workItem.Identity.CorrelationId.Value, authorization.ExecutionTenantContext.CorrelationId?.Value, StringComparison.Ordinal))
+        {
+            throw new ArgumentException("Execution context does not match the verified work authorization.", nameof(authorization));
+        }
+
+        WorkItemId = workItem.Identity.WorkItemId;
+        TenantContext = authorization.ExecutionTenantContext;
+        Scope = authorization.Scope;
+        Operation = authorization.Operation;
+        OperationId = authorization.Operation.OperationId;
         CorrelationId = workItem.Identity.CorrelationId;
+        ActorId = authorization.ActorId;
+        SessionId = authorization.SessionId;
     }
 
     public Guid WorkItemId { get; }
@@ -576,9 +656,15 @@ public sealed class DurableWorkExecutionContext
 
     public TenantWorkScope Scope { get; }
 
+    public DurableWorkOperationDescriptor Operation { get; }
+
     public string OperationId { get; }
 
     public CorrelationId CorrelationId { get; }
+
+    public Guid ActorId { get; }
+
+    public Guid SessionId { get; }
 }
 
 /// <summary>Safe result returned by a typed work handler.</summary>
@@ -661,7 +747,7 @@ public sealed record DurableWorkCompletion(
 public interface IDurableWorkHandler<TPayload>
     where TPayload : IWorkPayload
 {
-    string WorkType { get; }
+    DurableWorkOperationDescriptor Operation { get; }
 
     ValueTask<DurableWorkHandlerResult> ExecuteAsync(
         TPayload payload,
@@ -670,17 +756,31 @@ public interface IDurableWorkHandler<TPayload>
 }
 
 /// <summary>Safe outcome of live durable-work authority revalidation.</summary>
+public enum DurableWorkAuthorityValidationOutcome
+{
+    Approved = 1,
+    Denied = 2,
+    TemporarilyUnavailable = 3,
+    Cancelled = 4
+}
+
+/// <summary>Safe outcome of live durable-work authority revalidation.</summary>
 public sealed class DurableWorkAuthorityValidationResult
 {
     private DurableWorkAuthorityValidationResult(
-        bool allowed,
+        DurableWorkAuthorityValidationOutcome outcome,
         DurableWorkFailureCategory failureCategory,
-        string safeReason)
+        string safeReason,
+        VerifiedDurableWorkAuthorization? authorization)
     {
-        Allowed = allowed;
+        Outcome = outcome;
+        Allowed = outcome == DurableWorkAuthorityValidationOutcome.Approved;
         FailureCategory = failureCategory;
         SafeReason = safeReason;
+        Authorization = authorization;
     }
+
+    public DurableWorkAuthorityValidationOutcome Outcome { get; }
 
     public bool Allowed { get; }
 
@@ -688,11 +788,39 @@ public sealed class DurableWorkAuthorityValidationResult
 
     public string SafeReason { get; }
 
-    public static DurableWorkAuthorityValidationResult Approved() =>
-        new(true, DurableWorkFailureCategory.None, "authority_verified");
+    public VerifiedDurableWorkAuthorization? Authorization { get; }
+
+    public static DurableWorkAuthorityValidationResult Approved(
+        VerifiedDurableWorkAuthorization authorization)
+    {
+        ArgumentNullException.ThrowIfNull(authorization);
+        return new(
+            DurableWorkAuthorityValidationOutcome.Approved,
+            DurableWorkFailureCategory.None,
+            "authority_verified",
+            authorization);
+    }
 
     public static DurableWorkAuthorityValidationResult Denied(string safeReason) =>
-        new(false, DurableWorkFailureCategory.AuthorizationDenied, SafeReasonValue(safeReason));
+        new(
+            DurableWorkAuthorityValidationOutcome.Denied,
+            DurableWorkFailureCategory.AuthorizationDenied,
+            SafeReasonValue(safeReason),
+            null);
+
+    public static DurableWorkAuthorityValidationResult TemporarilyUnavailable(string safeReason) =>
+        new(
+            DurableWorkAuthorityValidationOutcome.TemporarilyUnavailable,
+            DurableWorkFailureCategory.ProviderUnavailable,
+            SafeReasonValue(safeReason),
+            null);
+
+    public static DurableWorkAuthorityValidationResult Cancelled(string safeReason) =>
+        new(
+            DurableWorkAuthorityValidationOutcome.Cancelled,
+            DurableWorkFailureCategory.Cancelled,
+            SafeReasonValue(safeReason),
+            null);
 
     private static string SafeReasonValue(string value)
     {
@@ -731,7 +859,7 @@ public sealed class TenantOutboxMessage : ITenantOwned
         WorkItemId = workItem.Identity.WorkItemId;
         TenantId = workItem.TenantId;
         Scope = workItem.Scope;
-        EventType = workItem.Identity.WorkType;
+        EventType = workItem.Identity.OperationId;
         CorrelationId = workItem.Identity.CorrelationId;
         OccurredAt = occurredAt;
         AttemptCount = 0;
@@ -800,7 +928,7 @@ public interface IRelationalDurableWorkStore
         TenantContext tenantContext,
         IDurableWorkAuthorityRevalidator authorityRevalidator,
         DateTimeOffset now,
-        Func<TenantOutboxMessage, CancellationToken, ValueTask> effect,
+        Func<TenantOutboxMessage, VerifiedDurableWorkAuthorization, CancellationToken, ValueTask> effect,
         CancellationToken cancellationToken = default);
 
     ValueTask<IReadOnlyList<DurableWorkAuditRecord>> ReadAuditAsync(

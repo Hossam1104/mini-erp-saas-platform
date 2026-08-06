@@ -13,12 +13,14 @@ public static class IdentityModuleRegistration
         ArgumentNullException.ThrowIfNull(services);
         services.AddSingleton<IPasswordHasher<GlobalUser>, PasswordHasher<GlobalUser>>();
         services.AddSingleton<IdentityStore>();
+        services.AddSingleton<IDurableWorkOperationCatalogue>(DurableWorkOperationCatalogue.Empty);
         services.AddSingleton<IdentityAuthorizationService>(serviceProvider =>
             new IdentityAuthorizationService(
                 serviceProvider.GetRequiredService<IdentityStore>(),
                 timeProvider: serviceProvider.GetRequiredService<TimeProvider>(),
                 passwordHasher: serviceProvider.GetRequiredService<IPasswordHasher<GlobalUser>>(),
-                assuranceEvidenceSource: serviceProvider.GetRequiredService<IAuthenticationAssuranceEvidenceSource>()));
+                assuranceEvidenceSource: serviceProvider.GetRequiredService<IAuthenticationAssuranceEvidenceSource>(),
+                operationCatalogue: serviceProvider.GetRequiredService<IDurableWorkOperationCatalogue>()));
         services.AddSingleton<IOrganizationScopeOwnershipResolver>(serviceProvider =>
             serviceProvider.GetRequiredService<IdentityAuthorizationService>());
         services.AddSingleton<IDurableWorkAuthorityRevalidator>(serviceProvider =>
