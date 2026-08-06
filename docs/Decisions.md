@@ -31,7 +31,7 @@ decisions, not production provider approval. ADR-018 evidence is recorded in
 evidence baseline was the exact 75-assertion catalogue, 11 SQL Server tests and
 a 296-test backend regression; the same catalogue and 11 SQL Server tests are
 re-run on every later baseline, and the backend regression has since grown to
-**474** tests on the open MESP-92 branch (216 of them the focused
+**488** tests on the open MESP-92 branch (230 of them the focused
 `DurableWork` regression). The complete sequence and its maturity boundary are
 recorded in `docs/97_Foundation_Completion_Review_Checkpoint.md`. ADR-002 and ADR-011
 remain required before their owning module work. ADR-016 is an index entry
@@ -41,8 +41,11 @@ each detailed record becomes mandatory and prevents production decisions from
 blocking business analysis.
 
 ADR-007 and ADR-008 carry an **In Progress** MESP-92 correction. That
-correction lives only on the open, unmerged PR #22 at head
-`9dc6cb82860b10215d05364f2f6e25f69df3b986`; it is **not on `main`**. No ADR
+correction lives only on the open, unmerged PR #22, most recently at head
+`576996f94ae9ddc251767445a7ebddd60c492c45` (H92-05/M92-05 focused correction,
+7 August 2026: `DurableWorkLocalRuntime`'s public surface is now limited to
+`Store`/`Dispatcher`; the mutable effect ledger and its executor are internal
+to `MiniErp.App`); it is **not on `main`**. No ADR
 status in this index asserts production maturity: the durable-work store,
 dispatcher, worker and effect ledger are local, in-memory, non-crash-durable
 test/development seams that are **not composed into the `MiniErp.Api` host**,

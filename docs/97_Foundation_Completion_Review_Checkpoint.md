@@ -155,6 +155,50 @@ Playwright 4/4, 0 audit vulnerabilities). No known MESP-92 code finding
 remains open. PR #22 remains open, non-draft and unmerged pending a focused
 ChatGPT security re-review at this head; MESP-92 is not marked Done.
 
+### H92-05/M92-05 closure overlay — 7 August 2026 (current, not a rewrite of the checkpoint above)
+
+The overlay above reflects head `9dc6cb8` exactly as recorded and is
+preserved unchanged. A further focused ChatGPT security re-review of PR #22
+at that head raised two new findings, both closed by a bounded correction on
+the same branch at head `576996f94ae9ddc251767445a7ebddd60c492c45`:
+
+- **H92-05 (High) — closed.** `DurableWorkLocalRuntime` publicly exposed
+  `EffectGuard`/`EffectExecutor`, letting a shipping caller reserve, release,
+  complete or mark an effect uncertain outside the approved executor (for
+  example releasing an in-flight reservation so a second dispatch executes
+  the same protected effect twice). `DurableWorkLocalRuntime`'s public
+  surface is now limited to `Store`/`Dispatcher`; the guard, the executor and
+  their state/reservation/execution-result types are internal to
+  `MiniErp.App`.
+- **M92-05 (Medium) — closed.** `IDurableWorkEffectGuard.GetOutcomeUnknownReason`
+  was reachable from a raw `DurableWorkEffectKey` alone, bypassing the H92-04
+  authorized reconciliation port. The interface is now internal, so the
+  method is not reachable from any public type; it remains an
+  internal/test-only seam over the O92-01 preserved reason. The only publicly
+  reachable uncertain-effect evidence path remains
+  `ReadUncertainEffectsAsync(VerifiedDurableWorkReconciliationAuthorization)`.
+
+**Public-surface evidence:** `DurableWorkLocalRuntime` exposes exactly `Store`
+and `Dispatcher` publicly; `IDurableWorkEffectGuard`,
+`InMemoryDurableWorkEffectGuard`, `IDurableWorkEffectExecutor` and
+`DurableWorkEffectExecutor` are non-public types; no public method in
+`MiniErp.App` returns, accepts or is typed as any of the four, and no public
+method accepts only a raw `DurableWorkEffectKey` and returns reason/state
+evidence — all verified by reflection in the new
+`DurableWorkEffectLedgerSurfaceTests.cs` (14 tests), including an executable
+attack-regression proving a blocked in-flight reservation cannot be released
+through any publicly reachable member and the effect still executes exactly
+once. See
+[`docs/94_Product_Delivery_Master_Plan.md`](94_Product_Delivery_Master_Plan.md#mesp-92-h92-05m92-05-focused-correction--in-progress)
+and
+[`docs/96_Foundation_Release1_Safety_Validation.md`](96_Foundation_Release1_Safety_Validation.md#h92-05m92-05-focused-correction--7-august-2026)
+for the full correction record and re-run validation totals (230/230
+focused, 488/488 full backend, 11/11 SQL LocalDB, 27/27 Angular, Playwright
+4/4, 0 audit vulnerabilities). O92-01 and O92-02 remain closed. No known
+MESP-92 code finding remains open at this head. PR #22 remains open,
+non-draft and unmerged pending a further focused ChatGPT security re-review;
+MESP-92 is not marked Done.
+
 ## MESP-91 correction overlay — merged and Done
 
 The MESP-64 merged-main checkpoint above is the prior historical Foundation

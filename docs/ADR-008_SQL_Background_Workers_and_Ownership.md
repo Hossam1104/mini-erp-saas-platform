@@ -90,7 +90,15 @@ shipping code may construct the guard, executor, store or dispatcher, all
 four constructors now being `internal`, and a syntax-tree architecture test
 proves no other shipping construction site exists); the purpose and
 EventId in the key keep the two effect categories independent within that one
-shared guard. Reservation of that key is the single non-reversible boundary:
+shared guard. `DurableWorkLocalRuntime`'s public surface is limited to
+`Store` and `Dispatcher` (H92-05 focused review correction): `EffectGuard`
+and `EffectExecutor` are internal properties, and `IDurableWorkEffectGuard`,
+`InMemoryDurableWorkEffectGuard`, `IDurableWorkEffectExecutor` and
+`DurableWorkEffectExecutor` are internal types, so a shipping caller holding
+the runtime cannot reserve, release, complete or mark an effect uncertain
+outside the executor — closing a release-mid-flight path that would have let
+a second dispatch execute an already-reserved effect twice. Reservation of
+that key is the single non-reversible boundary:
 an interruption before it permits bounded retry, and the protected callback
 must return an explicit `DurableWorkProtectedEffectResult` outcome —
 `Applied`, `NotAppliedRetryable`, `OutcomeUnknown` or `TerminalNotApplied` —
@@ -103,7 +111,12 @@ repeated and readable only through
 `VerifiedDurableWorkReconciliationAuthorization` scoped to the exact
 Tenant/Company/Branch/Warehouse boundary and its verified descendants only
 (H92-04 focused review correction; a sibling organization is never visible).
-A duplicate dispatch of an already-Completed effect replays the exact recorded
+The guard preserves its own safe reason on the OutcomeUnknown transition
+(O92-01), but `IDurableWorkEffectGuard.GetOutcomeUnknownReason` is not a
+public raw-key evidence path: the interface is internal (M92-05 focused
+review correction), so the only publicly reachable uncertain-effect evidence
+remains the scope-authorized `ReadUncertainEffectsAsync` port above. A
+duplicate dispatch of an already-Completed effect replays the exact recorded
 safe result instead of re-invoking the handler. `InMemoryRelationalDurableWorkStore`/
 `IRelationalDurableWorkStore` are renamed to `InMemoryDurableWorkStore`/
 `IDurableWorkStore` to remove the misleading relational/SQL-backed
@@ -154,7 +167,11 @@ is scheduled, and nothing here is a production capability. A future host
 composition root must call `DurableWorkLocalRuntime.Create` exactly once and
 reuse the returned instance — `MiniErp.App` grants
 `InternalsVisibleTo("MiniErp.Api")`, so the `internal` constructors alone do
-not enforce that; the syntax-tree architecture test does.
+not enforce that; the syntax-tree architecture test does. Verified at head
+`576996f94ae9ddc251767445a7ebddd60c492c45` (H92-05/M92-05 correction, 7 August
+2026): `MiniErp.Api` still does not reference any durable-work type, so
+tightening `DurableWorkLocalRuntime`'s public surface to `Store`/`Dispatcher`
+only changed nothing reachable from the host.
 
 ## Gates
 

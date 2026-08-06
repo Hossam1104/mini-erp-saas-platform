@@ -12,10 +12,10 @@
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
 | Current activity | `MESP-92 Correction Package 2 — In Progress on an open, unmerged Pull Request` |
 | Current implementation item | `MESP-92 — In Progress; the only active bounded implementation item` |
-| Active branch | `fix/MESP-92-single-effect-immutable-payloads` (base merged-main `32a91f27bc162685fc0db0f38b031d02ffbc99d2`; head `9dc6cb82860b10215d05364f2f6e25f69df3b986`) |
+| Active branch | `fix/MESP-92-single-effect-immutable-payloads` (base merged-main `32a91f27bc162685fc0db0f38b031d02ffbc99d2`; head `576996f94ae9ddc251767445a7ebddd60c492c45`) |
 | Merged-main baseline | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` (PR #21 merge; MESP-91 Done through PR #20) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `PR #22 open, non-draft and unmerged; two focused ChatGPT security reviews answered; Opus 5 project-wide checkpoint of 6 August 2026 verified H92-03, H92-04, M92-03, M92-04 and L92-01 as closed at head 271e9df and recorded two new non-blocking findings (O92-01 Low, O92-02 Low), both closed by the bounded correction at head 9dc6cb8 — see below; no known MESP-92 code finding remains open` |
+| Current review checkpoint | `PR #22 open, non-draft and unmerged; three focused ChatGPT security reviews answered; Opus 5 project-wide checkpoint of 6 August 2026 verified H92-03, H92-04, M92-03, M92-04 and L92-01 as closed at head 271e9df and recorded two new non-blocking findings (O92-01 Low, O92-02 Low), both closed by the bounded correction at head 9dc6cb8; a further focused re-review at that head raised H92-05 (High) and M92-05 (Medium), both closed by the bounded correction at head 576996f — see below; no known MESP-92 code finding remains open` |
 
 ---
 
@@ -66,7 +66,7 @@ merged-main baseline**.
 MESP-92 Correction Package 2 is **In Progress** and is the only active bounded
 implementation item. Its work is on branch
 `fix/MESP-92-single-effect-immutable-payloads` (head
-`9dc6cb82860b10215d05364f2f6e25f69df3b986`) and is published as
+`576996f94ae9ddc251767445a7ebddd60c492c45`) and is published as
 [PR #22](https://github.com/Hossam1104/mini-erp-saas-platform/pull/22), which is
 **open, non-draft and unmerged**. Nothing in MESP-92 is on `main` yet. No Sprint
 is active and no parallel implementation item exists.
@@ -94,7 +94,7 @@ is active and no parallel implementation item exists.
 | MESP-61 background processing foundation | Done — PR #17 merged at `7db49a88e11232f055c2016b8bb033a61de629ec`; typed Tenant-bound durable work/outbox/inbox, bounded worker, notification contracts and private-file adapter |
 | MESP-64 provider/schema/index validation | Done — PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`; ADR-018, disposable LocalDB SQL Server harness, exact 75-assertion evidence and merged-main validation complete; no production provider or migration |
 | MESP-91 verified work scope and worker authority correction | Done — Correction Package 1; PR #20 merged at `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT approval; Identity-owned organization resolver, authorization-context-bound scopes, live worker/outbox revalidation and safe authority dead-letter are merged to `main` |
-| MESP-92 single-effect durable work and immutable typed payloads | **In Progress** — Correction Package 2; PR #22 open, non-draft and **unmerged** at head `9dc6cb82860b10215d05364f2f6e25f69df3b986`; not on `main` |
+| MESP-92 single-effect durable work and immutable typed payloads | **In Progress** — Correction Package 2; PR #22 open, non-draft and **unmerged** at head `576996f94ae9ddc251767445a7ebddd60c492c45`; not on `main` |
 | MESP-93 private-file/notification hardening | To Do — Correction Package 3; must not start before MESP-92 closes |
 | MESP-94 safety-catalogue and validation-evidence correction | To Do — must not start before MESP-92 closes |
 | Final Foundation correction checkpoint | Not Started — follows MESP-93 and MESP-94 |
@@ -132,7 +132,7 @@ is active and no parallel implementation item exists.
 - [x] `MESP-64` is **Done**; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`, merged-main validation passed, and its branch was deleted.
 - [x] `MESP-91` is **Done**; PR #20 merged at `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT security review approval; branch `fix/MESP-91-verified-work-scope-authority` deleted after merge.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
-- 🔄 `MESP-92` is **In Progress** (verified in Jira on 6 August 2026). It is the only active bounded implementation item; PR #22 is open, non-draft and unmerged at head `9dc6cb82860b10215d05364f2f6e25f69df3b986`.
+- 🔄 `MESP-92` is **In Progress** (verified in Jira on 6 August 2026). It is the only active bounded implementation item; PR #22 is open, non-draft and unmerged at head `576996f94ae9ddc251767445a7ebddd60c492c45`.
 - [ ] `MESP-93` and `MESP-94` remain **To Do**; Correction Package 3 and the safety-catalogue correction are untouched and must not start before MESP-92 closes.
 - [x] No Sprint is active; MESP-89 and MESP-63 were delivered outside a Sprint.
 - [x] MESP-63, MESP-90, MESP-61, MESP-64 and MESP-91 completed sequentially; MESP-92 is now the single active implementation item and no parallel implementation is authorized.
@@ -947,7 +947,7 @@ merged-main Foundation baseline `32a91f27bc162685fc0db0f38b031d02ffbc99d2`.
 MESP-91 Correction Package 1 merged through PR #20 at
 `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT security
 review approval. MESP-92 is In Progress on PR #22, which is open, non-draft and
-unmerged at head `9dc6cb82860b10215d05364f2f6e25f69df3b986`; no Sprint is
+unmerged at head `576996f94ae9ddc251767445a7ebddd60c492c45`; no Sprint is
 active; MESP-93, MESP-94 and MESP-31 remain To Do; and the final Foundation
 correction checkpoint has not started.**
 
@@ -1348,20 +1348,23 @@ Use this section to record major milestones.
 > MESP-92 (`Guarantee single-effect durable work execution and immutable
 > typed payloads`) is **In Progress** on branch
 > `fix/MESP-92-single-effect-immutable-payloads` at head
-> `9dc6cb82860b10215d05364f2f6e25f69df3b986`. PR #22 received a first focused
+> `576996f94ae9ddc251767445a7ebddd60c492c45`. PR #22 received a first focused
 > ChatGPT security review (H92-01, H92-02, M92-01, M92-02) and a second
 > focused ChatGPT security review (H92-03, H92-04, M92-03, M92-04, L92-01);
 > both rounds of corrections are recorded in the overlays below. The Opus 5
 > project-wide checkpoint of 6 August 2026 independently verified all ten
 > findings as closed at head `271e9df` and recorded two new **non-blocking
-> Low** findings (O92-01, O92-02). A bounded correction at the current head
-> closes both — see the O92-01/O92-02 overlay below; **no known MESP-92 code
-> finding remains open**. PR #22 remains open, non-draft and held unmerged
-> pending a focused ChatGPT re-review; it is **not** approved. MESP-93,
-> MESP-94 and MESP-31 remain To Do. Master Data and Catalog, Retail POS and
-> future ERP transaction work remain out of scope. `MESP-48` and `MESP-50`
-> remain explicit production gates. No Sprint is active, and MESP-93,
-> MESP-94 and MESP-31 must not start before MESP-92 closes.
+> Low** findings (O92-01, O92-02), closed by a bounded correction at head
+> `9dc6cb8` — see the O92-01/O92-02 overlay below. A further focused ChatGPT
+> re-review at that head raised H92-05 (High) and M92-05 (Medium); both are
+> closed by a bounded correction at the current head — see the H92-05/M92-05
+> overlay below; **no known MESP-92 code finding remains open**. PR #22
+> remains open, non-draft and held unmerged pending a further focused
+> ChatGPT re-review; it is **not** approved. MESP-93, MESP-94 and MESP-31
+> remain To Do. Master Data and Catalog, Retail POS and future ERP
+> transaction work remain out of scope. `MESP-48` and `MESP-50` remain
+> explicit production gates. No Sprint is active, and MESP-93, MESP-94 and
+> MESP-31 must not start before MESP-92 closes.
 
 ## MESP-92 In Progress — single-effect durable work and immutable payloads
 
@@ -1555,6 +1558,75 @@ this head -- **no known MESP-92 code finding remains open**. No broker,
 production SQL work store, production worker deployment, migration, Master
 Data implementation, MESP-48 or MESP-50 work was introduced, and the
 `local-prd-rename-before-MESP-92` stash was preserved untouched.
+
+## MESP-92 H92-05/M92-05 focused correction — In Progress
+
+A further focused ChatGPT security re-review of PR #22 at head
+`9dc6cb82860b10215d05364f2f6e25f69df3b986` raised H92-05 (High) and M92-05
+(Medium). This overlay closes both on the same branch, at head
+`576996f94ae9ddc251767445a7ebddd60c492c45`.
+
+H92-05 closed a public mutable-ledger exposure: `DurableWorkLocalRuntime`
+publicly exposed `EffectGuard` (`IDurableWorkEffectGuard`) and `EffectExecutor`
+(`IDurableWorkEffectExecutor`), so a shipping caller holding the runtime could
+call `TryReserve`, `Release`, `RecordCompleted` or `RecordOutcomeUnknown`
+directly -- for example reserving an effect through the dispatcher, then
+releasing that same reservation through the runtime's public guard while the
+protected effect was still executing, letting a second dispatch reserve and
+execute it again. `DurableWorkLocalRuntime`'s public surface is now limited to
+`Store` and `Dispatcher`; `EffectGuard` and `EffectExecutor` are internal
+properties, and `IDurableWorkEffectGuard`, `InMemoryDurableWorkEffectGuard`,
+`IDurableWorkEffectExecutor`, `DurableWorkEffectExecutor` and their
+state/reservation/execution-result types are internal to `MiniErp.App`. `Store`
+and `Dispatcher` continue to share the identical internal guard and executor
+instance, unchanged from H92-03.
+
+M92-05 closed the raw-key reason-read bypass: `IDurableWorkEffectGuard.GetOutcomeUnknownReason(key)`
+(added by O92-01) required only a `DurableWorkEffectKey`, with no live User,
+session, Membership/SupportGrant, `work.reconciliation.read` permission or
+exact Tenant/Company/Branch/Warehouse scope check -- bypassing the H92-04
+authorized reconciliation port entirely. Because `IDurableWorkEffectGuard` is
+now internal, `GetOutcomeUnknownReason` is not reachable from any public type;
+it remains solely an internal/test-only seam that still preserves the O92-01
+safe reason on the guard's own `EffectRecord`. The only publicly reachable
+uncertain-effect evidence path remains
+`IDurableWorkStore.ReadUncertainEffectsAsync(VerifiedDurableWorkReconciliationAuthorization)`,
+unchanged from H92-04.
+
+`DurableWorkEffectKey`, `DurableWorkEffectPurpose`, `DurableWorkProtectedEffectResult`
+and `DurableWorkProtectedEffectOutcome` remain public: the first two are
+required by the public `DurableWorkUncertainEffectRecord` reconciliation
+evidence contract, and the latter two are the outcome contract a handler
+author implementing `IDurableWorkHandler<TPayload>` must return.
+
+New structural/architecture coverage in `DurableWorkEffectLedgerSurfaceTests`
+(14 tests) proves: no public `EffectGuard`/`EffectExecutor` property or type
+exists anywhere in the `MiniErp.App` assembly; no public method accepts only a
+raw `DurableWorkEffectKey` and returns reason or state evidence;
+`ReadUncertainEffectsAsync` still has exactly one overload requiring
+`VerifiedDurableWorkReconciliationAuthorization`; `Store` and `Dispatcher`
+still share one internal guard and executor; and an executable
+attack-regression test blocks a handler mid-effect, proves no publicly
+reachable member can obtain the guard to release the in-flight reservation,
+then completes the handler and issues a duplicate dispatch to confirm the
+protected effect executed exactly once. All previously added O92-01/O92-02
+tests continue to pass unmodified.
+
+Validation at this head: Release build **0 warnings/0 errors**; focused
+DurableWork/composition suite **230/230** passed (up from 216); full backend
+regression **488/488** passed via `validate-foundation.ps1`, including
+**11/11** SQL Server LocalDB probes with no `MiniErpFoundation_*` database
+remaining after teardown; Angular unit tests **27/27** passed; Angular
+production build succeeded (351.02 kB initial / 87.80 kB transferred);
+Playwright **4/4** passed; `npm audit --omit=dev --audit-level=high` reported
+**0** vulnerabilities.
+
+MESP-92 is **not** marked Done by this overlay. PR #22 remains open,
+non-draft and held unmerged pending a further focused ChatGPT security
+re-review at this head. No broker, production SQL work store, production
+worker deployment, migration, Master Data implementation, MESP-48 or MESP-50
+work was introduced, and the `local-prd-rename-before-MESP-92` stash was
+preserved untouched.
 
 ## MESP-91 Correction Package 1 — merged and Done
 

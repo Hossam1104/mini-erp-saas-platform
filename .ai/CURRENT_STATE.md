@@ -7,7 +7,9 @@ A new agent can begin from this section with no prior chat history.
 | Fact | Verified value |
 |---|---|
 | Current branch | `fix/MESP-92-single-effect-immutable-payloads` |
-| Current branch head | `9dc6cb82860b10215d05364f2f6e25f69df3b986` |
+| Current branch head (final implementation head) | `576996f94ae9ddc251767445a7ebddd60c492c45` |
+| Starting head for this correction | `9e0999ee6b64a27aeb6f3cce918d987325c18cab` (see note below) |
+| Previous MESP-92 correction head | `9dc6cb82860b10215d05364f2f6e25f69df3b986` (O92-01/O92-02 closure) |
 | Previous branch head | `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4` (Opus 5 project-wide review head; PRD `R100` rename) |
 | Merged-main baseline | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` |
 | Open Pull Request | PR #22 — open, non-draft, **unmerged**, **not approved** |
@@ -21,10 +23,76 @@ A new agent can begin from this section with no prior chat history.
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
 
-**Exact next action:** obtain the focused ChatGPT security review of PR #22 at
-head `9dc6cb82860b10215d05364f2f6e25f69df3b986`. Do not merge PR #22, do not
-close MESP-92, and do not start MESP-93, MESP-94 or MESP-31 until that review
-authorizes the next step. The merge hold is a standing process gate.
+**Note on the starting head:** the task instruction for this correction named
+expected starting head `413585c6e22aac26706d3ecaa9af13339bcedf9d`. At
+execution time the actual branch head was one commit ahead, at
+`9e0999ee6b64a27aeb6f3cce918d987325c18cab` ("fix(work): add analytics
+configuration to Angular CLI settings", `frontend/angular.json` only — a
+local Angular CLI telemetry identifier, not a MESP-92 code or security
+change). That commit was inspected and is unrelated to this correction's
+scope; it is preserved as-is.
+
+**Exact next action:** obtain a further focused ChatGPT security review of PR
+#22 at head `576996f94ae9ddc251767445a7ebddd60c492c45`. Do not merge PR #22, do
+not close MESP-92, and do not start MESP-93, MESP-94 or MESP-31 until that
+review authorizes the next step. The merge hold is a standing process gate.
+
+**H92-05/M92-05 closure (7 August 2026):** a focused ChatGPT security
+re-review of PR #22 raised H92-05 (`DurableWorkLocalRuntime` publicly exposed
+the mutable effect guard, letting a shipping caller reserve, release,
+complete or mark an effect uncertain outside the approved executor -- for
+example releasing an in-flight reservation so a second dispatch executes the
+same protected effect twice) and M92-05 (`IDurableWorkEffectGuard.GetOutcomeUnknownReason`
+was reachable from a raw `DurableWorkEffectKey` alone, bypassing the H92-04
+authorized reconciliation port). Both are now closed at head
+`576996f94ae9ddc251767445a7ebddd60c492c45`:
+
+- H92-05 is closed: `DurableWorkLocalRuntime`'s public surface is now limited
+  to `Store` and `Dispatcher`. `EffectGuard` and `EffectExecutor` are internal
+  properties, and `IDurableWorkEffectGuard`, `InMemoryDurableWorkEffectGuard`,
+  `IDurableWorkEffectExecutor`, `DurableWorkEffectExecutor` and their
+  state/reservation/execution-result types (`DurableWorkEffectState`,
+  `DurableWorkEffectReservationKind`, `DurableWorkEffectReservation`,
+  `DurableWorkEffectExecutionKind`, `DurableWorkEffectExecution`) are internal
+  to `MiniErp.App`. No shipping caller outside this assembly's approved
+  `DurableWorkEffectExecutor` can reserve, release, complete or mark an effect
+  uncertain; `Store` and `Dispatcher` still share the identical internal
+  guard and executor instance.
+- M92-05 is closed: `IDurableWorkEffectGuard.GetOutcomeUnknownReason` is no
+  longer reachable from any public type -- the interface itself is internal.
+  The guard still preserves the O92-01 safe reason on its own `EffectRecord`;
+  it is inspectable only through the internal/test-only seam
+  (`InternalsVisibleTo("MiniErp.ArchitectureTests")`). The only publicly
+  reachable uncertain-effect evidence path remains
+  `IDurableWorkStore.ReadUncertainEffectsAsync(VerifiedDurableWorkReconciliationAuthorization)`.
+- `DurableWorkEffectKey`, `DurableWorkEffectPurpose`, `DurableWorkProtectedEffectResult`
+  and `DurableWorkProtectedEffectOutcome` remain public: the first two are
+  required by the public `DurableWorkUncertainEffectRecord` reconciliation
+  evidence, and the latter two are the return-type contract a handler author
+  implementing `IDurableWorkHandler<TPayload>` must produce.
+- 14 new structural/architecture tests were added in
+  `DurableWorkEffectLedgerSurfaceTests.cs`, including an executable
+  attack-regression test that blocks a handler mid-effect, proves no publicly
+  reachable member can release the in-flight reservation, then completes the
+  handler and a duplicate dispatch to confirm the effect still executed
+  exactly once.
+- O92-01 and O92-02 remain closed; all previously added O92-01/O92-02 tests
+  continue to pass unmodified.
+- Validation at this head: focused DurableWork/composition suite **230/230**
+  passed (up from 216, the 14 new tests); full backend regression via
+  `validate-foundation.ps1` **488/488** passed with 0 failed and 0 skipped,
+  including **11/11** SQL Server LocalDB probes and no `MiniErpFoundation_*`
+  database remaining after teardown; Release build **0 warnings/0 errors**;
+  Angular unit tests **27/27** passed; Angular production build succeeded
+  (351.02 kB initial / 87.80 kB transferred); Playwright **4/4** passed;
+  `npm audit --omit=dev --audit-level=high` reported **0** vulnerabilities.
+  MESP-92 is **not** marked Done; PR #22 remains open, non-draft and unmerged
+  pending a further focused ChatGPT security re-review at this head. MESP-93,
+  MESP-94 and MESP-31 remain To Do; no Sprint is active; MESP-48 and MESP-50
+  remain explicit production gates. The `local-prd-rename-before-MESP-92`
+  stash was preserved untouched throughout this correction, and the canonical
+  PRD blob (`1f9163b9412cb343a19a98312eb642ad26c1efaa` at
+  `docs/MESP_PRD_v1.2.docx`) was not modified.
 
 **PRD path:** the approved PRD binary is unchanged. It moved from
 `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx` to
@@ -35,10 +103,14 @@ the move is recorded as a Git `R100` rename in commit
 "formerly `<old-name>`, now maintained at `docs/MESP_PRD_v1.2.docx`".
 
 **MESP-92 findings after the Opus 5 project-wide review of 6 August 2026:**
-0 Critical, 0 High, 0 Medium, 2 Low, none merge-blocking. Both Low findings are
-now **closed** by the bounded correction at head
-`9dc6cb82860b10215d05364f2f6e25f69df3b986` (7 August 2026); no known MESP-92
-code finding remains open.
+0 Critical, 0 High, 0 Medium, 2 Low, none merge-blocking. Both Low findings
+were closed by the bounded correction at head
+`9dc6cb82860b10215d05364f2f6e25f69df3b986` (7 August 2026). A subsequent
+focused ChatGPT security re-review of PR #22 at that head then raised H92-05
+(High) and M92-05 (Medium); both are now **closed** by the bounded correction
+at head `576996f94ae9ddc251767445a7ebddd60c492c45` (7 August 2026; see the
+H92-05/M92-05 closure entry above). No known MESP-92 code finding remains
+open at this head, pending the next focused ChatGPT security re-review.
 
 - **O92-01 (Low) — closed.** `InMemoryDurableWorkEffectGuard.RecordOutcomeUnknown`
   used to accept a `safeReason` and discard it. The guard now persists the

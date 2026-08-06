@@ -402,3 +402,62 @@ non-substitution proof, and reflection-based corrupted-record fail-closed
 tests (no production member was made public solely for testing). MESP-92 is
 **not** marked Done by this correction; PR #22 remains open, non-draft and
 held unmerged pending a focused ChatGPT security re-review at this head.
+
+## H92-05/M92-05 focused correction — 7 August 2026
+
+A further focused ChatGPT security re-review of PR #22 at head
+`9dc6cb82860b10215d05364f2f6e25f69df3b986` raised H92-05 (High —
+`DurableWorkLocalRuntime` publicly exposed the mutable effect guard) and
+M92-05 (Medium — `GetOutcomeUnknownReason` was reachable from a raw effect
+key, bypassing the H92-04 authorized reconciliation port). Both are closed at
+head `576996f94ae9ddc251767445a7ebddd60c492c45` on the same branch. No SQL
+Server schema, index, rowversion, collation, Tenant-filter, stored-owner,
+relationship, transaction, idempotency or lease probe changed; the existing
+75-assertion safety catalogue is untouched.
+
+**Public-surface evidence.** `DurableWorkLocalRuntime`'s public instance
+members are now exactly `Store` and `Dispatcher` (verified by reflection in
+`DurableWorkEffectLedgerSurfaceTests.Runtime_public_instance_surface_is_limited_to_Store_and_Dispatcher`).
+`IDurableWorkEffectGuard`, `InMemoryDurableWorkEffectGuard`,
+`IDurableWorkEffectExecutor` and `DurableWorkEffectExecutor` are confirmed
+non-public types by reflection (`Type.IsPublic` false for each). A
+whole-assembly reflection scan
+(`No_public_type_in_the_App_assembly_exposes_an_internal_ledger_type`) proves
+no public property or method anywhere in `MiniErp.App` returns, accepts or is
+typed as one of these four types. A second whole-assembly scan
+(`No_public_method_in_the_App_assembly_resolves_uncertain_effect_evidence_from_a_raw_key_alone`)
+proves no public method accepts only a `DurableWorkEffectKey` and returns a
+`string` or enum (reason/state evidence); a third
+(`GetOutcomeUnknownReason_is_not_declared_by_any_public_type`) proves no
+public type declares that method at all.
+
+**Architecture-test evidence.** `DurableWorkEffectLedgerSurfaceTests.cs` adds
+14 tests: the public-surface checks above; `Store_and_dispatcher_still_share_the_identical_internal_guard`
+proving both still route through the same internal guard/executor instance
+(unchanged from H92-03); `ReadUncertainEffectsAsync_still_requires_verified_reconciliation_authorization_and_has_one_overload`
+proving the H92-04 port was not weakened or overloaded; `Internal_reason_is_preserved_and_inspectable_only_through_the_internal_test_only_seam`
+proving O92-01's preserved reason is still readable through
+`InternalsVisibleTo`; and an executable attack-regression test
+(`Shipping_caller_cannot_reach_the_guard_to_release_an_in_flight_reservation_and_effect_still_runs_once`)
+that blocks a handler mid-effect, proves no publicly reachable member yields
+the guard during that window, then completes the handler and issues a
+duplicate dispatch to confirm the protected effect executed exactly once.
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused durable-work regression (baseline + all corrections) | 230 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~DurableWork` |
+| Complete backend suite | 488 passed, 0 failed, 0 skipped | `powershell -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped | `npx ng test --watch=false` |
+| Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred | `npx ng build --configuration production` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npx playwright test` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Diff check | Passed, no whitespace errors | `git diff --check` |
+| Hosted CI | Not available | No hosted workflow is configured in this repository |
+
+No `MiniErpFoundation_*` database remained in `MSSQLLocalDB` after teardown.
+O92-01 and O92-02 remain closed; all previously added O92-01/O92-02 tests
+continue to pass unmodified. MESP-92 is **not** marked Done by this
+correction; PR #22 remains open, non-draft and held unmerged pending a
+further focused ChatGPT security re-review at this head.
