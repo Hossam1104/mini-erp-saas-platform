@@ -533,6 +533,14 @@ public sealed class DurableWorkItem : ITenantOwned
 
     public string? SafeFailureReason { get; private set; }
 
+    /// <summary>
+    /// The actual transition time into <see cref="DurableWorkLifecycle.OutcomeUnknown"/>.
+    /// Never derived from <see cref="NextAttemptAt"/>, <see cref="UpdatedAt"/>,
+    /// lease time, creation time or current time, none of which represent
+    /// when this item's outcome actually became unknown.
+    /// </summary>
+    public DateTimeOffset? OutcomeUnknownAt { get; private set; }
+
     public bool IsDeadLettered => Lifecycle == DurableWorkLifecycle.DeadLetter;
 
     public static DurableWorkItem Create<TPayload>(
@@ -647,6 +655,7 @@ public sealed class DurableWorkItem : ITenantOwned
             // Uncertain effects are never auto-retried, regardless of the
             // remaining attempt budget: only explicit reconciliation applies.
             Lifecycle = DurableWorkLifecycle.OutcomeUnknown;
+            OutcomeUnknownAt = now;
         }
         else if (result.DeadLetter || AttemptCount >= MaximumAttempts)
         {

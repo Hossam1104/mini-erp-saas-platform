@@ -1150,6 +1150,253 @@ public sealed class DurableWorkPayloadAndEffectTests
     }
 
     // ---------------------------------------------------------------------
+    // Guard-level uncertain-effect safe reason preservation (O92-01 focused
+    // correction)
+    // ---------------------------------------------------------------------
+
+    [Fact]
+    public void RecordOutcomeUnknown_preserves_the_exact_approved_safe_reason()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var key = NewKey();
+        guard.TryReserve(key);
+
+        guard.RecordOutcomeUnknown(key, "effect_boundary_interrupted");
+
+        Assert.Equal("effect_boundary_interrupted", guard.GetOutcomeUnknownReason(key));
+    }
+
+    [Fact]
+    public async Task Executor_recorded_outcome_unknown_reason_is_readable_from_the_guard()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var executor = new DurableWorkEffectExecutor(guard);
+        var key = NewKey();
+
+        await executor.ExecuteHandlerEffectAsync(key, _ =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("provider_reported_outcome_unknown")));
+
+        Assert.Equal("provider_reported_outcome_unknown", guard.GetOutcomeUnknownReason(key));
+    }
+
+    [Fact]
+    public void Duplicate_RecordOutcomeUnknown_call_cannot_replace_the_original_reason()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var key = NewKey();
+        guard.TryReserve(key);
+        guard.RecordOutcomeUnknown(key, "first_reason");
+
+        Assert.Throws<InvalidOperationException>(() => guard.RecordOutcomeUnknown(key, "first_reason"));
+        Assert.Equal("first_reason", guard.GetOutcomeUnknownReason(key));
+    }
+
+    [Fact]
+    public void A_different_reason_cannot_overwrite_an_already_recorded_uncertain_outcome()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var key = NewKey();
+        guard.TryReserve(key);
+        guard.RecordOutcomeUnknown(key, "original_reason");
+
+        Assert.Throws<InvalidOperationException>(() => guard.RecordOutcomeUnknown(key, "attempted_overwrite_reason"));
+        Assert.Equal("original_reason", guard.GetOutcomeUnknownReason(key));
+    }
+
+    [Fact]
+    public void The_preserved_reason_belongs_to_the_exact_effect_key()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var keyA = NewKey();
+        var keyB = NewKey();
+        guard.TryReserve(keyA);
+        guard.TryReserve(keyB);
+
+        guard.RecordOutcomeUnknown(keyA, "reason_for_a");
+
+        Assert.Equal("reason_for_a", guard.GetOutcomeUnknownReason(keyA));
+        Assert.Null(guard.GetOutcomeUnknownReason(keyB));
+    }
+
+    [Fact]
+    public void Handler_and_outbox_uncertain_reasons_for_the_same_work_item_remain_separated()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var tenantId = new TenantId(Guid.NewGuid());
+        var workItemId = Guid.NewGuid();
+        const string operationId = "foundation.effect-work";
+        var handlerKey = DurableWorkEffectKey.ForHandlerEffect(tenantId, workItemId, operationId);
+        var outboxKey = DurableWorkEffectKey.ForOutboxEffect(tenantId, workItemId, operationId, Guid.NewGuid());
+        guard.TryReserve(handlerKey);
+        guard.TryReserve(outboxKey);
+
+        guard.RecordOutcomeUnknown(handlerKey, "handler_reason");
+        guard.RecordOutcomeUnknown(outboxKey, "outbox_reason");
+
+        Assert.Equal("handler_reason", guard.GetOutcomeUnknownReason(handlerKey));
+        Assert.Equal("outbox_reason", guard.GetOutcomeUnknownReason(outboxKey));
+    }
+
+    [Fact]
+    public void Different_outbox_event_ids_do_not_share_or_overwrite_reasons()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var tenantId = new TenantId(Guid.NewGuid());
+        var workItemId = Guid.NewGuid();
+        const string operationId = "foundation.effect-work";
+        var keyA = DurableWorkEffectKey.ForOutboxEffect(tenantId, workItemId, operationId, Guid.NewGuid());
+        var keyB = DurableWorkEffectKey.ForOutboxEffect(tenantId, workItemId, operationId, Guid.NewGuid());
+        guard.TryReserve(keyA);
+        guard.TryReserve(keyB);
+
+        guard.RecordOutcomeUnknown(keyA, "reason_a");
+        guard.RecordOutcomeUnknown(keyB, "reason_b");
+
+        Assert.Equal("reason_a", guard.GetOutcomeUnknownReason(keyA));
+        Assert.Equal("reason_b", guard.GetOutcomeUnknownReason(keyB));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("hascontrol")]
+    public void Unsafe_or_invalid_reason_fails_closed(string invalidReason)
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var key = NewKey();
+        guard.TryReserve(key);
+
+        Assert.Throws<ArgumentException>(() => guard.RecordOutcomeUnknown(key, invalidReason));
+        Assert.Equal(DurableWorkEffectState.Reserved, guard.GetState(key));
+    }
+
+    [Fact]
+    public void Unbounded_reason_fails_closed()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var key = NewKey();
+        guard.TryReserve(key);
+
+        Assert.Throws<ArgumentException>(() => guard.RecordOutcomeUnknown(key, new string('x', 129)));
+    }
+
+    [Fact]
+    public async Task Guard_preserved_reason_never_contains_the_raw_exception_message()
+    {
+        var guard = new InMemoryDurableWorkEffectGuard();
+        var executor = new DurableWorkEffectExecutor(guard);
+        var key = NewKey();
+        var secretMarker = $"guard-secret-{Guid.NewGuid():N}";
+
+        await executor.ExecuteHandlerEffectAsync(key, _ => throw new InvalidOperationException(secretMarker));
+
+        var preservedReason = guard.GetOutcomeUnknownReason(key);
+        Assert.NotNull(preservedReason);
+        Assert.DoesNotContain(secretMarker, preservedReason, StringComparison.Ordinal);
+    }
+
+    // ---------------------------------------------------------------------
+    // Uncertain-effect occurrence timestamp integrity (O92-02 focused
+    // correction)
+    // ---------------------------------------------------------------------
+
+    [Fact]
+    public async Task Handler_outcome_unknown_record_reports_its_exact_transition_timestamp()
+    {
+        var sharedExecutor = new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore(sharedExecutor);
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue, PayloadRegistry, sharedExecutor);
+        dispatcher.Register(new OutcomeUnknownHandler());
+        var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
+        var work = Work(context, "handler-outcome-unknown-timestamp");
+        await store.SubmitAsync(work);
+        var transitionTime = Clock.AddMinutes(3);
+
+        await worker.ProcessOneAsync(context, Guid.NewGuid(), transitionTime, TimeSpan.FromMinutes(5));
+
+        var uncertain = await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(context));
+        var record = Assert.Single(uncertain);
+        Assert.Equal(transitionTime, record.OutcomeUnknownAt);
+    }
+
+    [Fact]
+    public async Task Outbox_outcome_unknown_record_reports_its_exact_transition_timestamp()
+    {
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
+        var work = Work(context, "outbox-outcome-unknown-timestamp");
+        await store.SubmitAsync(work);
+        var transitionTime = Clock.AddMinutes(7);
+
+        await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), transitionTime, (_, _, _) =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("boundary_interrupted")));
+
+        var uncertain = await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(context));
+        var record = Assert.Single(uncertain);
+        Assert.Equal(transitionTime, record.OutcomeUnknownAt);
+    }
+
+    [Fact]
+    public async Task Outbox_outcome_unknown_record_never_reports_NextAttemptAt_as_its_occurrence_time()
+    {
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
+        var work = Work(context, "outbox-outcome-unknown-not-next-attempt");
+        await store.SubmitAsync(work);
+        // The message's original NextAttemptAt/OccurredAt is the submission
+        // time (Clock); the OutcomeUnknown transition happens much later and
+        // must never fall back to it.
+        var transitionTime = Clock.AddHours(2);
+
+        await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), transitionTime, (_, _, _) =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("boundary_interrupted")));
+
+        var uncertain = await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(context));
+        var record = Assert.Single(uncertain);
+        Assert.Equal(transitionTime, record.OutcomeUnknownAt);
+        Assert.NotEqual(Clock, record.OutcomeUnknownAt);
+    }
+
+    [Fact]
+    public async Task Corrupted_outbox_outcome_unknown_record_without_a_timestamp_fails_closed()
+    {
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore(new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard()));
+        var work = Work(context, "outbox-corrupted-missing-timestamp");
+        await store.SubmitAsync(work);
+
+        await store.DispatchOutboxAsync(context, new TestAuthorityRevalidator(), Clock, (_, _, _) =>
+            ValueTask.FromResult(DurableWorkProtectedEffectResult.OutcomeUnknown("boundary_interrupted")));
+        CorruptOutboxOutcomeUnknownAtForTest(store, work.Identity.WorkItemId);
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(context)));
+
+        Assert.DoesNotContain(work.Identity.WorkItemId.ToString(), thrown.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(context.TenantId.Value.ToString(), thrown.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(nameof(InMemoryDurableWorkStore), thrown.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Corrupted_handler_outcome_unknown_record_without_a_timestamp_fails_closed()
+    {
+        var sharedExecutor = new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
+        var context = CreateContext();
+        var store = new InMemoryDurableWorkStore(sharedExecutor);
+        var dispatcher = new DurableWorkDispatcher(OperationCatalogue, PayloadRegistry, sharedExecutor);
+        dispatcher.Register(new OutcomeUnknownHandler());
+        var worker = new TenantDurableWorkWorker(store, dispatcher, new TestAuthorityRevalidator());
+        var work = Work(context, "handler-corrupted-missing-timestamp");
+        await store.SubmitAsync(work);
+        await worker.ProcessOneAsync(context, Guid.NewGuid(), Clock, TimeSpan.FromMinutes(5));
+        CorruptHandlerOutcomeUnknownAtForTest(store, work.Identity.WorkItemId);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await store.ReadUncertainEffectsAsync(DurableWorkTestSupport.ApproveReconciliation(context)));
+    }
+
+    // ---------------------------------------------------------------------
     // Payload codec exception sanitization (M92-02)
     // ---------------------------------------------------------------------
 
@@ -1290,6 +1537,33 @@ public sealed class DurableWorkPayloadAndEffectTests
         {
             bytes[0] ^= 0xFF;
         }
+    }
+
+    /// <summary>
+    /// Test-only corruption seam for O92-02: production code exposes no
+    /// method to clear a stored OutcomeUnknownAt, so the test project reaches
+    /// the private outbox dictionary through bounded reflection instead, to
+    /// prove the read port fails closed on the invalid internal state.
+    /// </summary>
+    private static void CorruptOutboxOutcomeUnknownAtForTest(InMemoryDurableWorkStore store, Guid workItemId)
+    {
+        var field = typeof(InMemoryDurableWorkStore).GetField("outbox", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("The private outbox field was not found.");
+        var outbox = (Dictionary<Guid, TenantOutboxMessage>)field.GetValue(store)!;
+        var message = outbox.Values.Single(item => item.WorkItemId == workItemId);
+        message.OutcomeUnknownAt = null;
+    }
+
+    /// <summary>Same test-only corruption seam as above, for a handler work item.</summary>
+    private static void CorruptHandlerOutcomeUnknownAtForTest(InMemoryDurableWorkStore store, Guid workItemId)
+    {
+        var field = typeof(InMemoryDurableWorkStore).GetField("workItems", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("The private workItems field was not found.");
+        var workItems = (Dictionary<Guid, DurableWorkItem>)field.GetValue(store)!;
+        var item = workItems[workItemId];
+        var setter = typeof(DurableWorkItem).GetProperty(nameof(DurableWorkItem.OutcomeUnknownAt))?.GetSetMethod(nonPublic: true)
+            ?? throw new InvalidOperationException("The OutcomeUnknownAt setter was not found.");
+        setter.Invoke(item, [null]);
     }
 
     private static IDurableWorkEffectExecutor NewExecutor() =>
@@ -1508,6 +1782,8 @@ public sealed class DurableWorkPayloadAndEffectTests
             inner.RecordOutcomeUnknown(key, safeReason);
 
         public void Release(DurableWorkEffectKey key) => inner.Release(key);
+
+        public string? GetOutcomeUnknownReason(DurableWorkEffectKey key) => inner.GetOutcomeUnknownReason(key);
     }
 
     private sealed class TestAuthorityRevalidator : IDurableWorkAuthorityRevalidator

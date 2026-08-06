@@ -147,6 +147,14 @@ public interface IDurableWorkEffectGuard
     void RecordOutcomeUnknown(DurableWorkEffectKey key, string safeReason);
 
     void Release(DurableWorkEffectKey key);
+
+    /// <summary>
+    /// Returns the exact safe reason preserved when <paramref name="key"/> was
+    /// recorded as <see cref="DurableWorkEffectState.OutcomeUnknown"/>, or null
+    /// when the key does not currently hold that state. Read-only: it exposes
+    /// no mutation surface (O92-01).
+    /// </summary>
+    string? GetOutcomeUnknownReason(DurableWorkEffectKey key);
 }
 
 /// <summary>
@@ -189,7 +197,7 @@ public sealed class InMemoryDurableWorkEffectGuard : IDurableWorkEffectGuard
                 };
             }
 
-            records[key] = new EffectRecord(DurableWorkEffectState.Reserved, null);
+            records[key] = new EffectRecord(DurableWorkEffectState.Reserved, null, null);
             return DurableWorkEffectReservation.ReservedNow();
         }
     }
@@ -205,13 +213,14 @@ public sealed class InMemoryDurableWorkEffectGuard : IDurableWorkEffectGuard
                 throw new InvalidOperationException("An effect can be completed only from a reserved state.");
             }
 
-            records[key] = new EffectRecord(DurableWorkEffectState.Completed, safeResult);
+            records[key] = new EffectRecord(DurableWorkEffectState.Completed, safeResult, null);
         }
     }
 
     public void RecordOutcomeUnknown(DurableWorkEffectKey key, string safeReason)
     {
         ArgumentNullException.ThrowIfNull(key);
+        var sanitizedReason = SanitizeSafeReason(safeReason);
         lock (syncRoot)
         {
             if (!records.TryGetValue(key, out var existing) || existing.State != DurableWorkEffectState.Reserved)
@@ -219,7 +228,11 @@ public sealed class InMemoryDurableWorkEffectGuard : IDurableWorkEffectGuard
                 throw new InvalidOperationException("Outcome-unknown can be recorded only from a reserved state.");
             }
 
-            records[key] = new EffectRecord(DurableWorkEffectState.OutcomeUnknown, null);
+            // The reserved -> OutcomeUnknown transition is one-way: once this
+            // key holds an OutcomeUnknown record its state is no longer
+            // Reserved, so a later call always fails the guard above instead
+            // of replacing the original preserved reason.
+            records[key] = new EffectRecord(DurableWorkEffectState.OutcomeUnknown, null, sanitizedReason);
         }
     }
 
@@ -235,7 +248,28 @@ public sealed class InMemoryDurableWorkEffectGuard : IDurableWorkEffectGuard
         }
     }
 
-    private sealed record EffectRecord(DurableWorkEffectState State, DurableWorkHandlerResult? Result);
+    public string? GetOutcomeUnknownReason(DurableWorkEffectKey key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        lock (syncRoot)
+        {
+            return records.TryGetValue(key, out var existing) && existing.State == DurableWorkEffectState.OutcomeUnknown
+                ? existing.SafeReason
+                : null;
+        }
+    }
+
+    private static string SanitizeSafeReason(string safeReason)
+    {
+        if (string.IsNullOrWhiteSpace(safeReason) || safeReason.Trim().Length > 128 || safeReason.Any(char.IsControl))
+        {
+            throw new ArgumentException("Outcome-unknown safe reason must be safe and bounded.", nameof(safeReason));
+        }
+
+        return safeReason.Trim();
+    }
+
+    private sealed record EffectRecord(DurableWorkEffectState State, DurableWorkHandlerResult? Result, string? SafeReason);
 }
 
 /// <summary>Explicit outcome of one protected-effect attempt made after the reservation boundary.</summary>

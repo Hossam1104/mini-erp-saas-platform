@@ -346,7 +346,7 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
                     DurableWorkEffectKey.ForHandlerEffect(item.TenantId, item.Identity.WorkItemId, item.Identity.OperationId),
                     item.Scope,
                     item.Identity.CorrelationId,
-                    item.UpdatedAt,
+                    RequireOutcomeUnknownAt(item.OutcomeUnknownAt),
                     item.SafeFailureReason ?? "outcome_unknown",
                     item.ConcurrencyVersion));
 
@@ -358,7 +358,7 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
                     DurableWorkEffectKey.ForOutboxEffect(message.TenantId, message.WorkItemId, message.EventType, message.EventId),
                     message.Scope,
                     message.CorrelationId,
-                    message.OutcomeUnknownAt ?? message.NextAttemptAt,
+                    RequireOutcomeUnknownAt(message.OutcomeUnknownAt),
                     message.SafeFailureReason ?? "outcome_unknown",
                     message.AttemptCount));
 
@@ -438,6 +438,17 @@ public sealed class InMemoryDurableWorkStore : IDurableWorkStore
 
     private static TimeSpan BoundedBackoff(int attempt) =>
         TimeSpan.FromSeconds(Math.Min(60, Math.Max(1, attempt * attempt)));
+
+    /// <summary>
+    /// Fails closed on an internal invariant violation: every record in the
+    /// explicit OutcomeUnknown lifecycle must carry its own occurrence
+    /// timestamp. NextAttemptAt, creation time, update time, lease time and
+    /// current time are never valid substitutes (O92-02). The message carries
+    /// no record identifier or other internal state.
+    /// </summary>
+    private static DateTimeOffset RequireOutcomeUnknownAt(DateTimeOffset? outcomeUnknownAt) =>
+        outcomeUnknownAt ?? throw new InvalidOperationException(
+            "An OutcomeUnknown record is missing its required occurrence timestamp.");
 }
 
 /// <summary>
