@@ -155,15 +155,6 @@ public sealed class DurableWorkPayloadEnvelope
         return copy;
     }
 
-    /// <summary>Test-only fault injection simulating a corrupted stored envelope.</summary>
-    internal void TamperForValidation()
-    {
-        if (bytes.Length > 0)
-        {
-            bytes[0] ^= 0xFF;
-        }
-    }
-
     private static string ComputeChecksum(byte[] value) => Convert.ToHexString(SHA256.HashData(value));
 }
 
@@ -229,7 +220,27 @@ public sealed class DurableWorkPayloadRegistry : IDurableWorkPayloadRegistry
             }
         }
 
-        var bytes = registered.Encode(payload);
+        byte[] bytes;
+        try
+        {
+            bytes = registered.Encode(payload);
+        }
+        catch (DurableWorkPayloadException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // A custom codec's exception message, type name and any payload
+            // value it might carry are never safe to surface; only the
+            // bounded, provider-neutral envelope exception is exposed.
+            throw new DurableWorkPayloadException("The payload could not be encoded safely.");
+        }
+
         return DurableWorkPayloadEnvelope.Capture(typeId, bytes);
     }
 
@@ -252,7 +263,25 @@ public sealed class DurableWorkPayloadRegistry : IDurableWorkPayloadRegistry
         }
 
         var bytes = envelope.GetBytesCopy();
-        return (TPayload)registered.Decode(bytes);
+        try
+        {
+            return (TPayload)registered.Decode(bytes);
+        }
+        catch (DurableWorkPayloadException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // A custom codec's exception message, type name and any payload
+            // value it might carry are never safe to surface; only the
+            // bounded, provider-neutral envelope exception is exposed.
+            throw new DurableWorkPayloadException("The payload could not be decoded safely.");
+        }
     }
 
     private sealed record RegisteredCodec(
