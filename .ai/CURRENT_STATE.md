@@ -92,3 +92,26 @@
   production deployment.
 - MESP-48 and MESP-50 remain explicit production gates; no core ERP BRD is
   implemented and MESP-91 is the only active implementation item.
+
+## MESP-91 focused correction overlay
+
+- The focused correction is implemented in commit
+  `7d3524d42e9ef6501c374dc22bb5cef7482cbdb0` on
+  `fix/MESP-91-verified-work-scope-authority`. It adds the authoritative
+  durable-operation descriptor catalogue, exact permission/path/scope-policy
+  binding, server-issued verified execution authorization, exact-scope worker
+  and outbox dispatch, and distinct denial/provider-unavailable/cancellation
+  outcomes with bounded recovery.
+- The focused durable-work and authority regression set passes **71/71** with
+  zero skips. The complete Foundation validation on this overlay passes
+  **329/329** backend tests, **11/11** SQL Server LocalDB probes, **27/27**
+  Angular tests, **4/4** Playwright journeys, Release build with 0 warnings
+  and 0 errors, and production dependency audit with 0 vulnerabilities.
+- SQL evidence used the disposable `MSSQLLocalDB` instance with Windows
+  integrated authentication; the LocalDB/model collation observed during the
+  run was `SQL_Latin1_General_CP1_CI_AS`. No `MiniErpFoundation_*` test
+  database remained after teardown.
+- PR #20 remains open and unmerged for focused ChatGPT review. MESP-91 remains
+  **In Progress**; MESP-92, MESP-93 and MESP-94 remain **To Do**; MESP-31,
+  Master Data implementation, Sprint work, production providers, migrations,
+  MESP-48 and MESP-50 work remain outside this correction.

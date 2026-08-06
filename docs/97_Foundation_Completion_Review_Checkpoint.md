@@ -222,3 +222,32 @@ Foundation baseline. MESP-91 Correction Package 1 is active on its branch with
 an open, unmerged PR pending focused ChatGPT security review. MESP-48 and
 MESP-50 remain production gates; no core ERP BRD, MESP-31, package 2/3 or
 production implementation was started.
+
+## MESP-91 correction overlay disposition
+
+The historical checkpoint above remains the Foundation baseline. Its MESP-91
+overlay is corrected by commit
+`7d3524d42e9ef6501c374dc22bb5cef7482cbdb0` on the dedicated branch. The
+correction closes the focused authorization findings by:
+
+- binding durable operations to one authoritative descriptor containing the
+  exact permission code, authorization paths and scope policy;
+- returning a server-issued exact-scope execution authorization from live
+  revalidation and requiring both worker and outbox effects to consume it;
+- separating true `AuthorizationDenied` from recoverable
+  `ProviderUnavailable` and `Cancelled` outcomes, with bounded retry and safe
+  lease/outbox recovery; and
+- removing the unrestricted shipping `ForServerContext` scope factory while
+  retaining a test-only fixture issuer through the architecture-test assembly.
+
+The correction validation record is **329/329** complete backend tests,
+**11/11** SQL Server LocalDB probes, **27/27** Angular tests, **4/4** Playwright
+journeys, Release build 0 warnings/0 errors, and production dependency audit 0
+vulnerabilities. The disposable LocalDB/model collation was
+`SQL_Latin1_General_CP1_CI_AS`, and teardown left no `MiniErpFoundation_*`
+database.
+
+This overlay does not close the merge hold: PR #20 remains open, non-draft and
+unmerged; MESP-91 remains **In Progress**; MESP-92, MESP-93, MESP-94 and
+MESP-31 remain **To Do**. No Sprint, Master Data implementation, production
+provider, migration, MESP-48 or MESP-50 work was started.

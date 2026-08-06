@@ -7,13 +7,13 @@
 | Owner | Hossam |
 | Repository | `Hossam1104/mini-erp-saas-platform` |
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
-| Last updated | 5 August 2026 |
+| Last updated | 6 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Current activity | `MESP-91 Correction Package 1 — verified work scope and worker authority revalidation` |
 | Current implementation item | `MESP-91 — In Progress; sole active implementation item` |
 | Current branch | `fix/MESP-91-verified-work-scope-authority` (baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `MESP-91 non-draft PR must remain open and unmerged for focused ChatGPT security review; MESP-31/MESP-92/MESP-93 remain To Do` |
+| Current review checkpoint | `MESP-91 corrected non-draft PR must remain open and unmerged for focused ChatGPT security review; MESP-31/MESP-92/MESP-93/MESP-94 remain To Do` |
 
 ---
 
@@ -1304,8 +1304,42 @@ Use this section to record major milestones.
 
 > Complete and publish the MESP-91 Correction Package 1 validation record.
 > Keep its non-draft PR open and unmerged for focused ChatGPT security review;
-> keep MESP-91 In Progress, MESP-31 through MESP-40 and MESP-92/MESP-93 To Do,
+> keep MESP-91 In Progress, MESP-31 through MESP-40 and MESP-92/MESP-93/MESP-94 To Do,
 > Master Data and Catalog, Retail POS and future ERP transaction work out of
 > scope. Preserve `MESP-48` and `MESP-50` as explicit production gates, keep no
 > Sprint active, and do not start another Jira item until review disposition is
 > recorded.
+
+## MESP-91 Correction Package 1 — focused ChatGPT correction evidence
+
+The MESP-91 correction overlay remains the sole active implementation item on
+`fix/MESP-91-verified-work-scope-authority`, based on the expected merged-main
+baseline `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. Source and regression
+corrections are recorded in commit
+`7d3524d42e9ef6501c374dc22bb5cef7482cbdb0`.
+
+The durable-work contract now selects an operation from an authoritative
+descriptor catalogue. The descriptor owns the exact permission code, allowed
+authorization paths and scope policy; the same immutable descriptor is used by
+submission identity, stored initiator facts, handler registration, live
+Identity revalidation and worker/verified outbox dispatch. Unknown or
+mismatched operation descriptors fail closed. Approved revalidation returns a
+server-issued exact-scope execution authorization; the worker and outbox effect
+receive that verified context rather than the broad caller context.
+
+True authority denials remain terminal `AuthorizationDenied` outcomes. Provider
+exceptions/timeouts are `ProviderUnavailable` bounded retries, and cancellation
+is a distinct recoverable `Cancelled` outcome. No handler or protected outbox
+effect runs after a failed authority check.
+
+Validation evidence for this correction is **329/329** complete backend tests,
+**11/11** SQL Server LocalDB probes, **27/27** Angular tests, **4/4** Playwright
+journeys, Release build 0 warnings/0 errors, and production dependency audit 0
+vulnerabilities. The disposable LocalDB/model collation observed was
+`SQL_Latin1_General_CP1_CI_AS`; no disposable Foundation database remained
+after cleanup.
+
+PR #20 remains open, non-draft and unmerged. MESP-91 remains **In Progress**;
+MESP-92, MESP-93, MESP-94 and MESP-31 remain **To Do**. No Sprint, Master Data
+implementation, production provider, migration, Retail POS, Wafra-core,
+MESP-48 or MESP-50 work was started.

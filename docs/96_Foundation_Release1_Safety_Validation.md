@@ -178,3 +178,38 @@ From the repository root on the supported developer machine:
 The command fails closed when LocalDB is missing, the connection is unset or
 unsafe, any assertion fails, or cleanup cannot complete. Docker/Testcontainers
 CI execution remains deferred by ADR-018.
+
+## MESP-91 focused correction validation overlay
+
+The MESP-91 correction was validated on commit
+`7d3524d42e9ef6501c374dc22bb5cef7482cbdb0` from the dedicated correction
+branch, against merged-main baseline
+`4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d`. This is an unmerged review
+overlay; it does not change the maturity or production-provider claims above.
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused durable-work/authority regression | 71 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~DurableWork` |
+| Complete backend suite | 329 passed, 0 failed, 0 skipped | `powershell -ExecutionPolicy Bypass -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped | `npm test -- --watch=false --no-progress` |
+| Angular production build | Passed | `npm run build` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Safety catalogue | 53 PASS, 21 NOT APPLICABLE, 1 DEFERRED, 0 failed | Existing 75-assertion catalogue; no scope claim changed |
+| Diff check | Passed | `git diff --check` |
+
+The LocalDB validation used the approved `MSSQLLocalDB` instance and Windows
+integrated authentication only. The actual LocalDB/model collation observed
+for the disposable run was `SQL_Latin1_General_CP1_CI_AS`; no case-sensitivity
+policy was inferred from that value. The test database name used the
+`MiniErpFoundation_` prefix and teardown was verified with a server query:
+zero `MiniErpFoundation_*` databases remained. No production or shared
+database was accessed.
+
+The `npm ci` development install reported three moderate development-tree
+advisories and four blocked optional install scripts; these do not affect the
+production audit result and were not force-fixed as part of this focused
+correction. No migration, provider selection, production worker, notification
+provider, object-storage provider or purge behavior was introduced.
