@@ -1,26 +1,43 @@
 # Current State
 
-## Start here — verified position on 7 August 2026 (MESP-93 Done; PR #24 merged; MESP-94 next eligible)
+## Start here — verified position on 7 August 2026 (MESP-94 In Progress; PR #25 merged)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
-| Current branch | `main` |
-| Current `main` head | `005c796629341ab9becfbc6d1abe2ae34b6a7332` (PR #24 merge commit) |
-| MESP-93 | **Done** — PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT security re-review verdict **APPROVED FOR MERGE** |
+| Current branch | `fix/MESP-94-foundation-validation-evidence` |
+| Branch base / starting `main` head | `9f333c9734c767673e43a30d6b57c05793e1fb69` (PR #25 merge commit) |
+| PR #25 | **Merged** to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` — MESP-93 post-merge Markdown reconciliation |
+| MESP-93 | Done — PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT security re-review verdict **APPROVED FOR MERGE** |
 | PR #23 | Closed as superseded (not merged) — its docs-only MESP-92 reconciliation content was already carried onto `main` through PR #24; see the PR #23 closing comment for file-by-file evidence |
 | MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
 | MESP-91 | Done |
-| Active Jira item | **MESP-94** — next eligible Foundation correction, To Do (not yet started); uses normal bounded review, not the MESP-92/MESP-93 manual security merge hold |
-| MESP-31 (Master Data BRD) | To Do — not started; blocked until Foundation entry conditions (MESP-93, MESP-94) are complete |
+| Active Jira item | **MESP-94 — In Progress** on branch `fix/MESP-94-foundation-validation-evidence`; uses normal bounded review, not the MESP-92/MESP-93 manual security merge hold |
+| MESP-31 (Master Data BRD) | To Do — not started; no Master Data implementation has begun |
 | MESP-48 / MESP-50 | To Do — open production gates, preserved |
 | Sprint | None active |
 | Parallel implementation | None |
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
 
-**MESP-93 closure (7 August 2026):** PR #24 merged to `main` at
+**MESP-94 started (7 August 2026):** transitioned Jira MESP-94 To Do ->
+In Progress and created branch `fix/MESP-94-foundation-validation-evidence`
+from `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` (PR #25 merge —
+MESP-93 post-merge Markdown reconciliation, closing L-3's PR #25 provenance
+gap since that merge SHA was not yet known when PR #25 itself was written).
+MESP-94 makes the Foundation validation tooling, SQL evidence, safety-row
+classifications (rows 40, 45, 66) and checkpoint documentation say exactly
+what the repository proves; it closes H-2, H-3, M-3, M-6, M-10, M-12, M-13,
+M-14, M-15, L-2, L-3 and L-5. See
+`docs/96_Foundation_Release1_Safety_Validation.md`'s "MESP-94 correction"
+section for the exact resolution of each finding and the source-implementation
+SHA/validated-repository-SHA evidence model this correction introduces.
+MESP-94 is **not** marked Done yet; it remains In Progress pending PR review,
+merge and post-merge closure. MESP-31 remains To Do; no Master Data
+implementation has started.
+
+**MESP-93 closure (7 August 2026, historical — superseded by "Start here" above):** PR #24 merged to `main` at
 `005c796629341ab9becfbc6d1abe2ae34b6a7332` after a focused ChatGPT security
 re-review verdict of APPROVED FOR MERGE at reviewed head `83b0c0e`. Post-merge
 validation on `main`, rerun (not copied from pre-merge): Release build **0

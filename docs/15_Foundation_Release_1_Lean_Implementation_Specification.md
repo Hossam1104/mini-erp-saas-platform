@@ -18,8 +18,8 @@ implementation, a Sprint start, or a production release.
 > *delivery-status* statements are frozen at the 3 August 2026 approval date and
 > are no longer current: MESP-57 through MESP-64, MESP-87, MESP-88, MESP-89,
 > MESP-90, MESP-91, MESP-92 and MESP-93 have since been implemented and merged
-> under separately authorized implementation items, and MESP-94 is now the
-> next eligible correction, not yet started.
+> under separately authorized implementation items, and MESP-94 is now
+> **In Progress** on branch `fix/MESP-94-foundation-validation-evidence`.
 > Wherever this document says an Enabler is "To Do", that
 > an Enabler is "not started", or names a "next action", read
 > [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and

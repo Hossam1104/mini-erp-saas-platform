@@ -3,9 +3,9 @@
 | Field | Decision |
 |---|---|
 | Status | Approved foundation test strategy; production equivalence remains deferred |
-| Date | 4 August 2026 |
+| Date | 4 August 2026; reconciled 7 August 2026 (MESP-94 validation-tooling correction) |
 | Owners | Solution Architecture / Test Engineering |
-| Related Jira | MESP-64, MESP-48, MESP-50 |
+| Related Jira | MESP-64, MESP-48, MESP-50, MESP-94 |
 | Supersedes | None |
 
 ## Context
@@ -32,11 +32,21 @@ ever connecting to a production or shared database.
    unique-index composition, `rowversion`, collation/Unicode round-trip and
    transaction behavior) from provider-neutral contract evidence (Tenant
    context, ownership, authorization path and durable-work contracts).
-4. The repository command `scripts/validate-foundation.ps1` starts LocalDB,
-   supplies the disposable connection string to the test process, runs the
-   targeted SQL Server suite and the full backend regression, and clears the
-   environment variable in `finally`. The fixture owns database cleanup even
-   when a test fails.
+4. The repository command `scripts/validate-foundation.ps1` is the single
+   canonical Foundation validation entry point (MESP-94 M-14). It discovers
+   `SqlLocalDB.exe`/`sqlcmd.exe` dynamically — PATH first, then a
+   version-agnostic scan of installed SQL Server Tools directories under
+   Program Files; no SQL Server release/version is ever hard-coded (MESP-94
+   M-15). It starts LocalDB, removes any stale disposable database left by an
+   interrupted prior run, supplies a fresh disposable connection string to the
+   test process, runs backend restore/build/the full backend regression
+   (including the targeted SQL Server suite and the safety-catalogue
+   validator), the Angular unit tests and production build, the Playwright
+   Foundation journeys, `npm audit`, and `git diff --check`. The fixture owns
+   per-run database cleanup even when a test fails; the script additionally
+   proves, in a `finally` block that always runs, that zero
+   `MiniErpFoundation_*` databases remain on the instance (MESP-94 M-6), and
+   clears the environment variable. Every step fails the command closed.
 5. Docker/Testcontainers remains a CI-compatible option to be introduced only
    through a separately approved change. This ADR does not claim that LocalDB
    is production-equivalent, nor does it select a production SQL topology.

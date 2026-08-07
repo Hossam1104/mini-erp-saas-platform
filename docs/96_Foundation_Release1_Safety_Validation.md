@@ -73,8 +73,10 @@ authorized by this correction.
 - The SQL Server unique index permits the same BusinessKey in different Tenants and rejects a duplicate within one Tenant without exposing provider detail.
 - The `Version` property is a SQL Server `timestamp`/`rowversion`; stale update and stale delete both return the safe persistence conflict.
 - The required unique `(TenantId, BusinessKey)` index was inspected from SQL Server catalog metadata.
-- Database collation was recorded without selecting an unapproved case-sensitivity policy, and an Arabic Unicode identifier round-tripped successfully.
+- The disposable database's collation is queried live (`SqlServerSafetyTests.Sql_server_collation_is_recorded_and_unicode_identifier_round_trips`, `SELECT CAST(DATABASEPROPERTYEX(DB_NAME(), 'Collation') AS nvarchar(128));`), not assumed; the value observed on this validation run is recorded in the "Complete Foundation validation evidence" section below. An Arabic Unicode `BusinessKey` round-trips through storage and a plain equality read of the same session.
+  **Proven:** the LocalDB database is created and queried under this recorded collation, and an Arabic-script value can be stored and read back unchanged. **Not proven by this evidence (MESP-94 M-3 correction):** Arabic linguistic sort order, `LIKE`/full-text search semantics, accent- or diacritic-aware matching, or any Saudi-production database collation decision — no test exercises `ORDER BY`, `LIKE`, or a collation-aware comparison against Arabic data, so no claim of Arabic search or sort correctness is made by this row.
 - Test-only SQL probes proved transaction rollback removes work and outbox rows together, `(TenantId, EventId)` idempotency is Tenant-scoped, and a lease claim has one optimistic owner.
+- The harness's unsafe-configuration rejection is proven against the real validator, not restated as a self-check: `SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString` (the exact method the fixture calls at startup) is unit-tested directly with a null/empty connection string, a non-LocalDB `Server`, an `InitialCatalog` outside the disposable prefix, the bare prefix with no suffix, and an `InitialCatalog` with characters outside the allowed pattern — each is proven to throw `InvalidOperationException` — alongside a positive control proving a safe configuration passes (MESP-94 M-13 correction; the prior test only compared the harness's own already-accepted connection string against two constants and would still pass if the real validator were deleted).
 
 ## Safety assertion matrix
 
@@ -124,12 +126,12 @@ DEFERRED row is reserved for the MESP-48/MESP-50 production decisions.
 | 37 | Inactive or closed units reject new work | No later ERP unit/historical-reference workflow is implemented in this foundation checkpoint | NOT APPLICABLE | Approved Tenant lifecycle implementation gate; add executable evidence before that domain is authorized |
 | 38 | Authorized historical reference remains readable | No later ERP unit/historical-reference workflow is implemented in this foundation checkpoint | NOT APPLICABLE | Approved Tenant lifecycle implementation gate; add executable evidence before that domain is authorized |
 | 39 | Used parent ownership cannot be rewritten | No later ERP unit/historical-reference workflow is implemented in this foundation checkpoint | NOT APPLICABLE | Approved Tenant lifecycle implementation gate; add executable evidence before that domain is authorized |
-| 40 | Same-Tenant composite relationships enforce Branch -> Company, Warehouse -> Branch and Department -> Company | `TenantPersistenceTests` and `SqlServerSafetyTests` representative same-Tenant relationship guard | PASS | Foundation evidence in this checkpoint |
+| 40 | Same-Tenant composite relationships enforce Branch -> Company, Warehouse -> Branch and Department -> Company | `TenantPersistenceTests.Same_tenant_relationship_is_accepted`/`Cross_tenant_relationship_is_rejected` and `SqlServerSafetyTests.Same_tenant_composite_relationship_is_allowed_on_sql_server`/`Same_tenant_relationship_is_allowed_and_cross_tenant_relationship_is_denied` cover all three named kinds (`CompanyBranch`, `BranchWarehouse`, `CompanyDepartment`) in both the accepted same-Tenant and denied cross-Tenant direction, in-memory and on SQL Server (closes MESP-94 H-3; the prior evidence exercised only one representative kind for acceptance) | PASS | Foundation evidence in this checkpoint; Branch/Warehouse/Department are the generic `TenantRelationshipKind` guard applied to the shared `TenantOwnedRecord` test fixture, not yet real Organization-domain entities — a later Organization/Company-Structure implementation must add its own equivalent relationship evidence for its actual entities |
 | 41 | Tenant Membership, Role Assignment and Support Case/Grant cannot reference another Tenant | `TenantPersistenceTests`, `IdentityAuthorizationTests` | PASS | Foundation evidence in this checkpoint |
 | 42 | Missing TenantId is rejected by the write pipeline | `TenantPersistenceTests`, `SqlServerSafetyTests` | PASS | Foundation evidence in this checkpoint |
 | 43 | Mismatched TenantId versus trusted context is rejected | `TenantPersistenceTests`, `SqlServerSafetyTests` | PASS | Foundation evidence in this checkpoint |
 | 44 | Restricted IgnoreQueryFilters/raw SQL/bulk/maintenance paths are unavailable to ordinary Tenant calls | `ModuleBoundaryTests`, `TenantPersistenceTests` | PASS | Foundation evidence in this checkpoint |
-| 45 | Background/worker/outbox work revalidates exact initiating Tenant ownership, verified organization ownership and authorized scope, plus live User/session/Membership/SupportGrant/SupportCase/Permission lifecycle | `DurableWorkAuthorityRevalidationTests`, `DurableWorkTests` | PASS | MESP-91 correction evidence; SQL probes remain persistence/lease/transaction/idempotency evidence only |
+| 45 | Background/worker/outbox work revalidates exact initiating Tenant ownership, verified organization ownership and authorized scope, plus live User/session/Membership/SupportGrant/SupportCase/Permission lifecycle | `DurableWorkAuthorityRevalidationTests` (inactive user, suspended Membership, revoked/expired session, missing exact Permission, reduced current scope, expired/revoked SupportGrant, inactive SupportCase, foreign/sibling organization ownership) and `DurableWorkTests` | PASS | Foundation evidence in this checkpoint only, corrected by MESP-94 H-2: `DurableWorkLocalRuntime`, `InMemoryDurableWorkStore`, `DurableWorkDispatcher` and `TenantDurableWorkWorker` are **not referenced by `MiniErp.Api`** — this is an unwired local/in-memory Foundation seam proven by architecture and unit tests, not a production-composed capability reachable from the running host. SQL probes remain persistence/lease/transaction/idempotency evidence only |
 | 46 | Denied cross-Tenant audit/telemetry records do not leak target data | `AuditObservabilityTests`, `DurableWorkTests`, `RestFoundationTests` | PASS | Foundation evidence in this checkpoint |
 | 47 | Tenant-aware alternate/unique keys and architecture dependency direction remain valid | `ModuleBoundaryTests`, `SqlServerSafetyTests` schema/index evidence | PASS | Foundation evidence in this checkpoint |
 | 48 | MESP-48/MESP-50 gates cannot be bypassed and no production purge is authorized | Scope gate recorded; no production threshold or purge test is authorized | DEFERRED | MESP-48 performance/volume and MESP-50 retention, residency, privacy, legal-hold, purge and provider gates |
@@ -150,7 +152,7 @@ DEFERRED row is reserved for the MESP-48/MESP-50 production decisions.
 | 63 | Every command/query maps to exactly one public or internal operation and every operation maps back to exactly one command/query; no catalogue row is orphaned | `RestFoundationTests` operation/security-profile catalogue checks | PASS | Foundation evidence in this checkpoint |
 | 64 | Every API operation has one named homogeneous security profile with explicit owner, actor, path, authentication, MFA/fresh-auth, context, Permission, scope, lifecycle, concurrency, idempotency, audit, safe errors, and response | `RestFoundationTests` operation/security-profile catalogue checks | PASS | Foundation evidence in this checkpoint |
 | 65 | Role, assignment, grant, support-case, and support-grant TenantIds are integrity-consistent; cross-Tenant mutation or lookup is denied | `IdentityAuthorizationTests`, `TenantPersistenceTests`, `SqlServerSafetyTests` | PASS | Foundation evidence in this checkpoint |
-| 66 | Support-grant approval/rejection evidence is distinct from revocation evidence, and rejection does not masquerade as revocation of active access | Support rejection evidence and Tenant lifecycle state machine remain later implementation scope | NOT APPLICABLE | Approved Tenant lifecycle/export implementation gate; MESP-50 for purge concepts |
+| 66 | Support-grant approval/rejection evidence is distinct from revocation evidence, and rejection does not masquerade as revocation of active access | Revocation evidence is real and already proven (`IdentityAuthorizationTests.RevokedSupportGrantDeniesImmediately`/`RepeatedSupportGrantRevocationRemainsDenied`, `DurableWorkAuthorityRevalidationTests.Revoked_support_grant_prevents_dispatch`, `HostSecurityTests`, `PrivateFileAndNotificationSecurityTests.Revoked_support_grant_caller_is_denied`); only `AddSupportGrant` (approval-time creation) and `RevokeSupportGrant` exist in the codebase — there is no distinct SupportGrant **rejection** concept at all, so this row's comparative claim (rejection evidence distinct from, and not masquerading as, revocation) has nothing to evaluate against (corrected by MESP-94 M-10; the prior text implied no related evidence existed) | NOT APPLICABLE | Approved Tenant lifecycle/export implementation gate — a SupportGrant rejection concept and its distinct evidence remain later implementation scope; the existing revocation evidence above is unaffected by this gate; MESP-50 for purge concepts |
 | 67 | Each lifecycle command has an approved predecessor/guard or an explicit rejection outcome; no transition creates a dead-end, and deferred `Purge Approved`/`Purged` concepts remain non-executable in Release 1 | Support rejection evidence and Tenant lifecycle state machine remain later implementation scope | NOT APPLICABLE | Approved Tenant lifecycle/export implementation gate; MESP-50 for purge concepts |
 | 68 | Wafra-specific behavior remains validation-only and Retail POS remains outside the foundation specification and its test scope | `docs/15_Foundation_Release_1_Lean_Implementation_Specification.md`, ADR-018 scope control | PASS | Foundation evidence in this checkpoint |
 | 69 | A Tenant Administrator can suspend a Membership in Tenant A while an independently authorized User remains eligible for Tenant B | `IdentityAuthorizationTests`, `HostSecurityTests` | PASS | Foundation evidence in this checkpoint |
@@ -184,9 +186,26 @@ From the repository root on the supported developer machine:
 .\scripts\validate-foundation.ps1
 ```
 
-The command fails closed when LocalDB is missing, the connection is unset or
-unsafe, any assertion fails, or cleanup cannot complete. Docker/Testcontainers
-CI execution remains deferred by ADR-018.
+This is the single canonical Foundation validation command (MESP-94 M-14):
+backend restore, backend Release build, the full backend regression (which
+includes the SQL Server LocalDB probes and the safety-catalogue structural
+validator, since both are part of the `MiniErp.ArchitectureTests` project run
+by the solution-wide `dotnet test`), Angular unit tests, the Angular
+production build, the Playwright Foundation journeys, `npm audit --omit=dev
+--audit-level=high`, and `git diff --check`. Every step fails the whole
+command closed on a non-zero exit code — none are swallowed. `SqlLocalDB.exe`
+and `sqlcmd.exe` are discovered dynamically (PATH first, then a version-
+agnostic scan of every installed SQL Server Tools directory under Program
+Files); no specific SQL Server release is hard-coded (MESP-94 M-15). The
+command removes any stale `MiniErpFoundation_*` database from a prior
+interrupted run before creating its own disposable database, and proves zero
+`MiniErpFoundation_*` databases remain on the LocalDB instance in a `finally`
+block that always runs, even when an earlier step fails (MESP-94 M-6); it only
+ever targets a database matching that exact disposable naming convention. The
+command fails closed when LocalDB or `sqlcmd` cannot be discovered, the
+connection is unset or unsafe, any step fails, or the final orphan-database
+proof finds a remaining database. Docker/Testcontainers CI execution remains
+deferred by ADR-018.
 
 ## MESP-91 focused correction validation overlay — merged and Done
 
@@ -612,4 +631,135 @@ on `main` (not copied from the pre-merge totals above):
 No `MiniErpFoundation_*` database remained after teardown (verified directly
 via `sys.databases` on the `MSSQLLocalDB` instance, in addition to the
 script's own teardown). MESP-93 is marked **Done** in Jira. MESP-94 is the
-next eligible Foundation correction, not yet started.
+next eligible Foundation correction, not yet started. **Superseded — see the
+MESP-94 correction overlay below for the current safety-catalogue and
+validation-evidence state.**
+
+## MESP-94 correction — safety-catalogue and validation-evidence accuracy (In Progress)
+
+MESP-94 makes this checkpoint's validation tooling, SQL evidence, safety-row
+classifications and provenance say exactly what the repository proves, on
+branch `fix/MESP-94-foundation-validation-evidence` based on `main` at
+`9f333c9734c767673e43a30d6b57c05793e1fb69` (PR #25 merge — the MESP-93
+post-merge Markdown reconciliation).
+
+**SHA evidence model (M-12, L-5).** From this correction forward, evidence
+explicitly distinguishes two fields instead of one ambiguous SHA:
+
+- **Implementation SHA** — the commit containing the source/test/tooling
+  change being evaluated.
+- **Validated repository SHA** — the exact commit whose working tree the
+  complete Foundation validation command was actually run against.
+
+These may be equal; when documentation is committed after the validated
+source commit, the two are recorded separately rather than collapsed.
+
+**Findings closed:**
+
+- **H-2 (row 45 overstated) — closed.** Row 45's evidence/limitation column
+  now states explicitly that `DurableWorkLocalRuntime`,
+  `InMemoryDurableWorkStore`, `DurableWorkDispatcher` and
+  `TenantDurableWorkWorker` are not referenced by `MiniErp.Api` — an unwired
+  local Foundation seam, not a production-composed capability. The underlying
+  test evidence itself (`DurableWorkAuthorityRevalidationTests`,
+  `DurableWorkTests`) was found to be genuinely broad across the claimed
+  User/session/Membership/SupportGrant/SupportCase/Permission lifecycle list;
+  status remains PASS with the corrected, honest limitation stated.
+- **H-3 (row 40 incorrectly Passed) — closed.** The prior evidence proved
+  cross-Tenant *rejection* for all relationship kinds but only one
+  representative *acceptance* case. New focused tests
+  (`TenantPersistenceTests.Same_tenant_relationship_is_accepted` and
+  `SqlServerSafetyTests.Same_tenant_composite_relationship_is_allowed_on_sql_server`,
+  both `[Theory]`-driven) now prove acceptance for all three named composite
+  kinds (`CompanyBranch`, `BranchWarehouse`, `CompanyDepartment`) in-memory and
+  on SQL Server. Row 40 remains PASS with genuinely complete evidence instead
+  of a single representative case, and the evidence text now discloses that
+  Branch/Warehouse/Department are the generic relationship-kind test fixture,
+  not yet real Organization-domain entities.
+- **M-3 (collation/SQL probe evidence overstated) — closed.** The collation
+  assertion already queried the database live; the safety-catalogue text now
+  explicitly states what is and is not proven (see the "SQL Server evidence"
+  section above) — no claim of Arabic linguistic sort/search correctness is
+  made from a storage round-trip alone.
+- **M-6 (incomplete orphan DB cleanup) — closed.** `validate-foundation.ps1`
+  now removes stale `MiniErpFoundation_*` databases before creating its own,
+  and proves zero remain in a `finally` block that always runs (even after a
+  failed step), in addition to the existing xUnit fixture teardown. Only
+  databases matching the exact disposable naming convention are ever dropped.
+- **M-10 (row 66 partially misclassified) — closed.** Row 66 now states that
+  SupportGrant revocation evidence is real and already proven elsewhere,
+  while the row's specific comparative claim (rejection evidence distinct
+  from revocation) has no implemented "rejection" concept to evaluate.
+  Status remains NOT APPLICABLE with an honest reason instead of implying no
+  related evidence exists at all.
+- **M-12 (repository SHA not distinguished) — closed.** See the SHA evidence
+  model above.
+- **M-13 (vacuous unsafe SQL configuration test) — closed.** The connection-
+  string safety check is extracted into
+  `SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString` and
+  exercised directly by five negative cases and one positive control; the
+  fixture itself now calls this same method, so the test would fail if the
+  real check were weakened or removed.
+- **M-14 (validation script does not run the complete Foundation) — closed.**
+  `validate-foundation.ps1` is now the single canonical command; see
+  "Reproduction" above for its exact scope.
+- **M-15 (hard-coded LocalDB version path) — closed.** `SqlLocalDB.exe` and
+  `sqlcmd.exe` are resolved dynamically (PATH, then a version-agnostic scan of
+  installed SQL Server Tools directories); no `150`/`160`/`170` version
+  segment is hard-coded anywhere in the tracked repository.
+- **L-2 (MESP-90 regression missing) — closed.** A new focused test,
+  `auth.service.spec.ts`'s `'MESP-90 regression guard: does not desynchronize
+  local session state ahead of the server sign-out response'`, extends the
+  existing MESP-90 coverage by asserting the session and route remain
+  untouched between calling `signOut()` and the server's response settling,
+  then confirms the normal 204 outcome still clears state and navigates.
+- **L-3 (documentation PR provenance incomplete) — closed.** PR #25 (docs)
+  merged to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69`; PR #23 was
+  closed as superseded, never merged; PR #22 (MESP-92) merged at
+  `322341e70e56270797d5770b4b90342c20b7833e`; PR #24 (MESP-93) merged at
+  `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head
+  `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`, verdict APPROVED FOR MERGE).
+- **L-5 (safety evidence lacks validated commit SHA) — closed.** See the SHA
+  evidence model above and the validation table below.
+
+**Safety-catalogue disposition after this correction:** unchanged in
+aggregate — 53 PASS, 21 NOT APPLICABLE, 1 DEFERRED — because rows 40 and 45
+remain PASS and row 66 remains NOT APPLICABLE; only their evidence and
+limitation text changed. A new structural validator,
+`SafetyCatalogueValidationTests`, now proves the catalogue's 75 rows are
+uniquely and sequentially numbered, every status is within the allowed
+`PASS`/`NOT APPLICABLE`/`DEFERRED` vocabulary, every PASS row declares
+non-empty evidence, and every non-PASS row names a deferred owner or scope
+boundary; it runs as part of the same `MiniErp.ArchitectureTests` project the
+canonical validation command already executes.
+
+MESP-94 does not implement production SQL hosting, a production migration,
+performance/retention/purge behavior, or any Master Data domain work.
+MESP-48 and MESP-50 remain unchanged, explicit production gates.
+
+**Complete Foundation validation evidence.** Source-implementation SHA
+(uncommitted working tree with all MESP-94 test/tooling changes applied,
+based on branch `fix/MESP-94-foundation-validation-evidence` from starting
+`main` `9f333c9734c767673e43a30d6b57c05793e1fb69`); validated repository SHA
+recorded once this content is committed — see `.ai/CURRENT_STATE.md` and the
+MESP-94 Pull Request for the exact commit the run below was captured against.
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Backend Release build | 0 warnings, 0 errors | `.\scripts\validate-foundation.ps1` |
+| Complete backend suite (includes SQL Server LocalDB probes and the safety-catalogue validator) | 582 passed, 0 failed, 0 skipped | Same validation command |
+| SQL Server LocalDB suite | 21 passed, 0 failed, 0 skipped (up from 11: +6 real negative/positive configuration-validator tests, +3 same-Tenant composite acceptance cases, +1 fixture-consistency check) | Same validation command; disposable `MiniErpFoundation_*` database |
+| SQL Server collation observed | `SQL_Latin1_General_CP1_CI_AS` (queried live via `DATABASEPROPERTYEX`; no linguistic sort/search claim made — see "SQL Server evidence" above) | Same validation command |
+| LocalDB/sqlcmd discovery | Dynamic: PATH first, then a version-agnostic scan of installed SQL Server Tools directories under Program Files; no hard-coded version | `Resolve-SqlLocalDbExecutable`/`Resolve-SqlCmdExecutable` in `scripts/validate-foundation.ps1` |
+| Disposable database cleanup | 0 `MiniErpFoundation_*` databases remained (pre-run stale-database sweep and post-run proof both ran) | Same validation command |
+| Angular suite | 28 passed, 0 failed, 0 skipped, across 5 test files (up from 27: +1 MESP-90 regression guard) | `npm test -- --watch=false --no-progress` |
+| Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred (unchanged) | `npm run build` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Diff check | Passed (one benign CRLF-normalization advisory on `scripts/validate-foundation.ps1`, not a whitespace error; exit code 0) | `git diff --check` |
+| Hosted CI | Not available | No hosted workflow is configured in this repository |
+
+MESP-94 is **not** marked Done by this validation; its Pull Request is pending
+review, merge and post-merge closure. No production SQL provider, migration,
+retention/purge, performance claim or Master Data implementation was
+introduced.

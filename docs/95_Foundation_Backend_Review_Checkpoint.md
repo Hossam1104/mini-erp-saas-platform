@@ -10,7 +10,8 @@
 > The Foundation sequence continued after this checkpoint through MESP-63,
 > MESP-90, MESP-61, MESP-64, MESP-91, MESP-92 and MESP-93 (all Done; MESP-93's
 > PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332`) to
-> MESP-94, which is the next eligible correction and not yet started.
+> MESP-94, which is now **In Progress** on branch
+> `fix/MESP-94-foundation-validation-evidence`.
 
 Status at the time of this checkpoint: MESP-89 is Done. PR #12 was approved by
 focused ChatGPT review and merged to `main`; MESP-63 was the next authorized
