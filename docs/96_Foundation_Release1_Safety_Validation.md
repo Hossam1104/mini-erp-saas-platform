@@ -521,3 +521,22 @@ remain closed; all previously added tests for those findings continue to pass
 unmodified. MESP-92 is **not** marked Done by this correction; PR #22 remains
 open, non-draft and held unmerged pending a further focused ChatGPT security
 re-review at this head.
+
+## MESP-92 closure overlay — Done (7 August 2026, current, not a rewrite of the overlays above)
+
+Every overlay above this line is the preserved historical validation record of
+the MESP-92 correction sequence and is not rewritten. The further focused
+ChatGPT security re-review requested by the last overlay completed with
+verdict APPROVED FOR MERGE at reviewed head `3ec6b45bc108d1388035caa8c331866a2c72d043`.
+PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e`.
+Post-merge validation on `main` reproduced the identical totals recorded in
+the last overlay: Release build 0 warnings/0 errors; full backend regression
+**493/493** passed (0 failed, 0 skipped) including **11/11** SQL Server
+LocalDB probes with no `MiniErpFoundation_*` database remaining after
+teardown; Angular unit tests **27/27** passed; Angular production build
+succeeded (351.02 kB initial / 87.80 kB transferred, unchanged); Playwright
+**4/4** passed; `npm audit --omit=dev --audit-level=high` reported **0**
+vulnerabilities; `git diff --check` clean. MESP-92 is now marked **Done** in
+Jira. MESP-93 (private-file access and notification hardening) is the next
+active Foundation correction — see `.ai/CURRENT_STATE.md` for its exact
+branch, head and Pull Request.

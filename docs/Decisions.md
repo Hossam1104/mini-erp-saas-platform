@@ -30,8 +30,8 @@ decisions, not production provider approval. ADR-018 evidence is recorded in
 `docs/96_Foundation_Release1_Safety_Validation.md`. Its original MESP-64
 evidence baseline was the exact 75-assertion catalogue, 11 SQL Server tests and
 a 296-test backend regression; the same catalogue and 11 SQL Server tests are
-re-run on every later baseline, and the backend regression has since grown to
-**493** tests on the open MESP-92 branch (238 of them the focused
+re-run on every later baseline, and the backend regression grew to **493**
+tests on `main` after the MESP-92 merge (238 of them the focused
 `DurableWork`/ledger/composition/reconciliation regression). The complete sequence and its maturity boundary are
 recorded in `docs/97_Foundation_Completion_Review_Checkpoint.md`. ADR-002 and ADR-011
 remain required before their owning module work. ADR-016 is an index entry
@@ -40,16 +40,16 @@ Server Row-Level Security adoption or formal deferral. The index controls when
 each detailed record becomes mandatory and prevents production decisions from
 blocking business analysis.
 
-ADR-007 and ADR-008 carry an **In Progress** MESP-92 correction. That
-correction lives only on the open, unmerged PR #22, most recently at head
-`e991641` (H92-06/M92-07/L92-02 focused correction, 7 August 2026:
-`MiniErp.App` no longer grants `InternalsVisibleTo("MiniErp.Api")` — the
-mutable effect ledger and its executor were made `internal` by the prior
-H92-05/M92-05 correction, but that friend-assembly grant alone still let the
-shipping `MiniErp.Api` host reach them; removing it is the change that
-actually closes the compiled shipping boundary. `DurableWorkLocalRuntime`'s
-public surface remains limited to `Store`/`Dispatcher`); it is **not on
-`main`**. No ADR
+ADR-007 and ADR-008 carry a **Done** MESP-92 correction, merged to `main` at
+`322341e70e56270797d5770b4b90342c20b7833e` (PR #22, H92-06/M92-07/L92-02
+focused correction, 7 August 2026: `MiniErp.App` no longer grants
+`InternalsVisibleTo("MiniErp.Api")` — the mutable effect ledger and its
+executor were made `internal` by the prior H92-05/M92-05 correction, but that
+friend-assembly grant alone still let the shipping `MiniErp.Api` host reach
+them; removing it is the change that actually closed the compiled shipping
+boundary. `DurableWorkLocalRuntime`'s public surface remains limited to
+`Store`/`Dispatcher`). MESP-93 is now In Progress hardening the adjacent
+private-file and notification seams. No ADR
 status in this index asserts production maturity: the durable-work store,
 dispatcher, worker and effect ledger are local, in-memory, non-crash-durable
 test/development seams that are **not composed into the `MiniErp.Api` host**,

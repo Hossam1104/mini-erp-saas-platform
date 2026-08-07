@@ -8,8 +8,9 @@
 > findings — read [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and
 > [`docs/94_Product_Delivery_Master_Plan.md`](94_Product_Delivery_Master_Plan.md).
 > The Foundation sequence continued after this checkpoint through MESP-63,
-> MESP-90, MESP-61, MESP-64 and MESP-91 (all Done) to MESP-92, which is
-> In Progress on an open, unmerged Pull Request.
+> MESP-90, MESP-61, MESP-64, MESP-91 and MESP-92 (all Done; MESP-92's PR #22
+> merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e`) to MESP-93,
+> which is now In Progress.
 
 Status at the time of this checkpoint: MESP-89 is Done. PR #12 was approved by
 focused ChatGPT review and merged to `main`; MESP-63 was the next authorized

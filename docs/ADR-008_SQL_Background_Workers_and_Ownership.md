@@ -2,10 +2,10 @@
 
 | Field | Decision |
 |---|---|
-| Status | Foundation worker seam; MESP-91 live authority correction merged and Done (PR #20, `f2cde57400fed470ab048776e05b56f353b36890`); MESP-92 single-effect/immutable-payload correction In Progress; deployment topology deferred |
-| Date | 4 August 2026; reconciled 6 August 2026 |
+| Status | Foundation worker seam; MESP-91 live authority correction merged and Done (PR #20, `f2cde57400fed470ab048776e05b56f353b36890`); MESP-92 single-effect/immutable-payload correction merged and Done (PR #22, `322341e70e56270797d5770b4b90342c20b7833e`); deployment topology deferred |
+| Date | 4 August 2026; reconciled 6 August 2026; reconciled again 7 August 2026 |
 | Owners | Solution Architecture / Background Processing |
-| Related Jira | MESP-61, MESP-64, MESP-91, MESP-92, MESP-48, MESP-50 |
+| Related Jira | MESP-61, MESP-64, MESP-91, MESP-92, MESP-93, MESP-48, MESP-50 |
 | Supersedes | None |
 
 ## Context

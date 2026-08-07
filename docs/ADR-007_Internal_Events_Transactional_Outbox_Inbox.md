@@ -2,10 +2,10 @@
 
 | Field | Decision |
 |---|---|
-| Status | Foundation implementation baseline; MESP-92 single-effect correction In Progress; production delivery provider deferred |
-| Date | 4 August 2026; reconciled 6 August 2026 |
+| Status | Foundation implementation baseline; MESP-92 single-effect correction merged and Done (PR #22, `322341e70e56270797d5770b4b90342c20b7833e`); production delivery provider deferred |
+| Date | 4 August 2026; reconciled 6 August 2026; reconciled again 7 August 2026 |
 | Owners | Solution Architecture / Application Engineering |
-| Related Jira | MESP-61, MESP-64, MESP-91, MESP-92, MESP-48, MESP-50 |
+| Related Jira | MESP-61, MESP-64, MESP-91, MESP-92, MESP-93, MESP-48, MESP-50 |
 | Supersedes | None |
 
 ## Context
@@ -41,7 +41,7 @@ scope, survive duplicate delivery, and remain practical for a single developer.
 - A global event table or dispatcher query was rejected because it would create
   an unscoped Tenant business-data path.
 
-## MESP-92 single-effect correction (In Progress)
+## MESP-92 single-effect correction (Done — merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e`)
 
 The inbox uniqueness marker described in point 2 is superseded by a
 server-owned `DurableWorkEffectKey` guarded by
