@@ -521,3 +521,69 @@ remain closed; all previously added tests for those findings continue to pass
 unmodified. MESP-92 is **not** marked Done by this correction; PR #22 remains
 open, non-draft and held unmerged pending a further focused ChatGPT security
 re-review at this head.
+
+## MESP-92 closure overlay — Done (7 August 2026, current, not a rewrite of the overlays above)
+
+Every overlay above this line is the preserved historical validation record of
+the MESP-92 correction sequence and is not rewritten. The further focused
+ChatGPT security re-review requested by the last overlay completed with
+verdict APPROVED FOR MERGE at reviewed head `3ec6b45bc108d1388035caa8c331866a2c72d043`.
+PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e`.
+Post-merge validation on `main` reproduced the identical totals recorded in
+the last overlay: Release build 0 warnings/0 errors; full backend regression
+**493/493** passed (0 failed, 0 skipped) including **11/11** SQL Server
+LocalDB probes with no `MiniErpFoundation_*` database remaining after
+teardown; Angular unit tests **27/27** passed; Angular production build
+succeeded (351.02 kB initial / 87.80 kB transferred, unchanged); Playwright
+**4/4** passed; `npm audit --omit=dev --audit-level=high` reported **0**
+vulnerabilities; `git diff --check` clean. MESP-92 is now marked **Done** in
+Jira. MESP-93 (private-file access and notification hardening) is the next
+active Foundation correction — see `.ai/CURRENT_STATE.md` for its exact
+branch, head and Pull Request.
+
+## MESP-93 implementation validation (7 August 2026, current)
+
+MESP-93 closes M-1, M-4, M-5, M-7, M-8, M-9 and L-4 on branch
+`fix/MESP-93-private-files-notifications`, based on `main` at `322341e`. 45
+new focused tests were added in `PrivateFileAndNotificationSecurityTests.cs`.
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused MESP-93 suite | 45 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~PrivateFileAndNotificationSecurityTests` |
+| Complete backend suite | 538 passed, 0 failed, 0 skipped | `powershell -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped (unchanged; no frontend files touched) | `npx ng test` |
+| Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred (unchanged) | `npx ng build --configuration production` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npx playwright test` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Diff check | Passed, no whitespace errors | `git diff --check` |
+
+No `MiniErpFoundation_*` database remained after teardown. No production
+object storage, public URL, signed download, malware scanner, production
+notification provider or physical purge was introduced. MESP-93 is **not**
+marked Done by this validation; its Pull Request is held open, non-draft and
+unmerged pending a focused ChatGPT security review, the same standing gate
+MESP-92 carried.
+
+## MESP-93 focused re-review correction validation (7 August 2026, current)
+
+A focused re-review of PR #24 at head `759eb04` raised H93-01, H93-02,
+M93-01, M93-02 and L93-01; all five are closed at head `1820416`. 28 new
+focused tests were added (73 total).
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused MESP-93 suite | 73 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter FullyQualifiedName~PrivateFileAndNotificationSecurityTests` |
+| Complete backend suite | 566 passed, 0 failed, 0 skipped | `powershell -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped (unchanged) | `npx ng test` |
+| Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred (unchanged) | `npx ng build --configuration production` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npx playwright test` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Diff check | Passed, no whitespace errors | `git diff --check` |
+
+No `MiniErpFoundation_*` database remained after teardown. MESP-93 remains
+**not** marked Done; PR #24 is held open, non-draft and unmerged pending a
+further focused ChatGPT security re-review at head `1820416`.

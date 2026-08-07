@@ -18,7 +18,8 @@ namespace MiniErp.App.Modules.Identity;
 internal sealed class IdentityAuthorizationService :
     IOrganizationScopeOwnershipResolver,
     IDurableWorkAuthorityRevalidator,
-    IDurableWorkReconciliationAuthorizer
+    IDurableWorkReconciliationAuthorizer,
+    INotificationRecipientAuthorizer
 {
     private const string GenericDeniedCode = "access_denied";
     private const string GenericAuthenticationCode = "authentication_failed";
@@ -137,6 +138,126 @@ internal sealed class IdentityAuthorizationService :
         }
 
         return ValueTask.FromResult(result);
+    }
+
+    /// <summary>
+    /// Live-revalidates the caller's own Tenant authorization path (H93-02) --
+    /// a structurally valid <see cref="TenantContext"/> is not by itself proof
+    /// of current authority, since its factory methods are reachable from
+    /// server-facing code with any caller-resolved reference -- and then
+    /// live-proves the caller-supplied notification recipient reference is an
+    /// active Global user with an active ordinary Membership in the caller's
+    /// exact Tenant (M-8). A foreign-Tenant, suspended, revoked, pending or
+    /// unknown recipient is always denied with a generic safe reason; no
+    /// SupportGrant path can substitute for a genuine Tenant Membership on the
+    /// recipient side.
+    /// </summary>
+    public ValueTask<NotificationRecipientAuthorizationResult> AuthorizeAsync(
+        TenantContext currentTenantContext,
+        NotificationRecipientReference recipient,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(currentTenantContext);
+        ArgumentNullException.ThrowIfNull(recipient);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromResult(
+                NotificationRecipientAuthorizationResult.Denied("recipient_authorization_cancelled"));
+        }
+
+        NotificationRecipientAuthorizationResult result;
+        lock (store.SyncRoot)
+        {
+            result = AuthorizeNotificationRecipientUnsafe(currentTenantContext, recipient, Now);
+        }
+
+        return ValueTask.FromResult(result);
+    }
+
+    private NotificationRecipientAuthorizationResult AuthorizeNotificationRecipientUnsafe(
+        TenantContext currentTenantContext,
+        NotificationRecipientReference recipient,
+        DateTimeOffset now)
+    {
+        if (!IsCurrentNotificationCallerAuthorityUnsafe(currentTenantContext, now))
+        {
+            return NotificationRecipientAuthorizationResult.Denied("caller_denied");
+        }
+
+        var recipientUserId = new UserId(recipient.UserId);
+        if (!store.Users.TryGetValue(recipientUserId, out var user) || user.Status != GlobalUserStatus.Active)
+        {
+            return NotificationRecipientAuthorizationResult.Denied("recipient_denied");
+        }
+
+        var membership = store.Memberships.Values.FirstOrDefault(candidate =>
+            candidate.UserId == recipientUserId && candidate.TenantId == currentTenantContext.TenantId);
+
+        if (membership is null || membership.Status != MembershipStatus.Active)
+        {
+            return NotificationRecipientAuthorizationResult.Denied("recipient_denied");
+        }
+
+        return NotificationRecipientAuthorizationResult.Approved(
+            new VerifiedNotificationRecipient(currentTenantContext.TenantId, recipient.UserId));
+    }
+
+    /// <summary>
+    /// Live-revalidates that the caller's own <see cref="TenantContext"/> still
+    /// reflects a currently valid Tenant authorization path (H93-02). A
+    /// structurally valid context is not proof of current authority: its
+    /// TenantId, MembershipReference, SupportGrantReference and ActorId are
+    /// all matched against current server-owned records, exactly as durable-work
+    /// dispatch and reconciliation-read revalidation already do. An ordinary
+    /// context never falls back to a SupportGrant path and vice versa.
+    /// </summary>
+    private bool IsCurrentNotificationCallerAuthorityUnsafe(TenantContext currentTenantContext, DateTimeOffset now)
+    {
+        if (currentTenantContext.ActorId is not { } actorId || actorId == Guid.Empty)
+        {
+            return false;
+        }
+
+        if (!store.Users.TryGetValue(new UserId(actorId), out var actor) || actor.Status != GlobalUserStatus.Active)
+        {
+            return false;
+        }
+
+        switch (currentTenantContext.AuthorizationPath)
+        {
+            case TenantAuthorizationPath.OrdinaryMembership:
+                if (currentTenantContext.SupportGrant.HasValue
+                    || currentTenantContext.Membership is not { } membershipReference
+                    || !store.Memberships.TryGetValue(new MembershipId(membershipReference.Value), out var membership)
+                    || membership.UserId.Value != actorId
+                    || membership.TenantId != currentTenantContext.TenantId
+                    || membership.Status != MembershipStatus.Active)
+                {
+                    return false;
+                }
+
+                return true;
+
+            case TenantAuthorizationPath.SupportGrant:
+                if (currentTenantContext.Membership.HasValue
+                    || currentTenantContext.SupportGrant is not { } supportGrantReference
+                    || !store.SupportGrants.TryGetValue(new SupportGrantId(supportGrantReference.GrantId), out var supportGrant)
+                    || supportGrant.CaseId.Value != supportGrantReference.CaseId
+                    || supportGrant.UserId.Value != actorId
+                    || supportGrant.TenantId != currentTenantContext.TenantId
+                    || supportGrant.RevokedAt.HasValue
+                    || supportGrant.ExpiresAt <= now
+                    || !store.SupportCases.TryGetValue(supportGrant.CaseId, out var supportCase)
+                    || !supportCase.IsActive)
+                {
+                    return false;
+                }
+
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     internal UserId CreateUser(string email, string password, bool mfaEnabled = true)

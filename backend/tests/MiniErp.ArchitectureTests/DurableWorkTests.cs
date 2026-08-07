@@ -434,7 +434,7 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var adapter = new InMemoryNotificationAdapter();
-        var intent = TenantNotificationIntent.Create(context, DurableWorkTestSupport.TenantWideScope(context), new NotificationRecipientReference(Guid.NewGuid()), "welcome", "en", "notify-1");
+        var intent = TenantNotificationIntent.Create(context, DurableWorkTestSupport.TenantWideScope(context), VerifiedRecipient(context.TenantId), "welcome", "en", "notify-1");
         var first = await adapter.DeliverAsync(context, intent);
         var second = await adapter.DeliverAsync(context, intent);
         Assert.True(first.Delivered);
@@ -446,7 +446,7 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var adapter = new InMemoryNotificationAdapter(_ => DurableWorkFailureCategory.ProviderUnavailable);
-        var intent = TenantNotificationIntent.Create(context, DurableWorkTestSupport.TenantWideScope(context), new NotificationRecipientReference(Guid.NewGuid()), "welcome", "en", "notify-failure");
+        var intent = TenantNotificationIntent.Create(context, DurableWorkTestSupport.TenantWideScope(context), VerifiedRecipient(context.TenantId), "welcome", "en", "notify-failure");
         var result = await adapter.DeliverAsync(context, intent);
         Assert.Equal(DurableWorkFailureCategory.ProviderUnavailable, result.FailureCategory);
         Assert.Equal("provider_unavailable", result.SafeOutcome);
@@ -457,7 +457,7 @@ public sealed class DurableWorkTests
     {
         var context = CreateContext();
         var adapter = new InMemoryNotificationAdapter();
-        var intent = TenantNotificationIntent.Create(context, DurableWorkTestSupport.TenantWideScope(context), new NotificationRecipientReference(Guid.NewGuid()), "welcome", "en", "notify-safe");
+        var intent = TenantNotificationIntent.Create(context, DurableWorkTestSupport.TenantWideScope(context), VerifiedRecipient(context.TenantId), "welcome", "en", "notify-safe");
         await adapter.DeliverAsync(context, intent);
         Assert.DoesNotContain("@", string.Join("|", adapter.Decisions));
         Assert.DoesNotContain(typeof(TenantNotificationIntent).GetProperties(), property => property.Name.Contains("Email", StringComparison.OrdinalIgnoreCase));
@@ -484,7 +484,7 @@ public sealed class DurableWorkTests
         var storage = new InMemoryPrivateObjectStorage();
         var metadata = await storage.StoreAsync(tenantB, DurableWorkTestSupport.TenantWideScope(tenantB), "private.txt", "text/plain", Content("secret"));
         var result = await storage.ReadAsync(CreateContext(), metadata.ObjectId);
-        Assert.Equal(PrivateFileAccessOutcome.TenantDenied, result.Outcome);
+        Assert.Equal(PrivateFileAccessOutcome.NotFound, result.Outcome);
         Assert.Null(result.Metadata);
         Assert.Null(result.Content);
     }
@@ -496,7 +496,7 @@ public sealed class DurableWorkTests
         var storage = new InMemoryPrivateObjectStorage();
         var metadata = await storage.StoreAsync(tenantB, DurableWorkTestSupport.TenantWideScope(tenantB), "private.txt", "text/plain", Content("secret"));
         var result = await storage.OverwriteAsync(CreateContext(), metadata.ObjectId, metadata.ConcurrencyVersion, Content("forged"));
-        Assert.Equal(PrivateFileAccessOutcome.TenantDenied, result.Outcome);
+        Assert.Equal(PrivateFileAccessOutcome.NotFound, result.Outcome);
     }
 
     [Fact]
@@ -819,6 +819,9 @@ public sealed class DurableWorkTests
 
     private static MemoryStream Content(string value) =>
         new(System.Text.Encoding.UTF8.GetBytes(value));
+
+    private static VerifiedNotificationRecipient VerifiedRecipient(TenantId tenantId) =>
+        new(tenantId, Guid.NewGuid());
 
     private sealed record DemoPayload(string Value) : IWorkPayload;
 

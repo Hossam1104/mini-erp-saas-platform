@@ -19,14 +19,95 @@ public sealed class NotificationRecipientReference
 
     public Guid UserId { get; }
 }
+
+/// <summary>
+/// An Identity-proven recipient: <see cref="INotificationRecipientAuthorizer"/>
+/// is the only constructor. A raw <see cref="NotificationRecipientReference"/>
+/// alone is never sufficient to create a <see cref="TenantNotificationIntent"/>
+/// -- the referenced user must be live-verified as an active member of the
+/// exact target Tenant.
+/// </summary>
+public sealed class VerifiedNotificationRecipient
+{
+    internal VerifiedNotificationRecipient(TenantId tenantId, Guid userId)
+    {
+        TenantId = tenantId;
+        UserId = userId;
+    }
+
+    public TenantId TenantId { get; }
+
+    public Guid UserId { get; }
+}
+
+/// <summary>Safe outcome of a notification-recipient authorization check.</summary>
+public enum NotificationRecipientAuthorizationOutcome
+{
+    Approved = 1,
+    Denied = 2
+}
+
+/// <summary>Safe result of resolving and authorizing a notification recipient.</summary>
+public sealed class NotificationRecipientAuthorizationResult
+{
+    private NotificationRecipientAuthorizationResult(
+        NotificationRecipientAuthorizationOutcome outcome,
+        string safeReason,
+        VerifiedNotificationRecipient? recipient)
+    {
+        Outcome = outcome;
+        SafeReason = safeReason;
+        Recipient = recipient;
+    }
+
+    public NotificationRecipientAuthorizationOutcome Outcome { get; }
+
+    public bool Allowed => Outcome == NotificationRecipientAuthorizationOutcome.Approved;
+
+    public string SafeReason { get; }
+
+    public VerifiedNotificationRecipient? Recipient { get; }
+
+    public static NotificationRecipientAuthorizationResult Approved(VerifiedNotificationRecipient recipient)
+    {
+        ArgumentNullException.ThrowIfNull(recipient);
+        return new(NotificationRecipientAuthorizationOutcome.Approved, "recipient_authorized", recipient);
+    }
+
+    public static NotificationRecipientAuthorizationResult Denied(string safeReason) =>
+        new(NotificationRecipientAuthorizationOutcome.Denied, safeReason, null);
+}
+
+/// <summary>
+/// Identity-owned port that proves a caller-supplied recipient reference is an
+/// active member of the caller's exact Tenant before any notification intent
+/// can be created for it (M-8). A foreign-Tenant, suspended, revoked or
+/// unknown user is always denied; a Platform governance actor has no Tenant
+/// Membership or SupportGrant path and can never satisfy this authorizer.
+/// </summary>
+public interface INotificationRecipientAuthorizer
+{
+    ValueTask<NotificationRecipientAuthorizationResult> AuthorizeAsync(
+        TenantContext currentTenantContext,
+        NotificationRecipientReference recipient,
+        CancellationToken cancellationToken = default);
+}
+
 /// <summary>Provider-neutral Tenant-owned notification intent.</summary>
 public sealed class TenantNotificationIntent : ITenantOwned
 {
+    /// <summary>
+    /// The bounded, explicit maximum delivery attempts before an intent
+    /// transitions to the terminal <see cref="NotificationDeliveryState.DeadLetter"/>
+    /// state and is never automatically retried again (M-7).
+    /// </summary>
+    public const int MaxDeliveryAttempts = 5;
+
     private TenantNotificationIntent(
         Guid intentId,
         TenantId tenantId,
         TenantWorkScope scope,
-        NotificationRecipientReference recipient,
+        VerifiedNotificationRecipient recipient,
         string template,
         string locale,
         CorrelationId correlationId,
@@ -52,7 +133,7 @@ public sealed class TenantNotificationIntent : ITenantOwned
 
     public TenantWorkScope Scope { get; }
 
-    public NotificationRecipientReference Recipient { get; }
+    public VerifiedNotificationRecipient Recipient { get; }
 
     public string Template { get; }
 
@@ -72,11 +153,14 @@ public sealed class TenantNotificationIntent : ITenantOwned
 
     public long ConcurrencyVersion { get; internal set; }
 
-    /// <summary>Creates an intent from trusted server context and safe references.</summary>
+    /// <summary>
+    /// Creates an intent from trusted server context and a recipient already
+    /// proven eligible by <see cref="INotificationRecipientAuthorizer"/>.
+    /// </summary>
     public static TenantNotificationIntent Create(
         TenantContext trustedTenantContext,
         TenantWorkScope scope,
-        NotificationRecipientReference recipient,
+        VerifiedNotificationRecipient recipient,
         string template,
         string locale,
         string idempotencyKey,
@@ -88,6 +172,11 @@ public sealed class TenantNotificationIntent : ITenantOwned
         if (scope.TenantId != trustedTenantContext.TenantId)
         {
             throw new ArgumentException("Notification scope must belong to the trusted Tenant.", nameof(scope));
+        }
+
+        if (recipient.TenantId != trustedTenantContext.TenantId)
+        {
+            throw new ArgumentException("Notification recipient must be verified for the exact trusted Tenant.", nameof(recipient));
         }
 
         return new TenantNotificationIntent(
@@ -169,16 +258,40 @@ public sealed class InMemoryNotificationAdapter : INotificationDeliveryAdapter
         cancellationToken.ThrowIfCancellationRequested();
         if (tenantContext.TenantId != intent.TenantId)
         {
+            // An unauthorized caller has no authority over the owner Tenant's
+            // intent: it must never mutate DeliveryState, FailureCategory,
+            // AttemptCount or the idempotency ledger, and must never dead-letter
+            // it on the owner's behalf (H93-01). The current state is read
+            // under the same lock as every legitimate mutation so this path
+            // cannot race with a concurrent legitimate delivery.
+            NotificationDeliveryState currentState;
+            lock (syncRoot)
+            {
+                currentState = intent.DeliveryState;
+            }
+
             return ValueTask.FromResult(new NotificationDeliveryResult(
                 false,
                 false,
-                NotificationDeliveryState.DeadLetter,
+                currentState,
                 DurableWorkFailureCategory.TenantMismatch,
                 "tenant_denied"));
         }
 
         lock (syncRoot)
         {
+            // Terminal: once dead-lettered, an intent is never retried again,
+            // regardless of caller retries or worker duplicate claims (M-7).
+            if (intent.DeliveryState == NotificationDeliveryState.DeadLetter)
+            {
+                return ValueTask.FromResult(new NotificationDeliveryResult(
+                    false,
+                    false,
+                    NotificationDeliveryState.DeadLetter,
+                    intent.FailureCategory,
+                    "dead_lettered"));
+            }
+
             var key = (intent.TenantId, intent.IdempotencyKey);
             if (!delivered.Add(key))
             {
@@ -197,8 +310,20 @@ public sealed class InMemoryNotificationAdapter : INotificationDeliveryAdapter
             if (failureCategory.HasValue)
             {
                 delivered.Remove(key);
-                intent.DeliveryState = NotificationDeliveryState.RetryScheduled;
                 intent.FailureCategory = failureCategory.Value;
+                if (intent.AttemptCount >= TenantNotificationIntent.MaxDeliveryAttempts)
+                {
+                    intent.DeliveryState = NotificationDeliveryState.DeadLetter;
+                    decisions.Add((intent.TenantId, intent.IntentId, intent.DeliveryState));
+                    return ValueTask.FromResult(new NotificationDeliveryResult(
+                        false,
+                        false,
+                        NotificationDeliveryState.DeadLetter,
+                        failureCategory.Value,
+                        "dead_lettered"));
+                }
+
+                intent.DeliveryState = NotificationDeliveryState.RetryScheduled;
                 decisions.Add((intent.TenantId, intent.IntentId, intent.DeliveryState));
                 return ValueTask.FromResult(new NotificationDeliveryResult(
                     false,

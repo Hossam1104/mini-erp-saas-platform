@@ -16,6 +16,17 @@
 | Merged correction branch | `fix/MESP-91-verified-work-scope-authority`, based on `4eb1ef3ab094242cbb26ec9ab79b4037512e0d2d` (deleted after merge) |
 | Review disposition | Focused ChatGPT security review returned APPROVED TO MERGE (0 Critical, 0 High, 0 Medium blockers); PR #20 merged by normal merge commit at `f2cde57400fed470ab048776e05b56f353b36890` |
 
+> **Historical checkpoint — not the current state.** The table above and the
+> sections below record the Foundation position as reviewed on 6 August 2026,
+> while MESP-92 was In Progress on the still-open PR #22. That checkpoint
+> content is preserved unchanged. MESP-92 has since closed: PR #22 received a
+> focused ChatGPT security review verdict of APPROVED FOR MERGE at reviewed
+> head `3ec6b45` and was merged to `main` at
+> `322341e70e56270797d5770b4b90342c20b7833e`; MESP-92 is **Done**; MESP-93 is
+> now **In Progress**. For the verified current position, read
+> [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and
+> [`docs/94_Product_Delivery_Master_Plan.md`](94_Product_Delivery_Master_Plan.md).
+
 ## MESP-92 In Progress — single-effect durable work and immutable payloads
 
 MESP-92 is **In Progress** on branch
