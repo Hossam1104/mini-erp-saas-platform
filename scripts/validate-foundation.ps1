@@ -19,9 +19,14 @@ $localDbServer = "(localdb)\$localDbInstanceName"
 
 function Resolve-SqlToolExecutable {
     <#
-    Dynamic SQL Server tool discovery: PATH first, then a version-agnostic
-    scan of every "Microsoft SQL Server" installation under Program Files.
-    No specific SQL Server release/version is ever hard-coded.
+    Dynamic but bounded SQL Server tool discovery: PATH first, then a
+    version-agnostic probe of the known SQL Server Tools\Binn and Client
+    SDK\ODBC Tools\Binn layouts under Program Files. No specific SQL Server
+    release/version is ever hard-coded, and this never performs a full
+    recursive scan of the (potentially huge) database-engine tree -- only the
+    single fixed "<version>\Tools\Binn\<exe>" and
+    "Client SDK\ODBC\<version>\Tools\Binn\<exe>" shapes are probed, one path
+    segment of wildcard expansion at a time.
     #>
     param(
         [Parameter(Mandatory = $true)][string]$ExecutableName
@@ -36,10 +41,15 @@ function Resolve-SqlToolExecutable {
         Where-Object { $_ -and (Test-Path -LiteralPath $_) } |
         Select-Object -Unique
 
+    $knownLayoutGlobs = @(
+        'Microsoft SQL Server\*\Tools\Binn',
+        'Microsoft SQL Server\Client SDK\ODBC\*\Tools\Binn'
+    )
+
     $matches = foreach ($root in $searchRoots) {
-        $sqlServerRoot = Join-Path $root 'Microsoft SQL Server'
-        if (Test-Path -LiteralPath $sqlServerRoot) {
-            Get-ChildItem -LiteralPath $sqlServerRoot -Filter $ExecutableName -Recurse -File -ErrorAction SilentlyContinue
+        foreach ($layoutGlob in $knownLayoutGlobs) {
+            $globPath = Join-Path (Join-Path $root $layoutGlob) $ExecutableName
+            Get-Item -Path $globPath -ErrorAction SilentlyContinue
         }
     }
 
@@ -127,76 +137,108 @@ if ($LASTEXITCODE -ne 0) {
     throw "The $localDbInstanceName instance could not be started."
 }
 
-Write-Host '--- Pre-run cleanup of stale disposable Foundation databases from a prior run ---'
-foreach ($stale in (Get-OrphanFoundationDatabaseNames -SqlCmdPath $sqlCmd)) {
-    Write-Host "Removing stale disposable database: $stale"
-    Remove-FoundationDatabase -SqlCmdPath $sqlCmd -DatabaseName $stale
-}
-
-$databaseName = "MiniErpFoundation_{0}_{1}" -f (Get-Date -Format 'yyyyMMddHHmmss'), ([Guid]::NewGuid().ToString('N').Substring(0, 8))
-$connectionString = "Server=$localDbServer;Database=$databaseName;Integrated Security=True;TrustServerCertificate=True;"
-$previousConnectionString = $env:MESP_SQLSERVER_CONNECTION_STRING
+# LocalDB itself is user/session-scoped, so a machine-wide lock is
+# unnecessary and would be needlessly destructive in effect; a named,
+# session-scoped mutex is enough to serialize concurrent canonical
+# Foundation validation runs so one run's stale-database cleanup can never
+# remove another run's still-active disposable database.
+$validationMutexName = 'Local\MiniErpFoundationValidation'
+$validationMutex = New-Object System.Threading.Mutex($false, $validationMutexName)
+$ownsValidationLock = $false
 
 try {
-    $env:MESP_SQLSERVER_CONNECTION_STRING = $connectionString
-    Push-Location $repositoryRoot
+    $ownsValidationLock = $validationMutex.WaitOne([TimeSpan]::FromMinutes(10))
+    if (-not $ownsValidationLock) {
+        throw "Another canonical Foundation validation run already owns the '$validationMutexName' lock. Wait for it to finish, or investigate a stuck run, then retry. Startup cleanup is never run without holding this lock."
+    }
 
-    Write-Host '--- Backend restore ---'
-    & dotnet restore .\backend\MiniErp.sln
-    if ($LASTEXITCODE -ne 0) { throw 'Backend restore failed.' }
+    Write-Host '--- Pre-run cleanup of stale disposable Foundation databases from a prior run ---'
+    foreach ($stale in (Get-OrphanFoundationDatabaseNames -SqlCmdPath $sqlCmd)) {
+        Write-Host "Removing stale disposable database: $stale"
+        Remove-FoundationDatabase -SqlCmdPath $sqlCmd -DatabaseName $stale
+    }
 
-    Write-Host '--- Backend Release build ---'
-    & dotnet build .\backend\MiniErp.sln --configuration Release --no-restore
-    if ($LASTEXITCODE -ne 0) { throw 'Backend Release build failed.' }
+    $databaseName = "MiniErpFoundation_{0}_{1}" -f (Get-Date -Format 'yyyyMMddHHmmss'), ([Guid]::NewGuid().ToString('N').Substring(0, 8))
+    $connectionString = "Server=$localDbServer;Database=$databaseName;Integrated Security=True;TrustServerCertificate=True;"
+    $previousConnectionString = $env:MESP_SQLSERVER_CONNECTION_STRING
 
-    Write-Host '--- Backend full regression (includes SQL Server LocalDB probes and the safety-catalogue validator) ---'
-    & dotnet test .\backend\MiniErp.sln --configuration Release --no-restore --no-build
-    if ($LASTEXITCODE -ne 0) { throw 'The full backend regression failed.' }
-
-    Push-Location (Join-Path $repositoryRoot 'frontend')
     try {
-        Write-Host '--- Angular unit tests ---'
-        & npm test -- --watch=false --no-progress
-        if ($LASTEXITCODE -ne 0) { throw 'Angular unit tests failed.' }
+        $env:MESP_SQLSERVER_CONNECTION_STRING = $connectionString
+        Push-Location $repositoryRoot
 
-        Write-Host '--- Angular production build ---'
-        & npm run build
-        if ($LASTEXITCODE -ne 0) { throw 'Angular production build failed.' }
+        Write-Host '--- Backend restore ---'
+        & dotnet restore .\backend\MiniErp.sln
+        if ($LASTEXITCODE -ne 0) { throw 'Backend restore failed.' }
 
-        Write-Host '--- Playwright Foundation journeys ---'
-        & npm run test:e2e
-        if ($LASTEXITCODE -ne 0) { throw 'Playwright Foundation journeys failed.' }
+        Write-Host '--- Backend Release build ---'
+        & dotnet build .\backend\MiniErp.sln --configuration Release --no-restore
+        if ($LASTEXITCODE -ne 0) { throw 'Backend Release build failed.' }
 
-        Write-Host '--- Production dependency audit ---'
-        & npm audit --omit=dev --audit-level=high
-        if ($LASTEXITCODE -ne 0) { throw 'npm audit reported a high or critical production vulnerability.' }
+        Write-Host '--- Backend full regression (includes SQL Server LocalDB probes and the safety-catalogue validator) ---'
+        & dotnet test .\backend\MiniErp.sln --configuration Release --no-restore --no-build
+        if ($LASTEXITCODE -ne 0) { throw 'The full backend regression failed.' }
+
+        Push-Location (Join-Path $repositoryRoot 'frontend')
+        try {
+            Write-Host '--- Angular unit tests ---'
+            & npm test -- --watch=false --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Angular unit tests failed.' }
+
+            Write-Host '--- Angular production build ---'
+            & npm run build
+            if ($LASTEXITCODE -ne 0) { throw 'Angular production build failed.' }
+
+            Write-Host '--- Playwright Foundation journeys ---'
+            & npm run test:e2e
+            if ($LASTEXITCODE -ne 0) { throw 'Playwright Foundation journeys failed.' }
+
+            Write-Host '--- Production dependency audit ---'
+            & npm audit --omit=dev --audit-level=high
+            if ($LASTEXITCODE -ne 0) { throw 'npm audit reported a high or critical production vulnerability.' }
+        }
+        finally {
+            Pop-Location
+        }
+
+        Write-Host '--- git diff --check (working tree against HEAD) ---'
+        & git diff --check
+        if ($LASTEXITCODE -ne 0) { throw 'git diff --check reported working-tree whitespace errors.' }
+
+        Write-Host '--- git diff --check (branch delta against origin/main) ---'
+        & git diff --check origin/main...HEAD
+        if ($LASTEXITCODE -ne 0) { throw 'git diff --check reported whitespace errors in the branch delta against origin/main.' }
+
+        Write-Host "Foundation validation passed against disposable database $databaseName."
     }
     finally {
-        Pop-Location
+        # Nested so environment-variable restoration is guaranteed even if
+        # Pop-Location, the best-effort database removal, or the final
+        # orphan-database proof itself throws.
+        try {
+            Pop-Location -ErrorAction SilentlyContinue
+
+            try {
+                Remove-FoundationDatabase -SqlCmdPath $sqlCmd -DatabaseName $databaseName
+            }
+            catch {
+                Write-Warning "Best-effort direct removal of '$databaseName' reported: $($_.Exception.Message). Continuing to the final orphan-database proof."
+            }
+
+            Assert-NoOrphanFoundationDatabasesRemain -SqlCmdPath $sqlCmd
+        }
+        finally {
+            if ($null -eq $previousConnectionString) {
+                Remove-Item Env:MESP_SQLSERVER_CONNECTION_STRING -ErrorAction SilentlyContinue
+            }
+            else {
+                $env:MESP_SQLSERVER_CONNECTION_STRING = $previousConnectionString
+            }
+        }
     }
-
-    Write-Host '--- git diff --check ---'
-    & git diff --check
-    if ($LASTEXITCODE -ne 0) { throw 'git diff --check reported whitespace errors.' }
-
-    Write-Host "Foundation validation passed against disposable database $databaseName."
 }
 finally {
-    Pop-Location -ErrorAction SilentlyContinue
-
-    try {
-        Remove-FoundationDatabase -SqlCmdPath $sqlCmd -DatabaseName $databaseName
+    if ($ownsValidationLock) {
+        $validationMutex.ReleaseMutex()
     }
-    catch {
-        Write-Warning "Best-effort direct removal of '$databaseName' reported: $($_.Exception.Message). Continuing to the final orphan-database proof."
-    }
-
-    Assert-NoOrphanFoundationDatabasesRemain -SqlCmdPath $sqlCmd
-
-    if ($null -eq $previousConnectionString) {
-        Remove-Item Env:MESP_SQLSERVER_CONNECTION_STRING -ErrorAction SilentlyContinue
-    }
-    else {
-        $env:MESP_SQLSERVER_CONNECTION_STRING = $previousConnectionString
-    }
+    $validationMutex.Dispose()
 }

@@ -85,18 +85,22 @@ public sealed class SafetyCatalogueValidationTests
                 continue;
             }
 
-            var cells = trimmed.Split('|');
+            // Every row is delimited by exactly one leading and one trailing
+            // '|'; trim those outer delimiters first so the split below
+            // yields the real 5 table columns, not 5 columns plus two empty
+            // tokens from the outer pipes.
+            var cells = trimmed.Trim('|').Split('|');
             Assert.True(
-                cells.Length == 7,
+                cells.Length == 5,
                 $"Catalogue row starting '{trimmed[..Math.Min(40, trimmed.Length)]}' does not have exactly 5 columns.");
 
-            var number = int.Parse(cells[1].Trim());
+            var number = int.Parse(cells[0].Trim());
             rows.Add(new CatalogueRow(
                 number,
+                cells[1].Trim(),
                 cells[2].Trim(),
                 cells[3].Trim(),
-                cells[4].Trim(),
-                cells[5].Trim()));
+                cells[4].Trim()));
         }
 
         return rows;

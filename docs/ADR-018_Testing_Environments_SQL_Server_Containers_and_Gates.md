@@ -34,19 +34,27 @@ ever connecting to a production or shared database.
    context, ownership, authorization path and durable-work contracts).
 4. The repository command `scripts/validate-foundation.ps1` is the single
    canonical Foundation validation entry point (MESP-94 M-14). It discovers
-   `SqlLocalDB.exe`/`sqlcmd.exe` dynamically — PATH first, then a
-   version-agnostic scan of installed SQL Server Tools directories under
-   Program Files; no SQL Server release/version is ever hard-coded (MESP-94
-   M-15). It starts LocalDB, removes any stale disposable database left by an
-   interrupted prior run, supplies a fresh disposable connection string to the
-   test process, runs backend restore/build/the full backend regression
-   (including the targeted SQL Server suite and the safety-catalogue
-   validator), the Angular unit tests and production build, the Playwright
-   Foundation journeys, `npm audit`, and `git diff --check`. The fixture owns
-   per-run database cleanup even when a test fails; the script additionally
-   proves, in a `finally` block that always runs, that zero
+   `SqlLocalDB.exe`/`sqlcmd.exe` dynamically but boundedly — PATH first, then
+   a probe of only the known `<version>\Tools\Binn` and
+   `Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files, never
+   a full recursive scan of the (potentially large) SQL Server database-
+   engine tree; no SQL Server release/version is ever hard-coded (MESP-94
+   M-15). A named, session-scoped mutex (`Local\MiniErpFoundationValidation`)
+   serializes concurrent runs so one run's stale-database cleanup can never
+   remove another run's active database (MESP-94 R4). It starts LocalDB,
+   removes any stale disposable database left by an interrupted prior run,
+   supplies a fresh disposable connection string to the test process, runs
+   backend restore/build/the full backend regression (including the targeted
+   SQL Server suite and the safety-catalogue validator), the Angular unit
+   tests and production build, the Playwright Foundation journeys, `npm
+   audit`, `git diff --check` against the working tree, and `git diff --check
+   origin/main...HEAD` against the live branch delta (MESP-94 R2). The
+   fixture owns per-run database cleanup even when a test fails; the script
+   additionally proves, in a `finally` block that always runs, that zero
    `MiniErpFoundation_*` databases remain on the instance (MESP-94 M-6), and
-   clears the environment variable. Every step fails the command closed.
+   restores the environment variable in its own nested `finally` guaranteed
+   regardless of any other step's failure (MESP-94 R3). Every step fails the
+   command closed.
 5. Docker/Testcontainers remains a CI-compatible option to be introduced only
    through a separately approved change. This ADR does not claim that LocalDB
    is production-equivalent, nor does it select a production SQL topology.

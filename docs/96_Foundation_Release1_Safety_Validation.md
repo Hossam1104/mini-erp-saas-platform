@@ -192,20 +192,34 @@ includes the SQL Server LocalDB probes and the safety-catalogue structural
 validator, since both are part of the `MiniErp.ArchitectureTests` project run
 by the solution-wide `dotnet test`), Angular unit tests, the Angular
 production build, the Playwright Foundation journeys, `npm audit --omit=dev
---audit-level=high`, and `git diff --check`. Every step fails the whole
-command closed on a non-zero exit code — none are swallowed. `SqlLocalDB.exe`
-and `sqlcmd.exe` are discovered dynamically (PATH first, then a version-
-agnostic scan of every installed SQL Server Tools directory under Program
-Files); no specific SQL Server release is hard-coded (MESP-94 M-15). The
-command removes any stale `MiniErpFoundation_*` database from a prior
-interrupted run before creating its own disposable database, and proves zero
-`MiniErpFoundation_*` databases remain on the LocalDB instance in a `finally`
-block that always runs, even when an earlier step fails (MESP-94 M-6); it only
-ever targets a database matching that exact disposable naming convention. The
-command fails closed when LocalDB or `sqlcmd` cannot be discovered, the
-connection is unset or unsafe, any step fails, or the final orphan-database
-proof finds a remaining database. Docker/Testcontainers CI execution remains
-deferred by ADR-018.
+--audit-level=high`, `git diff --check` against the working tree, and a
+second `git diff --check origin/main...HEAD` against the live branch delta
+from current `origin/main` (not a hard-coded SHA, so it actually covers
+whatever the branch changed, not just uncommitted edits). Every step fails
+the whole command closed on a non-zero exit code — none are swallowed.
+`SqlLocalDB.exe` and `sqlcmd.exe` are discovered dynamically but boundedly
+(PATH first, then a probe of only the known `<version>\Tools\Binn` and
+`Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files — never a
+full recursive scan of the much larger SQL Server database-engine tree); no
+specific SQL Server release is hard-coded (MESP-94 M-15). A named,
+session-scoped mutex (`Local\MiniErpFoundationValidation`) is held from
+before stale-database cleanup through final cleanup, the orphan-database
+proof and environment-variable restoration, so two concurrent validation
+runs on the same machine can never remove each other's active disposable
+database (MESP-94 R4); the command fails clearly if another run already
+holds the lock rather than silently racing it. The command removes any
+stale `MiniErpFoundation_*` database from a prior interrupted run before
+creating its own disposable database, and proves zero `MiniErpFoundation_*`
+databases remain on the LocalDB instance in a `finally` block that always
+runs, even when an earlier step fails (MESP-94 M-6); it only ever targets a
+database matching that exact disposable naming convention.
+`MESP_SQLSERVER_CONNECTION_STRING` restoration runs in its own nested
+`finally` so it is guaranteed even if the best-effort database removal or
+the final orphan-database proof itself throws (MESP-94 R3). The command
+fails closed when the validation lock cannot be acquired, LocalDB or
+`sqlcmd` cannot be discovered, the connection is unset or unsafe, any step
+fails, or the final orphan-database proof finds a remaining database.
+Docker/Testcontainers CI execution remains deferred by ADR-018.
 
 ## MESP-91 focused correction validation overlay — merged and Done
 
@@ -697,15 +711,20 @@ source commit, the two are recorded separately rather than collapsed.
 - **M-13 (vacuous unsafe SQL configuration test) — closed.** The connection-
   string safety check is extracted into
   `SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString` and
-  exercised directly by five negative cases and one positive control; the
-  fixture itself now calls this same method, so the test would fail if the
-  real check were weakened or removed.
+  exercised directly by 6 negative cases + 1 positive control; the fixture
+  itself now calls this same method, so the test would fail if the real
+  check were weakened or removed.
 - **M-14 (validation script does not run the complete Foundation) — closed.**
   `validate-foundation.ps1` is now the single canonical command; see
-  "Reproduction" above for its exact scope.
+  "Reproduction" above for its exact scope, including the branch-delta
+  `git diff --check origin/main...HEAD`, the session-scoped validation lock
+  and the guaranteed environment-variable restoration added in this PR's
+  review-correction round.
 - **M-15 (hard-coded LocalDB version path) — closed.** `SqlLocalDB.exe` and
-  `sqlcmd.exe` are resolved dynamically (PATH, then a version-agnostic scan of
-  installed SQL Server Tools directories); no `150`/`160`/`170` version
+  `sqlcmd.exe` are resolved dynamically but boundedly (PATH first, then a
+  probe of only the known `<version>\Tools\Binn` and
+  `Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files — never
+  a full recursive scan of the SQL Server tree); no `150`/`160`/`170` version
   segment is hard-coded anywhere in the tracked repository.
 - **L-2 (MESP-90 regression missing) — closed.** A new focused test,
   `auth.service.spec.ts`'s `'MESP-90 regression guard: does not desynchronize
@@ -721,6 +740,58 @@ source commit, the two are recorded separately rather than collapsed.
   `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`, verdict APPROVED FOR MERGE).
 - **L-5 (safety evidence lacks validated commit SHA) — closed.** See the SHA
   evidence model above and the validation table below.
+
+### Focused review corrections (R1–R7) — PR #26
+
+A focused ChatGPT review of PR #26 at reviewed head
+`88146a733a65bd6070ae80a3c1b6d17c4a456efa` returned CHANGES REQUIRED BEFORE
+MERGE, raising R1–R7. All seven are closed on the same branch:
+
+- **R1 (final catalogue content needs its own validation)** — closed by this
+  correction round itself: the complete canonical validation is rerun once
+  at the exact commit containing every R2–R7 source/tooling/catalogue
+  change, and the source-implementation SHA / validated repository SHA /
+  final PR head are recorded separately below rather than reusing the prior
+  round's SHA against changed Markdown.
+- **R2 (`git diff --check` must cover the branch delta)** — closed.
+  `validate-foundation.ps1` now runs both `git diff --check` against the
+  working tree and `git diff --check origin/main...HEAD` against the live
+  branch delta from current `origin/main`, not a hard-coded SHA. Either
+  failure fails the command closed.
+- **R3 (guarantee `MESP_SQLSERVER_CONNECTION_STRING` restoration)** —
+  closed. Restoration now runs in its own nested `finally`, so it executes
+  regardless of a backend failure, a frontend failure, a database-removal
+  failure, or a final orphan-database assertion failure.
+- **R4 (protect concurrent validation runs)** — closed. A named,
+  session-scoped mutex (`Local\MiniErpFoundationValidation`, not a
+  machine-wide mechanism — LocalDB itself is user/session-scoped) is
+  acquired before stale-database cleanup and held through database
+  creation, complete validation, final cleanup, the orphan-database proof
+  and environment restoration; a run that cannot acquire the lock fails
+  clearly instead of racing another run's active database. Manually
+  verified: a second acquisition attempt while a first holder is active
+  correctly returns not-acquired, and correctly succeeds once the first
+  holder releases.
+- **R5 (SQL configuration evidence counts)** — closed. Every occurrence of
+  ambiguous wording is corrected to the exact, unambiguous
+  `6 negative cases + 1 positive control`.
+- **R6 (safety-catalogue parser column counting)** — closed.
+  `SafetyCatalogueValidationTests.ReadCatalogueRows()` now trims the row's
+  outer `|` delimiters before splitting, asserts the real 5-column count,
+  and indexes `cells[0]`–`cells[4]` directly instead of splitting into 7
+  tokens (2 of them always-empty artifacts of the leading/trailing pipe)
+  and asserting a confusingly-worded 7-count.
+- **R7 (bound SQL tool discovery)** — closed. `Resolve-SqlToolExecutable`
+  no longer performs a full recursive `Get-ChildItem -Recurse` scan of the
+  entire `Microsoft SQL Server` Program Files tree (which can contain a
+  large database-engine installation and be slow). It now probes only the
+  two known tool layouts —
+  `Microsoft SQL Server\<version>\Tools\Binn\<exe>` and
+  `Microsoft SQL Server\Client SDK\ODBC\<version>\Tools\Binn\<exe>` — with a
+  single wildcarded version-directory segment per layout; PATH remains the
+  first lookup, no SQL Server release is hard-coded, and SQL validation
+  still never silently skips (a clear error is thrown if neither tool is
+  found).
 
 **Safety-catalogue disposition after this correction:** unchanged in
 aggregate — 53 PASS, 21 NOT APPLICABLE, 1 DEFERRED — because rows 40 and 45
@@ -751,10 +822,13 @@ Request for the exact pushed head once opened.
 |---|---:|---|
 | Backend Release build | 0 warnings, 0 errors | `.\scripts\validate-foundation.ps1` |
 | Complete backend suite (includes SQL Server LocalDB probes and the safety-catalogue validator) | 582 passed, 0 failed, 0 skipped | Same validation command |
-| SQL Server LocalDB suite | 21 passed, 0 failed, 0 skipped (up from 11: +6 real negative/positive configuration-validator tests, +3 same-Tenant composite acceptance cases, +1 fixture-consistency check) | Same validation command; disposable `MiniErpFoundation_*` database |
+| SQL Server LocalDB suite | 21 passed, 0 failed, 0 skipped (up from 11: -1 removed vacuous test, +6 negative cases + 1 positive control for the real configuration validator, +1 fixture-consistency check, +3 same-Tenant composite acceptance cases) | Same validation command; disposable `MiniErpFoundation_*` database |
 | SQL Server collation observed | `SQL_Latin1_General_CP1_CI_AS` (queried live via `DATABASEPROPERTYEX`; no linguistic sort/search claim made — see "SQL Server evidence" above) | Same validation command |
-| LocalDB/sqlcmd discovery | Dynamic: PATH first, then a version-agnostic scan of installed SQL Server Tools directories under Program Files; no hard-coded version | `Resolve-SqlLocalDbExecutable`/`Resolve-SqlCmdExecutable` in `scripts/validate-foundation.ps1` |
-| Disposable database cleanup | 0 `MiniErpFoundation_*` databases remained (pre-run stale-database sweep and post-run proof both ran) | Same validation command |
+| LocalDB/sqlcmd discovery | Dynamic but bounded: PATH first, then a version-agnostic probe of the known `<version>\Tools\Binn` and `Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files (never a full recursive scan of the SQL Server tree); no hard-coded version | `Resolve-SqlLocalDbExecutable`/`Resolve-SqlCmdExecutable` in `scripts/validate-foundation.ps1` |
+| Disposable database cleanup | 0 `MiniErpFoundation_*` databases remained (pre-run stale-database sweep and post-run proof both ran, serialized by a session-scoped validation lock) | Same validation command |
+| Validation concurrency lock | A named, session-scoped mutex (`Local\MiniErpFoundationValidation`) is held from before stale-database cleanup through final cleanup, the orphan-database proof and environment-variable restoration, so two concurrent runs cannot drop each other's active disposable database | `scripts/validate-foundation.ps1`; manually verified two concurrent acquisition attempts block/release correctly |
+| Repository-integrity check | `git diff --check` against the working tree, and separately `git diff --check origin/main...HEAD` against the live branch delta from current `origin/main` (not a hard-coded SHA) | Same validation command |
+| Environment restoration | `MESP_SQLSERVER_CONNECTION_STRING` restoration runs in a nested `finally` guaranteed regardless of backend/frontend/database-removal/orphan-proof failure | Same validation command |
 | Angular suite | 28 passed, 0 failed, 0 skipped, across 5 test files (up from 27: +1 MESP-90 regression guard) | `npm test -- --watch=false --no-progress` |
 | Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred (unchanged) | `npm run build` |
 | Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
