@@ -1,6 +1,6 @@
 # Current State
 
-## Start here — verified position on 7 August 2026 (MESP-94 In Progress; PR #26 open, focused review corrections applied)
+## Start here — verified position on 8 August 2026 (MESP-94 In Progress; PR #26 open, F1-F2 focused review corrections applied)
 
 A new agent can begin from this section with no prior chat history.
 
@@ -9,7 +9,7 @@ A new agent can begin from this section with no prior chat history.
 | Current branch | `fix/MESP-94-foundation-validation-evidence` |
 | Branch base / starting `main` head | `9f333c9734c767673e43a30d6b57c05793e1fb69` (PR #25 merge commit) |
 | PR #25 | **Merged** to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` — MESP-93 post-merge Markdown reconciliation |
-| Open Pull Request | [PR #26](https://github.com/Hossam1104/mini-erp-saas-platform/pull/26) — open, non-draft, unmerged; a focused ChatGPT review at reviewed head `88146a733a65bd6070ae80a3c1b6d17c4a456efa` returned CHANGES REQUIRED BEFORE MERGE (R1-R7), all closed — see `docs/96_Foundation_Release1_Safety_Validation.md`'s "Focused review corrections (R1-R7)" section |
+| Open Pull Request | [PR #26](https://github.com/Hossam1104/mini-erp-saas-platform/pull/26) — open, non-draft, unmerged; a first focused ChatGPT review at reviewed head `88146a733a65bd6070ae80a3c1b6d17c4a456efa` returned CHANGES REQUIRED BEFORE MERGE (R1-R7), all closed; a second focused ChatGPT review at reviewed head `809a4da0e6e3804a6461e55ce34fdfaec0df690e` returned CHANGES REQUIRED BEFORE MERGE (F1-F2), both closed — see `docs/96_Foundation_Release1_Safety_Validation.md`'s "Focused review corrections (R1-R7)" and "Focused review corrections (F1-F2)" sections |
 | MESP-93 | Done — PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT security re-review verdict **APPROVED FOR MERGE** |
 | PR #23 | Closed as superseded (not merged) — its docs-only MESP-92 reconciliation content was already carried onto `main` through PR #24; see the PR #23 closing comment for file-by-file evidence |
 | MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
@@ -36,8 +36,35 @@ recursive Program Files scan). All seven are closed at implementation SHA
 `ac65e204ca4f134d4c3ae98e7871b936fe01c613`; see
 `docs/96_Foundation_Release1_Safety_Validation.md`'s "Focused review
 corrections (R1-R7)" section for the exact resolution of each and the
-complete validation totals re-run at that commit. MESP-94 remains In
-Progress pending a further focused review of PR #26 at its new pushed head.
+complete validation totals re-run at that commit. That correction round was
+superseded by the F1-F2 round below.
+
+**MESP-94 PR #26 F1-F2 focused review corrections (8 August 2026):** a
+second focused ChatGPT review of PR #26 at reviewed head
+`809a4da0e6e3804a6461e55ce34fdfaec0df690e` returned CHANGES REQUIRED BEFORE
+MERGE, raising F1 (the R4 lock was session-scoped `Local\`, which does not
+coordinate two processes for the same Windows user running in different
+logon sessions, even though the shared automatic LocalDB instance is scoped
+by Windows user, not by session) and F2 (recover safely from an abandoned
+validation lock left by a prior owner that terminated unexpectedly). Both
+are closed at implementation SHA `037491cee8650bfd38c4fad4d58e3baa86a3e2a4`:
+the lock is now `scripts/FoundationValidationLock.ps1`, a Global-namespace
+named mutex suffixed with the current Windows user's SID and ACL-restricted
+to that SID, coordinating every validation run for the same Windows user
+across sessions without serializing unrelated Windows users or letting one
+open/signal another's lock; `Wait-FoundationValidationLock` recovers
+ownership from a genuine `AbandonedMutexException` instead of treating it as
+an ordinary competing run. A new focused, automated, multi-process
+verification harness, `scripts/verify-foundation-validation-lock.ps1`,
+proves all five required behaviors (active owner blocks entry to cleanup;
+a second same-user process cannot bypass the lock; an abandoned owner is
+recovered safely; the lock is released after normal completion; the lock is
+released after a simulated failure) — 5/5 passed, re-run twice for
+stability. See `docs/96_Foundation_Release1_Safety_Validation.md`'s
+"Focused review corrections (F1-F2)" section for the exact resolution of
+each and the complete validation totals re-run at that commit. MESP-94
+remains In Progress pending a further focused review of PR #26 at its new
+pushed head.
 
 **MESP-94 started (7 August 2026):** transitioned Jira MESP-94 To Do ->
 In Progress and created branch `fix/MESP-94-foundation-validation-evidence`

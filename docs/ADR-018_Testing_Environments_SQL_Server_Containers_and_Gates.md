@@ -39,9 +39,14 @@ ever connecting to a production or shared database.
    `Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files, never
    a full recursive scan of the (potentially large) SQL Server database-
    engine tree; no SQL Server release/version is ever hard-coded (MESP-94
-   M-15). A named, session-scoped mutex (`Local\MiniErpFoundationValidation`)
-   serializes concurrent runs so one run's stale-database cleanup can never
-   remove another run's active database (MESP-94 R4). It starts LocalDB,
+   M-15). The automatic LocalDB instance is scoped by Windows user, not by
+   logon session, so a named mutex coordinates every validation run for the
+   same Windows user across sessions -- a Global-namespace name suffixed
+   with the current user's SID, ACL-restricted to that SID, so it neither
+   serializes unrelated Windows users nor lets one open or signal another's
+   lock (MESP-94 F1). An abandoned lock from a prior run that terminated
+   unexpectedly is recovered rather than treated as an ordinary competing
+   run (MESP-94 F2). It starts LocalDB,
    removes any stale disposable database left by an interrupted prior run,
    supplies a fresh disposable connection string to the test process, runs
    backend restore/build/the full backend regression (including the targeted

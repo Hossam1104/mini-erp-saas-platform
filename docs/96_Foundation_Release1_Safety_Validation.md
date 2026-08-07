@@ -201,13 +201,27 @@ the whole command closed on a non-zero exit code — none are swallowed.
 (PATH first, then a probe of only the known `<version>\Tools\Binn` and
 `Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files — never a
 full recursive scan of the much larger SQL Server database-engine tree); no
-specific SQL Server release is hard-coded (MESP-94 M-15). A named,
-session-scoped mutex (`Local\MiniErpFoundationValidation`) is held from
-before stale-database cleanup through final cleanup, the orphan-database
-proof and environment-variable restoration, so two concurrent validation
-runs on the same machine can never remove each other's active disposable
-database (MESP-94 R4); the command fails clearly if another run already
-holds the lock rather than silently racing it. The command removes any
+specific SQL Server release is hard-coded (MESP-94 M-15). The automatic
+LocalDB instance is scoped by Windows user, not by logon session, so a
+session-scoped `Local\` mutex would not coordinate two same-user processes
+running in different sessions; the lock is instead a Global-namespace named
+mutex whose name is suffixed with the current Windows user's SID and whose
+access control list grants rights only to that SID (`FoundationValidationLock.ps1`).
+This coordinates every validation process for the same Windows user across
+sessions, without serializing unrelated Windows users and without letting a
+different Windows user open or signal the lock at all (MESP-94 F1); it does
+not prove that no other process on the machine can interfere with LocalDB by
+any other means. The lock is held from before stale-database cleanup through
+final cleanup, the orphan-database proof and environment-variable
+restoration, so two validation runs for the same Windows user can never
+remove each other's active disposable database; the command fails clearly if
+another run already holds the lock rather than silently racing it. If the
+prior owner terminated unexpectedly while holding the lock (crash, forced
+kill, forced session end), `Wait-FoundationValidationLock` recovers ownership
+from the resulting `AbandonedMutexException`, logs the interrupted-owner
+condition, and continues into the same stale-database discovery/cleanup flow
+below rather than treating it as an ordinary competing active run (MESP-94
+F2). The command removes any
 stale `MiniErpFoundation_*` database from a prior interrupted run before
 creating its own disposable database, and proves zero `MiniErpFoundation_*`
 databases remain on the LocalDB instance in a `finally` block that always
@@ -717,9 +731,10 @@ source commit, the two are recorded separately rather than collapsed.
 - **M-14 (validation script does not run the complete Foundation) — closed.**
   `validate-foundation.ps1` is now the single canonical command; see
   "Reproduction" above for its exact scope, including the branch-delta
-  `git diff --check origin/main...HEAD`, the session-scoped validation lock
-  and the guaranteed environment-variable restoration added in this PR's
-  review-correction round.
+  `git diff --check origin/main...HEAD`, the validation lock (see the F1/F2
+  correction below for its current exact scope) and the guaranteed
+  environment-variable restoration added in this PR's review-correction
+  round.
 - **M-15 (hard-coded LocalDB version path) — closed.** `SqlLocalDB.exe` and
   `sqlcmd.exe` are resolved dynamically but boundedly (PATH first, then a
   probe of only the known `<version>\Tools\Binn` and
@@ -762,16 +777,20 @@ MERGE, raising R1–R7. All seven are closed on the same branch:
   closed. Restoration now runs in its own nested `finally`, so it executes
   regardless of a backend failure, a frontend failure, a database-removal
   failure, or a final orphan-database assertion failure.
-- **R4 (protect concurrent validation runs)** — closed. A named,
-  session-scoped mutex (`Local\MiniErpFoundationValidation`, not a
-  machine-wide mechanism — LocalDB itself is user/session-scoped) is
-  acquired before stale-database cleanup and held through database
-  creation, complete validation, final cleanup, the orphan-database proof
-  and environment restoration; a run that cannot acquire the lock fails
-  clearly instead of racing another run's active database. Manually
-  verified: a second acquisition attempt while a first holder is active
-  correctly returns not-acquired, and correctly succeeds once the first
-  holder releases.
+- **R4 (protect concurrent validation runs)** — closed at this round with a
+  named, session-scoped mutex (`Local\MiniErpFoundationValidation`) acquired
+  before stale-database cleanup and held through database creation, complete
+  validation, final cleanup, the orphan-database proof and environment
+  restoration; a run that cannot acquire the lock fails clearly instead of
+  racing another run's active database. Manually verified at the time: a
+  second acquisition attempt while a first holder is active correctly
+  returns not-acquired, and correctly succeeds once the first holder
+  releases. **Historical note, corrected by the F1/F2 correction below:** a
+  session-scoped `Local\` mutex does not coordinate two processes for the
+  same Windows user running in different logon sessions, even though the
+  automatic LocalDB instance they share is scoped by Windows user rather
+  than by session; that gap, plus recovery from an abandoned lock, is closed
+  by the MESP-94 F1/F2 correction below.
 - **R5 (SQL configuration evidence counts)** — closed. Every occurrence of
   ambiguous wording is corrected to the exact, unambiguous
   `6 negative cases + 1 positive control`.
@@ -804,6 +823,80 @@ non-empty evidence, and every non-PASS row names a deferred owner or scope
 boundary; it runs as part of the same `MiniErp.ArchitectureTests` project the
 canonical validation command already executes.
 
+### Focused review corrections (F1–F2) — PR #26
+
+A further focused ChatGPT review of PR #26 at reviewed head
+`809a4da0e6e3804a6461e55ce34fdfaec0df690e` returned CHANGES REQUIRED BEFORE
+MERGE, raising F1 and F2 against the R4 lock closed above. Both are closed on
+the same branch:
+
+- **F1 (align validation lock scope with LocalDB scope)** — closed. The
+  automatic `MSSQLLocalDB` instance is owned/scoped by Windows user, not by
+  logon session, so two processes for the same Windows user running from
+  different sessions can reach the identical LocalDB instance; the R4
+  session-scoped `Local\` mutex did not coordinate across those sessions.
+  The lock now lives in `scripts/FoundationValidationLock.ps1`, shared by
+  `validate-foundation.ps1` and its own focused verification harness: a
+  Global-namespace named mutex whose name is suffixed with the current
+  Windows user's SID (`Global\MiniErpFoundationValidation_<SID>`) and whose
+  access control list grants `MutexRights.FullControl` only to that exact
+  SID. This coordinates every validation process for the same Windows user
+  across sessions, does not serialize unrelated Windows users against each
+  other (each user's lock has a distinct name), and cannot be opened or
+  signaled by a different Windows user at all (the ACL grants that user no
+  rights on it). It does not claim that no other process on the machine can
+  ever interfere with LocalDB by some unrelated means -- only that this
+  specific lock is user-scoped and cross-session, which is exactly and only
+  what a `Global\`-namespace, SID-named, SID-ACL'd mutex proves.
+- **F2 (recover safely from an abandoned validation lock)** — closed.
+  `Wait-FoundationValidationLock` wraps the wait call and catches
+  `System.Threading.AbandonedMutexException`: when the prior owner for this
+  Windows user terminated unexpectedly (crash, forced kill, forced session
+  end) while still holding the lock, ownership transfers to the current
+  process, a warning records the interrupted-prior-owner condition, and the
+  run continues into the identical stale-database discovery/cleanup flow
+  used for an uncontested acquisition -- it is never treated as an ordinary
+  competing active validation run. The lock remains held through the same
+  points as before (database creation, complete validation, final cleanup,
+  the orphan-database proof and environment restoration) and is
+  released/disposed in the same guaranteed outer `finally`.
+
+**Focused lock verification (`scripts/verify-foundation-validation-lock.ps1`,
+new).** Dot-sources the identical `FoundationValidationLock.ps1` functions
+`validate-foundation.ps1` uses, so the check exercises the real production
+lock, not a re-implementation. It spawns genuine separate `powershell.exe`
+child processes (not just background threads/jobs, since a Win32 named
+mutex is owned per-thread and a second wait from the same thread would
+trivially re-enter) and proves, each against a real process boundary:
+
+1. **Active owner prevents another run from entering cleanup** — while a
+   holder child process actively owns the lock, a second wait attempt from
+   the orchestrator times out (`Acquired = $false`); a real
+   `validate-foundation.ps1` run would throw at that point and never reach
+   stale-database cleanup, since it never acquired the lock.
+2. **A second same-user process/session cannot bypass the lock** — the same
+   timed-out wait proves the lock cannot be silently bypassed; the second
+   process either genuinely blocks/fails or genuinely acquires, never both.
+3. **An abandoned/interrupted owner is recovered safely** — a second child
+   process is deliberately terminated (`[Environment]::Exit`) while still
+   holding the lock, without calling `ReleaseMutex`, producing a genuine
+   OS-abandoned mutex; the orchestrator's own handle is opened before that
+   child exits (a handle must already be open when the sole owner
+   terminates, or Windows destroys the named object outright instead of
+   marking it abandoned), and `Wait-FoundationValidationLock` observes the
+   real `AbandonedMutexException` and recovers ownership.
+4. **Lock is released after normal completion** — acquire, release,
+   dispose, then immediately re-acquire from a fresh handle; the
+   re-acquisition succeeds, proving the lock was actually freed.
+5. **Lock is released after validation failure** — acquire, throw inside a
+   `try`, release inside the matching `finally` (mirroring
+   `validate-foundation.ps1`'s own structure), then immediately re-acquire
+   from a fresh handle; the re-acquisition succeeds.
+
+All five checks passed, re-run twice for stability. This supersedes the R4
+"manually verified" narrative above with an automated, repeatable harness
+against genuine multi-process contention and genuine OS-level abandonment.
+
 MESP-94 does not implement production SQL hosting, a production migration,
 performance/retention/purge behavior, or any Master Data domain work.
 MESP-48 and MESP-50 remain unchanged, explicit production gates.
@@ -827,7 +920,7 @@ exact pushed head once this documentation is committed.
 | SQL Server collation observed | `SQL_Latin1_General_CP1_CI_AS` (queried live via `DATABASEPROPERTYEX`; no linguistic sort/search claim made — see "SQL Server evidence" above) | Same validation command |
 | LocalDB/sqlcmd discovery | Dynamic but bounded: PATH first, then a probe of only the known `<version>\Tools\Binn` and `Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files — never a full recursive scan of the SQL Server tree (MESP-94 R7); no hard-coded version | `Resolve-SqlLocalDbExecutable`/`Resolve-SqlCmdExecutable` in `scripts/validate-foundation.ps1` |
 | Disposable database cleanup | 0 `MiniErpFoundation_*` databases remained (pre-run stale-database sweep and post-run proof both ran, serialized by the validation lock) | Same validation command |
-| Validation concurrency lock | A named, session-scoped mutex (`Local\MiniErpFoundationValidation`) is held from before stale-database cleanup through final cleanup, the orphan-database proof and environment-variable restoration, so two concurrent runs cannot drop each other's active disposable database (MESP-94 R4) | `scripts/validate-foundation.ps1`; manually verified two concurrent acquisition attempts block/release correctly |
+| Validation concurrency lock | **Superseded by the F1/F2 correction below** — at this round it was still the R4 session-scoped `Local\MiniErpFoundationValidation` mutex | `scripts/validate-foundation.ps1`; manually verified two concurrent acquisition attempts block/release correctly |
 | Repository-integrity check | `git diff --check` against the working tree passed, and separately `git diff --check origin/main...HEAD` against the live branch delta from current `origin/main` passed (MESP-94 R2) | Same validation command |
 | Environment restoration | `MESP_SQLSERVER_CONNECTION_STRING` restoration ran in its nested `finally`, guaranteed regardless of backend/frontend/database-removal/orphan-proof failure (MESP-94 R3) | Same validation command |
 | Angular suite | 28 passed, 0 failed, 0 skipped, across 5 test files (up from 27: +1 MESP-90 regression guard) | `npm test -- --watch=false --no-progress` |
@@ -837,14 +930,48 @@ exact pushed head once this documentation is committed.
 | Hosted CI | Not available | No hosted workflow is configured in this repository |
 
 **Final-head targeted verification (R1 step 5).** After the evidence-only
-documentation commit that records this table, the following were re-run at
+documentation commit that recorded this table, `SafetyCatalogueValidationTests`
+(4/4 passed, confirming the R6 parser fix against the just-committed
+Markdown), the MESP-94 focused SQL/configuration tests (`SqlServerSafetyTests`,
+21/21 passed), and `git diff --check` / `git diff --check origin/main...HEAD`
+against the final committed state (both passed) were re-run at that exact
+head. This round is superseded by the F1/F2 correction below.
+
+**Complete Foundation validation evidence (re-run after the F1-F2 focused
+review corrections).** Source-implementation SHA:
+`037491cee8650bfd38c4fad4d58e3baa86a3e2a4`
+(`fix(validation): scope Foundation validation lock per-user across sessions
+and recover from abandonment`, branch `fix/MESP-94-foundation-validation-evidence`,
+based on the R1-R7 correction at `ac65e204ca4f134d4c3ae98e7871b936fe01c613`).
+Validated repository SHA: identical — the run below was executed directly
+against this commit's working tree. Final PR head: see
+`.ai/CURRENT_STATE.md` and PR #26 for the exact pushed head once this
+documentation is committed.
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Backend Release build | 0 warnings, 0 errors | `.\scripts\validate-foundation.ps1` |
+| Complete backend suite (includes SQL Server LocalDB probes and the safety-catalogue validator) | 582 passed, 0 failed, 0 skipped (unchanged — F1/F2 add no new `dotnet test` cases; their own verification is the separate PowerShell harness below) | Same validation command |
+| SQL Server LocalDB suite | 21 passed, 0 failed, 0 skipped (unchanged) | Same validation command; disposable database `MiniErpFoundation_20260807235850_aaac3c7e` |
+| Disposable database cleanup | 0 `MiniErpFoundation_*` databases remained after teardown | Same validation command |
+| Validation concurrency lock scope | A Global-namespace named mutex (`Global\MiniErpFoundationValidation_<current-user-SID>`), ACL-restricted to that exact SID, coordinates every validation run for the same Windows user across logon sessions; it does not serialize unrelated Windows users and cannot be opened or signaled by a different Windows user (MESP-94 F1) | `scripts/FoundationValidationLock.ps1`; `scripts/verify-foundation-validation-lock.ps1` (5/5 checks passed, re-run twice) |
+| Abandoned-lock recovery | `Wait-FoundationValidationLock` recovers ownership from a genuine `AbandonedMutexException` (prior owner terminated unexpectedly) and continues into the normal stale-database cleanup flow instead of treating it as an ordinary competing run (MESP-94 F2) | Same harness, check 3 |
+| Repository-integrity check | `git diff --check` against the working tree passed, and separately `git diff --check origin/main...HEAD` against the live branch delta from current `origin/main` passed | Same validation command |
+| Environment restoration | `MESP_SQLSERVER_CONNECTION_STRING` restoration ran in its nested `finally`, guaranteed regardless of backend/frontend/database-removal/orphan-proof failure (unchanged from R3) | Same validation command |
+| Angular suite | 28 passed, 0 failed, 0 skipped, across 5 test files (unchanged) | `npm test -- --watch=false --no-progress` |
+| Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred (unchanged) | `npm run build` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Hosted CI | Not available | No hosted workflow is configured in this repository |
+
+**Final-head targeted verification (F1/F2).** After the evidence-only
+documentation commit that records this table, the following are re-run at
 that exact final head, without re-running the full suite a second time:
-`SafetyCatalogueValidationTests` (4/4 passed, confirming the R6 parser fix
-against the just-committed Markdown), the MESP-94 focused SQL/configuration
-tests (`SqlServerSafetyTests`, 21/21 passed), and `git diff --check` /
-`git diff --check origin/main...HEAD` against the final committed state
-(both passed). See `.ai/CURRENT_STATE.md` for the exact final PR head these
-were run against.
+`SafetyCatalogueValidationTests`, `SqlServerSafetyTests`, the focused lock
+verification (`scripts/verify-foundation-validation-lock.ps1`), and
+`git diff --check` / `git diff --check origin/main...HEAD` against the final
+committed state. See `.ai/CURRENT_STATE.md` for the exact final PR head these
+were run against and the exact results.
 
 MESP-94 is **not** marked Done by this validation; its Pull Request is pending
 review, merge and post-merge closure. No production SQL provider, migration,
