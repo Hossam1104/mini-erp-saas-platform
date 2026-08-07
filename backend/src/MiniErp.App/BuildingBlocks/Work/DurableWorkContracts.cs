@@ -63,16 +63,23 @@ public enum PrivateFileDisposition
     ChecksumFailed = 4
 }
 
-/// <summary>Safe file-access outcomes that do not reveal foreign targets.</summary>
+/// <summary>
+/// Safe file-access outcomes that do not reveal foreign targets. A missing
+/// object and an object that exists but belongs to a different Tenant are
+/// externally indistinguishable: both surface as <see cref="NotFound"/> on
+/// every <see cref="PrivateFileAccessResult"/> returned to a caller.
+/// <see cref="TenantDenied"/> exists only as an internal safe audit-evidence
+/// classification and is never the <see cref="PrivateFileAccessResult.Outcome"/>
+/// of a caller-visible result.
+/// </summary>
 public enum PrivateFileAccessOutcome
 {
     Allowed = 1,
     NotFound = 2,
     TenantDenied = 3,
-    AnonymousDenied = 4,
-    Expired = 5,
-    ChecksumFailed = 6,
-    ConcurrencyConflict = 7
+    Expired = 4,
+    ChecksumFailed = 5,
+    ConcurrencyConflict = 6
 }
 
 /// <summary>Marker for a handler-specific, typed durable-work payload.</summary>

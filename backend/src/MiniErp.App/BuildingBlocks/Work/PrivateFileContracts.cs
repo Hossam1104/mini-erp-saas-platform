@@ -1,6 +1,7 @@
 #pragma warning disable CS1591
 
 using System.Security.Cryptography;
+using System.Text;
 using MiniErp.App.BuildingBlocks.Tenancy;
 
 namespace MiniErp.App.BuildingBlocks.Work;
@@ -175,8 +176,11 @@ public sealed class InMemoryPrivateObjectStorage : IPrivateObjectStorage
 
             if (stored.Metadata.TenantId != tenantContext.TenantId)
             {
+                // Internal audit evidence preserves the granular truth; the
+                // caller-visible outcome always folds to NotFound so a foreign
+                // object can never be distinguished from a missing one (M-1).
                 accessEvidence.Add((tenantContext.TenantId, objectId, PrivateFileAccessOutcome.TenantDenied));
-                return ValueTask.FromResult(PrivateFileAccessResult.Denied(PrivateFileAccessOutcome.TenantDenied));
+                return ValueTask.FromResult(PrivateFileAccessResult.Denied(PrivateFileAccessOutcome.NotFound));
             }
 
             if (stored.Metadata.Disposition != PrivateFileDisposition.Available
@@ -223,8 +227,28 @@ public sealed class InMemoryPrivateObjectStorage : IPrivateObjectStorage
 
             if (stored.Metadata.TenantId != tenantContext.TenantId)
             {
+                // Same fold as ReadAsync: a foreign object must not be
+                // distinguishable from a missing one to the caller (M-1).
                 accessEvidence.Add((tenantContext.TenantId, objectId, PrivateFileAccessOutcome.TenantDenied));
-                return PrivateFileAccessResult.Denied(PrivateFileAccessOutcome.TenantDenied);
+                return PrivateFileAccessResult.Denied(PrivateFileAccessOutcome.NotFound);
+            }
+
+            // An object in any prohibited lifecycle state fails closed instead
+            // of being silently overwritten (M-4): expired/disposed metadata,
+            // or content whose checksum no longer matches the recorded hash.
+            if (stored.Metadata.Disposition != PrivateFileDisposition.Available
+                || stored.Metadata.ExpiresAt <= DateTimeOffset.UtcNow)
+            {
+                accessEvidence.Add((tenantContext.TenantId, objectId, PrivateFileAccessOutcome.Expired));
+                return PrivateFileAccessResult.Denied(PrivateFileAccessOutcome.Expired);
+            }
+
+            var existingChecksum = Convert.ToHexString(SHA256.HashData(stored.Content));
+            if (!string.Equals(existingChecksum, stored.Metadata.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                stored.Metadata.Disposition = PrivateFileDisposition.ChecksumFailed;
+                accessEvidence.Add((tenantContext.TenantId, objectId, PrivateFileAccessOutcome.ChecksumFailed));
+                return PrivateFileAccessResult.Denied(PrivateFileAccessOutcome.ChecksumFailed);
             }
 
             if (stored.Metadata.ConcurrencyVersion != expectedConcurrencyVersion)
@@ -283,10 +307,50 @@ public sealed class InMemoryPrivateObjectStorage : IPrivateObjectStorage
         return buffer.ToArray();
     }
 
+    /// <summary>
+    /// Unicode bidirectional-override, embedding, isolate and other deceptive
+    /// formatting characters that must never appear in a filename (M-5). Valid
+    /// Arabic letters, digits and normalized Unicode text are unaffected --
+    /// none of these code points are Arabic script.
+    /// </summary>
+    private static readonly char[] UnsafeFormatCharacters =
+    [
+        (char)0x200B, // zero width space
+        (char)0x200C, // zero width non-joiner
+        (char)0x200D, // zero width joiner
+        (char)0x200E, // left-to-right mark
+        (char)0x200F, // right-to-left mark
+        (char)0x2060, // word joiner
+        (char)0x202A, // left-to-right embedding
+        (char)0x202B, // right-to-left embedding
+        (char)0x202C, // pop directional formatting
+        (char)0x202D, // left-to-right override
+        (char)0x202E, // right-to-left override
+        (char)0x2066, // left-to-right isolate
+        (char)0x2067, // right-to-left isolate
+        (char)0x2068, // first strong isolate
+        (char)0x2069, // pop directional isolate
+        (char)0xFEFF  // zero width no-break space / byte order mark
+    ];
+
     private static string SafeFileName(string value)
     {
-        var name = Path.GetFileName(value);
-        if (string.IsNullOrWhiteSpace(name) || name.Length > 255 || name.Any(char.IsControl))
+        ArgumentNullException.ThrowIfNull(value);
+
+        // Normalize composed/decomposed Unicode to one comparable form before
+        // validation. A path separator anywhere in the supplied name fails
+        // closed rather than being silently truncated to a leaf name -- a
+        // caller-supplied value that looks like a path is rejected outright,
+        // never tolerantly reinterpreted as one (M-5).
+        var name = value.Normalize(NormalizationForm.FormC);
+        if (string.IsNullOrWhiteSpace(name)
+            || name.Length > 255
+            || name is "." or ".."
+            || name.Contains("..", StringComparison.Ordinal)
+            || name.Contains('/')
+            || name.Contains('\\')
+            || name.Any(char.IsControl)
+            || name.Any(UnsafeFormatCharacters.Contains))
         {
             throw new ArgumentException("Original filename is invalid or unsafe.", nameof(value));
         }

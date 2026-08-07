@@ -18,7 +18,8 @@ namespace MiniErp.App.Modules.Identity;
 internal sealed class IdentityAuthorizationService :
     IOrganizationScopeOwnershipResolver,
     IDurableWorkAuthorityRevalidator,
-    IDurableWorkReconciliationAuthorizer
+    IDurableWorkReconciliationAuthorizer,
+    INotificationRecipientAuthorizer
 {
     private const string GenericDeniedCode = "access_denied";
     private const string GenericAuthenticationCode = "authentication_failed";
@@ -137,6 +138,57 @@ internal sealed class IdentityAuthorizationService :
         }
 
         return ValueTask.FromResult(result);
+    }
+
+    /// <summary>
+    /// Live-proves a caller-supplied notification recipient reference is an
+    /// active Global user with an active ordinary Membership in the caller's
+    /// exact Tenant (M-8). A foreign-Tenant, suspended, revoked, pending or
+    /// unknown recipient is always denied with a generic safe reason; no
+    /// SupportGrant path can substitute for a genuine Tenant Membership here.
+    /// </summary>
+    public ValueTask<NotificationRecipientAuthorizationResult> AuthorizeAsync(
+        TenantContext currentTenantContext,
+        NotificationRecipientReference recipient,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(currentTenantContext);
+        ArgumentNullException.ThrowIfNull(recipient);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromResult(
+                NotificationRecipientAuthorizationResult.Denied("recipient_authorization_cancelled"));
+        }
+
+        NotificationRecipientAuthorizationResult result;
+        lock (store.SyncRoot)
+        {
+            result = AuthorizeNotificationRecipientUnsafe(currentTenantContext, recipient);
+        }
+
+        return ValueTask.FromResult(result);
+    }
+
+    private NotificationRecipientAuthorizationResult AuthorizeNotificationRecipientUnsafe(
+        TenantContext currentTenantContext,
+        NotificationRecipientReference recipient)
+    {
+        var recipientUserId = new UserId(recipient.UserId);
+        if (!store.Users.TryGetValue(recipientUserId, out var user) || user.Status != GlobalUserStatus.Active)
+        {
+            return NotificationRecipientAuthorizationResult.Denied("recipient_denied");
+        }
+
+        var membership = store.Memberships.Values.FirstOrDefault(candidate =>
+            candidate.UserId == recipientUserId && candidate.TenantId == currentTenantContext.TenantId);
+
+        if (membership is null || membership.Status != MembershipStatus.Active)
+        {
+            return NotificationRecipientAuthorizationResult.Denied("recipient_denied");
+        }
+
+        return NotificationRecipientAuthorizationResult.Approved(
+            new VerifiedNotificationRecipient(currentTenantContext.TenantId, recipient.UserId));
     }
 
     internal UserId CreateUser(string email, string password, bool mfaEnabled = true)
