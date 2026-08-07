@@ -10,12 +10,11 @@
 | Last updated | 7 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-92 Correction Package 2 — In Progress on an open, unmerged Pull Request` |
-| Current implementation item | `MESP-92 — In Progress; the only active bounded implementation item` |
-| Active branch | `fix/MESP-92-single-effect-immutable-payloads` (base merged-main `32a91f27bc162685fc0db0f38b031d02ffbc99d2`; head `e991641`) |
-| Merged-main baseline | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` (PR #21 merge; MESP-91 Done through PR #20) |
+| Current activity | `MESP-93 private-file/notification hardening — active implementation item` |
+| Current implementation item | `MESP-93 — see .ai/CURRENT_STATE.md for the exact live branch/head/PR` |
+| Merged-main baseline | `322341e70e56270797d5770b4b90342c20b7833e` (PR #22 merge; MESP-92 Done) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `PR #22 open, non-draft and unmerged; four focused ChatGPT security reviews answered; Opus 5 project-wide checkpoint of 6 August 2026 verified H92-03, H92-04, M92-03, M92-04 and L92-01 as closed at head 271e9df and recorded two new non-blocking findings (O92-01 Low, O92-02 Low), both closed by the bounded correction at head 9dc6cb8; a further focused re-review at that head raised H92-05 (High) and M92-05 (Medium), both closed by the bounded correction at head 576996f; a follow-up shipping-boundary correction then found that closure incomplete and raised/closed H92-06 (High), M92-07 (Medium) and L92-02 (Low scope cleanup) at head e991641 — see below; no known MESP-92 code finding remains open` |
+| Current review checkpoint | `MESP-92 PR #22 merged to main at 322341e70e56270797d5770b4b90342c20b7833e after focused ChatGPT security review verdict APPROVED FOR MERGE at reviewed head 3ec6b45; no known MESP-92 code finding remains open. MESP-93 is now active — see .ai/CURRENT_STATE.md, which is the canonical live-state document, for its current branch/head/PR.` |
 
 ---
 
@@ -63,13 +62,15 @@ approved by focused ChatGPT security review and merged to `main` at
 at `32a91f27bc162685fc0db0f38b031d02ffbc99d2`, which is the **current
 merged-main baseline**.
 
-MESP-92 Correction Package 2 is **In Progress** and is the only active bounded
-implementation item. Its work is on branch
-`fix/MESP-92-single-effect-immutable-payloads` (head
-`e991641`) and is published as
-[PR #22](https://github.com/Hossam1104/mini-erp-saas-platform/pull/22), which is
-**open, non-draft and unmerged**. Nothing in MESP-92 is on `main` yet. No Sprint
-is active and no parallel implementation item exists.
+MESP-92 Correction Package 2 is **Done**. Its work was published as
+[PR #22](https://github.com/Hossam1104/mini-erp-saas-platform/pull/22), which
+received a focused ChatGPT security review verdict of APPROVED FOR MERGE at
+reviewed head `3ec6b45` and was merged to `main` at
+`322341e70e56270797d5770b4b90342c20b7833e` on 7 August 2026. MESP-93
+(Correction Package 3 — private-file/notification hardening) is now the only
+active bounded implementation item. No Sprint is active and no parallel
+implementation item exists. See `.ai/CURRENT_STATE.md` for MESP-93's exact
+live branch, head and Pull Request.
 
 | Area | Current status |
 |---|---|
@@ -94,9 +95,9 @@ is active and no parallel implementation item exists.
 | MESP-61 background processing foundation | Done — PR #17 merged at `7db49a88e11232f055c2016b8bb033a61de629ec`; typed Tenant-bound durable work/outbox/inbox, bounded worker, notification contracts and private-file adapter |
 | MESP-64 provider/schema/index validation | Done — PR #18 merged at `2002d1c25d39022b227e89b3d70f41a53de0408c`; ADR-018, disposable LocalDB SQL Server harness, exact 75-assertion evidence and merged-main validation complete; no production provider or migration |
 | MESP-91 verified work scope and worker authority correction | Done — Correction Package 1; PR #20 merged at `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT approval; Identity-owned organization resolver, authorization-context-bound scopes, live worker/outbox revalidation and safe authority dead-letter are merged to `main` |
-| MESP-92 single-effect durable work and immutable typed payloads | **In Progress** — Correction Package 2; PR #22 open, non-draft and **unmerged** at head `e991641`; not on `main` |
-| MESP-93 private-file/notification hardening | To Do — Correction Package 3; must not start before MESP-92 closes |
-| MESP-94 safety-catalogue and validation-evidence correction | To Do — must not start before MESP-92 closes |
+| MESP-92 single-effect durable work and immutable typed payloads | **Done** — Correction Package 2; PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT approval |
+| MESP-93 private-file/notification hardening | **In Progress** — Correction Package 3; see `.ai/CURRENT_STATE.md` for exact branch/head/PR |
+| MESP-94 safety-catalogue and validation-evidence correction | To Do — must not start before MESP-93 closes |
 | Final Foundation correction checkpoint | Not Started — follows MESP-93 and MESP-94 |
 | MESP-3 Identity and Access Epic | In Progress |
 | MESP-28 Identity and Access BRD | Done — v0.3 Approved Release 1 Baseline (founder change-control approval 3 August 2026) |
@@ -132,10 +133,10 @@ is active and no parallel implementation item exists.
 - [x] `MESP-64` is **Done**; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`, merged-main validation passed, and its branch was deleted.
 - [x] `MESP-91` is **Done**; PR #20 merged at `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT security review approval; branch `fix/MESP-91-verified-work-scope-authority` deleted after merge.
 - [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
-- 🔄 `MESP-92` is **In Progress** (verified in Jira on 6 August 2026). It is the only active bounded implementation item; PR #22 is open, non-draft and unmerged at head `e991641`.
-- [ ] `MESP-93` and `MESP-94` remain **To Do**; Correction Package 3 and the safety-catalogue correction are untouched and must not start before MESP-92 closes.
+- [x] `MESP-92` is **Done** (7 August 2026). PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT security review approval.
+- 🔄 `MESP-93` is **In Progress**; it is now the only active bounded implementation item. `MESP-94` remains **To Do** and must not start before MESP-93 closes.
 - [x] No Sprint is active; MESP-89 and MESP-63 were delivered outside a Sprint.
-- [x] MESP-63, MESP-90, MESP-61, MESP-64 and MESP-91 completed sequentially; MESP-92 is now the single active implementation item and no parallel implementation is authorized.
+- [x] MESP-63, MESP-90, MESP-61, MESP-64, MESP-91 and MESP-92 completed sequentially; MESP-93 is now the single active implementation item and no parallel implementation is authorized.
 - [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; implementation refinement is controlled and is not production readiness.
 - [x] Product-wide Phase 2 remains **In Progress** because core ERP BRDs remain incomplete; Foundation backend work does not imply complete ERP backend implementation.
 - [x] Branch `feat/mesp-57-modular-monolith-seam` was created from `main` and pushed.
@@ -750,12 +751,13 @@ Implement approved backlog items sequentially, validate them with focused automa
 The product-wide Phase 2 BRD stream remains in progress because core ERP BRDs
 remain incomplete. The Foundation slice has completed the approved MESP-63
 frontend baseline, MESP-61 durable-work foundation and the MESP-91 Correction
-Package 1 authority hardening; that does not mean complete ERP backend
-implementation has started. MESP-91 is Done and merged. MESP-92 is **In
-Progress** on an open, unmerged Pull Request and is the only active
-implementation item; no Sprint is active. Do not start MESP-31, MESP-93,
-MESP-94 or any downstream ERP transaction work before MESP-92 closes and its
-entry conditions are reconfirmed.
+Package 1 authority hardening and the MESP-92 Correction Package 2 payload/
+effect hardening; that does not mean complete ERP backend implementation has
+started. MESP-91 and MESP-92 are Done and merged (PR #22 merged to `main` at
+`322341e70e56270797d5770b4b90342c20b7833e`). MESP-93 is **In Progress** and is
+the only active implementation item; no Sprint is active. Do not start
+MESP-31, MESP-94 or any downstream ERP transaction work before MESP-93 closes
+and its entry conditions are reconfirmed.
 
 - [x] Approve `MESP-28` Identity and Access BRD v0.3 change-control baseline on `docs/foundation-release1-lean-spec`.
 - [x] Begin and complete `MESP-29` Multi-Tenancy BRD as the single requirements activity; v0.2 is approved and Done.
@@ -1875,3 +1877,17 @@ exists. Wafra remains a validation Tenant only.
 9. Begin the MESP-31 BRD only after its entry conditions are reconfirmed.
 10. Keep Master Data implementation blocked until its BRD and implementation
     gates are approved.
+
+### MESP-92 closure overlay — supersedes the sequence above (7 August 2026)
+
+Steps 1–5 of the "Next authorized sequence" above are now complete: the
+bounded O92-01/O92-02 correction, then H92-05/M92-05 and H92-06/M92-07/L92-02,
+closed every MESP-92 finding; a focused ChatGPT security review of PR #22 at
+final reviewed head `3ec6b45` returned verdict APPROVED FOR MERGE; PR #22 was
+merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e`; documentation
+was reconciled; and MESP-92 was moved to **Done** in Jira. Step 6, starting
+MESP-93, is now underway. All narrative and status text above this overlay
+that describes MESP-92 as "In Progress" or PR #22 as "open, non-draft and
+unmerged" is the preserved historical record of the correction sequence, not
+the current state. `.ai/CURRENT_STATE.md` is the canonical live-state
+document for MESP-93's exact branch, head and Pull Request.

@@ -1,27 +1,39 @@
 # Current State
 
-## Start here — verified position on 7 August 2026
+## Start here — verified position on 7 August 2026 (post-MESP-92 merge)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
-| Current branch | `fix/MESP-92-single-effect-immutable-payloads` |
-| Current branch head (final implementation head) | `e991641` (`e99164134054ae9f5c48ad53399e1fbb9898225b`) |
-| Starting head for this correction | `dd3b4f58e9dcf290d42536dbd4a1196232f378e7` |
-| Previous MESP-92 correction head | `576996f94ae9ddc251767445a7ebddd60c492c45` (H92-05/M92-05 closure) |
-| Previous branch head | `9dc6cb82860b10215d05364f2f6e25f69df3b986` (O92-01/O92-02 closure) |
-| Merged-main baseline | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` |
-| Open Pull Request | PR #22 — open, non-draft, **unmerged**, **not approved** |
-| Active Jira item | **MESP-92 — In Progress** (the only active bounded implementation item) |
+| Current branch | `main` (MESP-93 work happens on `fix/MESP-93-private-files-notifications`, branched from this head) |
+| `main` head | `322341e70e56270797d5770b4b90342c20b7833e` (PR #22 merge commit) |
+| MESP-92 final reviewed head (pre-merge) | `3ec6b45bc108d1388035caa8c331866a2c72d043` |
+| Merged-main baseline before MESP-92 | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` |
+| PR #22 | **Merged** to `main` at `322341e70e56270797d5770b4b90342c20b7833e` (2026-08-07T09:42:13Z), after focused ChatGPT security review verdict APPROVED FOR MERGE |
+| Active Jira item | **MESP-92 — Done.** **MESP-93 — In Progress** (the only active bounded implementation item) |
 | MESP-91 | Done |
-| MESP-93 / MESP-94 | To Do — must not start before MESP-92 closes |
-| MESP-31 (Master Data BRD) | To Do — not started |
+| MESP-94 | To Do — must not start before MESP-93 closes |
+| MESP-31 (Master Data BRD) | To Do — not started; blocked until Foundation entry conditions (MESP-93, MESP-94) are complete |
 | MESP-48 / MESP-50 | To Do — open production gates, preserved |
 | Sprint | None active |
 | Parallel implementation | None |
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
+
+**MESP-92 closure (7 August 2026):** PR #22 merged to `main` at
+`322341e70e56270797d5770b4b90342c20b7833e` after a focused ChatGPT security
+review verdict of APPROVED FOR MERGE at reviewed head `3ec6b45`. Post-merge
+validation on `main`: Release build 0 warnings/0 errors; full backend
+regression **493/493** passed (0 failed, 0 skipped), including **11/11** SQL
+Server LocalDB probes with no `MiniErpFoundation_*` database remaining after
+teardown; Angular unit tests **27/27** passed; Angular production build
+succeeded (351.02 kB initial / 87.80 kB transferred, unchanged); Playwright
+**4/4** passed; `npm audit --omit=dev --audit-level=high` reported **0**
+vulnerabilities. MESP-92 is marked **Done** in Jira. MESP-93 is now the active
+implementation item; see the MESP-93 section below for its branch, findings
+and status. The sections below this line are the preserved historical record
+of the MESP-92 correction sequence and are not the current state.
 
 **H92-06/M92-07/L92-02 closure (7 August 2026):** a focused shipping-boundary
 correction found that `MiniErp.App` still granted
@@ -89,10 +101,13 @@ findings are now closed at head `e991641`:
   (`1f9163b9412cb343a19a98312eb642ad26c1efaa` at `docs/MESP_PRD_v1.2.docx`) was
   not modified.
 
-**Exact next action:** obtain a further focused ChatGPT security review of PR
-#22 at head `e991641`. Do not merge PR #22, do not close MESP-92, and do not
-start MESP-93, MESP-94 or MESP-31 until that review authorizes the next step.
-The merge hold is a standing process gate.
+**Exact next action (historical — superseded, see the closure entry above):**
+obtain a further focused ChatGPT security review of PR #22 at head `e991641`.
+Do not merge PR #22, do not close MESP-92, and do not start MESP-93, MESP-94
+or MESP-31 until that review authorizes the next step. The merge hold is a
+standing process gate. **Superseded 7 August 2026:** that review completed
+with verdict APPROVED FOR MERGE, PR #22 is merged, MESP-92 is Done, and
+MESP-93 is now active — see "Start here" above.
 
 **H92-05/M92-05 closure (7 August 2026):** a focused ChatGPT security
 re-review of PR #22 raised H92-05 (`DurableWorkLocalRuntime` publicly exposed
