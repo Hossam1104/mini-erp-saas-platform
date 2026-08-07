@@ -1970,3 +1970,40 @@ transitioned To Do -> In Progress, and branch
 `fix/MESP-94-foundation-validation-evidence` was created from that head. See
 `.ai/CURRENT_STATE.md` and `docs/96_Foundation_Release1_Safety_Validation.md`
 for MESP-94's exact scope, findings and evidence.
+
+### MESP-94 closure and Foundation completion checkpoint — supersedes the sequence above (8 August 2026)
+
+Steps 6–8 of the "Next authorized sequence" recorded earlier in this document
+are now complete. MESP-94's R1–R7 and F1–F2 focused review rounds both
+closed; a ChatGPT final merge review of PR #26 at approved exact head
+`2c7ed3dec4662672bb78967ceb70db7ed73eb7d4` returned verdict **APPROVED FOR
+MERGE** (0 Critical, 0 High, 0 Medium blockers); PR #26 merged to `main` at
+actual merge commit `06d837c958c1cb7977dc121e3aaea4e7278944fd`; post-merge
+focused verification passed (`SafetyCatalogueValidationTests` +
+`SqlServerSafetyTests` 25/25, lock harness 5/5, both `git diff --check`
+scopes clean, 0 orphan databases); and MESP-94 was moved to **Done** in
+Jira. All narrative and status text above this overlay that describes
+MESP-94 as "In Progress" or its Pull Request as "open" is the preserved
+historical record of the correction sequence, not the current state.
+
+A bounded Foundation completion checkpoint followed (not a redesign):
+MESP-92, MESP-93 and MESP-94 are confirmed Done; MESP-48 and MESP-50 remain
+intentionally open production gates and are not treated as blockers to
+MESP-31 BRD entry; no remaining Foundation correction ticket blocks BRD
+entry. See `docs/97_Foundation_Completion_Review_Checkpoint.md` for the
+checkpoint record.
+
+**Step 9 (begin the MESP-31 BRD only after its entry conditions are
+reconfirmed) is evaluated, not executed.** Foundation completion is a
+necessary but not sufficient condition: the only recorded precedent for
+"reconfirming" a BRD's entry conditions in this repository is MESP-29's,
+where a distinct, explicit founder/owner authorization statement — not
+Foundation completion alone — permitted the Task to move to In Progress
+(`docs/13_Multi_Tenancy_BRD.md` SC-001). No equivalent authorization is
+recorded for MESP-31, and Jira MESP-31 itself still carries the standing
+instruction not to move to In Progress until its BRD entry criteria are
+approved. `MESP-31 BRD ENTRY: NOT YET ELIGIBLE FOR AUTOMATIC START — OWNER
+APPROVAL REQUIRED.` MESP-31 remains **To Do**; step 10 (Master Data
+implementation blocked until its BRD and implementation gates are approved)
+continues to apply regardless of when BRD drafting starts. `.ai/CURRENT_STATE.md`
+is the canonical live-state document for the exact current position.
