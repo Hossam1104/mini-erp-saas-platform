@@ -2,7 +2,7 @@
 
 | Field | Decision |
 |---|---|
-| Status | Contract baseline; MESP-93 access-outcome and lifecycle hardening implemented; production storage decision deferred |
+| Status | Contract baseline; MESP-93 access-outcome and lifecycle hardening implemented, merged and Done (PR #24, `005c796629341ab9becfbc6d1abe2ae34b6a7332`); production storage decision deferred |
 | Date | 4 August 2026; reconciled 7 August 2026 |
 | Owners | Solution Architecture / Security Engineering |
 | Related Jira | MESP-61, MESP-64, MESP-93, MESP-38, MESP-39, MESP-50 |
@@ -59,7 +59,7 @@ operations. MESP-50 owns privacy, retention, residency, legal hold, purge,
 backup and restoration. ADR-009 does not supersede ADR-016 or any production
 security decision.
 
-## MESP-93 hardening (7 August 2026, implementation pending review)
+## MESP-93 hardening (7 August 2026, merged and Done)
 
 Point 3's "fail closed without returning foreign metadata or content" is now
 enforced as external indistinguishability, not merely non-disclosure: a

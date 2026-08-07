@@ -19,11 +19,15 @@
 > **Historical checkpoint — not the current state.** The table above and the
 > sections below record the Foundation position as reviewed on 6 August 2026,
 > while MESP-92 was In Progress on the still-open PR #22. That checkpoint
-> content is preserved unchanged. MESP-92 has since closed: PR #22 received a
-> focused ChatGPT security review verdict of APPROVED FOR MERGE at reviewed
-> head `3ec6b45` and was merged to `main` at
-> `322341e70e56270797d5770b4b90342c20b7833e`; MESP-92 is **Done**; MESP-93 is
-> now **In Progress**. For the verified current position, read
+> content is preserved unchanged. MESP-92 and MESP-93 have since both closed:
+> PR #22 received a focused ChatGPT security review verdict of APPROVED FOR
+> MERGE at reviewed head `3ec6b45` and was merged to `main` at
+> `322341e70e56270797d5770b4b90342c20b7833e` (MESP-92 Done); PR #24 then
+> received a focused ChatGPT security re-review verdict of APPROVED FOR MERGE
+> at reviewed head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e` and was merged
+> to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (MESP-93 Done).
+> MESP-94 is now the next eligible Foundation correction, not yet started.
+> For the verified current position, read
 > [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and
 > [`docs/94_Product_Delivery_Master_Plan.md`](94_Product_Delivery_Master_Plan.md).
 

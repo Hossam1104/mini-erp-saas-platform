@@ -1,20 +1,18 @@
 # Current State
 
-## Start here — verified position on 7 August 2026 (MESP-93 focused re-review corrections implemented, pending re-review)
+## Start here — verified position on 7 August 2026 (MESP-93 Done; PR #24 merged; MESP-94 next eligible)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
-| Current branch | `fix/MESP-93-private-files-notifications` |
-| Branch base | `main` at `322341e70e56270797d5770b4b90342c20b7833e` (PR #22 merge commit; MESP-92 Done) |
-| First implementation head | `85b9ec1` (closed M-1, M-4, M-5, M-7, M-8, M-9, L-4; reviewed at pushed head `759eb04`) |
-| Re-review correction head | `1820416` (closes H93-01, H93-02, M93-01, M93-02, L93-01 raised against `759eb04`) |
-| Open Pull Request | [PR #24](https://github.com/Hossam1104/mini-erp-saas-platform/pull/24) — open, non-draft, **unmerged**, manual merge hold for focused ChatGPT security re-review (same standing gate MESP-92 carried) |
-| Active Jira item | **MESP-93 — In Progress** (the only active bounded implementation item) |
+| Current branch | `main` |
+| Current `main` head | `005c796629341ab9becfbc6d1abe2ae34b6a7332` (PR #24 merge commit) |
+| MESP-93 | **Done** — PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT security re-review verdict **APPROVED FOR MERGE** |
+| PR #23 | Closed as superseded (not merged) — its docs-only MESP-92 reconciliation content was already carried onto `main` through PR #24; see the PR #23 closing comment for file-by-file evidence |
 | MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
 | MESP-91 | Done |
-| MESP-94 | To Do — must not start before MESP-93 closes |
+| Active Jira item | **MESP-94** — next eligible Foundation correction, To Do (not yet started); uses normal bounded review, not the MESP-92/MESP-93 manual security merge hold |
 | MESP-31 (Master Data BRD) | To Do — not started; blocked until Foundation entry conditions (MESP-93, MESP-94) are complete |
 | MESP-48 / MESP-50 | To Do — open production gates, preserved |
 | Sprint | None active |
@@ -22,7 +20,28 @@ A new agent can begin from this section with no prior chat history.
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
 
-**MESP-93 focused re-review correction (7 August 2026):** a focused
+**MESP-93 closure (7 August 2026):** PR #24 merged to `main` at
+`005c796629341ab9becfbc6d1abe2ae34b6a7332` after a focused ChatGPT security
+re-review verdict of APPROVED FOR MERGE at reviewed head `83b0c0e`. Post-merge
+validation on `main`, rerun (not copied from pre-merge): Release build **0
+warnings/0 errors**; full backend regression **566/566** passed (0 failed, 0
+skipped), including **11/11** SQL Server LocalDB probes with no
+`MiniErpFoundation_*` database remaining after teardown; Angular unit tests
+**27/27** passed; Angular production build succeeded (351.02 kB initial /
+87.80 kB transferred, unchanged); Playwright **4/4** passed; `npm audit
+--omit=dev --audit-level=high` reported **0** vulnerabilities; `git diff
+--check` clean. All original findings (M-1, M-4, M-5, M-7, M-8, M-9, L-4) and
+all focused re-review findings (H93-01, H93-02, M93-01, M93-02, L93-01) are
+closed. MESP-93 is marked **Done** in Jira. PR #23 was investigated and found
+fully superseded by PR #24's own reconciliation content already on `main`
+(identical or newer for every one of its 11 changed files); it was closed
+without merge rather than conflict-resolved. MESP-94 is now the next eligible
+Foundation correction (not yet started); MESP-31 remains To Do. The sections
+below this line are the preserved historical record of the MESP-93
+implementation and re-review correction sequence and are not the current
+state.
+
+**MESP-93 focused re-review correction (7 August 2026, historical):** a focused
 ChatGPT/Copilot re-review of PR #24 at head `759eb04` returned CHANGES
 REQUIRED BEFORE MERGE, raising H93-01, H93-02, M93-01, M93-02 and L93-01.
 All five are closed at head `1820416`:

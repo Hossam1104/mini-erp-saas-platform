@@ -10,11 +10,11 @@
 | Last updated | 7 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-93 private-file/notification hardening — active implementation item` |
-| Current implementation item | `MESP-93 — see .ai/CURRENT_STATE.md for the exact live branch/head/PR` |
-| Merged-main baseline | `322341e70e56270797d5770b4b90342c20b7833e` (PR #22 merge; MESP-92 Done) |
+| Current activity | `MESP-93 Done; MESP-94 is the next eligible Foundation correction, not yet started` |
+| Current implementation item | `None active — see .ai/CURRENT_STATE.md for the exact live position` |
+| Merged-main baseline | `005c796629341ab9becfbc6d1abe2ae34b6a7332` (PR #24 merge; MESP-93 Done) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `MESP-92 PR #22 merged to main at 322341e70e56270797d5770b4b90342c20b7833e after focused ChatGPT security review verdict APPROVED FOR MERGE at reviewed head 3ec6b45; no known MESP-92 code finding remains open. MESP-93 is now active — see .ai/CURRENT_STATE.md, which is the canonical live-state document, for its current branch/head/PR.` |
+| Current review checkpoint | `MESP-93 PR #24 merged to main at 005c796629341ab9becfbc6d1abe2ae34b6a7332 after focused ChatGPT security re-review verdict APPROVED FOR MERGE at reviewed head 83b0c0ed547dcc1b41c873ed087ab4e62d49c50e; no known MESP-93 code finding remains open. PR #23 was closed as superseded (not merged). MESP-94 is the next eligible correction — see .ai/CURRENT_STATE.md, which is the canonical live-state document, for its current position.` |
 
 ---
 
@@ -1911,7 +1911,7 @@ gate MESP-92 carried. MESP-94 and MESP-31 remain To Do; no production object
 storage, notification provider or physical purge was introduced. See
 `.ai/CURRENT_STATE.md` for the exact PR number and head once opened.
 
-### MESP-93 focused re-review overlay (7 August 2026, current)
+### MESP-93 focused re-review overlay (7 August 2026, historical)
 
 A focused ChatGPT/Copilot re-review of [PR #24](https://github.com/Hossam1104/mini-erp-saas-platform/pull/24)
 at pushed head `759eb04` returned CHANGES REQUIRED BEFORE MERGE, raising
@@ -1926,6 +1926,39 @@ checksum-failed object was misleadingly surfaced as `Expired`) and L93-01
 tests). All five are closed at head `1820416`: see the closure entry in
 `.ai/CURRENT_STATE.md` for the exact corrections and validation totals
 (28 new tests, 566/566 backend, 11/11 SQL LocalDB, 27/27 Angular, 4/4
-Playwright, 0 audit vulnerabilities). MESP-93 remains **not** Done; PR #24
-is held open, non-draft and unmerged pending the next focused ChatGPT
-security re-review.
+Playwright, 0 audit vulnerabilities). At the time this overlay was written,
+MESP-93 remained not Done and PR #24 was held open, non-draft and unmerged
+pending the next focused ChatGPT security re-review. **Superseded — see the
+closure overlay below.**
+
+### MESP-93 closure overlay — supersedes the sequence above (7 August 2026)
+
+The further focused ChatGPT security re-review requested above completed
+with verdict **APPROVED FOR MERGE** at reviewed head
+`83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`. PR #24 was merged to `main` at
+`005c796629341ab9becfbc6d1abe2ae34b6a7332`. Post-merge validation on `main`
+(rerun, not copied from pre-merge) passed: Release build 0 warnings/0 errors;
+full backend regression **566/566** passed, 0 failed, 0 skipped, including
+**11/11** SQL Server LocalDB probes with no `MiniErpFoundation_*` database
+remaining after teardown; Angular unit tests **27/27** passed; Angular
+production build succeeded (351.02 kB / 87.80 kB, unchanged); Playwright
+**4/4** passed; `npm audit --omit=dev --audit-level=high` reported **0**
+vulnerabilities; `git diff --check` clean. All seven original findings (M-1,
+M-4, M-5, M-7, M-8, M-9, L-4) and all five focused re-review findings
+(H93-01, H93-02, M93-01, M93-02, L93-01) are closed. MESP-93 was moved to
+**Done** in Jira.
+
+PR #23 (a separate docs-only MESP-92 reconciliation branch, opened before
+PR #24 merged) was investigated rather than mechanically conflict-resolved:
+every one of its 11 changed files was found identical to, or a strict subset
+of, the equivalent content PR #24 had already carried onto `main`. It was
+closed as superseded without merging, preserving its history.
+
+MESP-94 (Correct Foundation safety-catalogue classifications and
+validation-evidence accuracy) is now the next eligible Foundation
+correction; it is not yet started and uses normal bounded review, not the
+MESP-92/MESP-93 manual security merge hold. MESP-31 remains To Do. All
+narrative and status text above this overlay that describes MESP-93 as "In
+Progress" or its Pull Request as "open, non-draft and unmerged" is the
+preserved historical record of the correction sequence, not the current
+state. `.ai/CURRENT_STATE.md` is the canonical live-state document.

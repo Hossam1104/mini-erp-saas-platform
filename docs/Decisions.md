@@ -48,8 +48,11 @@ executor were made `internal` by the prior H92-05/M92-05 correction, but that
 friend-assembly grant alone still let the shipping `MiniErp.Api` host reach
 them; removing it is the change that actually closed the compiled shipping
 boundary. `DurableWorkLocalRuntime`'s public surface remains limited to
-`Store`/`Dispatcher`). MESP-93 is now In Progress hardening the adjacent
-private-file and notification seams. No ADR
+`Store`/`Dispatcher`). MESP-93 (hardening the adjacent private-file and
+notification seams) is now **Done**: PR #24 merged to `main` at
+`005c796629341ab9becfbc6d1abe2ae34b6a7332` after focused ChatGPT security
+re-review approval; ADR-009 carries its closed findings. MESP-94 is the next
+eligible Foundation correction. No ADR
 status in this index asserts production maturity: the durable-work store,
 dispatcher, worker and effect ledger are local, in-memory, non-crash-durable
 test/development seams that are **not composed into the `MiniErp.Api` host**,
