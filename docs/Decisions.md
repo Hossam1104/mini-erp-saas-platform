@@ -27,11 +27,35 @@ ADR-004 is the accepted Foundation Release 1 implementation baseline. ADR-006,
 ADR-007, ADR-008, ADR-009 and ADR-018 were authored for the completed MESP-61
 and MESP-64 Foundation timing; they establish bounded contracts and local/test
 decisions, not production provider approval. ADR-018 evidence is recorded in
-`docs/96_Foundation_Release1_Safety_Validation.md` and includes the exact
-75-assertion catalogue, 11 SQL Server tests and 296-test backend regression.
-The complete sequence and its maturity boundary are recorded in
-`docs/97_Foundation_Completion_Review_Checkpoint.md`. ADR-002 and ADR-011
-remain required before their owning module work. ADR-016 remains a production
-decision for SQL Server Row-Level Security adoption or formal deferral. The
-index controls when each detailed record becomes mandatory and prevents
-production decisions from blocking business analysis.
+`docs/96_Foundation_Release1_Safety_Validation.md`. Its original MESP-64
+evidence baseline was the exact 75-assertion catalogue, 11 SQL Server tests and
+a 296-test backend regression; the same catalogue and 11 SQL Server tests are
+re-run on every later baseline, and the backend regression has since grown to
+**493** tests on the open MESP-92 branch (238 of them the focused
+`DurableWork`/ledger/composition/reconciliation regression). The complete sequence and its maturity boundary are
+recorded in `docs/97_Foundation_Completion_Review_Checkpoint.md`. ADR-002 and ADR-011
+remain required before their owning module work. ADR-016 is an index entry
+only — no ADR document exists yet — and remains a production decision for SQL
+Server Row-Level Security adoption or formal deferral. The index controls when
+each detailed record becomes mandatory and prevents production decisions from
+blocking business analysis.
+
+ADR-007 and ADR-008 carry an **In Progress** MESP-92 correction. That
+correction lives only on the open, unmerged PR #22, most recently at head
+`e991641` (H92-06/M92-07/L92-02 focused correction, 7 August 2026:
+`MiniErp.App` no longer grants `InternalsVisibleTo("MiniErp.Api")` — the
+mutable effect ledger and its executor were made `internal` by the prior
+H92-05/M92-05 correction, but that friend-assembly grant alone still let the
+shipping `MiniErp.Api` host reach them; removing it is the change that
+actually closes the compiled shipping boundary. `DurableWorkLocalRuntime`'s
+public surface remains limited to `Store`/`Dispatcher`); it is **not on
+`main`**. No ADR
+status in this index asserts production maturity: the durable-work store,
+dispatcher, worker and effect ledger are local, in-memory, non-crash-durable
+test/development seams that are **not composed into the `MiniErp.Api` host**,
+and the SQL Server evidence is a disposable-LocalDB probe, not a production
+provider selection. The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`
+(formerly `MiniERPSaaSPlatform_PRD_v1.2.docx`; contents unchanged).
+
+No new ADR was created by the Opus 5 project-wide checkpoint of 6 August 2026:
+that review found no architectural decision that is not already recorded here.

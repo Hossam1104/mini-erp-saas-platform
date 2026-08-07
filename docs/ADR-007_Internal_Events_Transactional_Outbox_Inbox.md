@@ -2,10 +2,10 @@
 
 | Field | Decision |
 |---|---|
-| Status | Foundation implementation baseline; production delivery provider deferred |
-| Date | 4 August 2026 |
+| Status | Foundation implementation baseline; MESP-92 single-effect correction In Progress; production delivery provider deferred |
+| Date | 4 August 2026; reconciled 6 August 2026 |
 | Owners | Solution Architecture / Application Engineering |
-| Related Jira | MESP-61, MESP-64, MESP-48, MESP-50 |
+| Related Jira | MESP-61, MESP-64, MESP-91, MESP-92, MESP-48, MESP-50 |
 | Supersedes | None |
 
 ## Context
@@ -40,6 +40,89 @@ scope, survive duplicate delivery, and remain practical for a single developer.
   lose a required protected effect.
 - A global event table or dispatcher query was rejected because it would create
   an unscoped Tenant business-data path.
+
+## MESP-92 single-effect correction (In Progress)
+
+The inbox uniqueness marker described in point 2 is superseded by a
+server-owned `DurableWorkEffectKey` guarded by
+`IDurableWorkEffectGuard`/`IDurableWorkEffectExecutor`. Reservation of that
+key is the single non-reversible boundary; a protected effect is acknowledged
+as `Applied` (recorded Completed, never repeats) only after the effect
+callback returns an explicit `DurableWorkProtectedEffectResult.Applied`
+outcome. Outbox dispatch now reports one of four explicit outcomes:
+
+- **Applied** — the effect ran (or was proven already Completed) and is
+  recorded so duplicate delivery safely replays the same result without
+  repeating the effect.
+- **NotAppliedRetryable** — the provider/handler positively confirms the
+  effect did not occur (for example, a live-authority provider outage or
+  cancellation before the reservation boundary, or an explicit provider
+  report after it); bounded retry may run. A generic retry alone is never
+  sufficient: only this explicit outcome may release a reservation.
+- **TerminalNotApplied** — the effect is proven not to have started and will
+  never succeed; a safe terminal result is recorded and never repeated.
+- **OutcomeUnknown** — the effect boundary was reached but a caught
+  exception, cancellation or completion-recording failure observed inside
+  the running process means its outcome cannot be proven; delivery moves to
+  the dedicated, Tenant-scoped `DurableWorkLifecycle.OutcomeUnknown`
+  reconciliation state, is never automatically repeated by normal polling or
+  generic redelivery, and requires explicit reconciliation through
+  `IDurableWorkStore.ReadUncertainEffectsAsync`. An actual process crash
+  loses this in-memory adapter's guard and lifecycle state entirely and is
+  **not** represented as `OutcomeUnknown` or any other recorded outcome;
+  production durable crash recovery remains deferred to a future SQL/durable
+  provider.
+
+### H92-01 — effect-purpose and EventId keying
+
+`DurableWorkEffectKey` carries a server-owned `DurableWorkEffectPurpose`
+(`Handler` or `Outbox`) in addition to Tenant, WorkItemId and OperationId; an
+outbox-purpose key also carries the immutable `EventId`. This keeps a handler
+effect and an outbox effect for the identical Tenant/WorkItemId/OperationId
+independent even when both are guarded by the same shared executor, while
+redelivery of the same outbox `EventId` still resolves to the same key and
+two different `EventId`s remain independent. The same effect key and one
+shared guard protect both the outbox effect path and the direct
+worker/dispatcher handler path, so a duplicate submission or a concurrent
+redelivery across either path still produces exactly one effect invocation
+per purpose. Provider exception text is never persisted in outbox or audit
+evidence; only a safe, bounded category and reason are recorded.
+
+### H92-03 — one structurally enforced composition (focused review correction)
+
+`DurableWorkEffectComposition.CreateSharedExecutor()` produced a new,
+independent ledger on every call, so the production API previously permitted
+the store, the dispatcher and a second dispatcher to each receive a different
+executor. `DurableWorkLocalRuntime.Create(operationCatalogue, payloadRegistry)`
+is now the single approved composition entry point: it is the only place
+shipping code may construct `InMemoryDurableWorkEffectGuard`,
+`DurableWorkEffectExecutor`, `InMemoryDurableWorkStore` or
+`DurableWorkDispatcher` (all four constructors are `internal`), and it
+supplies the identical executor instance to the store and dispatcher it
+returns. A syntax-tree architecture test scans all of `src/MiniErp.App` and
+fails if any of those four types is constructed anywhere outside
+`DurableWorkLocalRuntime.cs`.
+
+### H92-04 — exact-scope reconciliation authorization (focused review correction)
+
+`ReadUncertainEffectsAsync(TenantContext)` previously filtered only by
+TenantId, so any same-Tenant context could see uncertain-effect records
+belonging to a sibling Company, Branch or Warehouse. The port now takes a
+server-issued `VerifiedDurableWorkReconciliationAuthorization`, issued only by
+`IDurableWorkReconciliationAuthorizer` after live-revalidating actor, session,
+Membership-or-SupportGrant validity and a dedicated catalogue-backed
+`work.reconciliation.read` permission, reusing the identical
+organization-scope ownership/containment logic as MESP-91 dispatch
+revalidation. A missing or malformed selected scope fails closed, and
+`PlatformGovernanceContext` has no path into this authorizer.
+
+### M92-03 — exact uncertain-effect identity (focused review correction)
+
+`DurableWorkUncertainEffectRecord` now carries the exact
+`DurableWorkEffectKey` (so `OperationId` is always present and `EventId` is
+present only for an Outbox-purpose record), the exact verified
+`TenantWorkScope`, the actual `OutcomeUnknownAt` transition time and a
+preserved safe reason, instead of `NextAttemptAt` and a hard-coded reason.
 
 ## Consequences and guardrails
 

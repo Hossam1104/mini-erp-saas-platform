@@ -11,7 +11,7 @@
 | Approved by / date | Hossam / 1 August 2026 |
 | Prepared | 1 August 2026 |
 | Accountable owner | Hossam, interim Product Owner and Platform Operations owner |
-| Canonical PRD | `D:\AI Tools\Hossam\mini-erp-saas-platform\MiniERPSaaSPlatform_PRD_v1.2.docx` |
+| Canonical PRD | `docs/MESP_PRD_v1.2.docx` (formerly `MiniERPSaaSPlatform_PRD_v1.2.docx`; contents unchanged) |
 | Mandatory vocabulary | `docs/00_ERP_Business_Glossary.md` |
 | Architecture constraint | `docs/01_Technology_Architecture_Baseline.md`; Jira PD-019 |
 | Approval authority | Hossam; external privacy, legal, Saudi compliance, security, and finance validation where stated |

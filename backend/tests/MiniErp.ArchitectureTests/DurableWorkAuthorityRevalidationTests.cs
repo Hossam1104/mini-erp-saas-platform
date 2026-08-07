@@ -36,6 +36,16 @@ public sealed class DurableWorkAuthorityRevalidationTests
             [TenantAuthorizationPath.OrdinaryMembership]);
     private static readonly DurableWorkOperationCatalogue OperationCatalogue =
         new([ReadOperation, SupportOperation, ExportOperation]);
+    private static readonly IDurableWorkPayloadRegistry PayloadRegistry = CreatePayloadRegistry();
+    private static readonly IDurableWorkEffectExecutor EffectExecutor =
+        new DurableWorkEffectExecutor(new InMemoryDurableWorkEffectGuard());
+
+    private static DurableWorkPayloadRegistry CreatePayloadRegistry()
+    {
+        var registry = new DurableWorkPayloadRegistry();
+        registry.Register(new DurableWorkPayloadTypeId("test.authority-payload"), new JsonDurableWorkPayloadCodec<AuthorityPayload>());
+        return registry;
+    }
 
     [Fact]
     public void Foreign_tenant_company_is_rejected_by_the_real_resolver()
@@ -232,7 +242,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
     {
         var fixture = CreateOrdinaryFixture();
         var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
-        var store = new InMemoryRelationalDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(EffectExecutor);
         Assert.True(await store.SubmitAsync(work));
         var effects = 0;
 
@@ -243,7 +253,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
             (_, _, _) =>
             {
                 effects++;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(result.DeadLettered);
@@ -625,7 +635,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
         var work = CreateWork(
             fixture,
             TenantWorkScopeRequest.ForWarehouse(CompanyA, BranchA, WarehouseA));
-        var store = new InMemoryRelationalDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(EffectExecutor);
         Assert.True(await store.SubmitAsync(work));
         VerifiedDurableWorkAuthorization? seenAuthorization = null;
 
@@ -636,7 +646,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
             (_, authorization, _) =>
             {
                 seenAuthorization = authorization;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(result.Delivered);
@@ -696,6 +706,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
             resolution.Scope!,
             identity,
             new AuthorityPayload("safe-payload"),
+            PayloadRegistry,
             Guid.NewGuid()));
     }
 
@@ -834,7 +845,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
         var fixture = CreateOrdinaryFixture();
         var work = CreateWork(fixture, TenantWorkScopeRequest.TenantWide());
         fixture.Service.Store.Users[fixture.Actor].Status = GlobalUserStatus.Suspended;
-        var store = new InMemoryRelationalDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(EffectExecutor);
         Assert.True(await store.SubmitAsync(work));
         var effectCalls = 0;
 
@@ -845,7 +856,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
             (_, _, _) =>
             {
                 effectCalls++;
-                return ValueTask.CompletedTask;
+                return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
             });
 
         Assert.True(result.DeadLettered);
@@ -1028,6 +1039,7 @@ public sealed class DurableWorkAuthorityRevalidationTests
             resolution.Scope!,
             identity,
             new AuthorityPayload("safe-payload"),
+            PayloadRegistry,
             fixture.Session.Id.Value,
             3,
             fixture.Clock.GetUtcNow());
@@ -1038,10 +1050,10 @@ public sealed class DurableWorkAuthorityRevalidationTests
         DurableWorkItem work,
         TenantContext? currentTenantContext = null)
     {
-        var store = new InMemoryRelationalDurableWorkStore();
+        var store = new InMemoryDurableWorkStore(EffectExecutor);
         Assert.True(await store.SubmitAsync(work));
         var handler = new CountingHandler(work.Identity.Operation);
-        var dispatcher = new DurableWorkDispatcher(fixture.Service.OperationCatalogue);
+        var dispatcher = new DurableWorkDispatcher(fixture.Service.OperationCatalogue, PayloadRegistry, EffectExecutor);
         dispatcher.Register(handler);
         var worker = new TenantDurableWorkWorker(store, dispatcher, fixture.Service);
         var executionContext = currentTenantContext ?? fixture.Context;
@@ -1252,13 +1264,13 @@ public sealed class DurableWorkAuthorityRevalidationTests
 
         public DurableWorkOperationDescriptor Operation => operation;
 
-        public ValueTask<DurableWorkHandlerResult> ExecuteAsync(
+        public ValueTask<DurableWorkProtectedEffectResult> ExecuteAsync(
             AuthorityPayload payload,
             DurableWorkExecutionContext context,
             CancellationToken cancellationToken = default)
         {
             Calls++;
-            return ValueTask.FromResult(DurableWorkHandlerResult.Succeeded());
+            return ValueTask.FromResult(DurableWorkProtectedEffectResult.Applied(DurableWorkHandlerResult.Succeeded()));
         }
     }
 

@@ -17,7 +17,8 @@ namespace MiniErp.App.Modules.Identity;
 /// </remarks>
 internal sealed class IdentityAuthorizationService :
     IOrganizationScopeOwnershipResolver,
-    IDurableWorkAuthorityRevalidator
+    IDurableWorkAuthorityRevalidator,
+    IDurableWorkReconciliationAuthorizer
 {
     private const string GenericDeniedCode = "access_denied";
     private const string GenericAuthenticationCode = "authentication_failed";
@@ -102,6 +103,37 @@ internal sealed class IdentityAuthorizationService :
         lock (store.SyncRoot)
         {
             result = RevalidateDurableWorkUnsafe(workItem, currentTenantContext, now);
+        }
+
+        return ValueTask.FromResult(result);
+    }
+
+    /// <summary>
+    /// Live-authorizes exactly one Tenant-scoped durable-work reconciliation
+    /// read using the same organization-scope ownership and current-authority
+    /// checks as durable-work dispatch revalidation, gated by the dedicated
+    /// <see cref="IdentityPermissions.DurableWorkReconciliationRead"/>
+    /// catalogue permission. A raw TenantContext alone is never sufficient.
+    /// </summary>
+    public ValueTask<DurableWorkReconciliationAuthorizationResult> AuthorizeAsync(
+        TenantContext currentTenantContext,
+        Guid sessionId,
+        TenantWorkScopeRequest requestedReadScope,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(currentTenantContext);
+        ArgumentNullException.ThrowIfNull(requestedReadScope);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromResult(
+                DurableWorkReconciliationAuthorizationResult.Denied("reconciliation_authorization_cancelled"));
+        }
+
+        DurableWorkReconciliationAuthorizationResult result;
+        lock (store.SyncRoot)
+        {
+            result = AuthorizeReconciliationReadUnsafe(currentTenantContext, sessionId, requestedReadScope, now);
         }
 
         return ValueTask.FromResult(result);
@@ -1602,6 +1634,130 @@ internal sealed class IdentityAuthorizationService :
             actorId,
             sessionId);
         return DurableWorkAuthorityValidationResult.Approved(authorization);
+    }
+
+    /// <summary>
+    /// Reuses the same live actor/session/Membership/SupportGrant validity and
+    /// organization-scope ownership logic as durable-work dispatch
+    /// revalidation, gated additionally by the dedicated reconciliation-read
+    /// permission. Ordinary Membership never falls back to a SupportGrant
+    /// check or vice versa; a missing or malformed requested scope fails
+    /// closed through <see cref="TryResolveOrganizationScopeUnsafe"/>.
+    /// </summary>
+    private DurableWorkReconciliationAuthorizationResult AuthorizeReconciliationReadUnsafe(
+        TenantContext currentTenantContext,
+        Guid sessionId,
+        TenantWorkScopeRequest requestedReadScope,
+        DateTimeOffset now)
+    {
+        if (currentTenantContext.ActorId is not { } actorId || actorId == Guid.Empty || sessionId == Guid.Empty)
+        {
+            return DurableWorkReconciliationAuthorizationResult.Denied("actor_or_session_denied");
+        }
+
+        if (!store.Users.TryGetValue(new UserId(actorId), out var user)
+            || user.Status != GlobalUserStatus.Active
+            || user.LockoutEnd is { } lockoutEnd && lockoutEnd > now)
+        {
+            return DurableWorkReconciliationAuthorizationResult.Denied("user_inactive");
+        }
+
+        if (!store.Sessions.TryGetValue(new SessionId(sessionId), out var session)
+            || session.UserId != user.Id
+            || !IsCurrentSessionUnsafe(session, now))
+        {
+            return DurableWorkReconciliationAuthorizationResult.Denied("session_denied");
+        }
+
+        // Reuses the identical live scope-containment logic used for
+        // durable-work dispatch revalidation: an ordinary context's own
+        // selected scope marker must resolve and itself contain the
+        // requested read scope, and the underlying Membership scope grant
+        // (or, on the support path, the exact case-bound SupportGrant --
+        // never a client-visible marker) must independently contain it too.
+        // A missing or malformed selected scope fails closed here.
+        if (!TryResolveOrganizationScopeUnsafe(currentTenantContext.TenantId, requestedReadScope, out var organizationScope)
+            || !IsCurrentScopeContainedUnsafe(currentTenantContext, organizationScope, now))
+        {
+            return DurableWorkReconciliationAuthorizationResult.Denied("scope_not_authorized");
+        }
+
+        switch (currentTenantContext.AuthorizationPath)
+        {
+            case TenantAuthorizationPath.OrdinaryMembership:
+                if (!currentTenantContext.Membership.HasValue
+                    || currentTenantContext.SupportGrant.HasValue
+                    || !store.Memberships.TryGetValue(
+                        new MembershipId(currentTenantContext.Membership.Value.Value),
+                        out var membership)
+                    || membership.UserId != user.Id
+                    || membership.TenantId != currentTenantContext.TenantId
+                    || membership.Status != MembershipStatus.Active
+                    || !session.MembershipReferences.Contains(membership.Id)
+                    || !HasPermissionUnsafe(membership, IdentityPermissions.DurableWorkReconciliationRead))
+                {
+                    return DurableWorkReconciliationAuthorizationResult.Denied("membership_authority_denied");
+                }
+
+                break;
+
+            case TenantAuthorizationPath.SupportGrant:
+                if (currentTenantContext.Membership.HasValue
+                    || !currentTenantContext.SupportGrant.HasValue
+                    || !store.SupportGrants.TryGetValue(
+                        new SupportGrantId(currentTenantContext.SupportGrant.Value.GrantId),
+                        out var supportGrant)
+                    || supportGrant.CaseId.Value != currentTenantContext.SupportGrant.Value.CaseId
+                    || supportGrant.UserId != user.Id
+                    || supportGrant.TenantId != currentTenantContext.TenantId
+                    || supportGrant.RevokedAt.HasValue
+                    || supportGrant.ExpiresAt <= now
+                    || !store.SupportCases.TryGetValue(supportGrant.CaseId, out var supportCase)
+                    || !supportCase.IsActive
+                    || !supportGrant.Permissions.Contains(IdentityPermissions.DurableWorkReconciliationRead)
+                    || !session.SupportGrantReferences.Contains(supportGrant.Id))
+                {
+                    return DurableWorkReconciliationAuthorizationResult.Denied("support_authority_denied");
+                }
+
+                break;
+
+            default:
+                return DurableWorkReconciliationAuthorizationResult.Denied("authorization_path_conflict");
+        }
+
+        var exactScopeReference = new ScopeReference($"{organizationScope.Kind}:{organizationScope.TargetId}");
+        var executionTenantContext = currentTenantContext.AuthorizationPath switch
+        {
+            TenantAuthorizationPath.OrdinaryMembership when currentTenantContext.Membership is { } membershipReference =>
+                TenantContext.ForOrdinaryMembership(
+                    currentTenantContext.TenantId,
+                    membershipReference,
+                    exactScopeReference,
+                    currentTenantContext.CorrelationId,
+                    actorId),
+            TenantAuthorizationPath.SupportGrant when currentTenantContext.SupportGrant is { } supportGrantReference =>
+                TenantContext.ForSupportGrant(
+                    currentTenantContext.TenantId,
+                    supportGrantReference,
+                    exactScopeReference,
+                    currentTenantContext.CorrelationId,
+                    actorId),
+            _ => null
+        };
+        if (executionTenantContext is null || currentTenantContext.CorrelationId is not { } correlationId)
+        {
+            return DurableWorkReconciliationAuthorizationResult.Denied("authorization_path_conflict");
+        }
+
+        var verifiedScope = TenantWorkScope.IssueFromVerifiedAuthority(executionTenantContext, requestedReadScope);
+        var authorization = new VerifiedDurableWorkReconciliationAuthorization(
+            executionTenantContext,
+            verifiedScope,
+            actorId,
+            sessionId,
+            correlationId);
+        return DurableWorkReconciliationAuthorizationResult.Approved(authorization);
     }
 
     private DurableWorkAuthorityValidationResult DurableWorkDenied(

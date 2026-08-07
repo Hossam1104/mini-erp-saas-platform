@@ -2,10 +2,10 @@
 
 | Field | Decision |
 |---|---|
-| Status | Foundation worker seam; MESP-91 live authority correction merged and Done (PR #20, `f2cde57400fed470ab048776e05b56f353b36890`); deployment topology deferred |
+| Status | Foundation worker seam; MESP-91 live authority correction merged and Done (PR #20, `f2cde57400fed470ab048776e05b56f353b36890`); MESP-92 single-effect/immutable-payload correction In Progress; deployment topology deferred |
 | Date | 4 August 2026; reconciled 6 August 2026 |
 | Owners | Solution Architecture / Background Processing |
-| Related Jira | MESP-61, MESP-64, MESP-91, MESP-48, MESP-50 |
+| Related Jira | MESP-61, MESP-64, MESP-91, MESP-92, MESP-48, MESP-50 |
 | Supersedes | None |
 
 ## Context
@@ -65,6 +65,72 @@ binding. The
 SQL/MESP-64 probes validate persistence, lease, transaction and idempotency
 behavior only; they are not worker-authorization evidence.
 
+MESP-92 adds single-effect and immutable-payload guarantees to this seam. A
+submitted payload is captured immediately into an immutable, checksummed
+envelope through an explicit `IDurableWorkPayloadRegistry`; no original
+caller payload reference is retained, and unknown types, handler/payload
+mismatches, checksum tampering and oversized payloads fail closed before a
+handler runs. A focused ChatGPT re-review of PR #22 requires production code
+to expose no payload-mutation fault-injection hook; checksum-corruption is
+exercised only through bounded test-project reflection, and a custom codec's
+encode/decode exception is always wrapped in the safe
+`DurableWorkPayloadException`.
+
+The dispatcher resolves a stable, purpose-qualified `DurableWorkEffectKey`
+(Tenant, `DurableWorkEffectPurpose.Handler`, WorkItemId, OperationId — an
+outbox-purpose key additionally carries the immutable `EventId`), and every
+registered handler invocation is routed exclusively through
+`IDurableWorkEffectExecutor.ExecuteHandlerEffectAsync` (architecture-enforced;
+a handler cannot bypass this while remaining a protected durable-work
+handler). The store's outbox dispatch and the dispatcher's handler execution
+share one authoritative executor, obtained only through the single approved
+composition entry point `DurableWorkLocalRuntime.Create(operationCatalogue,
+payloadRegistry)` (H92-03 focused review correction: it is the only place
+shipping code may construct the guard, executor, store or dispatcher, all
+four constructors now being `internal`, and a syntax-tree architecture test
+proves no other shipping construction site exists); the purpose and
+EventId in the key keep the two effect categories independent within that one
+shared guard. `DurableWorkLocalRuntime`'s public surface is limited to
+`Store` and `Dispatcher` (H92-05 focused review correction): `EffectGuard`
+and `EffectExecutor` are internal properties, and `IDurableWorkEffectGuard`,
+`InMemoryDurableWorkEffectGuard`, `IDurableWorkEffectExecutor` and
+`DurableWorkEffectExecutor` are internal types, so a shipping caller holding
+the runtime cannot reserve, release, complete or mark an effect uncertain
+outside the executor — closing a release-mid-flight path that would have let
+a second dispatch execute an already-reserved effect twice. Reservation of
+that key is the single non-reversible boundary:
+an interruption before it permits bounded retry, and the protected callback
+must return an explicit `DurableWorkProtectedEffectResult` outcome —
+`Applied`, `NotAppliedRetryable`, `OutcomeUnknown` or `TerminalNotApplied` —
+so a bare generic retry can never release a reservation after an effect may
+already have run. A caught exception or cancellation observed inside the
+running process after that boundary is recorded `OutcomeUnknown` — a
+dedicated, Tenant-scoped reconciliation lifecycle state, never automatically
+repeated and readable only through
+`IDurableWorkStore.ReadUncertainEffectsAsync`, which requires a server-issued
+`VerifiedDurableWorkReconciliationAuthorization` scoped to the exact
+Tenant/Company/Branch/Warehouse boundary and its verified descendants only
+(H92-04 focused review correction; a sibling organization is never visible).
+The guard preserves its own safe reason on the OutcomeUnknown transition
+(O92-01), but `IDurableWorkEffectGuard.GetOutcomeUnknownReason` is not a
+public raw-key evidence path: the interface is internal (M92-05 focused
+review correction), so the only publicly reachable uncertain-effect evidence
+remains the scope-authorized `ReadUncertainEffectsAsync` port above. A
+duplicate dispatch of an already-Completed effect replays the exact recorded
+safe result instead of re-invoking the handler. `InMemoryRelationalDurableWorkStore`/
+`IRelationalDurableWorkStore` are renamed to `InMemoryDurableWorkStore`/
+`IDurableWorkStore` to remove the misleading relational/SQL-backed
+implication.
+
+**Maturity boundary, corrected:** this in-memory adapter preserves only a
+caught post-boundary interruption (an exception or cancellation observed
+inside the running process) as `OutcomeUnknown`. An actual process crash
+loses the adapter's in-memory guard and lifecycle state entirely; that state
+loss is **not** represented as `OutcomeUnknown` or any other recorded
+outcome. Production durable crash recovery remains deferred to a future
+SQL/durable provider; this adapter remains a non-crash-durable Foundation
+seam only.
+
 ## Alternatives considered
 
 - A hosted worker that trusts request/client Tenant input was rejected because
@@ -89,6 +155,46 @@ behavior only; they are not worker-authorization evidence.
   scheduler, region or provider.
 - Worker telemetry and audit are allow-listed and redacted; payloads, tokens,
   cookies, private bytes and provider exception text are excluded.
+
+## Composition status
+
+Verified on 6 August 2026: `DurableWorkLocalRuntime`,
+`InMemoryDurableWorkStore`, `DurableWorkDispatcher` and
+`TenantDurableWorkWorker` are **not referenced by `MiniErp.Api`**. This ADR
+describes a contract and a local, in-memory, non-crash-durable adapter proven
+by automated tests; **no worker is composed into the running host**, no worker
+is scheduled, and nothing here is a production capability. A future host
+composition root must call `DurableWorkLocalRuntime.Create` exactly once and
+reuse the returned instance; the syntax-tree architecture test enforces that
+no other shipping construction site exists. Verified at head
+`576996f94ae9ddc251767445a7ebddd60c492c45` (H92-05/M92-05 correction, 7 August
+2026): `MiniErp.Api` still does not reference any durable-work type, so
+tightening `DurableWorkLocalRuntime`'s public surface to `Store`/`Dispatcher`
+only changed nothing reachable from the host.
+
+**H92-06/M92-07 correction (7 August 2026, head `e991641`):** at every head up
+to and including `576996f94ae9ddc251767445a7ebddd60c492c45`, `MiniErp.App`
+still granted `[assembly: InternalsVisibleTo("MiniErp.Api")]`. **That grant
+alone made the preceding paragraphs' `internal` claims incomplete**: a friend
+assembly sees another assembly's `internal` members exactly as if they were
+public, so `MiniErp.Api` could still reach `EffectGuard`/`EffectExecutor`,
+construct `InMemoryDurableWorkEffectGuard`/`DurableWorkEffectExecutor`
+directly, and call `TryReserve`/`Release`/`RecordCompleted`/
+`RecordOutcomeUnknown`/`GetOutcomeUnknownReason` — the H92-05/M92-05 `internal`
+modifiers narrowed the *source-level* surface but did not close the
+*compiled* shipping boundary. The correction removes that grant; `MiniErp.App`
+now declares `InternalsVisibleTo` only for `MiniErp.ArchitectureTests`. The
+one resulting `MiniErp.Api` compile break was unrelated to durable work
+(`FoundationHostSignInResult.Principal`, needed by the sign-in endpoint to
+call `HttpContext.SignInAsync`) and was resolved by making that one property
+public rather than restoring friend access. No mutable ledger type is public.
+M92-07 closes as a direct consequence: `GetOutcomeUnknownReason` is declared
+only on the already-internal `IDurableWorkEffectGuard`, so removing the friend
+grant removes `MiniErp.Api`'s only path to it too.
+`FriendAssemblyPolicyTests.cs` proves this by full Roslyn compilation: source
+compiled under the assembly name `MiniErp.Api` fails to compile (`CS0122`)
+against the internal ledger surface, while identical source compiled under
+`MiniErp.ArchitectureTests` still succeeds.
 
 ## Gates
 

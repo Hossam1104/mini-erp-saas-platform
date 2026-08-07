@@ -6,7 +6,7 @@
 | **Jira Task** | MESP-18 |
 | **Epic** | MESP-1 — EPIC 01 Product Governance and BRD Foundation |
 | **Release** | R0 — BRD and Product Foundation |
-| **Source baseline** | `MiniERPSaaSPlatform_PRD_v1.2.docx` — PRD v1.2, Final Approved Baseline, approved 31 July 2026 |
+| **Source baseline** | `docs/MESP_PRD_v1.2.docx` — PRD v1.2, Final Approved Baseline, approved 31 July 2026 (formerly `MiniERPSaaSPlatform_PRD_v1.2.docx`; contents unchanged) |
 | **Status** | Draft — ready for Product Owner and Business Owner review |
 | **Prepared** | 31 July 2026 |
 

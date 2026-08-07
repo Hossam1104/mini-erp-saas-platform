@@ -7,7 +7,7 @@
 | Status | Approved Architecture Baseline |
 | Product release | Release 1 - B2B ERP |
 | Jira foundation | MESP-22 - Create Product Decision Register |
-| Source PRD | D:\AI Tools\Hossam\mini-erp-saas-platform\MiniERPSaaSPlatform_PRD_v1.2.docx |
+| Source PRD | `docs/MESP_PRD_v1.2.docx` (formerly `MiniERPSaaSPlatform_PRD_v1.2.docx`; contents unchanged) |
 | Source glossary | docs/00_ERP_Business_Glossary.md |
 | Prepared | 1 August 2026 |
 | Architecture owner | Hossam |
@@ -778,7 +778,7 @@ Before production, the team must validate:
 
 # Source alignment and governance gaps
 
-1. The canonical PRD is `D:\AI Tools\Hossam\mini-erp-saas-platform\MiniERPSaaSPlatform_PRD_v1.2.docx`. References in older Jira comments to a longer filename are historical labels for the same approved v1.2 baseline and do not change the canonical repository path.
+1. The canonical PRD is `docs/MESP_PRD_v1.2.docx`. References in older Jira comments and documents to `MiniERPSaaSPlatform_PRD_v1.2.docx` or `MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx` are historical labels for the same approved v1.2 baseline; the file contents are unchanged and only the repository path moved.
 2. PRD section 5.1 and the glossary's Owning module fields conflict on ownership of Warehouse, Supplier/Business Customer, Goods Receipt/Supplier Return, Delivery/Customer Return, and Fiscal Calendar. Section 4 records a provisional reconciliation; final ownership is resolved in the owning BRDs and recorded in ADR-001/ADR-006 before affected implementation.
 3. Hossam is the interim Product Owner, Business Sponsor, Business Analysis Lead, Architecture Owner, QA Lead, and Implementation Lead. Finance, Saudi compliance, privacy, residency, retention, and security conclusions still require the appropriate external specialist validation before production approval.
 4. The glossary remains a controlled working baseline and explicitly leaves terms dependent on MESP-41 through MESP-56 open. This architecture does not convert any recommended default into an approved business decision.

@@ -13,6 +13,20 @@ controlled refinement of the existing Enablers only; it does not itself authoriz
 application code, database migrations, API or UI implementation, automated-test
 implementation, a Sprint start, or a production release.
 
+> **Delivery-status note (added 6 August 2026).** The v0.4 specification content
+> below remains the approved Release 1 baseline and is unchanged. Its
+> *delivery-status* statements are frozen at the 3 August 2026 approval date and
+> are no longer current: MESP-57 through MESP-64, MESP-87, MESP-88, MESP-89,
+> MESP-90 and MESP-91 have since been implemented and merged under separately
+> authorized implementation items, and MESP-92 is In Progress on an open,
+> unmerged Pull Request. Wherever this document says an Enabler is "To Do", that
+> an Enabler is "not started", or names a "next action", read
+> [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and
+> [`docs/94_Product_Delivery_Master_Plan.md`](94_Product_Delivery_Master_Plan.md)
+> instead. The scope, gate and stop conditions in this document remain binding:
+> MESP-48 and MESP-50 stay open production gates, and MESP-31 work, Retail POS
+> and Wafra-specific core behavior stay out of this baseline.
+
 ## 1. Document Control
 
 | Field | Value |

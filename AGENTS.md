@@ -14,6 +14,16 @@
 - Stop and escalate on Tenant leakage, authentication/authorization weakness,
   data loss or purge, accounting-integrity risk, or a legal/privacy decision
   that cannot be safely deferred.
-- MESP-89 is an explicit security exception to automatic merge: open the
-  non-draft PR, keep it unmerged and In Progress, and stop for focused ChatGPT
-  review before starting MESP-63, MESP-61 or MESP-64.
+- The active implementation item is **MESP-92**, and it carries the explicit
+  security exception to automatic merge: PR #22 stays open, non-draft and
+  unmerged while MESP-92 stays In Progress, and work stops for focused ChatGPT
+  review. Do not merge PR #22, do not close MESP-92, and do not start MESP-93,
+  MESP-94 or MESP-31 until that review authorizes the next step. (MESP-89 held
+  the same exception earlier in the sequence; it is now Done and merged, as are
+  MESP-63, MESP-61 and MESP-64.)
+- The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`. Older references to
+  `MiniERPSaaSPlatform_PRD_v1.2.docx` or
+  `MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx` name the same
+  unchanged file.
+- `.ai/CURRENT_STATE.md` is the entry point for the verified current branch,
+  head, active item, open Pull Request and open findings.

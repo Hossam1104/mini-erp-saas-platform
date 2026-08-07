@@ -57,7 +57,15 @@ public sealed class FoundationHostSignInResult
     public string Code { get; }
     public Guid? ActorId { get; }
     public Guid? SessionId { get; }
-    internal ClaimsPrincipal? Principal { get; }
+
+    /// <summary>
+    /// The claims principal for the host to sign in via cookie authentication
+    /// on success. Public and unrelated to the durable-work effect ledger
+    /// (H92-06): it carries only the claims this module already issues
+    /// through <see cref="FoundationIdentityClaims"/>, never a raw credential.
+    /// </summary>
+    public ClaimsPrincipal? Principal { get; }
+
     public FoundationHostSessionState? State { get; }
 }
 
