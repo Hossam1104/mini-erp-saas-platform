@@ -527,3 +527,51 @@ approved PR #20 to merge; it merged by normal merge commit at
 the next eligible correction; MESP-93, MESP-94 and
 MESP-31 remain **To Do**. No Sprint, Master Data implementation, production
 provider, migration, MESP-48 or MESP-50 work was started.
+
+## Foundation correction checkpoint — MESP-92/93/94 closed (8 August 2026)
+
+Everything above this section is the preserved historical Foundation
+checkpoint as reviewed on 6 August 2026, when MESP-92 was still In Progress
+on open PR #22. It is not rewritten. Since that checkpoint: MESP-92 closed
+(PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e`,
+focused ChatGPT security review verdict APPROVED FOR MERGE); MESP-93 closed
+(PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332`,
+focused ChatGPT security re-review verdict APPROVED FOR MERGE); and MESP-94
+closed (PR #26 merged to `main` at actual merge commit
+`06d837c958c1cb7977dc121e3aaea4e7278944fd`, approved final head
+`2c7ed3dec4662672bb78967ceb70db7ed73eb7d4`, ChatGPT final merge review
+verdict APPROVED FOR MERGE). All three corrections are **Done**.
+
+This is a bounded checkpoint, not a redesign — it answers Opus 5 review
+question 10 above ("May Master Data and Product Catalog requirements/design
+work begin, or must another approved correction be completed first?") for
+the current state:
+
+- No further Foundation correction ticket is outstanding; MESP-92, MESP-93
+  and MESP-94 are all Done.
+- MESP-48 (supported-volume/performance) and MESP-50 (retention, privacy,
+  legal-hold, purge, residency, backup/restoration) remain intentionally
+  open, explicit **production** gates. Neither is, or should be treated as,
+  a blocker to drafting the MESP-31 BRD — they gate production
+  implementation and go-live, not requirements/design work.
+- No remaining Foundation correction ticket blocks **BRD entry**. Foundation
+  completion is therefore a necessary condition for MESP-31 BRD entry, and
+  it is now satisfied.
+- Foundation completion is **not by itself a sufficient condition**.
+  `docs/94_Product_Delivery_Master_Plan.md`'s "Next authorized sequence"
+  requires MESP-31's BRD entry conditions to be independently "reconfirmed"
+  before starting (step 9), and the only recorded precedent for that
+  reconfirmation — MESP-29's, in `docs/13_Multi_Tenancy_BRD.md` SC-001 — was
+  a distinct, explicit founder/owner authorization statement, not an
+  automatic consequence of Foundation completion. No equivalent
+  authorization is recorded for MESP-31, whose Jira Task still carries the
+  standing instruction not to move to In Progress until its BRD entry
+  criteria are approved.
+
+**Conclusion:** `MESP-31 BRD ENTRY: NOT YET ELIGIBLE FOR AUTOMATIC START —
+OWNER APPROVAL REQUIRED.` MESP-31 remains **To Do**. This checkpoint does not
+move MESP-31 to In Progress and does not start Master Data implementation,
+which in any case remains blocked until both the MESP-31 BRD and its
+separate implementation gate are approved (step 10 of the master plan's
+authorized sequence). See `.ai/CURRENT_STATE.md` for the current canonical
+state.

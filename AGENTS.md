@@ -14,17 +14,25 @@
 - Stop and escalate on Tenant leakage, authentication/authorization weakness,
   data loss or purge, accounting-integrity risk, or a legal/privacy decision
   that cannot be safely deferred.
-- MESP-93 is Done: PR #24 merged to `main` at
-  `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head
-  `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT security
-  re-review approval. PR #25 (docs) merged to `main` at
-  `9f333c9734c767673e43a30d6b57c05793e1fb69`. MESP-94 is now **In Progress** on
-  branch `fix/MESP-94-foundation-validation-evidence`; it uses normal bounded
-  review, not the MESP-92/MESP-93 manual security merge hold. MESP-31 remains
-  To Do and is not started; no Master Data implementation has begun. (MESP-92
-  carried the same exception earlier in the sequence; PR #22 merged to `main`
-  at `322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT approval,
-  and MESP-92 is Done, as are MESP-89, MESP-63, MESP-61 and MESP-64.)
+- MESP-94 is Done: PR #26 merged to `main` at the actual merge commit
+  `06d837c958c1cb7977dc121e3aaea4e7278944fd` (approved final head
+  `2c7ed3dec4662672bb78967ceb70db7ed73eb7d4`) after a ChatGPT final merge
+  review verdict of APPROVED FOR MERGE; it used normal bounded review, not
+  the MESP-92/MESP-93 manual security merge hold. MESP-93 is Done: PR #24
+  merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed
+  head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT
+  security re-review approval. PR #25 (docs) merged to `main` at
+  `9f333c9734c767673e43a30d6b57c05793e1fb69`. MESP-92 carried the same
+  manual-hold exception earlier in the sequence; PR #22 merged to `main` at
+  `322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT approval,
+  and MESP-92 is Done, as are MESP-89, MESP-63, MESP-61 and MESP-64. The
+  Foundation completion checkpoint following MESP-94 confirms MESP-92/93/94
+  Done and MESP-48/MESP-50 as intentional open production gates, not BRD
+  entry blockers. MESP-31 remains **To Do** and is not started — Foundation
+  completion alone does not satisfy its BRD entry criteria; a distinct owner
+  approval is required (see `.ai/CURRENT_STATE.md`'s "MESP-31 BRD entry
+  eligibility" section). No Master Data implementation has begun and none
+  may start automatically.
 - The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`. Older references to
   `MiniERPSaaSPlatform_PRD_v1.2.docx` or
   `MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx` name the same

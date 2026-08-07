@@ -10,8 +10,11 @@
 > The Foundation sequence continued after this checkpoint through MESP-63,
 > MESP-90, MESP-61, MESP-64, MESP-91, MESP-92 and MESP-93 (all Done; MESP-93's
 > PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332`) to
-> MESP-94, which is now **In Progress** on branch
-> `fix/MESP-94-foundation-validation-evidence`.
+> MESP-94 (also Done; PR #26 merged to `main` at
+> `06d837c958c1cb7977dc121e3aaea4e7278944fd`). The Foundation completion
+> checkpoint following MESP-94 found no remaining Foundation correction
+> blocking MESP-31 BRD entry; MESP-31 itself remains To Do pending a distinct
+> owner approval — see `.ai/CURRENT_STATE.md`.
 
 Status at the time of this checkpoint: MESP-89 is Done. PR #12 was approved by
 focused ChatGPT review and merged to `main`; MESP-63 was the next authorized

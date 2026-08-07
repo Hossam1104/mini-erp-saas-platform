@@ -977,3 +977,29 @@ MESP-94 is **not** marked Done by this validation; its Pull Request is pending
 review, merge and post-merge closure. No production SQL provider, migration,
 retention/purge, performance claim or Master Data implementation was
 introduced.
+
+## PR #26 merge and MESP-94 closure (8 August 2026)
+
+The section above is preserved unchanged as the pre-merge evidence record. A
+ChatGPT final merge review of PR #26 at approved exact head
+`2c7ed3dec4662672bb78967ceb70db7ed73eb7d4` returned verdict **APPROVED FOR
+MERGE** (0 Critical, 0 High, 0 Medium blockers). The PR description was
+updated to make the F1/F2 final lock design and validation totals
+unmistakable, then PR #26 was merged to `main` at actual GitHub merge commit
+`06d837c958c1cb7977dc121e3aaea4e7278944fd` (a fast-forward-equivalent normal
+merge with `2c7ed3d` as an ancestor, no divergence, no semantic merge edits).
+
+**Post-merge focused verification**, run directly on merged `main` rather
+than repeating the full expensive suite (already complete pre-merge at
+`037491cee8650bfd38c4fad4d58e3baa86a3e2a4` and targeted at final head
+`2c7ed3d`): `SafetyCatalogueValidationTests` + `SqlServerSafetyTests`
+**25/25** passed, `scripts/verify-foundation-validation-lock.ps1` **5/5**
+passed, `git diff --check` (working tree) and `git diff --check
+origin/main...HEAD` both passed, and 0 `MiniErpFoundation_*` databases
+remained after the run.
+
+MESP-94 is marked **Done**. No production SQL provider, migration,
+retention/purge, performance claim or Master Data implementation was
+introduced. See `.ai/CURRENT_STATE.md` for the current canonical state and
+the Foundation completion checkpoint / MESP-31 BRD entry eligibility
+conclusion in `docs/97_Foundation_Completion_Review_Checkpoint.md`.

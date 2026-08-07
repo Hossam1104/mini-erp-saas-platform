@@ -51,8 +51,14 @@ boundary. `DurableWorkLocalRuntime`'s public surface remains limited to
 `Store`/`Dispatcher`). MESP-93 (hardening the adjacent private-file and
 notification seams) is now **Done**: PR #24 merged to `main` at
 `005c796629341ab9becfbc6d1abe2ae34b6a7332` after focused ChatGPT security
-re-review approval; ADR-009 carries its closed findings. MESP-94 is the next
-eligible Foundation correction. No ADR
+re-review approval; ADR-009 carries its closed findings. MESP-94 (correcting
+Foundation safety-catalogue classifications and validation-evidence
+accuracy, including ADR-018's validation-lock scope) is also now **Done**:
+PR #26 merged to `main` at `06d837c958c1cb7977dc121e3aaea4e7278944fd` after
+a ChatGPT final merge review verdict of APPROVED FOR MERGE. The Foundation
+completion checkpoint that followed found no remaining Foundation correction
+blocking MESP-31 BRD entry, though MESP-31 itself remains To Do pending a
+distinct owner approval — see `.ai/CURRENT_STATE.md`. No ADR
 status in this index asserts production maturity: the durable-work store,
 dispatcher, worker and effect ledger are local, in-memory, non-crash-durable
 test/development seams that are **not composed into the `MiniErp.Api` host**,

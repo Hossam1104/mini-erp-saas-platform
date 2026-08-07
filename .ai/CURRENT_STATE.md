@@ -1,26 +1,35 @@
 # Current State
 
-## Start here — verified position on 8 August 2026 (MESP-94 In Progress; PR #26 open, F1-F2 focused review corrections applied)
+## Start here — verified position on 8 August 2026 (MESP-94 Done; PR #26 merged; Foundation completion checkpoint performed)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
-| Current branch | `fix/MESP-94-foundation-validation-evidence` |
-| Branch base / starting `main` head | `9f333c9734c767673e43a30d6b57c05793e1fb69` (PR #25 merge commit) |
-| PR #25 | **Merged** to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` — MESP-93 post-merge Markdown reconciliation |
-| Open Pull Request | [PR #26](https://github.com/Hossam1104/mini-erp-saas-platform/pull/26) — open, non-draft, unmerged; a first focused ChatGPT review at reviewed head `88146a733a65bd6070ae80a3c1b6d17c4a456efa` returned CHANGES REQUIRED BEFORE MERGE (R1-R7), all closed; a second focused ChatGPT review at reviewed head `809a4da0e6e3804a6461e55ce34fdfaec0df690e` returned CHANGES REQUIRED BEFORE MERGE (F1-F2), both closed — see `docs/96_Foundation_Release1_Safety_Validation.md`'s "Focused review corrections (R1-R7)" and "Focused review corrections (F1-F2)" sections |
+| Current branch | `main` |
+| PR #26 | **Merged** to `main` — approved final head `2c7ed3dec4662672bb78967ceb70db7ed73eb7d4`, ChatGPT final merge review **APPROVED FOR MERGE** (0 Critical, 0 High, 0 Medium blockers); actual GitHub merge commit `06d837c958c1cb7977dc121e3aaea4e7278944fd` |
+| PR #25 | Merged to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` — MESP-93 post-merge Markdown reconciliation |
+| MESP-94 | **Done** — closes H-2, H-3, M-3, M-6, M-10, M-12, M-13, M-14, M-15, L-2, L-3, L-5 (original round), R1-R7 (focused review round) and F1-F2 (concurrency-lock focused review round); see `docs/96_Foundation_Release1_Safety_Validation.md` for full evidence |
 | MESP-93 | Done — PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT security re-review verdict **APPROVED FOR MERGE** |
 | PR #23 | Closed as superseded (not merged) — its docs-only MESP-92 reconciliation content was already carried onto `main` through PR #24; see the PR #23 closing comment for file-by-file evidence |
 | MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
 | MESP-91 | Done |
-| Active Jira item | **MESP-94 — In Progress** on branch `fix/MESP-94-foundation-validation-evidence`; uses normal bounded review, not the MESP-92/MESP-93 manual security merge hold |
-| MESP-31 (Master Data BRD) | To Do — not started; no Master Data implementation has begun |
-| MESP-48 / MESP-50 | To Do — open production gates, preserved |
+| Active Jira item | **None** — no implementation item is currently In Progress; the Foundation correction sequence (MESP-92, MESP-93, MESP-94) is complete |
+| Foundation completion checkpoint | Performed 8 August 2026: MESP-92/93/94 Done; MESP-48/MESP-50 remain intentionally open production gates, not treated as blockers to MESP-31 BRD entry; no remaining Foundation correction ticket blocks BRD entry |
+| MESP-31 (Master Data BRD) | **To Do** — not started; no Master Data implementation has begun. Foundation completion alone does not satisfy BRD entry: the MESP-29 precedent (`docs/13_Multi_Tenancy_BRD.md` SC-001) shows a distinct, explicit founder/owner authorization is required beyond Foundation completion before moving a BRD Task to In Progress. No such authorization is recorded for MESP-31 in this repository. BRD entry therefore remains pending that explicit owner approval — see "MESP-31 BRD entry eligibility" below |
+| MESP-48 / MESP-50 | To Do — open production gates, preserved, intentionally not blocking BRD entry |
 | Sprint | None active |
 | Parallel implementation | None |
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
+
+### Post-merge focused verification (8 August 2026)
+
+After PR #26 merged to `main` at `06d837c958c1cb7977dc121e3aaea4e7278944fd` (approved head `2c7ed3d` confirmed an ancestor, no divergence, no semantic merge edits), bounded focused verification was re-run directly on merged `main` rather than the full expensive suite (already run complete pre-merge at `037491cee8650bfd38c4fad4d58e3baa86a3e2a4` and targeted at final head `2c7ed3d`): `SafetyCatalogueValidationTests` + `SqlServerSafetyTests` **25/25** passed, `scripts/verify-foundation-validation-lock.ps1` **5/5** passed, `git diff --check` (working tree) and `git diff --check origin/main...HEAD` both passed, and 0 `MiniErpFoundation_*` databases remained after the run.
+
+### MESP-31 BRD entry eligibility
+
+`MESP-31 BRD ENTRY: NOT YET ELIGIBLE FOR AUTOMATIC START — OWNER APPROVAL REQUIRED.` The Foundation correction sequence blocking BRD entry (MESP-92, MESP-93, MESP-94) is complete, and MESP-48/MESP-50 are intentionally not entry blockers. `docs/94_Product_Delivery_Master_Plan.md`'s "Next authorized sequence" step 9 requires the MESP-31 BRD's entry conditions to be "reconfirmed" before starting, and the only recorded precedent for that reconfirmation (MESP-29, see `docs/13_Multi_Tenancy_BRD.md` SC-001) was a distinct founder/owner authorization statement, not an automatic consequence of Foundation completion. No such authorization is recorded for MESP-31. Jira MESP-31 itself carries the standing instruction not to move the Task to In Progress until its BRD entry criteria are approved. Do not move MESP-31 to In Progress and do not start Master Data implementation until that explicit owner approval is recorded.
 
 **MESP-94 PR #26 focused review corrections (7 August 2026):** a focused
 ChatGPT review of PR #26 at reviewed head
