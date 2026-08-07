@@ -1,16 +1,16 @@
 # Current State
 
-## Start here — verified position on 6 August 2026
+## Start here — verified position on 7 August 2026
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
 | Current branch | `fix/MESP-92-single-effect-immutable-payloads` |
-| Current branch head (final implementation head) | `576996f94ae9ddc251767445a7ebddd60c492c45` |
-| Starting head for this correction | `9e0999ee6b64a27aeb6f3cce918d987325c18cab` (see note below) |
-| Previous MESP-92 correction head | `9dc6cb82860b10215d05364f2f6e25f69df3b986` (O92-01/O92-02 closure) |
-| Previous branch head | `271e9dfedce8e0ea44ef9f8d3ab6e6b61d984ac4` (Opus 5 project-wide review head; PRD `R100` rename) |
+| Current branch head (final implementation head) | `e991641` (`e99164134054ae9f5c48ad53399e1fbb9898225b`) |
+| Starting head for this correction | `dd3b4f58e9dcf290d42536dbd4a1196232f378e7` |
+| Previous MESP-92 correction head | `576996f94ae9ddc251767445a7ebddd60c492c45` (H92-05/M92-05 closure) |
+| Previous branch head | `9dc6cb82860b10215d05364f2f6e25f69df3b986` (O92-01/O92-02 closure) |
 | Merged-main baseline | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` |
 | Open Pull Request | PR #22 — open, non-draft, **unmerged**, **not approved** |
 | Active Jira item | **MESP-92 — In Progress** (the only active bounded implementation item) |
@@ -23,19 +23,76 @@ A new agent can begin from this section with no prior chat history.
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
 
-**Note on the starting head:** the task instruction for this correction named
-expected starting head `413585c6e22aac26706d3ecaa9af13339bcedf9d`. At
-execution time the actual branch head was one commit ahead, at
-`9e0999ee6b64a27aeb6f3cce918d987325c18cab` ("fix(work): add analytics
-configuration to Angular CLI settings", `frontend/angular.json` only — a
-local Angular CLI telemetry identifier, not a MESP-92 code or security
-change). That commit was inspected and is unrelated to this correction's
-scope; it is preserved as-is.
+**H92-06/M92-07/L92-02 closure (7 August 2026):** a focused shipping-boundary
+correction found that `MiniErp.App` still granted
+`[assembly: InternalsVisibleTo("MiniErp.Api")]` even after the H92-05/M92-05
+correction made the effect guard, effect executor and their interfaces
+`internal` — a friend assembly sees another assembly's internal members
+exactly as if they were public, so that grant alone let the shipping
+`MiniErp.Api` host reach `EffectGuard`/`EffectExecutor`, construct the guard
+or executor directly, and call `TryReserve`/`Release`/`RecordCompleted`/
+`RecordOutcomeUnknown`/`GetOutcomeUnknownReason` on the raw key. **Making a
+member `internal` does not by itself prevent shipping access when the
+declaring assembly grants that shipping assembly `InternalsVisibleTo`** — any
+prior documentation implying otherwise is corrected by this entry. Both
+findings are now closed at head `e991641`:
+
+- H92-06 is closed: `backend/src/MiniErp.App/Properties/AssemblyInfo.cs` now
+  grants `InternalsVisibleTo` only to `MiniErp.ArchitectureTests`; the grant to
+  `MiniErp.Api` is removed. Rebuilding the full solution with that single
+  change surfaced exactly one compile break in `MiniErp.Api`, unrelated to the
+  durable-work ledger: `Program.cs`'s sign-in endpoint read the internal
+  `FoundationHostSignInResult.Principal` to call `HttpContext.SignInAsync`.
+  That property is now public — a narrow, intentional seam that exposes only
+  the `ClaimsPrincipal` this module already issues through
+  `FoundationIdentityClaims`, never a raw credential or ledger type. No
+  mutable ledger type, guard, or executor was made public or given back
+  friend access.
+- M92-07 is closed by the same correction: `GetOutcomeUnknownReason` is
+  declared only on the already-internal `IDurableWorkEffectGuard` interface,
+  so removing `MiniErp.Api`'s friend grant removes its only path to that
+  raw-key evidence as well. The sole production uncertain-effect evidence path
+  remains `IDurableWorkStore.ReadUncertainEffectsAsync(VerifiedDurableWorkReconciliationAuthorization)`.
+- L92-02 is closed: `frontend/angular.json` is restored to the exact
+  `origin/main` analytics state (no `analytics` key), removing the unrelated
+  identifier commit `9e0999e` had added. Verified byte-for-byte identical to
+  `origin/main` for this file.
+- `backend/tests/MiniErp.ArchitectureTests/FriendAssemblyPolicyTests.cs` is new
+  (5 tests): reflection asserts `MiniErp.App`'s `InternalsVisibleTo` allow-list
+  is exactly `["MiniErp.ArchitectureTests"]` (and contains no non-test
+  assembly), and a Roslyn in-memory compilation proves source compiled under
+  the assembly name `MiniErp.Api` fails with `CS0122` when it tries to
+  construct `InMemoryDurableWorkEffectGuard`/`DurableWorkEffectExecutor` or
+  call `TryReserve`/`Release`/`RecordOutcomeUnknown`/`GetOutcomeUnknownReason`,
+  while the identical source compiled under `MiniErp.ArchitectureTests`
+  succeeds. These tests were verified to fail against the prior (vulnerable)
+  `InternalsVisibleTo("MiniErp.Api")` state before being verified to pass
+  against this correction — they are a genuine regression proof, not just a
+  restatement of the fix.
+- O92-01, O92-02, H92-05 and M92-05 remain closed; all previously added tests
+  for those findings continue to pass unmodified.
+- Validation at this head: focused DurableWork/ledger/composition/
+  reconciliation suite **238/238** passed (up from 230, the 5 new tests plus 3
+  incidentally matched by a broader filter); full backend regression via
+  `validate-foundation.ps1` **493/493** passed with 0 failed and 0 skipped
+  (up from 488, the 5 new tests), including **11/11** SQL Server LocalDB
+  probes and no `MiniErpFoundation_*` database remaining after teardown;
+  Release build **0 warnings/0 errors**; Angular unit tests **27/27** passed;
+  Angular production build succeeded (351.02 kB initial / 87.80 kB
+  transferred, unchanged); Playwright **4/4** passed; `npm audit --omit=dev
+  --audit-level=high` reported **0** vulnerabilities. MESP-92 is **not** marked
+  Done; PR #22 remains open, non-draft and unmerged pending a further focused
+  ChatGPT security re-review at this head. MESP-93, MESP-94 and MESP-31 remain
+  To Do; no Sprint is active; MESP-48 and MESP-50 remain explicit production
+  gates. The `local-prd-rename-before-MESP-92` stash was preserved untouched
+  throughout this correction, and the canonical PRD blob
+  (`1f9163b9412cb343a19a98312eb642ad26c1efaa` at `docs/MESP_PRD_v1.2.docx`) was
+  not modified.
 
 **Exact next action:** obtain a further focused ChatGPT security review of PR
-#22 at head `576996f94ae9ddc251767445a7ebddd60c492c45`. Do not merge PR #22, do
-not close MESP-92, and do not start MESP-93, MESP-94 or MESP-31 until that
-review authorizes the next step. The merge hold is a standing process gate.
+#22 at head `e991641`. Do not merge PR #22, do not close MESP-92, and do not
+start MESP-93, MESP-94 or MESP-31 until that review authorizes the next step.
+The merge hold is a standing process gate.
 
 **H92-05/M92-05 closure (7 August 2026):** a focused ChatGPT security
 re-review of PR #22 raised H92-05 (`DurableWorkLocalRuntime` publicly exposed
@@ -107,10 +164,14 @@ the move is recorded as a Git `R100` rename in commit
 were closed by the bounded correction at head
 `9dc6cb82860b10215d05364f2f6e25f69df3b986` (7 August 2026). A subsequent
 focused ChatGPT security re-review of PR #22 at that head then raised H92-05
-(High) and M92-05 (Medium); both are now **closed** by the bounded correction
-at head `576996f94ae9ddc251767445a7ebddd60c492c45` (7 August 2026; see the
-H92-05/M92-05 closure entry above). No known MESP-92 code finding remains
-open at this head, pending the next focused ChatGPT security re-review.
+(High) and M92-05 (Medium); both were closed by the bounded correction at head
+`576996f94ae9ddc251767445a7ebddd60c492c45` (7 August 2026; see the H92-05/M92-05
+closure entry above). A follow-up shipping-boundary correction then found that
+closure incomplete — H92-06 (High) and M92-07 (Medium), plus the unrelated
+L92-02 (Low) scope cleanup — all now **closed** by the bounded correction at
+head `e991641` (7 August 2026; see the H92-06/M92-07/L92-02 closure entry
+above). No known MESP-92 code finding remains open at this head, pending the
+next focused ChatGPT security re-review.
 
 - **O92-01 (Low) — closed.** `InMemoryDurableWorkEffectGuard.RecordOutcomeUnknown`
   used to accept a `safeReason` and discard it. The guard now persists the
@@ -130,9 +191,12 @@ open at this head, pending the next focused ChatGPT security re-review.
 
 **Verified maturity boundary:** `DurableWorkLocalRuntime`,
 `InMemoryDurableWorkStore`, `DurableWorkDispatcher` and
-`TenantDurableWorkWorker` are **not referenced by `MiniErp.Api`**. The
-durable-work seam is a contract plus a local adapter with test coverage; it is
-not composed into the running host and is not a production capability.
+`TenantDurableWorkWorker` are **not referenced by `MiniErp.Api`**, and as of
+the H92-06 closure at head `e991641` `MiniErp.Api` also no longer has
+`InternalsVisibleTo` friend access to `MiniErp.App`'s internal ledger surface
+at all. The durable-work seam is a contract plus a local adapter with test
+coverage; it is not composed into the running host and is not a production
+capability.
 
 ## MESP-92 In Progress — single-effect durable work and immutable payloads
 
@@ -156,11 +220,13 @@ not composed into the running host and is not a production capability.
   removed; an executor is always required. A syntax-tree architecture test
   scans the whole `backend/src` tree — every shipping project, including
   `MiniErp.Api` — and fails if any of the four types is constructed anywhere
-  outside `DurableWorkLocalRuntime.cs`. That test is load-bearing:
-  `MiniErp.App` grants `InternalsVisibleTo("MiniErp.Api")`, so the `internal`
-  constructors alone do not stop the future host composition root from
-  building an independent ledger, and the test matches only direct `new`
-  expressions.
+  outside `DurableWorkLocalRuntime.cs`. That test is load-bearing because it
+  matches only direct `new` expressions rather than relying on accessibility
+  alone. **Historical note, corrected by the H92-06 closure below:** at the
+  time this paragraph was written, `MiniErp.App` still granted
+  `InternalsVisibleTo("MiniErp.Api")`, so the `internal` constructors alone did
+  not yet stop the shipping host from building an independent ledger; that
+  friend-assembly grant is removed as of head `e991641`.
 - H92-04 is closed: `IDurableWorkStore.ReadUncertainEffectsAsync` now takes a
   server-issued `VerifiedDurableWorkReconciliationAuthorization` instead of a
   raw `TenantContext`. `IdentityAuthorizationService` (as the new

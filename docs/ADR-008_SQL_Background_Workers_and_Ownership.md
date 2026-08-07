@@ -165,13 +165,36 @@ describes a contract and a local, in-memory, non-crash-durable adapter proven
 by automated tests; **no worker is composed into the running host**, no worker
 is scheduled, and nothing here is a production capability. A future host
 composition root must call `DurableWorkLocalRuntime.Create` exactly once and
-reuse the returned instance — `MiniErp.App` grants
-`InternalsVisibleTo("MiniErp.Api")`, so the `internal` constructors alone do
-not enforce that; the syntax-tree architecture test does. Verified at head
+reuse the returned instance; the syntax-tree architecture test enforces that
+no other shipping construction site exists. Verified at head
 `576996f94ae9ddc251767445a7ebddd60c492c45` (H92-05/M92-05 correction, 7 August
 2026): `MiniErp.Api` still does not reference any durable-work type, so
 tightening `DurableWorkLocalRuntime`'s public surface to `Store`/`Dispatcher`
 only changed nothing reachable from the host.
+
+**H92-06/M92-07 correction (7 August 2026, head `e991641`):** at every head up
+to and including `576996f94ae9ddc251767445a7ebddd60c492c45`, `MiniErp.App`
+still granted `[assembly: InternalsVisibleTo("MiniErp.Api")]`. **That grant
+alone made the preceding paragraphs' `internal` claims incomplete**: a friend
+assembly sees another assembly's `internal` members exactly as if they were
+public, so `MiniErp.Api` could still reach `EffectGuard`/`EffectExecutor`,
+construct `InMemoryDurableWorkEffectGuard`/`DurableWorkEffectExecutor`
+directly, and call `TryReserve`/`Release`/`RecordCompleted`/
+`RecordOutcomeUnknown`/`GetOutcomeUnknownReason` — the H92-05/M92-05 `internal`
+modifiers narrowed the *source-level* surface but did not close the
+*compiled* shipping boundary. The correction removes that grant; `MiniErp.App`
+now declares `InternalsVisibleTo` only for `MiniErp.ArchitectureTests`. The
+one resulting `MiniErp.Api` compile break was unrelated to durable work
+(`FoundationHostSignInResult.Principal`, needed by the sign-in endpoint to
+call `HttpContext.SignInAsync`) and was resolved by making that one property
+public rather than restoring friend access. No mutable ledger type is public.
+M92-07 closes as a direct consequence: `GetOutcomeUnknownReason` is declared
+only on the already-internal `IDurableWorkEffectGuard`, so removing the friend
+grant removes `MiniErp.Api`'s only path to it too.
+`FriendAssemblyPolicyTests.cs` proves this by full Roslyn compilation: source
+compiled under the assembly name `MiniErp.Api` fails to compile (`CS0122`)
+against the internal ledger surface, while identical source compiled under
+`MiniErp.ArchitectureTests` still succeeds.
 
 ## Gates
 

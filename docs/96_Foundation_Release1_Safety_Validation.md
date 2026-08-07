@@ -461,3 +461,63 @@ O92-01 and O92-02 remain closed; all previously added O92-01/O92-02 tests
 continue to pass unmodified. MESP-92 is **not** marked Done by this
 correction; PR #22 remains open, non-draft and held unmerged pending a
 further focused ChatGPT security re-review at this head.
+
+## H92-06/M92-07/L92-02 focused correction — 7 August 2026
+
+A follow-up shipping-boundary correction found that the H92-05/M92-05
+`internal` closure above, while accurate about source-level visibility, did
+not close the compiled shipping boundary: `MiniErp.App` still declared
+`[assembly: InternalsVisibleTo("MiniErp.Api")]`. A friend assembly sees
+another assembly's `internal` members exactly as if they were public, so
+`MiniErp.Api` could still reach `EffectGuard`/`EffectExecutor`, construct
+`InMemoryDurableWorkEffectGuard`/`DurableWorkEffectExecutor` directly, and
+call `TryReserve`/`Release`/`RecordCompleted`/`RecordOutcomeUnknown`/
+`GetOutcomeUnknownReason`. This is H92-06 (High); M92-07 (Medium) is the same
+root cause applied to the M92-05 raw-key reason bypass specifically. Both are
+closed at head `e991641` on the same branch. No SQL Server schema, index,
+rowversion, collation, Tenant-filter, stored-owner, relationship, transaction,
+idempotency or lease probe changed; the existing 75-assertion safety
+catalogue is untouched.
+
+**Friend-assembly evidence.** `backend/src/MiniErp.App/Properties/AssemblyInfo.cs`
+now declares `InternalsVisibleTo` only for `MiniErp.ArchitectureTests`; the
+grant to `MiniErp.Api` is removed. The one resulting `MiniErp.Api` compile
+break was `FoundationHostSignInResult.Principal` (needed by the sign-in
+endpoint to call `HttpContext.SignInAsync`), unrelated to durable work; it is
+now a narrow public property rather than a restored friend grant. No mutable
+ledger type is public.
+
+**Architecture-test evidence.** `FriendAssemblyPolicyTests.cs` adds 5 tests:
+reflection over `InternalsVisibleToAttribute` proves `MiniErp.App`'s
+friend-assembly allow-list is exactly `["MiniErp.ArchitectureTests"]` and
+contains no non-test assembly; a full Roslyn in-memory compilation
+(`Source_compiled_as_the_shipping_Api_assembly_cannot_access_the_internal_effect_guard_or_executor_types`)
+proves source compiled under the assembly name `MiniErp.Api` fails with
+`CS0122` when constructing the guard/executor or calling their
+reserve/release/record/read-reason members; a matching positive control
+proves the identical source compiled under `MiniErp.ArchitectureTests` still
+succeeds. Both the reflection and compilation tests were run against the
+prior (vulnerable) `InternalsVisibleTo("MiniErp.Api")` state and confirmed to
+fail there before being confirmed to pass against this correction -- genuine
+regression proof, not a restatement of the fix.
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Focused durable-work/ledger/composition/reconciliation regression | 238 passed, 0 failed, 0 skipped | `dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj --filter "FullyQualifiedName~DurableWork\|FullyQualifiedName~FriendAssemblyPolicy\|FullyQualifiedName~Reconciliation\|FullyQualifiedName~LedgerSurface\|FullyQualifiedName~Composition\|FullyQualifiedName~Payload"` |
+| Complete backend suite | 493 passed, 0 failed, 0 skipped | `powershell -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped | `npx ng test --watch=false` |
+| Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred (unchanged) | `npx ng build --configuration production` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npx playwright test` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Diff check | Passed, no whitespace errors | `git diff --check` |
+| Hosted CI | Not available | No hosted workflow is configured in this repository |
+
+No `MiniErpFoundation_*` database remained in `MSSQLLocalDB` after teardown.
+`frontend/angular.json` is byte-for-byte identical to `origin/main` (L92-02
+scope cleanup, not a security finding). O92-01, O92-02, H92-05 and M92-05
+remain closed; all previously added tests for those findings continue to pass
+unmodified. MESP-92 is **not** marked Done by this correction; PR #22 remains
+open, non-draft and held unmerged pending a further focused ChatGPT security
+re-review at this head.

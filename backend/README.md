@@ -12,8 +12,12 @@ workflow. Identity, sessions, audit, durable work, notifications and private
 files are bounded in-memory or local seams; there is no production database,
 migration, SQL work provider, broker, object-storage provider, notification
 provider or deployment. The durable-work runtime is not composed into
-`MiniErp.Api` at all. SQL Server evidence comes from disposable LocalDB probes
-only. MESP-48 and MESP-50 remain open production gates.
+`MiniErp.Api` at all, and (as of the MESP-92 H92-06 correction, 7 August 2026)
+`MiniErp.Api` no longer has `InternalsVisibleTo` friend access to
+`MiniErp.App`'s internal durable-work ledger either — only
+`MiniErp.ArchitectureTests` is granted that access. SQL Server evidence comes
+from disposable LocalDB probes only. MESP-48 and MESP-50 remain open
+production gates.
 
 ## Prerequisites
 

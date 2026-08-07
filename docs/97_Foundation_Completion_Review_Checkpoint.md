@@ -199,6 +199,61 @@ MESP-92 code finding remains open at this head. PR #22 remains open,
 non-draft and unmerged pending a further focused ChatGPT security re-review;
 MESP-92 is not marked Done.
 
+### H92-06/M92-07/L92-02 closure overlay — 7 August 2026 (current, not a rewrite of the checkpoint above)
+
+The overlay above reflects head `576996f` exactly as recorded and is
+preserved unchanged. **One statement in the original checkpoint body needs an
+explicit correction, not just a later overlay:** the paragraph above (under
+"The review also confirmed an important maturity boundary...") states that
+`MiniErp.App` grants `InternalsVisibleTo("MiniErp.Api")` and that "the
+`internal` constructors alone do not prevent a future host composition root
+from constructing an independent ledger — the syntax-tree architecture test is
+what closes that path." That was true as written for the H92-03 construction
+site alone, but it understated the consequence: the same friend-assembly grant
+also let the shipping `MiniErp.Api` host reach `EffectGuard`/`EffectExecutor`
+and call `TryReserve`/`Release`/`RecordCompleted`/`RecordOutcomeUnknown`/
+`GetOutcomeUnknownReason` directly, regardless of any `internal` modifier,
+because a friend assembly sees another assembly's internals exactly as if
+they were public. This was H92-06 (High) and, for the raw-key reason bypass
+specifically, M92-07 (Medium). Both are closed by a bounded correction on the
+same branch at head `e991641`:
+
+- **H92-06 (High) — closed.** `backend/src/MiniErp.App/Properties/AssemblyInfo.cs`
+  now grants `InternalsVisibleTo` only to `MiniErp.ArchitectureTests`; the
+  grant to `MiniErp.Api` is removed. The one resulting `MiniErp.Api` compile
+  break (`FoundationHostSignInResult.Principal`, needed for
+  `HttpContext.SignInAsync`) was unrelated to durable work and is resolved by
+  a narrow public property, not by restoring friend access. No mutable ledger
+  type is public.
+- **M92-07 (Medium) — closed.** `GetOutcomeUnknownReason` is declared only on
+  the already-internal `IDurableWorkEffectGuard`, so removing the friend grant
+  removes `MiniErp.Api`'s only path to it. The only publicly reachable
+  uncertain-effect evidence path remains
+  `ReadUncertainEffectsAsync(VerifiedDurableWorkReconciliationAuthorization)`,
+  unchanged.
+- **L92-02 (Low, scope cleanup) — closed.** `frontend/angular.json` is
+  restored to the exact `origin/main` analytics state, removing an unrelated
+  identifier an earlier commit had added.
+
+**Friend-assembly evidence:** new `FriendAssemblyPolicyTests.cs` (5 tests)
+proves by reflection that `MiniErp.App`'s `InternalsVisibleTo` allow-list is
+exactly `["MiniErp.ArchitectureTests"]`, and by full Roslyn compilation that
+source compiled under the assembly name `MiniErp.Api` cannot compile
+(`CS0122`) against the internal ledger guard/executor or their
+construct/reserve/release/record/read-reason members, while identical source
+compiled under `MiniErp.ArchitectureTests` still succeeds — verified to fail
+against the prior vulnerable state before being verified to pass against this
+correction. See
+[`docs/94_Product_Delivery_Master_Plan.md`](94_Product_Delivery_Master_Plan.md#mesp-92-h92-06m92-07l92-02-focused-correction--in-progress)
+and
+[`docs/96_Foundation_Release1_Safety_Validation.md`](96_Foundation_Release1_Safety_Validation.md#h92-06m92-07l92-02-focused-correction--7-august-2026)
+for the full correction record and re-run validation totals (238/238
+focused, 493/493 full backend, 11/11 SQL LocalDB, 27/27 Angular, Playwright
+4/4, 0 audit vulnerabilities). O92-01, O92-02, H92-05 and M92-05 remain
+closed. No known MESP-92 code finding remains open at this head. PR #22
+remains open, non-draft and unmerged pending a further focused ChatGPT
+security re-review; MESP-92 is not marked Done.
+
 ## MESP-91 correction overlay — merged and Done
 
 The MESP-64 merged-main checkpoint above is the prior historical Foundation
