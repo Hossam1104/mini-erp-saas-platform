@@ -808,15 +808,16 @@ MESP-94 does not implement production SQL hosting, a production migration,
 performance/retention/purge behavior, or any Master Data domain work.
 MESP-48 and MESP-50 remain unchanged, explicit production gates.
 
-**Complete Foundation validation evidence.** Source-implementation SHA:
-`692d3ab03e7a29e0a644ce8be18051dc3f43ab0e`
-(`test(validation): harden SQL and Foundation validation evidence`, branch
+**Complete Foundation validation evidence (re-run after the R1-R7 focused
+review corrections).** Source-implementation SHA:
+`ac65e204ca4f134d4c3ae98e7871b936fe01c613`
+(`fix(validation): apply PR #26 focused review corrections R2-R7`, branch
 `fix/MESP-94-foundation-validation-evidence`, based on starting `main`
-`9f333c9734c767673e43a30d6b57c05793e1fb69`). Validated repository SHA: the
-working tree at that exact commit — no test/tooling source changed between
-the validation run below and that commit; only this documentation commit
-followed it. Final PR head: see `.ai/CURRENT_STATE.md` and the MESP-94 Pull
-Request for the exact pushed head once opened.
+`9f333c9734c767673e43a30d6b57c05793e1fb69`). Validated repository SHA:
+identical — the run below was executed directly against this commit's
+working tree, not a stale prior commit whose Markdown had since changed
+(closing R1). Final PR head: see `.ai/CURRENT_STATE.md` and PR #26 for the
+exact pushed head once this documentation is committed.
 
 | Validation | Exact result | Command/evidence |
 |---|---:|---|
@@ -824,17 +825,26 @@ Request for the exact pushed head once opened.
 | Complete backend suite (includes SQL Server LocalDB probes and the safety-catalogue validator) | 582 passed, 0 failed, 0 skipped | Same validation command |
 | SQL Server LocalDB suite | 21 passed, 0 failed, 0 skipped (up from 11: -1 removed vacuous test, +6 negative cases + 1 positive control for the real configuration validator, +1 fixture-consistency check, +3 same-Tenant composite acceptance cases) | Same validation command; disposable `MiniErpFoundation_*` database |
 | SQL Server collation observed | `SQL_Latin1_General_CP1_CI_AS` (queried live via `DATABASEPROPERTYEX`; no linguistic sort/search claim made — see "SQL Server evidence" above) | Same validation command |
-| LocalDB/sqlcmd discovery | Dynamic but bounded: PATH first, then a version-agnostic probe of the known `<version>\Tools\Binn` and `Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files (never a full recursive scan of the SQL Server tree); no hard-coded version | `Resolve-SqlLocalDbExecutable`/`Resolve-SqlCmdExecutable` in `scripts/validate-foundation.ps1` |
-| Disposable database cleanup | 0 `MiniErpFoundation_*` databases remained (pre-run stale-database sweep and post-run proof both ran, serialized by a session-scoped validation lock) | Same validation command |
-| Validation concurrency lock | A named, session-scoped mutex (`Local\MiniErpFoundationValidation`) is held from before stale-database cleanup through final cleanup, the orphan-database proof and environment-variable restoration, so two concurrent runs cannot drop each other's active disposable database | `scripts/validate-foundation.ps1`; manually verified two concurrent acquisition attempts block/release correctly |
-| Repository-integrity check | `git diff --check` against the working tree, and separately `git diff --check origin/main...HEAD` against the live branch delta from current `origin/main` (not a hard-coded SHA) | Same validation command |
-| Environment restoration | `MESP_SQLSERVER_CONNECTION_STRING` restoration runs in a nested `finally` guaranteed regardless of backend/frontend/database-removal/orphan-proof failure | Same validation command |
+| LocalDB/sqlcmd discovery | Dynamic but bounded: PATH first, then a probe of only the known `<version>\Tools\Binn` and `Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files — never a full recursive scan of the SQL Server tree (MESP-94 R7); no hard-coded version | `Resolve-SqlLocalDbExecutable`/`Resolve-SqlCmdExecutable` in `scripts/validate-foundation.ps1` |
+| Disposable database cleanup | 0 `MiniErpFoundation_*` databases remained (pre-run stale-database sweep and post-run proof both ran, serialized by the validation lock) | Same validation command |
+| Validation concurrency lock | A named, session-scoped mutex (`Local\MiniErpFoundationValidation`) is held from before stale-database cleanup through final cleanup, the orphan-database proof and environment-variable restoration, so two concurrent runs cannot drop each other's active disposable database (MESP-94 R4) | `scripts/validate-foundation.ps1`; manually verified two concurrent acquisition attempts block/release correctly |
+| Repository-integrity check | `git diff --check` against the working tree passed, and separately `git diff --check origin/main...HEAD` against the live branch delta from current `origin/main` passed (MESP-94 R2) | Same validation command |
+| Environment restoration | `MESP_SQLSERVER_CONNECTION_STRING` restoration ran in its nested `finally`, guaranteed regardless of backend/frontend/database-removal/orphan-proof failure (MESP-94 R3) | Same validation command |
 | Angular suite | 28 passed, 0 failed, 0 skipped, across 5 test files (up from 27: +1 MESP-90 regression guard) | `npm test -- --watch=false --no-progress` |
 | Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred (unchanged) | `npm run build` |
 | Playwright | 4 passed, 0 failed, 0 skipped | `npm run test:e2e` |
 | Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
-| Diff check | Passed (one benign CRLF-normalization advisory on `scripts/validate-foundation.ps1`, not a whitespace error; exit code 0) | `git diff --check` |
 | Hosted CI | Not available | No hosted workflow is configured in this repository |
+
+**Final-head targeted verification (R1 step 5).** After the evidence-only
+documentation commit that records this table, the following were re-run at
+that exact final head, without re-running the full suite a second time:
+`SafetyCatalogueValidationTests` (4/4 passed, confirming the R6 parser fix
+against the just-committed Markdown), the MESP-94 focused SQL/configuration
+tests (`SqlServerSafetyTests`, 21/21 passed), and `git diff --check` /
+`git diff --check origin/main...HEAD` against the final committed state
+(both passed). See `.ai/CURRENT_STATE.md` for the exact final PR head these
+were run against.
 
 MESP-94 is **not** marked Done by this validation; its Pull Request is pending
 review, merge and post-merge closure. No production SQL provider, migration,
