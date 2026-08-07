@@ -25,7 +25,7 @@ A new agent can begin from this section with no prior chat history.
 
 ### Post-merge focused verification (8 August 2026)
 
-After PR #26 merged by fast-forward to `06d837c958c1cb7977dc121e3aaea4e7278944fd` (`2c7ed3d` confirmed an ancestor, no divergence, no semantic merge edits), bounded focused verification was re-run directly on merged `main` rather than the full expensive suite (already run complete pre-merge at `037491cee8650bfd38c4fad4d58e3baa86a3e2a4` and targeted at final head `2c7ed3d`): `SafetyCatalogueValidationTests` + `SqlServerSafetyTests` **25/25** passed, `scripts/verify-foundation-validation-lock.ps1` **5/5** passed, `git diff --check` (working tree) and `git diff --check origin/main...HEAD` both passed, and 0 `MiniErpFoundation_*` databases remained after the run.
+After PR #26 merged to `main` at `06d837c958c1cb7977dc121e3aaea4e7278944fd` (approved head `2c7ed3d` confirmed an ancestor, no divergence, no semantic merge edits), bounded focused verification was re-run directly on merged `main` rather than the full expensive suite (already run complete pre-merge at `037491cee8650bfd38c4fad4d58e3baa86a3e2a4` and targeted at final head `2c7ed3d`): `SafetyCatalogueValidationTests` + `SqlServerSafetyTests` **25/25** passed, `scripts/verify-foundation-validation-lock.ps1` **5/5** passed, `git diff --check` (working tree) and `git diff --check origin/main...HEAD` both passed, and 0 `MiniErpFoundation_*` databases remained after the run.
 
 ### MESP-31 BRD entry eligibility
 

@@ -528,7 +528,7 @@ the next eligible correction; MESP-93, MESP-94 and
 MESP-31 remain **To Do**. No Sprint, Master Data implementation, production
 provider, migration, MESP-48 or MESP-50 work was started.
 
-## Foundation correction checkpoint — MESP-92/93/94 closed (8 August 2026, current)
+## Foundation correction checkpoint — MESP-92/93/94 closed (8 August 2026)
 
 Everything above this section is the preserved historical Foundation
 checkpoint as reviewed on 6 August 2026, when MESP-92 was still In Progress
