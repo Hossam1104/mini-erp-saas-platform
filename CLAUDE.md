@@ -12,13 +12,16 @@ and never auto-start the next Jira item. MESP-48 and MESP-50 remain explicit
 gates. Stop for Tenant leakage, auth weakness, data loss/purge, accounting
 integrity, or an unresolved legal/privacy decision.
 
-MESP-93 is the active implementation item and the current security-task merge
-exception: after implementation, validation, and a non-draft Pull Request, stop
-for focused ChatGPT review. Do not merge PR #24 or close MESP-93, and do not
-start MESP-94 or MESP-31 until that review authorizes the next step. MESP-92
-held this exception earlier in the sequence; PR #22 merged at
+MESP-93 is Done: PR #24 merged to `main` at
+`005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head
+`83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT security
+re-review approval. MESP-94 is the next eligible Foundation correction and
+uses normal bounded review, not the MESP-92/MESP-93 manual security merge
+hold, unless Jira/repository policy states otherwise for that item. MESP-31
+remains To Do and is not started. MESP-92 carried the same exception earlier
+in the sequence; PR #22 merged at
 `322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT approval and
-MESP-92 is now Done, as are MESP-89, MESP-63, MESP-61 and MESP-64.
+MESP-92 is Done, as are MESP-89, MESP-63, MESP-61 and MESP-64.
 
 The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`; older filenames name
 the same unchanged file. Start from `.ai/CURRENT_STATE.md` for the verified

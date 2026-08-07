@@ -541,7 +541,7 @@ Jira. MESP-93 (private-file access and notification hardening) is the next
 active Foundation correction — see `.ai/CURRENT_STATE.md` for its exact
 branch, head and Pull Request.
 
-## MESP-93 implementation validation (7 August 2026, current)
+## MESP-93 implementation validation (7 August 2026, historical)
 
 MESP-93 closes M-1, M-4, M-5, M-7, M-8, M-9 and L-4 on branch
 `fix/MESP-93-private-files-notifications`, based on `main` at `322341e`. 45
@@ -566,7 +566,7 @@ marked Done by this validation; its Pull Request is held open, non-draft and
 unmerged pending a focused ChatGPT security review, the same standing gate
 MESP-92 carried.
 
-## MESP-93 focused re-review correction validation (7 August 2026, current)
+## MESP-93 focused re-review correction validation (7 August 2026, historical)
 
 A focused re-review of PR #24 at head `759eb04` raised H93-01, H93-02,
 M93-01, M93-02 and L93-01; all five are closed at head `1820416`. 28 new
@@ -584,6 +584,32 @@ focused tests were added (73 total).
 | Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
 | Diff check | Passed, no whitespace errors | `git diff --check` |
 
-No `MiniErpFoundation_*` database remained after teardown. MESP-93 remains
-**not** marked Done; PR #24 is held open, non-draft and unmerged pending a
-further focused ChatGPT security re-review at head `1820416`.
+No `MiniErpFoundation_*` database remained after teardown. At the time this
+validation was recorded, MESP-93 remained not marked Done and PR #24 was
+held open, non-draft and unmerged pending a further focused ChatGPT security
+re-review at head `1820416`. **Superseded — see the closure validation
+below.**
+
+## MESP-93 closure validation (7 August 2026, current)
+
+The further focused ChatGPT security re-review requested above completed
+with verdict **APPROVED FOR MERGE** at reviewed head
+`83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`. PR #24 merged to `main` at
+`005c796629341ab9becfbc6d1abe2ae34b6a7332`. Post-merge validation was rerun
+on `main` (not copied from the pre-merge totals above):
+
+| Validation | Exact result | Command/evidence |
+|---|---:|---|
+| Complete backend suite | 566 passed, 0 failed, 0 skipped | `powershell -File .\scripts\validate-foundation.ps1` |
+| SQL Server LocalDB suite | 11 passed, 0 failed, 0 skipped | Same validation command; disposable `MSSQLLocalDB` database |
+| Backend Release build | 0 warnings, 0 errors | Same validation command |
+| Angular suite | 27 passed, 0 failed, 0 skipped | `npm test` |
+| Angular production build | Passed — 351.02 kB initial, 87.80 kB transferred (unchanged) | `npm run build` |
+| Playwright | 4 passed, 0 failed, 0 skipped | `npx playwright test` |
+| Production dependency audit | 0 vulnerabilities | `npm audit --omit=dev --audit-level=high` |
+| Diff check | Passed, no whitespace errors | `git diff --check` |
+
+No `MiniErpFoundation_*` database remained after teardown (verified directly
+via `sys.databases` on the `MSSQLLocalDB` instance, in addition to the
+script's own teardown). MESP-93 is marked **Done** in Jira. MESP-94 is the
+next eligible Foundation correction, not yet started.
