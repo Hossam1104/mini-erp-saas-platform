@@ -737,12 +737,15 @@ MESP-94 does not implement production SQL hosting, a production migration,
 performance/retention/purge behavior, or any Master Data domain work.
 MESP-48 and MESP-50 remain unchanged, explicit production gates.
 
-**Complete Foundation validation evidence.** Source-implementation SHA
-(uncommitted working tree with all MESP-94 test/tooling changes applied,
-based on branch `fix/MESP-94-foundation-validation-evidence` from starting
-`main` `9f333c9734c767673e43a30d6b57c05793e1fb69`); validated repository SHA
-recorded once this content is committed — see `.ai/CURRENT_STATE.md` and the
-MESP-94 Pull Request for the exact commit the run below was captured against.
+**Complete Foundation validation evidence.** Source-implementation SHA:
+`692d3ab03e7a29e0a644ce8be18051dc3f43ab0e`
+(`test(validation): harden SQL and Foundation validation evidence`, branch
+`fix/MESP-94-foundation-validation-evidence`, based on starting `main`
+`9f333c9734c767673e43a30d6b57c05793e1fb69`). Validated repository SHA: the
+working tree at that exact commit — no test/tooling source changed between
+the validation run below and that commit; only this documentation commit
+followed it. Final PR head: see `.ai/CURRENT_STATE.md` and the MESP-94 Pull
+Request for the exact pushed head once opened.
 
 | Validation | Exact result | Command/evidence |
 |---|---:|---|
