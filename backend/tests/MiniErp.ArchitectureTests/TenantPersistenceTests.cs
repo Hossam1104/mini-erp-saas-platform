@@ -523,14 +523,17 @@ public sealed class TenantPersistenceTests
             new SupportGrantReference(Guid.NewGuid(), Guid.NewGuid())));
     }
 
-    [Fact]
-    public async Task Same_tenant_relationship_is_accepted()
+    [Theory]
+    [InlineData(TenantRelationshipKind.CompanyBranch)]
+    [InlineData(TenantRelationshipKind.BranchWarehouse)]
+    [InlineData(TenantRelationshipKind.CompanyDepartment)]
+    public async Task Same_tenant_relationship_is_accepted(TenantRelationshipKind relationshipKind)
     {
         await using var fixture = await PersistenceFixture.CreateAsync();
         var record = new TenantOwnedRecord(
             fixture.TenantA.TenantId,
-            "same-tenant-relationship",
-            TenantRelationshipKind.CompanyBranch,
+            $"same-tenant-{relationshipKind}",
+            relationshipKind,
             fixture.TenantA.TenantId);
 
         await fixture.AddAsync(fixture.TenantA, record);

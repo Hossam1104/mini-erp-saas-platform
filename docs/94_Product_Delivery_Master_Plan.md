@@ -10,11 +10,11 @@
 | Last updated | 7 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-93 Done; MESP-94 is the next eligible Foundation correction, not yet started` |
-| Current implementation item | `None active — see .ai/CURRENT_STATE.md for the exact live position` |
-| Merged-main baseline | `005c796629341ab9becfbc6d1abe2ae34b6a7332` (PR #24 merge; MESP-93 Done) |
+| Current activity | `MESP-93 Done; MESP-94 is In Progress on branch fix/MESP-94-foundation-validation-evidence` |
+| Current implementation item | `MESP-94 — Correct Foundation safety-catalogue classifications and validation-evidence accuracy — see .ai/CURRENT_STATE.md for the exact live position` |
+| Merged-main baseline | `9f333c9734c767673e43a30d6b57c05793e1fb69` (PR #25 merge; MESP-93 post-merge Markdown reconciliation) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Current review checkpoint | `MESP-93 PR #24 merged to main at 005c796629341ab9becfbc6d1abe2ae34b6a7332 after focused ChatGPT security re-review verdict APPROVED FOR MERGE at reviewed head 83b0c0ed547dcc1b41c873ed087ab4e62d49c50e; no known MESP-93 code finding remains open. PR #23 was closed as superseded (not merged). MESP-94 is the next eligible correction — see .ai/CURRENT_STATE.md, which is the canonical live-state document, for its current position.` |
+| Current review checkpoint | `MESP-93 PR #24 merged to main at 005c796629341ab9becfbc6d1abe2ae34b6a7332 after focused ChatGPT security re-review verdict APPROVED FOR MERGE at reviewed head 83b0c0ed547dcc1b41c873ed087ab4e62d49c50e; no known MESP-93 code finding remains open. PR #23 was closed as superseded (not merged). PR #25 (docs) merged at 9f333c9734c767673e43a30d6b57c05793e1fb69. MESP-94 is now In Progress — see .ai/CURRENT_STATE.md, which is the canonical live-state document, for its current position.` |
 
 ---
 
@@ -1955,10 +1955,18 @@ of, the equivalent content PR #24 had already carried onto `main`. It was
 closed as superseded without merging, preserving its history.
 
 MESP-94 (Correct Foundation safety-catalogue classifications and
-validation-evidence accuracy) is now the next eligible Foundation
-correction; it is not yet started and uses normal bounded review, not the
-MESP-92/MESP-93 manual security merge hold. MESP-31 remains To Do. All
-narrative and status text above this overlay that describes MESP-93 as "In
-Progress" or its Pull Request as "open, non-draft and unmerged" is the
-preserved historical record of the correction sequence, not the current
-state. `.ai/CURRENT_STATE.md` is the canonical live-state document.
+validation-evidence accuracy) was the next eligible Foundation correction; it
+uses normal bounded review, not the MESP-92/MESP-93 manual security merge
+hold. MESP-31 remains To Do. All narrative and status text above this
+overlay that describes MESP-93 as "In Progress" or its Pull Request as "open,
+non-draft and unmerged" is the preserved historical record of the correction
+sequence, not the current state. `.ai/CURRENT_STATE.md` is the canonical
+live-state document.
+
+**Superseded (7 August 2026):** PR #25 (docs-only MESP-93 post-merge
+reconciliation) merged to `main` at
+`9f333c9734c767673e43a30d6b57c05793e1fb69`. MESP-94 was then started: Jira
+transitioned To Do -> In Progress, and branch
+`fix/MESP-94-foundation-validation-evidence` was created from that head. See
+`.ai/CURRENT_STATE.md` and `docs/96_Foundation_Release1_Safety_Validation.md`
+for MESP-94's exact scope, findings and evidence.

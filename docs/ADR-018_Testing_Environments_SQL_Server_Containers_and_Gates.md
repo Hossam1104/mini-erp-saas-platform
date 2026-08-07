@@ -3,9 +3,9 @@
 | Field | Decision |
 |---|---|
 | Status | Approved foundation test strategy; production equivalence remains deferred |
-| Date | 4 August 2026 |
+| Date | 4 August 2026; reconciled 7 August 2026 (MESP-94 validation-tooling correction) |
 | Owners | Solution Architecture / Test Engineering |
-| Related Jira | MESP-64, MESP-48, MESP-50 |
+| Related Jira | MESP-64, MESP-48, MESP-50, MESP-94 |
 | Supersedes | None |
 
 ## Context
@@ -32,11 +32,34 @@ ever connecting to a production or shared database.
    unique-index composition, `rowversion`, collation/Unicode round-trip and
    transaction behavior) from provider-neutral contract evidence (Tenant
    context, ownership, authorization path and durable-work contracts).
-4. The repository command `scripts/validate-foundation.ps1` starts LocalDB,
-   supplies the disposable connection string to the test process, runs the
-   targeted SQL Server suite and the full backend regression, and clears the
-   environment variable in `finally`. The fixture owns database cleanup even
-   when a test fails.
+4. The repository command `scripts/validate-foundation.ps1` is the single
+   canonical Foundation validation entry point (MESP-94 M-14). It discovers
+   `SqlLocalDB.exe`/`sqlcmd.exe` dynamically but boundedly — PATH first, then
+   a probe of only the known `<version>\Tools\Binn` and
+   `Client SDK\ODBC\<version>\Tools\Binn` layouts under Program Files, never
+   a full recursive scan of the (potentially large) SQL Server database-
+   engine tree; no SQL Server release/version is ever hard-coded (MESP-94
+   M-15). The automatic LocalDB instance is scoped by Windows user, not by
+   logon session, so a named mutex coordinates every validation run for the
+   same Windows user across sessions -- a Global-namespace name suffixed
+   with the current user's SID, ACL-restricted to that SID, so it neither
+   serializes unrelated Windows users nor lets one open or signal another's
+   lock (MESP-94 F1). An abandoned lock from a prior run that terminated
+   unexpectedly is recovered rather than treated as an ordinary competing
+   run (MESP-94 F2). It starts LocalDB,
+   removes any stale disposable database left by an interrupted prior run,
+   supplies a fresh disposable connection string to the test process, runs
+   backend restore/build/the full backend regression (including the targeted
+   SQL Server suite and the safety-catalogue validator), the Angular unit
+   tests and production build, the Playwright Foundation journeys, `npm
+   audit`, `git diff --check` against the working tree, and `git diff --check
+   origin/main...HEAD` against the live branch delta (MESP-94 R2). The
+   fixture owns per-run database cleanup even when a test fails; the script
+   additionally proves, in a `finally` block that always runs, that zero
+   `MiniErpFoundation_*` databases remain on the instance (MESP-94 M-6), and
+   restores the environment variable in its own nested `finally` guaranteed
+   regardless of any other step's failure (MESP-94 R3). Every step fails the
+   command closed.
 5. Docker/Testcontainers remains a CI-compatible option to be introduced only
    through a separately approved change. This ADR does not claim that LocalDB
    is production-equivalent, nor does it select a production SQL topology.

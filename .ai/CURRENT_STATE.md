@@ -1,26 +1,96 @@
 # Current State
 
-## Start here — verified position on 7 August 2026 (MESP-93 Done; PR #24 merged; MESP-94 next eligible)
+## Start here — verified position on 8 August 2026 (MESP-94 In Progress; PR #26 open, F1-F2 focused review corrections applied)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
-| Current branch | `main` |
-| Current `main` head | `005c796629341ab9becfbc6d1abe2ae34b6a7332` (PR #24 merge commit) |
-| MESP-93 | **Done** — PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT security re-review verdict **APPROVED FOR MERGE** |
+| Current branch | `fix/MESP-94-foundation-validation-evidence` |
+| Branch base / starting `main` head | `9f333c9734c767673e43a30d6b57c05793e1fb69` (PR #25 merge commit) |
+| PR #25 | **Merged** to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` — MESP-93 post-merge Markdown reconciliation |
+| Open Pull Request | [PR #26](https://github.com/Hossam1104/mini-erp-saas-platform/pull/26) — open, non-draft, unmerged; a first focused ChatGPT review at reviewed head `88146a733a65bd6070ae80a3c1b6d17c4a456efa` returned CHANGES REQUIRED BEFORE MERGE (R1-R7), all closed; a second focused ChatGPT review at reviewed head `809a4da0e6e3804a6461e55ce34fdfaec0df690e` returned CHANGES REQUIRED BEFORE MERGE (F1-F2), both closed — see `docs/96_Foundation_Release1_Safety_Validation.md`'s "Focused review corrections (R1-R7)" and "Focused review corrections (F1-F2)" sections |
+| MESP-93 | Done — PR #24 merged to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (reviewed head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e`) after focused ChatGPT security re-review verdict **APPROVED FOR MERGE** |
 | PR #23 | Closed as superseded (not merged) — its docs-only MESP-92 reconciliation content was already carried onto `main` through PR #24; see the PR #23 closing comment for file-by-file evidence |
 | MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
 | MESP-91 | Done |
-| Active Jira item | **MESP-94** — next eligible Foundation correction, To Do (not yet started); uses normal bounded review, not the MESP-92/MESP-93 manual security merge hold |
-| MESP-31 (Master Data BRD) | To Do — not started; blocked until Foundation entry conditions (MESP-93, MESP-94) are complete |
+| Active Jira item | **MESP-94 — In Progress** on branch `fix/MESP-94-foundation-validation-evidence`; uses normal bounded review, not the MESP-92/MESP-93 manual security merge hold |
+| MESP-31 (Master Data BRD) | To Do — not started; no Master Data implementation has begun |
 | MESP-48 / MESP-50 | To Do — open production gates, preserved |
 | Sprint | None active |
 | Parallel implementation | None |
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
 
-**MESP-93 closure (7 August 2026):** PR #24 merged to `main` at
+**MESP-94 PR #26 focused review corrections (7 August 2026):** a focused
+ChatGPT review of PR #26 at reviewed head
+`88146a733a65bd6070ae80a3c1b6d17c4a456efa` returned CHANGES REQUIRED BEFORE
+MERGE, raising R1 (final catalogue content needs its own validation at the
+exact committed SHA), R2 (`git diff --check` must cover the branch delta,
+not just the working tree), R3 (guarantee
+`MESP_SQLSERVER_CONNECTION_STRING` restoration), R4 (protect concurrent
+validation runs from dropping each other's disposable database), R5
+(unambiguous SQL-configuration-test counts), R6 (safety-catalogue parser
+column counting) and R7 (bound SQL tool discovery instead of a full
+recursive Program Files scan). All seven are closed at implementation SHA
+`ac65e204ca4f134d4c3ae98e7871b936fe01c613`; see
+`docs/96_Foundation_Release1_Safety_Validation.md`'s "Focused review
+corrections (R1-R7)" section for the exact resolution of each and the
+complete validation totals re-run at that commit. That correction round was
+superseded by the F1-F2 round below.
+
+**MESP-94 PR #26 F1-F2 focused review corrections (8 August 2026):** a
+second focused ChatGPT review of PR #26 at reviewed head
+`809a4da0e6e3804a6461e55ce34fdfaec0df690e` returned CHANGES REQUIRED BEFORE
+MERGE, raising F1 (the R4 lock was session-scoped `Local\`, which does not
+coordinate two processes for the same Windows user running in different
+logon sessions, even though the shared automatic LocalDB instance is scoped
+by Windows user, not by session) and F2 (recover safely from an abandoned
+validation lock left by a prior owner that terminated unexpectedly). Both
+are closed at implementation SHA `037491cee8650bfd38c4fad4d58e3baa86a3e2a4`:
+the lock is now `scripts/FoundationValidationLock.ps1`, a Global-namespace
+named mutex suffixed with the current Windows user's SID and ACL-restricted
+to that SID, coordinating every validation run for the same Windows user
+across sessions without serializing unrelated Windows users or letting one
+open/signal another's lock; `Wait-FoundationValidationLock` recovers
+ownership from a genuine `AbandonedMutexException` instead of treating it as
+an ordinary competing run. A new focused, automated, multi-process
+verification harness, `scripts/verify-foundation-validation-lock.ps1`,
+proves all five required behaviors (active owner blocks entry to cleanup;
+a second same-user process cannot bypass the lock; an abandoned owner is
+recovered safely; the lock is released after normal completion; the lock is
+released after a simulated failure) — 5/5 passed, re-run twice for
+stability. See `docs/96_Foundation_Release1_Safety_Validation.md`'s
+"Focused review corrections (F1-F2)" section for the exact resolution of
+each and the complete validation totals re-run at that commit. The
+evidence-only documentation commit recording this correction and its
+validation table is `a35e71a767abc124849bd70706722834517478ed`. At that
+exact final head, `SafetyCatalogueValidationTests` + `SqlServerSafetyTests`
+were re-run together (25/25 passed: 4 catalogue + 21 SQL configuration/
+schema/probe tests, unchanged counts), `scripts/verify-foundation-validation-lock.ps1`
+was re-run (5/5 passed), and both `git diff --check` (working tree) and
+`git diff --check origin/main...HEAD` (branch delta) passed clean. MESP-94
+remains In Progress pending a further focused review of PR #26 at its new
+pushed head, which is this same commit unless a later commit supersedes it
+— check `git log` on this branch for the true tip.
+
+**MESP-94 started (7 August 2026):** transitioned Jira MESP-94 To Do ->
+In Progress and created branch `fix/MESP-94-foundation-validation-evidence`
+from `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` (PR #25 merge —
+MESP-93 post-merge Markdown reconciliation, closing L-3's PR #25 provenance
+gap since that merge SHA was not yet known when PR #25 itself was written).
+MESP-94 makes the Foundation validation tooling, SQL evidence, safety-row
+classifications (rows 40, 45, 66) and checkpoint documentation say exactly
+what the repository proves; it closes H-2, H-3, M-3, M-6, M-10, M-12, M-13,
+M-14, M-15, L-2, L-3 and L-5. See
+`docs/96_Foundation_Release1_Safety_Validation.md`'s "MESP-94 correction"
+section for the exact resolution of each finding and the source-implementation
+SHA/validated-repository-SHA evidence model this correction introduces.
+MESP-94 is **not** marked Done yet; it remains In Progress pending PR review,
+merge and post-merge closure. MESP-31 remains To Do; no Master Data
+implementation has started.
+
+**MESP-93 closure (7 August 2026, historical — superseded by "Start here" above):** PR #24 merged to `main` at
 `005c796629341ab9becfbc6d1abe2ae34b6a7332` after a focused ChatGPT security
 re-review verdict of APPROVED FOR MERGE at reviewed head `83b0c0e`. Post-merge
 validation on `main`, rerun (not copied from pre-merge): Release build **0

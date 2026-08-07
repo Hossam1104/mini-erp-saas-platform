@@ -25,8 +25,11 @@
 > `322341e70e56270797d5770b4b90342c20b7833e` (MESP-92 Done); PR #24 then
 > received a focused ChatGPT security re-review verdict of APPROVED FOR MERGE
 > at reviewed head `83b0c0ed547dcc1b41c873ed087ab4e62d49c50e` and was merged
-> to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (MESP-93 Done).
-> MESP-94 is now the next eligible Foundation correction, not yet started.
+> to `main` at `005c796629341ab9becfbc6d1abe2ae34b6a7332` (MESP-93 Done). PR
+> #25 (docs) then merged to `main` at
+> `9f333c9734c767673e43a30d6b57c05793e1fb69`. MESP-94 is now **In Progress**
+> on branch `fix/MESP-94-foundation-validation-evidence`, correcting Foundation
+> safety-catalogue classifications and validation-evidence accuracy.
 > For the verified current position, read
 > [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and
 > [`docs/94_Product_Delivery_Master_Plan.md`](94_Product_Delivery_Master_Plan.md).
