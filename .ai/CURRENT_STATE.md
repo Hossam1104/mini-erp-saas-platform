@@ -62,9 +62,17 @@ recovered safely; the lock is released after normal completion; the lock is
 released after a simulated failure) — 5/5 passed, re-run twice for
 stability. See `docs/96_Foundation_Release1_Safety_Validation.md`'s
 "Focused review corrections (F1-F2)" section for the exact resolution of
-each and the complete validation totals re-run at that commit. MESP-94
+each and the complete validation totals re-run at that commit. The
+evidence-only documentation commit recording this correction and its
+validation table is `a35e71a767abc124849bd70706722834517478ed`. At that
+exact final head, `SafetyCatalogueValidationTests` + `SqlServerSafetyTests`
+were re-run together (25/25 passed: 4 catalogue + 21 SQL configuration/
+schema/probe tests, unchanged counts), `scripts/verify-foundation-validation-lock.ps1`
+was re-run (5/5 passed), and both `git diff --check` (working tree) and
+`git diff --check origin/main...HEAD` (branch delta) passed clean. MESP-94
 remains In Progress pending a further focused review of PR #26 at its new
-pushed head.
+pushed head, which is this same commit unless a later commit supersedes it
+— check `git log` on this branch for the true tip.
 
 **MESP-94 started (7 August 2026):** transitioned Jira MESP-94 To Do ->
 In Progress and created branch `fix/MESP-94-foundation-validation-evidence`
