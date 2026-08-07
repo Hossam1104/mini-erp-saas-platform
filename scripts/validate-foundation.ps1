@@ -17,6 +17,8 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $localDbInstanceName = 'MSSQLLocalDB'
 $localDbServer = "(localdb)\$localDbInstanceName"
 
+. (Join-Path $PSScriptRoot 'FoundationValidationLock.ps1')
+
 function Resolve-SqlToolExecutable {
     <#
     Dynamic but bounded SQL Server tool discovery: PATH first, then a
@@ -137,19 +139,35 @@ if ($LASTEXITCODE -ne 0) {
     throw "The $localDbInstanceName instance could not be started."
 }
 
-# LocalDB itself is user/session-scoped, so a machine-wide lock is
-# unnecessary and would be needlessly destructive in effect; a named,
-# session-scoped mutex is enough to serialize concurrent canonical
-# Foundation validation runs so one run's stale-database cleanup can never
-# remove another run's still-active disposable database.
-$validationMutexName = 'Local\MiniErpFoundationValidation'
-$validationMutex = New-Object System.Threading.Mutex($false, $validationMutexName)
+# See FoundationValidationLock.ps1: LocalDB is scoped by Windows user, not by
+# logon session, so the lock must coordinate across sessions for the same
+# user rather than merely within one session. It is a Global-namespace named
+# mutex whose name is suffixed with the current user's SID and whose ACL
+# grants access only to that SID -- it does not serialize unrelated Windows
+# users, and no other Windows user can open or signal it (MESP-94 F1).
+$validationMutexName = Get-FoundationValidationLockName
+$validationMutex = New-FoundationValidationLock
 $ownsValidationLock = $false
+$recoveredFromAbandonedLock = $false
 
 try {
-    $ownsValidationLock = $validationMutex.WaitOne([TimeSpan]::FromMinutes(10))
+    # The prior validation run for this Windows user may have terminated
+    # (crash, forced kill, forced session end) while still holding the lock.
+    # Wait-FoundationValidationLock recovers ownership in that case rather
+    # than treating it as an ordinary competing active run (MESP-94 F2).
+    $lockResult = Wait-FoundationValidationLock -Mutex $validationMutex -Timeout ([TimeSpan]::FromMinutes(10))
+    $ownsValidationLock = $lockResult.Acquired
+    $recoveredFromAbandonedLock = $lockResult.RecoveredFromAbandonedLock
+    if ($recoveredFromAbandonedLock) {
+        Write-Warning "Recovered from an abandoned Foundation validation lock ('$validationMutexName'): the prior owner for this Windows user terminated without releasing it. Continuing into stale-database cleanup to recover safely."
+    }
+
     if (-not $ownsValidationLock) {
-        throw "Another canonical Foundation validation run already owns the '$validationMutexName' lock. Wait for it to finish, or investigate a stuck run, then retry. Startup cleanup is never run without holding this lock."
+        throw "Another canonical Foundation validation run already owns the '$validationMutexName' lock for this Windows user. Wait for it to finish, or investigate a stuck run, then retry. Startup cleanup is never run without holding this lock."
+    }
+
+    if ($recoveredFromAbandonedLock) {
+        Write-Host '--- Recovered from an abandoned prior validation lock for this Windows user; proceeding to stale-database cleanup ---'
     }
 
     Write-Host '--- Pre-run cleanup of stale disposable Foundation databases from a prior run ---'
