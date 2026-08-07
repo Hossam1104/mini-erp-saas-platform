@@ -9,8 +9,8 @@ A new agent can begin from this section with no prior chat history.
 | Current branch | `fix/MESP-93-private-files-notifications` |
 | Branch base | `main` at `322341e70e56270797d5770b4b90342c20b7833e` (PR #22 merge commit; MESP-92 Done) |
 | Implementation head | `85b9ec1` (source/test correction closing M-1, M-4, M-5, M-7, M-8, M-9, L-4) |
-| Docs reconciliation head | current branch tip after this update |
-| Open Pull Request | to be opened at this head — **not yet merged**, manual merge hold for focused ChatGPT security review (same standing gate MESP-92 carried) |
+| Docs reconciliation head | `0202e50` |
+| Open Pull Request | [PR #24](https://github.com/Hossam1104/mini-erp-saas-platform/pull/24) — open, non-draft, **unmerged**, manual merge hold for focused ChatGPT security review (same standing gate MESP-92 carried) |
 | Active Jira item | **MESP-93 — In Progress** (the only active bounded implementation item) |
 | MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
 | MESP-91 | Done |

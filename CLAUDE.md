@@ -14,11 +14,11 @@ integrity, or an unresolved legal/privacy decision.
 
 MESP-93 is the active implementation item and the current security-task merge
 exception: after implementation, validation, and a non-draft Pull Request, stop
-for focused ChatGPT review. Do not merge the MESP-93 Pull Request or close
-MESP-93, and do not start MESP-94 or MESP-31 until that review authorizes the
-next step. MESP-92 held this exception earlier in the sequence; PR #22 merged
-at `322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT approval
-and MESP-92 is now Done, as are MESP-89, MESP-63, MESP-61 and MESP-64.
+for focused ChatGPT review. Do not merge PR #24 or close MESP-93, and do not
+start MESP-94 or MESP-31 until that review authorizes the next step. MESP-92
+held this exception earlier in the sequence; PR #22 merged at
+`322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT approval and
+MESP-92 is now Done, as are MESP-89, MESP-63, MESP-61 and MESP-64.
 
 The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`; older filenames name
 the same unchanged file. Start from `.ai/CURRENT_STATE.md` for the verified

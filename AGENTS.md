@@ -15,14 +15,13 @@
   data loss or purge, accounting-integrity risk, or a legal/privacy decision
   that cannot be safely deferred.
 - The active implementation item is **MESP-93**, and it carries the explicit
-  security exception to automatic merge: its Pull Request must stay open,
-  non-draft and unmerged while MESP-93 stays In Progress, and work stops for
-  focused ChatGPT review. Do not merge the MESP-93 Pull Request, do not close
-  MESP-93, and do not start MESP-94 or MESP-31 until that review authorizes
-  the next step. (MESP-92 held the same exception earlier in the sequence; PR
-  #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` after
-  focused ChatGPT approval and MESP-92 is now Done, as are MESP-89, MESP-63,
-  MESP-61 and MESP-64.)
+  security exception to automatic merge: PR #24 stays open, non-draft and
+  unmerged while MESP-93 stays In Progress, and work stops for focused
+  ChatGPT review. Do not merge PR #24, do not close MESP-93, and do not start
+  MESP-94 or MESP-31 until that review authorizes the next step. (MESP-92
+  held the same exception earlier in the sequence; PR #22 merged to `main` at
+  `322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT approval
+  and MESP-92 is now Done, as are MESP-89, MESP-63, MESP-61 and MESP-64.)
 - The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`. Older references to
   `MiniERPSaaSPlatform_PRD_v1.2.docx` or
   `MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx` name the same
