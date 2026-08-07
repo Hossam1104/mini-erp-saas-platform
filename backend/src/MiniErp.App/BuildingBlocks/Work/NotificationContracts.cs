@@ -258,12 +258,22 @@ public sealed class InMemoryNotificationAdapter : INotificationDeliveryAdapter
         cancellationToken.ThrowIfCancellationRequested();
         if (tenantContext.TenantId != intent.TenantId)
         {
-            intent.DeliveryState = NotificationDeliveryState.DeadLetter;
-            intent.FailureCategory = DurableWorkFailureCategory.TenantMismatch;
+            // An unauthorized caller has no authority over the owner Tenant's
+            // intent: it must never mutate DeliveryState, FailureCategory,
+            // AttemptCount or the idempotency ledger, and must never dead-letter
+            // it on the owner's behalf (H93-01). The current state is read
+            // under the same lock as every legitimate mutation so this path
+            // cannot race with a concurrent legitimate delivery.
+            NotificationDeliveryState currentState;
+            lock (syncRoot)
+            {
+                currentState = intent.DeliveryState;
+            }
+
             return ValueTask.FromResult(new NotificationDeliveryResult(
                 false,
                 false,
-                NotificationDeliveryState.DeadLetter,
+                currentState,
                 DurableWorkFailureCategory.TenantMismatch,
                 "tenant_denied"));
         }

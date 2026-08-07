@@ -79,7 +79,8 @@ public enum PrivateFileAccessOutcome
     TenantDenied = 3,
     Expired = 4,
     ChecksumFailed = 5,
-    ConcurrencyConflict = 6
+    ConcurrencyConflict = 6,
+    Disposed = 7
 }
 
 /// <summary>Marker for a handler-specific, typed durable-work payload.</summary>

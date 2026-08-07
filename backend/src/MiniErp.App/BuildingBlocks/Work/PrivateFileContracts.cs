@@ -183,11 +183,10 @@ public sealed class InMemoryPrivateObjectStorage : IPrivateObjectStorage
                 return ValueTask.FromResult(PrivateFileAccessResult.Denied(PrivateFileAccessOutcome.NotFound));
             }
 
-            if (stored.Metadata.Disposition != PrivateFileDisposition.Available
-                || stored.Metadata.ExpiresAt <= DateTimeOffset.UtcNow)
+            if (EvaluateLifecycleOutcome(stored.Metadata, DateTimeOffset.UtcNow) is { } lifecycleOutcome)
             {
-                accessEvidence.Add((tenantContext.TenantId, objectId, PrivateFileAccessOutcome.Expired));
-                return ValueTask.FromResult(PrivateFileAccessResult.Denied(PrivateFileAccessOutcome.Expired));
+                accessEvidence.Add((tenantContext.TenantId, objectId, lifecycleOutcome));
+                return ValueTask.FromResult(PrivateFileAccessResult.Denied(lifecycleOutcome));
             }
 
             var checksum = Convert.ToHexString(SHA256.HashData(stored.Content));
@@ -234,13 +233,12 @@ public sealed class InMemoryPrivateObjectStorage : IPrivateObjectStorage
             }
 
             // An object in any prohibited lifecycle state fails closed instead
-            // of being silently overwritten (M-4): expired/disposed metadata,
-            // or content whose checksum no longer matches the recorded hash.
-            if (stored.Metadata.Disposition != PrivateFileDisposition.Available
-                || stored.Metadata.ExpiresAt <= DateTimeOffset.UtcNow)
+            // of being silently overwritten (M-4), reported with its exact
+            // classification rather than a generic Expired (M93-02).
+            if (EvaluateLifecycleOutcome(stored.Metadata, DateTimeOffset.UtcNow) is { } lifecycleOutcome)
             {
-                accessEvidence.Add((tenantContext.TenantId, objectId, PrivateFileAccessOutcome.Expired));
-                return PrivateFileAccessResult.Denied(PrivateFileAccessOutcome.Expired);
+                accessEvidence.Add((tenantContext.TenantId, objectId, lifecycleOutcome));
+                return PrivateFileAccessResult.Denied(lifecycleOutcome);
             }
 
             var existingChecksum = Convert.ToHexString(SHA256.HashData(stored.Content));
@@ -290,6 +288,37 @@ public sealed class InMemoryPrivateObjectStorage : IPrivateObjectStorage
         }
     }
 
+    /// <summary>
+    /// Evaluates the exact already-recorded lifecycle outcome for a same-Tenant
+    /// object, without mutating anything. Checked in disposition-priority
+    /// order so a previously recorded <see cref="PrivateFileDisposition.ChecksumFailed"/>
+    /// or <see cref="PrivateFileDisposition.Disposed"/> state is always
+    /// reported with its exact classification rather than being folded into
+    /// the generic <see cref="PrivateFileAccessOutcome.Expired"/> outcome
+    /// (M93-02). Returns <see langword="null"/> when the object is Available
+    /// and unexpired, meaning the caller may proceed to the live checksum
+    /// check.
+    /// </summary>
+    private static PrivateFileAccessOutcome? EvaluateLifecycleOutcome(PrivateFileMetadata metadata, DateTimeOffset now)
+    {
+        if (metadata.Disposition == PrivateFileDisposition.ChecksumFailed)
+        {
+            return PrivateFileAccessOutcome.ChecksumFailed;
+        }
+
+        if (metadata.Disposition == PrivateFileDisposition.Disposed)
+        {
+            return PrivateFileAccessOutcome.Disposed;
+        }
+
+        if (metadata.Disposition == PrivateFileDisposition.Expired || metadata.ExpiresAt <= now)
+        {
+            return PrivateFileAccessOutcome.Expired;
+        }
+
+        return null;
+    }
+
     private static void ValidateContext(TenantContext tenantContext, TenantWorkScope scope)
     {
         ArgumentNullException.ThrowIfNull(tenantContext);
@@ -311,13 +340,15 @@ public sealed class InMemoryPrivateObjectStorage : IPrivateObjectStorage
     /// Unicode bidirectional-override, embedding, isolate and other deceptive
     /// formatting characters that must never appear in a filename (M-5). Valid
     /// Arabic letters, digits and normalized Unicode text are unaffected --
-    /// none of these code points are Arabic script.
+    /// none of these code points are Arabic script. Deliberately excludes
+    /// U+200C (ZERO WIDTH NON-JOINER) and U+200D (ZERO WIDTH JOINER): both
+    /// have legitimate shaping uses in Arabic-script text and are outside the
+    /// approved rejection policy (L93-01) -- only the code points below are
+    /// rejected.
     /// </summary>
     private static readonly char[] UnsafeFormatCharacters =
     [
         (char)0x200B, // zero width space
-        (char)0x200C, // zero width non-joiner
-        (char)0x200D, // zero width joiner
         (char)0x200E, // left-to-right mark
         (char)0x200F, // right-to-left mark
         (char)0x2060, // word joiner
@@ -341,12 +372,15 @@ public sealed class InMemoryPrivateObjectStorage : IPrivateObjectStorage
         // validation. A path separator anywhere in the supplied name fails
         // closed rather than being silently truncated to a leaf name -- a
         // caller-supplied value that looks like a path is rejected outright,
-        // never tolerantly reinterpreted as one (M-5).
+        // never tolerantly reinterpreted as one (M-5). Only the exact reserved
+        // names "." and ".." are rejected as traversal; separators are already
+        // rejected outright, so an embedded ".." substring (e.g.
+        // "report..final.txt") is a legitimate filename, not traversal
+        // (L93-01).
         var name = value.Normalize(NormalizationForm.FormC);
         if (string.IsNullOrWhiteSpace(name)
             || name.Length > 255
             || name is "." or ".."
-            || name.Contains("..", StringComparison.Ordinal)
             || name.Contains('/')
             || name.Contains('\\')
             || name.Any(char.IsControl)

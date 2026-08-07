@@ -25,6 +25,8 @@ public static class IdentityModuleRegistration
             serviceProvider.GetRequiredService<IdentityAuthorizationService>());
         services.AddSingleton<IDurableWorkAuthorityRevalidator>(serviceProvider =>
             serviceProvider.GetRequiredService<IdentityAuthorizationService>());
+        services.AddSingleton<INotificationRecipientAuthorizer>(serviceProvider =>
+            serviceProvider.GetRequiredService<IdentityAuthorizationService>());
         services.AddSingleton<IAuthenticationAssuranceEvidenceSource, UnavailableAuthenticationAssuranceEvidenceSource>();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IFoundationIdentityHost>(serviceProvider =>
