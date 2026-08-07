@@ -1,17 +1,18 @@
 # Current State
 
-## Start here — verified position on 7 August 2026 (post-MESP-92 merge)
+## Start here — verified position on 7 August 2026 (MESP-93 implemented, pending focused security review)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
-| Current branch | `main` (MESP-93 work happens on `fix/MESP-93-private-files-notifications`, branched from this head) |
-| `main` head | `322341e70e56270797d5770b4b90342c20b7833e` (PR #22 merge commit) |
-| MESP-92 final reviewed head (pre-merge) | `3ec6b45bc108d1388035caa8c331866a2c72d043` |
-| Merged-main baseline before MESP-92 | `32a91f27bc162685fc0db0f38b031d02ffbc99d2` |
-| PR #22 | **Merged** to `main` at `322341e70e56270797d5770b4b90342c20b7833e` (2026-08-07T09:42:13Z), after focused ChatGPT security review verdict APPROVED FOR MERGE |
-| Active Jira item | **MESP-92 — Done.** **MESP-93 — In Progress** (the only active bounded implementation item) |
+| Current branch | `fix/MESP-93-private-files-notifications` |
+| Branch base | `main` at `322341e70e56270797d5770b4b90342c20b7833e` (PR #22 merge commit; MESP-92 Done) |
+| Implementation head | `85b9ec1` (source/test correction closing M-1, M-4, M-5, M-7, M-8, M-9, L-4) |
+| Docs reconciliation head | current branch tip after this update |
+| Open Pull Request | to be opened at this head — **not yet merged**, manual merge hold for focused ChatGPT security review (same standing gate MESP-92 carried) |
+| Active Jira item | **MESP-93 — In Progress** (the only active bounded implementation item) |
+| MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
 | MESP-91 | Done |
 | MESP-94 | To Do — must not start before MESP-93 closes |
 | MESP-31 (Master Data BRD) | To Do — not started; blocked until Foundation entry conditions (MESP-93, MESP-94) are complete |
@@ -20,6 +21,67 @@ A new agent can begin from this section with no prior chat history.
 | Parallel implementation | None |
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
+
+**MESP-93 implementation (7 August 2026):** closes seven findings against the
+merged private-file (`PrivateFileContracts.cs`) and notification
+(`NotificationContracts.cs`) seams, on branch
+`fix/MESP-93-private-files-notifications` based on `main` at `322341e`.
+
+- **M-1 (foreign vs missing file existence oracle) — closed.** `ReadAsync`
+  and `OverwriteAsync` now return the identical `PrivateFileAccessOutcome.NotFound`
+  for a foreign-Tenant object and a genuinely missing object.
+  `PrivateFileAccessOutcome.TenantDenied` is preserved only as an internal
+  safe audit-evidence classification recorded in the adapter's internal
+  access-evidence list; it is never the outcome a caller observes.
+- **M-4 (expired/invalid object overwrite) — closed.** `OverwriteAsync` fails
+  closed with `Expired` or `ChecksumFailed` for any object whose disposition
+  is not `Available`, whose `ExpiresAt` has passed, or whose live-recomputed
+  checksum no longer matches the recorded hash, before the concurrency check
+  is even reached. An invalid object is never silently replaced.
+- **M-5 (unsafe Unicode filename controls) — closed.** `SafeFileName`
+  normalizes to Unicode Normalization Form C, then rejects outright (rather
+  than silently truncating) any filename containing a path separator,
+  traversal sequence, control character, or one of the bidi/embedding/
+  isolate/mark/zero-width format characters U+202A-E, U+2066-9, U+200E,
+  U+200F, U+200B, U+2060, U+FEFF. Valid Arabic, mixed Arabic/English and
+  normalized composed/decomposed filenames remain fully supported and compare
+  equal after normalization.
+- **M-7 (unbounded notification retry) — closed.** `TenantNotificationIntent.MaxDeliveryAttempts`
+  (5) bounds retry; `InMemoryNotificationAdapter` transitions to a terminal
+  `DeadLetter` state at the bound and never attempts delivery again
+  afterward, regardless of further caller or duplicate-worker calls.
+- **M-8 (unverified notification recipient) — closed.** `TenantNotificationIntent.Create`
+  now requires a `VerifiedNotificationRecipient`, obtainable only through the
+  new `INotificationRecipientAuthorizer` port. `IdentityAuthorizationService`
+  implements it: a recipient must be an active `GlobalUser` with an active
+  `TenantMembership` in the caller's exact Tenant; a foreign-Tenant, unknown,
+  suspended, revoked or pending-invitation recipient is denied. The port
+  takes a `TenantContext`, so `PlatformGovernanceContext` has no path to
+  become Tenant notification authority.
+- **M-9 (untested returned-content immutability) — closed.** New tests prove
+  mutating a returned read/overwrite byte array, or the caller's own upload
+  buffer after `StoreAsync` returns, never affects stored content or a
+  subsequent read; the existing defensive-copy behavior was previously
+  unverified by any test.
+- **L-4 (dead enum member) — closed.** The unreachable
+  `PrivateFileAccessOutcome.AnonymousDenied` member is removed; all
+  consumers and tests updated.
+
+45 new focused tests added in
+`backend/tests/MiniErp.ArchitectureTests/PrivateFileAndNotificationSecurityTests.cs`.
+Full validation at implementation head `85b9ec1`: Release build **0
+warnings/0 errors**; full backend regression **538/538** passed (0 failed, 0
+skipped), including **11/11** SQL Server LocalDB probes with no
+`MiniErpFoundation_*` database remaining after teardown; Angular unit tests
+**27/27** passed (unchanged, no frontend files touched); Angular production
+build succeeded (351.02 kB initial / 87.80 kB transferred, unchanged);
+Playwright **4/4** passed; `npm audit --omit=dev --audit-level=high` reported
+**0** vulnerabilities; `git diff --check` clean. No production object
+storage, public URL, signed download, malware scanner, production
+notification provider or physical purge was introduced. MESP-93 is **not**
+marked Done; the Pull Request for this branch is held open, non-draft and
+unmerged pending a focused ChatGPT security review, the same standing gate
+MESP-92 carried. MESP-94 and MESP-31 remain To Do.
 
 **MESP-92 closure (7 August 2026):** PR #22 merged to `main` at
 `322341e70e56270797d5770b4b90342c20b7833e` after a focused ChatGPT security
@@ -30,10 +92,9 @@ Server LocalDB probes with no `MiniErpFoundation_*` database remaining after
 teardown; Angular unit tests **27/27** passed; Angular production build
 succeeded (351.02 kB initial / 87.80 kB transferred, unchanged); Playwright
 **4/4** passed; `npm audit --omit=dev --audit-level=high` reported **0**
-vulnerabilities. MESP-92 is marked **Done** in Jira. MESP-93 is now the active
-implementation item; see the MESP-93 section below for its branch, findings
-and status. The sections below this line are the preserved historical record
-of the MESP-92 correction sequence and are not the current state.
+vulnerabilities. MESP-92 is marked **Done** in Jira. The sections below this
+line are the preserved historical record of the MESP-92 correction sequence
+and are not the current state.
 
 **H92-06/M92-07/L92-02 closure (7 August 2026):** a focused shipping-boundary
 correction found that `MiniErp.App` still granted

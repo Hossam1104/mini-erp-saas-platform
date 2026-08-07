@@ -2,10 +2,10 @@
 
 | Field | Decision |
 |---|---|
-| Status | Contract baseline; production storage decision deferred |
-| Date | 4 August 2026 |
+| Status | Contract baseline; MESP-93 access-outcome and lifecycle hardening implemented; production storage decision deferred |
+| Date | 4 August 2026; reconciled 7 August 2026 |
 | Owners | Solution Architecture / Security Engineering |
-| Related Jira | MESP-61, MESP-64, MESP-38, MESP-39, MESP-50 |
+| Related Jira | MESP-61, MESP-64, MESP-93, MESP-38, MESP-39, MESP-50 |
 | Supersedes | None |
 
 ## Context
@@ -58,3 +58,23 @@ MESP-48 owns supported-volume/performance and recovery evidence for file
 operations. MESP-50 owns privacy, retention, residency, legal hold, purge,
 backup and restoration. ADR-009 does not supersede ADR-016 or any production
 security decision.
+
+## MESP-93 hardening (7 August 2026, implementation pending review)
+
+Point 3's "fail closed without returning foreign metadata or content" is now
+enforced as external indistinguishability, not merely non-disclosure: a
+foreign-Tenant object and a genuinely missing object return the identical
+`PrivateFileAccessOutcome.NotFound` to the caller (M-1). The foreign-vs-missing
+distinction is preserved only in the adapter's internal safe audit-evidence
+list, never in the caller-visible result. Point 3's overwrite guarantee is
+extended to any prohibited lifecycle state, not only a Tenant mismatch: an
+expired object or one whose live-recomputed checksum no longer matches its
+recorded hash also fails closed on `OverwriteAsync`, so an invalid existing
+object cannot be silently resurrected by an ordinary overwrite (M-4). Original
+filename validation now normalizes to Unicode Normalization Form C and
+rejects, rather than tolerantly truncates, any value containing a path
+separator, traversal sequence, or Unicode bidirectional/embedding/isolate/
+mark/zero-width formatting character (M-5); valid Arabic and mixed
+Arabic/English filenames remain fully supported. This remains the MESP-61
+bounded in-memory adapter; no production object-storage provider, signed
+URL, public download or malware scanner is introduced by this correction.

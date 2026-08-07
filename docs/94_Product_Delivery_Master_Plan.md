@@ -1891,3 +1891,22 @@ that describes MESP-92 as "In Progress" or PR #22 as "open, non-draft and
 unmerged" is the preserved historical record of the correction sequence, not
 the current state. `.ai/CURRENT_STATE.md` is the canonical live-state
 document for MESP-93's exact branch, head and Pull Request.
+
+### MESP-93 implementation overlay (7 August 2026)
+
+MESP-93 (Correction Package 3 — private-file access outcomes, filename
+validation and notification bounds) is implemented on branch
+`fix/MESP-93-private-files-notifications`, based on `main` at `322341e`.
+Seven findings are closed: M-1 (foreign vs missing file existence oracle),
+M-4 (expired/invalid object overwrite), M-5 (unsafe Unicode filename
+controls), M-7 (unbounded notification retry), M-8 (unverified notification
+recipient), M-9 (untested returned-content immutability) and L-4 (dead
+`AnonymousDenied` enum member). 45 new focused tests were added. Full
+validation: Release build 0 warnings/0 errors; full backend regression
+**538/538** passed including **11/11** SQL Server LocalDB probes; Angular
+**27/27**, Playwright **4/4**, `npm audit` **0** vulnerabilities. MESP-93 is
+**not** marked Done; its Pull Request is held open, non-draft and unmerged
+pending a focused ChatGPT security review, the same standing merge-hold
+gate MESP-92 carried. MESP-94 and MESP-31 remain To Do; no production object
+storage, notification provider or physical purge was introduced. See
+`.ai/CURRENT_STATE.md` for the exact PR number and head once opened.
