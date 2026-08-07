@@ -78,3 +78,17 @@ mark/zero-width formatting character (M-5); valid Arabic and mixed
 Arabic/English filenames remain fully supported. This remains the MESP-61
 bounded in-memory adapter; no production object-storage provider, signed
 URL, public download or malware scanner is introduced by this correction.
+
+A focused re-review of the above correction (M93-02) found that an object
+already recorded as `ChecksumFailed` or `Disposed` was misleadingly reported
+as `Expired`, since the original check treated every non-`Available`
+disposition alike. `PrivateFileAccessOutcome` now has a dedicated `Disposed`
+classification, and both `ReadAsync` and `OverwriteAsync` report a
+previously recorded `ChecksumFailed` or `Disposed` disposition with its
+exact classification through a single shared evaluation path. Separately,
+the filename policy was found to over-reject: an embedded `".."` substring
+in an otherwise-safe filename (e.g. `report..final.txt`) is no longer
+rejected now that path separators alone are sufficient to block real
+traversal (L93-01), and U+200C/U+200D (ZWNJ/ZWJ) -- which have legitimate
+Arabic-script shaping uses -- were removed from the rejected code-point list,
+which was never intended to cover them.

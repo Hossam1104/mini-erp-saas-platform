@@ -1,6 +1,6 @@
 # Current State
 
-## Start here — verified position on 7 August 2026 (MESP-93 implemented, pending focused security review)
+## Start here — verified position on 7 August 2026 (MESP-93 focused re-review corrections implemented, pending re-review)
 
 A new agent can begin from this section with no prior chat history.
 
@@ -8,9 +8,9 @@ A new agent can begin from this section with no prior chat history.
 |---|---|
 | Current branch | `fix/MESP-93-private-files-notifications` |
 | Branch base | `main` at `322341e70e56270797d5770b4b90342c20b7833e` (PR #22 merge commit; MESP-92 Done) |
-| Implementation head | `85b9ec1` (source/test correction closing M-1, M-4, M-5, M-7, M-8, M-9, L-4) |
-| Docs reconciliation head | `0202e50` |
-| Open Pull Request | [PR #24](https://github.com/Hossam1104/mini-erp-saas-platform/pull/24) — open, non-draft, **unmerged**, manual merge hold for focused ChatGPT security review (same standing gate MESP-92 carried) |
+| First implementation head | `85b9ec1` (closed M-1, M-4, M-5, M-7, M-8, M-9, L-4; reviewed at pushed head `759eb04`) |
+| Re-review correction head | `1820416` (closes H93-01, H93-02, M93-01, M93-02, L93-01 raised against `759eb04`) |
+| Open Pull Request | [PR #24](https://github.com/Hossam1104/mini-erp-saas-platform/pull/24) — open, non-draft, **unmerged**, manual merge hold for focused ChatGPT security re-review (same standing gate MESP-92 carried) |
 | Active Jira item | **MESP-93 — In Progress** (the only active bounded implementation item) |
 | MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
 | MESP-91 | Done |
@@ -21,6 +21,56 @@ A new agent can begin from this section with no prior chat history.
 | Parallel implementation | None |
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
+
+**MESP-93 focused re-review correction (7 August 2026):** a focused
+ChatGPT/Copilot re-review of PR #24 at head `759eb04` returned CHANGES
+REQUIRED BEFORE MERGE, raising H93-01, H93-02, M93-01, M93-02 and L93-01.
+All five are closed at head `1820416`:
+
+- **H93-01 (High) — closed.** A wrong-Tenant `DeliverAsync` call no longer
+  mutates the owner Tenant's `TenantNotificationIntent` at all -- no
+  `DeliveryState`, `FailureCategory`, `AttemptCount` or idempotency-ledger
+  change, and no automatic dead-letter on the owner's behalf. The read for
+  the denial result is taken under the same `syncRoot` lock as every
+  legitimate mutation, closing the unlocked-mutation data race a Copilot
+  review comment flagged.
+- **H93-02 (High) — closed.** `INotificationRecipientAuthorizer` now
+  live-revalidates the caller's own Tenant authorization path -- a
+  structurally valid `TenantContext` was not previously proof of current
+  authority. Both `OrdinaryMembership` (exact live Membership, Active,
+  correct Tenant, no `SupportGrant` present) and `SupportGrant` (exact live
+  grant/case, Active actor, not revoked, not expired, case still active, no
+  `Membership` present) paths are live-checked with no cross-fallback,
+  reusing the same authorization semantics as durable-work dispatch and
+  reconciliation revalidation.
+- **M93-01 (Medium) — closed.** `INotificationRecipientAuthorizer` is now
+  registered in `AddIdentityAuthorization()` against the same
+  `IdentityAuthorizationService` singleton every other Identity-owned port
+  uses.
+- **M93-02 (Medium) — closed.** `PrivateFileContracts.EvaluateLifecycleOutcome`
+  reports a previously recorded `ChecksumFailed` or `Disposed` disposition
+  with its exact classification instead of folding every non-`Available`
+  state into `Expired`. `PrivateFileAccessOutcome.Disposed` was added for the
+  new classification, shared between `ReadAsync` and `OverwriteAsync`.
+- **L93-01 (Low) — closed.** `SafeFileName` no longer rejects an embedded
+  `".."` substring (only the exact reserved names `"."`/`".."` remain
+  rejected -- path separators already block real traversal), and no longer
+  rejects U+200C/U+200D (ZWNJ/ZWJ), which have legitimate Arabic-script
+  shaping uses and were outside the documented rejection policy. A missing
+  U+2060 (word joiner) rejection test case was added.
+
+28 new focused tests added (73 total in the MESP-93 suite), resolving all
+four open Copilot review comments on PR #24. Full validation at head
+`1820416`: Release build **0 warnings/0 errors**; full backend regression
+**566/566** passed (0 failed, 0 skipped), including **11/11** SQL Server
+LocalDB probes with no `MiniErpFoundation_*` database remaining after
+teardown; Angular unit tests **27/27** passed (unchanged); Angular production
+build succeeded (351.02 kB initial / 87.80 kB transferred, unchanged);
+Playwright **4/4** passed; `npm audit --omit=dev --audit-level=high` reported
+**0** vulnerabilities; `git diff --check` clean. MESP-93 is **not** marked
+Done; PR #24 is held open, non-draft and unmerged pending a further focused
+ChatGPT security re-review at head `1820416`. MESP-94 and MESP-31 remain To
+Do.
 
 **MESP-93 implementation (7 August 2026):** closes seven findings against the
 merged private-file (`PrivateFileContracts.cs`) and notification

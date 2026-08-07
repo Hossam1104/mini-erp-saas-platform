@@ -1910,3 +1910,22 @@ pending a focused ChatGPT security review, the same standing merge-hold
 gate MESP-92 carried. MESP-94 and MESP-31 remain To Do; no production object
 storage, notification provider or physical purge was introduced. See
 `.ai/CURRENT_STATE.md` for the exact PR number and head once opened.
+
+### MESP-93 focused re-review overlay (7 August 2026, current)
+
+A focused ChatGPT/Copilot re-review of [PR #24](https://github.com/Hossam1104/mini-erp-saas-platform/pull/24)
+at pushed head `759eb04` returned CHANGES REQUIRED BEFORE MERGE, raising
+H93-01 (High — wrong-Tenant notification delivery could mutate/dead-letter
+the owner Tenant's intent, partly outside the adapter's synchronization
+boundary), H93-02 (High — the recipient authorizer validated the recipient
+but never live-revalidated the caller's own Membership/SupportGrant
+authority), M93-01 (Medium — `INotificationRecipientAuthorizer` implemented
+but not registered in DI), M93-02 (Medium — a disposed or already
+checksum-failed object was misleadingly surfaced as `Expired`) and L93-01
+(Low — avoidable filename over-rejection plus incomplete exact-policy
+tests). All five are closed at head `1820416`: see the closure entry in
+`.ai/CURRENT_STATE.md` for the exact corrections and validation totals
+(28 new tests, 566/566 backend, 11/11 SQL LocalDB, 27/27 Angular, 4/4
+Playwright, 0 audit vulnerabilities). MESP-93 remains **not** Done; PR #24
+is held open, non-draft and unmerged pending the next focused ChatGPT
+security re-review.
