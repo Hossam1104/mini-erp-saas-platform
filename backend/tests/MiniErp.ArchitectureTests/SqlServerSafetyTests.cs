@@ -15,26 +15,18 @@ public sealed class SqlServerSafetyCollection : ICollectionFixture<SqlServerSafe
 }
 
 /// <summary>
-/// Disposable SQL Server LocalDB fixture. The safety checks intentionally fail
-/// when an explicit, safe LocalDB connection is not supplied.
+/// The exact configuration-safety check the SQL Server harness relies on to
+/// refuse a missing, non-LocalDB or non-disposable connection string. Extracted
+/// so a test can exercise the real rejection path directly instead of
+/// re-asserting an already-accepted connection string against constants.
 /// </summary>
-public sealed class SqlServerSafetyFixture : IAsyncLifetime
+internal static class SqlServerSafetyConfigurationValidator
 {
-    private const string RequiredDataSource = @"(localdb)\MSSQLLocalDB";
-    private const string DatabasePrefix = "MiniErpFoundation_";
-    private string _connectionString = string.Empty;
-    private DbContextOptions _options = null!;
+    internal const string RequiredDataSource = @"(localdb)\MSSQLLocalDB";
+    internal const string DisposableDatabasePattern = "^MiniErpFoundation_[A-Za-z0-9_]+$";
 
-    public TenantContext TenantA { get; private set; } = null!;
-
-    public TenantContext TenantB { get; private set; } = null!;
-
-    public TenantPersistenceSessionFactory Factory { get; private set; } = null!;
-
-    public async Task InitializeAsync()
+    public static SqlConnectionStringBuilder ValidateSafeConnectionString(string? rawConnectionString)
     {
-        var rawConnectionString = Environment.GetEnvironmentVariable(
-            "MESP_SQLSERVER_CONNECTION_STRING");
         if (string.IsNullOrWhiteSpace(rawConnectionString))
         {
             throw new InvalidOperationException(
@@ -50,12 +42,38 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
 
         if (!System.Text.RegularExpressions.Regex.IsMatch(
                 builder.InitialCatalog,
-                "^MiniErpFoundation_[A-Za-z0-9_]+$",
+                DisposableDatabasePattern,
                 System.Text.RegularExpressions.RegexOptions.CultureInvariant))
         {
             throw new InvalidOperationException(
                 "The SQL Server safety database must use the disposable MiniErpFoundation_ prefix.");
         }
+
+        return builder;
+    }
+}
+
+/// <summary>
+/// Disposable SQL Server LocalDB fixture. The safety checks intentionally fail
+/// when an explicit, safe LocalDB connection is not supplied.
+/// </summary>
+public sealed class SqlServerSafetyFixture : IAsyncLifetime
+{
+    private string _connectionString = string.Empty;
+    private DbContextOptions _options = null!;
+
+    public TenantContext TenantA { get; private set; } = null!;
+
+    public TenantContext TenantB { get; private set; } = null!;
+
+    public TenantPersistenceSessionFactory Factory { get; private set; } = null!;
+
+    public async Task InitializeAsync()
+    {
+        var rawConnectionString = Environment.GetEnvironmentVariable(
+            "MESP_SQLSERVER_CONNECTION_STRING");
+
+        var builder = SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString(rawConnectionString);
 
         builder.IntegratedSecurity = true;
         builder.TrustServerCertificate = true;
@@ -320,6 +338,23 @@ public sealed class SqlServerSafetyTests
         Assert.Equal(TenantPersistenceViolationCode.RelationshipMismatch, exception.Code);
     }
 
+    [Theory]
+    [InlineData(TenantRelationshipKind.CompanyBranch)]
+    [InlineData(TenantRelationshipKind.BranchWarehouse)]
+    [InlineData(TenantRelationshipKind.CompanyDepartment)]
+    public async Task Same_tenant_composite_relationship_is_allowed_on_sql_server(TenantRelationshipKind relationshipKind)
+    {
+        var allowed = new TenantOwnedRecord(
+            _fixture.TenantA.TenantId,
+            $"sql-related-{relationshipKind}-{Guid.NewGuid():N}",
+            relationshipKind,
+            _fixture.TenantA.TenantId);
+        await _fixture.AddAsync(_fixture.TenantA, allowed);
+
+        await using var session = _fixture.Factory.Create(_fixture.TenantA);
+        Assert.NotNull(await session.Records.FindAsync(allowed.Id));
+    }
+
     [Fact]
     public async Task Sql_server_schema_has_tenant_business_unique_index_and_rowversion()
     {
@@ -432,16 +467,48 @@ public sealed class SqlServerSafetyTests
         Assert.Equal(0, await second.ExecuteNonQueryAsync());
     }
 
-    [Fact]
-    public async Task Unsafe_or_missing_sql_server_configuration_fails_closed_by_fixture_contract()
+    [Theory]
+    [InlineData(null, "a null connection string")]
+    [InlineData("", "an empty connection string")]
+    [InlineData(
+        @"Server=tcp:prod-sql.example.com,1433;Database=MiniErpFoundation_x;Integrated Security=True;",
+        "a non-LocalDB Server/DataSource")]
+    [InlineData(
+        @"Server=(localdb)\MSSQLLocalDB;Database=ProductionCustomers;Integrated Security=True;",
+        "an InitialCatalog outside the disposable MiniErpFoundation_ prefix")]
+    [InlineData(
+        @"Server=(localdb)\MSSQLLocalDB;Database=MiniErpFoundation;Integrated Security=True;",
+        "an InitialCatalog equal to the prefix with no disposable suffix")]
+    [InlineData(
+        @"Server=(localdb)\MSSQLLocalDB;Database=MiniErpFoundation_evil.database;Integrated Security=True;",
+        "an InitialCatalog containing characters outside the disposable pattern")]
+    public void Unsafe_sql_server_configuration_is_rejected_by_the_real_validator(
+        string? unsafeConnectionString,
+        string reason)
     {
-        Assert.Equal(@"(localdb)\MSSQLLocalDB", new SqlConnectionStringBuilder(
-            Environment.GetEnvironmentVariable("MESP_SQLSERVER_CONNECTION_STRING")!).DataSource);
-        Assert.StartsWith(
-            "MiniErpFoundation_",
-            new SqlConnectionStringBuilder(
-                Environment.GetEnvironmentVariable("MESP_SQLSERVER_CONNECTION_STRING")!).InitialCatalog,
-            StringComparison.Ordinal);
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString(unsafeConnectionString));
+        Assert.False(string.IsNullOrWhiteSpace(exception.Message), $"Expected a safe-closed rejection for {reason}.");
+    }
+
+    [Fact]
+    public void Safe_sql_server_configuration_passes_the_real_validator()
+    {
+        var builder = SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString(
+            @"Server=(localdb)\MSSQLLocalDB;Database=MiniErpFoundation_selftest01;Integrated Security=True;");
+
+        Assert.Equal(@"(localdb)\MSSQLLocalDB", builder.DataSource);
+        Assert.StartsWith("MiniErpFoundation_", builder.InitialCatalog, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Fixture_accepted_connection_string_is_the_one_the_real_validator_approved()
+    {
+        var rawConnectionString = Environment.GetEnvironmentVariable("MESP_SQLSERVER_CONNECTION_STRING");
+        var builder = SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString(rawConnectionString);
+
+        Assert.Equal(@"(localdb)\MSSQLLocalDB", builder.DataSource);
+        Assert.StartsWith("MiniErpFoundation_", builder.InitialCatalog, StringComparison.Ordinal);
     }
 
     private static async Task ExecuteProbeInsertAsync(

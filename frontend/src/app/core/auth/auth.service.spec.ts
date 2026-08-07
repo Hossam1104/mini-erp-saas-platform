@@ -110,6 +110,34 @@ describe('AuthService', () => {
     expect(navigate).toHaveBeenCalledWith(['/login']);
   });
 
+  it('MESP-90 regression guard: does not desynchronize local session state ahead of the server sign-out response', async () => {
+    // The MESP-90 defect cleared local session state and routed to /login as
+    // soon as signOut() was called, desynchronized from the server outcome --
+    // a false logout whenever server session revocation failed or was merely
+    // slow. Local state must remain untouched until the sign-out request
+    // actually settles, and must then track the server's real outcome.
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    service.acceptServerSession(authenticatedSession);
+
+    const result = service.signOut();
+    http.expectOne('/api/v1/auth/antiforgery').flush(
+      { status: 'issued' },
+      { headers: new HttpHeaders({ 'X-CSRF-TOKEN': 'logout-token' }) },
+    );
+    await flushSignOutRequest();
+
+    expect(service.session()).toEqual(authenticatedSession);
+    expect(service.status()).toBe('authenticated');
+    expect(navigate).not.toHaveBeenCalled();
+
+    http.expectOne('/api/v1/auth/sign-out').flush(null, { status: 204, statusText: 'No Content' });
+
+    await expect(result).resolves.toEqual({ outcome: 'signed-out' });
+    expect(service.session()).toBeNull();
+    expect(service.status()).toBe('anonymous');
+    expect(navigate).toHaveBeenCalledWith(['/login']);
+  });
+
   it('clears session and navigates when 401 confirms the session is already invalid', async () => {
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     service.acceptServerSession(authenticatedSession);
