@@ -22,8 +22,8 @@ is authoritative for the live repository and Jira position.
 | Open decisions | MD-OD-001 through MD-OD-011 remain unresolved and preserved. |
 | Production/external gates | MESP-48, MESP-49, and MESP-50 remain open; no production or external-validation decision is invented. |
 | Source implementation | MESP-96 source implementation is now present only in the bounded non-persistent slice described above; no Product/Item, SKU/Barcode, tracking, availability, approval-catalogue, lifecycle, Wafra, Retail POS, migration, database, or endpoint behavior was added. |
-| Current branch | `main`; post-merge correction and required state/task reconciliation are complete at `ecfe7f7` (`docs(MESP-96): reconcile correction handoff`). |
-| Main synchronization | Local `main` and `origin/main` match `ecfe7f7`; the functional PR #31 merge is `4eeefe0d1a9af209cc3e31608812ec35ef283fd9`; the original PR #30 review thread is replied to and resolved, and no correction PR remains open. |
+| Current branch | `main`; the required state/task reconciliation content is published at `ecfe7f7` (`docs(MESP-96): reconcile correction handoff`), followed by the final metadata-only handoff update. |
+| Main synchronization | The state/task handoff is synchronized through `e4f81c28de1728ea3a11a296c1547b3557b93311`; the final metadata-only update is the current branch tip. The functional PR #31 merge is `4eeefe0d1a9af209cc3e31608812ec35ef283fd9`; the original PR #30 review thread is replied to and resolved, and no correction PR remains open. |
 
 M95-SL-01 remains contract-only: no Master Data EF entities/tables, migration,
 or `MESP` database creation/access solely for this slice; no Product/Item,
