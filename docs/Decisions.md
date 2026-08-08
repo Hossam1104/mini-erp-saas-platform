@@ -57,8 +57,11 @@ accuracy, including ADR-018's validation-lock scope) is also now **Done**:
 PR #26 merged to `main` at `06d837c958c1cb7977dc121e3aaea4e7278944fd` after
 a ChatGPT final merge review verdict of APPROVED FOR MERGE. The Foundation
 completion checkpoint that followed found no remaining Foundation correction
-blocking MESP-31 BRD entry, though MESP-31 itself remains To Do pending a
-distinct owner approval — see `.ai/CURRENT_STATE.md`. No ADR
+blocking MESP-31 BRD entry. Hossam recorded the required distinct owner
+authorization on 8 August 2026; MESP-31 moved to In Progress and a draft BRD
+(`docs/16_Master_Data_and_Product_Catalog_BRD.md`, v0.2 on open PR #28) is
+now pending Hossam's business-owner review and is not Approved — see
+`.ai/CURRENT_STATE.md`. No ADR
 status in this index asserts production maturity: the durable-work store,
 dispatcher, worker and effect ledger are local, in-memory, non-crash-durable
 test/development seams that are **not composed into the `MiniErp.Api` host**,
@@ -68,3 +71,17 @@ provider selection. The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`
 
 No new ADR was created by the Opus 5 project-wide checkpoint of 6 August 2026:
 that review found no architectural decision that is not already recorded here.
+
+## Current Master Data approval overlay — 8 August 2026
+
+The historical Foundation and MESP-31 status narrative above is preserved.
+Hossam approved MESP-31 BRD v0.3 as the Release 1 business baseline in Jira
+comment `10649` at reviewed content head
+`1e2d055354f0ddde833190948d09fa426707484c`. The approval changes no ADR
+decision and silently resolves none of the BRD's MD-OD-001 through MD-OD-011
+decisions. ADR-002 and ADR-011 remain required before affected module
+implementation; ADR-016 remains a production-timing decision only. PR #28 is
+approved for merge but remains open and unmerged until the approval-state
+reconciliation is pushed and reverified. MESP-95 exists as To Do and is the
+next implementation-readiness item only after MESP-31 is actually merged and
+closed. No Master Data source implementation has started.

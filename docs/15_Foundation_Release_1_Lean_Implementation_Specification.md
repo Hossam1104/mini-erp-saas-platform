@@ -21,8 +21,10 @@ implementation, a Sprint start, or a production release.
 > and merged under separately authorized implementation items (MESP-94's PR
 > #26 merged to `main` at `06d837c958c1cb7977dc121e3aaea4e7278944fd`). The
 > Foundation completion checkpoint that followed found no remaining Foundation
-> correction blocking MESP-31 BRD entry; MESP-31 itself remains To Do pending
-> a distinct owner approval.
+> correction blocking MESP-31 BRD entry. Hossam recorded the required
+> distinct owner authorization on 8 August 2026; MESP-31 moved to In Progress
+> with a draft BRD (v0.2, on open PR #28) pending Hossam's review and not
+> Approved. No Master Data implementation has started.
 > Wherever this document says an Enabler is "To Do", that
 > an Enabler is "not started", or names a "next action", read
 > [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and
@@ -1557,3 +1559,15 @@ MESP-64 remain To Do.
 or begin work outside the authorized MESP-58 item. Preserve MESP-48 and MESP-50
 gates, and keep MESP-31 work, Retail POS, and Wafra-specific behavior out of
 this baseline.
+
+## Current Master Data status overlay — 8 August 2026
+
+The historical Foundation baseline and its earlier MESP-31 pre-approval note
+are preserved. Hossam approved MESP-31 BRD v0.3 as the Release 1 business
+baseline in Jira comment `10649` at reviewed content head
+`1e2d055354f0ddde833190948d09fa426707484c`. The approval preserves and does
+not answer MD-OD-001 through MD-OD-011; blocking decisions remain gates for
+affected implementation slices. PR #28 is approved for merge but remains
+open and unmerged pending the approval-state reconciliation. MESP-95 exists
+as To Do and is the next readiness item only after MESP-31 is merged and
+closed. No Master Data source implementation has started.
