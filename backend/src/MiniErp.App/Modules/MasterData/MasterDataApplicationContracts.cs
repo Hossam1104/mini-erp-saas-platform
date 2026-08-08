@@ -316,15 +316,14 @@ public sealed class MasterDataResourceAuthorizationService
     public MasterDataAuthorizationResult Authorize(
         MasterDataRequestContext context,
         MasterDataResourceReference resource,
-        MasterDataOperation operation,
-        MasterDataCapability capability)
+        MasterDataOperation operation)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(resource);
 
-        if (!Enum.IsDefined(operation) || !Enum.IsDefined(capability))
+        if (!MasterDataOperationCatalog.TryGetRequiredCapability(operation, out var requiredCapability))
         {
-            return MasterDataAuthorizationResult.Denied("authorization_contract_invalid");
+            return MasterDataAuthorizationResult.Denied("authorization_operation_unmapped");
         }
 
         if (resource.Tenant.TenantId != context.TenantId.Value)
@@ -357,7 +356,7 @@ public sealed class MasterDataResourceAuthorizationService
             return MasterDataAuthorizationResult.Denied("permission_unavailable");
         }
 
-        if (capabilities is null || !capabilities.Contains(capability))
+        if (capabilities is null || !capabilities.Contains(requiredCapability))
         {
             return MasterDataAuthorizationResult.Denied("permission_denied");
         }
@@ -390,7 +389,7 @@ public sealed class MasterDataResourceAuthorizationService
                 context,
                 resource,
                 operation,
-                capability,
+                requiredCapability,
                 approval));
         }
         catch

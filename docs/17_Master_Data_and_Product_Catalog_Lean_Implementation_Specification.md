@@ -9,6 +9,8 @@
 **Owner:** Hossam / Product Owner
 **Date:** 8 August 2026
 
+> **Authoritative current overlay - MESP-100 readiness correction, 9 August 2026.** MESP-100 is the active bounded readiness item for M95-SL-02. MESP-96 is Done, MESP-99 remains To Do until this correction is fully validated, merged, and activated, and no Category/UOM persistence or behavior is implemented here. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006; the remaining Open Decision Register stays preserved.
+
 > **Current delivery overlay - 8 August 2026.** MESP-95 is **Done** after
 > ChatGPT final review passed and PR #29 merged normally. This specification
 > remains the implementation-readiness baseline; MESP-96 separately completed
@@ -29,6 +31,14 @@ application code, entities in the repository, EF mapping, migration, database,
 endpoint, controller, Angular screen, or automated implementation test. The
 remaining data-bearing implementation slices remain unactivated until their
 own bounded Definition of Ready and decision gates are satisfied.
+
+> **Current MESP-100 readiness overlay - 9 August 2026.** MESP-100 is the
+> active bounded correction for M95-SL-02. MESP-96 is Done, MESP-99 remains To
+> Do until readiness is fully validated and activated, and no Category/UOM
+> persistence or production behavior is authorized in this session. The
+> Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and
+> MD-OD-006. The server-owned operation/capability catalog and detailed
+> four-project ADR-002 are readiness corrections; they do not start MESP-99.
 
 ## 1. Document control and entry evidence
 
@@ -946,3 +956,55 @@ MD-OD-008 Draft-before-Active lifecycle, MD-OD-005 approval catalogue/slice
 boundary, MD-OD-002 Category hierarchy depth, and MD-OD-006 UOM
 precision/rounding. No open decision may be silently invented. MESP-48,
 MESP-49, and MESP-50 remain open gates.
+
+## 24. MESP-100 Category/UOM readiness-correction overlay — 9 August 2026
+
+MESP-100 is the bounded readiness correction between completed MESP-96 /
+M95-SL-01 and MESP-99 / M95-SL-02. It does not create Category/UOM entities,
+tables, mappings, migrations, database access, repositories, services, or
+endpoints.
+
+The following five Owner dispositions are now explicit for MESP-99 only:
+
+| Decision | MESP-99 bound |
+|---|---|
+| MD-OD-001 | Category/UOM business availability is Tenant-wide inside the owning Tenant; all Companies and Branches in that Tenant may reuse the records; no cross-Tenant sharing or client authority substitution. |
+| MD-OD-005 | Routine Category/UOM Create, Edit, Activate, Deactivate, and Reactivate require no separate approver; permission, exact server-derived authority, scope/resource authorization, and audit remain mandatory. |
+| MD-OD-008 | No Draft lifecycle; a valid authorized record is created Active and may later be Deactivated or Reactivated. |
+| MD-OD-002 | Optional same-Tenant Category parent, maximum three levels, no cycles, with an evolvable/configuration-led depth policy. |
+| MD-OD-006 | Quantity precision 6, conversion-factor precision 8, positive/non-zero factors, calculated values rounded to 6 with `MidpointRounding.AwayFromZero`, and over-precision user input rejected. |
+
+These are affected-slice bounds, not global resolutions of the MD-OD register.
+MESP-99 must not generalize them to Product, Supplier, Business Customer,
+Price List, Tax, Currency, Exchange Rate, Product/Item, tracking, or any later
+slice.
+
+### Readiness corrections completed by MESP-100
+
+- The server-owned immutable `MasterDataOperationCatalog` maps every defined
+  `MasterDataOperation` to exactly one existing `MasterDataCapability`. The
+  authorization service derives that capability from the operation; callers
+  cannot pass an unrelated capability. Unknown/unmapped operations fail closed.
+- ADR-002 is published at
+  `docs/ADR-002_Backend_Project_Structure_and_Module_Enforcement.md`. The
+  actual four-project direction and Api-to-Infrastructure composition path are
+  explicit and reconciled with ADR-006. No fifth production project or
+  microservice is introduced.
+- The existing trusted Tenant context, optional empty/same-Tenant target hint,
+  exact trusted scope, foreign-Tenant denial, and sibling/foreign-scope denial
+  remain unchanged. MESP-100 does not implement Category/UOM scope
+  persistence or turn a generic Tenant-only `BusinessScope` into a fallback
+  authority. MESP-99 must introduce the production-owned Category/UOM
+  Tenant-wide policy from MD-OD-001.
+
+### Non-blocking Opus follow-up carried into MESP-99
+
+Before lifecycle implementation, MESP-99 must replace the M95-SL-01
+case-insensitive substring forbidden-token guard with an identifier/symbol-aware
+check; harden the audit-evidence factory/type boundary against friend-assembly
+construction bypass; preserve full first-persistent-audit fidelity (Tenant,
+actor, session, affected record, business code, business scope, action,
+before/after, policy outcome, approver where applicable, correlation/evidence
+identity, timestamp/reason); use production-owned Category/UOM scope behavior;
+and make module-registration evidence reflect actual composition. These
+follow-ups do not authorize any data-bearing work in MESP-100.

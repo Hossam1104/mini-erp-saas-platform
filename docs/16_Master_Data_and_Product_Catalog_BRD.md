@@ -1,5 +1,7 @@
 # Mini ERP SaaS Platform — Master Data and Product Catalog BRD
 
+> **Authoritative current overlay - MESP-100 readiness correction, 9 August 2026.** MESP-100 is the active bounded readiness item for M95-SL-02. MESP-96 is Done, MESP-99 remains To Do until this correction is fully validated, merged, and activated, and no Category/UOM persistence or behavior is implemented here. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006; the rest of the Open Decision Register remains preserved.
+
 > **Current delivery overlay - 8 August 2026 (supersedes older status wording below; approved business baseline unchanged).** MESP-31 is **Done**. PR #28 remains merged at final head `8396197b54189cb550f07bd4bb6779fd38ac30cb` and actual merge commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`. MESP-95 is **Done** after PR #29 merged at approved head `c465d660e49a254f2fffbb95e0d07c5fcf17a193` with actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; closure evidence is Jira comment `10654`. MESP-96 is **In Progress** for contract-only/non-persistent M95-SL-01. MD-OD-001 through MD-OD-011 remain open and unresolved; no Master Data persistence exists.
 >
 > The approved requirements, classifications, recommendations, acceptance criteria, and Open Decision Register below are unchanged. This overlay records delivery state only and does not authorize Product/Item, SKU/Barcode, tracking, business-availability, approval-catalogue, or Draft/Active behavior.
@@ -7,6 +9,15 @@
 > **Post-merge live-state overlay — 8 August 2026 (supersedes historical status wording below; approved business baseline unchanged).** MESP-31 is **Done**. PR #28 is merged: final PR head `8396197b54189cb550f07bd4bb6779fd38ac30cb`, actual merge commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`; Hossam's approval is recorded in Jira comment `10649` and final closure evidence in comment `10650`. MESP-95 is **In Progress**, and PR #29 is the active, open, non-draft implementation-readiness review. MD-OD-001 through MD-OD-011 remain open and unresolved; Master Data source implementation has not started.
 >
 > The approved requirements, classifications, recommendations, acceptance criteria, and Open Decision Register below are unchanged. Historical status paragraphs are retained for provenance and are superseded by this overlay for current-state purposes.
+
+> **Current MESP-100 readiness overlay - 9 August 2026.** MESP-100 is the
+> active, bounded readiness correction for M95-SL-02 and MESP-99 remains To Do
+> until the correction is validated, merged, and activated. The five
+> Category/UOM-only Owner bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002,
+> and MD-OD-006; they do not resolve the remaining Open Decision Register for
+> other Master Data domains. No Category/UOM persistence or business behavior
+> is implemented by MESP-100, and the approved v0.3 requirements remain
+> unchanged.
 
 ## 1. Document Control
 
@@ -837,3 +848,64 @@ remain unresolved, and no Master Data persistence exists.
 **Review history.** v0.1 was published as PR #28 at head `6d0aa80eef0a2860c85a141dd6f13ee38bf5760d` and received a business-requirements review verdict of *CHANGES REQUIRED BEFORE OWNER APPROVAL / MERGE*. v0.2 is the corrected draft: MESP-41 reclassified as an unapproved recommended default and raised as MD-OD-010; MESP-54 reclassified as a Deferred Gate / Recommended Default owned by MESP-34; unsupported Tax and Price List separate-approver claims withdrawn into MD-OD-005 behind the generic MD-BR-046 control; MD-OD-008 restored to a genuine Open Decision; MD-AC-026's lifecycle wording corrected; Business Party cross-role duplicate semantics clarified (MD-BR-045); and the Tenant isolation boundary separated from the undecided Company/Legal Entity business scope. v0.2 was reviewed at head `865701128c86d358f6aa919162c91d91ae025f21` and received a further verdict of *CHANGES REQUIRED — FINAL SMALL CORRECTION ROUND* (M31-R10 through M31-R13). v0.3 is this corrected draft: MD-BR-015's Product/Item modelling withdrawn from Confirmed status and raised as new Open Decision MD-OD-011 (M31-R10); §27's routine-edit row and MD-AC-016 reworded to remove a residual approval assumption not established by any approved source, both made explicitly MD-OD-005-dependent (M31-R11); MD-OD-007's blocking rationale corrected to distinguish BRD/implementation-baseline non-blocking from a still-gated production launch, preserving External Validation Required (M31-R12); and the unrelated `.vscode/settings.json` change removed from the PR #28 branch delta (M31-R13). The Open Decision register now holds eleven decisions (MD-OD-001–011). The review chronology is preserved; the approval overlay below supersedes the former pending-approval status.
 
 **Approval overlay — 8 August 2026.** Hossam approved v0.3 as the Release 1 **Approved Business Baseline** in Jira comment `10649` at reviewed content head `1e2d055354f0ddde833190948d09fa426707484c`. The approval leaves MD-OD-001 through MD-OD-011 open and governed; it answers none of them. Blocking decisions remain gates for the affected implementation slices. PR #28 is approved for merge but remains unmerged until the approval-state reconciliation is pushed and reverified. No Master Data source implementation has started.
+
+## Post-approval Category/UOM Owner-decision overlay — 9 August 2026
+
+This overlay records a later, scope-limited Owner decision package for the
+dedicated M95-SL-02 Category and Unit of Measure slice. It is a reconciliation
+after approval of the v0.3 business baseline; it does not rewrite the
+historical requirements or silently close the complete Open Decision Register.
+The activation and decision evidence is Jira MESP-100 comment `10662`, and the
+implementation item is MESP-99. The five dispositions below apply only to
+Category and UOM. The same MD-OD identifier remains governed and unresolved
+for every other Master Data domain unless its own Owner decision is recorded.
+
+### MD-OD-001 — Category/UOM business availability
+
+For Release 1, Category and UOM are Tenant-wide inside the owning Tenant. They
+are defined once for that Tenant and are reusable by all Companies and Branches
+inside it. There is no cross-Tenant sharing, and no client-selected Tenant or
+scope hint can replace or broaden trusted server-derived authority. This is a
+Category/UOM business-availability bound for MESP-99, not a global Tenant-wide
+fallback for Product, Supplier, Customer, Price List, Tax, Currency, Exchange
+Rate, or later slices.
+
+### MD-OD-005 — Category/UOM approval catalogue
+
+Routine Category/UOM Create, Edit, Activate, Deactivate, and Reactivate
+operations do not require a separate approver in Release 1. A valid permission,
+server-derived Tenant authority, correct resource/scope authorization, and
+audit evidence remain mandatory. The generic approval, no-self-approval, and
+fail-closed framework remains available for a future approved policy. This
+disposition does not establish approval behavior for another Master Data
+domain.
+
+### MD-OD-008 — Category/UOM lifecycle
+
+Category and UOM use no Draft lifecycle in Release 1. A valid authorized record
+is created Active and may later be Deactivated or Reactivated according to the
+approved permission, Tenant/scope, and audit controls. This is a Category/UOM
+bound and does not resolve lifecycle behavior for another domain.
+
+### MD-OD-002 — Category hierarchy
+
+Category supports an optional parent and a maximum depth of three levels. A
+parent must belong to the same Tenant and cycles are forbidden. The maximum-
+depth policy must remain configuration-led/evolvable so changing the policy
+does not require a schema redesign. This hierarchy bound applies only to the
+Category implementation in MESP-99.
+
+### MD-OD-006 — UOM precision and rounding
+
+For Category/UOM Release 1 behavior, quantity values support six decimal
+places, conversion factors support eight decimal places, and conversion
+factors must be positive and non-zero. Calculated quantities round to six
+decimal places using `MidpointRounding.AwayFromZero`. User-entered values that
+exceed supported precision are rejected rather than silently rounded. This is
+not a precision or rounding decision for any later domain.
+
+The original MD-OD-001 through MD-OD-011 register remains preserved for
+traceability. The MESP-99 task must carry these five Category/UOM bounds into
+its implementation and must leave Product/Item, SKU/Barcode, tracking,
+Supplier, Business Customer, Price List, Tax, Currency, Exchange Rate, and
+production-gate decisions outside this scope.

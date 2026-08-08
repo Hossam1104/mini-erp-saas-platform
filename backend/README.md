@@ -47,22 +47,30 @@ Invoke-RestMethod http://localhost:5000/api/v1/module-registration
 The port may be selected by the local ASP.NET Core launch environment; use the
 URL printed by `dotnet run` when it differs from port 5000.
 
-## Three-project direction
+## Four-project direction
 
 - `MiniErp.Contracts` contains only stable public module contracts and module
   identity records, including the Master Data/Catalog and Business Parties
   composition seams and their non-persistent shared value contracts. It has no
-  dependency on application internals.
+  dependency on application, provider, or host internals.
 - `MiniErp.App` contains the composition entry points, server-derived Tenant
   context consumption, policy-neutral scope and authorization hooks, and the
   internal Platform, Master Data/Catalog, and Business Parties
-  implementations. Internal implementations are not public.
-- `MiniErp.Api` is the host. It registers the Platform module through
-  `PlatformModuleRegistration` and consumes only public contracts. MESP-96 did
-  not add a Master Data endpoint or persistence composition.
+  implementations. Internal implementations are not public and App does not
+  reference EF Core or Infrastructure.
+- `MiniErp.Infrastructure` is the provider/persistence implementation project.
+  It depends on App and Contracts, owns provider-specific EF Core code, and
+  keeps future business-module contexts, mappings, schemas, and migrations in
+  explicit module-owned areas. MESP-100 adds no Category/UOM persistence.
+- `MiniErp.Api` is the host and composition root. It references App,
+  Contracts, and Infrastructure; it registers host/application seams directly
+  and will call Infrastructure registration methods when provider-backed
+  composition is due.
 
-The permitted dependency direction is `MiniErp.Api -> MiniErp.App ->
-MiniErp.Contracts`. `MiniErp.Api` also references `MiniErp.Contracts` for its
-composition type. Contracts never reference the host or application internals;
-the application never references the host. The architecture tests enforce the
-forbidden directions and the absence of a cycle.
+The approved project-reference direction is `MiniErp.Api ->
+MiniErp.Infrastructure -> MiniErp.App -> MiniErp.Contracts`, with Api also
+referencing App and Contracts for existing host composition. Contracts never
+reference the host/application/provider; App never references the host or
+Infrastructure; Infrastructure never references the host. Architecture tests
+enforce the project graph, forbidden directions, public persistence surface,
+and absence of a cycle.

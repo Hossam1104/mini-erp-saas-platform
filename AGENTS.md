@@ -1,6 +1,32 @@
 # Repository Working Agreement
 
-## Current execution overlay - 8 August 2026 (MESP-95 closed; MESP-96 active)
+## Current execution overlay - 9 August 2026 (MESP-100 active)
+
+MESP-100 is the single active bounded readiness-correction session for
+M95-SL-02. The branch is `fix/MESP-100-m95-sl-02-readiness`, based on
+`c948a4fba8cf1ac9620474b42d56ce95f9effd52`; MESP-96 is Done and MESP-99
+remains To Do until this session is fully validated, merged, and activated.
+This session may close readiness blockers only. It may not implement
+Category/UOM persistence or behavior, create entities/tables/migrations, or
+start MESP-99 automatically.
+
+The approved Category/UOM-only bounds are MD-OD-001 (Tenant-wide inside the
+owning Tenant, reusable by its Companies/Branches, no cross-Tenant sharing),
+MD-OD-005 (routine lifecycle actions need no separate approver but do require
+permission, exact server-derived authority, and audit), MD-OD-008 (no Draft;
+authorized creation is Active with Deactivate/Reactivate), MD-OD-002 (optional
+same-Tenant parent, maximum three levels, no cycles), and MD-OD-006 (quantity
+precision 6, conversion precision 8, positive/non-zero factors, AwayFromZero
+calculation rounding, reject over-precision input). These bounds apply only to
+MESP-99 Category/UOM work and do not resolve the rest of the decision register.
+
+The actual backend topology is four projects: `MiniErp.Api`, `MiniErp.App`,
+`MiniErp.Contracts`, and `MiniErp.Infrastructure`. ADR-002 is the detailed
+project/module enforcement record and ADR-006 remains authoritative for shared
+SQL Server, Tenant ownership, module-owned contexts/schemas/migrations, and
+provider/production gates. MESP-48, MESP-49, and MESP-50 remain open.
+
+## Historical execution overlay - 8 August 2026 (preserved)
 
 MESP-31 is **Done** as the approved BRD baseline. PR #29 is **merged** at
 actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; its approved

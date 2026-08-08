@@ -1,179 +1,171 @@
-# M95-SL-02 — Category and UOM
+# Execute MESP-99 — M95-SL-02 Category and UOM
 
-## Session boundary
+Execute exactly one bounded MESP-99 session in this chat. This is the first
+data-bearing Master Data implementation slice after the completed MESP-100
+readiness correction. Do not continue automatically to M95-SL-03 or any later
+Master Data slice.
 
-This is the exact next implementation session after the completed MESP-96 /
-M95-SL-01 correction. A fresh Codex/Luna chat executes only this root task.
-Do not start M95-SL-03 Product, any later Master Data slice, Retail POS, or
-Wafra-specific core behavior in the same chat.
+## Session handoff
 
-MESP-96 remains **Done** in Jira. M95-SL-01 remains complete, contract-only,
-and non-persistent. Its functional PR #30 merged at
-`87f150d95f583168a86aa56200916343c6404f7f`; the bounded post-merge correction
-commit is `85d3c48f20a97f8057e5960c305a3bcc0cb8d672` on
-`fix/mesp-96-optional-scope-hint`; correction PR #31 merged at
-`4eeefe0d1a9af209cc3e31608812ec35ef283fd9`. The required state/task handoff
-is published on synchronized `main`; Jira correction evidence is comment
-`10657` and final repository reconciliation is comment `10658`.
-Historical completion comments `10655` and `10656` remain preserved.
+MESP-100 is Done and its merged branch, PR, merge commit, validation, and Jira
+closure evidence are recorded in `.ai/CURRENT_STATE.md`. MESP-99 is the
+single active Jira implementation item for M95-SL-02. Start from the verified
+synchronized `main` recorded there and read the live MESP-99 description and
+comments before changing scope.
 
-No Category/UOM source implementation, entity, table, migration, database
-access, endpoint, or Jira child slice was created by the preceding session.
+Hossam's standing Owner approval covers normal implementation, review,
+commit, merge, closure, and next-session activation inside this approved
+scope. Stop for a real Tenant-isolation or authorization weakness,
+accounting/data-integrity risk, destructive migration/data-loss risk,
+unresolved business decision, legal/privacy or external-validation blocker,
+credential/production-infrastructure blocker, or material scope/architecture
+change. Do not stop for ceremonial approval.
 
-## Objective
+## Required reading
 
-Implement only the first data-bearing Master Data slice: Product Category and
-Unit of Measure identity and safe conversion boundaries, after the completed
-shared Tenant/scope and authorization contracts from M95-SL-01.
+Before changing source, read:
 
-The slice must be configuration-led, Tenant-isolated, modular-monolith
-compatible, and bounded to Category/UOM. Do not make technical choices that
-silently answer an unresolved business decision.
-
-## Required pre-work
-
-Start from a clean, synchronized `main` and verify the exact local and remote
-head. Read and reconcile:
-
-- `AGENTS.md`, `CLAUDE.md`, `.ai/CURRENT_STATE.md`, and this `TASK.md`;
-- the approved `docs/16_Master_Data_and_Product_Catalog_BRD.md`;
+- `.ai/CURRENT_STATE.md`;
+- the live Jira items MESP-99 and its parent MESP-6;
+- `docs/16_Master_Data_and_Product_Catalog_BRD.md`;
 - `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`;
-- `docs/94_Product_Delivery_Master_Plan.md` and `docs/Decisions.md`;
-- the relevant PRD/glossary and the actual Master Data contracts,
-  application code, persistence conventions, and architecture tests;
-- ADR-002, ADR-005, ADR-006, and ADR-011 material, including their live status
-  in `docs/Decisions.md` and the Technology Architecture Baseline.
+- `docs/01_Technology_Architecture_Baseline.md`;
+- `docs/ADR-002_Backend_Project_Structure_and_Module_Enforcement.md`;
+- `docs/ADR-006_Shared_Database_Tenant_Isolation_and_Module_Persistence.md`;
+- `docs/Decisions.md`, the approved glossary, Foundation specifications,
+  and `docs/94_Product_Delivery_Master_Plan.md`;
+- `backend/src/MiniErp.Contracts/Modules/MasterData`;
+- `backend/src/MiniErp.App/Modules/MasterData`;
+- the Infrastructure persistence boundary and existing architecture tests.
 
-Verify the dedicated Jira item for this slice is the single active
-implementation item and that its Definition of Ready is recorded. Do not
-invent a Jira key, activate parallel work, or begin a later slice.
+Treat explicit Owner decisions recorded in Jira and the approved MESP-31 BRD
+as authoritative. Do not turn a recommendation, unresolved Open Decision, or
+test helper into a new business requirement.
 
-## Mandatory decision gate — resolve or explicitly Owner-bound before data work
+## Approved MESP-99 bounds
 
-Category/UOM is the first data-bearing Master Data slice. Before creating
-persistence or implementing behavior that depends on any of the following,
-inspect live Jira and the approved repository evidence. Use an approved bound
-if one exists; do not treat a Founder Decision Pack recommendation as approved
-by itself.
+These five dispositions are approved for Category and UOM only. Preserve the
+remaining MD-OD-001 through MD-OD-011 register for every other Master Data
+domain.
 
-1. **MD-OD-001 — business availability scope.** Apply the approved
-   Tenant/Company/Branch/Warehouse scope and inheritance boundary. An absent or
-   optional scope must not be interpreted as Tenant-wide merely to simplify
-   persistence or authorization. Client hints never replace trusted server
-   authority.
-2. **MD-OD-008 — Draft-before-Active lifecycle.** Apply the approved creation,
-   activation, deactivation, and reactivation bound. Do not choose Draft or
-   no-Draft behavior by technical preference.
-3. **MD-OD-005 — approval catalogue and slice boundary.** Implement only the
-   exact Category/UOM operations covered by an approved approval policy. Keep
-   the generic no-self-approval and fail-closed hooks; do not infer Tax, Price
-   List, Exchange Rate, or other approval requirements for this slice.
-4. **MD-OD-002 — Category hierarchy depth.** Apply the approved maximum depth,
-   parent/child rule, cycle behavior, and any flat-category bound. Do not
-   assume unlimited, recursive, or flat hierarchy behavior without an
-   explicit Owner-approved bound.
-5. **MD-OD-006 — UOM precision and rounding.** Apply the approved precision,
-   scale, conversion, and rounding boundary. Positive non-zero conversion
-   validation may remain separate from precision/rounding policy, but do not
-   invent a rounding algorithm or quantity scale.
+| Decision | Required Category/UOM behavior |
+|---|---|
+| MD-OD-001 | Category and UOM are Tenant-wide inside the owning Tenant and reusable by all Companies and Branches in that Tenant. No cross-Tenant sharing. Client Tenant or scope input is never authority and cannot replace or broaden trusted server context. |
+| MD-OD-005 | Routine Create, Edit, Activate, Deactivate, and Reactivate require no separate approver. Valid permission, server-derived Tenant authority, exact resource/scope authorization, and audit evidence remain mandatory. Preserve the generic approval/no-self-approval/fail-closed framework for future policies. |
+| MD-OD-008 | No Draft lifecycle. An authorized valid record is created Active and may be Deactivated or Reactivated under the same authorization and audit controls. |
+| MD-OD-002 | Category has an optional parent, a maximum depth of three levels, a same-Tenant parent requirement, and cycle prevention. Keep the depth rule configuration-led/evolvable so a policy change does not require schema redesign. |
+| MD-OD-006 | Quantity precision is six decimal places; conversion-factor precision is eight decimal places; factors are positive and non-zero; calculated quantities round to six places using `MidpointRounding.AwayFromZero`; user values exceeding supported precision are rejected rather than silently rounded. |
 
-If an approved bound is absent and persistence or executable Category/UOM
-behavior would require inventing one of these decisions, stop at that genuine
-decision blocker. Report the exact missing decision and recommend an explicit
-Owner decision for the affected Category/UOM scope; do not create speculative
-tables, migrations, defaults, or policy values.
+Do not generalize these bounds to Product/Item, Supplier, Business Customer,
+Price List, Tax, Payment Term, Currency, Exchange Rate, tracking, or a later
+slice.
 
-## In-scope implementation
+## Implementation scope
 
-- Category and UOM contracts, owned entities, application behavior, and
-  persistence only to the extent authorized by the verified decision gate.
-- Tenant ownership, same-Tenant organization scope, cross-Tenant denial, and
-  configuration-led multi-tenant behavior.
-- Category duplicate and hierarchy validation within the approved scope.
-- UOM duplicate and positive conversion-factor validation, with the approved
-  precision/rounding policy isolated from generic contract validation.
-- Lifecycle, authorization, approval, audit/evidence, optimistic concurrency,
-  and safe error behavior required by the approved Category/UOM bound.
-- Focused Category/UOM regression and architecture tests, including no
-  cross-module table/repository access and no authority expansion from client
-  input.
+Implement only the Category and Unit of Measure behavior defined by the
+approved MESP-99 Jira item and the five bounds above.
+
+The slice may add the required Category/UOM domain contracts, application
+behavior, persistence model, module-owned EF context/configuration, schema,
+migrations, endpoints, and tests, but all of them must remain inside the
+approved modular-monolith boundaries:
+
+- Category/UOM persistence is owned by the Master Data module inside
+  `MiniErp.Infrastructure`; another module may not add its DbSet, repository,
+  table mapping, schema object, or migration operation.
+- Use the existing four-project direction:
+  `MiniErp.Api -> MiniErp.Infrastructure -> MiniErp.App -> MiniErp.Contracts`.
+  The API may also reference App and Contracts for host composition. Contracts
+  has no production-project dependency, App depends on Contracts only, and
+  Infrastructure never references Api.
+- Keep server-derived Tenant context, exact resource and scope authorization,
+  fail-closed permission resolution, and audit behavior on every command and
+  query. Category/UOM Tenant-wide business availability is a production-owned
+  MESP-99 policy; do not manufacture it through a generic Tenant-only fallback.
+- Use the server-owned immutable `MasterDataOperationCatalog` from MESP-100.
+  Every defined operation must map to exactly one existing capability; callers
+  must not provide a weaker or unrelated capability. Unknown or unmapped
+  operations fail closed. If M99 adds a Reactivate operation, extend the
+  operation enum, catalog, authorization tests, and audit vocabulary together.
+- Enforce same-Tenant category parents, optional parentage, maximum depth, and
+  cycle prevention in domain/application behavior and persistence constraints
+  as appropriate. Do not silently accept a foreign parent.
+- Enforce Active-on-create/no-Draft lifecycle and Deactivate/Reactivate
+  transitions with valid permission, exact authorization, concurrency and
+  audit controls.
+- Reject over-precision input and use the approved UOM precision and rounding
+  rules. Do not implement Product/Item conversion consumers or inventory
+  behavior in this slice.
+
+## Mandatory carry-forward corrections
+
+Complete these before or as part of lifecycle implementation:
+
+1. Replace the M95-SL-01 case-insensitive substring forbidden-token guard with
+   an identifier/symbol-aware check so valid lifecycle names such as Active,
+   Deactivate, and Reactivate do not create false positives while prohibited
+   identifiers remain rejected.
+2. Ensure invalid Master Data audit evidence cannot be constructed through a
+   friend assembly or internal-access path. Enforce invariants at the evidence
+   type/factory boundary, not only in caller discipline.
+3. Preserve first persistent audit fidelity: Tenant, actor, session, affected
+   record ID, business code, business scope, action, before/after values,
+   policy outcome, approver where applicable, correlation/evidence identity,
+   timestamp, and reason.
+4. Derive Category/UOM scope and Tenant-wide availability from actual
+   production-owned policy and trusted context; do not use a test-only
+   containment helper as the production rule.
+5. Make module-registration evidence reflect actual composition and registration
+   state. A mechanical consolidation of duplicate
+   `ModuleRegistrationEvidence` types is allowed only if it does not broaden
+   scope or weaken the boundary.
 
 ## Hard exclusions
 
-Do not implement or decide:
+Do not implement any behavior outside MESP-99 Category/UOM:
 
-- Product/Item identity, SKU, Barcode, variants, tracking, batch, lot, serial,
-  expiry, tax linkage, or Product persistence (M95-SL-03);
-- Supplier, Business Customer, Price List, Tax, Payment Term, Currency,
-  Exchange Rate, import/migration, reporting, or downstream transaction
-  behavior;
-- Retail POS, anonymous consumers, or Wafra-specific core logic;
-- a Tenant-wide default, an unapproved organization hierarchy rule, an
-  unapproved approval catalogue, or an unapproved Draft/Active default;
-- localization/search/forms/document behavior that depends on unresolved
-  ADR-011 decisions;
-- a new production project, microservice, endpoint topology, provider,
-  database topology, or production readiness claim.
+- Product, Item, SKU, Barcode, variant, tracking, batch, lot, serial, or expiry;
+- Supplier, Business Customer, Tax, Price List, Payment Term, Currency, or
+  Exchange Rate implementation;
+- Retail POS or Wafra-specific core behavior;
+- generic approval decisions for other domains;
+- M95-SL-03 or any later slice;
+- production provisioning, production credentials, or a production database;
+- a new production project, microservice, separate database, or replacement
+  architecture.
 
-## Architecture and safety constraints
+Do not close unresolved MD-OD decisions by inference. Keep MESP-48,
+MESP-49, and MESP-50 supported-volume, retention, privacy, legal-hold, purge,
+residency, backup/restore, and production/provider gates open unless their own
+approved evidence changes them.
 
-- Preserve ADR-002's `MiniErp.Api -> MiniErp.App -> MiniErp.Contracts`
-  modular-monolith direction and existing architecture enforcement.
-- Follow ADR-006 for module-owned persistence/context/schema/migration and
-  cross-module transaction ownership. Do not reach another module's DbSet,
-  repository, table, or migration.
-- Preserve ADR-005's deny-by-default authorization and resource-policy
-  boundary; use server-derived Tenant context and exact authorized scope.
-- Preserve ADR-011 timing: do not implement affected Arabic search, collation,
-  RTL, localized forms, or bilingual documents before that ADR is complete.
-- Preserve MESP-48 supported-volume and MESP-50 retention, privacy,
-  legal-hold, purge, residency, backup, and restoration gates.
-- Do not hard-code Tenant IDs, Wafra values, Saudi-only behavior, or any
-  tenant-specific policy. All behavior must be configuration-led.
+## Validation and review
 
-## Required validation
-
-Run targeted validation for the complete task diff:
+Run proportional validation for the complete task diff:
 
 - Release backend build with 0 warnings and 0 errors;
-- focused Category/UOM tests plus existing `MasterDataBoundaryTests` and
-  `ModuleBoundaryTests`;
-- positive and negative Tenant/resource/scope isolation, including same codes
-  in different Tenants and foreign/sibling denial;
-- the approved Category hierarchy bound, cycle/depth behavior, UOM positive
-  conversion, and the approved precision/rounding behavior;
-- lifecycle and approval behavior only where explicitly bounded, optimistic
-  concurrency, audit evidence, safe failures, and no-self-approval;
-- architecture/dependency checks and a scan for Product/Item, SKU/Barcode,
-  tracking, Retail POS, Wafra, unapproved decision defaults, and cross-module
-  persistence access;
-- `git diff --check`, complete diff review, and migration/database review.
+- focused Master Data authorization, Tenant-isolation, scope, lifecycle,
+  hierarchy, precision/rounding, audit, and module-boundary tests;
+- architecture dependency/reference tests and project-reference validation
+  against ADR-002 and ADR-006;
+- safe disposable persistence/model/migration tests only where the approved
+  local SQL Server harness is configured; do not provision production;
+- `git diff --check`, source scans, and a full review of the complete diff;
+- scans confirming no excluded domain, Retail POS/Wafra behavior, or
+  cross-module persistence shortcut was introduced.
 
-If persistence is authorized, verify no unrelated entity/table/migration,
-endpoint, provider, or database topology is introduced. If persistence is not
-authorized because a decision gate is missing, stop and report the blocker.
+Record an unavailable SQL Server harness as the existing credential/provider
+gate; never weaken its safety validator or invent a production connection.
 
-## Completion and handoff
+## Jira, Git, and session boundary
 
-When the bounded slice is genuinely complete:
+Keep MESP-99 as the only active implementation item. Update Jira with factual
+progress and closure evidence only after validation. Use one focused branch,
+one intentional implementation commit series, a focused PR, complete PR
+review, and a clean merge under the standing Owner approval. Synchronize local
+`main` and `origin/main` after merge.
 
-- update `.ai/CURRENT_STATE.md` with exact Jira, branch, commit, PR, merge,
-  synchronized-main, validation, and decision-gate evidence;
-- update `docs/94_Product_Delivery_Master_Plan.md` and any genuinely affected
-  state/plan Markdown without rewriting unrelated history;
-- keep all unresolved MD-OD entries visible and record exactly which approved
-  bounds were used;
-- keep MESP-48, MESP-49, and MESP-50 open unless separately approved by their
-  owners;
-- add factual Jira implementation/closure evidence, review the complete
-  branch diff, commit and push a focused branch, publish a focused PR, merge
-  only when clean and unblocked, then synchronize local `main` and
-  `origin/main`;
-- do not execute M95-SL-03 or any later `TASK.md` session automatically.
-
-Stop after this one session and return the exact implementation, validation,
-scope, decision-gate, Jira, PR, merge, and final-main report to
-Hossam/ChatGPT for review.
-
-`STOP — return the completion report to Hossam/ChatGPT before executing the
-next root TASK.md.`
+At the end of this session, update `TASK.md` to the next exact bounded task,
+update `.ai/CURRENT_STATE.md` and every genuinely affected Markdown
+state/plan/decision file, update Jira, commit and push, merge only when clean,
+and stop. Never execute the next root `TASK.md` automatically in this chat.

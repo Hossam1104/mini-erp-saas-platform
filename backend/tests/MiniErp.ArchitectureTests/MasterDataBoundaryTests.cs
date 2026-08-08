@@ -20,6 +20,73 @@ public sealed class MasterDataBoundaryTests
     private static readonly Guid SessionA = Guid.Parse("44444444-4444-4444-4444-444444444444");
 
     [Fact]
+    public void Operation_catalog_covers_every_defined_operation()
+    {
+        foreach (var operation in Enum.GetValues<MasterDataOperation>())
+        {
+            Assert.True(
+                MasterDataOperationCatalog.TryGetRequiredCapability(operation, out _),
+                $"No server-owned capability mapping exists for {operation}.");
+        }
+    }
+
+    [Fact]
+    public void Operation_catalog_maps_each_operation_to_its_exact_capability()
+    {
+        var expected = new Dictionary<MasterDataOperation, MasterDataCapability>
+        {
+            [MasterDataOperation.View] = MasterDataCapability.View,
+            [MasterDataOperation.Create] = MasterDataCapability.Create,
+            [MasterDataOperation.Edit] = MasterDataCapability.Edit,
+            [MasterDataOperation.Activate] = MasterDataCapability.Activate,
+            [MasterDataOperation.Deactivate] = MasterDataCapability.Deactivate,
+            [MasterDataOperation.Approve] = MasterDataCapability.Approve,
+            [MasterDataOperation.Import] = MasterDataCapability.ImportMigrate,
+            [MasterDataOperation.ViewAuditHistory] = MasterDataCapability.ViewAuditHistory
+        };
+
+        foreach (var (operation, capability) in expected)
+        {
+            Assert.True(MasterDataOperationCatalog.TryGetRequiredCapability(operation, out var actual));
+            Assert.Equal(capability, actual);
+        }
+    }
+
+    [Fact]
+    public void Unknown_operation_fails_closed_before_policy_evaluation()
+    {
+        var policy = new CountingAllowingResourcePolicy();
+        var service = new MasterDataResourceAuthorizationService(
+            new GrantingCapabilityResolver(MasterDataCapability.View),
+            policy,
+            new DefaultMasterDataApprovalPolicy(),
+            new ExactTrustedScopePolicy());
+
+        var result = service.Authorize(
+            ResolveContext(),
+            Resource(TenantA, CompanyA, "product-001"),
+            (MasterDataOperation)999);
+
+        Assert.False(result.Allowed);
+        Assert.Equal("authorization_operation_unmapped", result.Code);
+        Assert.Equal(0, policy.EvaluationCount);
+    }
+
+    [Fact]
+    public void Caller_cannot_pair_an_operation_with_a_weaker_unrelated_capability()
+    {
+        var service = AllowingAuthorizationService(MasterDataCapability.View);
+
+        var result = service.Authorize(
+            ResolveContext(),
+            Resource(TenantA, CompanyA, "product-001"),
+            MasterDataOperation.Create);
+
+        Assert.False(result.Allowed);
+        Assert.Equal("permission_denied", result.Code);
+    }
+
+    [Fact]
     public void Master_data_and_business_parties_are_explicit_composition_seams()
     {
         var masterData = MasterDataModuleRegistration.Create();
@@ -253,13 +320,11 @@ public sealed class MasterDataBoundaryTests
         var foreignTenant = service.Authorize(
             context,
             Resource(TenantB, CompanyA, "same-code"),
-            MasterDataOperation.View,
-            MasterDataCapability.View);
+            MasterDataOperation.View);
         var siblingScope = service.Authorize(
             context,
             Resource(TenantA, CompanyB, "same-code"),
-            MasterDataOperation.View,
-            MasterDataCapability.View);
+            MasterDataOperation.View);
         var noScope = service.Authorize(
             context,
             new MasterDataResourceReference(
@@ -267,8 +332,7 @@ public sealed class MasterDataBoundaryTests
                 new TenantOwnership(TenantA),
                 stableId: Guid.NewGuid(),
                 businessCode: "same-code"),
-            MasterDataOperation.View,
-            MasterDataCapability.View);
+            MasterDataOperation.View);
 
         Assert.False(foreignTenant.Allowed);
         Assert.Equal("cross_tenant_target_denied", foreignTenant.Code);
@@ -287,13 +351,11 @@ public sealed class MasterDataBoundaryTests
         var view = service.Authorize(
             context,
             Resource(TenantA, CompanyA, "product-001"),
-            MasterDataOperation.View,
-            MasterDataCapability.View);
+            MasterDataOperation.View);
         var create = service.Authorize(
             context,
             Resource(TenantA, CompanyA, "product-001"),
-            MasterDataOperation.Create,
-            MasterDataCapability.Create);
+            MasterDataOperation.Create);
 
         Assert.True(view.Allowed);
         Assert.False(create.Allowed);
@@ -313,8 +375,7 @@ public sealed class MasterDataBoundaryTests
         var result = service.Authorize(
             context,
             Resource(TenantA, CompanyA, "product-001"),
-            MasterDataOperation.Create,
-            MasterDataCapability.Create);
+            MasterDataOperation.Create);
 
         Assert.False(result.Allowed);
         Assert.Equal("approval_policy_not_configured", result.Code);
@@ -336,8 +397,7 @@ public sealed class MasterDataBoundaryTests
         var result = service.Authorize(
             context,
             Resource(TenantA, CompanyA, "product-001"),
-            MasterDataOperation.Edit,
-            MasterDataCapability.Edit);
+            MasterDataOperation.Edit);
 
         Assert.False(result.Allowed);
         Assert.Equal("self_approval_denied", result.Code);
@@ -477,6 +537,17 @@ public sealed class MasterDataBoundaryTests
         public MasterDataPolicyDecision Evaluate(MasterDataPolicyInput input)
         {
             Assert.NotNull(input);
+            return MasterDataPolicyDecision.Allowed();
+        }
+    }
+
+    private sealed class CountingAllowingResourcePolicy : IMasterDataResourcePolicy
+    {
+        public int EvaluationCount { get; private set; }
+
+        public MasterDataPolicyDecision Evaluate(MasterDataPolicyInput input)
+        {
+            EvaluationCount++;
             return MasterDataPolicyDecision.Allowed();
         }
     }
