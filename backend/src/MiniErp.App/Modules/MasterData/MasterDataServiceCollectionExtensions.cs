@@ -21,7 +21,6 @@ public static class MasterDataServiceCollectionExtensions
         services.AddSingleton<IMasterDataApprovalPolicy, CategoryUomApprovalPolicy>();
         services.AddSingleton<MasterDataResourceAuthorizationService>();
         services.AddSingleton<MasterDataCategoryHierarchyPolicy>();
-        services.AddSingleton<MasterDataCategoryUomService>();
         return services;
     }
 }

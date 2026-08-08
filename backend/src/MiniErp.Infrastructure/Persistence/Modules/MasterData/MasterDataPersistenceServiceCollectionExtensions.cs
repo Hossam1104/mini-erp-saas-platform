@@ -25,6 +25,7 @@ public static class MasterDataPersistenceServiceCollectionExtensions
         configureOptions(optionsBuilder);
         services.AddSingleton<IMasterDataCatalogPersistence>(
             new MasterDataCatalogPersistence(optionsBuilder.Options));
+        services.AddSingleton<MasterDataCategoryUomService>();
         return services;
     }
 }
