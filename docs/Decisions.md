@@ -141,3 +141,28 @@ solely for the slice, and may not invent Product/Item, SKU/Barcode, tracking,
 business-availability, approval-catalogue, or Draft/Active behavior. ADR-002
 and the actual three-project application direction remain mandatory before
 backend structure changes. MESP-48, MESP-49, and MESP-50 remain open gates.
+
+## Superseding MESP-96 correction state - 8 August 2026
+
+The historical execution overlays above are retained for provenance. MESP-96
+is **Done**. After the original functional PR #30 merge at
+`87f150d95f583168a86aa56200916343c6404f7f`, a bounded correction was made in
+commit `85d3c48f20a97f8057e5960c305a3bcc0cb8d672` on
+`fix/mesp-96-optional-scope-hint`, published as PR #31, and merged at
+`4eeefe0d1a9af209cc3e31608812ec35ef283fd9`.
+
+The correction makes empty and same-Tenant tenant-only scope selections
+optional hints that preserve trusted server-derived Tenant/scope authority.
+Exact matching trusted scope remains allowed; foreign Tenant and
+sibling/foreign scope remain denied, and client input cannot broaden or
+replace server authority. The original PR #30 review thread was replied to
+and resolved. Focused merged-main validation passed 34/34 tests and the
+Release build passed with 0 warnings and 0 errors.
+
+No persistence, migration, database, endpoint, Product/Item, SKU/Barcode,
+tracking, availability, approval-catalogue, lifecycle, Retail POS, or
+Wafra-specific behavior was added. MD-OD-001 through MD-OD-011 remain open and
+unresolved; MESP-48, MESP-49, and MESP-50 remain open production/external
+gates. M95-SL-02 Category and UOM is the next exact session and has not been
+started. Jira correction evidence is comment `10657`; the exact final
+repository-state handoff is recorded in `.ai/CURRENT_STATE.md`.

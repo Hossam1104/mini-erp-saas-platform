@@ -1,6 +1,6 @@
 # Current State
 
-## Current authoritative position - 8 August 2026 (MESP-96 complete; M95-SL-02 not started)
+## Current authoritative position - 8 August 2026 (MESP-96 correction complete; M95-SL-02 not started)
 
 The historical state sections below are preserved for provenance. This overlay
 is authoritative for the live repository and Jira position.
@@ -10,26 +10,28 @@ is authoritative for the live repository and Jira position.
 | MESP-31 | **Done**; the approved BRD v0.3 baseline remains unchanged. |
 | PR #29 | **Merged** normally at actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; approved final PR head `c465d660e49a254f2fffbb95e0d07c5fcf17a193`. |
 | MESP-95 | **Done** in Jira; closure evidence comment `10654`; ChatGPT final review passed and M95-R01/M95-R02/M95-R03 are closed. |
-| MESP-96 | **Done** in Jira; completion evidence comment `10655`; PR #30 merged at actual merge commit `87f150d95f583168a86aa56200916343c6404f7f`. |
+| MESP-96 | **Done** in Jira; original completion evidence comment `10655`; post-merge correction evidence comment `10657`; the exact synchronized handoff main is recorded below. |
 | M95-SL-01 | **Complete, contract-only, and non-persistent**; no Master Data persistence exists. |
-| Source branch | `agent/mesp-96-m95-sl-01-contracts`; source changes are limited to Contracts/App seams and focused architecture tests. |
-| Implementation commit | `aa413f7c9dadea036f1f8ab6a4f47fb5ed83b0f0` (`feat(MESP-96): add master data boundary contracts`). |
-| MESP-96 Pull Request | **#30 merged** from `agent/mesp-96-m95-sl-01-contracts` to `main`; approved final PR head `e44bf32523c08c47a32e1ae9d80a2e5638851756`. |
+| Original functional merge | PR #30 merged at actual merge commit `87f150d95f583168a86aa56200916343c6404f7f`; original final synchronized main before correction `f3ba1a498ad0df0d39307e75ba33bc6789e9d35b`. |
+| Correction branch | `fix/mesp-96-optional-scope-hint`; source correction commit `85d3c48f20a97f8057e5960c305a3bcc0cb8d672` (`fix(MESP-96): accept optional scope hints`). |
+| Correction Pull Request | **#31 merged** to `main` at actual merge commit `4eeefe0d1a9af209cc3e31608812ec35ef283fd9`. |
 | Source boundary | Master Data/Catalog and Business Parties composition seams; server-derived Tenant context consumption; policy-neutral BusinessScope/scope-policy hook; capability, resource-policy, generic approval, stable-reference, and audit/evidence contracts. |
-| Validation | Release solution build: 0 warnings/0 errors. Focused `MasterDataBoundaryTests` + `ModuleBoundaryTests`: 32/32 passed. `git diff --check` and prohibited-persistence/unresolved-behavior scans passed. |
+| Correction semantics | Empty and same-Tenant tenant-only selections are optional hints that preserve trusted server-derived Tenant/scope authority; exact trusted scope remains allowed; foreign Tenant and sibling/foreign scope remain denied. |
+| Validation | Merged correction main: Release solution build 0 warnings/0 errors; focused `MasterDataBoundaryTests` + `ModuleBoundaryTests`: 34/34 passed; `git diff --check`, complete-diff review, prohibited-persistence/unresolved-behavior scans passed. |
 | Next exact session | M95-SL-02 Category and UOM; not started, no Jira child active, and first-data-bearing MD-OD/ADR gates remain required. |
 | Open decisions | MD-OD-001 through MD-OD-011 remain unresolved and preserved. |
 | Production/external gates | MESP-48, MESP-49, and MESP-50 remain open; no production or external-validation decision is invented. |
 | Source implementation | MESP-96 source implementation is now present only in the bounded non-persistent slice described above; no Product/Item, SKU/Barcode, tracking, availability, approval-catalogue, lifecycle, Wafra, Retail POS, migration, database, or endpoint behavior was added. |
-| Current branch | `main`, synchronized after the MESP-96 merge; the current closure-state commit is `dec248f957e790873d0f923aad438ca69738455d`. |
-| Main synchronization | Local `main` matches `origin/main` at `dec248f957e790873d0f923aad438ca69738455d`; the functional MESP-96 merge commit is `87f150d95f583168a86aa56200916343c6404f7f`; no open MESP-96 PR remains. |
+| Current branch | `main`; the post-merge correction is complete and the state/task reconciliation commit is the next handoff commit after PR #31. |
+| Main synchronization | Before the required state reconciliation, local `main` and `origin/main` matched `4eeefe0d1a9af209cc3e31608812ec35ef283fd9`; PR #31 is merged, the original PR #30 review thread is replied to and resolved, and no correction PR remains open. |
 
-M95-SL-01 must remain contract-only: no Master Data EF entities/tables,
-migration, or `MESP` database creation/access solely for this slice; no
-Product/Item, SKU/Barcode, tracking, business-availability, approval-catalogue,
-or Draft/Active decision; no Wafra-specific behavior, Retail POS scope, or
-M95-SL-02 work. ADR-002 and the actual repository architecture must be
-inspected before backend structure changes; preserve the approved
+M95-SL-01 remains contract-only: no Master Data EF entities/tables, migration,
+or `MESP` database creation/access solely for this slice; no Product/Item,
+SKU/Barcode, tracking, business-availability, approval-catalogue, or
+Draft/Active decision; no Wafra-specific behavior, Retail POS scope, or
+M95-SL-02 work was added by the correction. The correction only repaired
+optional target-hint handling in the existing resolver. ADR-002 and the actual
+repository architecture remain authoritative; preserve the approved
 `MiniErp.Api -> MiniErp.App -> MiniErp.Contracts` direction and do not invent a
 new production project or topology.
 

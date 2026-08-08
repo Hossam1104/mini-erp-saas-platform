@@ -917,3 +917,32 @@ The local SQL Server choice is recorded without a password. MESP-48,
 MESP-49, MESP-50, ADR-011, ADR-016, Saudi legal/tax validation, and every
 affected MD-OD gate remain visible. The repository continues to contain no
 Master Data source implementation, migration, database, or credential.
+
+## 23. MESP-96 post-merge correction overlay - 8 August 2026
+
+MESP-96/M95-SL-01 is complete and remains contract-only/non-persistent. The
+post-merge correction was committed as
+`85d3c48f20a97f8057e5960c305a3bcc0cb8d672` on
+`fix/mesp-96-optional-scope-hint`, published as PR #31, and merged at
+`4eeefe0d1a9af209cc3e31608812ec35ef283fd9`. It repairs
+`MasterDataTenantContextResolver.Resolve` so that no selection, an empty
+selection, and a same-Tenant tenant-only hint preserve trusted server-derived
+Tenant/scope authority; exact trusted scope remains compatible, while foreign
+Tenant and sibling/foreign scope remain denied. Client selection remains an
+optional hint and cannot create broader or replacement authority.
+
+The correction added no persistence, migration, database, endpoint,
+Product/Item, SKU/Barcode, tracking, availability, approval-catalogue,
+Draft/Active lifecycle, Retail POS, or Wafra-specific behavior. MESP-96 remains
+**Done** in Jira; correction evidence is comment `10657`. Merged-main
+validation passed with 0 Release build warnings/errors and 34/34 focused
+boundary tests, and the original PR #30 review thread was replied to and
+resolved.
+
+M95-SL-02 Category and UOM is the next exact root `TASK.md` session and has
+not started. Before any data-bearing implementation, the session must inspect
+and apply the approved handling for MD-OD-001 business availability scope,
+MD-OD-008 Draft-before-Active lifecycle, MD-OD-005 approval catalogue/slice
+boundary, MD-OD-002 Category hierarchy depth, and MD-OD-006 UOM
+precision/rounding. No open decision may be silently invented. MESP-48,
+MESP-49, and MESP-50 remain open gates.

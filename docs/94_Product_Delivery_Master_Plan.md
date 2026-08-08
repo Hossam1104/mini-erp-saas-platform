@@ -2175,3 +2175,26 @@ is comment `10655`, and the exact branch/PR/merge/Jira evidence is recorded in
 `.ai/CURRENT_STATE.md`. M95-SL-02 Category and UOM remains the next exact
 session and is gated by the affected Owner decisions and ADR timing; it was
 not started automatically.
+
+### MESP-96 post-merge correction overlay - 8 August 2026
+
+The historical MESP-96 completion overlay above is preserved. A bounded
+post-merge correction repaired the optional target-hint semantics in
+`MasterDataTenantContextResolver.Resolve`: no selection, an empty selection,
+and a same-Tenant tenant-only hint preserve the trusted server-derived
+Tenant/scope authority; an exact trusted scope remains compatible; foreign
+Tenant and sibling/foreign scope remain denied. Client input does not create
+broader or replacement authority.
+
+The correction was committed as `85d3c48f20a97f8057e5960c305a3bcc0cb8d672` on
+`fix/mesp-96-optional-scope-hint`, published as PR #31, and merged to `main` at
+`4eeefe0d1a9af209cc3e31608812ec35ef283fd9`. Merged-main validation passed with
+0 Release build warnings/errors and 34/34 focused boundary tests. The
+correction added no persistence, migration, database, endpoint, Product/Item,
+SKU/Barcode, tracking, availability, approval-catalogue, lifecycle, Retail
+POS, or Wafra-specific behavior. MESP-96 remains **Done**; Jira correction
+evidence is comment `10657`; the exact final synchronized handoff main is
+recorded in `.ai/CURRENT_STATE.md`. The original PR #30 review thread was
+replied to and resolved. M95-SL-02 Category and UOM is the next exact session
+and was not started; MD-OD-001 through MD-OD-011 and MESP-48/MESP-49/MESP-50
+remain open.
