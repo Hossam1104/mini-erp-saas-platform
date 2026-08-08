@@ -1,5 +1,18 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
+> **Current ADR-002 reconciliation overlay — 9 August 2026.** The repository's
+> approved Release 1 production topology is four projects: `MiniErp.Api`,
+> `MiniErp.App`, `MiniErp.Contracts`, and the existing
+> `MiniErp.Infrastructure`. ADR-002 is published at
+> `docs/ADR-002_Backend_Project_Structure_and_Module_Enforcement.md`.
+> The permitted project direction is `MiniErp.Api -> MiniErp.Infrastructure ->
+> MiniErp.App -> MiniErp.Contracts`, with Api also directly consuming the
+> existing App/Contracts host seams. Infrastructure does not depend on Api;
+> Contracts does not depend on App/Infrastructure/Api. ADR-006 remains the
+> authority for shared SQL Server, Tenant ownership, module-owned schemas,
+> migrations, and production/provider gates. No Category/UOM persistence is
+> created by this reconciliation.
+
 | Field | Value |
 |---|---|
 | Document | Technology Architecture Baseline |
@@ -216,6 +229,10 @@ The backend should begin with a small project count:
           Api/
           Modules/
           Events/
+        MiniErp.Infrastructure/
+          Persistence/
+          Modules/
+            <module-owned contexts, mappings, schemas, migrations>
       Directory.Build.props
       Directory.Packages.props
 
@@ -227,13 +244,22 @@ The backend should begin with a small project count:
 
 Practical rules for one developer:
 
-- Start with three production projects: Api, App, and Contracts.
+- Start with the four existing production projects: Api, App, Contracts, and
+  Infrastructure. Api is the host/composition root; Infrastructure is the
+  provider/persistence implementation project.
+- Enforce the project direction `Api -> Infrastructure -> App -> Contracts`;
+  Api may also reference App and Contracts for host composition. Contracts has
+  no production-project dependency, App has no EF Core or Infrastructure
+  dependency, and Infrastructure never references Api.
 - Keep module internals internal to MiniErp.App and expose only explicit contracts.
 - Do not create one assembly per module initially. Split a module into its own project only when architecture tests and internal access controls are insufficient.
 - Keep endpoint definitions thin. They authenticate, validate transport data, call an application use case, and map its result.
 - Keep business invariants in domain code, not controllers, EF configurations, Angular code, or database triggers.
 - Keep provider-specific integrations behind interfaces implemented in Infrastructure.
-- Use one operational EF Core context initially to simplify migrations and atomic posting, while repository and configuration namespaces enforce module ownership. The DbContext must not be exposed to feature endpoints or other modules.
+- Keep provider-specific EF Core implementation in Infrastructure. Each
+  business module owns its context/model, mappings, schema namespace, and
+  migrations inside the shared Infrastructure project; the DbContext must not
+  be exposed to feature endpoints or another module. See ADR-002 and ADR-006.
 - Use explicit command/query use cases. Do not introduce a mediator or CQRS framework unless an ADR shows that it reduces, rather than adds, complexity.
 
 # 6. Angular application structure
@@ -690,7 +716,7 @@ The following ADRs must exist in docs/Decisions.md or linked files before the af
 | ADR | Decision | Approval or dependency |
 |---|---|---|
 | ADR-001 | Modular Monolith, module dependency rules, and source-ownership reconciliation | Already aligned to PRD D-001; Hossam and affected domain owners |
-| ADR-002 | Backend project structure and module enforcement | Hossam |
+| ADR-002 | Backend project structure and module enforcement | Hossam; published in `ADR-002_Backend_Project_Structure_and_Module_Enforcement.md` before MESP-99 |
 | ADR-003 | Shared-database tenant isolation controls | Hossam plus Security owner |
 | ADR-004 | Identity cookie, antiforgery, session, and MFA policy | Hossam plus Security owner |
 | ADR-005 | Policy and resource authorization model | Security owner and business control owners |

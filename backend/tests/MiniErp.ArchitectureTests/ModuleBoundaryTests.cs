@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -78,6 +79,25 @@ public sealed class ModuleBoundaryTests
         Assert.DoesNotContain(
             InfrastructureAssembly.GetReferencedAssemblies(),
             reference => string.Equals(reference.Name, ApiAssembly.GetName().Name, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Project_reference_direction_matches_adr_002()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+
+        Assert.Equal(
+            ["MiniErp.Contracts"],
+            ProjectReferences(repositoryRoot, "MiniErp.App"));
+        Assert.Equal(
+            ["MiniErp.App", "MiniErp.Contracts"],
+            ProjectReferences(repositoryRoot, "MiniErp.Infrastructure"));
+        Assert.Equal(
+            ["MiniErp.App", "MiniErp.Contracts", "MiniErp.Infrastructure"],
+            ProjectReferences(repositoryRoot, "MiniErp.Api"));
+        Assert.Equal(
+            ["MiniErp.Api", "MiniErp.App", "MiniErp.Contracts", "MiniErp.Infrastructure"],
+            ProjectReferences(repositoryRoot, "MiniErp.ArchitectureTests", testsProject: true));
     }
 
     [Fact]
@@ -411,6 +431,23 @@ public sealed class ModuleBoundaryTests
         }
 
         throw new DirectoryNotFoundException("Repository root could not be located for architecture source checks.");
+    }
+
+    private static string[] ProjectReferences(
+        string repositoryRoot,
+        string project,
+        bool testsProject = false)
+    {
+        var projectPath = testsProject
+            ? Path.Combine(repositoryRoot, "backend", "tests", project, project + ".csproj")
+            : Path.Combine(repositoryRoot, "backend", "src", project, project + ".csproj");
+        var document = XDocument.Load(projectPath);
+        return document
+            .Descendants("ProjectReference")
+            .Select(reference => Path.GetFileNameWithoutExtension(
+                (string?)reference.Attribute("Include") ?? string.Empty))
+            .OrderBy(reference => reference, StringComparer.Ordinal)
+            .ToArray();
     }
 
     [Fact]

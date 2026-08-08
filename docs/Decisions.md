@@ -2,7 +2,30 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
-## Current execution overlay - 8 August 2026
+## Current execution overlay - 9 August 2026 (MESP-100 readiness correction)
+
+MESP-100 is the single active readiness-correction item for M95-SL-02. The
+reviewed starting baseline is `c948a4fba8cf1ac9620474b42d56ce95f9effd52`;
+MESP-96/M95-SL-01 is Done, MESP-99 remains To Do, and no Category/UOM
+persistence exists. This overlay supersedes the older 8 August execution
+wording below while preserving it as historical provenance.
+
+The actual production project topology is four projects:
+`MiniErp.Api`, `MiniErp.App`, `MiniErp.Contracts`, and the existing
+`MiniErp.Infrastructure`. ADR-002 is now published at
+`docs/ADR-002_Backend_Project_Structure_and_Module_Enforcement.md` and defines
+the direct host composition path `MiniErp.Api -> MiniErp.Infrastructure`, the
+provider direction `MiniErp.Infrastructure -> MiniErp.App ->
+MiniErp.Contracts`, and the no-cycle/no-cross-module-persistence rules.
+ADR-006 remains authoritative for shared SQL Server, Tenant ownership,
+module-owned contexts/schemas/migrations, and production/provider gates.
+
+MESP-100 records five Category/UOM-only Owner bounds for MESP-99: MD-OD-001,
+MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. They do not resolve or
+generalize any later Product, Supplier, Business Customer, Price List, Tax,
+Currency, Exchange Rate, tracking, or Product/Item decision.
+
+## Historical execution overlay - 8 August 2026 (preserved)
 
 MESP-31 is **Done** and PR #29 closed MESP-95 at approved head
 `c465d660e49a254f2fffbb95e0d07c5fcf17a193`, merged normally at
@@ -28,7 +51,7 @@ persistence exists.
 | ADR | Title | Status | Required Timing | Related Jira | Detailed Source |
 |---|---|---|---|---|---|
 | ADR-001 | Modular Monolith, module dependency rules, and source-ownership reconciliation | Approved Baseline | Ownership reconciliation completed in owning BRDs; detailed enforcement before module implementation | MESP-22; MESP-27 to MESP-40 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
-| ADR-002 | Backend project structure and module enforcement | Required before module implementation | Before the first backend module is implemented | MESP-27 and affected domain BRD | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
+| ADR-002 | Backend project structure and module enforcement | **Approved for M95-SL-02 module implementation; production/provider validation gated** | Published before the first data-bearing Master Data module | MESP-100; MESP-99; MESP-48; MESP-50 | [ADR-002](ADR-002_Backend_Project_Structure_and_Module_Enforcement.md) |
 | ADR-003 | Shared-database tenant isolation controls | Approved Baseline | Detailed controls before tenant-scoped persistence implementation; validate before production | MESP-29; MESP-38; MESP-50 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
 | ADR-004 | Identity cookie, server session, antiforgery, context resolution and authentication-assurance policy | Accepted for Foundation Release 1 implementation | Implemented for the MESP-89 host seam; production providers remain separately gated | MESP-28; MESP-38; MESP-55; MESP-89 | [ADR-004](ADR-004_Identity_Cookie_Server_Session_Antiforgery_Context_Resolution.md) |
 | ADR-005 | Policy and resource authorization model | Approved Baseline | Resource and permission details before affected module implementation | MESP-28; MESP-42; MESP-46; MESP-55 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |

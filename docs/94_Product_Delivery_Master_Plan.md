@@ -1,5 +1,16 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
+> **Current MESP-100 readiness overlay — 9 August 2026.** MESP-100 is the
+> single active bounded readiness-correction item between completed MESP-96 /
+> M95-SL-01 and MESP-99 / M95-SL-02. MESP-99 remains To Do until this session
+> is fully validated, merged, and activated. The actual production topology is
+> four projects (`MiniErp.Api`, `MiniErp.App`, `MiniErp.Contracts`, and the
+> existing `MiniErp.Infrastructure`); ADR-002 now defines the direct
+> Api-to-Infrastructure composition route and the Infrastructure-to-App-to-
+> Contracts provider direction. The five Category/UOM-only Owner bounds are
+> MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. No Category/UOM
+> persistence or M95-SL-02 business implementation is part of MESP-100.
+
 > **Current execution overlay - 8 August 2026 (supersedes older progress claims below).** MESP-31, MESP-95, and MESP-96 are **Done** at their bounded scope. MESP-96/M95-SL-01 is contract-only/non-persistent and PR #30 merged at actual commit `87f150d95f583168a86aa56200916343c6404f7f`; Jira completion evidence is comment `10655`. M95-SL-02 Category and UOM is the next exact session and is not started. MD-OD-001 through MD-OD-011 remain unresolved, MESP-48/MESP-49/MESP-50 remain open gates, and no Master Data persistence exists.
 >
 > Hossam standing Owner approval covers normal BRD/specification/readiness, merge/closure, and next-session activation within approved scope and architecture. A fresh Codex/Luna chat executes exactly one root `TASK.md` session, validates, updates affected state/Jira, commits/pushes, merges only when clean, then stops for ChatGPT review. Stop only for a real security, Tenant-isolation, accounting/data-integrity, destructive migration/data-loss, legal/external-validation, credential/infrastructure, unresolved-decision, or material scope/architecture blocker. Independent Opus review is due after every five sessions or earlier at a critical checkpoint.
@@ -11,15 +22,15 @@
 | Owner | Hossam |
 | Repository | `Hossam1104/mini-erp-saas-platform` |
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
-| Last updated | 8 August 2026 |
+| Last updated | 9 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-96 / M95-SL-01 — complete contract-only, non-persistent shared boundary and Tenant/scope contracts; no Master Data persistence.` |
-| Current implementation item | `MESP-96 is complete. MESP-95 is Done; M95-SL-02 Category and UOM is the next exact session and no later slice is active.` |
-| Merged-main baseline | `87f150d95f583168a86aa56200916343c6404f7f` (PR #30 merge; includes PR #29 baseline) |
+| Current activity | `MESP-100 / M95-SL-02 readiness correction — operation/capability authorization and backend topology only; no Category/UOM persistence.` |
+| Current implementation item | `MESP-100 is In Progress. MESP-99 remains To Do until this readiness correction is fully validated, merged, and activated.` |
+| Merged-main baseline | `c948a4fba8cf1ac9620474b42d56ce95f9effd52` (verified starting baseline for MESP-100) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; PR #30 merged. No later slice PR is open.` |
-| Current review checkpoint | `MESP-31, MESP-95, and MESP-96 are complete at their bounded scope. M95-SL-02 is not started; MD-OD-001 through MD-OD-011 remain unresolved and MESP-48/MESP-49/MESP-50 remain open gates.` |
+| Open Pull Request | `MESP-100 readiness branch is being validated; no PR has been published yet.` |
+| Current review checkpoint | `MESP-100 is the single active bounded session. MESP-96 is Done; MESP-99 is not started; MD-OD-001 through MD-OD-011 remain preserved except for the five Category/UOM-only bounds recorded for MESP-99; MESP-48/MESP-49/MESP-50 remain open gates.` |
 
 ---
 
