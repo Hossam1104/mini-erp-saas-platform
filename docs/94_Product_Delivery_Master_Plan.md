@@ -10,8 +10,8 @@
 | Last updated | 7 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-93 Done; MESP-94 is In Progress on branch fix/MESP-94-foundation-validation-evidence` |
-| Current implementation item | `MESP-94 — Correct Foundation safety-catalogue classifications and validation-evidence accuracy — see .ai/CURRENT_STATE.md for the exact live position` |
+| Current activity | `MESP-94 Done; Foundation completion checkpoint performed; MESP-31 is In Progress (BRD drafting only) on branch docs/MESP-31-master-data-product-catalog-brd` |
+| Current implementation item | `None — MESP-31 is a documentation-only BRD-drafting activity, not an implementation item; see .ai/CURRENT_STATE.md for the exact live position` |
 | Merged-main baseline | `9f333c9734c767673e43a30d6b57c05793e1fb69` (PR #25 merge; MESP-93 post-merge Markdown reconciliation) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
 | Current review checkpoint | `MESP-93 PR #24 merged to main at 005c796629341ab9becfbc6d1abe2ae34b6a7332 after focused ChatGPT security re-review verdict APPROVED FOR MERGE at reviewed head 83b0c0ed547dcc1b41c873ed087ab4e62d49c50e; no known MESP-93 code finding remains open. PR #23 was closed as superseded (not merged). PR #25 (docs) merged at 9f333c9734c767673e43a30d6b57c05793e1fb69. MESP-94 is now In Progress — see .ai/CURRENT_STATE.md, which is the canonical live-state document, for its current position.` |
@@ -283,7 +283,7 @@ Define the business meaning of each domain before technical implementation. Each
 
 ### Core ERP domains
 
-- [ ] Master Data and Catalog BRD.
+- [ ] 🔄 Master Data and Catalog BRD — MESP-31 In Progress; v0.1 draft produced at `docs/16_Master_Data_and_Product_Catalog_BRD.md`, pending Hossam's business-owner review. Not yet Approved.
 - [ ] Business Parties BRD.
 - [ ] Procurement BRD.
 - [ ] Inventory BRD.
@@ -321,10 +321,12 @@ Define the business meaning of each domain before technical implementation. Each
 - [ ] No technical behavior is invented to fill a business gap.
 
 MESP-28, MESP-29 and MESP-30 are the approved BRD baselines for the current
-foundation slice. MESP-31 through MESP-40 remain To Do and are not implied to be
-approved by the MESP-28 approval; each requires its own controlled BRD decision.
+foundation slice. MESP-31 is now In Progress (BRD drafting only, v0.1 draft
+produced, pending Hossam's review — see `.ai/CURRENT_STATE.md`); MESP-32
+through MESP-40 remain To Do and are not implied to be approved by any prior
+approval; each requires its own controlled BRD decision.
 
-**Phase 2 status: IN PROGRESS — MESP-28 v0.3, MESP-29 v0.2, and MESP-30 v0.2 are approved and Done; MESP-5 remains In Progress. MESP-31 through MESP-40 remain To Do and require separate approval. MESP-86 v0.4 is approved and Done; no remaining BRD is implicitly approved by that decision.**
+**Phase 2 status: IN PROGRESS — MESP-28 v0.3, MESP-29 v0.2, and MESP-30 v0.2 are approved and Done; MESP-5 remains In Progress. MESP-31 is In Progress with a v0.1 draft BRD pending Hossam's review; MESP-32 through MESP-40 remain To Do and require separate approval. MESP-86 v0.4 is approved and Done; no remaining BRD is implicitly approved by that decision.**
 
 ---
 
@@ -2002,8 +2004,17 @@ Foundation completion alone — permitted the Task to move to In Progress
 (`docs/13_Multi_Tenancy_BRD.md` SC-001). No equivalent authorization is
 recorded for MESP-31, and Jira MESP-31 itself still carries the standing
 instruction not to move to In Progress until its BRD entry criteria are
-approved. `MESP-31 BRD ENTRY: NOT YET ELIGIBLE FOR AUTOMATIC START — OWNER
-APPROVAL REQUIRED.` MESP-31 remains **To Do**; step 10 (Master Data
-implementation blocked until its BRD and implementation gates are approved)
-continues to apply regardless of when BRD drafting starts. `.ai/CURRENT_STATE.md`
+approved. This step-9 evaluation and its "NOT YET ELIGIBLE" conclusion are
+the preserved historical record as of the Foundation completion checkpoint;
+**superseded 8 August 2026:** Hossam recorded the required distinct
+BRD-entry owner authorization, explicitly scoping MESP-31 to Products,
+Product Categories, Units of Measure, Suppliers, Business Customers, Price
+Lists, Taxes, Payment Terms, Currencies and Exchange Rates, and separately
+pre-authorized the later Master Data implementation phase (not yet
+executable). MESP-31 moved to **In Progress** on branch
+`docs/MESP-31-master-data-product-catalog-brd`; a v0.1 draft BRD was produced
+at `docs/16_Master_Data_and_Product_Catalog_BRD.md` and is pending Hossam's
+business-owner review — it is not Approved. Step 10 (Master Data
+implementation blocked until its BRD and a dedicated implementation Jira
+item are approved) continues to apply unchanged. `.ai/CURRENT_STATE.md`
 is the canonical live-state document for the exact current position.

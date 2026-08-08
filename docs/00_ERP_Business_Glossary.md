@@ -537,6 +537,24 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 # 3. Business Parties
 
+## Business Party
+
+**Approved definition:** The umbrella business concept covering Supplier and Business Customer: an external counterparty recorded as master data inside a Tenant.
+
+**Business meaning:** Names what a Supplier and a Business Customer share — external identity, contact/address structure, and duplicate-detection treatment — without merging their distinct approved meanings or lifecycles.
+
+**What it is not:** Not a new record type. Not a system User under any circumstance. Not a Tenant. Does not replace or narrow the existing Supplier or Business Customer definitions below.
+
+**Owning module:** Master Data and Catalog.
+
+**Related entities or documents:** Supplier, Business Customer, Supplier Contact, Customer Contact.
+
+**Example:** A duplicate-detection scan that checks a new counterparty's tax registration number against both existing Suppliers and existing Business Customers is a Business-Party-level check.
+
+**Approval status:** Draft for BRD Validation
+
+**Source:** New entry proposed by the Master Data and Product Catalog BRD (MESP-31) to name a concept the glossary previously left implicit.
+
 ## Supplier
 
 **Approved definition:** An external business party from whom a Company procures goods or services, recorded as master data inside a Tenant.
@@ -829,6 +847,24 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Source:** PRD v1.2 — sales pricing requirements. Structure and precedence require confirmation in MESP-35.
 
+## Tax
+
+**Approved definition:** A configured, effective-dated rate or rule applied to a transaction.
+
+**Business meaning:** The reusable master-data fact that a rate exists, what it is, and from when — independent of which country-specific treatment ultimately selects it.
+
+**What it is not:** Not Tax Category, which is the Saudi-Country-Pack-owned classification that determines *which* tax treatment applies to a given Item or transaction. Not a hard-coded value inside transaction logic.
+
+**Owning module:** Master Data and Catalog.
+
+**Related entities or documents:** Tax Category, Product, Sales Invoice, Purchase Invoice.
+
+**Example:** A 15% VAT rate effective from a stated date is a Tax master record; whether a specific Item is standard-rated or zero-rated is Tax Category.
+
+**Approval status:** Draft for BRD Validation
+
+**Source:** New entry proposed by the Master Data and Product Catalog BRD (MESP-31); PRD v1.2 FIN-007, KSA-002 — tax rates are configured and effective-dated, never hard-coded into transaction logic.
+
 ## Tax Category
 
 **Approved definition:** The classification that determines the tax treatment applied to an Item or transaction under the applicable Country Pack.
@@ -846,6 +882,24 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 **Approval status:** Requires Business Decision
 
 **Source:** PRD v1.2 — Saudi tax requirements. Detailed treatment and e-invoicing coupling are open in **MESP-49**.
+
+## Active / Inactive
+
+**Approved definition:** The two ordinary lifecycle states of a master-data record. Active means the record may be selected for a new transaction, price, or assignment; Inactive means it may not, but remains visible for historical reference and reporting.
+
+**Business meaning:** Lets a Tenant retire a Product, Supplier, Business Customer, Price List, Tax, Payment Term, Currency, or Exchange Rate from future use without deleting it or disturbing any transaction that already referenced it.
+
+**What it is not:** Not deletion. Not a statement that the record's history is invalid. Not a domain-specific status such as Tenant lifecycle status (see `docs/13_Multi_Tenancy_BRD.md`) or Organization lifecycle status (see `docs/14_Organization_and_Company_Structure_BRD.md`), which remain their own approved vocabularies.
+
+**Owning module:** Master Data and Catalog (this is the first BRD to define the term generically; other modules may reuse it without redefining it).
+
+**Related entities or documents:** Product, Category, Unit of Measure, Supplier, Business Customer, Price List, Tax, Payment Term, Currency, Exchange Rate.
+
+**Example:** A discontinued Product is set Inactive; it can no longer be added to a new Purchase Order, but every historical Purchase Order that used it is unchanged.
+
+**Approval status:** Draft for BRD Validation
+
+**Source:** New entry proposed by the Master Data and Product Catalog BRD (MESP-31); PRD v1.2 PLT-003 — authorized users can create, review, activate, deactivate, import, export, and search shared business master data.
 
 ---
 
@@ -2088,6 +2142,24 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 **Approval status:** Requires Business Decision
 
 **Source:** PRD v1.2 — reconciliation requirement. Reconciliation ownership and report catalogue are open in **MESP-53 — Confirm report catalogue and reconciliation ownership**.
+
+## Currency
+
+**Approved definition:** A recognized unit of monetary value maintained as Tenant master data.
+
+**Business meaning:** The reusable master-data fact that a currency exists and is available for use; distinct from the *usage role* a currency plays on a given document or ledger.
+
+**What it is not:** Not Base Currency, Transaction Currency, or Reporting Currency, which are the specific usage roles the glossary defines below for a given document or ledger context. Not limited to SAR — Release 1 provides genuine multi-currency capability.
+
+**Owning module:** Master Data and Catalog.
+
+**Related entities or documents:** Base Currency, Transaction Currency, Reporting Currency, Exchange Rate, Price List.
+
+**Example:** USD, EUR, and SAR are each a Currency master record; a specific Tenant document then uses one of them as its Transaction Currency.
+
+**Approval status:** Draft for BRD Validation
+
+**Source:** New entry proposed by the Master Data and Product Catalog BRD (MESP-31); PRD v1.2 FIN-010 — transactions retain document, functional, and reporting currency amounts.
 
 ## Base Currency
 

@@ -29,13 +29,20 @@ MESP-92 is Done, as are MESP-89, MESP-63, MESP-61 and MESP-64.
 
 A Foundation completion checkpoint following MESP-94 confirmed MESP-92,
 MESP-93 and MESP-94 Done, and MESP-48/MESP-50 as intentional open production
-gates that do not block MESP-31 BRD entry. MESP-31 remains **To Do** and is
-not started: Foundation completion alone does not satisfy its BRD entry
-criteria, and a distinct owner approval is required before it may move to
-In Progress — see `.ai/CURRENT_STATE.md`'s "MESP-31 BRD entry eligibility"
-section for the exact evidence and precedent. No Master Data implementation
-has begun, and none may start automatically even once MESP-31 is approved to
-enter BRD drafting.
+gates that do not block MESP-31 BRD entry. Hossam recorded the required
+distinct owner authorization on 8 August 2026, and MESP-31 moved to
+**In Progress** on branch `docs/MESP-31-master-data-product-catalog-brd`.
+A v0.1 draft of `docs/16_Master_Data_and_Product_Catalog_BRD.md` (Products,
+Product Categories, Units of Measure, Suppliers, Business Customers, Price
+Lists, Taxes, Payment Terms, Currencies, Exchange Rates) has been produced
+and is pending Hossam's business-owner review; it is not Approved. Hossam
+also pre-authorized the later Master Data implementation phase, but that
+authorization is not yet executable: implementation cannot start until this
+BRD is reviewed and explicitly approved as a business baseline and a
+dedicated implementation Jira item, separate from MESP-31, is identified and
+activated. No Master Data implementation has begun, and none may start
+automatically merely because this draft exists — see
+`.ai/CURRENT_STATE.md` for the exact live position.
 
 The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`; older filenames name
 the same unchanged file. Start from `.ai/CURRENT_STATE.md` for the verified

@@ -1,12 +1,15 @@
 # Current State
 
-## Start here — verified position on 8 August 2026 (MESP-94 Done; PR #26 merged; Foundation completion checkpoint performed)
+## Start here — verified position on 8 August 2026 (MESP-31 In Progress; BRD v0.1 drafted, pending Hossam's review)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
-| Current branch | `main` |
+| Current branch | `docs/MESP-31-master-data-product-catalog-brd`, created from verified `main` at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54` (PR #27 merge) |
+| MESP-31 | **In Progress.** Hossam recorded the required distinct BRD-entry owner authorization on 8 August 2026 (see "MESP-31 BRD entry eligibility" below, now resolved) and also pre-authorized the later Master Data implementation phase. A v0.1 draft of `docs/16_Master_Data_and_Product_Catalog_BRD.md` exists, covering Products, Product Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies and Exchange Rates. It is **pending Hossam's business-owner review and is not Approved.** No Master Data implementation has begun; the pre-authorized implementation phase remains gated on this BRD's approval and a dedicated, separate implementation Jira item. |
+| No live Jira tool | This session has no Jira API/MCP integration. The Owner-authorization and status facts above are recorded here and in the BRD itself (`docs/16_Master_Data_and_Product_Catalog_BRD.md` §41/§44); they should be mirrored into the actual Jira MESP-31 ticket by Hossam or a session with Jira access. |
+| Prior verified `main` | `main` (before this branch) |
 | PR #26 | **Merged** to `main` — approved final head `2c7ed3dec4662672bb78967ceb70db7ed73eb7d4`, ChatGPT final merge review **APPROVED FOR MERGE** (0 Critical, 0 High, 0 Medium blockers); actual GitHub merge commit `06d837c958c1cb7977dc121e3aaea4e7278944fd` |
 | PR #25 | Merged to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` — MESP-93 post-merge Markdown reconciliation |
 | MESP-94 | **Done** — closes H-2, H-3, M-3, M-6, M-10, M-12, M-13, M-14, M-15, L-2, L-3, L-5 (original round), R1-R7 (focused review round) and F1-F2 (concurrency-lock focused review round); see `docs/96_Foundation_Release1_Safety_Validation.md` for full evidence |
@@ -14,9 +17,9 @@ A new agent can begin from this section with no prior chat history.
 | PR #23 | Closed as superseded (not merged) — its docs-only MESP-92 reconciliation content was already carried onto `main` through PR #24; see the PR #23 closing comment for file-by-file evidence |
 | MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
 | MESP-91 | Done |
-| Active Jira item | **None** — no implementation item is currently In Progress; the Foundation correction sequence (MESP-92, MESP-93, MESP-94) is complete |
+| Active Jira item | **MESP-31** (BRD drafting only) — the Foundation correction sequence (MESP-92, MESP-93, MESP-94) is complete; no implementation Jira item is active and none may start before MESP-31's BRD is approved and a dedicated implementation item is identified |
 | Foundation completion checkpoint | Performed 8 August 2026: MESP-92/93/94 Done; MESP-48/MESP-50 remain intentionally open production gates, not treated as blockers to MESP-31 BRD entry; no remaining Foundation correction ticket blocks BRD entry |
-| MESP-31 (Master Data BRD) | **To Do** — not started; no Master Data implementation has begun. Foundation completion alone does not satisfy BRD entry: the MESP-29 precedent (`docs/13_Multi_Tenancy_BRD.md` SC-001) shows a distinct, explicit founder/owner authorization is required beyond Foundation completion before moving a BRD Task to In Progress. No such authorization is recorded for MESP-31 in this repository. BRD entry therefore remains pending that explicit owner approval — see "MESP-31 BRD entry eligibility" below |
+| MESP-31 (Master Data BRD) | **In Progress** — see the "Start here" table above and "MESP-31 BRD entry eligibility" below (now resolved). No Master Data implementation has begun. |
 | MESP-48 / MESP-50 | To Do — open production gates, preserved, intentionally not blocking BRD entry |
 | Sprint | None active |
 | Parallel implementation | None |
@@ -27,9 +30,9 @@ A new agent can begin from this section with no prior chat history.
 
 After PR #26 merged to `main` at `06d837c958c1cb7977dc121e3aaea4e7278944fd` (approved head `2c7ed3d` confirmed an ancestor, no divergence, no semantic merge edits), bounded focused verification was re-run directly on merged `main` rather than the full expensive suite (already run complete pre-merge at `037491cee8650bfd38c4fad4d58e3baa86a3e2a4` and targeted at final head `2c7ed3d`): `SafetyCatalogueValidationTests` + `SqlServerSafetyTests` **25/25** passed, `scripts/verify-foundation-validation-lock.ps1` **5/5** passed, `git diff --check` (working tree) and `git diff --check origin/main...HEAD` both passed, and 0 `MiniErpFoundation_*` databases remained after the run.
 
-### MESP-31 BRD entry eligibility
+### MESP-31 BRD entry eligibility — RESOLVED 8 August 2026
 
-`MESP-31 BRD ENTRY: NOT YET ELIGIBLE FOR AUTOMATIC START — OWNER APPROVAL REQUIRED.` The Foundation correction sequence blocking BRD entry (MESP-92, MESP-93, MESP-94) is complete, and MESP-48/MESP-50 are intentionally not entry blockers. `docs/94_Product_Delivery_Master_Plan.md`'s "Next authorized sequence" step 9 requires the MESP-31 BRD's entry conditions to be "reconfirmed" before starting, and the only recorded precedent for that reconfirmation (MESP-29, see `docs/13_Multi_Tenancy_BRD.md` SC-001) was a distinct founder/owner authorization statement, not an automatic consequence of Foundation completion. No such authorization is recorded for MESP-31. Jira MESP-31 itself carries the standing instruction not to move the Task to In Progress until its BRD entry criteria are approved. Do not move MESP-31 to In Progress and do not start Master Data implementation until that explicit owner approval is recorded.
+`MESP-31 BRD ENTRY: ELIGIBLE — OWNER APPROVAL RECORDED.` The Foundation correction sequence blocking BRD entry (MESP-92, MESP-93, MESP-94) is complete, and MESP-48/MESP-50 are intentionally not entry blockers. `docs/94_Product_Delivery_Master_Plan.md`'s "Next authorized sequence" step 9 required the MESP-31 BRD's entry conditions to be "reconfirmed" before starting; the precedent for that reconfirmation (MESP-29, see `docs/13_Multi_Tenancy_BRD.md` SC-001) was a distinct founder/owner authorization statement, not an automatic consequence of Foundation completion. Hossam recorded that distinct authorization on 8 August 2026, explicitly scoping MESP-31 to cover Products, Product Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies, and Exchange Rates, and separately pre-authorized the later Master Data implementation phase (not yet executable — see below). MESP-31 moved to In Progress on branch `docs/MESP-31-master-data-product-catalog-brd`, and a v0.1 draft BRD was produced at `docs/16_Master_Data_and_Product_Catalog_BRD.md`. **This BRD draft is not yet Approved** and does not itself authorize implementation; do not start Master Data implementation until Hossam explicitly approves the drafted BRD content and a dedicated implementation Jira item, separate from MESP-31, is identified and activated. This session has no live Jira integration, so the authorization and status facts above should be mirrored into the actual Jira MESP-31 ticket separately.
 
 **MESP-94 PR #26 focused review corrections (7 August 2026):** a focused
 ChatGPT review of PR #26 at reviewed head
