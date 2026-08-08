@@ -1,5 +1,26 @@
 # MESP-96 - M95-SL-01 Shared boundary and Tenant/scope contracts
 
+## Current root-task handoff - 8 August 2026 (MESP-96 complete)
+
+The MESP-96/M95-SL-01 execution recorded below is complete. The bounded source
+slice adds only the Master Data/Catalog and Business Parties seams, trusted
+server-derived Tenant consumption, policy-neutral scope and authorization
+hooks, stable reference contracts, and audit/evidence integration. It creates
+no Master Data persistence, endpoint, migration, database access, or business
+decision for Product/Item identity, SKU/Barcode, tracking, availability,
+approval catalogue, or lifecycle defaults. The implementation branch, PR,
+merge evidence, and validation results are recorded in `.ai/CURRENT_STATE.md`
+and the MESP-96 Jira closure comment.
+
+The implementation commit is `aa413f7c9dadea036f1f8ab6a4f47fb5ed83b0f0` and
+the publication PR is **#30** against `main`; final merge and Jira closure
+remain part of this session's completion evidence.
+
+The next exact root-task session is M95-SL-02 Category and UOM. It is not
+started in this chat and has no active Jira child slice. Its first-data-bearing
+gates remain MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006, with
+ADR-002/ADR-006 and ADR-011 timing preserved.
+
 ## Executable session definition - 8 August 2026
 
 This is the single next implementation session after the completed MESP-95
@@ -140,7 +161,12 @@ checkpoint.
 
 ## Exact next action
 
-Start a fresh Codex/Luna chat from the synchronized `main`, re-read this task
-and the required baselines, inspect ADR-002 and the actual project structure,
-then execute only MESP-96/M95-SL-01. Do not execute M95-SL-02 or any other
-`TASK.md` session automatically.
+Start a fresh Codex/Luna chat from the synchronized `main` after the MESP-96
+merge, re-read this task and the required baselines, inspect the approved
+MESP-31 BRD, M95 implementation specification, ADR-002/ADR-005/ADR-006,
+ADR-011, and the actual project structure, then execute only M95-SL-02
+Category and UOM. Before any data-bearing source work, confirm that
+MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006 are resolved or
+explicitly Owner-bounded for the slice. Do not execute M95-SL-03 or any other
+`TASK.md` session automatically, and do not create a Jira child slice without
+its own active Definition of Ready.

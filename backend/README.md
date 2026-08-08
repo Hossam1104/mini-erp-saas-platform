@@ -17,7 +17,10 @@ provider or deployment. The durable-work runtime is not composed into
 `MiniErp.App`'s internal durable-work ledger either — only
 `MiniErp.ArchitectureTests` is granted that access. SQL Server evidence comes
 from disposable LocalDB probes only. MESP-48 and MESP-50 remain open
-production gates.
+production gates. MESP-96 added only non-persistent Master Data/Catalog and
+Business Parties boundary contracts, Tenant/scope authorization hooks, stable
+reference contracts, and audit/evidence integration; it did not add Master
+Data entities, migrations, endpoints, or database access.
 
 ## Prerequisites
 
@@ -47,11 +50,16 @@ URL printed by `dotnet run` when it differs from port 5000.
 ## Three-project direction
 
 - `MiniErp.Contracts` contains only stable public module contracts and module
-  identity records. It has no dependency on application internals.
-- `MiniErp.App` contains the composition entry point and the internal Platform
-  Administration implementation. The internal implementation is not public.
+  identity records, including the Master Data/Catalog and Business Parties
+  composition seams and their non-persistent shared value contracts. It has no
+  dependency on application internals.
+- `MiniErp.App` contains the composition entry points, server-derived Tenant
+  context consumption, policy-neutral scope and authorization hooks, and the
+  internal Platform, Master Data/Catalog, and Business Parties
+  implementations. Internal implementations are not public.
 - `MiniErp.Api` is the host. It registers the Platform module through
-  `PlatformModuleRegistration` and consumes only the public contract.
+  `PlatformModuleRegistration` and consumes only public contracts. MESP-96 did
+  not add a Master Data endpoint or persistence composition.
 
 The permitted dependency direction is `MiniErp.Api -> MiniErp.App ->
 MiniErp.Contracts`. `MiniErp.Api` also references `MiniErp.Contracts` for its

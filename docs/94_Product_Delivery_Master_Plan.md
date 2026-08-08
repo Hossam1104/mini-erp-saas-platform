@@ -1,6 +1,6 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Current execution overlay - 8 August 2026 (supersedes older progress claims below).** MESP-31 is **Done**. PR #29 merged at approved head `c465d660e49a254f2fffbb95e0d07c5fcf17a193` with actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; MESP-95 is **Done** with Jira closure comment `10654`. MESP-96 is the single next executable implementation item and is **In Progress** for contract-only/non-persistent M95-SL-01. MD-OD-001 through MD-OD-011 remain unresolved, MESP-48/MESP-49/MESP-50 remain open gates, and no Master Data persistence exists.
+> **Current execution overlay - 8 August 2026 (supersedes older progress claims below).** MESP-31 and MESP-95 are **Done**. MESP-96/M95-SL-01 is **complete** as a contract-only/non-persistent implementation; its branch, PR, merge, Jira closure, and validation evidence are recorded in `.ai/CURRENT_STATE.md` and the MESP-96 Jira closure comment. M95-SL-02 Category and UOM is the next exact session and is not started. MD-OD-001 through MD-OD-011 remain unresolved, MESP-48/MESP-49/MESP-50 remain open gates, and no Master Data persistence exists.
 >
 > Hossam standing Owner approval covers normal BRD/specification/readiness, merge/closure, and next-session activation within approved scope and architecture. A fresh Codex/Luna chat executes exactly one root `TASK.md` session, validates, updates affected state/Jira, commits/pushes, merges only when clean, then stops for ChatGPT review. Stop only for a real security, Tenant-isolation, accounting/data-integrity, destructive migration/data-loss, legal/external-validation, credential/infrastructure, unresolved-decision, or material scope/architecture blocker. Independent Opus review is due after every five sessions or earlier at a critical checkpoint.
 
@@ -14,12 +14,12 @@
 | Last updated | 8 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-96 / M95-SL-01 — contract-only, non-persistent shared boundary and Tenant/scope contracts; no Master Data persistence.` |
-| Current implementation item | `MESP-96 is In Progress. MESP-95 is Done after PR #29 merge; no later slice is active.` |
+| Current activity | `MESP-96 / M95-SL-01 — complete contract-only, non-persistent shared boundary and Tenant/scope contracts; no Master Data persistence.` |
+| Current implementation item | `MESP-96 is complete. MESP-95 is Done; M95-SL-02 Category and UOM is the next exact session and no later slice is active.` |
 | Merged-main baseline | `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d` (PR #29 merge) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None for MESP-95; PR #29 is merged. The next source slice must use a dedicated MESP-96 branch/PR and remain contract-only.` |
-| Current review checkpoint | `MESP-31 and MESP-95 are Done. PR #29 merged at 93f4e83992ef46f498cfbfacbb513cfc3d8dda7d. MESP-96 is In Progress for M95-SL-01 only; MD-OD-001 through MD-OD-011 remain unresolved and MESP-48/MESP-49/MESP-50 remain open gates.` |
+| Open Pull Request | `PR #30 carries the MESP-96 source handoff from agent/mesp-96-m95-sl-01-contracts; no later slice PR is open.` |
+| Current review checkpoint | `MESP-31, MESP-95, and MESP-96 are complete at their bounded scope. M95-SL-02 is not started; MD-OD-001 through MD-OD-011 remain unresolved and MESP-48/MESP-49/MESP-50 remain open gates.` |
 
 ---
 
@@ -2156,3 +2156,21 @@ approval catalogue, or Draft/Active behavior. It adds no Wafra-specific or
 Retail POS behavior and does not start M95-SL-02. MD-OD-001 through MD-OD-011
 remain unresolved; MESP-48, MESP-49, and MESP-50 remain open gates; no Master
 Data persistence exists.
+
+### MESP-96/M95-SL-01 completion overlay - 8 August 2026
+
+The MESP-96 source slice is complete at its approved contract-only boundary.
+It adds the Master Data/Catalog and Business Parties composition seams,
+server-derived Tenant context consumption, policy-neutral `BusinessScope` and
+scope-policy hooks, capability/resource/approval authorization hooks,
+tenant-aware stable reference contracts, and audit/evidence integration. The
+implementation creates no Master Data entity, table, migration, database
+access, endpoint, Product/Item identity, SKU/Barcode rule, tracking behavior,
+availability rule, approval catalogue, or Draft/Active lifecycle behavior.
+
+Release build and the focused `MasterDataBoundaryTests` plus
+`ModuleBoundaryTests` passed with 32/32 tests and zero warnings/errors. The
+exact branch/PR/merge/Jira evidence is recorded in `.ai/CURRENT_STATE.md` and
+the MESP-96 closure comment. M95-SL-02 Category and UOM remains the next exact
+session and is gated by the affected Owner decisions and ADR timing; it was
+not started automatically.

@@ -11,19 +11,22 @@
 
 > **Current delivery overlay - 8 August 2026.** MESP-95 is **Done** after
 > ChatGPT final review passed and PR #29 merged normally. This specification
-> remains a documentation/readiness baseline and did not perform Master Data
-> source implementation, persistence, migration, database creation/access, or
-> source tests. MESP-96 is now **In Progress** for the next bounded,
-> contract-only/non-persistent M95-SL-01 slice. MD-OD-001 through MD-OD-011
-> remain unresolved; MESP-48, MESP-49, and MESP-50 remain open gates.
+> remains the implementation-readiness baseline; MESP-96 separately completed
+> the bounded, contract-only/non-persistent M95-SL-01 slice. The slice created
+> no Master Data persistence, endpoint, migration, database access, or
+> unresolved Product/Item, availability, approval-catalogue, or lifecycle
+> behavior. M95-SL-02 Category and UOM is the next exact session and is not
+> started. MD-OD-001 through MD-OD-011 remain unresolved; MESP-48, MESP-49,
+> and MESP-50 remain open gates.
 
 This document is the implementation-readiness and technical-design baseline for
-the approved MESP-31 business baseline. It is a design and backlog document,
-not source implementation authorization. It creates no application code,
-entities in the repository, EF mapping, migration, database, endpoint,
-controller, Angular screen, or automated implementation test. The proposed
-implementation slices remain unactivated until this document is reviewed and
-approved and a separate bounded coding item is activated.
+the approved MESP-31 business baseline. It is a design and backlog document;
+MESP-96 was the separately activated coding item that implemented only the
+non-persistent M95-SL-01 contract boundary. This document itself creates no
+application code, entities in the repository, EF mapping, migration, database,
+endpoint, controller, Angular screen, or automated implementation test. The
+remaining data-bearing implementation slices remain unactivated until their
+own bounded Definition of Ready and decision gates are satisfied.
 
 ## 1. Document control and entry evidence
 
@@ -37,8 +40,8 @@ approved and a separate bounded coding item is activated.
 | Merged-main baseline for this work | `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b` |
 | Canonical PRD | `docs/MESP_PRD_v1.2.docx` |
 | Protected PRD Git blob | `1f9163b9412cb343a19a98312eb642ad26c1efaa` |
-| Jira activation | MESP-95 transitioned to Done after PR #29 merged; MESP-96 is now In Progress as the next implementation item |
-| Delivery state | MESP-31 Done; MESP-95 Done; MESP-96 In Progress for M95-SL-01 only |
+| Jira activation | MESP-95 transitioned to Done after PR #29 merged; MESP-96 separately activated and completed M95-SL-01 |
+| Delivery state | MESP-31 Done; MESP-95 Done; MESP-96 complete for M95-SL-01; M95-SL-02 not started |
 
 The approval of MESP-31 preserves MD-OD-001 through MD-OD-011. This
 specification identifies their implementation impact but does not answer,
