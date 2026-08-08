@@ -34,7 +34,14 @@ public enum MasterDataOperation
     Deactivate = 5,
     Approve = 6,
     Import = 7,
-    ViewAuditHistory = 8
+    ViewAuditHistory = 8,
+    Reactivate = 9
+}
+
+public enum MasterDataLifecycleState
+{
+    Active = 1,
+    Inactive = 2
 }
 
 public enum MasterDataCapability
@@ -447,7 +454,7 @@ public sealed class MasterDataPolicyDecision
 
 public sealed class MasterDataAuditEvidence
 {
-    internal MasterDataAuditEvidence(
+    private MasterDataAuditEvidence(
         Guid evidenceId,
         DateTimeOffset occurredAt,
         string operationId,
@@ -471,6 +478,11 @@ public sealed class MasterDataAuditEvidence
         if (evidenceId == Guid.Empty || actorId == Guid.Empty || sessionId == Guid.Empty)
         {
             throw new ArgumentException("Audit evidence requires non-empty identity values.");
+        }
+
+        if (occurredAt == default)
+        {
+            throw new ArgumentException("Audit evidence requires an occurrence timestamp.", nameof(occurredAt));
         }
 
         if (tenant.TenantId == Guid.Empty)
@@ -504,6 +516,18 @@ public sealed class MasterDataAuditEvidence
             throw new ArgumentException("Audit evidence identifiers must be non-empty when supplied.");
         }
 
+        if (decision == FoundationAuditDecision.Allowed
+            && policyOutcome is not (MasterDataPolicyOutcome.Allowed or MasterDataPolicyOutcome.Approved))
+        {
+            throw new ArgumentException("An allowed audit decision requires an allowed policy outcome.", nameof(decision));
+        }
+
+        if (decision != FoundationAuditDecision.Allowed
+            && policyOutcome is (MasterDataPolicyOutcome.Allowed or MasterDataPolicyOutcome.Approved))
+        {
+            throw new ArgumentException("A denied audit decision cannot carry an allowed policy outcome.", nameof(decision));
+        }
+
         if (scope is not null && scope.Tenant != tenant)
         {
             throw new ArgumentException("Audit evidence scope must belong to the evidence Tenant.");
@@ -530,6 +554,46 @@ public sealed class MasterDataAuditEvidence
         Reason = reason;
         ApproverId = approverId;
     }
+
+    internal static MasterDataAuditEvidence CreateValidated(
+        Guid evidenceId,
+        DateTimeOffset occurredAt,
+        string operationId,
+        string correlationId,
+        Guid actorId,
+        Guid sessionId,
+        FoundationAuditAuthorizationPath authorizationPath,
+        TenantOwnership tenant,
+        BusinessScope? scope,
+        MasterDataOperation operation,
+        MasterDataResourceKind resourceKind,
+        Guid? resourceId,
+        string? businessCode,
+        MasterDataPolicyOutcome policyOutcome,
+        FoundationAuditDecision decision,
+        FoundationAuditReason reason,
+        string? beforeSummary,
+        string? afterSummary,
+        Guid? approverId) => new(
+            evidenceId,
+            occurredAt,
+            operationId,
+            correlationId,
+            actorId,
+            sessionId,
+            authorizationPath,
+            tenant,
+            scope,
+            operation,
+            resourceKind,
+            resourceId,
+            businessCode,
+            policyOutcome,
+            decision,
+            reason,
+            beforeSummary,
+            afterSummary,
+            approverId);
 
     public Guid EvidenceId { get; }
 
@@ -577,7 +641,7 @@ public sealed class MasterDataAuditEvidence
         }
 
         var normalized = value.Trim();
-        if (normalized.Length == 0 || normalized.Length > 128 || normalized.Any(char.IsControl))
+        if (normalized.Length == 0 || normalized.Length > 2048 || normalized.Any(char.IsControl))
         {
             throw new ArgumentException("Audit evidence text is outside the approved bound.");
         }

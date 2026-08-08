@@ -64,6 +64,22 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     }
 
     [Fact]
+    public async Task Module_registration_reports_the_composed_master_data_module()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/module-registration");
+        var body = await ReadJsonAsync(response);
+        var masterData = body.GetProperty("masterData");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("master-data-catalog", masterData.GetProperty("module").GetString());
+        Assert.Equal("Master Data and Catalog", masterData.GetProperty("name").GetString());
+        Assert.Equal("MasterDataAndCatalog", masterData.GetProperty("boundary").GetString());
+        Assert.True(masterData.GetProperty("registered").GetBoolean());
+    }
+
+    [Fact]
     public void Every_public_endpoint_has_one_operation_identifier()
     {
         var endpoints = factory.Services

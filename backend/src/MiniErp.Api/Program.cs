@@ -6,14 +6,18 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.Modules.Audit;
 using MiniErp.App.Modules.Identity;
+using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Platform;
 using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Platform;
+using MiniErp.Contracts.Modules.MasterData;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IPlatformAdministrationModule>(_ => PlatformModuleRegistration.Create());
+builder.Services.AddSingleton<IMasterDataCatalogModule>(_ => MasterDataModuleRegistration.Create());
+builder.Services.AddMasterDataAuthorization();
 builder.Services.AddIdentityAuthorization();
 builder.Services.AddAuthentication(options =>
 {
@@ -110,13 +114,22 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("platform.health")
     .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("platform.health")));
 
-app.MapGet("/api/v1/module-registration", (IPlatformAdministrationModule platformModule) =>
+app.MapGet("/api/v1/module-registration", (
+    IPlatformAdministrationModule platformModule,
+    IMasterDataCatalogModule masterDataModule) =>
     Results.Ok(new
     {
         module = platformModule.Descriptor.Key,
         name = platformModule.Descriptor.Name,
         boundary = platformModule.Descriptor.Boundary,
-        registered = platformModule.RegistrationEvidence.IsRegistered
+        registered = platformModule.RegistrationEvidence.IsRegistered,
+        masterData = new
+        {
+            module = masterDataModule.Descriptor.Key,
+            name = masterDataModule.Descriptor.Name,
+            boundary = masterDataModule.Descriptor.Boundary,
+            registered = masterDataModule.RegistrationEvidence.IsRegistered
+        }
     }))
     .WithName("platform.module-registration")
     .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("platform.module-registration")));

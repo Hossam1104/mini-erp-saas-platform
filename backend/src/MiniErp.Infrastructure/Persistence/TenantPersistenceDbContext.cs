@@ -31,11 +31,12 @@ internal class TenantPersistenceDbContext : DbContext
 
     // EF Core parameterizes context instance properties in model-level query
     // filters, so each explicit session gets its own trusted Tenant boundary.
-    private TenantId TrustedTenantId => _tenantContext.TenantId;
+    protected TenantId TrustedTenantId => _tenantContext.TenantId;
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         ValidateTenantOwnershipVerifiers();
+        PrepareApplicationConcurrencyTokens();
         _guard.Validate(ChangeTracker);
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
@@ -50,6 +51,7 @@ internal class TenantPersistenceDbContext : DbContext
         CancellationToken cancellationToken = default)
     {
         ValidateTenantOwnershipVerifiers();
+        PrepareApplicationConcurrencyTokens();
         await _guard.ValidateAsync(ChangeTracker, cancellationToken);
         return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
@@ -102,5 +104,33 @@ internal class TenantPersistenceDbContext : DbContext
         record.HasIndex(item => new { item.TenantId, item.BusinessKey }).IsUnique();
 
         record.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+    }
+
+    private void PrepareApplicationConcurrencyTokens()
+    {
+        if (Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer")
+        {
+            return;
+        }
+
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            var version = entry.Properties.SingleOrDefault(property =>
+                string.Equals(property.Metadata.Name, "Version", StringComparison.Ordinal)
+                && property.Metadata.ClrType == typeof(byte[]));
+            if (version is null)
+            {
+                continue;
+            }
+
+            if ((entry.State == EntityState.Added && version.CurrentValue is byte[] addedVersion
+                    && addedVersion.Length == 0)
+                || (entry.State == EntityState.Modified && version.CurrentValue is byte[] current
+                    && version.OriginalValue is byte[] original
+                    && current.SequenceEqual(original)))
+            {
+                version.CurrentValue = Guid.NewGuid().ToByteArray();
+            }
+        }
     }
 }

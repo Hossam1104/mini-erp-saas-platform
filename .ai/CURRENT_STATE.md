@@ -1,6 +1,27 @@
 # Current State
 
-## Current authoritative position - 9 August 2026 (MESP-100 closed; MESP-99 active)
+## Current authoritative position - 9 August 2026 (MESP-99 implementation complete; PR pending)
+
+This is the current handoff for the completed bounded MESP-99 / M95-SL-02
+Category/UOM implementation. The implementation is complete and validated on
+branch `agent/mesp-99-category-uom`; the focused PR, merge, and Jira closure
+evidence are recorded here as they are completed. No later slice is active.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-100 | **Done**; closure evidence is Jira comment `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. |
+| MESP-99 | **Implementation complete on branch**; Jira remains In Progress until the focused PR is reviewed, merged, and closure evidence is posted. Activation evidence is comment `10664`. |
+| Implementation branch | `agent/mesp-99-category-uom`. |
+| Category/UOM scope | Tenant-wide inside the owning Tenant; server-derived exact Category/UOM policy; no cross-Tenant sharing or client Tenant/scope authority; Active-on-create, Deactivate/Reactivate; three-level cycle-free Category hierarchy; quantity precision 6, conversion precision 8, positive factors, AwayFromZero rounding. |
+| Persistence ownership | Module-owned Category/UOM entities, `masterdata` EF context/tables, Tenant query filters/ownership verifiers, append-before-effect audit transactions, and application-owned concurrency tokens in `MiniErp.Infrastructure`; no migration or production database provisioning. |
+| Authorization/audit corrections | Identifier-aware M95-SL-01 exclusion scan; private validated audit-evidence construction; persistent first audit fidelity; authorized queries and commands; actual API module registration; Reactivate mapped to the existing Activate capability. |
+| Validation | Release build 0 warnings/0 errors; focused Category/UOM, composition, and architecture tests 142/142 passed; non-SQL architecture suite 592/592 passed; `git diff --check` clean. |
+| SQL safety gate | The 21 existing SQL Server safety tests still require the explicitly configured `MESP_SQLSERVER_CONNECTION_STRING`; no credential or production infrastructure was invented. |
+| Exclusions | No Product/Item/SKU/Barcode/tracking/batch/lot/serial/expiry, other Master Data domain, Retail POS/Wafra core behavior, migration, production provider, or production database. |
+| Next exact task | M95-SL-03 Product identity readiness and decision gate; documentation/readiness only after a dedicated Jira item and MD-OD-003/010/011 owner decisions. Do not start automatically. |
+| Open production gates | MESP-48, MESP-49, and MESP-50 remain open. |
+
+## Historical position at MESP-99 session start - 9 August 2026
 
 This is the authoritative live repository and Jira handoff after the bounded
 MESP-100 readiness correction. Historical sections below are preserved for
