@@ -13,13 +13,15 @@ is authoritative for the live repository and Jira position.
 | MESP-96 | **Implementation complete** for `Implement Master Data shared boundary and Tenant/scope contracts (M95-SL-01)`; final Jira closure/PR evidence is recorded in the session completion overlay and closure comment. |
 | M95-SL-01 | **Complete, contract-only, and non-persistent**; no Master Data persistence exists. |
 | Source branch | `agent/mesp-96-m95-sl-01-contracts`; source changes are limited to Contracts/App seams and focused architecture tests. |
+| Implementation commit | `aa413f7c9dadea036f1f8ab6a4f47fb5ed83b0f0` (`feat(MESP-96): add master data boundary contracts`). |
+| MESP-96 Pull Request | **#30** from `agent/mesp-96-m95-sl-01-contracts` to `main`; clean publication handoff, final merge/Jira evidence pending. |
 | Source boundary | Master Data/Catalog and Business Parties composition seams; server-derived Tenant context consumption; policy-neutral BusinessScope/scope-policy hook; capability, resource-policy, generic approval, stable-reference, and audit/evidence contracts. |
 | Validation | Release solution build: 0 warnings/0 errors. Focused `MasterDataBoundaryTests` + `ModuleBoundaryTests`: 32/32 passed. `git diff --check` and prohibited-persistence/unresolved-behavior scans passed. |
 | Next exact session | M95-SL-02 Category and UOM; not started, no Jira child active, and first-data-bearing MD-OD/ADR gates remain required. |
 | Open decisions | MD-OD-001 through MD-OD-011 remain unresolved and preserved. |
 | Production/external gates | MESP-48, MESP-49, and MESP-50 remain open; no production or external-validation decision is invented. |
 | Source implementation | MESP-96 source implementation is now present only in the bounded non-persistent slice described above; no Product/Item, SKU/Barcode, tracking, availability, approval-catalogue, lifecycle, Wafra, Retail POS, migration, database, or endpoint behavior was added. |
-| Main synchronization | MESP-96 was started from synchronized `main`; this source branch is the pending handoff branch until its clean PR merge, after which `main` must be reverified. |
+| Main synchronization | MESP-96 was started from synchronized `main`; PR #30 is the pending handoff branch until its clean merge, after which `main` must be reverified. |
 
 M95-SL-01 must remain contract-only: no Master Data EF entities/tables,
 migration, or `MESP` database creation/access solely for this slice; no

@@ -12,6 +12,10 @@ approval catalogue, or lifecycle defaults. The implementation branch, PR,
 merge evidence, and validation results are recorded in `.ai/CURRENT_STATE.md`
 and the MESP-96 Jira closure comment.
 
+The implementation commit is `aa413f7c9dadea036f1f8ab6a4f47fb5ed83b0f0` and
+the publication PR is **#30** against `main`; final merge and Jira closure
+remain part of this session's completion evidence.
+
 The next exact root-task session is M95-SL-02 Category and UOM. It is not
 started in this chat and has no active Jira child slice. Its first-data-bearing
 gates remain MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006, with

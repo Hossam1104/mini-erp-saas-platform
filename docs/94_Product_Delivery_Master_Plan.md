@@ -18,7 +18,7 @@
 | Current implementation item | `MESP-96 is complete. MESP-95 is Done; M95-SL-02 Category and UOM is the next exact session and no later slice is active.` |
 | Merged-main baseline | `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d` (PR #29 merge) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `The MESP-96 source PR is the current session handoff; exact PR/merge evidence is recorded after publication in the current-state document and Jira. No later slice PR is open.` |
+| Open Pull Request | `PR #30 carries the MESP-96 source handoff from agent/mesp-96-m95-sl-01-contracts; no later slice PR is open.` |
 | Current review checkpoint | `MESP-31, MESP-95, and MESP-96 are complete at their bounded scope. M95-SL-02 is not started; MD-OD-001 through MD-OD-011 remain unresolved and MESP-48/MESP-49/MESP-50 remain open gates.` |
 
 ---
