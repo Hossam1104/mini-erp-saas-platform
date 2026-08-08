@@ -1,17 +1,20 @@
 # Current State
 
-## Current authoritative position - 9 August 2026 (MESP-99 implementation complete; PR pending)
+## Current authoritative position - 9 August 2026 (MESP-99 PR #33 open; merge pending)
 
 This is the current handoff for the completed bounded MESP-99 / M95-SL-02
 Category/UOM implementation. The implementation is complete and validated on
-branch `agent/mesp-99-category-uom`; the focused PR, merge, and Jira closure
-evidence are recorded here as they are completed. No later slice is active.
+branch `agent/mesp-99-category-uom`; focused PR #33 is open for final review.
+The merge and Jira closure evidence are recorded here as they are completed.
+No later slice is active.
 
 | Current fact | Verified value |
 |---|---|
 | MESP-100 | **Done**; closure evidence is Jira comment `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. |
-| MESP-99 | **Implementation complete on branch**; Jira remains In Progress until the focused PR is reviewed, merged, and closure evidence is posted. Activation evidence is comment `10664`. |
+| MESP-99 | **Implementation complete; PR #33 open** from `agent/mesp-99-category-uom`; Jira remains In Progress until the PR is reviewed, merged, and closure evidence is posted. Activation evidence is comment `10664`. |
 | Implementation branch | `agent/mesp-99-category-uom`. |
+| Implementation commit | `430996c` (`feat(MESP-99): implement Category and UOM slice`). |
+| Focused PR | **#33**, draft/open pending final review and merge. |
 | Category/UOM scope | Tenant-wide inside the owning Tenant; server-derived exact Category/UOM policy; no cross-Tenant sharing or client Tenant/scope authority; Active-on-create, Deactivate/Reactivate; three-level cycle-free Category hierarchy; quantity precision 6, conversion precision 8, positive factors, AwayFromZero rounding. |
 | Persistence ownership | Module-owned Category/UOM entities, `masterdata` EF context/tables, Tenant query filters/ownership verifiers, append-before-effect audit transactions, and application-owned concurrency tokens in `MiniErp.Infrastructure`; no migration or production database provisioning. |
 | Authorization/audit corrections | Identifier-aware M95-SL-01 exclusion scan; private validated audit-evidence construction; persistent first audit fidelity; authorized queries and commands; actual API module registration; Reactivate mapped to the existing Activate capability. |

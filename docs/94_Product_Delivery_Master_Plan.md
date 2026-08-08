@@ -1,6 +1,6 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR pending).**
+> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 open).**
 > MESP-99 / M95-SL-02 Category and UOM is implementation-complete on branch
 > `agent/mesp-99-category-uom` at its approved bounded scope: Tenant-wide
 > Category/UOM policy, server-derived authorization, lifecycle/concurrency,
@@ -9,8 +9,9 @@
 > suite are green; the 21-test SQL Server safety gate remains an existing
 > credential/provider gate because `MESP_SQLSERVER_CONNECTION_STRING` is not
 > configured. No migration, production database, Product/Item behavior, or
-> later domain slice was introduced. The focused PR and final merge evidence
-> will be added to the current-state handoff after review. MESP-48, MESP-49,
+> later domain slice was introduced. Focused PR #33 is open from implementation
+> commit `430996c`; final merge evidence will be added to the current-state
+> handoff after review. MESP-48, MESP-49,
 > and MESP-50 remain open.
 
 > The next exact session is M95-SL-03 Product identity readiness only, gated by

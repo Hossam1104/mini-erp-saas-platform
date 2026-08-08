@@ -1,6 +1,6 @@
 # Master Data and Product Catalog Lean Implementation Specification
 
-> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR pending).**
+> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 open).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch
 > `agent/mesp-99-category-uom` and remains limited to the five approved bounds:
 > MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. It adds
@@ -11,7 +11,8 @@
 > green; the existing SQL Server safety gate remains unavailable without
 > `MESP_SQLSERVER_CONNECTION_STRING`. No migration, production database,
 > Product/Item behavior, or later Master Data slice was added. MESP-99 closure,
-> PR, and final merge evidence will be recorded in `.ai/CURRENT_STATE.md`.
+> PR #33 is open from the implementation commit `430996c`; final merge and
+> Jira closure evidence will be recorded in `.ai/CURRENT_STATE.md`.
 
 > The next exact session is M95-SL-03 Product identity readiness only. It must
 > not start automatically and requires a dedicated activated Jira item plus
