@@ -8,8 +8,10 @@ MESP-31 is **Done** and PR #29 closed MESP-95 at approved head
 `c465d660e49a254f2fffbb95e0d07c5fcf17a193`, merged normally at
 `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`. MESP-95 is **Done** with Jira
 closure evidence `10654`; ChatGPT passed the final review and M95-R01,
-M95-R02, and M95-R03 are closed. MESP-96 is now **In Progress** and is the
-single next executable implementation item for M95-SL-01.
+M95-R02, and M95-R03 are closed. MESP-96/M95-SL-01 is now **complete** at its
+contract-only, non-persistent boundary; its implementation, validation, PR,
+merge, and Jira closure evidence are recorded in `.ai/CURRENT_STATE.md`.
+M95-SL-02 Category and UOM is the next exact session and is not started.
 
 M95-SL-01 is contract-only and non-persistent. ADR-002 and the actual
 repository architecture must be inspected before backend structure changes;
