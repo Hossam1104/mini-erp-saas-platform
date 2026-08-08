@@ -28,6 +28,17 @@
 > MESP-95 exists as To Do and is the next readiness item only after MESP-31 is
 > merged and closed. No Master Data source implementation has started.
 
+> **Superseding live-state overlay — 8 August 2026:** PR #28 has now merged
+> at actual commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`, MESP-31 is Done
+> with closure evidence in Jira comment `10650`, and MESP-95 is In Progress
+> as the single implementation-readiness item. Its specification is
+> `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`.
+> The documentation-only readiness review is PR #29, open and non-draft, with
+> initial draft head `dc550e1171e8f9d20cd7fdf5509dfffb7537b3bd`; it is ready for
+> ChatGPT/Product Owner review and is not an implementation merge.
+> The specification is documentation-only; no Master Data source
+> implementation, migration, database, or credential has been created.
+
 Status at the time of this checkpoint: MESP-89 is Done. PR #12 was approved by
 focused ChatGPT review and merged to `main`; MESP-63 was the next authorized
 implementation item.

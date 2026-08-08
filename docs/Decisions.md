@@ -85,3 +85,20 @@ approved for merge but remains open and unmerged until the approval-state
 reconciliation is pushed and reverified. MESP-95 exists as To Do and is the
 next implementation-readiness item only after MESP-31 is actually merged and
 closed. No Master Data source implementation has started.
+
+## Current MESP-95 implementation-readiness overlay — 8 August 2026
+
+The MESP-31 BRD approval is now closed through Jira comment `10650` after PR
+#28 merged at actual commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`.
+MESP-95 is the single active implementation-readiness Task and its draft
+specification is `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`.
+The review is published as PR #29, open and non-draft, from initial draft head
+`dc550e1171e8f9d20cd7fdf5509dfffb7537b3bd`; it remains documentation-only and
+must not be merged as source implementation.
+The specification evaluates ADR-002, ADR-005, ADR-006, ADR-011, and ADR-016
+without creating or updating an ADR: ADR-002 and ADR-011 remain pre-code
+dependencies, ADR-016 remains production-timing only, and the existing
+Foundation ADR seams remain authoritative. MD-OD-001 through MD-OD-011 remain
+open and are classified as slice gates rather than resolved by technical
+design. No Master Data source implementation has started; MESP-48, MESP-49,
+and MESP-50 remain open gates.
