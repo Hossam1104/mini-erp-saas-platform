@@ -56,13 +56,14 @@ This session is contract-only and non-persistent. It MUST NOT:
 - persist a Master Data business record;
 - create Master Data EF entities or Master Data database tables;
 - create a Master Data migration;
-- create or access the `MESP` database solely for this slice;
+- no MESP database creation/access solely for this slice;
 - make a Product/Item decision;
 - make a SKU/Barcode decision;
 - make a batch/lot/serial/expiry tracking decision;
-- assume Tenant-wide, Company, Branch, or other business availability;
-- assume or create an approval catalogue;
-- assume Draft/Active creation or lifecycle behavior;
+- make a business availability assumption (Tenant-wide, Company, Branch, or
+  other scope);
+- make an approval catalogue assumption or create an approval catalogue;
+- make a Draft/Active creation or lifecycle assumption;
 - add Wafra-specific behavior;
 - add Retail POS scope or consumer behavior;
 - start `M95-SL-02` or any later slice.
