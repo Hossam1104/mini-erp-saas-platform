@@ -158,6 +158,32 @@ public sealed class MasterDataBoundaryTests
     }
 
     [Fact]
+    public void Resolver_accepts_empty_selection_without_changing_trusted_scope()
+    {
+        var result = new MasterDataTenantContextResolver().Resolve(
+            CreateFoundationContext(),
+            new MasterDataScopeSelection());
+
+        Assert.True(result.Allowed);
+        var context = Assert.IsType<MasterDataRequestContext>(result.Context);
+        Assert.Equal(TenantA, context.TenantId.Value);
+        Assert.Equal($"Company:{CompanyA:D}", context.TrustedScope!.Value.Value);
+    }
+
+    [Fact]
+    public void Resolver_accepts_same_tenant_only_hint_and_preserves_server_scope()
+    {
+        var result = new MasterDataTenantContextResolver().Resolve(
+            CreateFoundationContext(),
+            new MasterDataScopeSelection(requestedTenantId: TenantA));
+
+        Assert.True(result.Allowed);
+        var context = Assert.IsType<MasterDataRequestContext>(result.Context);
+        Assert.Equal(TenantA, context.TenantId.Value);
+        Assert.Equal($"Company:{CompanyA:D}", context.TrustedScope!.Value.Value);
+    }
+
+    [Fact]
     public void Resolver_preserves_support_grant_as_a_distinct_tenant_path()
     {
         var result = new MasterDataTenantContextResolver().Resolve(CreateFoundationContext(supportGrant: true));
@@ -208,6 +234,9 @@ public sealed class MasterDataBoundaryTests
             new MasterDataScopeSelection(TenantA, Scope(TenantA, CompanyB)));
 
         Assert.True(sameTenant.Allowed);
+        var resolvedSameTenant = Assert.IsType<MasterDataRequestContext>(sameTenant.Context);
+        Assert.Equal(TenantA, resolvedSameTenant.TenantId.Value);
+        Assert.Equal($"Company:{CompanyA:D}", resolvedSameTenant.TrustedScope!.Value.Value);
         Assert.False(foreignTenant.Allowed);
         Assert.Equal("cross_tenant_target_denied", foreignTenant.Code);
         Assert.Null(foreignTenant.Context);

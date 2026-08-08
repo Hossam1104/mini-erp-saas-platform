@@ -139,11 +139,10 @@ public sealed class MasterDataTenantContextResolver
                 return MasterDataContextResolution.Denied("resource_scope_denied");
             }
         }
-        else if (selection is not null && context.TrustedScope is not null)
-        {
-            return MasterDataContextResolution.Denied("resource_scope_denied");
-        }
 
+        // A supplied selection is only an optional target hint. The context
+        // returned below remains the trusted server-derived authority, so an
+        // empty or tenant-only hint cannot broaden or replace its scope.
         return MasterDataContextResolution.Success(context);
     }
 }
