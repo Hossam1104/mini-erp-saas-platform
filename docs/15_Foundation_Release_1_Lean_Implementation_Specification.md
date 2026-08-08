@@ -1,5 +1,15 @@
 # Foundation Release 1 Lean Implementation Specification
 
+> **Current delivery overlay - 8 August 2026:** This Foundation
+> specification is historical and does not define the current active item.
+> MESP-31 and MESP-95 are **Done**; PR #29 merged at
+> `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d` from approved head
+> `c465d660e49a254f2fffbb95e0d07c5fcf17a193`, with MESP-95 closure evidence
+> in Jira comment `10654`. MESP-96 is **In Progress** for contract-only,
+> non-persistent M95-SL-01. MD-OD-001 through MD-OD-011 remain unresolved,
+> MESP-48/MESP-49/MESP-50 remain open gates, and no Master Data persistence
+> exists. Root `TASK.md` and `.ai/CURRENT_STATE.md` are authoritative.
+
 **Version:** v0.4 — Approved Release 1 Baseline
 **Status:** Approved for controlled implementation refinement — not production-approved
 **Jira:** MESP-86 - Produce Foundation Release 1 Lean Implementation Specification

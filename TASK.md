@@ -1,58 +1,145 @@
-# MESP-95 — Current Review-Correction Handoff
+# MESP-96 - M95-SL-01 Shared boundary and Tenant/scope contracts
 
-## Session record — 8 August 2026
+## Executable session definition - 8 August 2026
 
-This is one bounded documentation-only correction session for the active
-MESP-95 implementation-readiness review. It addresses only M95-R01, M95-R02,
-and M95-R03 from PR #29. It does not merge PR #29, close MESP-95, activate a
-Jira child slice, start source implementation, create migrations or a
-database, add credentials, or run an Opus review.
+This is the single next implementation session after the completed MESP-95
+readiness item. A fresh Codex/Luna chat executes exactly this root `TASK.md`
+session and no later session in the same chat.
 
-- Starting branch: `docs/MESP-95-master-data-lean-implementation-spec`
-- Starting head: `d44ea29992ce1b927265c7fee4438ff888eca4f1`
-- Attachment reference head: `f4e3131c8f733ac3a92c7e9f83d8f2b970564d07`;
-  this was superseded by the newer empty `TASK.md` commit and was not
-  overwritten.
-- Final correction commit / final PR #29 branch head: the single pushed
-  documentation-only commit produced by this session; its exact SHA is the
-  final PR #29 head recorded in the session completion report.
-- Changed documentation: `TASK.md`, `.ai/CURRENT_STATE.md`,
-  `docs/16_Master_Data_and_Product_Catalog_BRD.md`, and
-  `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`.
-- Validation: `git diff --check`, complete diff review, Markdown identifier
-  audit, scope scans, relative-link audit, stale maturity-phrase audit, and
-  branch/PR/Jira state verification. No source tests are required or run for
-  this documentation-only session.
-- Markdown audit: 39 tracked Markdown files reviewed; 10 are changed in the
-  effective branch delta and 29 are unchanged. The MESP-95 specification has
-  exactly 11 unique MD-OD identifiers, 15 unique M95-TD identifiers, and 12
-  unique M95-SL identifiers.
+- Jira: `MESP-96` - Implement Master Data shared boundary and Tenant/scope
+  contracts (M95-SL-01), **In Progress**.
+- Predecessor: `MESP-95`, **Done**; Jira closure evidence comment `10654`.
+- Approved readiness head: `c465d660e49a254f2fffbb95e0d07c5fcf17a193`.
+- Predecessor merge: PR #29 merged normally at
+  `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`.
+- Starting baseline: synchronized `main`; verify the exact local and remote
+  `main` head in `.ai/CURRENT_STATE.md` before creating a dedicated branch.
+- No MESP-96 source implementation has been performed in the handoff session
+  that creates this task.
 
-## Protected current state
+## Objective
 
-- MESP-31 is **Done**.
-- PR #28 is merged with final PR head
-  `8396197b54189cb550f07bd4bb6779fd38ac30cb` and actual merge commit
-  `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`; approval comment is `10649`
-  and closure evidence is `10650`.
-- MESP-95 is **In Progress** on the branch above. PR #29 is open,
-  non-draft, documentation-only, and awaiting ChatGPT re-review.
-- MD-OD-001 through MD-OD-011 remain open and unresolved. No business
-  requirement, Open Decision, source classification, or recommendation was
-  resolved or changed by this session.
-- No Master Data source implementation, migration, database, credential,
-  Jira child, or Sprint activation was created.
-- MESP-48, MESP-49, and MESP-50 remain open gates. The named
-  `local-prd-rename-before-MESP-92` stash remains untouched.
+Implement only the first bounded source slice from the approved MESP-95
+specification: the shared Master Data/Catalog and Business Parties boundary,
+trusted server-derived Tenant context, policy-neutral business scope,
+authorization/resource hooks, audit/evidence contracts, stable reference
+vocabulary, and the minimum architecture enforcement required for this slice.
 
-## One-session workflow and exact next action
+## Required source and architecture inspection
 
-The workflow is deliberately one active implementation/readiness item at a
-time: inspect the live item and approved baselines, make only the bounded
-correction, validate the complete diff, commit and push, verify the existing
-PR/Jira state, then stop. Opus review remains reserved for major checkpoints;
-this session requires the next ChatGPT review of PR #29, not an Opus review.
+Before changing backend structure, read and reconcile:
 
-**Exact next action: STOP and return control to Hossam for ChatGPT re-review of
-PR #29. Do not merge PR #29, close MESP-95, create a Jira child, or start
-Master Data source implementation automatically.**
+- `AGENTS.md`, `CLAUDE.md`, `.ai/CURRENT_STATE.md`;
+- `docs/16_Master_Data_and_Product_Catalog_BRD.md`;
+- `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`;
+- `docs/01_Technology_Architecture_Baseline.md` and `docs/Decisions.md`;
+- the applicable Foundation specifications/checkpoints and ADR-002, ADR-005,
+  ADR-006, ADR-007, ADR-008, ADR-011, ADR-016, and ADR-018;
+- the actual `backend/MiniErp.sln`, project references, and architecture tests.
+
+Honor the existing modular-monolith application direction:
+
+- `MiniErp.Api` is the host;
+- `MiniErp.App` contains application/module internals;
+- `MiniErp.Contracts` contains stable public contracts;
+- the permitted application dependency direction is `Api -> App -> Contracts`.
+
+The repository already contains infrastructure and test projects associated
+with this baseline. Do not invent a new production project, a fourth project,
+a microservice, or a new topology. Keep any architecture adjustment minimal,
+explicitly justified by ADR-002 and covered by architecture tests.
+
+## Hard boundaries - mandatory
+
+This session is contract-only and non-persistent. It MUST NOT:
+
+- persist a Master Data business record;
+- create Master Data EF entities or Master Data database tables;
+- create a Master Data migration;
+- create or access the `MESP` database solely for this slice;
+- make a Product/Item decision;
+- make a SKU/Barcode decision;
+- make a batch/lot/serial/expiry tracking decision;
+- assume Tenant-wide, Company, Branch, or other business availability;
+- assume or create an approval catalogue;
+- assume Draft/Active creation or lifecycle behavior;
+- add Wafra-specific behavior;
+- add Retail POS scope or consumer behavior;
+- start `M95-SL-02` or any later slice.
+
+No unresolved MD-OD decision may be silently answered. In particular, keep
+MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011 outside
+implementation behavior, and preserve the complete MD-OD-001 through
+MD-OD-011 register.
+
+## In-scope implementation
+
+Implement only the minimum safe structures for:
+
+- the Master Data/Catalog module boundary;
+- the Business Parties boundary required by shared contracts;
+- trusted server-derived Tenant context consumption;
+- a policy-neutral `BusinessScope` contract;
+- resource and authorization-policy inputs/hooks;
+- audit/evidence contract integration;
+- stable reference contracts and vocabulary for later Master Data slices;
+- approved architecture dependency enforcement required for this slice.
+
+Do not broaden into Product persistence, lifecycle rules, approval workflows,
+localized search/forms/documents, migrations, database provisioning, or any
+downstream slice. ADR-011 remains a dependency before affected localized
+search/form/document implementation.
+
+## Validation and Definition of Done
+
+Run targeted validation for the touched source only:
+
+- architecture and dependency rules, including ADR-002 enforcement;
+- Tenant-positive and Tenant-negative contract behavior;
+- same-code/different-Tenant isolation at the contract/policy level without
+  persistence;
+- proof that client-supplied Tenant data cannot expand server authority;
+- authorization/audit contracts preserving Tenant and applicable organization
+  scope;
+- proof that no persistent Master Data record is created;
+- proof that no unresolved MD-OD is implemented;
+- targeted build/tests required by the touched code;
+- `git diff --check`, complete task-diff review, and source/scope scans.
+
+Avoid broad unrelated test suites. Do not create a database, migration,
+credential, production provider, or external integration for this slice.
+
+The session is Done only when the bounded contracts are implemented and
+validated, the exact diff is reviewed, the branch/PR is pushed, and the
+repository handoff and affected Markdown state are updated.
+
+## Standing execution governance
+
+Hossam has standing Owner approval for normal BRD, specification, readiness,
+merge, closure, and next-session activation while work remains inside the
+approved project scope and architecture. Do not stop for ceremonial approval.
+Stop only for a real blocker: security or Tenant-isolation weakness;
+accounting or data-integrity risk; destructive migration or data-loss risk;
+an unresolved decision that would require invented business behavior; legal or
+external-validation requirements; credential or production-infrastructure
+risk; or a material scope/architecture deviation.
+
+Every fresh Codex/Luna chat executes exactly one root `TASK.md` session. At
+session end: validate, review the complete task diff, update this `TASK.md`
+with the next exact session, update `.ai/CURRENT_STATE.md`, update every
+genuinely affected Markdown state/plan file, update Jira, commit/push, merge
+only when the completed session is clean and no real blocker exists, then
+STOP and return the completion report to Hossam for ChatGPT review.
+
+Never automatically execute the next `TASK.md` in the same chat. Run an
+independent Opus project review after every five completed execution sessions,
+or earlier at a critical architecture, security/Tenant-isolation,
+accounting/financial-posting, migration/data-model, or major cross-module
+checkpoint.
+
+## Exact next action
+
+Start a fresh Codex/Luna chat from the synchronized `main`, re-read this task
+and the required baselines, inspect ADR-002 and the actual project structure,
+then execute only MESP-96/M95-SL-01. Do not execute M95-SL-02 or any other
+`TASK.md` session automatically.

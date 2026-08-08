@@ -1,5 +1,9 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
+> **Current execution overlay - 8 August 2026 (supersedes older progress claims below).** MESP-31 is **Done**. PR #29 merged at approved head `c465d660e49a254f2fffbb95e0d07c5fcf17a193` with actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; MESP-95 is **Done** with Jira closure comment `10654`. MESP-96 is the single next executable implementation item and is **In Progress** for contract-only/non-persistent M95-SL-01. MD-OD-001 through MD-OD-011 remain unresolved, MESP-48/MESP-49/MESP-50 remain open gates, and no Master Data persistence exists.
+>
+> Hossam standing Owner approval covers normal BRD/specification/readiness, merge/closure, and next-session activation within approved scope and architecture. A fresh Codex/Luna chat executes exactly one root `TASK.md` session, validates, updates affected state/Jira, commits/pushes, merges only when clean, then stops for ChatGPT review. Stop only for a real security, Tenant-isolation, accounting/data-integrity, destructive migration/data-loss, legal/external-validation, credential/infrastructure, unresolved-decision, or material scope/architecture blocker. Independent Opus review is due after every five sessions or earlier at a critical checkpoint.
+
 | Field | Value |
 |---|---|
 | Document | Product Delivery Master Plan |
@@ -10,12 +14,12 @@
 | Last updated | 8 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-31 approval-state reconciliation — BRD v0.3 is an Owner Approved Business Baseline at reviewed content head 1e2d055354f0ddde833190948d09fa426707484c; documentation only.` |
-| Current implementation item | `None — MESP-31 is in BRD finalization and MESP-95 remains To Do. No Master Data source implementation is active or started; see .ai/CURRENT_STATE.md for the exact live position.` |
-| Merged-main baseline | `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54` (PR #27 merge — MESP-94 post-merge closure and Foundation completion reconciliation) |
+| Current activity | `MESP-96 / M95-SL-01 — contract-only, non-persistent shared boundary and Tenant/scope contracts; no Master Data persistence.` |
+| Current implementation item | `MESP-96 is In Progress. MESP-95 is Done after PR #29 merge; no later slice is active.` |
+| Merged-main baseline | `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d` (PR #29 merge) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `PR #28 — open, non-draft, mergeable and unmerged: docs(MESP-31) Master Data and Product Catalog BRD. Approved reviewed content head 1e2d055354f0ddde833190948d09fa426707484c; base main at c86ecb851e88205f1d3907f5a5c36cfb59ce8b54.` |
-| Current review checkpoint | `Foundation is complete: MESP-92, MESP-93 and MESP-94 are all Done. MESP-31 BRD v0.3 is approved by Hossam in Jira comment 10649 as the Release 1 business baseline, with MD-OD-001 through MD-OD-011 preserved and unresolved. PR #28 is approved for merge but remains unmerged until the approval-state reconciliation is pushed and reverified. MESP-95 exists as To Do and is not active. MESP-48, MESP-49 and MESP-50 and all qualified external-production gates remain open.` |
+| Open Pull Request | `None for MESP-95; PR #29 is merged. The next source slice must use a dedicated MESP-96 branch/PR and remain contract-only.` |
+| Current review checkpoint | `MESP-31 and MESP-95 are Done. PR #29 merged at 93f4e83992ef46f498cfbfacbb513cfc3d8dda7d. MESP-96 is In Progress for M95-SL-01 only; MD-OD-001 through MD-OD-011 remain unresolved and MESP-48/MESP-49/MESP-50 remain open gates.` |
 
 ---
 
@@ -2135,3 +2139,20 @@ database, credential, Jira child slice, Sprint, Retail POS behavior, or
 Wafra-specific behavior. MESP-23 remains the separate In Progress governance
 task for the Open Questions Register; no implementation/readiness item other
 than MESP-95 is active. MESP-48, MESP-49, and MESP-50 remain open gates.
+
+### Current MESP-95 closure and MESP-96 activation overlay - 8 August 2026
+
+The historical progress and MESP-95 review overlays above are preserved. The
+current verified state is that MESP-31 is **Done**, PR #29 is merged normally
+at `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d` from approved head
+`c465d660e49a254f2fffbb95e0d07c5fcf17a193`, and MESP-95 is **Done** with Jira
+closure evidence `10654`. MESP-96 is **In Progress** as the single next
+executable implementation item for M95-SL-01.
+
+M95-SL-01 is contract-only and non-persistent. It creates no Master Data
+entities/tables, migration, or `MESP` database/access solely for the slice and
+does not decide Product/Item, SKU/Barcode, tracking, business availability,
+approval catalogue, or Draft/Active behavior. It adds no Wafra-specific or
+Retail POS behavior and does not start M95-SL-02. MD-OD-001 through MD-OD-011
+remain unresolved; MESP-48, MESP-49, and MESP-50 remain open gates; no Master
+Data persistence exists.

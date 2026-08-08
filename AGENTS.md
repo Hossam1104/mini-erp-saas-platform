@@ -1,5 +1,40 @@
 # Repository Working Agreement
 
+## Current execution overlay - 8 August 2026 (MESP-95 closed; MESP-96 active)
+
+MESP-31 is **Done** as the approved BRD baseline. PR #29 is **merged** at
+actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; its approved
+final head is `c465d660e49a254f2fffbb95e0d07c5fcf17a193`. MESP-95 is **Done**
+with Jira closure evidence in comment `10654`. ChatGPT passed the final review,
+and M95-R01, M95-R02, and M95-R03 are closed. MESP-96 is the single next
+executable implementation item and is **In Progress** in Jira for M95-SL-01
+only. This overlay supersedes older live-state claims below.
+
+M95-SL-01 is contract-only and non-persistent. It may not create Master Data
+EF entities/tables, migrations, or an `MESP` database/access solely for this
+slice, and it may not decide Product/Item identity, SKU/Barcode, tracking,
+business availability, approval catalogue, or Draft/Active behavior. Retail
+POS and Wafra-specific core behavior remain excluded; M95-SL-02 and later
+slices remain out of scope. No Master Data persistence exists yet.
+
+Hossam has standing Owner approval for normal BRD, specification, readiness,
+merge, closure, and next-session activation while work remains inside the
+approved project scope and architecture. Do not stop for ceremonial approval.
+Stop only for a real security/Tenant-isolation, accounting/data-integrity,
+destructive migration/data-loss, unresolved-business-decision,
+legal/external-validation, credential/production-infrastructure, or material
+scope/architecture blocker.
+
+Each fresh Codex/Luna chat executes exactly one root `TASK.md` session. At the
+end of every session, validate, review the complete task diff, update `TASK.md`
+with the next exact session, update `.ai/CURRENT_STATE.md`, update every
+genuinely affected Markdown state/plan file, update Jira, commit/push, merge
+only when clean and unblocked, then STOP and return the completion report to
+Hossam for ChatGPT review. Never execute the next `TASK.md` automatically in
+the same chat. Run an independent Opus project review after every five
+completed sessions, or earlier at a critical architecture/security,
+accounting, migration/data-model, or major cross-module checkpoint.
+
 ## Current approval overlay — 8 August 2026
 
 MESP-31 BRD v0.3 is an **Approved Business Baseline** and is now **Done** in

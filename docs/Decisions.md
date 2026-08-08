@@ -2,6 +2,26 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
+## Current execution overlay - 8 August 2026
+
+MESP-31 is **Done** and PR #29 closed MESP-95 at approved head
+`c465d660e49a254f2fffbb95e0d07c5fcf17a193`, merged normally at
+`93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`. MESP-95 is **Done** with Jira
+closure evidence `10654`; ChatGPT passed the final review and M95-R01,
+M95-R02, and M95-R03 are closed. MESP-96 is now **In Progress** and is the
+single next executable implementation item for M95-SL-01.
+
+M95-SL-01 is contract-only and non-persistent. ADR-002 and the actual
+repository architecture must be inspected before backend structure changes;
+preserve the approved `MiniErp.Api -> MiniErp.App -> MiniErp.Contracts`
+direction and do not invent a new production project or topology. The slice
+does not create Master Data EF entities/tables, migrations, or `MESP` database
+access solely for this work, and does not decide Product/Item, SKU/Barcode,
+tracking, business availability, approval catalogue, or Draft/Active behavior.
+MD-OD-001 through MD-OD-011 remain unresolved, and MESP-48, MESP-49, and
+MESP-50 remain open production/external-validation gates. No Master Data
+persistence exists.
+
 | ADR | Title | Status | Required Timing | Related Jira | Detailed Source |
 |---|---|---|---|---|---|
 | ADR-001 | Modular Monolith, module dependency rules, and source-ownership reconciliation | Approved Baseline | Ownership reconciliation completed in owning BRDs; detailed enforcement before module implementation | MESP-22; MESP-27 to MESP-40 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
@@ -102,3 +122,19 @@ Foundation ADR seams remain authoritative. MD-OD-001 through MD-OD-011 remain
 open and are classified as slice gates rather than resolved by technical
 design. No Master Data source implementation has started; MESP-48, MESP-49,
 and MESP-50 remain open gates.
+
+## Superseding current Jira and repository execution state - 8 August 2026
+
+The historical MESP-31/MESP-95 overlay above is retained for provenance. The
+live sequence is now MESP-31 **Done**, MESP-95 **Done**, and MESP-96 **In
+Progress**. PR #29 merged at `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d` from
+approved head `c465d660e49a254f2fffbb95e0d07c5fcf17a193`; MESP-95 closure
+evidence is Jira comment `10654`.
+
+MESP-96/M95-SL-01 is contract-only/non-persistent and must preserve all
+unresolved MD-OD-001 through MD-OD-011 decisions. It may not create Master
+Data persistence, EF entities/tables, migrations, or `MESP` database access
+solely for the slice, and may not invent Product/Item, SKU/Barcode, tracking,
+business-availability, approval-catalogue, or Draft/Active behavior. ADR-002
+and the actual three-project application direction remain mandatory before
+backend structure changes. MESP-48, MESP-49, and MESP-50 remain open gates.

@@ -1,5 +1,16 @@
 # Foundation Backend Review Checkpoint
 
+> **Current execution overlay - 8 August 2026:** This checkpoint is
+> historical. MESP-31 is **Done**; PR #29 merged at actual commit
+> `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d` from approved head
+> `c465d660e49a254f2fffbb95e0d07c5fcf17a193`; MESP-95 is **Done** with Jira
+> closure evidence `10654`. MESP-96 is **In Progress** as the single next
+> executable implementation item for contract-only/non-persistent M95-SL-01.
+> MD-OD-001 through MD-OD-011 remain unresolved, MESP-48/MESP-49/MESP-50
+> remain open gates, and no Master Data persistence exists. Read
+> [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and root `TASK.md` for
+> the authoritative live handoff.
+
 > **Historical checkpoint — not the current state.** This document records the
 > Foundation backend position as reviewed on 3–4 August 2026, at the point
 > MESP-89 closed. Everything below is preserved as the baseline of that

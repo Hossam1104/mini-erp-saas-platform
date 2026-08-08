@@ -1,5 +1,41 @@
 # Current State
 
+## Current authoritative position - 8 August 2026 (MESP-95 closed; MESP-96 active)
+
+The historical state sections below are preserved for provenance. This overlay
+is authoritative for the live repository and Jira position.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-31 | **Done**; the approved BRD v0.3 baseline remains unchanged. |
+| PR #29 | **Merged** normally at actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; approved final PR head `c465d660e49a254f2fffbb95e0d07c5fcf17a193`. |
+| MESP-95 | **Done** in Jira; closure evidence comment `10654`; ChatGPT final review passed and M95-R01/M95-R02/M95-R03 are closed. |
+| MESP-96 | **In Progress** in Jira and the single next executable implementation item: `Implement Master Data shared boundary and Tenant/scope contracts (M95-SL-01)`. |
+| M95-SL-01 | Contract-only and non-persistent; no Master Data persistence exists yet. |
+| Open decisions | MD-OD-001 through MD-OD-011 remain unresolved and preserved. |
+| Production/external gates | MESP-48, MESP-49, and MESP-50 remain open; no production or external-validation decision is invented. |
+| Source implementation | None was performed under MESP-95 or this closure/handoff session. |
+| Main synchronization | Local `main` was synchronized to the PR #29 merge before MESP-96 activation; the final post-merge state commit is the current `main` head. |
+
+M95-SL-01 must remain contract-only: no Master Data EF entities/tables,
+migration, or `MESP` database creation/access solely for this slice; no
+Product/Item, SKU/Barcode, tracking, business-availability, approval-catalogue,
+or Draft/Active decision; no Wafra-specific behavior, Retail POS scope, or
+M95-SL-02 work. ADR-002 and the actual repository architecture must be
+inspected before backend structure changes; preserve the approved
+`MiniErp.Api -> MiniErp.App -> MiniErp.Contracts` direction and do not invent a
+new production project or topology.
+
+Hossam has standing Owner approval for normal BRD/specification/readiness,
+merge/closure, and next-session activation inside approved scope and
+architecture. Each fresh Codex/Luna chat executes exactly one root `TASK.md`
+session, validates, updates the handoff and affected Markdown/Jira, commits and
+pushes, merges only when clean and unblocked, then STOPs for ChatGPT review.
+Never automatically execute the next session. Independent Opus review is due
+after every five completed sessions or earlier at a critical architecture,
+security/Tenant-isolation, accounting, migration/data-model, or major
+cross-module checkpoint.
+
 ## Current verified position — 8 August 2026 (MESP-31 closed; MESP-95 active)
 
 The Stage-A and Stage-B gates are now sequenced and live. MESP-31 is closed

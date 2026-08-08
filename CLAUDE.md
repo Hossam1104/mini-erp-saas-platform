@@ -1,4 +1,33 @@
 @AGENTS.md
+
+## Current execution overlay - 8 August 2026 (MESP-95 closed; MESP-96 active)
+
+MESP-31 is **Done**. PR #29 merged at actual commit
+`93f4e83992ef46f498cfbfacbb513cfc3d8dda7d` from approved head
+`c465d660e49a254f2fffbb95e0d07c5fcf17a193`. MESP-95 is **Done** with Jira
+closure evidence `10654`; ChatGPT passed the final review and M95-R01,
+M95-R02, and M95-R03 are closed. MESP-96 is the single next executable item,
+**In Progress** in Jira, and is limited to M95-SL-01. This overlay supersedes
+older live-state claims below.
+
+M95-SL-01 is contract-only and non-persistent. Do not create Master Data EF
+entities/tables, migrations, or an `MESP` database/access solely for this
+slice. Do not decide Product/Item, SKU/Barcode, tracking, business
+availability, approval catalogue, or Draft/Active behavior. Retail POS,
+Wafra-specific core behavior, and M95-SL-02 remain out of scope. No Master
+Data persistence exists yet.
+
+Hossam has standing Owner approval for normal BRD/specification/readiness,
+merge/closure, and next-session activation within approved scope and
+architecture; stop only for a real security, Tenant-isolation,
+accounting/data-integrity, destructive migration/data-loss,
+legal/external-validation, credential/infrastructure, unresolved-business-
+decision, or material scope/architecture blocker. One fresh Codex/Luna chat
+executes exactly one root `TASK.md` session, validates, updates all genuinely
+affected state, updates Jira, commits/pushes, merges only when clean, then
+STOPs for ChatGPT review. Never automatically execute the next task. Run an
+independent Opus review after every five sessions or earlier at a critical
+architecture/security/financial/data-model checkpoint.
 # Mini ERP Delivery Rules
 
 ## Current approval overlay — 8 August 2026

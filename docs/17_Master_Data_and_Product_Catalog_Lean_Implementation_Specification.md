@@ -1,13 +1,21 @@
 # Master Data and Product Catalog Lean Implementation Specification
 
 **Version:** v0.1
-**Status:** Draft - implementation-readiness review
+**Status:** Completed implementation-readiness baseline; MESP-95 is Done
 **Jira:** MESP-95 - Produce Master Data and Product Catalog Lean Implementation Specification
 **Parent Epic:** MESP-6 - EPIC 06 - Master Data and Product Catalog
 **Branch:** `docs/MESP-95-master-data-lean-implementation-spec`
-**Review PR:** #29 - Open, non-draft, ready for ChatGPT/Product Owner review; initial draft head `dc550e1171e8f9d20cd7fdf5509dfffb7537b3bd`
+**Review PR:** #29 - Merged into `main` at `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; approved final head `c465d660e49a254f2fffbb95e0d07c5fcf17a193`
 **Owner:** Hossam / Product Owner
 **Date:** 8 August 2026
+
+> **Current delivery overlay - 8 August 2026.** MESP-95 is **Done** after
+> ChatGPT final review passed and PR #29 merged normally. This specification
+> remains a documentation/readiness baseline and did not perform Master Data
+> source implementation, persistence, migration, database creation/access, or
+> source tests. MESP-96 is now **In Progress** for the next bounded,
+> contract-only/non-persistent M95-SL-01 slice. MD-OD-001 through MD-OD-011
+> remain unresolved; MESP-48, MESP-49, and MESP-50 remain open gates.
 
 This document is the implementation-readiness and technical-design baseline for
 the approved MESP-31 business baseline. It is a design and backlog document,
@@ -29,8 +37,8 @@ approved and a separate bounded coding item is activated.
 | Merged-main baseline for this work | `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b` |
 | Canonical PRD | `docs/MESP_PRD_v1.2.docx` |
 | Protected PRD Git blob | `1f9163b9412cb343a19a98312eb642ad26c1efaa` |
-| Jira activation | MESP-95 transitioned from To Do to In Progress after MESP-31 was confirmed Done |
-| Delivery state | MESP-31 Done; MESP-95 is the single active implementation-readiness item |
+| Jira activation | MESP-95 transitioned to Done after PR #29 merged; MESP-96 is now In Progress as the next implementation item |
+| Delivery state | MESP-31 Done; MESP-95 Done; MESP-96 In Progress for M95-SL-01 only |
 
 The approval of MESP-31 preserves MD-OD-001 through MD-OD-011. This
 specification identifies their implementation impact but does not answer,
@@ -869,7 +877,7 @@ strategy is the acceptance plan for the later slices.
 | MD-OD-001-011 | Dedicated impact matrix and decision package in section 16; no entry is resolved. |
 | Foundation specification and ADRs | Sections 4, 5, 8, 9, 10, 11, 13, 14, 17, 18, 19. |
 
-## 21. Definition of Ready for MESP-95 review
+## 21. Historical Definition of Ready for MESP-95 review
 
 This document is Ready for ChatGPT/Product Owner review when:
 
@@ -891,14 +899,14 @@ This document is Ready for ChatGPT/Product Owner review when:
 - the document remains explicitly Draft and is not marked Approved by the
   delivery agent.
 
-## 22. Review status and delivery boundary
+## 22. Superseding review status and delivery boundary
 
-MESP-95 is **In Progress** in Jira and this document is **Draft -
-implementation-readiness review**. It is ready for ChatGPT review after the
-documentation validation and PR publication. Approval of this specification,
-when granted, must still be followed by separate activation of the first
-bounded source-code item. No source implementation begins automatically from
-this PR.
+MESP-95 is **Done** in Jira. ChatGPT final review passed at approved head
+`c465d660e49a254f2fffbb95e0d07c5fcf17a193`, and PR #29 merged at actual commit
+`93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`. The specification remains a
+documentation/readiness baseline; no source implementation begins from this
+document. MESP-96 is the next separately activated implementation item and is
+limited to contract-only/non-persistent M95-SL-01.
 
 The local SQL Server choice is recorded without a password. MESP-48,
 MESP-49, MESP-50, ADR-011, ADR-016, Saudi legal/tax validation, and every

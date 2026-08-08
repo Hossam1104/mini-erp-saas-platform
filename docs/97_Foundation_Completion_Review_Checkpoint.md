@@ -1,5 +1,14 @@
 # Foundation Completion Review Checkpoint
 
+> **Current execution overlay - 8 August 2026:** The Foundation checkpoint
+> below is historical. MESP-31 and MESP-95 are **Done**; PR #29 merged at
+> `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d` from approved head
+> `c465d660e49a254f2fffbb95e0d07c5fcf17a193`, with MESP-95 closure evidence in
+> Jira comment `10654`. MESP-96 is **In Progress** for the next bounded
+> contract-only/non-persistent M95-SL-01 session. MD-OD-001 through MD-OD-011
+> remain unresolved; MESP-48, MESP-49, and MESP-50 remain open gates; no
+> Master Data persistence exists. Root `TASK.md` is the executable handoff.
+
 | Field | Value |
 |---|---|
 | Status | Foundation checkpoint baseline preserved; MESP-91 correction merged and Done; not production-readiness approval |
