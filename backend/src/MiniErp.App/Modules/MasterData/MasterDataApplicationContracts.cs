@@ -55,6 +55,9 @@ public sealed class MasterDataRequestContext
 
     internal FoundationRequestContext FoundationContext { get; }
 
+    public TenantContext TenantContext => FoundationContext.TenantContext
+        ?? throw new InvalidOperationException("A Master Data context must carry a trusted Tenant context.");
+
     internal static MasterDataRequestContext FromFoundationContext(
         FoundationRequestContext foundationContext)
     {
@@ -247,16 +250,17 @@ public interface IMasterDataScopePolicy
 {
     MasterDataScopeDecision Evaluate(
         MasterDataRequestContext context,
-        BusinessScope? resourceScope);
+        MasterDataResourceReference resource);
 }
 
 public sealed class DenyAllMasterDataScopePolicy : IMasterDataScopePolicy
 {
     public MasterDataScopeDecision Evaluate(
         MasterDataRequestContext context,
-        BusinessScope? resourceScope)
+        MasterDataResourceReference resource)
     {
         ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(resource);
         return MasterDataScopeDecision.Denied();
     }
 }
@@ -334,7 +338,7 @@ public sealed class MasterDataResourceAuthorizationService
         MasterDataScopeDecision? scopeDecision;
         try
         {
-            scopeDecision = scopePolicy.Evaluate(context, resource.Scope);
+            scopeDecision = scopePolicy.Evaluate(context, resource);
         }
         catch
         {
@@ -464,7 +468,7 @@ public static class MasterDataAuditEvidenceFactory
             _ => throw new ArgumentException("Audit evidence requires a Tenant authorization path.", nameof(context))
         };
 
-        return new MasterDataAuditEvidence(
+        return MasterDataAuditEvidence.CreateValidated(
             Guid.NewGuid(),
             occurredAt ?? DateTimeOffset.UtcNow,
             $"master-data.{resource.ResourceKind}.{operation}",

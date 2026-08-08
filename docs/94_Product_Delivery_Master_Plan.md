@@ -1,6 +1,24 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative current overlay - MESP-100 closed; MESP-99 active, 9 August 2026.** MESP-100 is Done with Jira closure evidence `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. MESP-99 is In Progress with activation evidence `10664` and is the single active implementation item. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. No Category/UOM persistence or MESP-99 behavior was implemented by MESP-100; the root TASK.md now contains the exact MESP-99 session.
+> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 open).**
+> MESP-99 / M95-SL-02 Category and UOM is implementation-complete on branch
+> `agent/mesp-99-category-uom` at its approved bounded scope: Tenant-wide
+> Category/UOM policy, server-derived authorization, lifecycle/concurrency,
+> hierarchy, precision/rounding, module-owned persistence, isolation, and
+> persistent audit fidelity. Release build, focused tests, and the non-SQL
+> suite are green; the 21-test SQL Server safety gate remains an existing
+> credential/provider gate because `MESP_SQLSERVER_CONNECTION_STRING` is not
+> configured. No migration, production database, Product/Item behavior, or
+> later domain slice was introduced. Focused PR #33 is open from implementation
+> commit `430996c`; final merge evidence will be added to the current-state
+> handoff after review. MESP-48, MESP-49,
+> and MESP-50 remain open.
+
+> The next exact session is M95-SL-03 Product identity readiness only, gated by
+> a dedicated activated Jira item and owner decisions/bounds for MD-OD-003,
+> MD-OD-010, and MD-OD-011. It must not start automatically.
+
+> **Historical current overlay at MESP-99 activation - MESP-100 closed; MESP-99 active, 9 August 2026.** MESP-100 is Done with Jira closure evidence `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. MESP-99 was In Progress with activation evidence `10664` and was the single active implementation item. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. No Category/UOM persistence or MESP-99 behavior was implemented by MESP-100; the root TASK.md then contained the exact MESP-99 session.
 
 > **Current MESP-100 readiness overlay — 9 August 2026.** MESP-100 is the
 > single active bounded readiness-correction item between completed MESP-96 /

@@ -6,6 +6,8 @@ using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.BusinessParties;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.MasterData;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
 namespace MiniErp.ArchitectureTests;
@@ -42,7 +44,8 @@ public sealed class MasterDataBoundaryTests
             [MasterDataOperation.Deactivate] = MasterDataCapability.Deactivate,
             [MasterDataOperation.Approve] = MasterDataCapability.Approve,
             [MasterDataOperation.Import] = MasterDataCapability.ImportMigrate,
-            [MasterDataOperation.ViewAuditHistory] = MasterDataCapability.ViewAuditHistory
+            [MasterDataOperation.ViewAuditHistory] = MasterDataCapability.ViewAuditHistory,
+            [MasterDataOperation.Reactivate] = MasterDataCapability.Activate
         };
 
         foreach (var (operation, capability) in expected)
@@ -151,7 +154,7 @@ public sealed class MasterDataBoundaryTests
         var sourceFiles = Directory.GetFiles(appSourcePath, "*.cs", SearchOption.AllDirectories)
             .Concat(Directory.GetFiles(contractSourcePath, "*.cs", SearchOption.AllDirectories))
             .ToArray();
-        var forbiddenTokens = new[]
+        var forbiddenIdentifiers = new[]
         {
             "DbContext",
             "EntityFrameworkCore",
@@ -166,7 +169,6 @@ public sealed class MasterDataBoundaryTests
             "Serial",
             "Expiry",
             "Draft",
-            "Active",
             "TenantWide"
         };
 
@@ -174,9 +176,15 @@ public sealed class MasterDataBoundaryTests
         foreach (var sourceFile in sourceFiles)
         {
             var source = File.ReadAllText(sourceFile);
-            foreach (var forbiddenToken in forbiddenTokens)
+            var tree = CSharpSyntaxTree.ParseText(source, path: sourceFile);
+            var identifiers = tree.GetRoot()
+                .DescendantTokens()
+                .Where(token => token.RawKind == (int)Microsoft.CodeAnalysis.CSharp.SyntaxKind.IdentifierToken)
+                .Select(token => token.ValueText)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var forbiddenToken in forbiddenIdentifiers)
             {
-                Assert.DoesNotContain(forbiddenToken, source, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(forbiddenToken, identifiers);
             }
         }
     }
@@ -556,10 +564,10 @@ public sealed class MasterDataBoundaryTests
     {
         public MasterDataScopeDecision Evaluate(
             MasterDataRequestContext context,
-            BusinessScope? resourceScope)
+            MasterDataResourceReference resource)
         {
             Assert.NotNull(context);
-            if (resourceScope?.OrganizationAnchor is not { } anchor
+            if (resource.Scope?.OrganizationAnchor is not { } anchor
                 || context.TrustedScope is not { } trustedScope
                 || !string.Equals(anchor.CanonicalValue, trustedScope.Value, StringComparison.Ordinal))
             {

@@ -22,7 +22,10 @@ public static class MasterDataOperationCatalog
             [MasterDataOperation.Deactivate] = MasterDataCapability.Deactivate,
             [MasterDataOperation.Approve] = MasterDataCapability.Approve,
             [MasterDataOperation.Import] = MasterDataCapability.ImportMigrate,
-            [MasterDataOperation.ViewAuditHistory] = MasterDataCapability.ViewAuditHistory
+            [MasterDataOperation.ViewAuditHistory] = MasterDataCapability.ViewAuditHistory,
+            // Reactivation is the lifecycle counterpart of activation and
+            // therefore deliberately uses the existing Activate permission.
+            [MasterDataOperation.Reactivate] = MasterDataCapability.Activate
         }.ToFrozenDictionary();
 
     /// <summary>
