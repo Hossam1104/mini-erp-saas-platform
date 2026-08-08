@@ -28,11 +28,43 @@
   and MESP-92 is Done, as are MESP-89, MESP-63, MESP-61 and MESP-64. The
   Foundation completion checkpoint following MESP-94 confirms MESP-92/93/94
   Done and MESP-48/MESP-50 as intentional open production gates, not BRD
-  entry blockers. MESP-31 remains **To Do** and is not started — Foundation
-  completion alone does not satisfy its BRD entry criteria; a distinct owner
-  approval is required (see `.ai/CURRENT_STATE.md`'s "MESP-31 BRD entry
-  eligibility" section). No Master Data implementation has begun and none
-  may start automatically.
+  entry blockers. PR #27 merged that closure to `main` at
+  `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54`, the current merged-main
+  baseline.
+- MESP-31 is **In Progress** under Parent Epic `MESP-6 — EPIC 06 - Master
+  Data and Product Catalog`, on branch
+  `docs/MESP-31-master-data-product-catalog-brd`. Both Owner authorizations
+  are recorded in live Jira: comment `10615` (BRD entry) and comment `10616`
+  (future Master Data implementation, conditional). MESP-31's Jira Source
+  Baseline is primary anchor PLT-003 with supporting anchors PLT-002,
+  SAL-001, PROC-002, PROC-008, FIN-001, FIN-003, FIN-007, FIN-010, KSA-002,
+  BR-013, ADM-003 and the applicable PRD RULE set for master-data integrity;
+  PLT-011 through PLT-014 and BR-004 are Platform Administration anchors and
+  are not MESP-31's baseline.
+- `docs/16_Master_Data_and_Product_Catalog_BRD.md` covers Products, Product
+  Categories, Units of Measure, Suppliers, Business Customers, Price Lists,
+  Taxes, Payment Terms, Currencies and Exchange Rates, and is published on
+  open **PR #28**. Its v0.1 head `6d0aa80` drew a business-requirements
+  verdict of CHANGES REQUIRED BEFORE OWNER APPROVAL / MERGE; a bounded
+  correction round produced v0.2 with ten Open Decisions (MD-OD-001–010),
+  reviewed at head `8657011`, which drew a further verdict of CHANGES
+  REQUIRED — FINAL SMALL CORRECTION ROUND: M31-R10 (Product/Item modelling
+  needed an Owner decision rather than Confirmed status), M31-R11 (residual
+  approval assumptions), M31-R12 (Saudi launch language) and M31-R13 (an
+  unrelated `.vscode/settings.json` change in the PR delta). A second bounded
+  correction round closed all four and produced v0.3, whose Open Decision
+  register now holds eleven decisions (MD-OD-001–011, adding Product/Item
+  modelling as MD-OD-011).
+  The BRD is **Draft, pending Hossam's business-owner review, and is not
+  Approved.** Two Founder Decision Pack defaults are explicitly not approved
+  and must not be treated as requirements: MESP-41 (batch/lot/serial/expiry,
+  now MD-OD-010) and MESP-54 (exchange-rate sourcing and Finance approval,
+  owned by MESP-34). Hossam also pre-authorized the later Master Data
+  implementation phase, but that authorization only becomes executable after
+  this BRD is approved and a dedicated implementation Jira item, separate
+  from MESP-31, is identified and activated. No Master Data implementation
+  has begun and none may start automatically — see `.ai/CURRENT_STATE.md`
+  for the exact live position.
 - The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`. Older references to
   `MiniERPSaaSPlatform_PRD_v1.2.docx` or
   `MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx` name the same
