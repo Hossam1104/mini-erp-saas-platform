@@ -12,10 +12,10 @@ and non-persistent. Its functional PR #30 merged at
 `87f150d95f583168a86aa56200916343c6404f7f`; the bounded post-merge correction
 commit is `85d3c48f20a97f8057e5960c305a3bcc0cb8d672` on
 `fix/mesp-96-optional-scope-hint`; correction PR #31 merged at
-`4eeefe0d1a9af209cc3e31608812ec35ef283fd9`; and synchronized `main` and
-`origin/main` now match `4eeefe0d1a9af209cc3e31608812ec35ef283fd9`.
-MESP-96 correction evidence is Jira comment `10657`; historical completion
-comments `10655` and `10656` remain preserved.
+`4eeefe0d1a9af209cc3e31608812ec35ef283fd9`. The required state/task handoff
+is published on synchronized `main`; Jira correction evidence is comment
+`10657` and final repository reconciliation is comment `10658`.
+Historical completion comments `10655` and `10656` remain preserved.
 
 No Category/UOM source implementation, entity, table, migration, database
 access, endpoint, or Jira child slice was created by the preceding session.
