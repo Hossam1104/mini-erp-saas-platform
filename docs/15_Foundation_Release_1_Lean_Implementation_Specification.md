@@ -23,7 +23,8 @@ implementation, a Sprint start, or a production release.
 > Foundation completion checkpoint that followed found no remaining Foundation
 > correction blocking MESP-31 BRD entry. Hossam recorded the required
 > distinct owner authorization on 8 August 2026; MESP-31 moved to In Progress
-> with a v0.1 draft BRD pending Hossam's review.
+> with a draft BRD (v0.2, on open PR #28) pending Hossam's review and not
+> Approved. No Master Data implementation has started.
 > Wherever this document says an Enabler is "To Do", that
 > an Enabler is "not started", or names a "next action", read
 > [`.ai/CURRENT_STATE.md`](../.ai/CURRENT_STATE.md) and

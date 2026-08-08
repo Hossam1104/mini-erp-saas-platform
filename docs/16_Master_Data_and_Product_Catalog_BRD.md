@@ -6,8 +6,8 @@
 |---|---|
 | Document | Master Data and Product Catalog Business Requirements Document |
 | Jira | MESP-31 — Produce Master Data and Product Catalog BRD |
-| Parent Epic | Presumed `MESP-6 — EPIC 06 - Master Data and Product Catalog`, inferred from the established Epic-numbering pattern (Epic MESP-2 → MESP-27, MESP-3 → MESP-28, MESP-4 → MESP-29, MESP-5 → MESP-30). **Not independently confirmed** in `docs/94_Product_Delivery_Master_Plan.md` or `docs/90_MVP_Founder_Decision_Pack.md`; verify directly against Jira before citing as fact. |
-| Version | v0.1 — Draft for Owner Review |
+| Parent Epic | `MESP-6 — EPIC 06 - Master Data and Product Catalog` — verified directly against live Jira, not inferred. |
+| Version | v0.2 — Draft for Owner Review (v0.1 corrected after the first business-requirements review of PR #28) |
 | Status | **Draft pending Hossam's business-owner review.** Not Approved. This document does not authorize implementation. |
 | Accountable owner | Hossam, Product Owner and founder approver |
 | Prepared by | Claude (Sonnet 5), acting as the delivery agent under Hossam's direction, following the drafting role used for MESP-27/28/29/30 |
@@ -17,7 +17,7 @@
 | Related approved BRDs | `docs/11_SaaS_Platform_Administration_BRD.md`; `docs/12_Identity_and_Access_BRD.md`; `docs/13_Multi_Tenancy_BRD.md`; `docs/14_Organization_and_Company_Structure_BRD.md` |
 | Architecture reference | `docs/01_Technology_Architecture_Baseline.md` (constraint reference only; does not dictate business requirements) |
 | Delivery reference | `docs/94_Product_Delivery_Master_Plan.md`; `docs/90_MVP_Founder_Decision_Pack.md` |
-| Jira state at drafting | MESP-31 In Progress (BRD-entry authorization and future implementation authorization recorded by the Owner on 8 August 2026 — see §41); no downstream implementation Jira item exists or has started |
+| Jira state | MESP-31 is **In Progress**. Both Owner authorizations are recorded in live Jira: comment `10615` (BRD-entry authorization) and comment `10616` (future Master Data implementation authorization, conditional — see §41). MESP-31's Jira Source Baseline has been corrected to the anchors listed in §6. No downstream implementation Jira item exists or has started. |
 | Development environment decision (non-business) | The Owner has selected local SQL Server (instance `.`, database `MESP`) as the development environment for the later, separately gated implementation phase. This is an implementation/environment decision, not a business rule, carries no business meaning, and is Out of Scope for this BRD's content. No credential of any kind appears in this document. |
 | Classification summary | See §43 Coverage Checklist for the exact rule/scenario/decision counts produced by this draft. |
 
@@ -29,6 +29,7 @@
 | **Confirmed — Founder-approved Release 1 requirement** | Explicitly approved by Hossam for the Release 1 business baseline (including the scope authorization recorded for this BRD on 8 August 2026) and carried forward without adding implementation behavior. |
 | **Open Decision** | A genuine business decision still requiring Hossam's recorded approval. Only the `MD-OD-*` register uses this classification. |
 | **Deferred Gate** | Deliberately owned by a later domain BRD (MESP-32 through MESP-40, MESP-46, MESP-49), MESP-48, MESP-50, or a later approval. No value is invented here. |
+| **Deferred Gate / Recommended Default — not yet approved** | A `docs/90_MVP_Founder_Decision_Pack.md` recommended default that Hossam has **not** approved. The pack states it as a starting position for its owning BRD, not as an approved requirement. This BRD records the recommendation and its owner; it does not adopt, approve, or build behavior on it. Used for MESP-41 (see MD-OD-010) and MESP-54 (owned by MESP-34). |
 | **External Validation Required** | Requires confirmation from Saudi legal, tax, or accounting authority beyond this BRD's business-analysis scope. |
 | **Out of Scope** | Explicitly excluded from this BRD or owned by another domain in full. |
 
@@ -38,7 +39,7 @@ This is a business-requirements document. It authorizes no API, database, UI, co
 
 **Classification: Confirmed.** Master Data and Product Catalog is the shared, reusable business-fact layer that every other Release 1 domain consumes: Procurement reads Supplier and Product facts to raise a Purchase Order; Inventory reads Product and Unit of Measure facts to move stock; B2B Sales reads Business Customer, Product, and Price List facts to quote and invoice; Finance reads Currency, Exchange Rate, Payment Term, and Tax facts to post a balanced ledger entry. A Product, Supplier, or Tax rate defined once and reused everywhere is what keeps these domains consistent with each other; defining the same fact twice, inconsistently, in two domains is the specific failure this BRD prevents.
 
-**Classification: Confirmed.** Master Data lives inside the approved Tenant boundary (`docs/13_Multi_Tenancy_BRD.md`). Every master record this BRD defines is Tenant-owned business data: it is private to its Tenant by default, is never visible or reusable across a Tenant boundary, and its duplicate checks, search, import, and export never leak another Tenant's values. Nothing in this BRD weakens or reinterprets the Multi-Tenancy or Organization BRDs' approved isolation, scope, or hierarchy rules.
+**Classification: Confirmed.** Master Data lives inside the approved Tenant boundary (`docs/13_Multi_Tenancy_BRD.md`). Every master record this BRD defines is Tenant-owned business data: it is private to its Tenant by default, is never visible or reusable across a Tenant boundary, and its duplicate checks, search, import, and export never leak another Tenant's values. That isolation boundary is mandatory and settled. **It is a separate question from business scope inside the owning Tenant** — whether a record is usable by every Company/Legal Entity in that Tenant or restricted to some of them is undecided and is Open Decision MD-OD-001 (§30). Tenant ownership is not read anywhere in this BRD as automatic Tenant-wide business availability. Nothing here weakens or reinterprets the Multi-Tenancy or Organization BRDs' approved isolation, scope, or hierarchy rules.
 
 **Classification: Confirmed — Founder-approved Release 1 requirement.** This BRD is reusable, configuration-led product content. It defines no Wafra-specific schema, rule, permission, workflow, report, status, price rule, tax behavior, or UX. Wafra is validation evidence only, exactly as the approved PRD and the Multi-Tenancy/Organization BRDs already require.
 
@@ -58,7 +59,7 @@ This is a business-requirements document. It authorizes no API, database, UI, co
 | Governed taxation | Tax rates are effective-dated configuration; they are never hard-coded into transaction logic and never silently rewrite history. | Confirmed | PRD FIN-007, KSA-002 |
 | Auditable commercial terms | A Payment Term is reusable configuration whose meaning on an already-posted document survives any later change to the term itself. | Confirmed | PRD FIN-004/FIN-005; glossary Payment Terms |
 | Controlled currencies | Release 1 supports multiple currencies; SAR is the Saudi default, not a hard-coded ceiling. | Confirmed | PRD FIN-010; glossary Base/Transaction/Reporting Currency |
-| Reproducible exchange rates | An Exchange Rate is effective-dated; a posted transaction keeps the rate it actually used forever. | Confirmed | PRD FIN-003; Founder Decision Pack MESP-54 default |
+| Reproducible exchange rates | An Exchange Rate is effective-dated; a posted transaction keeps the rate it actually used forever. | Confirmed | PRD FIN-003, FIN-010; glossary Exchange Rate. (How rates are *sourced and approved* is the separate, unapproved MESP-54 default owned by MESP-34 — see §20.) |
 | Reuse across downstream domains | Every fact this BRD defines is read, not redefined, by Procurement (MESP-32), Inventory (MESP-33), B2B Sales (MESP-35), and Finance (MESP-34). | Confirmed | PRD bounded-context table (Catalog/Parties contexts) |
 | Governed gates preserved | MESP-48 and MESP-50 remain explicit production and capacity gates; this BRD invents no volume, retention, or purge value. | Deferred Gate | MESP-48/MESP-50 |
 
@@ -109,12 +110,13 @@ This is a business-requirements document. It authorizes no API, database, UI, co
 
 | Source | Relevant authority used in this BRD | Classification |
 |---|---|---|
-| Jira MESP-31 | Required scope: Products, Categories, UOM, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies, Exchange Rates; deactivate-not-delete instruction. | Confirmed |
+| Jira MESP-31 | Required scope: Products, Categories, UOM, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies, Exchange Rates; deactivate-not-delete instruction. Parent Epic `MESP-6 — EPIC 06 - Master Data and Product Catalog`. Owner authorizations recorded in comments `10615` and `10616` (§41). | Confirmed |
+| Jira MESP-31 Source Baseline (corrected) | MESP-31's Jira Source Baseline now reads: primary anchor **PLT-003**; supporting anchors **PLT-002, SAL-001, PROC-002, PROC-008, FIN-001, FIN-003, FIN-007, FIN-010, KSA-002, BR-013, ADM-003**, plus the applicable PRD RULE set for master-data integrity. This is the authoritative baseline this BRD traces to. `PLT-011`–`PLT-014` and `BR-004` are Platform Administration anchors and are **no longer** listed as MESP-31's baseline — see §42. | Confirmed |
 | Owner instruction, 8 August 2026 | BRD-entry authorization and future implementation authorization (see §41); explicit ten-domain scope mandate for MESP-31. | Confirmed — Founder-approved Release 1 requirement |
 | PRD v1.2 (`docs/MESP_PRD_v1.2.docx`) | **PLT-003** ("Master data. Authorized users can create, review, activate, deactivate, import, export, and search shared business master data with validation and duplicate detection.") is the primary Platform-foundation anchor. **PLT-002** (organization hierarchy, functional currencies). **SAL-001** (customer identity, addresses, tax attributes, contacts, payment terms, price list, credit limit, status). **PROC-002** (supplier quotations: price, currency, tax, delivery terms). **PROC-008** (suppliers are external parties, no platform accounts). **FIN-001** (chart of accounts, currency behavior). **FIN-003** (journal currencies/exchange rates). **FIN-007** (tax calculated from effective-dated rules). **FIN-010** (document/functional/reporting currency, exchange-rate source, rounding differences). **KSA-002** (Saudi VAT seeded at 15% but configurable, never hard-coded). **BR-013** (import opening and master data with preview, validation, duplicate control, rollback, reconciliation). **ADM-003** (import controls: templates, validation previews, row-level errors, duplicate rules). The PRD's own bounded-context table also assigns "Catalog" (Product, category, unit, price list, tax classification) and "Parties" (Supplier, customer, contacts, addresses, terms) as distinct contexts. | Confirmed |
-| **Correction to the task brief's cited anchors** | The task brief that requested this BRD names **PLT-011 through PLT-014 and BR-004** as the PRD traceability anchors. Direct extraction of `docs/MESP_PRD_v1.2.docx` text shows these four PLT anchors are Platform Administration requirements (tenant provisioning, subscriptions/entitlements, tenant branding/structure, no-tenant-specific-code) already owned by the approved MESP-27 BRD (`docs/11_SaaS_Platform_Administration_BRD.md` lines 63–66), and BR-004 is "Manage plans, subscriptions, modules, entitlements, quotas, and tenant lifecycle" — also Platform Administration, not master data. This BRD traces instead to the verified anchors listed above (principally PLT-003) rather than repeating an inaccurate citation. See §42 Source Conflicts and Corrections. | Confirmed correction |
+| **Anchor correction, now reflected in Jira** | The task brief that originally requested this BRD named **PLT-011 through PLT-014 and BR-004** as the PRD traceability anchors. Direct extraction of `docs/MESP_PRD_v1.2.docx` text shows these four PLT anchors are Platform Administration requirements (tenant provisioning, subscriptions/entitlements, tenant branding/structure, no-tenant-specific-code) already owned by the approved MESP-27 BRD (`docs/11_SaaS_Platform_Administration_BRD.md` lines 63–66), and BR-004 is "Manage plans, subscriptions, modules, entitlements, quotas, and tenant lifecycle" — also Platform Administration, not master data. **MESP-31's Jira Source Baseline has since been corrected** to the anchors listed above (principally PLT-003), so the repository and Jira now agree. See §42 Source Conflicts and Corrections. | Confirmed correction |
 | `docs/00_ERP_Business_Glossary.md` | Controlled definitions for Product, Item, SKU, Barcode, Category, Unit of Measure, Base Unit, Purchase/Sales Unit, Supplier, Supplier Contact, Business Customer, Customer Contact, Payment Terms, Credit Limit, Price List, Tax Category, Base/Transaction/Reporting Currency, Exchange Rate family, Audit Event, Retail POS. | Confirmed |
-| `docs/90_MVP_Founder_Decision_Pack.md` | MESP-41 (batch/lot/serial/expiry scope is configurable per product/category, disabled by default — jointly owned by MESP-31/MESP-33); MESP-51 (migrate master data plus reconciled opening balances, owned by MESP-40); MESP-54 (exchange rates are manual, effective-dated, Finance-approved by default, automated feeds deferred — owned by MESP-34); domain sequence placing MESP-31 fifth, immediately after MESP-30 and before MESP-32. | Confirmed |
+| `docs/90_MVP_Founder_Decision_Pack.md` | The pack's §4 legend is explicit: unless a row is marked **APPROVED**, its content is a *recommended default* that "must decide during its owning domain BRD" — it is not an approved requirement. Only MESP-52 and MESP-56 carry an APPROVED marking. Accordingly: **MESP-41** (batch/lot/serial/expiry scope — configurable per Product or Category, disabled by default, enforced end-to-end when enabled; jointly owned by MESP-31/MESP-33) is an **unapproved recommended default** — it is MESP-31's own owning-BRD decision and is raised as **MD-OD-010**. **MESP-54** (manual, effective-dated exchange rates maintained and approved by Finance; preserve the applied rate; automated feeds deferred) is an **unapproved recommended default owned by Finance/MESP-34** and is not approved by this BRD. **MESP-51** (migrate master data plus reconciled opening balances, owned by MESP-40) is likewise an unapproved recommended default. The domain sequence placing MESP-31 fifth, immediately after MESP-30 and before MESP-32, is settled delivery sequencing. | Confirmed as to what the pack states; the MESP-41/MESP-51/MESP-54 defaults themselves are **Deferred Gate / Recommended Default — not yet approved** |
 | `docs/13_Multi_Tenancy_BRD.md` | Tenant ownership, private-by-default data, cross-Tenant denial, audit-evidence boundary — all apply unchanged to every master record this BRD defines. | Confirmed |
 | `docs/14_Organization_and_Company_Structure_BRD.md` | Approved hierarchy (Platform → Tenant → Company/Legal Entity → Branch → Warehouse); scope never inherits upward; the Organization BRD is silent on which of these levels owns Product/Price List/Tax scope — see MD-OD-001. | Confirmed boundary |
 | `docs/12_Identity_and_Access_BRD.md` | Plain-language Permission-category convention (no dotted technical naming); Separation-of-Duties pattern distinguishing SoD from approval workflow. | Confirmed |
@@ -129,7 +131,7 @@ This is a business-requirements document. It authorizes no API, database, UI, co
 | Hossam / Product Owner and founder approver | Approves this BRD, resolves the `MD-OD-*` register, and controls delivery sequencing including the implementation gate. | Approval does not itself authorize implementation. | Confirmed |
 | Tenant Administrator | Confirms initial master-data setup (Currencies, base Tax configuration, initial Categories) within the Tenant's approved scope. | Cannot cross Tenant boundaries. | Confirmed |
 | Master Data Maintainer | Creates, edits, activates, and deactivates Products, Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies, and Exchange Rates within an authorized scope. | Requires the applicable capability (§26); cannot bypass duplicate checks or effective-dating rules. | Confirmed |
-| Approver (sensitive master data) | Approves a risk-sensitive change — a tax-rate change, a manually entered exchange rate, or a published price — where §27 requires approval. | Cannot approve their own change where self-approval is prohibited (§28). | Confirmed |
+| Approver (sensitive master data) | Approves a master-data change **where an approved business policy requires a separate approver**. Which specific changes carry that requirement is not settled by any approved source and is Open Decision MD-OD-005; candidate changes include tax-rate changes, published customer-facing Price List changes, and manually entered exchange rates. | Cannot approve their own change wherever a separate approver is required (§28). | Confirmed as a role; the catalogue of changes it applies to is Open Decision (MD-OD-005) |
 | Procurement / Inventory / B2B Sales / Finance consumer | Reads Master Data facts to perform a downstream business function; never redefines them locally. | Cannot silently fork a Product, Supplier, Tax, or Currency definition inside its own domain. | Confirmed |
 | Migration / Onboarding owner | Owns source mapping, duplicate review, reconciliation, and sign-off for a Master Data import. | Ambiguous mappings remain quarantined until accountable approval. | Confirmed |
 | Security / Privacy / Audit reviewer | Reviews master-data change evidence and denial events. | Does not gain ordinary maintenance access merely by being a reviewer. | Confirmed |
@@ -141,7 +143,7 @@ This BRD reuses every existing glossary definition unchanged (see §6). It does 
 | Term | Business meaning used by MESP-31 | Classification |
 |---|---|---|
 | Master record | Any Product, Category, Unit of Measure, Supplier, Business Customer, Price List, Tax, Payment Term, Currency, or Exchange Rate record defined once and reused across transactions. | Confirmed |
-| Business Party | The umbrella business concept covering Supplier and Business Customer: an external counterparty recorded as master data inside a Tenant, never a system User. Supplier and Business Customer keep their distinct approved glossary meanings; "Business Party" only names what they share for duplicate-detection and shared-contact/address purposes. **New glossary entry proposed** (see §42). | Confirmed — Founder-approved Release 1 requirement |
+| Business Party | The umbrella business concept covering Supplier and Business Customer: an external counterparty recorded as master data inside a Tenant, never a system User. Supplier and Business Customer remain **distinct business roles with distinct approved glossary meanings and lifecycles**; "Business Party" only names what they share (external identity, contact/address structure, duplicate-detection treatment). The approved glossary already states that the same legal company may legitimately exist as both a Supplier record and a Business Customer record, so the term introduces **no unified party record** and **no rule that an identity match across the two roles blocks the second role** — see MD-BR-045. **New glossary entry proposed** (see §42). | Confirmed |
 | Currency (generic) | A recognized unit of monetary value maintained as Tenant master data, distinct from the Base/Transaction/Reporting *usage roles* the glossary already defines for a given document or ledger. **New glossary entry proposed** (see §42). | Confirmed |
 | Tax (generic) | A configured, effective-dated rate or rule applied to a transaction, distinct from **Tax Category**, which the glossary already defines as the Saudi-Country-Pack-owned classification that determines *which* tax treatment applies. **New glossary entry proposed** (see §42). | Confirmed |
 | Effective date | The date from which a rate, price, or configuration value is the one applied to a new transaction; it never changes what an already-posted transaction recorded. | Confirmed |
@@ -174,11 +176,11 @@ This BRD reuses every existing glossary definition unchanged (see §6). It does 
 
 | Status | Business meaning | Entry / exit | Classification |
 |---|---|---|---|
-| Active | The record may be selected for a new transaction, price, or assignment. | Default state on successful creation after validation and duplicate checks pass. | Confirmed |
+| Active | The record may be selected for a new transaction, price, or assignment. | Recommended entry: successful validated creation becomes Active directly, with no Draft step — pending MD-OD-008. | Confirmed as a state; its entry point is Open Decision (MD-OD-008) |
 | Inactive (Deactivated) | The record may not be selected for a new transaction, but remains visible for historical reference and reporting. | An authorized actor deactivates it; a record already referenced by a draft or posted transaction may still be deactivated — deactivation blocks *new* use, it does not touch existing references. | Confirmed — Founder-approved Release 1 requirement |
 | Reactivated | An Inactive record is returned to Active. | An authorized actor reactivates it; for effective-dated domains (Tax, Exchange Rate, Price List) reactivation never rewrites the effective-dated history already recorded — see MD-BR-004. | Confirmed |
 
-**Classification: Confirmed.** No master-data domain in this BRD requires a Draft-before-Active workflow for Release 1; MD-OD-008 records this as confirmable now rather than left open, subject to Hossam's review.
+**Classification: Open Decision (MD-OD-008).** Whether any master-data domain requires a Draft-before-Active workflow for Release 1 is Hossam's decision and is **not** confirmed by this BRD. The recommended option is: **no Draft state for Release 1 — successful validated creation becomes Active** (the two-state Active/Inactive lifecycle in the table above). The Active/Inactive table and the reference-preservation matrix below are written on that recommendation; if Hossam decides a Draft state is required for one or more domains, §10, §23.1, and the creation-related acceptance scenarios must be revised before the implementation baseline is finalized.
 
 **Reference-preservation matrix**, per task requirement, for what happens when a master record is:
 
@@ -207,7 +209,7 @@ This BRD reuses every existing glossary definition unchanged (see §6). It does 
 | Purchasable flag | Required | Business meaning only — whether the Product may appear on a Purchase Order; does not define Procurement workflow. |
 | Inventory-relevant flag | Required | Whether the Product is stock-tracked; detailed costing/valuation is Inventory-owned (MESP-33). |
 | Status | Required | Active / Inactive per §10. |
-| Batch/lot/serial/expiry tracking | Conditionally required, per MESP-41 | Configurable per Product or Category, disabled by default, jointly owned by MESP-31 (identity flag) and MESP-33 (enforcement). |
+| Batch/lot/serial/expiry tracking | **Open Decision (MD-OD-010)** — not yet a requirement | The `docs/90_MVP_Founder_Decision_Pack.md` MESP-41 entry recommends "configurable per Product or Category; disabled by default; enforce end-to-end when enabled", jointly owned by MESP-31 (identity/configuration) and MESP-33 (enforcement). That is a **Recommended Founder Decision Pack default — pending Hossam approval**, not a confirmed requirement, so this BRD neither adopts it nor specifies any batch/lot/serial/expiry behavior. Whether the field exists at all on a Product depends on MD-OD-010. |
 
 **Business validation:** duplicate code/name detection before create or import; a Product cannot be deleted once referenced by any Purchase Order, Sales Order, Price List line, or stock ledger entry (only deactivation is permitted); deactivating a Product never deactivates or alters historical documents that already referenced it.
 
@@ -250,7 +252,7 @@ Precision/rounding-algorithm detail for a conversion is not decided here (MD-OD-
 | Default Currency | Optional, references an active Currency |
 | Status | Required — Active/Inactive |
 
-Duplicate detection uses legal/trading name and tax registration number where available. Deactivating a Supplier blocks new Purchase Order creation but preserves every historical Purchase Order, receipt, and invoice that already referenced it. Purchasing/AP dependency detail is Deferred to MESP-32/MESP-34.
+Duplicate detection uses legal/trading name and tax registration number where available, and it runs **within the Supplier role** — its purpose is to prevent a second Supplier record for the same party. A match against an existing *Business Customer* is not a duplicate: the approved glossary confirms the same legal company may legitimately be both, so such a match is surfaced for review and optional linkage only and never blocks Supplier creation (MD-BR-045). Deactivating a Supplier blocks new Purchase Order creation but preserves every historical Purchase Order, receipt, and invoice that already referenced it. Purchasing/AP dependency detail is Deferred to MESP-32/MESP-34.
 
 ## 15. Business Customer Requirements
 
@@ -268,7 +270,7 @@ Duplicate detection uses legal/trading name and tax registration number where av
 | Credit Limit reference | Out of Scope — Finance/MESP-46 owns the value and mechanics; this BRD records only that a Business Customer *may carry* such a reference |
 | Status | Required — Active/Inactive |
 
-Duplicate detection uses legal/trading name and tax registration number. Deactivating a Business Customer blocks new Sales Order creation but preserves every historical document. Sales/AR dependency detail is Deferred to MESP-35/MESP-34.
+Duplicate detection uses legal/trading name and tax registration number, and it runs **within the Business Customer role** — its purpose is to prevent a second Business Customer record for the same party. A match against an existing *Supplier* is not a duplicate and never blocks Business Customer creation; it is surfaced for review and optional linkage only (MD-BR-045). Deactivating a Business Customer blocks new Sales Order creation but preserves every historical document. Sales/AR dependency detail is Deferred to MESP-35/MESP-34.
 
 ## 16. Price List Requirements
 
@@ -334,10 +336,10 @@ A Currency referenced by any transaction, Price List, or party default cannot be
 | Target currency | Required, references an active Currency, must differ from source |
 | Rate | Required, must be positive |
 | Effective date | Required |
-| Source/provenance | Conditionally required — manual entry is the Release 1 default (see below) |
+| Source/provenance | Conditionally required — how a rate is sourced and approved is not settled here (see below) |
 | Status | Required — Active/Inactive |
 
-**Classification: Confirmed — Founder-approved Release 1 requirement (default).** Per the Founder Decision Pack's MESP-54 default, Release 1 exchange rates are manually maintained and approved by Finance; automated provider feeds are deferred. Final confirmation of this default remains with MESP-34 (Deferred Gate); this BRD records it as the current Release 1 baseline, not an invention. A posted transaction retains the exact exchange rate it applied, permanently — no retroactive recalculation (MD-BR-039). A missing rate for a required currency pair/effective date blocks posting; it is never silently defaulted (MD-BR-040). Duplicate or overlapping rate entries for the same currency pair and effective date are rejected (MD-BR-041).
+**Classification: Deferred Gate / Recommended Default — not yet approved.** The current Founder Decision Pack recommendation is manual, effective-dated rates maintained and approved by Finance, preserving the applied rate on documents, with automated feeds deferred. **Final business authorization for MESP-54 remains owned by MESP-34 / MESP-54 and has not been given by Hossam**; this BRD records the recommendation and does not approve it, adopt it as a Release 1 requirement, or specify any rate-sourcing or Finance-approval mechanism built on it. The rules below are separately confirmed by the PRD and do not depend on MESP-54: a posted transaction retains the exact exchange rate it applied, permanently — no retroactive recalculation (MD-BR-039). A missing rate for a required currency pair/effective date blocks posting; it is never silently defaulted (MD-BR-040). Duplicate or overlapping rate entries for the same currency pair and effective date are rejected (MD-BR-041).
 
 ## 21. Data Requirements Summary
 
@@ -345,7 +347,8 @@ A Currency referenced by any transaction, Price List, or party default cannot be
 
 | Cross-cutting data expectation | Applies to | Classification |
 |---|---|---|
-| Tenant-scoped | Every field of every domain in §§11–20 | Confirmed — Founder-approved Release 1 requirement |
+| Tenant-owned and Tenant-isolated (ownership/security boundary) | Every field of every domain in §§11–20 | Confirmed — Founder-approved Release 1 requirement |
+| Business scope inside the owning Tenant (Company / Legal Entity / Branch availability) | Every domain in §§11–20 | Open Decision (MD-OD-001) — undecided; not assumed Tenant-wide |
 | Business-uniqueness enforced at create/import | Product code, Category code, UOM code, Supplier code/tax registration, Customer code/tax registration, Price List name, Tax code, Payment Term code, Currency code, Exchange Rate (currency pair + effective date) | Confirmed |
 | Effective-dated | Price List, Tax, Exchange Rate | Confirmed |
 | Auditable | Every create, edit, activate, deactivate, and rate/price change across all ten domains | Confirmed |
@@ -398,9 +401,11 @@ The following register is the MESP-31 business-rule baseline. It contains no API
 | MD-BR-039 | Exchange Rate | Exchange rates are effective-dated; a posted transaction retains its applied rate permanently with no retroactive recalculation. | Confirmed — Founder-approved Release 1 requirement |
 | MD-BR-040 | Exchange Rate | A missing exchange rate for a required currency pair/effective date blocks posting; it is never silently defaulted. | Confirmed — Founder-approved Release 1 requirement |
 | MD-BR-041 | Exchange Rate | Duplicate or overlapping exchange-rate entries for the same currency pair and effective date are rejected. | Confirmed |
-| MD-BR-042 | Exchange Rate | Release 1 default: exchange rates are manually maintained and approved by Finance; automated provider feeds are deferred. | Confirmed (default) |
+| MD-BR-042 | Exchange Rate | The Founder Decision Pack **recommends** manually maintained, effective-dated rates approved by Finance, with automated provider feeds deferred. This is MESP-54, an unapproved recommended default owned by Finance/MESP-34; it is recorded here, not adopted, and no rate-sourcing or approval mechanism is specified by this BRD. | Deferred Gate / Recommended Default — not yet approved |
 | MD-BR-043 | Migration | Master-data import/migration follows preview, validation, duplicate control, rollback, and reconciliation. | Confirmed |
 | MD-BR-044 | Permissions | Only a Permission-holding, scope-authorized actor may create, edit, activate, or deactivate a master record; the Permission is Tenant-scoped and least-privilege. | Confirmed |
+| MD-BR-045 | Business Party | Duplicate detection prevents a second record **within the same party role** (Supplier-to-Supplier, Business Customer-to-Business Customer). A matching identity across the two roles is **not** a duplicate: the same legal company may legitimately be both a Supplier and a Business Customer, so a cross-role match is surfaced for review and optional linkage and must never automatically reject the second role. Supplier and Business Customer remain distinct business roles with distinct records unless a later approved party-unification decision changes that; no unified Party record is defined here. | Confirmed (approved glossary — Supplier entry) |
+| MD-BR-046 | Cross-cutting | Where an approved business policy requires a master-data change to be separately approved, the requester may not self-approve and publication is blocked until the required approval exists. Which changes carry that requirement is Open Decision MD-OD-005; this rule states the control, not its catalogue. | Confirmed (generic control); catalogue is Open Decision (MD-OD-005) |
 
 ## 23. Main Business Processes
 
@@ -458,7 +463,8 @@ Each process is business-level. No screen, API, schema, or implementation behavi
 | Reactivation would rewrite already-recorded effective-dated history | Deny reactivation; require a new effective-dated entry instead. | Confirmed |
 | Ambiguous migration mapping | Quarantine until an accountable owner approves the reconciled outcome. | Confirmed |
 | Cross-Tenant duplicate-check or search attempt | Deny; never expose another Tenant's master data. | Confirmed — Founder-approved Release 1 requirement |
-| Self-approval attempted on a sensitive change | Deny where §27/§28 requires a separate approver. | Confirmed |
+| Self-approval attempted on a change that an approved business policy requires a separate approver for | Deny; block publication until a distinct approver approves it (MD-BR-046, §27, §28). | Confirmed |
+| Cross-role identity match between a Supplier and a Business Customer (same legal company) | Surface for review and optional linkage; never auto-reject the second role (MD-BR-045). | Confirmed |
 
 ## 25. Validation Rules
 
@@ -474,9 +480,10 @@ Each process is business-level. No screen, API, schema, or implementation behavi
 | MD-VR-008 | Exchange Rate value is zero or negative | Reject | Confirmed |
 | MD-VR-009 | Required exchange rate missing at transaction posting time | Block posting; no silent default | Confirmed — Founder-approved Release 1 requirement |
 | MD-VR-010 | Cross-Tenant reference in any master-data field (Category, UOM, Currency, Payment Term, Price List) | Reject | Confirmed — Founder-approved Release 1 requirement |
-| MD-VR-011 | Tax-rate, price, or exchange-rate change lacks required approval | Block publication | Confirmed |
+| MD-VR-011 | A master-data change that an approved business policy requires to be separately approved lacks that approval, or the requester attempts to self-approve it | Block publication until a distinct authorized approver approves it (MD-BR-046). Which changes carry the requirement is Open Decision MD-OD-005 | Confirmed as a generic control; its catalogue is Open Decision (MD-OD-005) |
 | MD-VR-012 | Reactivation would alter already-recorded effective-dated history | Deny | Confirmed |
 | MD-VR-013 | Migration mapping is ambiguous or incomplete | Quarantine until accountable approval | Confirmed |
+| MD-VR-014 | Duplicate detection matches an existing record **in the other party role** (Supplier vs Business Customer) for the same legal company | Surface for review and optional linkage; do not reject the creation (MD-BR-045) | Confirmed |
 
 ## 26. Permissions
 
@@ -489,7 +496,7 @@ Each process is business-level. No screen, API, schema, or implementation behavi
 | Edit | All ten domains | Confirmed |
 | Activate | All ten domains | Confirmed |
 | Deactivate | All ten domains | Confirmed |
-| Approve (sensitive change) | Tax rate, Price List, Exchange Rate | Confirmed |
+| Approve (sensitive change) | Any domain whose changes an approved business policy requires a separate approver for; the exact catalogue is Open Decision MD-OD-005 | Confirmed as a capability; the changes it gates are Open Decision (MD-OD-005) |
 | Maintain Price Lists | Price List | Confirmed |
 | Maintain Taxes | Tax | Confirmed |
 | Maintain Exchange Rates | Exchange Rate | Confirmed |
@@ -500,17 +507,22 @@ No Wafra-specific role is created; every capability is reusable across Tenants (
 
 ## 27. Approval Controls
 
-**Classification: Confirmed.** Blanket approval is not invented for every field change. Risk-sensitive changes require approval; routine identity edits (a Supplier's contact phone number, a Product's description) do not.
+**Classification: Confirmed (control only).** The generic control this BRD confirms is MD-BR-046:
+
+> **Where an approved business policy requires separate approval, the requester may not self-approve and publication is blocked until the required approval exists.**
+
+**No approved source in this repository establishes *which* master-data changes require a separate approver.** The PRD, the approved glossary, the approved adjacent BRDs, and the Founder Decision Pack all leave that catalogue unset. This BRD therefore does not decide it: blanket approval is not invented for every field change, and neither is a specific separate-approver rule for any individual domain. The full catalogue is Open Decision **MD-OD-005**.
 
 | Change | Approval expectation | Classification |
 |---|---|---|
-| Tax-rate creation or change | Requires one separate Approver distinct from the requester. | Confirmed |
-| Manually entered Exchange Rate | Requires Finance approval per the MESP-54 Release 1 default (MD-BR-042). | Confirmed (default) |
-| Published commercial Price List change | Requires one separate Approver where the Price List is customer-facing. | Confirmed |
+| Tax-rate creation or change | **Candidate** for a separate-approver requirement; not established by any approved source. Decide in MD-OD-005. | Open Decision (MD-OD-005) |
+| Published customer-facing commercial Price List change | **Candidate** for a separate-approver requirement; not established by any approved source. Decide in MD-OD-005. | Open Decision (MD-OD-005) |
+| Manually entered Exchange Rate | The Founder Decision Pack **recommends** Finance approval (MESP-54, MD-BR-042). That recommendation is unapproved and owned by MESP-34; it is not a Release 1 requirement established here. | Deferred Gate / Recommended Default — not yet approved |
+| Other sensitive master-data changes (Product Base Unit, Supplier/Business Customer bank or tax-registration detail, Payment Term, Currency activation) | Not established by any approved source. Decide in MD-OD-005. | Open Decision (MD-OD-005) |
 | High-impact reference change (e.g., changing a Product's Base Unit before any stock transaction exists) | Requires review; exact policy owned jointly with MESP-33. | Deferred Gate |
-| Routine identity/contact-detail edit | No approval required. | Confirmed |
+| Routine identity/contact-detail edit (a Supplier's contact phone number, a Product's description) | No approval required. | Confirmed |
 
-Where approval policy for a specific field is not settled by an approved source, it is recorded as an Open Decision rather than invented — see MD-OD-005.
+Wherever an approved policy *does* require approval, MD-BR-046, MD-VR-011, and §28's no-self-approval boundary apply in full and without exception. Until MD-OD-005 is resolved, this BRD states that control and leaves its scope to Hossam rather than inventing one.
 
 ## 28. Separation of Duties
 
@@ -518,8 +530,9 @@ Where approval policy for a specific field is not settled by an approved source,
 
 | SoD concern | Required separation | Classification |
 |---|---|---|
-| Tax-rate maintainer vs. transaction poster | The person who changes a Tax rate is not required to also be the poster of transactions using it, but self-approval of one's own tax-rate change is prohibited. | Confirmed |
-| Price maintainer vs. sales approver | The person who publishes a Price List entry should not be the sole approver of that same entry where §27 requires separate approval. | Confirmed |
+| Requester vs. approver, on any change requiring approval | Wherever an approved business policy requires a separate approver, the requester may not be that approver (MD-BR-046). This generic no-self-approval boundary is approved and applies unconditionally; which changes it attaches to is MD-OD-005. | Confirmed |
+| Tax-rate maintainer vs. transaction poster | The person who changes a Tax rate is not required to also be the poster of transactions using it. Whether a tax-rate change requires a separate approver at all is MD-OD-005; if it does, self-approval is prohibited by the row above. | Confirmed boundary; approval requirement is Open Decision (MD-OD-005) |
+| Price maintainer vs. sales approver | Whether publishing a customer-facing Price List entry requires a separate approver is MD-OD-005; if it does, the publisher may not be that sole approver. | Confirmed boundary; approval requirement is Open Decision (MD-OD-005) |
 | Supplier maintainer vs. payment execution | Supplier master-data maintenance is separable by Permission from AP payment execution (Finance-owned, MESP-34); this BRD records the separation, not the payment mechanics. | Confirmed boundary |
 | Customer maintainer vs. credit authorization | Business Customer master-data maintenance is separable by Permission from credit-limit authorization (Finance-owned, MESP-46). | Confirmed boundary |
 
@@ -531,7 +544,20 @@ This BRD does not over-design a role model; it records the required business sep
 
 ## 30. Company / Legal Entity / Branch Scope
 
-**Classification: Open Decision (MD-OD-001).** The approved Organization BRD (`docs/14_Organization_and_Company_Structure_BRD.md`) confirms the hierarchy Platform → Tenant → Company/Legal Entity → Branch → Warehouse and confirms scope never inherits upward, but it is explicitly silent on which of these levels owns Product, Price List, Tax, Payment Term, Currency, or Exchange Rate master data — the Explore research for this BRD confirmed no existing approved BRD assigns this. This BRD does not assume every record belongs at Tenant level, and it does not invent a shared-across-Tenant master. The recommended default, pending Hossam's decision, is: Product, Category, Unit of Measure, Supplier, Business Customer, Tax, Payment Term, and Currency are Tenant-level (shared across a Tenant's Companies, since the glossary already frames them as "defined once and reused across all transactions"); Price List and Exchange Rate *may* need a Company-level override where a Tenant's Companies operate in different functional currencies (PLT-002 already confirms a Tenant may configure more than one functional currency). This recommendation is not implemented or assumed true anywhere else in this BRD — every domain section above states scope as "within its owning scope" rather than asserting Tenant or Company level.
+**Classification: Open Decision (MD-OD-001).** This section turns on a distinction the rest of this BRD keeps strictly separate, and which must not be collapsed:
+
+| Question | Status |
+|---|---|
+| **1. Tenant security and data ownership** — which Tenant owns a master record, and who may ever read or modify it | **Confirmed and mandatory.** Every master record belongs to exactly one Tenant and is never readable or modifiable across a Tenant boundary (§29, MD-BR-001, MD-VR-010). This is settled by `docs/13_Multi_Tenancy_BRD.md` and is not reopened by MD-OD-001. |
+| **2. Business availability and scope inside the owning Tenant** — whether a record is usable by every Company/Legal Entity in that Tenant, or is scoped to one Company or Branch | **Open Decision (MD-OD-001).** Unresolved for every domain in this BRD. |
+
+**"Tenant-owned" does not mean "Tenant-wide usable by every Company."** A record can be owned by one Tenant and still be restricted, by approved business configuration, to a subset of that Tenant's Companies, Legal Entities, or Branches. Nothing in this BRD asserts otherwise, and no domain section above states a Company-level answer — each says "within its owning scope" precisely because scope is undecided.
+
+The approved Organization BRD (`docs/14_Organization_and_Company_Structure_BRD.md`) confirms the hierarchy Platform → Tenant → Company/Legal Entity → Branch → Warehouse and confirms scope never inherits upward, but it is explicitly silent on which of these levels business-scopes Product, Price List, Tax, Payment Term, Currency, or Exchange Rate master data — the research for this BRD confirmed no existing approved BRD assigns it.
+
+The recommended option, pending Hossam's decision, is that Product, Category, Unit of Measure, Supplier, Business Customer, Tax, Payment Term, and Currency are available Tenant-wide across the Tenant's Companies (the glossary already frames them as "defined once and reused across all transactions"), while Price List and Exchange Rate *may* need a Company-level restriction where a Tenant's Companies operate in different functional currencies (PLT-002 confirms a Tenant may configure more than one functional currency). **This is a recommendation only and is relied on nowhere else in this BRD.**
+
+**No cross-Tenant shared business data is introduced by this BRD, under any scope option.** If a stable platform or country reference catalogue is ever discussed (for example ISO currency codes or a seeded Saudi VAT starting value), that is a *reference catalogue* a Tenant may draw on — the Tenant's own Currency, Tax, and other master records created from it remain Tenant-owned business configuration under §29. The approved Tenant model is not changed, narrowed, or reinterpreted here.
 
 ## 31. Downstream Domain Dependencies
 
@@ -600,7 +626,7 @@ No vendor is selected; no API contract is specified.
 
 ## 38. Migration Requirements
 
-**Classification: Confirmed.** Per the Founder Decision Pack's MESP-51 default, master data (all ten domains in this BRD) migrates together with reconciled opening balances, owned technically by MESP-40. This BRD's business expectations, distinct from technical ETL implementation (§5):
+**Classification: Confirmed**, except the MESP-51 scope decision itself. The Founder Decision Pack **recommends** (MESP-51, unapproved, owned by MESP-40) that master data migrates together with reconciled opening balances; this BRD records that recommendation without approving it. What *is* Confirmed below are the business migration expectations traceable to PRD BR-013 and ADM-003. Distinct from technical ETL implementation (§5):
 
 | Requirement | Classification |
 |---|---|
@@ -639,7 +665,7 @@ These are business acceptance scenarios, not automated tests.
 **Supplier**
 
 - MD-AC-008 — Given a new Supplier record, when it is created, then no system User account, login, or credential is created for it.
-- MD-AC-009 — Given an existing Supplier with the same tax registration number, when a User attempts to create a new Supplier with that number, then the system holds it for reviewed duplicate resolution.
+- MD-AC-009 — Given an existing **Supplier** with the same tax registration number, when a User attempts to create a new Supplier with that number, then the system holds it for reviewed duplicate resolution. (For a match against a *Business Customer* instead, see MD-AC-035.)
 - MD-AC-010 — Given a Supplier referenced by historical Purchase Orders, when an authorized actor deactivates it, then new Purchase Order creation against it is blocked and historical Purchase Orders remain unchanged.
 
 **Business Customer**
@@ -657,7 +683,7 @@ These are business acceptance scenarios, not automated tests.
 
 - MD-AC-016 — Given a Tenant with the Saudi VAT baseline seeded at 15%, when an authorized Approver publishes a new effective-dated exemption rule, then it applies only to transactions dated on or after its effective date.
 - MD-AC-017 — Given a posted invoice that applied a 15% VAT rate, when the Tax master record is later changed to a different rate, then the posted invoice continues to show 15% unchanged.
-- MD-AC-018 — Given a Tax-rate change request from a Maintainer who is also the sole Approver, when they attempt to self-approve, then the system denies the approval.
+- MD-AC-018 — Given an approved business policy that requires a Tax-rate change to be separately approved (MD-OD-005), and a change requested by a Maintainer who is also the sole Approver, when they attempt to self-approve, then the approval is denied and publication stays blocked until a distinct approver approves it. Where no approved policy requires separate approval for that change, this scenario does not apply.
 
 **Payment Terms**
 
@@ -672,12 +698,12 @@ These are business acceptance scenarios, not automated tests.
 
 - MD-AC-022 — Given no exchange rate exists for USD-to-SAR on a transaction's date, when a User attempts to post a USD transaction, then posting is blocked rather than defaulting to an assumed rate.
 - MD-AC-023 — Given a posted transaction that applied an exchange rate of 3.75, when a new effective-dated rate of 3.80 is later published, then the posted transaction continues to reflect 3.75 unchanged.
-- MD-AC-024 — Given a manually entered exchange rate awaiting Finance approval, when the entering User attempts to also approve it, then the system denies self-approval.
+- MD-AC-024 — Given an approved business policy that requires a manually entered exchange rate to be separately approved, when the entering User attempts to also approve it, then self-approval is denied. Whether exchange rates require Finance approval at all is the unapproved MESP-54 recommendation owned by MESP-34 (§20, MD-BR-042); this scenario tests the generic no-self-approval control (MD-BR-046), not an adopted MESP-54 requirement.
 - MD-AC-025 — Given a duplicate exchange-rate entry for the same currency pair and effective date, when a User attempts to save it, then the system rejects it.
 
 **Lifecycle / cross-cutting**
 
-- MD-AC-026 — Given any of the ten master-data domains, when an authorized actor deactivates a record with zero existing references, then the record becomes Active-unselectable with no other side effects.
+- MD-AC-026 — Given any of the ten master-data domains, when an authorized actor deactivates a record with zero existing references, then the record becomes **Inactive and unselectable for new use**, remains visible for historical reference and reporting, and has no other side effects.
 - MD-AC-027 — Given a deactivated Tax rate that would need reactivation to alter already-recorded effective-dated history, when an actor attempts reactivation, then the system denies it and requires a new effective-dated entry instead.
 
 **Tenant isolation**
@@ -696,45 +722,60 @@ These are business acceptance scenarios, not automated tests.
 - MD-AC-033 — Given a migration batch with an ambiguous Supplier-to-tax-registration mapping, when the batch runs, then the ambiguous rows are quarantined rather than committed.
 - MD-AC-034 — Given a completed master-data migration dry run, when the accountable owner reviews the reconciliation report, then sign-off is required before the batch is committed to production data.
 
+**Business Party cross-role identity**
+
+- MD-AC-035 — Given an existing **Business Customer** whose tax registration number matches, when a User creates a **Supplier** record for that same legal company, then the creation succeeds; the cross-role match is surfaced for review and optional linkage and is never treated as a blocking duplicate (MD-BR-045, MD-VR-014). The reverse case — creating a Business Customer for an existing Supplier's legal company — behaves identically.
+
 ## 40. Open Decision Register
+
+**What is and is not in this register.** It contains only genuine **business** decisions that Hossam owns for MESP-31 — ten of them, MD-OD-001 through MD-OD-010. It deliberately excludes three other categories, which are recorded in their own sections rather than inflating this register:
+
+- **Decisions owned by a later domain BRD** (MESP-32/33/34/35/49 and MESP-46) are marked *Deferred Gate* where they arise — for example exchange-rate sourcing and Finance approval (MESP-54, owned by MESP-34, §20/MD-BR-042), Credit Limit mechanics (MESP-46, §15), due-date calculation (MESP-34, §18), and pricing precedence inside a live Sales Order (MESP-35, §16). MESP-54 in particular is **not** listed here as an Owner decision for MESP-31 and is not approved by this BRD.
+- **Decisions requiring external Saudi legal/tax validation** are marked *External Validation Required* (§33), not carried here as if Hossam could resolve them alone. MD-OD-007 appears here only for the part that is genuinely his — which statutory fields Release 1 collects — with external validation noted.
+- **Implementation and architecture decisions** (schema, API, UI, indexing, rounding algorithms as code, search mechanics) are Out of Scope per §5 and belong to the later Lean Implementation Specification, not to a BRD.
+
+None of these decisions is closed by this document. Hossam resolves each one.
 
 | ID | Question | Why it matters | Impacted domains | Recommended option | Owner | Blocking? | Target decision point |
 |---|---|---|---|---|---|---|---|
-| MD-OD-001 | Does master data live at Tenant level or Company/Legal Entity level? | Determines whether a Tenant with multiple Companies shares one Product/Price List/Tax catalog or maintains separate catalogs per Company. | All ten domains | Tenant-level by default, with a Company-level override considered for Price List and Exchange Rate where functional currencies differ. | Hossam | Yes — blocks Lean Implementation Specification data-scope decisions | Before MESP-31 approval or immediately after, before any Lean Implementation Specification work |
+| MD-OD-001 | Inside the owning Tenant, at which organizational level is each master-data domain **available for business use** — Tenant-wide across all Companies, or scoped to a Company/Legal Entity (or Branch)? *This decides business availability only; the Tenant ownership and isolation boundary is already Confirmed and is not in question (§29, §30).* | Determines whether a Tenant with multiple Companies shares one Product/Price List/Tax catalogue or maintains separate ones per Company. | All ten domains | Tenant-wide availability for Product, Category, UOM, Supplier, Business Customer, Tax, Payment Term and Currency; consider a Company-level restriction for Price List and Exchange Rate where functional currencies differ. No cross-Tenant sharing under any option. | Hossam | Yes — blocks Lean Implementation Specification data-scope decisions | Before MESP-31 approval or immediately after, before any Lean Implementation Specification work |
 | MD-OD-002 | Is Product Category a flat list or a multi-level hierarchy? | Determines Category data structure and reporting rollups. | Product Category | Not recommended without further evidence; defer to Hossam. | Hossam | No — Release 1 can launch with a flat structure and add hierarchy later without data loss | Before MESP-32/33/35 Lean Implementation Specifications that rely on Category defaults |
 | MD-OD-003 | What is the Product SKU/Barcode coding-rule structure — auto-generated, manual, or hybrid; what format? | Affects duplicate detection and migration mapping. | Product | Not recommended without further evidence; defer to Hossam. | Hossam | No | Before MESP-31 implementation phase begins |
 | MD-OD-004 | What precedence rule resolves two applicable Price Lists for the same Product/Customer/Currency? | Directly affects which price a Sales Order uses. | Price List, B2B Sales (MESP-35) | Not recommended without further evidence; defer to Hossam and MESP-35. | Hossam / MESP-35 owner | Yes — blocks MESP-35 pricing logic | Before MESP-35 BRD drafting |
-| MD-OD-005 | Which specific master-data field changes require a separate Approver beyond Tax/Exchange Rate/Price List already confirmed in §27? | Determines the full approval-control catalogue. | All ten domains | Not recommended without further evidence; defer to Hossam. | Hossam | No | Before the Lean Implementation Specification's authorization design |
+| MD-OD-005 | **Which master-data changes require a separate Approver distinct from the requester?** No approved source establishes any specific separate-approver rule, so this covers the whole catalogue and nothing in it is pre-decided: (a) **Tax** creation and rate/effective-date changes; (b) **commercial Price List** changes, in particular publishing a customer-facing price; (c) **other sensitive master-data changes** — Product Base Unit or tax classification, Supplier/Business Customer tax-registration or bank detail, Payment Term terms, Currency activation, and Exchange Rate entry (noting that the exchange-rate recommendation is the unapproved MESP-54 default owned by MESP-34, MD-BR-042). | Determines the full approval-control catalogue. The generic control (MD-BR-046: no self-approval, publication blocked until the required approval exists) is already Confirmed and applies to whatever this decision selects — only the catalogue is open. | All ten domains | Not recommended without further evidence; defer to Hossam. This BRD deliberately confirms no specific approval rule. | Hossam | Yes — §27, §28, MD-VR-011 and the Lean Implementation Specification's authorization design cannot be finalized without it | Before MESP-31 approval, and before the Lean Implementation Specification's authorization design |
 | MD-OD-006 | What rounding/precision rule applies to a Unit of Measure conversion? | Affects quantity accuracy across Purchasing, Inventory, and Sales. | Unit of Measure, Inventory (MESP-33) | Not recommended without further evidence; defer to Hossam and MESP-33. | Hossam / MESP-33 owner | No | Before MESP-33 BRD drafting |
 | MD-OD-007 | Beyond VAT registration number, which Saudi statutory fields (e.g., Commercial Registration number) are mandatory on Supplier/Business Customer for Release 1? | Affects required-field validation and migration mapping. | Supplier, Business Customer | Not recommended without further evidence; External Validation Required from Saudi legal/tax authority. | Hossam, with external validator | No — can launch with VAT registration only and add fields later | Before MESP-49 Saudi Country Pack BRD drafting |
-| MD-OD-008 | Does any master-data domain require a Draft-before-Active state for Release 1? | Determines whether §10's two-state lifecycle is complete. | All ten domains | No — confirmed as not required for Release 1 (see §10); listed here only so Hossam can explicitly override if evidence changes. | Hossam | No | At BRD approval |
+| MD-OD-008 | Does any master-data domain require a Draft-before-Active state for Release 1? | Determines whether §10's two-state lifecycle is complete, and whether the creation process (§23.1) has a review step before a record becomes usable. | All ten domains | **No Draft state for Release 1; successful validated creation becomes Active.** This is a recommendation, not a confirmed requirement — §10 is written on it and must be revised if Hossam decides otherwise. | Hossam | No | At BRD approval |
 | MD-OD-009 | Can a deactivated effective-dated record (Tax, Exchange Rate, Price List) ever be reactivated, or must a new effective-dated entry always be created instead? | Affects the exact reactivation guard in MD-BR-004/MD-VR-012. | Tax, Exchange Rate, Price List | Recommend: reactivation is allowed only when it introduces no new effective-dated value into already-posted history; otherwise require a new entry. | Hossam | No | Before the Lean Implementation Specification's lifecycle design |
+| MD-OD-010 | Should Release 1 adopt the MESP-41 default that batch/lot/serial/expiry tracking is configurable per Product or Category, disabled by default, and enforced end-to-end only when enabled? | MESP-41 is an **unapproved recommended default** in `docs/90_MVP_Founder_Decision_Pack.md`, jointly owned by MESP-31 and MESP-33 and explicitly requiring Hossam's approval during its owning domain BRD(s). It determines whether Product identity/configuration carries a tracking setting at all, and therefore what Inventory must enforce. This BRD invents no batch/lot/serial/expiry behavior pending the decision. | Product, Product Category; jointly with **MESP-33 Inventory** | Use the existing Founder Decision Pack default (configurable per Product or Category; disabled by default; enforce end-to-end when enabled). | Hossam | **Yes** — must be resolved before the Master Data implementation baseline is finalized, because it affects Product identity/configuration and Inventory integration | Before the Master Data implementation baseline is finalized; jointly with MESP-33 Inventory BRD drafting |
 
 ## 41. Owner Authorizations Recorded in This BRD
 
-**Classification: Confirmed — Founder-approved Release 1 requirement.** Two separate Owner decisions are recorded as of 8 August 2026:
+**Classification: Confirmed — Founder-approved Release 1 requirement.** Two separate Owner decisions are recorded as of 8 August 2026, **both recorded in live Jira on MESP-31**:
 
-1. **BRD-entry authorization.** Hossam approved beginning MESP-31 — Master Data and Product Catalog BRD drafting, including the explicit ten-domain scope mandate (Products, Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies, Exchange Rates) that this BRD covers. This satisfies the distinct-authorization precedent already established for MESP-31 BRD entry (the MESP-29 precedent recorded in `.ai/CURRENT_STATE.md`'s "MESP-31 BRD entry eligibility" section, requiring an explicit owner authorization statement beyond Foundation completion alone).
-2. **Future implementation authorization.** Hossam has also explicitly pre-authorized the later Master Data implementation phase. This authorization exists now, but **it is not yet executable**: implementation cannot start until (a) this BRD is completed, reviewed, and explicitly approved by Hossam as a business baseline, and (b) a dedicated implementation Jira item is identified and activated, separate from MESP-31 and separate from any other implementation item.
+1. **BRD-entry authorization — Jira comment `10615`.** Hossam approved beginning MESP-31 — Master Data and Product Catalog BRD drafting, including the explicit ten-domain scope mandate (Products, Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies, Exchange Rates) that this BRD covers. This satisfies the distinct-authorization precedent for MESP-31 BRD entry (the MESP-29 precedent recorded in `.ai/CURRENT_STATE.md`'s "MESP-31 BRD entry eligibility" section, requiring an explicit owner authorization statement beyond Foundation completion alone).
+2. **Future implementation authorization — Jira comment `10616`.** Hossam has also explicitly pre-authorized the later Master Data implementation phase. That authorization is recorded, but **it remains conditional and is not yet executable**: implementation cannot start until (a) this BRD is completed, reviewed, and explicitly approved by Hossam as a business baseline, and (b) a dedicated implementation Jira item is identified and activated, separate from MESP-31 and separate from any other implementation item.
 
-**No implementation was performed in the drafting of this BRD.** No Master Data source code, EF Core entity, migration, SQL table, repository, application service, API endpoint, controller, DTO, Angular screen, or database was created. The `MESP` local SQL Server database was not created.
-
-**Note on Jira access:** this repository's tooling in this session does not include a live Jira integration. The Owner-authorization facts above are recorded here and should be mirrored into the actual Jira MESP-31 ticket by Hossam directly (or by a session with Jira access) rather than assumed to already exist there; §44 states this limitation explicitly again in the review package.
+**No implementation was performed in the drafting or correction of this BRD.** No Master Data source code, EF Core entity, migration, SQL table, repository, application service, API endpoint, controller, DTO, Angular screen, or database was created. The `MESP` local SQL Server database was not created.
 
 ## 42. Source Conflicts and Corrections
 
 | Conflict | Resolution | Classification |
 |---|---|---|
-| The task brief that requested this BRD cited PRD anchors PLT-011 through PLT-014 and BR-004 as MESP-31's traceability. Direct extraction of `docs/MESP_PRD_v1.2.docx` shows these are Platform Administration anchors (tenant provisioning, subscriptions/entitlements, tenant branding, no-tenant-specific-code) already owned by the approved MESP-27 BRD. | This BRD traces instead to the verified anchors in §6 (principally PLT-003, plus SAL-001, PROC-002, PROC-008, FIN-001/003/007/010, KSA-002, BR-013, ADM-003). | Confirmed correction |
+| The task brief that requested this BRD cited PRD anchors PLT-011 through PLT-014 and BR-004 as MESP-31's traceability. Direct extraction of `docs/MESP_PRD_v1.2.docx` shows these are Platform Administration anchors (tenant provisioning, subscriptions/entitlements, tenant branding, no-tenant-specific-code) already owned by the approved MESP-27 BRD. | **Resolved.** MESP-31's Jira Source Baseline has been corrected to primary anchor PLT-003 with supporting anchors PLT-002, SAL-001, PROC-002, PROC-008, FIN-001, FIN-003, FIN-007, FIN-010, KSA-002, BR-013, ADM-003 and the applicable PRD RULE set for master-data integrity. PLT-011–PLT-014 and BR-004 are no longer listed as MESP-31's baseline. Jira and this BRD now agree. | Confirmed — closed |
+| `docs/90_MVP_Founder_Decision_Pack.md` records MESP-41, MESP-51 and MESP-54 as recommended defaults. v0.1 of this BRD presented the MESP-41 and MESP-54 defaults as though they were already confirmed Release 1 requirements. | **Corrected in v0.2.** The pack's §4 legend marks only MESP-52 and MESP-56 as APPROVED; every other row is an unapproved default that "must decide during its owning domain BRD". MESP-41 is MESP-31's own owning-BRD decision and is now Open Decision **MD-OD-010**; MESP-54 is now classified *Deferred Gate / Recommended Default — not yet approved*, owned by Finance/MESP-34 (§20, MD-BR-042, §27); MESP-51 is described as the pack's recommendation in §38 rather than an approved requirement. No batch/lot/serial/expiry or exchange-rate-sourcing behavior is specified anywhere in this BRD. | Confirmed correction |
+| v0.1 of this BRD declared in §27 that Tax-rate changes and published customer-facing Price List changes each require one separate Approver, classified Confirmed. No approved source — PRD, glossary, approved adjacent BRD, or Founder Decision Pack — establishes either rule. | **Corrected in v0.2.** Both are withdrawn from Confirmed status and folded into Open Decision **MD-OD-005**, which now explicitly covers Tax changes, commercial Price List changes, and other sensitive master-data changes. What remains Confirmed is only the generic control, MD-BR-046: where an approved business policy requires separate approval, the requester may not self-approve and publication is blocked until the required approval exists. The approved SoD/no-self-approval boundary from `docs/12_Identity_and_Access_BRD.md` is preserved in full (§28). | Confirmed correction |
+| v0.1 stated in §10 as Confirmed that no master-data domain requires Draft-before-Active for Release 1, while MD-OD-008 simultaneously listed the same question as an Open Decision. | **Corrected in v0.2.** Treated consistently as an Open Decision. The recommended option — no Draft state for Release 1; successful validated creation becomes Active — is retained as a recommendation, and §10 states plainly that it must be revised if Hossam decides otherwise. | Confirmed correction |
 | The glossary assigns "Owning module" for Supplier, Business Customer, Price List, Tax Category, Payment Terms, and the Currency/Exchange Rate family to Procurement, B2B Sales, Finance, or the Saudi Country Pack — not to "Master Data and Catalog" — yet MESP-31's confirmed scope (§4, per Owner instruction) requires this BRD to define all of them. | §9 Ownership Boundaries resolves this as a two-layer split: MESP-31 owns the master-record identity/lifecycle layer; the named glossary module remains authoritative for transactional behavior. No glossary "Owning module" field is silently overwritten by this BRD. | Confirmed resolution |
 | The glossary has no standalone "Business Party," "Currency," or "Tax" entry, and no generic "Active/Inactive" entry, even though this BRD needs all four as controlled cross-cutting terms. | New glossary entries are proposed for these four terms (see §8); each is additive and does not change any existing entry's approved definition, owning module, or approval status. | Confirmed — glossary addition recommended |
+| The proposed "Business Party" term could be read as implying that a matching tax registration number across the Supplier and Business Customer roles blocks the second role — which would contradict the approved glossary's Supplier entry, stating that the same legal company may legitimately exist as both records. | **Corrected in v0.2.** Duplicate detection is scoped **within a party role**; a cross-role identity match is surfaced for review and optional linkage and never auto-rejects the second role (MD-BR-045, MD-VR-014, MD-AC-035, §14, §15). The glossary's Business Party entry is corrected to say the same. Supplier and Business Customer remain distinct business roles with distinct records; **no unified Party record or party-unification design is introduced**, and any such change would require a separate approved decision. | Confirmed correction |
 | The glossary's Item, SKU, Barcode, and Category entries are marked "Draft for BRD Validation," explicitly deferring confirmation to this BRD (MESP-31). | This BRD confirms Release 1 treats Product and Item as one concept (MD-BR-015) and leaves SKU coding rules and Category hierarchy depth as Open Decisions (MD-OD-002/003) rather than guessing; their glossary "Approval status" should move to "Approved Product Baseline" only after Hossam resolves the remaining Open Decisions. | Confirmed — partial resolution, remainder Open Decision |
 
 ## 43. Coverage Checklist
 
 | Domain | Coverage | Classification |
 |---|---|---|
-| Products | Complete | Confirmed |
+| Products | Complete (batch/lot/serial/expiry scope is Open Decision MD-OD-010; SKU/Barcode coding is MD-OD-003) | Confirmed |
 | Product Categories | Complete (hierarchy depth Open Decision) | Confirmed |
 | Units of Measure | Complete (rounding precision Open Decision) | Confirmed |
 | Suppliers | Complete | Confirmed |
@@ -743,7 +784,7 @@ These are business acceptance scenarios, not automated tests.
 | Taxes | Complete (Saudi statutory detail beyond VAT baseline is External Validation Required / Deferred to MESP-49) | Confirmed |
 | Payment Terms | Complete (due-date structure detail Deferred to MESP-34) | Confirmed |
 | Currencies | Complete | Confirmed |
-| Exchange Rates | Complete (automated-feed decision Deferred to MESP-34) | Confirmed |
+| Exchange Rates | Complete (rate sourcing, Finance approval and automated feeds are the unapproved MESP-54 default, Deferred to MESP-34) | Confirmed |
 | Multi-Tenant isolation | Verified consistent with `docs/13_Multi_Tenancy_BRD.md` throughout | Confirmed |
 | No Wafra hard-coding | Verified — MD-BR-008 and no domain section names Wafra | Confirmed |
 | Suppliers are external parties, never Users | Verified — MD-BR-022, MD-AC-008 | Confirmed |
@@ -753,11 +794,18 @@ These are business acceptance scenarios, not automated tests.
 | Multi-currency preserved | Verified — MD-BR-037, §32 | Confirmed |
 | Saudi localization boundaries | Verified — §33 | Confirmed |
 | Bilingual/RTL requirements | Verified — §34, ADR-011 | Confirmed |
+| No unapproved Founder Decision Pack default presented as approved | Verified — MESP-41 is MD-OD-010; MESP-54 is Deferred Gate / Recommended Default (§20, MD-BR-042, §27); MESP-51 is described as a recommendation (§38). Only MESP-52 and MESP-56 are APPROVED in the pack, and neither is claimed here. | Confirmed |
+| No unsupported approval rule presented as Confirmed | Verified — §27 confirms only the generic MD-BR-046 control; Tax, Price List and other sensitive-change approval requirements are Open Decision MD-OD-005 | Confirmed |
+| Tenant isolation kept separate from Company/Legal Entity business scope | Verified — §2, §21, §29 (isolation Confirmed and mandatory) vs §30, MD-OD-001 (business scope undecided); no cross-Tenant shared business data introduced | Confirmed |
+| Supplier and Business Customer remain distinct roles | Verified — MD-BR-045, MD-VR-014, MD-AC-035; no unified Party record introduced | Confirmed |
+| No contradictory Confirmed + Open Decision classification | Verified — MD-OD-008 (Draft-before-Active) is treated consistently as an Open Decision in §10 and §40 | Confirmed |
 
-**Register totals:** 44 business rules (MD-BR-001–044); 34 acceptance scenarios (MD-AC-001–034); 13 validation rules (MD-VR-001–013); 9 Open Decisions (MD-OD-001–009); 1 Deferred-Gate-heavy domain (Tax/Saudi statutory detail, External Validation Required); 0 rules or scenarios silently invented without a cited source.
+**Register totals (v0.2):** 46 business rules (MD-BR-001–046); 35 acceptance scenarios (MD-AC-001–035); 14 validation rules (MD-VR-001–014); **10 Open Decisions (MD-OD-001–010)**; 1 Deferred-Gate-heavy domain (Tax/Saudi statutory detail, External Validation Required); 0 rules or scenarios silently invented without a cited source.
 
 ## 44. Review and Approval Status
 
 **Classification: Confirmed.** This document is a **Draft pending Hossam's business-owner review**. It is not Approved. It does not itself move MESP-31 to Done, and it does not authorize any implementation work. The dedicated future implementation Jira item referenced in §41 does not exist yet and must not be created or started before Hossam approves this BRD's content as the Release 1 Master Data and Product Catalog business baseline.
 
-**No Jira write access exists in this session.** No live Jira integration tool was available to transition MESP-31's status or post an evidence comment directly. The evidence that would normally be posted to Jira is instead recorded in full in this BRD (§41 Owner Authorizations) and in `.ai/CURRENT_STATE.md`; Hossam or a session with Jira access should mirror it into the actual MESP-31 ticket.
+**Live Jira position.** MESP-31 is **In Progress** under Parent Epic `MESP-6 — EPIC 06 - Master Data and Product Catalog`. Both Owner authorizations are already recorded on the ticket — comment `10615` (BRD entry) and comment `10616` (future implementation, conditional). MESP-31's Jira Source Baseline is corrected to the anchors in §6. The BRD drafting-evidence comment for PR #28 is added to MESP-31 once the corrected head is ready for review.
+
+**Review history.** v0.1 was published as PR #28 at head `6d0aa80eef0a2860c85a141dd6f13ee38bf5760d` and received a business-requirements review verdict of *CHANGES REQUIRED BEFORE OWNER APPROVAL / MERGE*. v0.2 is the corrected draft: MESP-41 reclassified as an unapproved recommended default and raised as MD-OD-010; MESP-54 reclassified as a Deferred Gate / Recommended Default owned by MESP-34; unsupported Tax and Price List separate-approver claims withdrawn into MD-OD-005 behind the generic MD-BR-046 control; MD-OD-008 restored to a genuine Open Decision; MD-AC-026's lifecycle wording corrected; Business Party cross-role duplicate semantics clarified (MD-BR-045); and the Tenant isolation boundary separated from the undecided Company/Legal Entity business scope. The BRD remains Draft; none of these corrections approves anything.

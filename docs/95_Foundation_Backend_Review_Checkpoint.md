@@ -14,8 +14,9 @@
 > `06d837c958c1cb7977dc121e3aaea4e7278944fd`). The Foundation completion
 > checkpoint following MESP-94 found no remaining Foundation correction
 > blocking MESP-31 BRD entry. Hossam recorded the required distinct owner
-> authorization on 8 August 2026; MESP-31 moved to In Progress with a v0.1
-> draft BRD pending Hossam's review — see `.ai/CURRENT_STATE.md`.
+> authorization on 8 August 2026; MESP-31 moved to In Progress with a draft
+> BRD (v0.2, on open PR #28) pending Hossam's review and not Approved — see
+> `.ai/CURRENT_STATE.md`.
 
 Status at the time of this checkpoint: MESP-89 is Done. PR #12 was approved by
 focused ChatGPT review and merged to `main`; MESP-63 was the next authorized

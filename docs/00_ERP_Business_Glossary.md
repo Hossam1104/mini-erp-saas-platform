@@ -541,15 +541,17 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Approved definition:** The umbrella business concept covering Supplier and Business Customer: an external counterparty recorded as master data inside a Tenant.
 
-**Business meaning:** Names what a Supplier and a Business Customer share — external identity, contact/address structure, and duplicate-detection treatment — without merging their distinct approved meanings or lifecycles.
+**Business meaning:** Names what a Supplier and a Business Customer share — external identity, contact/address structure, and duplicate-detection treatment — without merging their distinct approved meanings, roles, or lifecycles.
 
-**What it is not:** Not a new record type. Not a system User under any circumstance. Not a Tenant. Does not replace or narrow the existing Supplier or Business Customer definitions below.
+**Duplicate detection across the two roles:** Duplicate detection prevents a second record **within the same party role** — a duplicate Supplier, or a duplicate Business Customer. It does **not** treat a match across the two roles as a duplicate. As the Supplier entry below states, the same legal company may legitimately exist as both a Supplier record and a Business Customer record; a matching tax registration number or legal name across those roles is therefore surfaced for review and optional linkage only, and must never automatically reject the second role.
+
+**What it is not:** Not a new record type, and **not a unified Party database or record** — Supplier and Business Customer remain distinct business roles with distinct records unless a later approved party-unification decision changes that. Not a system User under any circumstance. Not a Tenant. Does not replace or narrow the existing Supplier or Business Customer definitions below.
 
 **Owning module:** Master Data and Catalog.
 
 **Related entities or documents:** Supplier, Business Customer, Supplier Contact, Customer Contact.
 
-**Example:** A duplicate-detection scan that checks a new counterparty's tax registration number against both existing Suppliers and existing Business Customers is a Business-Party-level check.
+**Example:** A distributor a Tenant both buys from and sells to is recorded as one Supplier and one Business Customer. Creating the second record succeeds; the system flags the shared tax registration number for review and optional linkage rather than rejecting it as a duplicate.
 
 **Approval status:** Draft for BRD Validation
 

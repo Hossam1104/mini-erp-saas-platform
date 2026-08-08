@@ -1,14 +1,17 @@
 # Current State
 
-## Start here — verified position on 8 August 2026 (MESP-31 In Progress; BRD v0.1 drafted, pending Hossam's review)
+## Start here — verified position on 8 August 2026 (MESP-31 In Progress; BRD v0.2 corrected on open PR #28, pending Hossam's review)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
 | Current branch | `docs/MESP-31-master-data-product-catalog-brd`, created from verified `main` at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54` (PR #27 merge) |
-| MESP-31 | **In Progress.** Hossam recorded the required distinct BRD-entry owner authorization on 8 August 2026 (see "MESP-31 BRD entry eligibility" below, now resolved) and also pre-authorized the later Master Data implementation phase. A v0.1 draft of `docs/16_Master_Data_and_Product_Catalog_BRD.md` exists, covering Products, Product Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies and Exchange Rates. It is **pending Hossam's business-owner review and is not Approved.** No Master Data implementation has begun; the pre-authorized implementation phase remains gated on this BRD's approval and a dedicated, separate implementation Jira item. |
-| No live Jira tool | This session has no Jira API/MCP integration. The Owner-authorization and status facts above are recorded here and in the BRD itself (`docs/16_Master_Data_and_Product_Catalog_BRD.md` §41/§44); they should be mirrored into the actual Jira MESP-31 ticket by Hossam or a session with Jira access. |
+| MESP-31 | **In Progress.** A v0.2 corrected draft of `docs/16_Master_Data_and_Product_Catalog_BRD.md` exists, covering Products, Product Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies and Exchange Rates. It is **pending Hossam's business-owner review and is not Approved.** No Master Data implementation has begun; the pre-authorized implementation phase remains gated on this BRD's approval and a dedicated, separate implementation Jira item. |
+| MESP-31 Parent Epic | `MESP-6 — EPIC 06 - Master Data and Product Catalog` — verified against live Jira. |
+| MESP-31 Owner authorizations (in Jira) | Comment `10615` — BRD-entry authorization. Comment `10616` — future Master Data implementation authorization, which remains **conditional** on this BRD being approved and a dedicated implementation Jira item, separate from MESP-31, being identified and activated. |
+| MESP-31 Jira Source Baseline | Primary anchor **PLT-003**; supporting anchors PLT-002, SAL-001, PROC-002, PROC-008, FIN-001, FIN-003, FIN-007, FIN-010, KSA-002, BR-013, ADM-003, plus the applicable PRD RULE set for master-data integrity. PLT-011–PLT-014 and BR-004 are Platform Administration anchors and are **not** MESP-31's baseline. |
+| PR #28 | **Open, unmerged** — `docs(MESP-31): draft Master Data and Product Catalog BRD`, branch `docs/MESP-31-master-data-product-catalog-brd`, base `main` at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54`. The v0.1 head `6d0aa80eef0a2860c85a141dd6f13ee38bf5760d` received a business-requirements review verdict of **CHANGES REQUIRED BEFORE OWNER APPROVAL / MERGE**; a bounded correction round produced v0.2. Awaiting a new business-requirements review. Do not merge and do not move MESP-31 to Done. |
 | Prior verified `main` | `main` (before this branch) |
 | PR #26 | **Merged** to `main` — approved final head `2c7ed3dec4662672bb78967ceb70db7ed73eb7d4`, ChatGPT final merge review **APPROVED FOR MERGE** (0 Critical, 0 High, 0 Medium blockers); actual GitHub merge commit `06d837c958c1cb7977dc121e3aaea4e7278944fd` |
 | PR #25 | Merged to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` — MESP-93 post-merge Markdown reconciliation |
@@ -19,7 +22,7 @@ A new agent can begin from this section with no prior chat history.
 | MESP-91 | Done |
 | Active Jira item | **MESP-31** (BRD drafting only) — the Foundation correction sequence (MESP-92, MESP-93, MESP-94) is complete; no implementation Jira item is active and none may start before MESP-31's BRD is approved and a dedicated implementation item is identified |
 | Foundation completion checkpoint | Performed 8 August 2026: MESP-92/93/94 Done; MESP-48/MESP-50 remain intentionally open production gates, not treated as blockers to MESP-31 BRD entry; no remaining Foundation correction ticket blocks BRD entry |
-| MESP-31 (Master Data BRD) | **In Progress** — see the "Start here" table above and "MESP-31 BRD entry eligibility" below (now resolved). No Master Data implementation has begun. |
+| MESP-31 (Master Data BRD) | **In Progress** — BRD v0.2 Draft on open PR #28; not Approved. See "MESP-31 BRD entry eligibility" below (now resolved) and the "MESP-31 BRD review round" section. No Master Data implementation has begun. |
 | MESP-48 / MESP-50 | To Do — open production gates, preserved, intentionally not blocking BRD entry |
 | Sprint | None active |
 | Parallel implementation | None |
@@ -32,7 +35,54 @@ After PR #26 merged to `main` at `06d837c958c1cb7977dc121e3aaea4e7278944fd` (app
 
 ### MESP-31 BRD entry eligibility — RESOLVED 8 August 2026
 
-`MESP-31 BRD ENTRY: ELIGIBLE — OWNER APPROVAL RECORDED.` The Foundation correction sequence blocking BRD entry (MESP-92, MESP-93, MESP-94) is complete, and MESP-48/MESP-50 are intentionally not entry blockers. `docs/94_Product_Delivery_Master_Plan.md`'s "Next authorized sequence" step 9 required the MESP-31 BRD's entry conditions to be "reconfirmed" before starting; the precedent for that reconfirmation (MESP-29, see `docs/13_Multi_Tenancy_BRD.md` SC-001) was a distinct founder/owner authorization statement, not an automatic consequence of Foundation completion. Hossam recorded that distinct authorization on 8 August 2026, explicitly scoping MESP-31 to cover Products, Product Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies, and Exchange Rates, and separately pre-authorized the later Master Data implementation phase (not yet executable — see below). MESP-31 moved to In Progress on branch `docs/MESP-31-master-data-product-catalog-brd`, and a v0.1 draft BRD was produced at `docs/16_Master_Data_and_Product_Catalog_BRD.md`. **This BRD draft is not yet Approved** and does not itself authorize implementation; do not start Master Data implementation until Hossam explicitly approves the drafted BRD content and a dedicated implementation Jira item, separate from MESP-31, is identified and activated. This session has no live Jira integration, so the authorization and status facts above should be mirrored into the actual Jira MESP-31 ticket separately.
+`MESP-31 BRD ENTRY: ELIGIBLE — OWNER APPROVAL RECORDED.` The Foundation correction sequence blocking BRD entry (MESP-92, MESP-93, MESP-94) is complete, and MESP-48/MESP-50 are intentionally not entry blockers. `docs/94_Product_Delivery_Master_Plan.md`'s "Next authorized sequence" step 9 required the MESP-31 BRD's entry conditions to be "reconfirmed" before starting; the precedent for that reconfirmation (MESP-29, see `docs/13_Multi_Tenancy_BRD.md` SC-001) was a distinct founder/owner authorization statement, not an automatic consequence of Foundation completion. Hossam recorded that distinct authorization on 8 August 2026, explicitly scoping MESP-31 to cover Products, Product Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies, and Exchange Rates, and separately pre-authorized the later Master Data implementation phase (not yet executable — see below). MESP-31 moved to In Progress on branch `docs/MESP-31-master-data-product-catalog-brd`, and a v0.1 draft BRD was produced at `docs/16_Master_Data_and_Product_Catalog_BRD.md`. Both authorizations are recorded in live Jira — comments `10615` and `10616`. **This BRD draft is not yet Approved** and does not itself authorize implementation; do not start Master Data implementation until Hossam explicitly approves the BRD content and a dedicated implementation Jira item, separate from MESP-31, is identified and activated.
+
+### MESP-31 BRD review round — PR #28 (8 August 2026)
+
+The v0.1 draft was published as **PR #28** at head
+`6d0aa80eef0a2860c85a141dd6f13ee38bf5760d` and received a
+business-requirements review verdict of **CHANGES REQUIRED BEFORE OWNER
+APPROVAL / MERGE**. A bounded, documentation-only correction round produced
+**v0.2** on the same branch and the same Pull Request — no replacement PR was
+opened. The corrections were:
+
+- **MESP-41** (batch/lot/serial/expiry scope) reclassified from a confirmed
+  requirement to a *Recommended Founder Decision Pack default — pending
+  Hossam approval*, and raised as new Open Decision **MD-OD-010**, blocking
+  the Master Data implementation baseline and jointly dependent on MESP-33
+  Inventory.
+- **MESP-54** (exchange-rate sourcing and Finance approval) reclassified as
+  *Deferred Gate / Recommended Default — not yet approved*, owned by
+  Finance/MESP-34 and not approved by this BRD.
+- **Approval controls** corrected: no approved source establishes a
+  separate-approver rule for Tax or Price List changes, so both were
+  withdrawn from Confirmed status into Open Decision **MD-OD-005**. Only the
+  generic control remains Confirmed (MD-BR-046 — where an approved policy
+  requires separate approval, the requester may not self-approve and
+  publication is blocked until the approval exists).
+- **Draft-before-Active** (MD-OD-008) treated consistently as an Open
+  Decision rather than simultaneously Confirmed and open; the "no Draft
+  state for Release 1" position is retained as a recommendation.
+- **Lifecycle wording** corrected — a deactivated record becomes *Inactive
+  and unselectable for new use*, not "Active-unselectable".
+- **Business Party** duplicate semantics clarified in the BRD and the
+  glossary: duplicate detection runs within a party role; a cross-role
+  identity match between Supplier and Business Customer is surfaced for
+  review and optional linkage and never auto-rejects the second role, since
+  the approved glossary confirms the same legal company may be both. No
+  unified Party record is introduced.
+- **Organizational scope** separated into two questions: the Tenant
+  ownership/isolation boundary (Confirmed and mandatory) versus
+  Company/Legal Entity business availability (undecided, MD-OD-001).
+  "Tenant-owned" is not read as "Tenant-wide usable by every Company", and
+  no cross-Tenant shared business data is introduced.
+- Parent Epic, the two Jira Owner-authorization comments, and the corrected
+  Jira Source Baseline recorded as verified facts.
+
+The Open Decision register now holds **ten** decisions (MD-OD-001 through
+MD-OD-010). PR #28 remains **open and unmerged**, MESP-31 remains **In
+Progress**, the BRD remains **Draft and not Approved**, and **no Master Data
+implementation has started or may start automatically**.
 
 **MESP-94 PR #26 focused review corrections (7 August 2026):** a focused
 ChatGPT review of PR #26 at reviewed head

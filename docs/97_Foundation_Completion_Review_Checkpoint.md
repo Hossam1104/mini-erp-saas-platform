@@ -575,3 +575,40 @@ which in any case remains blocked until both the MESP-31 BRD and its
 separate implementation gate are approved (step 10 of the master plan's
 authorized sequence). See `.ai/CURRENT_STATE.md` for the current canonical
 state.
+
+## Superseded — MESP-31 BRD entry authorized (8 August 2026)
+
+Everything above this section is the preserved historical checkpoint record.
+Two of its statements are no longer the current state and are corrected here:
+
+1. The banner near the top of this document says **MESP-94 is "In Progress"**
+   on branch `fix/MESP-94-foundation-validation-evidence`. **MESP-94 is
+   Done.** PR #26 merged to `main` at
+   `06d837c958c1cb7977dc121e3aaea4e7278944fd` after a ChatGPT final merge
+   review verdict of APPROVED FOR MERGE at approved head
+   `2c7ed3dec4662672bb78967ceb70db7ed73eb7d4`; PR #27 then merged its
+   post-merge closure at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54`, the
+   current merged-main baseline. The header table's "Active implementation
+   item" row, which names MESP-92 as In Progress, is likewise the 6 August
+   position and not current — **no implementation item is active.**
+2. The conclusion above, `MESP-31 BRD ENTRY: NOT YET ELIGIBLE FOR AUTOMATIC
+   START — OWNER APPROVAL REQUIRED`, was correct when written and is now
+   **satisfied**. Hossam recorded the required distinct BRD-entry owner
+   authorization on 8 August 2026 (live Jira comment `10615` on MESP-31),
+   explicitly scoping MESP-31 to Products, Product Categories, Units of
+   Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment
+   Terms, Currencies and Exchange Rates, and separately pre-authorized the
+   later Master Data implementation phase (comment `10616`, conditional).
+   **MESP-31 is In Progress**, under Parent Epic `MESP-6 — EPIC 06 - Master
+   Data and Product Catalog`, on branch
+   `docs/MESP-31-master-data-product-catalog-brd`, with a v0.2 draft BRD at
+   `docs/16_Master_Data_and_Product_Catalog_BRD.md` published on open
+   **PR #28** and pending Hossam's business-owner review.
+
+What has **not** changed: the BRD is **Draft, not Approved**; step 10 of the
+master plan's authorized sequence continues to apply in full; and **no
+Master Data implementation has started or may start** until Hossam approves
+the BRD as a business baseline and a dedicated implementation Jira item,
+separate from MESP-31, is identified and activated. MESP-48 and MESP-50
+remain intentionally open production gates. `.ai/CURRENT_STATE.md` is the
+canonical live-state document.

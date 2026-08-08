@@ -58,9 +58,10 @@ PR #26 merged to `main` at `06d837c958c1cb7977dc121e3aaea4e7278944fd` after
 a ChatGPT final merge review verdict of APPROVED FOR MERGE. The Foundation
 completion checkpoint that followed found no remaining Foundation correction
 blocking MESP-31 BRD entry. Hossam recorded the required distinct owner
-authorization on 8 August 2026; MESP-31 moved to In Progress and a v0.1
-draft BRD (`docs/16_Master_Data_and_Product_Catalog_BRD.md`) is now pending
-Hossam's business-owner review — see `.ai/CURRENT_STATE.md`. No ADR
+authorization on 8 August 2026; MESP-31 moved to In Progress and a draft BRD
+(`docs/16_Master_Data_and_Product_Catalog_BRD.md`, v0.2 on open PR #28) is
+now pending Hossam's business-owner review and is not Approved — see
+`.ai/CURRENT_STATE.md`. No ADR
 status in this index asserts production maturity: the durable-work store,
 dispatcher, worker and effect ledger are local, in-memory, non-crash-durable
 test/development seams that are **not composed into the `MiniErp.Api` host**,
