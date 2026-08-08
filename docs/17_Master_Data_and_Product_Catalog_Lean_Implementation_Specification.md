@@ -9,6 +9,8 @@
 **Owner:** Hossam / Product Owner
 **Date:** 8 August 2026
 
+> **Authoritative current overlay - MESP-100 closed; MESP-99 active, 9 August 2026.** MESP-100 is Done with closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 is In Progress with activation evidence 10664. This specification remains the readiness baseline, while TASK.md now contains only the exact MESP-99 implementation session. No Category/UOM persistence or MESP-99 behavior was added by MESP-100.
+
 > **Authoritative current overlay - MESP-100 readiness correction, 9 August 2026.** MESP-100 is the active bounded readiness item for M95-SL-02. MESP-96 is Done, MESP-99 remains To Do until this correction is fully validated, merged, and activated, and no Category/UOM persistence or behavior is implemented here. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006; the remaining Open Decision Register stays preserved.
 
 > **Current delivery overlay - 8 August 2026.** MESP-95 is **Done** after

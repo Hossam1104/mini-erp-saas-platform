@@ -22,6 +22,14 @@ Business Parties boundary contracts, Tenant/scope authorization hooks, stable
 reference contracts, and audit/evidence integration; it did not add Master
 Data entities, migrations, endpoints, or database access.
 
+> **Current MESP-100/MESP-99 handoff - 9 August 2026.** MESP-100 is Done
+> with closure evidence Jira comment `10663`; PR #32 merged at
+> `511f6be9f005e54930f993aead9758d7a66b75a8`. MESP-99 is In Progress as the
+> single active Category/UOM implementation item, and the root TASK.md now
+> contains only that exact session. MESP-100 added no Category/UOM persistence
+> or business behavior. The SQL Server harness remains gated by the explicit
+> `MESP_SQLSERVER_CONNECTION_STRING` configuration.
+
 ## Prerequisites
 
 - .NET SDK 10.0.302 (the repository pins this SDK in `global.json`)

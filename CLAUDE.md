@@ -1,12 +1,13 @@
 @AGENTS.md
 
-## Current execution overlay - 9 August 2026 (MESP-100 active)
+## Current execution overlay - 9 August 2026 (MESP-100 closed; MESP-99 active)
 
-MESP-100 is the single active bounded readiness-correction session for
-M95-SL-02 on branch `fix/MESP-100-m95-sl-02-readiness`, based on
-`c948a4fba8cf1ac9620474b42d56ce95f9effd52`. MESP-96 is Done and MESP-99
-remains To Do until this session is fully validated, merged, and activated.
-No Category/UOM persistence or MESP-99 behavior may be implemented here.
+MESP-100 is Done with closure evidence `10663`; PR #32 merged at
+`511f6be9f005e54930f993aead9758d7a66b75a8` from correction commit
+`a009616f5b5c3a46d9ea0b369b4f3e3a4c143129`. MESP-99 is the single active
+implementation item, In Progress, with activation evidence `10664`. The root
+`TASK.md` contains only the exact MESP-99 / M95-SL-02 implementation session;
+this readiness session added no Category/UOM persistence or behavior.
 The only approved Category/UOM bounds are MD-OD-001, MD-OD-005, MD-OD-008,
 MD-OD-002, and MD-OD-006 as recorded in Jira MESP-100 comment `10662`.
 The actual backend consists of `MiniErp.Api`, `MiniErp.App`,

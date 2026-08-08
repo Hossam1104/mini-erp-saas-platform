@@ -1,9 +1,36 @@
 # Current State
 
-## Current authoritative position - 8 August 2026 (MESP-96 correction complete; M95-SL-02 not started)
+## Current authoritative position - 9 August 2026 (MESP-100 closed; MESP-99 active)
 
-The historical state sections below are preserved for provenance. This overlay
-is authoritative for the live repository and Jira position.
+This is the authoritative live repository and Jira handoff after the bounded
+MESP-100 readiness correction. Historical sections below are preserved for
+provenance and are not executable current-state instructions.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-100 | **Done**; closure evidence is Jira comment `10663`. |
+| MESP-99 | **In Progress**; activation evidence is Jira comment `10664`; it is the single active implementation item for M95-SL-02. |
+| Reviewed starting baseline | `c948a4fba8cf1ac9620474b42d56ce95f9effd52`. |
+| MESP-100 branch | `fix/MESP-100-m95-sl-02-readiness`. |
+| Source/document correction commit | `a009616f5b5c3a46d9ea0b369b4f3e3a4c143129`. |
+| Focused PR | **#32**, merged cleanly. |
+| Functional merge commit | `511f6be9f005e54930f993aead9758d7a66b75a8`; local `main` and `origin/main` were synchronized to this merge before the final handoff metadata update. |
+| MESP-96 / M95-SL-01 | **Done**; remains contract-only and non-persistent. |
+| ADR-002 | Published at `docs/ADR-002_Backend_Project_Structure_and_Module_Enforcement.md`; actual four-project roles and project-reference direction are explicit and tested. |
+| Production project direction | `MiniErp.Api -> MiniErp.Infrastructure -> MiniErp.App -> MiniErp.Contracts`; Api also references App and Contracts for host composition; no cycle, fifth project, or microservice was introduced. |
+| Authorization correction | Immutable server-owned `MasterDataOperationCatalog`: View->View, Create->Create, Edit->Edit, Activate->Activate, Deactivate->Deactivate, Approve->Approve, Import->ImportMigrate, ViewAuditHistory->ViewAuditHistory. Unknown/unmapped operations fail closed and callers cannot pair an unrelated capability. |
+| Validation | Release build 0 warnings/0 errors; focused MasterData + ModuleBoundary tests 39/39 passed; non-SQL architecture suite 582/582 passed; `git diff --check` clean. |
+| SQL safety gate | 21 existing SQL Server safety tests require the explicitly configured `MESP_SQLSERVER_CONNECTION_STRING`; no credential or production infrastructure was invented. |
+| Category/UOM implementation | None in MESP-100: no entity, table, DbContext, migration, repository, service, endpoint, persistence, or MESP-99 business behavior was added. |
+| Owner bounds | MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006 are recorded as Category/UOM-only bounds; the rest of MD-OD-001 through MD-OD-011 remains preserved and unresolved for other domains. |
+| Open production gates | MESP-48, MESP-49, and MESP-50 remain open. |
+| Root task | `TASK.md` contains only `MESP-99 — M95-SL-02 Category and UOM` and its exact implementation instructions. |
+| Current branch | `main`; PR #32 is merged and no readiness PR remains open. |
+
+## Historical execution position - 8 August 2026 (preserved)
+
+This historical state section is preserved for provenance. The authoritative
+live repository and Jira position is recorded in the current section above.
 
 | Current fact | Verified value |
 |---|---|

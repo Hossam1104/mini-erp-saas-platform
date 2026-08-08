@@ -1,5 +1,7 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
+> **Authoritative current overlay - MESP-100 closed; MESP-99 active, 9 August 2026.** MESP-100 is Done with Jira closure evidence `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. MESP-99 is In Progress with activation evidence `10664` and is the single active implementation item. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. No Category/UOM persistence or MESP-99 behavior was implemented by MESP-100; the root TASK.md now contains the exact MESP-99 session.
+
 > **Current MESP-100 readiness overlay — 9 August 2026.** MESP-100 is the
 > single active bounded readiness-correction item between completed MESP-96 /
 > M95-SL-01 and MESP-99 / M95-SL-02. MESP-99 remains To Do until this session
@@ -25,12 +27,12 @@
 | Last updated | 9 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-100 / M95-SL-02 readiness correction — operation/capability authorization and backend topology only; no Category/UOM persistence.` |
-| Current implementation item | `MESP-100 is In Progress. MESP-99 remains To Do until this readiness correction is fully validated, merged, and activated.` |
-| Merged-main baseline | `c948a4fba8cf1ac9620474b42d56ce95f9effd52` (verified starting baseline for MESP-100) |
+| Current activity | `MESP-100 / M95-SL-02 readiness correction — complete and merged; MESP-99 / M95-SL-02 Category and UOM is the single active implementation item.` |
+| Current implementation item | `MESP-99 is In Progress. MESP-100 is Done with closure evidence 10663; MESP-99 activation evidence is 10664.` |
+| Merged-main baseline | `511f6be9f005e54930f993aead9758d7a66b75a8` (PR #32 merge; functional readiness correction) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `MESP-100 readiness branch is being validated; no PR has been published yet.` |
-| Current review checkpoint | `MESP-100 is the single active bounded session. MESP-96 is Done; MESP-99 is not started; MD-OD-001 through MD-OD-011 remain preserved except for the five Category/UOM-only bounds recorded for MESP-99; MESP-48/MESP-49/MESP-50 remain open gates.` |
+| Open Pull Request | `None; PR #32 merged. No MESP-99 implementation PR has been opened.` |
+| Current review checkpoint | `MESP-100 is complete at its bounded readiness scope. MESP-99 is the single active implementation item; the five Category/UOM-only bounds are recorded, all other domain decisions remain preserved, and MESP-48/MESP-49/MESP-50 remain open gates.` |
 
 ---
 

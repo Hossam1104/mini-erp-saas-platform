@@ -1,5 +1,13 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
+> **Authoritative current overlay - 9 August 2026.** MESP-100 is Done
+> (closure evidence Jira comment `10663`) and MESP-99 is In Progress
+> (activation evidence `10664`). PR #32 merged at
+> `511f6be9f005e54930f993aead9758d7a66b75a8`. ADR-002 is now published and
+> reconciles the actual four-project topology; MESP-100 added no Category/UOM
+> persistence or business behavior. MESP-48, MESP-49, and MESP-50 remain
+> separately gated.
+
 > **Current ADR-002 reconciliation overlay — 9 August 2026.** The repository's
 > approved Release 1 production topology is four projects: `MiniErp.Api`,
 > `MiniErp.App`, `MiniErp.Contracts`, and the existing

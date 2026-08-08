@@ -1,14 +1,14 @@
 # Repository Working Agreement
 
-## Current execution overlay - 9 August 2026 (MESP-100 active)
+## Current execution overlay - 9 August 2026 (MESP-100 closed; MESP-99 active)
 
-MESP-100 is the single active bounded readiness-correction session for
-M95-SL-02. The branch is `fix/MESP-100-m95-sl-02-readiness`, based on
-`c948a4fba8cf1ac9620474b42d56ce95f9effd52`; MESP-96 is Done and MESP-99
-remains To Do until this session is fully validated, merged, and activated.
-This session may close readiness blockers only. It may not implement
-Category/UOM persistence or behavior, create entities/tables/migrations, or
-start MESP-99 automatically.
+MESP-100 is Done with closure evidence in Jira comment `10663`. Its focused
+PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8` from source/document
+correction commit `a009616f5b5c3a46d9ea0b369b4f3e3a4c143129`. MESP-99 is now the
+single active implementation item, In Progress, with activation evidence in
+comment `10664`. The root `TASK.md` contains only the exact MESP-99 / M95-SL-02
+implementation session; this chat did not implement Category/UOM persistence
+or business behavior.
 
 The approved Category/UOM-only bounds are MD-OD-001 (Tenant-wide inside the
 owning Tenant, reusable by its Companies/Branches, no cross-Tenant sharing),

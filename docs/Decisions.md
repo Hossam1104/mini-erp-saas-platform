@@ -2,6 +2,17 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
+## Current authoritative execution state - 9 August 2026
+
+MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at
+511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 is In Progress with
+activation evidence 10664 and is the single active implementation item. The
+five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002,
+and MD-OD-006. ADR-002 is published and the immutable operation/capability
+catalogue is implemented and tested. No Category/UOM persistence or MESP-99
+business behavior was added by MESP-100. The older readiness overlay below is
+retained as provenance; this section governs current status.
+
 ## Current execution overlay - 9 August 2026 (MESP-100 readiness correction)
 
 MESP-100 is the single active readiness-correction item for M95-SL-02. The
