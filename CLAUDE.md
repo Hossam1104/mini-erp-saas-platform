@@ -1,6 +1,19 @@
 @AGENTS.md
 # Mini ERP Delivery Rules
 
+## Current approval overlay — 8 August 2026
+
+MESP-31 BRD v0.3 is an **Approved Business Baseline**. Hossam's approval is
+recorded in live Jira comment `10649` at reviewed content head
+`1e2d055354f0ddde833190948d09fa426707484c`. The Open Decision Register
+MD-OD-001 through MD-OD-011 remains preserved; approval silently resolves none
+of those decisions, and blocking decisions remain implementation-slice gates.
+PR #28 is approved for merge but is still open and unmerged until the bounded
+approval-state reconciliation is pushed and reverified. MESP-31 remains the
+single active Jira item until it is closed. MESP-95 exists and remains To Do;
+it may become active only after the PR #28 merge, MESP-31 Jira closure, and the
+one-active-item gate. No Master Data source implementation has started.
+
 Authoritative sources are the approved PRD, owning BRDs, `docs/Decisions.md`,
 approved ADRs, the active Lean Implementation Specification, Jira, and
 `docs/94_Product_Delivery_Master_Plan.md` in that order. Read the active Jira
@@ -57,17 +70,18 @@ M31-R12 (Saudi launch language) and M31-R13 (an unrelated
 `.vscode/settings.json` change in the PR delta). A second bounded correction
 round closed all four and produced v0.3, whose Open Decision register now
 holds eleven decisions (MD-OD-001–011, adding Product/Item modelling as
-MD-OD-011). The BRD is **Draft, pending Hossam's business-owner review,
-and is not Approved**. Two Founder Decision Pack defaults are explicitly
-**not** approved and must not be treated as requirements: MESP-41
+MD-OD-011). The BRD is **v0.3 Approved Business Baseline**, approved by
+Hossam in Jira comment `10649` at reviewed content head
+`1e2d055354f0ddde833190948d09fa426707484c`. The Open Decision Register
+remains preserved; approval silently resolves none of MD-OD-001 through
+MD-OD-011. Two Founder Decision Pack defaults remain explicitly **not**
+approved and must not be treated as requirements: MESP-41
 (batch/lot/serial/expiry — now MD-OD-010) and MESP-54 (exchange-rate sourcing
-and Finance approval — owned by MESP-34). Hossam also pre-authorized the
-later Master Data implementation phase, but that authorization is not yet
-executable: implementation cannot start until this BRD is explicitly approved
-as a business baseline and a dedicated implementation Jira item, separate
-from MESP-31, is identified and activated. No Master Data implementation has
-begun, and none may start automatically merely because this draft exists —
-see `.ai/CURRENT_STATE.md` for the exact live position.
+and Finance approval — owned by MESP-34). Hossam also authorized the later
+Master Data implementation phase, subject to the normal Definition of Ready
+and the dedicated MESP-95 readiness item. No Master Data implementation has
+begun, and none may start automatically — see `.ai/CURRENT_STATE.md` for the
+exact live position.
 
 The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`; older filenames name
 the same unchanged file. Start from `.ai/CURRENT_STATE.md` for the verified

@@ -612,3 +612,16 @@ the BRD as a business baseline and a dedicated implementation Jira item,
 separate from MESP-31, is identified and activated. MESP-48 and MESP-50
 remain intentionally open production gates. `.ai/CURRENT_STATE.md` is the
 canonical live-state document.
+
+## Superseding MESP-31 approval overlay — 8 August 2026
+
+The historical checkpoint and its BRD-entry overlay above are preserved.
+Hossam subsequently approved MESP-31 BRD v0.3 as the Release 1 business
+baseline in Jira comment `10649` at reviewed content head
+`1e2d055354f0ddde833190948d09fa426707484c`. This approval does not silently
+answer MD-OD-001 through MD-OD-011; the register remains governed and any
+blocking decision remains an implementation-slice gate. PR #28 is approved
+for merge but remains open and unmerged until the approval-state
+reconciliation is pushed and reverified. MESP-95 exists as To Do and may
+become active only after the actual PR #28 merge and MESP-31 Jira closure. No
+Master Data source implementation has started.

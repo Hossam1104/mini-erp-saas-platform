@@ -18,6 +18,16 @@
 > BRD (v0.2, on open PR #28) pending Hossam's review and not Approved — see
 > `.ai/CURRENT_STATE.md`.
 
+> **Current Master Data approval overlay — 8 August 2026:** Hossam approved
+> MESP-31 BRD v0.3 as the Release 1 business baseline in Jira comment `10649`
+> at reviewed content head
+> `1e2d055354f0ddde833190948d09fa426707484c`. The Open Decision Register
+> MD-OD-001 through MD-OD-011 remains preserved and unresolved; blocking
+> decisions remain implementation-slice gates. PR #28 is approved for merge
+> but still open and unmerged pending the approval-state reconciliation.
+> MESP-95 exists as To Do and is the next readiness item only after MESP-31 is
+> merged and closed. No Master Data source implementation has started.
+
 Status at the time of this checkpoint: MESP-89 is Done. PR #12 was approved by
 focused ChatGPT review and merged to `main`; MESP-63 was the next authorized
 implementation item.

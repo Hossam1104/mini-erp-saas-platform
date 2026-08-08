@@ -71,3 +71,17 @@ provider selection. The canonical approved PRD is `docs/MESP_PRD_v1.2.docx`
 
 No new ADR was created by the Opus 5 project-wide checkpoint of 6 August 2026:
 that review found no architectural decision that is not already recorded here.
+
+## Current Master Data approval overlay — 8 August 2026
+
+The historical Foundation and MESP-31 status narrative above is preserved.
+Hossam approved MESP-31 BRD v0.3 as the Release 1 business baseline in Jira
+comment `10649` at reviewed content head
+`1e2d055354f0ddde833190948d09fa426707484c`. The approval changes no ADR
+decision and silently resolves none of the BRD's MD-OD-001 through MD-OD-011
+decisions. ADR-002 and ADR-011 remain required before affected module
+implementation; ADR-016 remains a production-timing decision only. PR #28 is
+approved for merge but remains open and unmerged until the approval-state
+reconciliation is pushed and reverified. MESP-95 exists as To Do and is the
+next implementation-readiness item only after MESP-31 is actually merged and
+closed. No Master Data source implementation has started.

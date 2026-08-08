@@ -10,12 +10,12 @@
 | Last updated | 8 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-31 BRD review and correction — the v0.1 draft published as PR #28 received a business-requirements review verdict of CHANGES REQUIRED BEFORE OWNER APPROVAL / MERGE and has been corrected to v0.2 on branch docs/MESP-31-master-data-product-catalog-brd. Documentation only.` |
-| Current implementation item | `None — MESP-31 is a documentation-only BRD-drafting activity, not an implementation item. No Master Data implementation is active or authorized to start; see .ai/CURRENT_STATE.md for the exact live position.` |
+| Current activity | `MESP-31 approval-state reconciliation — BRD v0.3 is an Owner Approved Business Baseline at reviewed content head 1e2d055354f0ddde833190948d09fa426707484c; documentation only.` |
+| Current implementation item | `None — MESP-31 is in BRD finalization and MESP-95 remains To Do. No Master Data source implementation is active or started; see .ai/CURRENT_STATE.md for the exact live position.` |
 | Merged-main baseline | `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54` (PR #27 merge — MESP-94 post-merge closure and Foundation completion reconciliation) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `PR #28 — open, unmerged: docs(MESP-31) draft Master Data and Product Catalog BRD. Base main at c86ecb851e88205f1d3907f5a5c36cfb59ce8b54.` |
-| Current review checkpoint | `Foundation is complete: MESP-92, MESP-93 and MESP-94 are all Done. MESP-94's PR #26 merged to main at 06d837c958c1cb7977dc121e3aaea4e7278944fd after a ChatGPT final merge review verdict of APPROVED FOR MERGE at approved head 2c7ed3dec4662672bb78967ceb70db7ed73eb7d4; PR #27 then merged its post-merge closure at c86ecb851e88205f1d3907f5a5c36cfb59ce8b54. No Foundation correction ticket remains open. The active review is now the MESP-31 BRD business-requirements review on open PR #28: MESP-31 is In Progress, the BRD is Draft and not Approved, and no Master Data implementation has started. MESP-48 and MESP-50 remain intentionally open production gates. See .ai/CURRENT_STATE.md, the canonical live-state document, for the exact current position.` |
+| Open Pull Request | `PR #28 — open, non-draft, mergeable and unmerged: docs(MESP-31) Master Data and Product Catalog BRD. Approved reviewed content head 1e2d055354f0ddde833190948d09fa426707484c; base main at c86ecb851e88205f1d3907f5a5c36cfb59ce8b54.` |
+| Current review checkpoint | `Foundation is complete: MESP-92, MESP-93 and MESP-94 are all Done. MESP-31 BRD v0.3 is approved by Hossam in Jira comment 10649 as the Release 1 business baseline, with MD-OD-001 through MD-OD-011 preserved and unresolved. PR #28 is approved for merge but remains unmerged until the approval-state reconciliation is pushed and reverified. MESP-95 exists as To Do and is not active. MESP-48, MESP-49 and MESP-50 and all qualified external-production gates remain open.` |
 
 ---
 
@@ -284,7 +284,7 @@ Define the business meaning of each domain before technical implementation. Each
 
 ### Core ERP domains
 
-- [ ] 🔄 Master Data and Catalog BRD — MESP-31 In Progress; draft at `docs/16_Master_Data_and_Product_Catalog_BRD.md` (v0.2, corrected after the first business-requirements review of PR #28), pending Hossam's business-owner review. Not yet Approved.
+- [ ] 🔄 Master Data and Catalog BRD — MESP-31 In Progress; v0.3 at `docs/16_Master_Data_and_Product_Catalog_BRD.md` is an Owner Approved Business Baseline at reviewed content head `1e2d055354f0ddde833190948d09fa426707484c`. PR #28 must merge and MESP-31 must be closed before the BRD sequence item is marked Done. MD-OD-001 through MD-OD-011 remain open and governed.
 - [ ] Business Parties BRD.
 - [ ] Procurement BRD.
 - [ ] Inventory BRD.
@@ -322,12 +322,13 @@ Define the business meaning of each domain before technical implementation. Each
 - [ ] No technical behavior is invented to fill a business gap.
 
 MESP-28, MESP-29 and MESP-30 are the approved BRD baselines for the current
-foundation slice. MESP-31 is now In Progress (BRD drafting only, v0.2 draft
-on open PR #28, pending Hossam's review — see `.ai/CURRENT_STATE.md`); MESP-32
+foundation slice. MESP-31 is In Progress for final BRD closure; v0.3 is an
+Owner Approved Business Baseline on open PR #28, with MD-OD-001 through
+MD-OD-011 preserved (see `.ai/CURRENT_STATE.md`); MESP-32
 through MESP-40 remain To Do and are not implied to be approved by any prior
 approval; each requires its own controlled BRD decision.
 
-**Phase 2 status: IN PROGRESS — MESP-28 v0.3, MESP-29 v0.2, and MESP-30 v0.2 are approved and Done; MESP-5 remains In Progress. MESP-31 is In Progress with a v0.2 draft BRD on open PR #28 pending Hossam's review, not Approved; MESP-32 through MESP-40 remain To Do and require separate approval. MESP-86 v0.4 is approved and Done; no remaining BRD is implicitly approved by that decision.**
+**Phase 2 status: IN PROGRESS — MESP-28 v0.3, MESP-29 v0.2, and MESP-30 v0.2 are approved and Done; MESP-5 remains In Progress. MESP-31 is In Progress for finalization with an Owner Approved v0.3 BRD on open PR #28; the PR must merge before MESP-31 is closed. MESP-32 through MESP-40 remain To Do and require separate approval. MESP-86 v0.4 is approved and Done; no remaining BRD is implicitly approved by that decision.**
 
 ---
 
@@ -2095,3 +2096,17 @@ MESP-31 stays In Progress; PR #28 remains open and unmerged; no Master Data
 implementation is active or permitted to start automatically.
 `.ai/CURRENT_STATE.md` remains the canonical live-state document and carries
 the exact new reviewed head.
+
+### MESP-31 Owner approval overlay — supersedes the above (8 August 2026)
+
+The review chronology above is preserved. Hossam approved MESP-31 BRD v0.3 as
+the Release 1 **Approved Business Baseline** in Jira comment `10649` at
+reviewed content head `1e2d055354f0ddde833190948d09fa426707484c`. The approval
+does not silently answer MD-OD-001 through MD-OD-011; the register remains
+open, and decisions marked blocking remain implementation-slice gates. PR #28
+is approved for merge but remains open and unmerged until the approval-state
+reconciliation is pushed and reverified. MESP-31 remains In Progress until
+the actual merge and Jira closure. MESP-95 exists as To Do and is the single
+next authorized implementation-readiness item only after those gates. No
+Master Data source implementation has started. MESP-48, MESP-49 and MESP-50
+and all qualified external-production gates remain open.

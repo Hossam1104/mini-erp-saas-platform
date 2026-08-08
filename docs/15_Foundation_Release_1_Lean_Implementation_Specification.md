@@ -1559,3 +1559,15 @@ MESP-64 remain To Do.
 or begin work outside the authorized MESP-58 item. Preserve MESP-48 and MESP-50
 gates, and keep MESP-31 work, Retail POS, and Wafra-specific behavior out of
 this baseline.
+
+## Current Master Data status overlay — 8 August 2026
+
+The historical Foundation baseline and its earlier MESP-31 pre-approval note
+are preserved. Hossam approved MESP-31 BRD v0.3 as the Release 1 business
+baseline in Jira comment `10649` at reviewed content head
+`1e2d055354f0ddde833190948d09fa426707484c`. The approval preserves and does
+not answer MD-OD-001 through MD-OD-011; blocking decisions remain gates for
+affected implementation slices. PR #28 is approved for merge but remains
+open and unmerged pending the approval-state reconciliation. MESP-95 exists
+as To Do and is the next readiness item only after MESP-31 is merged and
+closed. No Master Data source implementation has started.

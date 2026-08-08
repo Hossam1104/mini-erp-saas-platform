@@ -1,17 +1,17 @@
 # Current State
 
-## Start here — verified position on 8 August 2026 (MESP-31 In Progress; BRD v0.3 corrected on open PR #28, pending Hossam's review)
+## Start here — verified position on 8 August 2026 (MESP-31 BRD v0.3 Owner Approved; PR #28 pending merge)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
 | Current branch | `docs/MESP-31-master-data-product-catalog-brd`, created from verified `main` at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54` (PR #27 merge) |
-| MESP-31 | **In Progress.** A v0.3 corrected draft of `docs/16_Master_Data_and_Product_Catalog_BRD.md` exists, covering Products, Product Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies and Exchange Rates. It is **pending Hossam's business-owner review and is not Approved.** No Master Data implementation has begun; the pre-authorized implementation phase remains gated on this BRD's approval and a dedicated, separate implementation Jira item. |
+| MESP-31 | **In Progress.** BRD v0.3 at `docs/16_Master_Data_and_Product_Catalog_BRD.md` is an **Approved Business Baseline**, approved by Hossam on 8 August 2026 in Jira comment `10649` at reviewed content head `1e2d055354f0ddde833190948d09fa426707484c`. Its Open Decision Register MD-OD-001 through MD-OD-011 is preserved; approval does not silently answer those decisions. No Master Data source implementation has begun. |
 | MESP-31 Parent Epic | `MESP-6 — EPIC 06 - Master Data and Product Catalog` — verified against live Jira. |
-| MESP-31 Owner authorizations (in Jira) | Comment `10615` — BRD-entry authorization. Comment `10616` — future Master Data implementation authorization, which remains **conditional** on this BRD being approved and a dedicated implementation Jira item, separate from MESP-31, being identified and activated. |
+| MESP-31 Owner authorizations and approval (in Jira) | Comment `10615` — BRD-entry authorization. Comment `10616` — future Master Data implementation authorization. Comment `10649` — approval of BRD v0.3 as the Release 1 business baseline at reviewed content head `1e2d055354f0ddde833190948d09fa426707484c`; the implementation authorization remains subject to the normal Definition of Ready and a dedicated active readiness item. |
 | MESP-31 Jira Source Baseline | Primary anchor **PLT-003**; supporting anchors PLT-002, SAL-001, PROC-002, PROC-008, FIN-001, FIN-003, FIN-007, FIN-010, KSA-002, BR-013, ADM-003, plus the applicable PRD RULE set for master-data integrity. PLT-011–PLT-014 and BR-004 are Platform Administration anchors and are **not** MESP-31's baseline. |
-| PR #28 | **Open, unmerged** — `docs(MESP-31): draft Master Data and Product Catalog BRD`, branch `docs/MESP-31-master-data-product-catalog-brd`, base `main` at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54`. The v0.1 head `6d0aa80eef0a2860c85a141dd6f13ee38bf5760d` received a business-requirements review verdict of **CHANGES REQUIRED BEFORE OWNER APPROVAL / MERGE**; a bounded correction round produced v0.2, reviewed at head `865701128c86d358f6aa919162c91d91ae025f21`, which drew a further verdict of **CHANGES REQUIRED — FINAL SMALL CORRECTION ROUND** (M31-R10 through M31-R13). A second bounded correction round closed all four and produced v0.3. Awaiting a new business-requirements review. Do not merge and do not move MESP-31 to Done. |
+| PR #28 | **Open, non-draft, mergeable, unmerged, approved for merge after approval-state reconciliation** — `docs(MESP-31): draft Master Data and Product Catalog BRD`, branch `docs/MESP-31-master-data-product-catalog-brd`, base `main` at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54`. Approved reviewed content head: `1e2d055354f0ddde833190948d09fa426707484c`; the approval-state reconciliation is the remaining repository step before merge. Review-thread count is currently zero unresolved. |
 | Prior verified `main` | `main` (before this branch) |
 | PR #26 | **Merged** to `main` — approved final head `2c7ed3dec4662672bb78967ceb70db7ed73eb7d4`, ChatGPT final merge review **APPROVED FOR MERGE** (0 Critical, 0 High, 0 Medium blockers); actual GitHub merge commit `06d837c958c1cb7977dc121e3aaea4e7278944fd` |
 | PR #25 | Merged to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` — MESP-93 post-merge Markdown reconciliation |
@@ -20,14 +20,30 @@ A new agent can begin from this section with no prior chat history.
 | PR #23 | Closed as superseded (not merged) — its docs-only MESP-92 reconciliation content was already carried onto `main` through PR #24; see the PR #23 closing comment for file-by-file evidence |
 | MESP-92 | Done — PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` |
 | MESP-91 | Done |
-| Active Jira item | **MESP-31** (BRD drafting only) — the Foundation correction sequence (MESP-92, MESP-93, MESP-94) is complete; no implementation Jira item is active and none may start before MESP-31's BRD is approved and a dedicated implementation item is identified |
+| Active Jira item | **MESP-31** (BRD finalization only; no source implementation) — after PR #28 merges and MESP-31 is closed, MESP-95 is the single next authorized implementation-readiness item |
 | Foundation completion checkpoint | Performed 8 August 2026: MESP-92/93/94 Done; MESP-48/MESP-50 remain intentionally open production gates, not treated as blockers to MESP-31 BRD entry; no remaining Foundation correction ticket blocks BRD entry |
-| MESP-31 (Master Data BRD) | **In Progress** — BRD v0.2 Draft on open PR #28; not Approved. See "MESP-31 BRD entry eligibility" below (now resolved) and the "MESP-31 BRD review round" section. No Master Data implementation has begun. |
+| MESP-31 (Master Data BRD) | **In Progress** — BRD v0.3 is an Owner Approved Business Baseline on open PR #28; MESP-31 is not yet Done until the PR actually merges and Jira closure evidence is posted. The eleven Open Decisions remain preserved and governed. No Master Data implementation has begun. |
+| MESP-95 | **To Do** — `Produce Master Data and Product Catalog Lean Implementation Specification`; it becomes the single active item only after PR #28 merges, MESP-31 is confirmed Done in Jira, and no other implementation/readiness item is In Progress. |
 | MESP-48 / MESP-50 | To Do — open production gates, preserved, intentionally not blocking BRD entry |
 | Sprint | None active |
 | Parallel implementation | None |
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx` |
 | Hosted CI | None configured — all validation is local only |
+
+### MESP-31 Owner-approval overlay — 8 August 2026 (pre-merge)
+
+The historical review and correction sections below are preserved. The current
+position is that Hossam approved MESP-31 BRD v0.3 as the Release 1 business
+baseline in Jira comment `10649` at reviewed content head
+`1e2d055354f0ddde833190948d09fa426707484c`. The approval preserves
+MD-OD-001 through MD-OD-011 and silently resolves none of them; decisions
+marked blocking remain implementation-slice gates. PR #28 is approved for
+merge but remains open and unmerged until the approval-state reconciliation is
+pushed and reverified. MESP-31 remains In Progress until its actual merge and
+Jira closure. MESP-95 exists as To Do and is the next authorized item only
+after the Stage-A closure gate. No Master Data source implementation has
+started. MESP-48, MESP-49, MESP-50 and all qualified external-production gates
+remain open.
 
 ### Post-merge focused verification (8 August 2026)
 
