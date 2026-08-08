@@ -12,7 +12,9 @@
 > **Current delivery overlay - 8 August 2026.** MESP-95 is **Done** after
 > ChatGPT final review passed and PR #29 merged normally. This specification
 > remains the implementation-readiness baseline; MESP-96 separately completed
-> the bounded, contract-only/non-persistent M95-SL-01 slice. The slice created
+> the bounded, contract-only/non-persistent M95-SL-01 slice. PR #30 merged at
+> `87f150d95f583168a86aa56200916343c6404f7f` and Jira completion evidence is
+> comment `10655`. The slice created
 > no Master Data persistence, endpoint, migration, database access, or
 > unresolved Product/Item, availability, approval-catalogue, or lifecycle
 > behavior. M95-SL-02 Category and UOM is the next exact session and is not
@@ -41,7 +43,7 @@ own bounded Definition of Ready and decision gates are satisfied.
 | Canonical PRD | `docs/MESP_PRD_v1.2.docx` |
 | Protected PRD Git blob | `1f9163b9412cb343a19a98312eb642ad26c1efaa` |
 | Jira activation | MESP-95 transitioned to Done after PR #29 merged; MESP-96 separately activated and completed M95-SL-01 |
-| Delivery state | MESP-31 Done; MESP-95 Done; MESP-96 complete for M95-SL-01; M95-SL-02 not started |
+| Delivery state | MESP-31 Done; MESP-95 Done; MESP-96 Done for M95-SL-01; M95-SL-02 not started |
 
 The approval of MESP-31 preserves MD-OD-001 through MD-OD-011. This
 specification identifies their implementation impact but does not answer,

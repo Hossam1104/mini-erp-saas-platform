@@ -10,18 +10,19 @@ is authoritative for the live repository and Jira position.
 | MESP-31 | **Done**; the approved BRD v0.3 baseline remains unchanged. |
 | PR #29 | **Merged** normally at actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; approved final PR head `c465d660e49a254f2fffbb95e0d07c5fcf17a193`. |
 | MESP-95 | **Done** in Jira; closure evidence comment `10654`; ChatGPT final review passed and M95-R01/M95-R02/M95-R03 are closed. |
-| MESP-96 | **Implementation complete** for `Implement Master Data shared boundary and Tenant/scope contracts (M95-SL-01)`; final Jira closure/PR evidence is recorded in the session completion overlay and closure comment. |
+| MESP-96 | **Done** in Jira; completion evidence comment `10655`; PR #30 merged at actual merge commit `87f150d95f583168a86aa56200916343c6404f7f`. |
 | M95-SL-01 | **Complete, contract-only, and non-persistent**; no Master Data persistence exists. |
 | Source branch | `agent/mesp-96-m95-sl-01-contracts`; source changes are limited to Contracts/App seams and focused architecture tests. |
 | Implementation commit | `aa413f7c9dadea036f1f8ab6a4f47fb5ed83b0f0` (`feat(MESP-96): add master data boundary contracts`). |
-| MESP-96 Pull Request | **#30** from `agent/mesp-96-m95-sl-01-contracts` to `main`; clean publication handoff, final merge/Jira evidence pending. |
+| MESP-96 Pull Request | **#30 merged** from `agent/mesp-96-m95-sl-01-contracts` to `main`; approved final PR head `e44bf32523c08c47a32e1ae9d80a2e5638851756`. |
 | Source boundary | Master Data/Catalog and Business Parties composition seams; server-derived Tenant context consumption; policy-neutral BusinessScope/scope-policy hook; capability, resource-policy, generic approval, stable-reference, and audit/evidence contracts. |
 | Validation | Release solution build: 0 warnings/0 errors. Focused `MasterDataBoundaryTests` + `ModuleBoundaryTests`: 32/32 passed. `git diff --check` and prohibited-persistence/unresolved-behavior scans passed. |
 | Next exact session | M95-SL-02 Category and UOM; not started, no Jira child active, and first-data-bearing MD-OD/ADR gates remain required. |
 | Open decisions | MD-OD-001 through MD-OD-011 remain unresolved and preserved. |
 | Production/external gates | MESP-48, MESP-49, and MESP-50 remain open; no production or external-validation decision is invented. |
 | Source implementation | MESP-96 source implementation is now present only in the bounded non-persistent slice described above; no Product/Item, SKU/Barcode, tracking, availability, approval-catalogue, lifecycle, Wafra, Retail POS, migration, database, or endpoint behavior was added. |
-| Main synchronization | MESP-96 was started from synchronized `main`; PR #30 is the pending handoff branch until its clean merge, after which `main` must be reverified. |
+| Current branch | `main`, synchronized to MESP-96 merge commit `87f150d95f583168a86aa56200916343c6404f7f`. |
+| Main synchronization | Local `main` matches `origin/main` at `87f150d95f583168a86aa56200916343c6404f7f`; no open MESP-96 PR remains. |
 
 M95-SL-01 must remain contract-only: no Master Data EF entities/tables,
 migration, or `MESP` database creation/access solely for this slice; no
