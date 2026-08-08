@@ -1,6 +1,6 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 open).**
+> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 merged).**
 > MESP-99 / M95-SL-02 Category and UOM is implementation-complete on branch
 > `agent/mesp-99-category-uom` at its approved bounded scope: Tenant-wide
 > Category/UOM policy, server-derived authorization, lifecycle/concurrency,
@@ -9,9 +9,10 @@
 > suite are green; the 21-test SQL Server safety gate remains an existing
 > credential/provider gate because `MESP_SQLSERVER_CONNECTION_STRING` is not
 > configured. No migration, production database, Product/Item behavior, or
-> later domain slice was introduced. Focused PR #33 is open from implementation
-> commit `430996c`; final merge evidence will be added to the current-state
-> handoff after review. MESP-48, MESP-49,
+> later domain slice was introduced. Focused PR #33 merged to `main` at
+> `8364a67bce4d7d782115b7347e4e6607f02f9be4` from implementation commits
+> `430996c`, `0cf6906`, and `964766b`. Jira validation evidence is comment
+> `10665`; final closure evidence is comment `10666`; MESP-99 is Done. MESP-48, MESP-49,
 > and MESP-50 remain open.
 
 > The next exact session is M95-SL-03 Product identity readiness only, gated by
@@ -45,12 +46,12 @@
 | Last updated | 9 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-100 / M95-SL-02 readiness correction — complete and merged; MESP-99 / M95-SL-02 Category and UOM is the single active implementation item.` |
-| Current implementation item | `MESP-99 is In Progress. MESP-100 is Done with closure evidence 10663; MESP-99 activation evidence is 10664.` |
-| Merged-main baseline | `511f6be9f005e54930f993aead9758d7a66b75a8` (PR #32 merge; functional readiness correction) |
+| Current activity | `MESP-99 / M95-SL-02 Category and UOM — complete and merged through PR #33; M95-SL-03 Product identity readiness is the next exact task but is not active.` |
+| Current implementation item | `MESP-99 is Done; activation evidence is 10664; validation evidence is 10665; closure evidence is 10666.` |
+| Merged-main baseline | `8364a67bce4d7d782115b7347e4e6607f02f9be4` (PR #33 merge; bounded Category/UOM implementation) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; PR #32 merged. No MESP-99 implementation PR has been opened.` |
-| Current review checkpoint | `MESP-100 is complete at its bounded readiness scope. MESP-99 is the single active implementation item; the five Category/UOM-only bounds are recorded, all other domain decisions remain preserved, and MESP-48/MESP-49/MESP-50 remain open gates.` |
+| Open Pull Request | `None; PR #33 merged. No later implementation PR is open.` |
+| Current review checkpoint | `MESP-99 is complete at its bounded Category/UOM scope; PR #33 is merged, the five affected bounds remain Category/UOM-only, later domain decisions remain preserved, and MESP-48/MESP-49/MESP-50 remain open gates.` |
 
 ---
 
