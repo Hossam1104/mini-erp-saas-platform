@@ -92,6 +92,9 @@ The MESP-31 BRD approval is now closed through Jira comment `10650` after PR
 #28 merged at actual commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`.
 MESP-95 is the single active implementation-readiness Task and its draft
 specification is `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`.
+The review is published as PR #29, open and non-draft, from initial draft head
+`dc550e1171e8f9d20cd7fdf5509dfffb7537b3bd`; it remains documentation-only and
+must not be merged as source implementation.
 The specification evaluates ADR-002, ADR-005, ADR-006, ADR-011, and ADR-016
 without creating or updating an ADR: ADR-002 and ADR-011 remain pre-code
 dependencies, ADR-016 remains production-timing only, and the existing

@@ -2126,6 +2126,9 @@ MESP-95 already existed as the dedicated next Task and was transitioned from
 To Do to **In Progress** only after the Stage-A exit gate. Its branch is
 `docs/MESP-95-master-data-lean-implementation-spec` and its draft document is
 `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`.
+The documentation-only readiness review is published as open, non-draft PR #29
+from initial draft head `dc550e1171e8f9d20cd7fdf5509dfffb7537b3bd`; it is not a
+source implementation PR and must not be merged automatically.
 The document defines implementation-readiness boundaries and a proposed
 sequential backlog only. It creates no source implementation, migration,
 database, credential, Jira child slice, Sprint, Retail POS behavior, or

@@ -15,6 +15,7 @@ only; no Master Data source implementation has started.
 | MESP-95 | **In Progress**. `Produce Master Data and Product Catalog Lean Implementation Specification`; Jira item already existed and was activated after the Stage-A exit gate. |
 | Specification | `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`, Draft - implementation-readiness review; proposed slices only, no Jira children activated. |
 | MESP-95 branch | `docs/MESP-95-master-data-lean-implementation-spec` |
+| MESP-95 PR | **#29** — Open, non-draft, documentation-only readiness review; initial draft head `dc550e1171e8f9d20cd7fdf5509dfffb7537b3bd`. |
 | Open decisions | MD-OD-001 through MD-OD-011 remain preserved and unresolved; the specification classifies their slice impact without answering them. |
 | Other In Progress task | MESP-23 is the governance/open-questions register, not an implementation or readiness item. |
 | Production gates | MESP-48, MESP-49, and MESP-50 remain open; no supported-volume, retention, privacy, legal-hold, purge, residency, backup, restoration, or production topology decision is invented. |

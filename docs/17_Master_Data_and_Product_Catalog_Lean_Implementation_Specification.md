@@ -5,6 +5,7 @@
 **Jira:** MESP-95 - Produce Master Data and Product Catalog Lean Implementation Specification
 **Parent Epic:** MESP-6 - EPIC 06 - Master Data and Product Catalog
 **Branch:** `docs/MESP-95-master-data-lean-implementation-spec`
+**Review PR:** #29 - Open, non-draft, ready for ChatGPT/Product Owner review; initial draft head `dc550e1171e8f9d20cd7fdf5509dfffb7537b3bd`
 **Owner:** Hossam / Product Owner
 **Date:** 8 August 2026
 

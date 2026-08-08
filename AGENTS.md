@@ -13,7 +13,10 @@ remain implementation-slice gates. MESP-95 is the single active Jira item,
 In Progress, on branch `docs/MESP-95-master-data-lean-implementation-spec`.
 Its Draft implementation-readiness specification is documentation-only; no
 Master Data source implementation has started, no Jira child slice is active,
-and no next coding item may start automatically.
+and no next coding item may start automatically. The review is published as
+PR #29 (Open, non-draft) from initial draft head
+`dc550e1171e8f9d20cd7fdf5509dfffb7537b3bd`; it must not be merged or followed
+by source implementation automatically.
 
 - Read the active Jira item and the relevant approved PRD, BRD, ADRs, glossary,
   foundation specification, and Product Delivery Master Plan before changing
