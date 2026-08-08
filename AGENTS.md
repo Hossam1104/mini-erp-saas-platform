@@ -46,7 +46,15 @@
   Taxes, Payment Terms, Currencies and Exchange Rates, and is published on
   open **PR #28**. Its v0.1 head `6d0aa80` drew a business-requirements
   verdict of CHANGES REQUIRED BEFORE OWNER APPROVAL / MERGE; a bounded
-  correction round produced v0.2 with ten Open Decisions (MD-OD-001–010).
+  correction round produced v0.2 with ten Open Decisions (MD-OD-001–010),
+  reviewed at head `8657011`, which drew a further verdict of CHANGES
+  REQUIRED — FINAL SMALL CORRECTION ROUND: M31-R10 (Product/Item modelling
+  needed an Owner decision rather than Confirmed status), M31-R11 (residual
+  approval assumptions), M31-R12 (Saudi launch language) and M31-R13 (an
+  unrelated `.vscode/settings.json` change in the PR delta). A second bounded
+  correction round closed all four and produced v0.3, whose Open Decision
+  register now holds eleven decisions (MD-OD-001–011, adding Product/Item
+  modelling as MD-OD-011).
   The BRD is **Draft, pending Hossam's business-owner review, and is not
   Approved.** Two Founder Decision Pack defaults are explicitly not approved
   and must not be treated as requirements: MESP-41 (batch/lot/serial/expiry,

@@ -1,17 +1,17 @@
 # Current State
 
-## Start here — verified position on 8 August 2026 (MESP-31 In Progress; BRD v0.2 corrected on open PR #28, pending Hossam's review)
+## Start here — verified position on 8 August 2026 (MESP-31 In Progress; BRD v0.3 corrected on open PR #28, pending Hossam's review)
 
 A new agent can begin from this section with no prior chat history.
 
 | Fact | Verified value |
 |---|---|
 | Current branch | `docs/MESP-31-master-data-product-catalog-brd`, created from verified `main` at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54` (PR #27 merge) |
-| MESP-31 | **In Progress.** A v0.2 corrected draft of `docs/16_Master_Data_and_Product_Catalog_BRD.md` exists, covering Products, Product Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies and Exchange Rates. It is **pending Hossam's business-owner review and is not Approved.** No Master Data implementation has begun; the pre-authorized implementation phase remains gated on this BRD's approval and a dedicated, separate implementation Jira item. |
+| MESP-31 | **In Progress.** A v0.3 corrected draft of `docs/16_Master_Data_and_Product_Catalog_BRD.md` exists, covering Products, Product Categories, Units of Measure, Suppliers, Business Customers, Price Lists, Taxes, Payment Terms, Currencies and Exchange Rates. It is **pending Hossam's business-owner review and is not Approved.** No Master Data implementation has begun; the pre-authorized implementation phase remains gated on this BRD's approval and a dedicated, separate implementation Jira item. |
 | MESP-31 Parent Epic | `MESP-6 — EPIC 06 - Master Data and Product Catalog` — verified against live Jira. |
 | MESP-31 Owner authorizations (in Jira) | Comment `10615` — BRD-entry authorization. Comment `10616` — future Master Data implementation authorization, which remains **conditional** on this BRD being approved and a dedicated implementation Jira item, separate from MESP-31, being identified and activated. |
 | MESP-31 Jira Source Baseline | Primary anchor **PLT-003**; supporting anchors PLT-002, SAL-001, PROC-002, PROC-008, FIN-001, FIN-003, FIN-007, FIN-010, KSA-002, BR-013, ADM-003, plus the applicable PRD RULE set for master-data integrity. PLT-011–PLT-014 and BR-004 are Platform Administration anchors and are **not** MESP-31's baseline. |
-| PR #28 | **Open, unmerged** — `docs(MESP-31): draft Master Data and Product Catalog BRD`, branch `docs/MESP-31-master-data-product-catalog-brd`, base `main` at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54`. The v0.1 head `6d0aa80eef0a2860c85a141dd6f13ee38bf5760d` received a business-requirements review verdict of **CHANGES REQUIRED BEFORE OWNER APPROVAL / MERGE**; a bounded correction round produced v0.2. Awaiting a new business-requirements review. Do not merge and do not move MESP-31 to Done. |
+| PR #28 | **Open, unmerged** — `docs(MESP-31): draft Master Data and Product Catalog BRD`, branch `docs/MESP-31-master-data-product-catalog-brd`, base `main` at `c86ecb851e88205f1d3907f5a5c36cfb59ce8b54`. The v0.1 head `6d0aa80eef0a2860c85a141dd6f13ee38bf5760d` received a business-requirements review verdict of **CHANGES REQUIRED BEFORE OWNER APPROVAL / MERGE**; a bounded correction round produced v0.2, reviewed at head `865701128c86d358f6aa919162c91d91ae025f21`, which drew a further verdict of **CHANGES REQUIRED — FINAL SMALL CORRECTION ROUND** (M31-R10 through M31-R13). A second bounded correction round closed all four and produced v0.3. Awaiting a new business-requirements review. Do not merge and do not move MESP-31 to Done. |
 | Prior verified `main` | `main` (before this branch) |
 | PR #26 | **Merged** to `main` — approved final head `2c7ed3dec4662672bb78967ceb70db7ed73eb7d4`, ChatGPT final merge review **APPROVED FOR MERGE** (0 Critical, 0 High, 0 Medium blockers); actual GitHub merge commit `06d837c958c1cb7977dc121e3aaea4e7278944fd` |
 | PR #25 | Merged to `main` at `9f333c9734c767673e43a30d6b57c05793e1fb69` — MESP-93 post-merge Markdown reconciliation |
@@ -83,6 +83,58 @@ The Open Decision register now holds **ten** decisions (MD-OD-001 through
 MD-OD-010). PR #28 remains **open and unmerged**, MESP-31 remains **In
 Progress**, the BRD remains **Draft and not Approved**, and **no Master Data
 implementation has started or may start automatically**.
+
+### MESP-31 BRD second correction round — PR #28 (8 August 2026)
+
+The v0.2 draft was reviewed at head `865701128c86d358f6aa919162c91d91ae025f21`
+and received a further business-requirements verdict of **CHANGES REQUIRED —
+FINAL SMALL CORRECTION ROUND**, raising four findings. A second bounded,
+documentation-only correction round on the same branch and the same Pull
+Request closed all four and produced **v0.3**:
+
+- **M31-R10 (Product/Item modelling)** — MD-BR-015 ("Release 1 treats
+  Product and Item as one concept; no separate variant layer") was classified
+  Confirmed even though the approved glossary marks Item, SKU, and Barcode
+  "Draft for BRD Validation" and explicitly defers Product-versus-variant
+  modelling to this BRD. MD-BR-015 is withdrawn from Confirmed status and
+  raised as new Open Decision **MD-OD-011**, carrying the same one-concept,
+  no-variant-layer position forward only as the recommended option pending
+  Hossam's approval. §11, §8, §42, and §43 are updated to match; no variant
+  implementation is invented.
+- **M31-R11 (residual approval assumptions)** — §27's "Routine
+  identity/contact-detail edit ... No approval required — Confirmed" row
+  assumed a position not established by any approved source, contradicting
+  §27's own statement that the full approval catalogue is Open Decision
+  MD-OD-005. The row is restated as a recommendation ("recommended not to
+  require separate approval; final policy is part of MD-OD-005") and
+  reclassified Open Decision (MD-OD-005). MD-AC-016 is reworded from "an
+  authorized Approver publishes" to "an authorized actor publishes ... after
+  satisfying any approval policy applicable under MD-OD-005," removing the
+  residual assumption that a dedicated Approver role or specific approval
+  requirement already exists. The generic confirmed control, MD-BR-046, is
+  unchanged.
+- **M31-R12 (Saudi launch language)** — MD-OD-007's blocking rationale
+  ("can launch with VAT registration only and add fields later") made a
+  production-compliance claim outside this BRD's business-analysis scope.
+  The rationale now distinguishes BRD approval and the bounded Master Data
+  implementation baseline (not blocked by MD-OD-007) from production launch,
+  which remains gated by MESP-49 and qualified Saudi legal/tax validation of
+  the required statutory fields and tax treatment. The **External Validation
+  Required** classification is preserved unchanged.
+- **M31-R13 (unrelated `.vscode/settings.json`)** — the PR #28 branch delta
+  included `.vscode/settings.json`, introduced by unrelated commit `c5506e1`
+  (a local Bitbucket-integration editor setting with no business-requirements
+  content). The file is removed from the PR #28 branch delta by this
+  correction commit; the setting was not altered globally, only its presence
+  in this PR.
+
+The Open Decision register now holds **eleven** decisions (MD-OD-001 through
+MD-OD-011, adding Product/Item modelling as MD-OD-011). PR #28 remains **open
+and unmerged**, MESP-31 remains **In Progress**, the BRD remains **Draft and
+not Approved**, and **no Master Data implementation has started or may start
+automatically**. The new reviewed head is the correction commit on this
+branch — check `git log` on `docs/MESP-31-master-data-product-catalog-brd`
+for the exact SHA, since this entry is written before that commit exists.
 
 **MESP-94 PR #26 focused review corrections (7 August 2026):** a focused
 ChatGPT review of PR #26 at reviewed head

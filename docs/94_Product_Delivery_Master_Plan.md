@@ -2071,3 +2071,27 @@ approves this BRD as a business baseline and a dedicated implementation Jira
 item, separate from MESP-31, is identified and activated. No Sprint is active
 and no parallel implementation item exists. `.ai/CURRENT_STATE.md` remains the
 canonical live-state document.
+
+### MESP-31 BRD second correction round — supersedes the above (8 August 2026)
+
+The v0.2 draft was reviewed at head `865701128c86d358f6aa919162c91d91ae025f21`
+and received a further verdict of **CHANGES REQUIRED — FINAL SMALL
+CORRECTION ROUND**: M31-R10 (MD-BR-015's Product/Item modelling needed an
+Owner decision rather than Confirmed status), M31-R11 (§27's routine-edit row
+and MD-AC-016 carried residual approval assumptions not established by any
+approved source), M31-R12 (MD-OD-007's blocking rationale made a
+production-compliance claim ahead of external Saudi validation) and M31-R13
+(the PR delta carried an unrelated `.vscode/settings.json` change). A second
+bounded, documentation-only correction round closed all four and produced
+**v0.3**: MD-BR-015 withdrawn from Confirmed status and raised as new Open
+Decision MD-OD-011; the §27 routine-edit row and MD-AC-016 reworded to remove
+the residual approval assumption, both now explicitly MD-OD-005-dependent;
+MD-OD-007's rationale corrected to distinguish BRD/implementation-baseline
+non-blocking from a still-gated production launch, preserving External
+Validation Required; and `.vscode/settings.json` removed from the PR #28
+branch delta. The Open Decision register now holds **eleven** decisions
+(MD-OD-001 through MD-OD-011). **The BRD remains Draft and is not Approved;**
+MESP-31 stays In Progress; PR #28 remains open and unmerged; no Master Data
+implementation is active or permitted to start automatically.
+`.ai/CURRENT_STATE.md` remains the canonical live-state document and carries
+the exact new reviewed head.
