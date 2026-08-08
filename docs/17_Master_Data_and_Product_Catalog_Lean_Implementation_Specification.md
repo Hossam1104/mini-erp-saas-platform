@@ -578,8 +578,17 @@ authoritative outcome for a valid replay. Idempotency does not bypass current
 authorization, lifecycle, Tenant, or approval checks.
 
 Background import, export, notification, and downstream propagation preserve
-the initiating Tenant and organization scope, use the existing SQL-backed
-durable-work/outbox contracts, and revalidate authority before execution.
+the initiating Tenant and organization scope, carry scoped idempotency and
+single-effect expectations, retain audit and reconciliation evidence for
+success, failure, and uncertain outcomes, and revalidate current authority
+immediately before asynchronous execution. They use the existing
+durable-work/outbox contract or Foundation durable-work/outbox seam, as
+applicable to the later slice, for non-authoritative propagation after the
+authoritative transaction. This readiness document does not claim SQL-backed
+or crash-durable production persistence: production SQL/durable provider
+selection, worker deployment/topology, crash recovery, retention, purge,
+supported-volume, backup, and restoration remain later provider/production
+gates under ADR-007, ADR-008, MESP-48, and MESP-50.
 
 ### 14.3 Audit and operational evidence
 
@@ -634,38 +643,56 @@ classification describes implementation impact; it is not a resolution.
 | MD-OD-010 - batch/lot/serial/expiry tracking | Specific Product/Inventory slice; does not block initial foundation | Do not add a tracking flag or enforcement behavior until MESP-31/MESP-33 resolve the decision. | Product configuration and Inventory tracking implementation. |
 | MD-OD-011 - Product versus Item identity | Specific Product slice; blocks final Product identity model | Keep Product/Item identity boundary explicit and do not create a variant/product-family model or assume the recommended one-concept option. | Product identity, downstream references, and Product migration mapping. |
 
-No MD-OD entry is classified as silently resolved. MD-OD-001, MD-OD-005,
-MD-OD-008, and MD-OD-011 are the most material gates for a first data-bearing
-Master Data implementation baseline. MD-OD-003 and MD-OD-010 become mandatory
-for the Product slice; MD-OD-006 becomes mandatory for conversion execution;
-MD-OD-004 and MESP-54 remain downstream ownership boundaries.
+No MD-OD entry is classified as silently resolved. MD-OD-001, MD-OD-005, and
+MD-OD-008 are the baseline gates for the first data-bearing Master Data slice.
+MD-OD-003, MD-OD-010, and MD-OD-011 apply to the Product slice; MD-OD-006
+becomes mandatory for Category/UOM conversion execution; MD-OD-004 and
+MESP-54 remain downstream ownership boundaries.
 
-### 16.1 Decision package required before first source-code slice
+### 16.1 Decision-gate hierarchy by implementation slice
 
-MESP-95 recommends that the first coding item, if later activated, be limited
+`M95-SL-01` is the only proposed first coding item that can proceed without a
+data-bearing Master Data decision package. If later activated, it is limited
 to the shared module boundary, trusted Tenant contract, policy-neutral
-BusinessScope transport, authorization pipeline hooks, and audit contract. It
-must not persist a Master Data record. That narrow contract-only item can be
-reviewed without guessing the open decisions.
+`BusinessScope` transport, authorization/audit contracts, and stable reference
+vocabulary. It must not create a record, choose Product/Item identity, adopt a
+Draft/Active default, choose a business-availability scope, or define an
+approval catalogue. ADR-002 must be completed before module structure is
+implemented, and ADR-011 must be completed before any affected localized
+search, form, or document behavior is implemented.
 
-Before the first source-code item that persists or publishes a Master Data
-record, Hossam's concise decision package is:
+For the first data-bearing domain slice — a bounded domain slice, not a
+requirement to implement the whole catalogue — the following gates apply to
+the affected domains only:
 
-1. **MD-OD-001:** choose the business-availability level for each domain and
-   the permitted inheritance direction inside a Tenant.
-2. **MD-OD-005:** select the catalogue of changes requiring a separate
-   approver, including whether Tax, commercial Price List, Exchange Rate, or
-   other sensitive changes are covered. MESP-54 remains Finance-owned and is
-   not preselected by this item.
-3. **MD-OD-008:** confirm whether any domain requires Draft-before-Active.
-4. **MD-OD-011:** decide the Product/Item identity boundary before Product
-   persistence; resolve MD-OD-003 at the same Product identity gate.
-5. **MD-OD-010:** decide whether Product/Category carries any batch/lot/
-   serial/expiry tracking configuration before Product/Inventory integration.
+1. **MD-OD-001** must be resolved or explicitly owner-bounded for the affected
+   business-availability and Company/Branch scope.
+2. **MD-OD-008** must be resolved or explicitly bounded for the affected
+   create/lifecycle behavior.
+3. **MD-OD-005** must have an explicit owner-approved disposition and boundary
+   for the changes that the slice can publish. This does not require deciding
+   the entire separate-approval catalogue globally; changes outside the
+   bounded first-slice policy remain not Ready.
 
-MD-OD-002, MD-OD-006, and MD-OD-009 must be resolved or explicitly bounded
-before their affected slices. MD-OD-007 remains a Saudi legal/tax and
-production-readiness gate. MD-OD-004 remains a B2B Sales pricing gate.
+The affected-slice gates then narrow as follows:
+
+- **Category/UOM:** additionally resolve or explicitly bound MD-OD-002
+  (Category hierarchy) and MD-OD-006 (UOM precision/rounding) before the
+  affected hierarchy or conversion behavior.
+- **Product:** resolve MD-OD-003, MD-OD-010, and MD-OD-011 before dependent
+  Product identity, SKU/Barcode, or tracking implementation. No Product/Item
+  boundary or tracking behavior is selected here.
+- **Effective-dated reactivation:** MD-OD-009 must be resolved or explicitly
+  bounded before final reactivation behavior can be implemented for an
+  effective-dated record.
+- **Price List selection:** MD-OD-004 remains a downstream B2B Sales selection
+  gate; Master Data must not invent Price List precedence.
+- **Saudi statutory fields:** MD-OD-007 remains an external-validation and
+  production gate under MESP-49; it is not silently resolved by this design.
+
+No MD-OD entry is resolved by this hierarchy. A later slice must carry the
+owner decision or bounded disposition that applies to its own behavior and
+must leave every out-of-boundary decision explicitly gated.
 
 ## 17. ADR review and technical decision register
 
@@ -722,7 +749,11 @@ A proposed slice is Ready only when:
 - the exact MESP-31 rules and acceptance scenarios are linked;
 - its module owner and cross-module contracts are approved;
 - Tenant ownership and the applicable BusinessScope disposition are explicit;
-- every affected MD-OD is resolved or bounded in an owner-approved way;
+- for `M95-SL-01`, the non-persistent contract-only boundary is explicit and
+  no MD-OD is treated as resolved; for a data-bearing slice, MD-OD-001,
+  MD-OD-008, and the affected MD-OD-005 boundary are resolved or bounded in
+  an owner-approved way, together with every other decision affecting that
+  slice;
 - the required ADR timing is satisfied;
 - authorization, audit, lifecycle, concurrency, idempotency, failure, and
   migration effects are described;
@@ -745,18 +776,18 @@ check.
 
 | Slice | Objective and dependencies | Exact MESP-31 trace | Open-decision / ADR gates | Slice-specific DoR | DoD, targeted validation, and demonstration |
 |---|---|---|---|---|---|
-| M95-SL-01 Shared boundary and Tenant/scope contracts | Establish the Master Data/Catalog and Business Parties seams, trusted Tenant context, policy-neutral BusinessScope, authorization/audit contracts, and stable reference vocabulary. Depends on the approved Foundation baseline. | MD-BR-001/006/008/044/046; MD-VR-010/011; MD-AC-028/029/032. | MD-OD-001 remains explicitly unresolved; ADR-002 before module implementation, ADR-005/006/011 timing as applicable. | Contract-only scope; no persisted master record, no lifecycle default, no Product identity choice, no approval catalogue. | Tenant-positive/negative authorization, same-code different-Tenant proof, cross-Tenant denial, audit contract inspection, architecture dependency proof. Demonstrate a policy-neutral request context without a database record. |
-| M95-SL-02 Category and UOM | Implement Category/UOM identity and safe conversion boundary after SL-01. | MD-BR-016-021; MD-VR-003/004/010/012; MD-AC-005-007/026-027. | MD-OD-001/002/006/008; ADR-002/006; ADR-011 before localized search/forms. | Owner selects/bounds hierarchy, precision, lifecycle creation, and business scope; conversion policy is explicit. | Category deactivation and UOM positive-factor/concurrency/isolation validation; demonstrate Product-reference impact without Product persistence. |
-| M95-SL-03 Product identity | Implement Product master identity, category/UOM references, flags, tax linkage, and lifecycle. | MD-BR-010-015; MD-VR-001-003/010/012; MD-AC-001-004/026-027. | MD-OD-001/003/008/010/011; ADR-002/005/006/011. | Product/Item model, SKU/Barcode rules, tracking decision, lifecycle, and scope are approved; downstream snapshot contract is signed. | Product duplicate, active-reference, deactivation, stale-write, and Tenant-isolation validation; demonstrate historical reference preservation without inventory implementation. |
-| M95-SL-04 Supplier | Implement external Supplier role master boundary and duplicate/contact lifecycle. Depends on SL-01 and Business Parties seam. | MD-BR-022-024/045; MD-VR-001/002/010/014; MD-AC-008-010/026/028-029/035. | MD-OD-001/005/007/008; ADR-002/005/006/011. | Supplier role-local duplicate and statutory-field policy are explicit; no user path; procurement reference contract is approved. | Same-role duplicate, cross-role non-blocking match, no-login proof, deactivation/history, scope denial, and audit checks. Demonstrate a Supplier record cannot create a credential. |
-| M95-SL-05 Business Customer | Implement distinct B2B Business Customer role master boundary. Depends on SL-01 and Business Parties seam. | MD-BR-025-028/045; MD-VR-001/002/010/014; MD-AC-011-012/026/028-032/035. | MD-OD-001/005/007/008; ADR-002/005/006/011. | B2B scope, statutory fields, role-local duplicate, customer/sales reference contract, and no anonymous consumer behavior are approved. | Retail-consumer rejection, cross-role match, deactivation/history, Tenant isolation, bilingual validation, and audit checks. Demonstrate Sales receives a stable B2B reference only. |
-| M95-SL-06 Currency | Establish reusable Currency identity and lifecycle before monetary dependent slices. Depends on SL-01. | MD-BR-037-038; MD-VR-001/002/010; MD-AC-020-021/026/028-029. | MD-OD-001/008 as applicable; ADR-002/006/011 for localized names. | Currency scope and active-reference rule are approved; Finance contract for functional/transaction/reporting roles is signed. | Same-code cross-Tenant, active-reference deactivation, bilingual names, concurrency, and audit checks. Demonstrate a second currency can be referenced without SAR-only logic. |
-| M95-SL-07 Payment Term | Establish reusable Payment Term identity/lifecycle and party assignment contracts. Depends on SL-04, SL-05, and SL-06. | MD-BR-035-036; MD-VR-010/012; MD-AC-019/026/032. | MD-OD-001/005/008; Finance due-date detail remains MESP-34; ADR-002/005/006. | Term shape is supplied by MESP-34 or explicitly bounded; historical-value contract is approved. | Assignment isolation, deactivation/history preservation, concurrency, audit, and downstream contract checks. Demonstrate the term's meaning is preserved without implementing AP/AR. |
-| M95-SL-08 Tax | Establish generic effective-dated Tax configuration and policy hook. Depends on SL-01 and SL-06. | MD-BR-032-034/046; MD-VR-001/006/010-012; MD-AC-016-018/026-027/032. | MD-OD-001/005/007/008/009; MESP-49 external validation; ADR-002/005/006/011. | Approval catalogue and statutory boundary are explicit; tax treatment and historical snapshot contract are approved. | Effective-date overlap, no-hard-code, self-approval only where policy says required, deactivation/history, Tenant denial, and audit checks. Demonstrate future rate does not rewrite a posted-value contract. |
-| M95-SL-09 Exchange Rate | Establish effective-dated Currency-pair rate boundary. Depends on SL-06 and the Finance reference contract. | MD-BR-039-042/046; MD-VR-001/006-009/010-012; MD-AC-022-025/026-027/032. | MD-OD-001/005/008/009; MESP-54/MESP-34 ownership; ADR-002/005/006. | Source/provenance and approval ownership are explicit without adopting MESP-54; Finance posting contract is approved. | Positive-rate/different-currency, duplicate/overlap, missing-rate block, historical applied-rate, concurrency, and audit checks. Demonstrate a new rate cannot mutate an older application. |
-| M95-SL-10 Price List | Establish reusable Price List/container and effective-dated line boundary. Depends on SL-03, SL-05, and SL-06. | MD-BR-029-031/046; MD-VR-001/005/006/010-012; MD-AC-013-015/026-027/031-032. | MD-OD-001/004/005/008/009; B2B Sales precedence; ADR-002/005/006/011. | Price-list scope, overlap behavior, customer/segment meaning, approval catalogue, and Sales selection contract are approved. | Currency mismatch, overlap hold, deactivation/history, Tenant/scope, concurrency, bilingual search, and audit checks. Demonstrate ambiguity is rejected rather than resolved by an invented precedence rule. |
-| M95-SL-11 Import and migration boundary | Add a common, Tenant-bound preview/quarantine/sign-off/commit contract after all affected domain contracts exist. | MD-BR-005/006/043; MD-VR-001/010/013/014; MD-AC-002/009/033-035. | All unresolved ODs that affect mappings; MESP-40 ownership; ADR-006/007/008/018. | Source ownership, mapping, duplicate, rollback, batch idempotency, row outcome, and reconciliation sign-off are approved. | Repeated batch, ambiguous mapping quarantine, cross-Tenant denial, row-level errors, rollback/reconcile, and audit evidence. Demonstrate a dry run with no authoritative commit. |
-| M95-SL-12 Audit, reporting, and downstream integration | Connect immutable master evidence, authorized read models, effective-change reporting, and versioned consumer contracts. Depends on SL-01 through affected domain slices. | MD-BR-006/007/009/043-046; MD-VR-010/011/013; MD-AC-028-034. | All affected ODs; ADR-005/007/008/010/011/016; MESP-48/MESP-50 remain open. | Report ownership, freshness/as-of semantics, audit fields, consumer contract versions, and production gates are approved. | Tenant-scoped report/search, audit reconstruction, effective-change listing, downstream snapshot, event replay, and retention-boundary checks. Demonstrate history/report output without granting mutation or cross-Tenant visibility. |
+| M95-SL-01 Shared boundary and Tenant/scope contracts | Establish the Master Data/Catalog and Business Parties seams, trusted Tenant context, policy-neutral BusinessScope, authorization/audit contracts, and stable reference vocabulary. Depends on the approved Foundation baseline. | MD-BR-001/006/008/044/046; MD-VR-010/011; MD-AC-028/029/032. | No MD-OD is resolved for this contract-only slice; it must not encode MD-OD-001 availability, MD-OD-005 approval catalogue, MD-OD-008 lifecycle defaults, or MD-OD-011 Product identity. ADR-002 before module structure; ADR-011 before affected localized search/forms/documents. | Contract-only scope; no persisted master record, no lifecycle default, no Product identity choice, no business-availability scope, and no approval catalogue. | Tenant-positive/negative authorization, same-code different-Tenant proof, cross-Tenant denial, audit contract inspection, architecture dependency proof. Demonstrate a policy-neutral request context without a database record. |
+| M95-SL-02 Category and UOM | Implement Category/UOM identity and safe conversion boundary after SL-01. | MD-BR-016-021; MD-VR-003/004/010/012; MD-AC-005-007/026-027. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Category/UOM scope; additionally MD-OD-002/006 resolved or explicitly bounded; ADR-002/006; ADR-011 before affected localized search/forms/documents. | Owner selects/bounds hierarchy, precision, lifecycle creation, and business scope; conversion policy is explicit. | Category deactivation and UOM positive-factor/concurrency/isolation validation; demonstrate Product-reference impact without Product persistence. |
+| M95-SL-03 Product identity | Implement Product master identity, category/UOM references, flags, tax linkage, and lifecycle. | MD-BR-010-015; MD-VR-001-003/010/012; MD-AC-001-004/026-027. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Product scope; MD-OD-003/010/011 must be resolved before dependent Product identity, SKU/Barcode, or tracking implementation; ADR-002/005/006/011. | Product/Item model, SKU/Barcode rules, tracking decision, lifecycle, and scope are approved; downstream snapshot contract is signed. | Product duplicate, active-reference, deactivation, stale-write, and Tenant-isolation validation; demonstrate historical reference preservation without inventory implementation. |
+| M95-SL-04 Supplier | Implement external Supplier role master boundary and duplicate/contact lifecycle. Depends on SL-01 and Business Parties seam. | MD-BR-022-024/045; MD-VR-001/002/010/014; MD-AC-008-010/026/028-029/035. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Supplier scope; MD-OD-007 remains an external-validation/production gate for Saudi fields; ADR-002/005/006/011. | Supplier role-local duplicate and statutory-field policy are explicit; no user path; procurement reference contract is approved. | Same-role duplicate, cross-role non-blocking match, no-login proof, deactivation/history, scope denial, and audit checks. Demonstrate a Supplier record cannot create a credential. |
+| M95-SL-05 Business Customer | Implement distinct B2B Business Customer role master boundary. Depends on SL-01 and Business Parties seam. | MD-BR-025-028/045; MD-VR-001/002/010/014; MD-AC-011-012/026/028-032/035. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Business Customer scope; MD-OD-007 remains an external-validation/production gate for Saudi fields; ADR-002/005/006/011. | B2B scope, statutory fields, role-local duplicate, customer/sales reference contract, and no anonymous consumer behavior are approved. | Retail-consumer rejection, cross-role match, deactivation/history, Tenant isolation, bilingual validation, and audit checks. Demonstrate Sales receives a stable B2B reference only. |
+| M95-SL-06 Currency | Establish reusable Currency identity and lifecycle before monetary dependent slices. Depends on SL-01. | MD-BR-037-038; MD-VR-001/002/010; MD-AC-020-021/026/028-029. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Currency scope; ADR-002/006/011 for localized names. | Currency scope and active-reference rule are approved; Finance contract for functional/transaction/reporting roles is signed. | Same-code cross-Tenant, active-reference deactivation, bilingual names, concurrency, and audit checks. Demonstrate a second currency can be referenced without SAR-only logic. |
+| M95-SL-07 Payment Term | Establish reusable Payment Term identity/lifecycle and party assignment contracts. Depends on SL-04, SL-05, and SL-06. | MD-BR-035-036; MD-VR-010/012; MD-AC-019/026/032. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Payment Term scope; Finance due-date detail remains MESP-34; ADR-002/005/006. | Term shape is supplied by MESP-34 or explicitly bounded; historical-value contract is approved. | Assignment isolation, deactivation/history preservation, concurrency, audit, and downstream contract checks. Demonstrate the term's meaning is preserved without implementing AP/AR. |
+| M95-SL-08 Tax | Establish generic effective-dated Tax configuration and policy hook. Depends on SL-01 and SL-06. | MD-BR-032-034/046; MD-VR-001/006/010-012; MD-AC-016-018/026-027/032. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Tax scope; MD-OD-009 applies to final effective-dated reactivation; MD-OD-007 remains an external-validation/production gate; MESP-49; ADR-002/005/006/011. | Approval catalogue and statutory boundary are explicit; tax treatment and historical snapshot contract are approved. | Effective-date overlap, no-hard-code, self-approval only where policy says required, deactivation/history, Tenant denial, and audit checks. Demonstrate future rate does not rewrite a posted-value contract. |
+| M95-SL-09 Exchange Rate | Establish effective-dated Currency-pair rate boundary. Depends on SL-06 and the Finance reference contract. | MD-BR-039-042/046; MD-VR-001/006-009/010-012; MD-AC-022-025/026-027/032. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Exchange Rate scope; MD-OD-009 applies to final effective-dated reactivation; MESP-54/MESP-34 ownership; ADR-002/005/006. | Source/provenance and approval ownership are explicit without adopting MESP-54; Finance posting contract is approved. | Positive-rate/different-currency, duplicate/overlap, missing-rate block, historical applied-rate, concurrency, and audit checks. Demonstrate a new rate cannot mutate an older application. |
+| M95-SL-10 Price List | Establish reusable Price List/container and effective-dated line boundary. Depends on SL-03, SL-05, and SL-06. | MD-BR-029-031/046; MD-VR-001/005/006/010-012; MD-AC-013-015/026-027/031-032. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Price List scope; MD-OD-009 applies to final effective-dated reactivation; MD-OD-004 remains a downstream B2B Sales selection gate; ADR-002/005/006/011. | Price-list scope, overlap behavior, customer/segment meaning, approval catalogue, and Sales selection contract are approved. | Currency mismatch, overlap hold, deactivation/history, Tenant/scope, concurrency, bilingual search, and audit checks. Demonstrate ambiguity is rejected rather than resolved by an invented precedence rule. |
+| M95-SL-11 Import and migration boundary | Add a common, Tenant-bound preview/quarantine/sign-off/commit contract after all affected domain contracts exist. | MD-BR-005/006/043; MD-VR-001/010/013/014; MD-AC-002/009/033-035. | All affected MD-OD gates, including MD-OD-001/005/008 where this is the first data-bearing slice; MESP-40 ownership; ADR-006/007/008/018. | Source ownership, mapping, duplicate, rollback, batch idempotency, row outcome, and reconciliation sign-off are approved. | Repeated batch, ambiguous mapping quarantine, cross-Tenant denial, row-level errors, rollback/reconcile, and audit evidence. Demonstrate a dry run with no authoritative commit. |
+| M95-SL-12 Audit, reporting, and downstream integration | Connect immutable master evidence, authorized read models, effective-change reporting, and versioned consumer contracts. Depends on SL-01 through affected domain slices. | MD-BR-006/007/009/043-046; MD-VR-010/011/013; MD-AC-028-034. | All affected MD-OD gates, including MD-OD-001/005/008 for any newly data-bearing boundary; ADR-005/007/008/010/011/016; MESP-48/MESP-50 remain open. | Report ownership, freshness/as-of semantics, audit fields, consumer contract versions, and production gates are approved. | Tenant-scoped report/search, audit reconstruction, effective-change listing, downstream snapshot, event replay, and retention-boundary checks. Demonstrate history/report output without granting mutation or cross-Tenant visibility. |
 
 The sequence is intentionally conservative: it allows safe contract design
 first, keeps Product identity and approval-sensitive behavior behind decisions,

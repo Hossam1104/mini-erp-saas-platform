@@ -21,10 +21,32 @@ only; no Master Data source implementation has started.
 | Production gates | MESP-48, MESP-49, and MESP-50 remain open; no supported-volume, retention, privacy, legal-hold, purge, residency, backup, restoration, or production topology decision is invented. |
 | Source implementation | **None**. No entities, mappings, migrations, database, repositories, services, endpoints, controllers, Angular implementation, or source tests were created. |
 | Canonical approved PRD | `docs/MESP_PRD_v1.2.docx`; protected Git blob `1f9163b9412cb343a19a98312eb642ad26c1efaa` |
+| MESP-95 review corrections | **M95-R01, M95-R02, and M95-R03** are the only findings addressed in this documentation-only session; MD-OD-001 through MD-OD-011 remain open/unresolved and no source implementation, migration, database, secret, or Jira child was created. |
 
 The remainder of this file preserves the earlier pre-merge and historical
 checkpoint narratives for provenance. This current section supersedes their
 older live-state claims.
+
+### MESP-95 correction-session handoff — 8 August 2026
+
+- Session starting head: `d44ea29992ce1b927265c7fee4438ff888eca4f1` on
+  `docs/MESP-95-master-data-lean-implementation-spec`. The attachment's
+  earlier expected head `f4e3131c8f733ac3a92c7e9f83d8f2b970564d07` was
+  superseded by the newer empty `TASK.md` commit and was preserved.
+- M95-R01 corrects the durable-work/outbox maturity wording in the
+  implementation specification; production SQL/durable persistence remains a
+  later provider/production gate.
+- M95-R02 records the post-merge MESP-31/PR #28 state without changing the
+  approved BRD requirements or Open Decision Register.
+- M95-R03 reconciles the contract-only SL-01 gate, first data-bearing gates,
+  affected-domain Open Decisions, ADR-002/ADR-011 timing, and the generic DoR.
+- Final correction commit and final PR #29 branch head are the single pushed
+  documentation-only commit produced by this session; the exact SHA is the
+  final PR #29 head recorded in the session completion report. PR #29 remains
+  open and non-draft pending ChatGPT re-review.
+- No Opus review, PR merge, Jira transition, Jira child creation, source
+  implementation, migration, database, or secret action is authorized in this
+  session.
 
 ## Start here — verified position on 8 August 2026 (MESP-31 BRD v0.3 Owner Approved; PR #28 pending merge)
 

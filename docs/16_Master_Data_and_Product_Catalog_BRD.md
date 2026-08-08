@@ -1,5 +1,9 @@
 # Mini ERP SaaS Platform — Master Data and Product Catalog BRD
 
+> **Post-merge live-state overlay — 8 August 2026 (supersedes historical status wording below; approved business baseline unchanged).** MESP-31 is **Done**. PR #28 is merged: final PR head `8396197b54189cb550f07bd4bb6779fd38ac30cb`, actual merge commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`; Hossam's approval is recorded in Jira comment `10649` and final closure evidence in comment `10650`. MESP-95 is **In Progress**, and PR #29 is the active, open, non-draft implementation-readiness review. MD-OD-001 through MD-OD-011 remain open and unresolved; Master Data source implementation has not started.
+>
+> The approved requirements, classifications, recommendations, acceptance criteria, and Open Decision Register below are unchanged. Historical status paragraphs are retained for provenance and are superseded by this overlay for current-state purposes.
+
 ## 1. Document Control
 
 | Field | Value |
