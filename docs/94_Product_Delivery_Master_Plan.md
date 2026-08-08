@@ -2110,3 +2110,25 @@ the actual merge and Jira closure. MESP-95 exists as To Do and is the single
 next authorized implementation-readiness item only after those gates. No
 Master Data source implementation has started. MESP-48, MESP-49 and MESP-50
 and all qualified external-production gates remain open.
+
+### MESP-31 closure and MESP-95 readiness overlay - supersedes the above (8 August 2026)
+
+The historical MESP-31 approval and review chronology above is preserved.
+The current verified state is that MESP-31 is **Done**. PR #28 merged with
+final PR head `8396197b54189cb550f07bd4bb6779fd38ac30cb` at actual merge
+commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`; the approved reviewed BRD
+head `1e2d055354f0ddde833190948d09fa426707484c` is an ancestor of `main`.
+Final Jira closure evidence is MESP-31 comment `10650`. The BRD remains the
+v0.3 Approved Business Baseline and MD-OD-001 through MD-OD-011 remain open;
+approval silently resolves none of them.
+
+MESP-95 already existed as the dedicated next Task and was transitioned from
+To Do to **In Progress** only after the Stage-A exit gate. Its branch is
+`docs/MESP-95-master-data-lean-implementation-spec` and its draft document is
+`docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`.
+The document defines implementation-readiness boundaries and a proposed
+sequential backlog only. It creates no source implementation, migration,
+database, credential, Jira child slice, Sprint, Retail POS behavior, or
+Wafra-specific behavior. MESP-23 remains the separate In Progress governance
+task for the Open Questions Register; no implementation/readiness item other
+than MESP-95 is active. MESP-48, MESP-49, and MESP-50 remain open gates.

@@ -3,16 +3,18 @@
 
 ## Current approval overlay — 8 August 2026
 
-MESP-31 BRD v0.3 is an **Approved Business Baseline**. Hossam's approval is
-recorded in live Jira comment `10649` at reviewed content head
-`1e2d055354f0ddde833190948d09fa426707484c`. The Open Decision Register
-MD-OD-001 through MD-OD-011 remains preserved; approval silently resolves none
-of those decisions, and blocking decisions remain implementation-slice gates.
-PR #28 is approved for merge but is still open and unmerged until the bounded
-approval-state reconciliation is pushed and reverified. MESP-31 remains the
-single active Jira item until it is closed. MESP-95 exists and remains To Do;
-it may become active only after the PR #28 merge, MESP-31 Jira closure, and the
-one-active-item gate. No Master Data source implementation has started.
+MESP-31 BRD v0.3 is an **Approved Business Baseline** and is now **Done** in
+live Jira. Hossam's approval is recorded in comment `10649`; final closure
+evidence is in comment `10650`. PR #28 is merged at actual merge commit
+`1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`, with final PR head
+`8396197b54189cb550f07bd4bb6779fd38ac30cb` confirmed as an ancestor of
+`main`. The Open Decision Register MD-OD-001 through MD-OD-011 remains
+preserved; approval resolves none of those decisions, and blocking decisions
+remain implementation-slice gates. MESP-95 is the single active Jira item,
+In Progress, on branch `docs/MESP-95-master-data-lean-implementation-spec`.
+Its Draft implementation-readiness specification is documentation-only; no
+Master Data source implementation has started, no Jira child slice is active,
+and no next coding item may start automatically.
 
 Authoritative sources are the approved PRD, owning BRDs, `docs/Decisions.md`,
 approved ADRs, the active Lean Implementation Specification, Jira, and

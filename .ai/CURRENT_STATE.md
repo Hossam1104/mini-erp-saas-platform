@@ -1,5 +1,30 @@
 # Current State
 
+## Current verified position - 8 August 2026 (MESP-31 closed; MESP-95 active)
+
+The Stage-A and Stage-B gates are now sequenced and live. MESP-31 is closed
+after its approved BRD merged, and MESP-95 is the single active
+implementation-readiness item. The specification work remains documentation
+only; no Master Data source implementation has started.
+
+| Current fact | Verified value |
+|---|---|
+| Current branch | `docs/MESP-95-master-data-lean-implementation-spec`, created from merged `main` at `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b` |
+| MESP-31 | **Done**. BRD v0.3 is the Hossam-approved Release 1 Business Baseline; approval comment `10649`; closure evidence comment `10650`. |
+| PR #28 | **Merged**. Final PR head `8396197b54189cb550f07bd4bb6779fd38ac30cb`; actual merge commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`; approved reviewed BRD head is an ancestor of `main`. |
+| MESP-95 | **In Progress**. `Produce Master Data and Product Catalog Lean Implementation Specification`; Jira item already existed and was activated after the Stage-A exit gate. |
+| Specification | `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`, Draft - implementation-readiness review; proposed slices only, no Jira children activated. |
+| MESP-95 branch | `docs/MESP-95-master-data-lean-implementation-spec` |
+| Open decisions | MD-OD-001 through MD-OD-011 remain preserved and unresolved; the specification classifies their slice impact without answering them. |
+| Other In Progress task | MESP-23 is the governance/open-questions register, not an implementation or readiness item. |
+| Production gates | MESP-48, MESP-49, and MESP-50 remain open; no supported-volume, retention, privacy, legal-hold, purge, residency, backup, restoration, or production topology decision is invented. |
+| Source implementation | **None**. No entities, mappings, migrations, database, repositories, services, endpoints, controllers, Angular implementation, or source tests were created. |
+| Canonical approved PRD | `docs/MESP_PRD_v1.2.docx`; protected Git blob `1f9163b9412cb343a19a98312eb642ad26c1efaa` |
+
+The remainder of this file preserves the earlier pre-merge and historical
+checkpoint narratives for provenance. This current section supersedes their
+older live-state claims.
+
 ## Start here — verified position on 8 August 2026 (MESP-31 BRD v0.3 Owner Approved; PR #28 pending merge)
 
 A new agent can begin from this section with no prior chat history.
