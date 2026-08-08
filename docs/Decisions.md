@@ -86,7 +86,7 @@ reconciliation is pushed and reverified. MESP-95 exists as To Do and is the
 next implementation-readiness item only after MESP-31 is actually merged and
 closed. No Master Data source implementation has started.
 
-## Current MESP-95 implementation-readiness overlay - 8 August 2026
+## Current MESP-95 implementation-readiness overlay — 8 August 2026
 
 The MESP-31 BRD approval is now closed through Jira comment `10650` after PR
 #28 merged at actual commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`.

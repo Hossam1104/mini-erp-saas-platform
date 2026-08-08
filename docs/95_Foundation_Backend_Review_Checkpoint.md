@@ -28,7 +28,7 @@
 > MESP-95 exists as To Do and is the next readiness item only after MESP-31 is
 > merged and closed. No Master Data source implementation has started.
 
-> **Superseding live-state overlay - 8 August 2026:** PR #28 has now merged
+> **Superseding live-state overlay — 8 August 2026:** PR #28 has now merged
 > at actual commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`, MESP-31 is Done
 > with closure evidence in Jira comment `10650`, and MESP-95 is In Progress
 > as the single implementation-readiness item. Its specification is

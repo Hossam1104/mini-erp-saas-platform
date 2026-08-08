@@ -2111,7 +2111,7 @@ next authorized implementation-readiness item only after those gates. No
 Master Data source implementation has started. MESP-48, MESP-49 and MESP-50
 and all qualified external-production gates remain open.
 
-### MESP-31 closure and MESP-95 readiness overlay - supersedes the above (8 August 2026)
+### MESP-31 closure and MESP-95 implementation-readiness overlay — supersedes the above (8 August 2026)
 
 The historical MESP-31 approval and review chronology above is preserved.
 The current verified state is that MESP-31 is **Done**. PR #28 merged with

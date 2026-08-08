@@ -626,7 +626,7 @@ reconciliation is pushed and reverified. MESP-95 exists as To Do and may
 become active only after the actual PR #28 merge and MESP-31 Jira closure. No
 Master Data source implementation has started.
 
-## Superseding MESP-95 readiness overlay - 8 August 2026
+## Superseding MESP-95 implementation-readiness overlay — 8 August 2026
 
 The checkpoint and earlier approval overlays remain historical evidence. PR
 #28 is now merged at actual commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`,

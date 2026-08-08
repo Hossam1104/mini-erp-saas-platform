@@ -1,6 +1,6 @@
 # Current State
 
-## Current verified position - 8 August 2026 (MESP-31 closed; MESP-95 active)
+## Current verified position — 8 August 2026 (MESP-31 closed; MESP-95 active)
 
 The Stage-A and Stage-B gates are now sequenced and live. MESP-31 is closed
 after its approved BRD merged, and MESP-95 is the single active
