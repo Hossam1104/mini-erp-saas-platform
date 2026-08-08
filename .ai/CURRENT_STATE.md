@@ -21,8 +21,8 @@ is authoritative for the live repository and Jira position.
 | Open decisions | MD-OD-001 through MD-OD-011 remain unresolved and preserved. |
 | Production/external gates | MESP-48, MESP-49, and MESP-50 remain open; no production or external-validation decision is invented. |
 | Source implementation | MESP-96 source implementation is now present only in the bounded non-persistent slice described above; no Product/Item, SKU/Barcode, tracking, availability, approval-catalogue, lifecycle, Wafra, Retail POS, migration, database, or endpoint behavior was added. |
-| Current branch | `main`, synchronized to MESP-96 merge commit `87f150d95f583168a86aa56200916343c6404f7f`. |
-| Main synchronization | Local `main` matches `origin/main` at `87f150d95f583168a86aa56200916343c6404f7f`; no open MESP-96 PR remains. |
+| Current branch | `main`, synchronized after the MESP-96 merge; the current closure-state commit is `dec248f957e790873d0f923aad438ca69738455d`. |
+| Main synchronization | Local `main` matches `origin/main` at `dec248f957e790873d0f923aad438ca69738455d`; the functional MESP-96 merge commit is `87f150d95f583168a86aa56200916343c6404f7f`; no open MESP-96 PR remains. |
 
 M95-SL-01 must remain contract-only: no Master Data EF entities/tables,
 migration, or `MESP` database creation/access solely for this slice; no
