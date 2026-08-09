@@ -12,9 +12,12 @@
 > Product-only bounds remain limited to MD-OD-001, MD-OD-003, MD-OD-005,
 > MD-OD-008, MD-OD-010, and MD-OD-011. Build and non-SQL validation are green;
 > no migration/provider/production claim is made because the SQL safety gate
-> remains unavailable. The next exact session is M95-SL-04 Supplier readiness
-> and decision gate only; the remaining decision register and MESP-48/MESP-49/
-> MESP-50 gates remain preserved.
+> remains unavailable. MESP-103 is now Done for M95-SL-04 Supplier readiness;
+> the Supplier-only Owner disposition for MD-OD-001/005/008 is
+> recorded in Jira comment `10681` and MESP-103 is closed with comment `10682`.
+> The disposition does not resolve the global register; MD-OD-007 and
+> MESP-48/MESP-49/MESP-50 remain preserved/open. No Supplier source behavior
+> has started, and MESP-104 remains the next To Do implementation item.
 
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch
@@ -39,9 +42,10 @@
 > implementation through PR #37. The next exact session is M95-SL-04 Supplier
 > readiness and decision gate only and must not start automatically.
 
-> The next exact session is M95-SL-04 Supplier readiness and decision gate only.
-> It must not start automatically; MESP-102 Product implementation is complete
-> and the fresh session must create/revalidate its own Supplier readiness item.
+> The next exact session is MESP-104 / M95-SL-04 Supplier master-data
+> implementation only. It must not start automatically; MESP-102 Product
+> implementation and MESP-103 Supplier readiness are complete, and MESP-104
+> remains a separately prepared To Do item.
 
 **Version:** v0.1
 **Status:** Completed implementation-readiness baseline; MESP-95 and bounded MESP-102 Product implementation are Done
@@ -1087,3 +1091,46 @@ MESP-101 is readiness/documentation only. No Product/Item/SKU/Barcode/tracking
 entity, table, migration, repository, service, endpoint, or business behavior
 is authorized in this session. The original MD-OD-001 through MD-OD-011
 register remains preserved; these dispositions apply only to Product identity.
+
+## 26. M95-SL-04 Supplier readiness overlay - 9 August 2026
+
+MESP-103 was the Supplier readiness/decision-gate item and is now Done. This
+overlay is documentation-only and did not create Supplier entities, tables,
+EF mappings, migrations, repositories, services, endpoints, API contracts, UI,
+or business behavior. It must not generalize Product or Category/UOM decisions
+to Supplier.
+
+Supplier is an external Business Party role with no User, membership,
+credential, login, authentication identity, or consumer session. The future
+Supplier aggregate is bounded to external identity, localized legal/trading
+names, code and conditionally applicable registration references, contacts,
+same-role duplicate evidence, cross-role review/optional linkage, lifecycle,
+Tenant ownership, approved business scope, concurrency, and audit. Business
+Parties may provide the common counterparty seam; no unified Party entity is
+created by implication. Procurement owns later purchasing/profile behavior and
+Finance owns later AP/payment behavior.
+
+Supplier-specific MD-OD-001 business availability, MD-OD-005 approval
+catalogue, and MD-OD-008 Draft/Active lifecycle are approved for Supplier only
+by the Owner disposition in Jira comment `10681`: Tenant-wide availability
+inside the owning Tenant, no separate approver for routine maintenance, and no
+Draft with Active-on-authorized-create plus guarded Deactivate/Reactivate and
+preserved history. The global decision register remains unresolved outside
+this bounded Supplier application. MD-OD-007 remains an external Saudi
+statutory-validation gate, and MESP-49 remains open.
+
+After the bundle is recorded, the future data-bearing slice must satisfy the
+existing Supplier DoR: server-derived Tenant and explicit scope policy,
+same-role duplicate controls, cross-role match review without false rejection,
+Active/Inactive history semantics, permission/resource/approval/audit/
+concurrency/idempotency failure handling, module-owned persistence under
+ADR-002/ADR-006, and ADR-011 timing for localized search/forms/RTL/documents.
+No Supplier implementation was begun by MESP-103. MESP-104 is the separate
+implementation item prepared for a fresh session and remains To Do; it must
+honor the Supplier-only disposition and must not start automatically here.
+
+The Product review follow-up remains non-blocking and source-free here:
+authorization dependency failures fail closed, but future Product hardening
+should classify the unavailable/unmapped policy codes as internal/service
+failures where appropriate rather than generic caller denial. No Product source
+is changed by MESP-103.
