@@ -30,9 +30,23 @@
 > contracts/endpoints. Release validation was 0/0, Supplier tests 7/7, and
 > non-SQL tests 609/609. The 21 SQL Server safety tests remain gated by the
 > unavailable `MESP_SQLSERVER_CONNECTION_STRING`; no migration, provider, or
-> production deployment claim is made. The next position is M95-SL-05 Business
-> Customer readiness only; no dedicated Jira item or `MESP-105` key exists, and
-> no downstream module or unified Party behavior is authorized automatically.
+> production deployment claim is made. MESP-105 / M95-SL-05 Business Customer
+> readiness is now Done with Owner disposition evidence `10691`; MESP-107 is
+> the separate active implementation item with activation evidence `10692`.
+> No downstream module or unified Party behavior is authorized by that
+> activation.
+
+> **Authoritative current Business Customer implementation overlay - 10 August 2026.**
+> MESP-105 is Done for the readiness/decision gate. The approved Customer-only
+> bounds are Tenant-wide Customer identity inside the owning Tenant with no
+> cross-Tenant sharing, server-derived Tenant/resource authority, no separate
+> approver for routine Customer master-data maintenance, and no Draft with
+> Active-on-authorized-create plus guarded Deactivate/Reactivate. MESP-107 is
+> the single active implementation item. ADR-002, ADR-005, ADR-006, and
+> ADR-011 remain authoritative; MD-OD-007 and MESP-48/MESP-49/MESP-50 remain
+> open gates. No Customer source behavior was added by the readiness/activation
+> handoff, and downstream commercial or statutory behavior remains outside
+> MESP-107.
 
 > **Historical MESP-100 state overlay - 9 August 2026.** MESP-100 is Done
 > (closure evidence Jira comment `10663`) and MESP-99 is In Progress

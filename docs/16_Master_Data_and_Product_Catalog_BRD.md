@@ -28,10 +28,28 @@
 > fail-closed controls remain mandatory. Supplier remains an external Business
 > Party role with no login, credentials, membership, or consumer session; no
 > Supplier source behavior has started. MD-OD-007 remains an external Saudi
-> statutory-validation/production gate under MESP-49. MESP-104 is the next
-> separately prepared implementation item and remains To Do. See
+> statutory-validation/production gate under MESP-49. MESP-104 is now Done
+> through PR #39; MESP-105 is Done for the separately activated Customer
+> readiness item and MESP-107 is the active implementation item.
+> See
 > `docs/19_Supplier_M95_SL_04_Readiness.md` for the bounded contract and exact
 > implementation handoff.
+
+> **Authoritative current Business Customer implementation overlay - 10 August 2026.**
+> MESP-105 is **Done** for the dedicated M95-SL-05 readiness and decision-gate
+> item under MESP-6; the Customer-only Owner disposition is Jira comment
+> `10691`. MESP-107 is the separate active implementation item, activated in
+> Jira comment `10692`. Business Customer remains an external B2B role, not a
+> User, login, membership, credential holder, consumer, or unified Party. The
+> approved Customer-only bounds are Tenant-wide identity inside the owning
+> Tenant with no cross-Tenant sharing, server-derived Tenant/resource
+> authorization, no separate approver for routine master-data maintenance,
+> and no Draft with Active-on-authorized-create plus guarded
+> Deactivate/Reactivate. No Customer source behavior, persistence, migration,
+> API, UI, or downstream Sales/AR/Finance behavior was added by this
+> readiness/activation handoff. MD-OD-007 remains an external Saudi
+> statutory/legal and production gate under MESP-49; MESP-106 is a non-blocking
+> shared follow-up; MESP-48, MESP-49, and MESP-50 remain open.
 
 > **Historical MESP-100/MESP-99 state overlay - 9 August 2026.** MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 was In Progress with activation evidence 10664 for M95-SL-02. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. The approved v0.3 business requirements and all other Open Decisions remain preserved; no MESP-99 behavior was implemented by MESP-100.
 
