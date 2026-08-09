@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-09 10:23 +03:00
+**Last Updated:** 2026-08-09 11:33 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~27%**
@@ -897,6 +897,7 @@ Current strategic state:
 - The bounded post-merge correction gate is complete before SL-03 readiness:
   - Tenant ownership-verifier EF lookups are truly asynchronous and honor cancellation;
   - `persistence_unavailable` audit evidence is classified as an internal failure rather than authorization denial;
+  - `parent_category_not_found` audit evidence is classified as `NotFound`, while depth and cycle hierarchy validation remains unchanged;
   - the two low-risk test-quality findings from PR #33 are cleaned up;
   - stale duplicate Jira artifacts MESP-97/MESP-98 are reconciled as superseded historical work.
 - Correction commit `e527f8a0cc32a72cef554e2bd93ab6322e9b1064` merged through PR #34 at
@@ -918,6 +919,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 | 2026-08-09 02:34 +03:00 | **27%** | **34%** | **25%** | **15%** | MESP-99 Category/UOM merged; first data-bearing Master Data slice complete; small post-merge correction gate identified before SL-03 readiness | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
 | 2026-08-09 10:19 +03:00 | **27%** | **34%** | **25%** | **15%** | MESP-99 post-merge async, audit-reason, test-quality, and Jira-hygiene corrections complete; SL-03 readiness remains next and not started; non-Epic Jira 40 Done / 1 In Progress / 44 To Do | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
 | 2026-08-09 10:23 +03:00 | **27%** | **34%** | **25%** | **15%** | PR #34 correction merged; MESP-97/MESP-98 reconciled as terminal superseded/duplicate history; final tracked handoff evidence recorded; SL-03 readiness remains next and not started | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
+| 2026-08-09 11:33 +03:00 | **27%** | **34%** | **25%** | **15%** | Final MESP-99 audit-semantics correction classifies missing parent Category as `NotFound`; hierarchy behavior remains unchanged; SL-03 readiness remains next and not started | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
 
 ---
 

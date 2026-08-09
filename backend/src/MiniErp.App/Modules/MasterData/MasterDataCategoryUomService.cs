@@ -1343,7 +1343,10 @@ public sealed class MasterDataCategoryUomService
         "cross_tenant_target_denied" => FoundationAuditReason.CrossTenantTargetDenied,
         "permission_denied" => FoundationAuditReason.PermissionDenied,
         "authorization_denied" or "resource_scope_denied" => FoundationAuditReason.AuthorizationDenied,
-        "category_not_found" or "uom_not_found" or "conversion_not_found" => FoundationAuditReason.NotFound,
+        "category_not_found"
+            or "uom_not_found"
+            or "conversion_not_found"
+            or "parent_category_not_found" => FoundationAuditReason.NotFound,
         "concurrency_conflict" => FoundationAuditReason.ConcurrencyConflict,
         "persistence_unavailable"
             or "audit_unavailable"
@@ -1353,7 +1356,6 @@ public sealed class MasterDataCategoryUomService
         "validation_failed"
             or "category_duplicate"
             or "uom_duplicate"
-            or "parent_category_not_found"
             or "conversion_duplicate"
             or "precision_invalid"
             or "uom_in_use" => FoundationAuditReason.ValidationFailed,
