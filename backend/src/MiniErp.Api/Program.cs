@@ -5,26 +5,32 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http.HttpResults;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.Modules.Audit;
+using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.Identity;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Platform;
 using MiniErp.Contracts.Modules.Audit;
+using MiniErp.Contracts.Modules.BusinessParties;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Platform;
 using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
+using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IPlatformAdministrationModule>(_ => PlatformModuleRegistration.Create());
 builder.Services.AddSingleton<IMasterDataCatalogModule>(_ => MasterDataModuleRegistration.Create());
+builder.Services.AddSingleton<IBusinessPartiesModule>(_ => BusinessPartiesModuleRegistration.Create());
 builder.Services.AddMasterDataAuthorization();
 builder.Services.AddProductIdentity();
+builder.Services.AddSupplierIdentity();
 var sqlServerConnectionString = builder.Configuration["MESP_SQLSERVER_CONNECTION_STRING"];
 if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
 {
     builder.Services.AddMasterDataSqlServerPersistence(sqlServerConnectionString);
+    builder.Services.AddBusinessPartiesSqlServerPersistence(sqlServerConnectionString);
 }
 builder.Services.AddIdentityAuthorization();
 builder.Services.AddAuthentication(options =>
@@ -124,7 +130,8 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
 
 app.MapGet("/api/v1/module-registration", (
     IPlatformAdministrationModule platformModule,
-    IMasterDataCatalogModule masterDataModule) =>
+    IMasterDataCatalogModule masterDataModule,
+    IBusinessPartiesModule businessPartiesModule) =>
     Results.Ok(new
     {
         module = platformModule.Descriptor.Key,
@@ -137,6 +144,13 @@ app.MapGet("/api/v1/module-registration", (
             name = masterDataModule.Descriptor.Name,
             boundary = masterDataModule.Descriptor.Boundary,
             registered = masterDataModule.RegistrationEvidence.IsRegistered
+        },
+        businessParties = new
+        {
+            module = businessPartiesModule.Descriptor.Key,
+            name = businessPartiesModule.Descriptor.Name,
+            boundary = businessPartiesModule.Descriptor.Boundary,
+            registered = businessPartiesModule.RegistrationEvidence.IsRegistered
         }
     }))
     .WithName("platform.module-registration")
@@ -440,6 +454,7 @@ app.MapPost("/api/v1/foundation/probe", async (
     .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("foundation.probe.write")));
 
 app.MapProductIdentityEndpoints();
+app.MapSupplierEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")
