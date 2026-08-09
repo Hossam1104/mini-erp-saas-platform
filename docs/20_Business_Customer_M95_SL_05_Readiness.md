@@ -5,6 +5,7 @@
 **Parent:** MESP-6 - EPIC 06 - Master Data and Product Catalog
 **Status:** In Progress; documentation/readiness only
 **Activation evidence:** Jira comment `10688`
+**Review PR:** [#40](https://github.com/Hossam1104/mini-erp-saas-platform/pull/40) (Draft; intentionally not mergeable while the Owner bundle remains open)
 **Shared follow-up:** MESP-106 - Master Data authorization and duplicate-audit classification hardening (To Do, non-blocking)
 
 ## 1. Readiness verdict
@@ -349,8 +350,9 @@ behavior, broaden Supplier/Product scope, or replace the Owner bundle.
 ## 17. Handoff
 
 MESP-105 remains the single active Jira item with readiness evidence in this
-file and activation comment `10688`. The repository state/task files record
-the same status. The exact next bounded session is **M95-SL-05 Owner
-disposition review and implementation-item activation only**. It must stop if
-the three Customer decisions remain unresolved and must not execute the next
-root `TASK.md` automatically.
+file and activation comment `10688`. Review PR #40 is open as a draft from the
+docs-only commit; it must remain unmerged while the Owner bundle is unresolved.
+The repository state/task files record the same status. The exact next bounded
+session is **M95-SL-05 Owner disposition review and implementation-item
+activation only**. It must stop if the three Customer decisions remain
+unresolved and must not execute the next root `TASK.md` automatically.

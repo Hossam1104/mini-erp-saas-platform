@@ -120,8 +120,8 @@
 | Current implementation item | `MESP-104 / M95-SL-04 Supplier master-data implementation - Done; implementation head 9bf9afc... merged to main at 721adeb...; no Business Customer source implementation is active.` |
 | Merged-main baseline | `PR #39` merged implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` at `721adeb27c366d2b8aedde66d006ac6a49956f99`; the last synchronized reconciliation commit before this readiness branch is `b22ed4f6bb664e929bc1032d52f7f4651a17746d`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; Supplier implementation PR #39 is merged at 721adeb27c366d2b8aedde66d006ac6a49956f99; Supplier readiness/state PR #38 and Product PR #37 are also merged, as are PR #36, #33, #34, and #35.` |
-| Current review checkpoint | `MESP-105 remains In Progress pending explicit Customer-scoped MD-OD-001/005/008 disposition; no Business Customer implementation item is created or activated; SQL/provider/production gates remain unclaimed.` |
+| Open Pull Request | `Draft PR #40 from agent/mesp-105-business-customer-readiness at 68ba66c974e54e0827acce30097c717b0cc7d317; Supplier implementation PR #39 is merged at 721adeb27c366d2b8aedde66d006ac6a49956f99; earlier readiness/implementation PRs are merged.` |
+| Current review checkpoint | `MESP-105 remains In Progress pending explicit Customer-scoped MD-OD-001/005/008 disposition; draft PR #40 is intentionally unmerged; no Business Customer implementation item is created or activated; SQL/provider/production gates remain unclaimed.` |
 
 ---
 

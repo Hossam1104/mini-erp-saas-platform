@@ -79,8 +79,10 @@ gate under MESP-49; MESP-46, MESP-47, MESP-48, MESP-50 and other downstream
 ownership remain unchanged. MESP-106 is the single To Do, non-blocking shared
 authorization/duplicate-audit hardening follow-up.
 
-MESP-105 remains In Progress. No separate Business Customer implementation
-item has been created or activated. No new ADR is required during this stop;
+MESP-105 remains In Progress. Draft PR #40 carries the documentation-only
+readiness handoff and is intentionally unmerged while the bundle is open. No
+separate Business Customer implementation item has been created or activated.
+No new ADR is required during this stop;
 ADR-002, ADR-005, ADR-006 and ADR-011 remain authoritative at their existing
 status.
 

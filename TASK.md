@@ -14,9 +14,10 @@ readiness claim was made.
 The bounded M95-SL-05 Business Customer readiness analysis is now recorded in
 `docs/20_Business_Customer_M95_SL_05_Readiness.md`. Live Jira MESP-105 is the
 dedicated item under MESP-6, is In Progress, and has activation evidence in
-comment `10688`. MESP-106 is a separate To Do, non-blocking shared hardening
-follow-up. The Customer-specific MD-OD-001, MD-OD-005, and MD-OD-008 decisions
-remain one unresolved Owner bundle. No Customer source behavior was added.
+comment `10688`. Draft PR #40 carries the docs-only handoff. MESP-106 is a
+separate To Do, non-blocking shared hardening follow-up. The Customer-specific
+MD-OD-001, MD-OD-005, and MD-OD-008 decisions remain one unresolved Owner
+bundle. No Customer source behavior was added.
 
 The next exact bounded sequence position is Owner disposition review for that
 single bundle. A fresh session must verify explicit Owner evidence first. If
