@@ -16,8 +16,24 @@
 > the Supplier-only Owner disposition for MD-OD-001/005/008 is
 > recorded in Jira comment `10681` and MESP-103 is closed with comment `10682`.
 > The disposition does not resolve the global register; MD-OD-007 and
-> MESP-48/MESP-49/MESP-50 remain preserved/open. No Supplier source behavior
-> has started, and MESP-104 remains the next To Do implementation item.
+> MESP-48/MESP-49/MESP-50 remain preserved/open. MESP-104 is now Done through
+> PR #39 at merge `721adeb27c366d2b8aedde66d006ac6a49956f99`; the next
+> sequence position is M95-SL-05 Business Customer readiness only, with no
+> dedicated Jira item or automatic activation.
+
+> **Authoritative current Supplier implementation overlay - 10 August 2026.**
+> MESP-104 / M95-SL-04 Supplier implementation is **Done** through PR #39,
+> merged to `main` at `721adeb27c366d2b8aedde66d006ac6a49956f99` from
+> implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3`. Jira
+> activation, validation, and closure evidence are `10685`, `10686`, and
+> `10687`. The bounded source slice is Tenant-wide within the owning Tenant,
+> module-owned, server-authorized, concurrency-safe, audited before effect, and
+> limited to Supplier identity/contact/reference/lifecycle behavior. Supplier
+> readiness decisions do not generalize to Business Customer; MD-OD-007 and
+> MESP-48/MESP-49/MESP-50 remain open gates. The next sequence position is
+> M95-SL-05 Business Customer readiness and decision gate only. Live Jira has
+> no dedicated item or `MESP-105` key, so no Business Customer source behavior
+> is active or authorized automatically.
 
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch

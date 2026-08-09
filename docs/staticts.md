@@ -2,10 +2,10 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-09 23:42 +03:00
+**Last Updated:** 2026-08-10 00:30 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
-**Overall Production-Ready Completion:** **~28%**
+**Overall Production-Ready Completion:** **~29%**
 
 ---
 
@@ -60,17 +60,17 @@ Every future execution prompt should include:
 |---|---:|
 | Product / Requirements Definition | **~45%** |
 | Architecture & Technical Foundation | **~85%** |
-| Backend Overall | **~39%** |
-| Database / Persistence Overall | **~30%** |
+| Backend Overall | **~42%** |
+| Database / Persistence Overall | **~33%** |
 | Frontend Overall | **~15%** |
 | Automated Technical Safety Foundation | **~50%** |
 | Full End-to-End Business System | **~21%** |
-| Production Readiness | **~28%** |
-| **Remaining to Real Production** | **~72%** |
+| Production Readiness | **~29%** |
+| **Remaining to Real Production** | **~71%** |
 
 ## Current management headline
 
-> **Mini ERP SaaS Platform Release 1 is approximately 28% complete toward a genuinely production-ready system.**
+> **Mini ERP SaaS Platform Release 1 is approximately 29% complete toward a genuinely production-ready system.**
 
 This percentage is intentionally lower than the raw Jira completion percentage because many completed Jira items represent architecture, governance, BRD, authorization, and technical-foundation work rather than completed business capabilities.
 
@@ -84,9 +84,9 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **43** | **48.3%** |
+| Done | **44** | **49.4%** |
 | In Progress | **1** | **1.1%** |
-| To Do | **45** | **50.6%** |
+| To Do | **44** | **49.4%** |
 | **Total Non-Epic** | **89** | **100%** |
 
 Major Release-1 Epics:
@@ -94,12 +94,12 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 104 MESP issues, including the 15 Epics, the current workflow state
-is 43 Done, 6 In Progress, and 55 To Do. These counts were re-checked in live
-Jira on 9 August 2026; the non-Epic In Progress item is MESP-23.
+is 44 Done, 6 In Progress, and 54 To Do. These counts were re-checked in live
+Jira on 10 August 2026; the non-Epic In Progress item is MESP-23.
 
 ## Interpretation
 
-Raw Jira completion currently makes the project appear approximately **48% complete**.
+Raw Jira completion currently makes the project appear approximately **49% complete**.
 
 That number must NOT be used as the production-completion percentage.
 
@@ -107,8 +107,8 @@ Many future implementation tickets have not yet been generated because several m
 
 Therefore the current project should be represented as:
 
-> **Jira-created-work completion: ~48%**
-> **Actual Release-1 production completion: ~28%**
+> **Jira-created-work completion: ~49%**
+> **Actual Release-1 production completion: ~29%**
 
 **Jira hygiene note:** MESP-97 and MESP-98 were stale duplicate/superseded
 SL-02 administrative artifacts. They have now been reconciled to terminal Done
@@ -117,9 +117,11 @@ authoritative completed implementation/readiness records, MESP-101 is the
 completed Product readiness record, and MESP-102 is Done for the bounded Product
 implementation with activation/validation/closure comments `10675`/`10676`/
 `10677`. MESP-103 is Done with Supplier-only Owner disposition and closure
-evidence in comments `10681`/`10682`; MESP-104's non-activated handoff is
-comment `10683`, and it is the next separately prepared Supplier implementation
-item. It remains To Do, so no Supplier implementation item is active.
+evidence in comments `10681`/`10682`; MESP-104 is Done through PR #39 with
+activation, validation, and closure evidence in comments `10685`/`10686`/`10687`.
+Live Jira non-Epic state is now 44 Done / 1 In Progress / 44 To Do. The next
+sequence position is M95-SL-05 Business Customer readiness only, but no
+dedicated live Jira item or `MESP-105` key exists and no next item is active.
 
 ---
 
@@ -132,7 +134,7 @@ The following model represents progress toward a complete production Release 1.
 | 1. Product governance, requirements, business decisions | 8% | **45%** | 3.6% |
 | 2. Architecture, security & technical foundation | 12% | **85%** | 10.2% |
 | 3. Platform Admin / IAM / Tenancy / Organization | 8% | **55%** | 4.4% |
-| 4. Master Data & Product Catalog | 10% | **35%** | 3.5% |
+| 4. Master Data & Product Catalog | 10% | **38%** | 3.8% |
 | 5. Procurement / Purchase-to-Pay | 9% | **3%** | 0.3% |
 | 6. Inventory / Warehouse | 9% | **3%** | 0.3% |
 | 7. Finance / Accounting / AR / AP / Cash | 12% | **3%** | 0.4% |
@@ -143,7 +145,7 @@ The following model represents progress toward a complete production Release 1.
 | 12. Migration / Tenant Onboarding | 2% | **3%** | 0.1% |
 | 13. E2E QA, Performance, UAT, Deployment & Go-Live | 5% | **20%** | 1.0% |
 
-**Weighted overall result:** approximately **25–27%**.
+**Weighted overall result:** approximately **27–29%**.
 
 The weighted model remains an approximate planning band; the bounded Product
 implementation supports the conservative current 28% headline below without
@@ -151,7 +153,7 @@ resolving the SQL/provider or production gates.
 
 For project reporting use:
 
-> **Overall production-ready completion = 28%**
+> **Overall production-ready completion = 29%**
 
 Do not present decimal precision as certainty.
 
@@ -168,7 +170,7 @@ These percentages measure **usable production capability**, not Jira workflow st
 | MESP-3 | Identity & Access Management | **65%** |
 | MESP-4 | Multi-Tenancy | **75%** |
 | MESP-5 | Organization & Company Structure | **50%** |
-| MESP-6 | Master Data & Product Catalog | **35%** |
+| MESP-6 | Master Data & Product Catalog | **38%** |
 | MESP-7 | Procurement & Purchase-to-Pay | **3–5%** |
 | MESP-8 | Inventory & Warehouse | **3–5%** |
 | MESP-9 | B2B Sales & Order-to-Cash | **3–5%** |
@@ -198,7 +200,7 @@ SL-03 status is recorded in the current assessment immediately below it.
 | SL-01 | Shared Boundary & Tenant/Scope Contracts | ✅ Done |
 | SL-02 | Category & UOM | ✅ Implemented, corrected, and merged |
 | SL-03 | Product Identity | Done: bounded implementation merged through PR #37 |
-| SL-04 | Supplier | Done: bounded readiness closed; MESP-104 implementation remains To Do |
+| SL-04 | Supplier | Done: bounded implementation merged through PR #39 |
 | SL-05 | Business Customer | ⬜ Not Started |
 | SL-06 | Currency | ⬜ Not Started |
 | SL-07 | Payment Term | ⬜ Not Started |
@@ -212,33 +214,35 @@ SL-03 status is recorded in the current assessment immediately below it.
 
 The planning rows above preserve the prior sequential baseline. Current
 delivery status is authoritative here: **SL-03 Product Identity is bounded,
-validated, and merged through PR #37; SL-04 Supplier readiness is closed at its
-bounded decision gate, while the separate MESP-104 Supplier implementation
-item remains To Do.**
+validated, and merged through PR #37; SL-04 Supplier is implemented through PR
+#39 at its bounded source scope. SL-05 Business Customer is the next readiness
+and decision-gate position, with no dedicated Jira item currently active.**
 
 ## Master Data current assessment
 
-Current post-SL-03 pure implementation-slice completion:
+Current post-SL-04 pure implementation-slice completion:
 
-**~24-25%**, with Product identity now bounded, validated, and merged through
-PR #37. Supplier readiness documentation does not add production capability;
-the SQL/provider gate remains open, so this is not a production-ready claim.
+**~28-29%**, with Product identity and Supplier now bounded, validated, and
+merged through PR #37 and PR #39. The SQL/provider gate remains open, so this
+is not a production-ready claim.
 
 Historical pre-SL-03 pure implementation-slice completion:
 
 **~16–17%**
 
-Total lifecycle completion including BRD, lean specification, architecture, authorization contracts, persistence-readiness work, and the completed Category/UOM and bounded Product identity data-bearing slices:
+Total lifecycle completion including BRD, lean specification, architecture, authorization contracts, persistence-readiness work, and the completed Category/UOM, Product identity, and bounded Supplier data-bearing slices:
 
-**~35%**
+**~38%**
 
-Current post-SL-02 position:
+Current post-SL-04 position:
 
-**~35%**, with the bounded M95-SL-03 Product identity implementation complete
-through PR #37. M95-SL-04 Supplier readiness is closed without production
-capability increase; MESP-104 is the next To Do implementation item, no
-Supplier source implementation has started, and MD-OD-007 remains an external
-Saudi statutory/legal validation and production gate.
+**~38%**, with the bounded M95-SL-03 Product identity implementation complete
+through PR #37 and M95-SL-04 Supplier implementation complete through PR #39.
+The 21 SQL safety tests remain gated by the unavailable connection string; no
+Supplier production/provider claim is made. M95-SL-05 Business Customer is the
+next readiness-only sequence position, with no dedicated Jira item, and
+MD-OD-007 remains an external Saudi statutory/legal validation and production
+gate.
 
 ---
 
@@ -309,7 +313,7 @@ Major remaining areas include:
 
 ## Combined backend progress
 
-> **Backend Overall: ~39%**
+> **Backend Overall: ~42%**
 
 ---
 
@@ -317,7 +321,7 @@ Major remaining areas include:
 
 Current estimate:
 
-> **Database / Persistence Overall: ~30%**
+> **Database / Persistence Overall: ~33%**
 
 ## Strong foundation already established
 
@@ -361,7 +365,9 @@ Current estimate:
 - reporting/read models;
 - integration state.
 
-Category/UOM SL-02 represents the beginning of the first real business data-bearing Master Data implementation.
+Category/UOM, Product identity, and Supplier now represent the first bounded
+business data-bearing Master Data implementations. SQL/provider and production
+gates remain open.
 
 ---
 
@@ -455,7 +461,7 @@ These estimates assume continuation at approximately the current normalized exec
 
 | Remaining Area | Current Completion | Estimated Active Work |
 |---|---:|---:|
-| Complete Master Data | 20% | **6–9 days** |
+| Complete Master Data | 25% | **6–9 days** |
 | Procurement / Purchase-to-Pay | 3–5% | **6–9 days** |
 | Inventory / Warehouse | 3–5% | **7–10 days** |
 | Finance / Accounting | 3–5% | **9–13 days** |
@@ -657,7 +663,7 @@ The intended production-readiness curve is:
 | Milestone | Expected Overall Completion |
 |---|---:|
 | Current state after MESP-99 / SL-02 | **27%** |
-| Master Data complete | **~35%** |
+| Master Data complete | **~40%** |
 | Procurement complete | **~43%** |
 | Inventory complete | **~52%** |
 | Finance complete | **~64%** |
@@ -915,15 +921,17 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **MESP-103 / M95-SL-04 Supplier readiness is Done; MESP-104 is the next To Do implementation item; Product implementation is complete through PR #37 and MESP-99/SL-02 plus MESP-101 readiness are also complete**
+> **MESP-104 / M95-SL-04 Supplier implementation is Done through PR #39; M95-SL-05 Business Customer readiness is the next sequence position but has no dedicated Jira item; Product implementation is complete through PR #37 and MESP-99/SL-02 plus MESP-101 readiness are also complete**
 
 Current strategic state:
 
 - Foundation architecture is mostly established.
 - Tenant isolation and authorization foundations are materially mature.
-- Category/UOM is now the first completed data-bearing Master Data slice.
-- Master Data lifecycle completion is now estimated at ~35% after the bounded
-  Product identity implementation; Supplier readiness is the next exact slice.
+- Category/UOM, Product identity, and Supplier are now the first completed
+  bounded data-bearing Master Data slices.
+- Master Data lifecycle completion is now estimated at ~38% after the bounded
+  Product identity and Supplier implementations; Business Customer readiness
+  is the next exact sequence position.
 - The bounded post-merge correction gate is complete before SL-03 readiness:
   - Tenant ownership-verifier EF lookups are truly asynchronous and honor cancellation;
   - `persistence_unavailable` audit evidence is classified as an internal failure rather than authorization denial;
@@ -941,11 +949,15 @@ Current strategic state:
   missing connection string.
 - MESP-103 was activated under MESP-6 with Jira evidence `10679`; its
   independent analysis and decision bundle are `10680`, Supplier-only Owner
-  disposition is `10681`, and closure is `10682`. MD-OD-001, MD-OD-005, and
-  MD-OD-008 are resolved only for the bounded Supplier slice. MD-OD-007
-  remains an external Saudi-validation and production gate; no Supplier source,
-  persistence, API, migration, UI, or Procurement transaction behavior was
-  added. MESP-104 is prepared as the next To Do item and is not active here.
+  disposition is `10681`, and closure is `10682`. MESP-104 is Done through PR
+  #39 at merge `721adeb27c366d2b8aedde66d006ac6a49956f99`, with Jira
+  activation/validation/closure evidence `10685`/`10686`/`10687`. The bounded
+  Supplier source slice is implemented and validated, but the 21 SQL safety
+  tests remain gated by the unavailable connection string; no migration,
+  provider, or production claim was made. MD-OD-007 remains an external
+  Saudi-validation and production gate. M95-SL-05 Business Customer is the
+  next readiness-only position, with no dedicated Jira item and no automatic
+  activation.
 - A non-blocking Product hardening follow-up is recorded in the Supplier
   readiness note and current-state handoff: dependency/policy unavailability
   must eventually be classified as an internal/service failure while genuine
@@ -965,6 +977,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-10 00:30 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-104 bounded Supplier implementation merged through PR #39 at `721adeb27c366d2b8aedde66d006ac6a49956f99`; Release build 0/0, Supplier 7/7, non-SQL 609/609; 21 SQL safety tests remain connection-gated; live Jira non-Epic 44 Done / 1 In Progress / 44 To Do; next M95-SL-05 readiness has no dedicated Jira item | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-09 23:42 +03:00 | **28%** | **39%** | **30%** | **15%** | MESP-103 Supplier readiness/state reconciliation merged through PR #38 at `b850b32a9666c5f42531ffd9b6720182fa03c0b7`; MESP-104 remains To Do; no Supplier source implementation; live Jira non-Epic 43 Done / 1 In Progress / 45 To Do | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-09 23:36 +03:00 | **28%** | **39%** | **30%** | **15%** | MESP-103 Supplier readiness closed after Owner disposition `10681` and Jira closure evidence `10682`; MESP-104 handoff comment `10683`; MD-OD-001/005/008 are Supplier-only bounds, MD-OD-007 stays external, no Supplier source implementation; MESP-104 remains To Do; live Jira non-Epic 43 Done / 1 In Progress / 45 To Do | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-09 23:18 +03:00 | **28%** | **39%** | **30%** | **15%** | MESP-103 Supplier readiness analysis and one consolidated decision bundle recorded under Jira comments 10679/10680; MD-OD-001/005/008 Owner disposition remains pending; MD-OD-007 stays external; no Supplier source implementation; Product hardening follow-up recorded; non-Epic Jira 42 Done / 2 In Progress / 44 To Do | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
@@ -1034,10 +1047,10 @@ Do not answer from percentages alone. Check the 100% Production Ready Definition
 
 > ## Mini ERP SaaS Platform — Release 1
 >
-> **Overall Production-Ready Completion:** ~28%
+> **Overall Production-Ready Completion:** ~29%
 > **Architecture/Foundation:** ~85%
-> **Backend:** ~39%
-> **Database:** ~30%
+> **Backend:** ~42%
+> **Database:** ~33%
 > **Frontend:** ~15%
 > **End-to-End Business System:** ~21%
 >
@@ -1046,7 +1059,7 @@ Do not answer from percentages alone. Check the 100% Production Ready Definition
 > **Internal Release Ready Forecast:** Mid–Late October 2026  
 > **Production-Ready Forecast:** Late October–Mid November 2026  
 >
-> **Recommended management scenario:** Realistic 11–14 week remaining path from 2026-08-09, subject to Finance/Inventory complexity, Saudi production validation, migration, infrastructure readiness, and UAT findings.
+> **Recommended management scenario:** Realistic 11–14 week remaining path from 2026-08-10, subject to Finance/Inventory complexity, Saudi production validation, migration, infrastructure readiness, and UAT findings.
 
 ---
 

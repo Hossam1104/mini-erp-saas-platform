@@ -20,6 +20,20 @@
 > localized search, forms, or bilingual/RTL document behavior. MESP-48,
 > MESP-49, and MESP-50 remain open.
 
+> **Authoritative current Supplier implementation overlay - 10 August 2026.**
+> MESP-104 / M95-SL-04 is **Done** through PR #39, whose implementation head
+> `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` merged to `main` at
+> `721adeb27c366d2b8aedde66d006ac6a49956f99`. The bounded Supplier slice is
+> module-owned in the Business Parties application/infrastructure path and
+> includes Tenant-filtered ownership, server-derived authorization,
+> optimistic concurrency, append-before-effect audit, and Supplier-only API
+> contracts/endpoints. Release validation was 0/0, Supplier tests 7/7, and
+> non-SQL tests 609/609. The 21 SQL Server safety tests remain gated by the
+> unavailable `MESP_SQLSERVER_CONNECTION_STRING`; no migration, provider, or
+> production deployment claim is made. The next position is M95-SL-05 Business
+> Customer readiness only; no dedicated Jira item or `MESP-105` key exists, and
+> no downstream module or unified Party behavior is authorized automatically.
+
 > **Historical MESP-100 state overlay - 9 August 2026.** MESP-100 is Done
 > (closure evidence Jira comment `10663`) and MESP-99 is In Progress
 > (activation evidence `10664`). PR #32 merged at

@@ -3,12 +3,30 @@
 **Date:** 9 August 2026
 **Jira:** MESP-103 (Done)
 **Scope:** Supplier readiness and decision gate only
-**Status:** Supplier-only readiness complete and closed; implementation has not started
+**Status:** Supplier-only readiness complete and closed; the separate MESP-104
+implementation is complete at its bounded source scope
 
 **Jira evidence:** activation comment `10679`; readiness analysis and decision
 bundle comment `10680`; Owner disposition comment `10681`; closure comment
 `10682`; next-item handoff comment `10683`; implementation item `MESP-104` is
-prepared and remains To Do.
+now Done through PR #39, with implementation validation and closure evidence in
+Jira comments `10685`/`10686`/`10687`.
+
+## Post-readiness implementation overlay - 10 August 2026
+
+MESP-103 remains the authoritative Supplier readiness and decision-gate record;
+this document does not expand or retroactively change that readiness scope.
+MESP-104 separately implemented the approved Supplier-only boundary through
+PR #39, merged to `main` at `721adeb27c366d2b8aedde66d006ac6a49956f99` from
+head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3`. The implementation provides
+module-owned Tenant-filtered persistence/API, server-derived authorization,
+exact same-role duplicate controls, non-blocking cross-role match evidence,
+Active/Inactive lifecycle, optimistic concurrency, and append-before-effect
+audit. Release build 0/0, Supplier tests 7/7, and non-SQL tests 609/609 passed.
+The SQL Server safety gate remains unavailable without
+`MESP_SQLSERVER_CONNECTION_STRING`; no migration, provider, or production
+readiness claim is made. Business Customer is not implemented, and Supplier
+Owner decisions are not inherited by that later slice.
 
 ## 1. Readiness verdict
 
@@ -43,9 +61,11 @@ technical implementation claim:
 - MD-OD-007 remains a Saudi statutory/external-validation gate. No legal field
   set beyond the approved conditional VAT/registration baseline is invented.
 
-No Supplier source behavior, persistence, API, UI, migration, or downstream
-business behavior was added. MESP-104 is the separately prepared next Jira
-implementation item and remains To Do for a fresh implementation session.
+At the MESP-103 readiness boundary, no Supplier source behavior, persistence,
+API, UI, migration, or downstream business behavior was added. MESP-104 was the
+separately prepared next Jira implementation item and is now complete at its
+bounded source scope; this historical readiness statement does not claim that
+the implementation was part of MESP-103.
 
 ## 2. Baseline and authority
 

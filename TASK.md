@@ -1,147 +1,138 @@
-# Next session - MESP-104 / M95-SL-04 Supplier master-data implementation only
+# Next session - M95-SL-05 Business Customer readiness and decision gate only
 
-MESP-102 / M95-SL-03 Product Identity implementation is complete. PR #37
-merged to `main` at
-`202d59068caac5d1fac402794627e41d7f452456`, and Jira closure evidence is
-comment `10677` (activation `10675`, validation/merge `10676`).
+MESP-104 / M95-SL-04 Supplier master-data implementation is complete and
+closed. The bounded implementation was delivered from
+`9bf9afcd8a9ea427ed32b63ad9b655081e9592d3`, merged through PR #39 to `main`
+at `721adeb27c366d2b8aedde66d006ac6a49956f99`, and closed in Jira with
+activation, validation, and closure evidence in comments `10685`, `10686`, and
+`10687`. The final validation was a Release build with 0 warnings/0 errors,
+Supplier-focused tests 7/7, and the non-SQL suite 609/609. The 21 SQL Server
+safety tests remain gated by the unavailable
+`MESP_SQLSERVER_CONNECTION_STRING`; no migration, provider, or production
+readiness claim was made.
 
-MESP-103 / M95-SL-04 Supplier readiness is also complete and closed. The
-Supplier-only Owner disposition is Jira comment `10681`, and closure evidence
-is comment `10682`. MESP-104 is the separately prepared implementation item
-under MESP-6, currently **To Do**; its non-activated handoff is Jira comment
-`10683`. No Supplier implementation source has started. A fresh Codex/Luna
-chat executes this root TASK.md exactly once and
-then stops for review; do not execute it automatically in the current chat.
+The next exact bounded sequence position is M95-SL-05 Business Customer
+readiness and decision gate only. Live Jira currently has no dedicated
+Business Customer issue after MESP-104 and no `MESP-105` key exists. Therefore
+this handoff is not an activation or implementation authorization: a fresh
+session must verify the live Jira item and Owner gate first, must not invent a
+key, and must not start Business Customer source behavior automatically.
 
-## Current approved Supplier boundary - 9 August 2026
+A fresh Codex/Luna chat executes this root TASK.md exactly once, completes only
+the bounded readiness/decision work described below, updates the repository
+state and Jira truthfully, then stops for ChatGPT review. Do not execute the
+next root TASK.md automatically in the current chat.
 
-The following Owner decisions apply only to the bounded Supplier master-data
-slice. They do not resolve the global decision register or automatically define
-Business Customer, Procurement, Finance, Tax, payment/banking, settlement, or
-other downstream-domain policy.
+## Current approved baseline and non-inheritance rule
 
-- **MD-OD-001 - Supplier business availability:** Supplier master data is
-  Tenant-wide inside its owning Tenant and reusable by that Tenant's Companies
-  and Branches. Cross-Tenant sharing is prohibited. Client-supplied Company,
-  Branch, Tenant, or scope values cannot override trusted server-derived
-  authorization.
-- **MD-OD-005 - Supplier approval policy:** Routine Supplier creation,
-  identity/contact/reference maintenance, activation, deactivation, and
-  reactivation require no separate approver in Release 1. Permission, Tenant
-  authorization, optimistic concurrency, audit, and fail-closed controls are
-  mandatory. Saudi statutory data and future payment, banking, settlement, or
-  similarly sensitive changes are outside this base disposition and remain
-  subject to their owning requirements and controls.
-- **MD-OD-008 - Supplier lifecycle:** Supplier has no Draft state. A valid
-  authorized Supplier is created Active and supports guarded
-  Deactivate/Reactivate behavior. Deactivation prevents new applicable
-  business use while historical references and audit history remain preserved.
-- **MD-OD-007 remains open:** Saudi statutory fields are not resolved by this
-  disposition. Keep the external Saudi legal/tax validation and production
-  gate under MESP-49.
+The Supplier-only Owner disposition is complete, but its decisions are not a
+global Business Customer baseline. Do not copy MD-OD-001, MD-OD-005, or
+MD-OD-008 into Business Customer without a separate affected-scope analysis
+and Owner disposition. Preserve MD-OD-007 as the external Saudi statutory,
+legal/tax, and production gate under MESP-49. Preserve MESP-48 supported-volume,
+retention, privacy, legal-hold, purge, residency, backup, and restoration gates
+and MESP-50 retention/privacy/legal-hold gates.
+
+Release 1 remains B2B ERP only. Retail POS, Wafra-specific core behavior,
+consumer flows, and downstream Procurement, Finance, Tax, payment, banking,
+settlement, AR/AP, Sales, Inventory, Price List, Currency, and Exchange Rate
+behavior remain outside this readiness slice unless the approved source
+documents identify a decision dependency that must be recorded for later
+ownership. No unified Party model is implied by the existence of Supplier and
+Business Customer roles.
 
 ## Exact objective
 
-Implement the bounded M95-SL-04 Supplier master-data slice described by the
-approved BRD/LIS and the Owner evidence above. Deliver only the Supplier
-identity, contact/reference, lifecycle, Tenant-ownership, authorization,
-concurrency, audit, and API/persistence behavior needed by this slice. Supplier
-is an external Business Party role; it is never a User, Tenant member,
-credential holder, login identity, or consumer session.
+Prepare and independently review the M95-SL-05 Business Customer readiness and
+decision gate only. Read the approved BRD/LIS and the existing architecture,
+glossary, ADR, decision-register, foundation, and delivery-plan baselines;
+identify the Business Customer-specific business, ownership, identity,
+availability, lifecycle, authorization, audit, concurrency, localization,
+legal/tax, and downstream dependencies; and present only the decisions that
+require explicit Owner disposition before any Business Customer
+implementation.
 
-The implementation must preserve the existing four-project topology:
-
-- `MiniErp.Api`
-- `MiniErp.App`
-- `MiniErp.Contracts`
-- `MiniErp.Infrastructure`
-
-ADR-002 and ADR-006 remain binding. The future implementation is module-owned,
-Tenant-owned, server-authorized, concurrency-safe, audited before effect, and
-fail closed. Do not claim SQL/provider/production readiness when the configured
-`MESP_SQLSERVER_CONNECTION_STRING` gate is unavailable.
+This session is documentation/readiness work. It must not add Business
+Customer source behavior, entities, tables, schemas, migrations, database
+access, endpoints, UI, generated clients, or downstream transaction behavior.
+It must not modify the completed Supplier implementation or Product source.
 
 ## Entry gates
 
-- Re-read `.ai/CURRENT_STATE.md`, `docs/19_Supplier_M95_SL_04_Readiness.md`,
-  the approved `docs/16_Master_Data_and_Product_Catalog_BRD.md`, the relevant
-  sections of `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`,
+- Re-read `.ai/CURRENT_STATE.md`, `docs/staticts.md`, the approved
+  `docs/16_Master_Data_and_Product_Catalog_BRD.md`,
+  `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`,
   `docs/00_ERP_Business_Glossary.md`, the Foundation specification,
   `docs/01_Technology_Architecture_Baseline.md`, ADR-002, ADR-005, ADR-006,
   ADR-011's indexed baseline, `docs/94_Product_Delivery_Master_Plan.md`,
-  `docs/Decisions.md`, and `docs/staticts.md`.
-- Verify live Jira: MESP-103 is Done with Owner/closure evidence `10681`/
-  `10682`; MESP-104 is the single intended Supplier implementation item and is
-  To Do. Activate MESP-104 explicitly at the start of this fresh session, then
-  record activation evidence before implementation.
-- Preserve MD-OD-007 as an unresolved external Saudi legal/tax validation and
-  production gate under MESP-49. Do not infer statutory fields or legal
-  completeness from the Owner disposition.
-- Preserve open MESP-48 supported-volume/retention/privacy/legal-hold/purge/
-  residency/backup/restoration gates and MESP-50 retention/privacy/legal-hold
-  gates. Do not invent credentials, production infrastructure, or a database
-  connection string.
+  `docs/Decisions.md`, and the completed
+  `docs/19_Supplier_M95_SL_04_Readiness.md` record.
+- Verify live Jira first: MESP-104 is Done with comments `10685`/`10686`/
+  `10687`, PR #39 is merged, and there is no active implementation item. If a
+  dedicated Business Customer readiness item does not exist, do not fabricate
+  `MESP-105`, do not activate an unrelated issue, and record the missing Jira
+  item as a readiness handoff condition.
+- Confirm that no Business Customer Owner decisions have been silently
+  inherited from Supplier, Product, or the global decision register. Keep
+  unresolved decisions explicit and scoped to Business Customer.
+- Confirm MESP-48, MESP-49, and MESP-50 remain open and that no credential,
+  production connection string, migration, or Saudi legal conclusion is
+  required or invented for this documentation-only slice.
 
-## Allowed implementation boundary
+## Required readiness boundary
 
-- Supplier contracts, application behavior, module-owned persistence, API
-  endpoints, and focused tests required for the bounded Supplier slice.
-- Server-derived Tenant ownership and exact authorization; client Company,
-  Branch, Tenant, and scope hints are advisory at most and cannot broaden
-  authority.
-- Supplier identity/reference/contact behavior, same-role duplicate controls,
-  cross-role Supplier/Business Customer match review without false duplicate
-  rejection, guarded Active/Inactive lifecycle, historical-reference
-  preservation, optimistic concurrency, idempotency where required, and
-  append-before-effect audit evidence.
-- Permission, authorization, concurrency, audit, provider, and policy failures
-  must fail closed and must not be reported as successful business effects.
-- Keep Saudi statutory fields extensible and conditional within the approved
-  boundary; leave external/legal validation to MESP-49 and the owning control.
+- Define Business Customer as an explicit Release-1 business scope without
+  inventing a unified Party/consumer identity, customer login, membership, or
+  authentication path.
+- Analyze Tenant ownership, Company/Branch reuse, cross-Tenant isolation,
+  identity/reference and localized-name needs, duplicate/match handling,
+  lifecycle, authorization/resource scope, optimistic concurrency, audit, and
+  history requirements only to the level supported by the approved sources.
+- Separate Business Customer master data from AR, credit, payment terms,
+  tax, invoicing, Finance, Sales, and other downstream ownership. Record
+  unresolved dependencies rather than implementing them.
+- Identify any Saudi statutory/legal/tax dependency and leave its external
+  validation and production gate under the owning issue, including MESP-49.
+- Produce a bounded decision bundle and an implementation-ready/non-ready
+  verdict. A readiness verdict must not be presented as working production
+  capability.
 
 ## Hard exclusions
 
-- No Product/Item/SKU/Barcode/tracking changes and no modification of the
-  completed M95-SL-03 Product implementation.
-- No Business Customer implementation, unified Party entity by implication,
-  Procurement transaction/PO/receipt/invoice behavior, Tax, Finance, payment,
-  banking, settlement, Currency, Exchange Rate, Price List, Inventory, Sales,
-  or downstream workflow behavior.
-- No Supplier login, credential, authentication identity, membership, user
-  account, anonymous consumer path, or external-party access path.
-- No Draft lifecycle state, cross-Tenant sharing, client-authority trust,
-  unscoped query, hard delete of referenced records, or loss of historical
-  references/audit history.
-- No Saudi legal conclusion, external compliance certification, production
-  database provisioning, production migration execution, fabricated provider
-  claim, or invented SQL credential.
-- Do not broaden the Owner disposition to any domain outside Supplier.
+- No Business Customer/Product/Item/SKU/Barcode/Category/UOM/Supplier source
+  changes; no unified Party or variant entity by implication.
+- No customer login, credentials, user account, Tenant membership, consumer
+  session, external-party portal, or authentication identity.
+- No Procurement/PO/receipt/invoice, AR/AP, Finance, Tax, credit, payment,
+  banking, settlement, Sales, Inventory, Price List, Currency, or Exchange
+  Rate behavior.
+- No migration, SQL/provider configuration, database creation, production
+  provisioning, legal certification, or fabricated external validation.
+- No automatic activation of a missing or unrelated Jira item and no automatic
+  start of a later slice.
 
 ## Required validation and handoff
 
-- Review the complete source and documentation diff for Tenant leakage,
-  authorization bypass, missing audit-before-effect, concurrency gaps,
-  lifecycle/history errors, unscoped persistence, and downstream scope creep.
-- Run the release build, Supplier-focused tests, relevant non-SQL architecture/
-  module-boundary tests, REST/contract tests, and `git diff --check`. Record
-  SQL safety-test limitations truthfully if the configured connection string
-  remains unavailable.
-- Verify no Product source changed and no excluded downstream behavior or
-  migration was added. Inspect the final changed-file list and test output.
+- Review the complete documentation/Jira diff for scope creep, accidental
+  decision inheritance, Tenant-isolation ambiguity, authentication ambiguity,
+  legal/tax overclaiming, and accidental source changes.
+- Run the relevant documentation checks and `git diff --check`; verify that
+  Supplier source files and the merged `main` baseline are unchanged by this
+  readiness session.
 - Update every genuinely affected Markdown state/plan file, `.ai/CURRENT_STATE.md`,
-  `docs/staticts.md`, Jira activation/validation/closure evidence, and this
-  TASK.md to the next exact bounded session.
-- Commit the bounded implementation, push the branch, publish a focused PR,
-  review it, and merge only when the diff is clean, checks are truthful, and no
-  security/Tenant/data-integrity/production gate is being bypassed. Then
-  synchronize the local `main` baseline and stop for ChatGPT review.
+  `docs/staticts.md` only if production progress or Jira state materially
+  changes, Jira evidence if a dedicated item exists, and this TASK.md to the
+  next exact bounded session.
+- Commit and push the documentation/readiness work, merge only when the
+  authorized dedicated item and review gates are satisfied, synchronize local
+  `main`, and stop for ChatGPT review. Do not execute the next root TASK.md in
+  this session.
 
 ## Stop conditions
 
-Stop and report a blocker on unresolved Supplier ownership/scope, Tenant
-isolation or authorization weakness, credential/login ambiguity, accounting or
-data-integrity risk, destructive migration/data loss, missing provider or
-production infrastructure, unresolved Saudi legal/external validation that is
-required for the implementation, or material scope/architecture change.
-Keep MESP-48, MESP-49, and MESP-50 open unless their own separately authorized
-gates are satisfied. Do not execute another root TASK.md in this session.
+Stop and report a blocker on unresolved Business Customer ownership or scope,
+Tenant-isolation or authorization weakness, credential/login ambiguity,
+accounting or data-integrity risk, destructive migration/data loss, required
+Saudi legal/external validation, missing authorization for a Jira item, or a
+material scope/architecture change. Keep MESP-48, MESP-49, and MESP-50 open
+unless their own separately authorized gates are satisfied.

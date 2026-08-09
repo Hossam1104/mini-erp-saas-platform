@@ -24,15 +24,19 @@ is still required before localized search, forms, or bilingual/RTL document
 behavior. The remaining decision register is preserved, and MESP-48, MESP-49,
 and MESP-50 remain open.
 
-## Current Supplier-readiness state - 9 August 2026
+## Current Supplier implementation state - 10 August 2026
 
 MESP-103 is **Done** as the bounded M95-SL-04 Supplier readiness/decision-gate
 item under MESP-6. The Owner disposition is recorded in Jira comment `10681`
-and closure evidence in `10682`; the detailed analysis is in
+and closure evidence in `10682`; the detailed readiness analysis is in
 [`19_Supplier_M95_SL_04_Readiness.md`](19_Supplier_M95_SL_04_Readiness.md).
-Supplier is an external Business Party role with no login, credential,
-membership, authentication identity, or consumer session. No Supplier source
-implementation has started.
+MESP-104 is also **Done** for the separately authorized Supplier
+implementation. PR #39 merged to `main` at
+`721adeb27c366d2b8aedde66d006ac6a49956f99` from implementation head
+`9bf9afcd8a9ea427ed32b63ad9b655081e9592d3`; Jira activation, validation, and
+closure evidence are comments `10685`, `10686`, and `10687`. Supplier is an
+external Business Party role with no login, credential, membership,
+authentication identity, or consumer session.
 
 MD-OD-001, MD-OD-005, and MD-OD-008 are approved only for the bounded Supplier
 slice: Tenant-wide availability inside the owning Tenant with no cross-Tenant
@@ -44,8 +48,12 @@ plus guarded Deactivate/Reactivate and preserved history. These dispositions do
 not resolve the global register or define Business Customer, Procurement,
 Finance, Tax, payment/banking, or other downstream policy. MD-OD-007 remains an
 external Saudi statutory/legal validation and production gate owned by MESP-49.
-MESP-104 is the next separately prepared Supplier implementation item and
-remains To Do for a fresh session.
+The Supplier-only dispositions do not resolve Business Customer, unified Party,
+consumer, Procurement, Finance, Tax, payment/banking, or other downstream
+policy. The next sequence position is M95-SL-05 Business Customer readiness and
+decision gate only. Live Jira currently has no dedicated Business Customer
+issue and no `MESP-105` key exists; no readiness item is activated and no source
+implementation starts automatically.
 
 ADR-002, ADR-005, ADR-006, ADR-011, and MESP-48/MESP-49/MESP-50 remain
 authoritative/open at their existing status. No new ADR is required during this

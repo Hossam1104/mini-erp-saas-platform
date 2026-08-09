@@ -17,7 +17,23 @@
 > later Master Data or downstream decision is silently resolved. MESP-48,
 > MESP-49, and MESP-50 remain open.
 
-> **Authoritative Supplier-readiness overlay - 9 August 2026.** MESP-103 is
+> **Authoritative current Supplier implementation overlay - 10 August 2026.**
+> MESP-104 / M95-SL-04 Supplier implementation is **Done** through PR #39.
+> The implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` merged
+> to `main` at `721adeb27c366d2b8aedde66d006ac6a49956f99`; Jira activation,
+> validation, and closure evidence are comments `10685`, `10686`, and `10687`.
+> The bounded source slice provides module-owned Business Parties Supplier
+> persistence/API, server-derived Tenant authorization, identity/reference and
+> contact controls, lifecycle/concurrency, and append-before-effect audit.
+> Release build 0/0, Supplier-focused tests 7/7, and non-SQL tests 609/609
+> passed. The 21 SQL Server safety tests remain gated by the missing
+> `MESP_SQLSERVER_CONNECTION_STRING`; no migration, provider, or production
+> readiness claim is made. The next sequence position is M95-SL-05 Business
+> Customer readiness and decision gate only; live Jira has no dedicated item or
+> `MESP-105` key, so it is not activated and no source implementation starts
+> automatically. MESP-48, MESP-49, and MESP-50 remain open.
+
+> **Historical Supplier-readiness overlay - 9 August 2026.** MESP-103 is
 > **Done** as the bounded M95-SL-04 Supplier readiness and decision-gate item
 > under MESP-6. Jira activation/analysis evidence is in comments `10679` and
 > `10680`; the Supplier-only Owner disposition is comment `10681`; closure is
@@ -85,15 +101,15 @@
 | Owner | Hossam |
 | Repository | `Hossam1104/mini-erp-saas-platform` |
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
-| Last updated | 9 August 2026 |
+| Last updated | 10 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-103 / M95-SL-04 Supplier readiness and decision gate - Done; Supplier-only Owner disposition and closure are recorded in Jira comments 10681/10682. MESP-104 non-activated handoff is comment 10683 and the item remains To Do.` |
-| Current implementation item | `MESP-104 / M95-SL-04 Supplier master-data implementation - To Do; MESP-102 Product implementation is Done with Jira evidence 10675/10676/10677; no Supplier source implementation has started.` |
-| Merged-main baseline | `main` and `origin/main` are synchronized at the MESP-103 documentation/state merge `b850b32a9666c5f42531ffd9b6720182fa03c0b7`; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
+| Current activity | `MESP-104 / M95-SL-04 Supplier implementation - Done through PR #39; Jira activation/validation/closure evidence is in comments 10685/10686/10687. The next sequence position is M95-SL-05 Business Customer readiness only, with no dedicated live Jira item.` |
+| Current implementation item | `MESP-104 / M95-SL-04 Supplier master-data implementation - Done; implementation head 9bf9afc... merged to main at 721adeb...; no Business Customer source implementation is active.` |
+| Merged-main baseline | `main` and `origin/main` are synchronized at `721adeb27c366d2b8aedde66d006ac6a49956f99`; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; Supplier readiness/state PR #38 is merged at b850b32a9666c5f42531ffd9b6720182fa03c0b7; Product PR #37 is merged, as are PR #36, #33, #34, and #35.` |
-| Current review checkpoint | `MESP-103 is closed with Supplier-only Owner evidence 10681 and closure evidence 10682; MESP-104 remains To Do for a fresh bounded implementation session; MD-OD-007 and MESP-48/MESP-49/MESP-50 remain external/open.` |
+| Open Pull Request | `None; Supplier implementation PR #39 is merged at 721adeb27c366d2b8aedde66d006ac6a49956f99; Supplier readiness/state PR #38 and Product PR #37 are also merged, as are PR #36, #33, #34, and #35.` |
+| Current review checkpoint | `MESP-104 is closed with Jira evidence 10685/10686/10687 and PR #39 merged cleanly; SQL/provider/production gates remain unclaimed; M95-SL-05 Business Customer readiness is the next sequence position but has no dedicated Jira item and is not activated.` |
 
 ---
 
