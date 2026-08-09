@@ -1,5 +1,22 @@
 # Repository Working Agreement
 
+## Project Statistics Tracker
+
+`docs/staticts.md` is the tracked living source of truth for production
+progress. At the end of every bounded session that materially changes project
+progress, implementation state, Jira counts, phase completion, blockers,
+velocity, or forecast:
+
+1. Read the current tracked `docs/staticts.md`.
+2. Update it directly in the repository using conservative, validated
+   production capability rather than ticket count.
+3. Update `Last Updated` and `Progress History` when materially applicable.
+4. Commit and push the tracker update with the session.
+5. Do not generate or attach a separate copy for Hossam/ChatGPT.
+6. Completion reports state only changed headline percentages and confirm
+   that the repository tracker was updated; Hossam/ChatGPT inspects the
+   tracked GitHub version directly when needed.
+
 ## Current execution overlay - 9 August 2026 (MESP-100 closed; MESP-99 active)
 
 MESP-100 is Done with closure evidence in Jira comment `10663`. Its focused

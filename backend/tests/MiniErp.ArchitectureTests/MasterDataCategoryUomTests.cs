@@ -87,6 +87,53 @@ public sealed class MasterDataCategoryUomTests
     }
 
     [Fact]
+    public async Task Missing_parent_category_is_audited_as_not_found_without_changing_hierarchy_validation()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var missingParent = await fixture.Service.CreateCategoryAsync(
+            fixture.ContextA,
+            new CreateMasterDataCategoryCommand(
+                "orphan",
+                new LocalizedName("Orphan"),
+                Guid.NewGuid()));
+
+        Assert.False(missingParent.Succeeded);
+        Assert.Equal("parent_category_not_found", missingParent.Code);
+        Assert.NotNull(missingParent.Evidence);
+        Assert.Equal(FoundationAuditReason.NotFound, missingParent.Evidence!.Reason);
+        Assert.NotEqual(FoundationAuditReason.ValidationFailed, missingParent.Evidence.Reason);
+
+        var history = await fixture.Persistence.ReadAuditHistoryAsync(
+            fixture.TenantContextA,
+            MasterDataResourceKind.ProductCategory,
+            missingParent.Evidence.ResourceId);
+        var entry = Assert.Single(history);
+        Assert.Equal(FoundationAuditReason.NotFound, entry.Reason);
+        Assert.NotEqual(FoundationAuditReason.ValidationFailed, entry.Reason);
+
+        var root = await fixture.CreateCategoryAsync("root", "Root");
+        var child = await fixture.CreateCategoryAsync("child", "Child", root.Id);
+        var grandchild = await fixture.CreateCategoryAsync("grandchild", "Grandchild", child.Id);
+
+        var tooDeep = await fixture.Service.CreateCategoryAsync(
+            fixture.ContextA,
+            new CreateMasterDataCategoryCommand("too-deep", new LocalizedName("Too deep"), grandchild.Id));
+        Assert.False(tooDeep.Succeeded);
+        Assert.Equal("category_depth_exceeded", tooDeep.Code);
+
+        var cycle = await fixture.Service.EditCategoryAsync(
+            fixture.ContextA,
+            new EditMasterDataCategoryCommand(
+                child.Id,
+                "child",
+                new LocalizedName("Child"),
+                child.Id,
+                child.Version));
+        Assert.False(cycle.Succeeded);
+        Assert.Equal("category_parent_cycle", cycle.Code);
+    }
+
+    [Fact]
     public async Task Category_is_not_draft_and_lifecycle_is_permission_and_version_bound()
     {
         await using var fixture = await Fixture.CreateAsync();
