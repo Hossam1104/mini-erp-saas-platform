@@ -81,10 +81,11 @@ authorization/duplicate-audit hardening follow-up.
 
 MESP-107 is the separately created and activated single Customer
 implementation item under MESP-6, with activation evidence in Jira comment
-`10692`. PR #40 carries the documentation-only readiness/state handoff and is
-pending merge in this session. No Customer source behavior was added by that
-handoff, and no new ADR is required; ADR-002, ADR-005, ADR-006 and ADR-011
-remain authoritative at their existing status.
+`10692`. MESP-105 closure evidence is Jira comment `10693`. PR #40 carried the
+documentation-only readiness/state handoff and merged to `main` at
+`aa778038a509ad24ffabcd5d0fbb1824002451df`. No Customer source behavior was
+added by that handoff, and no new ADR is required; ADR-002, ADR-005, ADR-006
+and ADR-011 remain authoritative at their existing status.
 
 ADR-002, ADR-005, ADR-006, ADR-011, and MESP-48/MESP-49/MESP-50 remain
 authoritative/open at their existing status. The earlier Product hardening

@@ -1,6 +1,6 @@
 # Current State
 
-## Current authoritative position - 10 August 2026 (MESP-105 Done; MESP-107 Business Customer implementation active)
+## Current authoritative position - 10 August 2026 (MESP-105 Done; MESP-107 Business Customer implementation active; PR #40 merged)
 
 MESP-99 / M95-SL-02 Category and UOM, MESP-101 / M95-SL-03 Product identity
 readiness, and MESP-102 / M95-SL-03 Product identity implementation remain
@@ -27,14 +27,14 @@ a single To Do, non-blocking shared hardening follow-up.
 | MESP-102 | **Done** for the bounded M95-SL-03 Product identity implementation; PR #37 merged at `202d59068caac5d1fac402794627e41d7f452456` from head `f984835b28fe6d29156246b45917b12f1933b75b`; Jira activation/validation/closure evidence is comments `10675`, `10676`, and `10677`. |
 | MESP-103 | **Done** for the bounded M95-SL-04 Supplier readiness and decision gate; Owner comment `10681` approves MD-OD-001/005/008 for Supplier only, and closure evidence is `10682`. MD-OD-007 remains an external Saudi statutory/legal validation and production gate under MESP-49. |
 | MESP-104 | **Done** for the bounded M95-SL-04 Supplier implementation; activation/validation/closure evidence is Jira comments `10685`/`10686`/`10687`; PR #39 merged at `721adeb27c366d2b8aedde66d006ac6a49956f99` from implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3`. |
-| MESP-105 | **Done** for the bounded Customer readiness gate; Owner disposition evidence is Jira comment `10691`; repository closure evidence is recorded with the documentation handoff. |
+| MESP-105 | **Done** for the bounded Customer readiness gate; Owner disposition evidence is Jira comment `10691`; closure evidence is Jira comment `10693`; PR #40 merged the documentation handoff. |
 | MESP-107 | **In Progress** for the separate bounded Customer master-data implementation; activation evidence is Jira comment `10692`. |
-| Current branch | `agent/mesp-105-business-customer-readiness`; documentation/readiness and activation-handoff changes only; no Customer implementation source behavior. |
-| Open readiness PR | **#40**, documentation-only state/readiness handoff from `agent/mesp-105-business-customer-readiness`; ready for merge after final diff review in this session. |
+| Current branch | `main`; PR #40 documentation/readiness and activation-handoff changes are merged; no Customer implementation source behavior was added. |
+| Open readiness PR | **None.** PR #40 merged cleanly from `agent/mesp-105-business-customer-readiness` to `main`; the branch is retained remotely for auditability. |
 | Prior readiness PR | **#36**, merged cleanly from `09d2e09f6a382187e8cdba32cd594f2b9ad15ab7` to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; Product readiness branch is retained for auditability. |
 | Prior implementation branch | `agent/mesp-102-product-identity`; PR #37 merged; the branch is retained remotely for auditability. |
-| Final synchronized main | `PR #39` merged implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` at `721adeb27c366d2b8aedde66d006ac6a49956f99`; the subsequent synchronized reconciliation commit is `b22ed4f6bb664e929bc1032d52f7f4651a17746d`; PR #40 merge/reconciliation SHA is recorded after this session's merge. |
-| Current readiness note | `docs/20_Business_Customer_M95_SL_05_Readiness.md`; MESP-105 records the B2B-only external Customer boundary and the approved Customer-only MD-OD-001/005/008 disposition in Jira comment `10691`; MD-OD-007 remains external under MESP-49. |
+| Final synchronized main | `PR #39` merged implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` at `721adeb27c366d2b8aedde66d006ac6a49956f99`; PR #40 merged the Customer readiness/activation handoff at `aa778038a509ad24ffabcd5d0fbb1824002451df`; local `main` is synchronized and clean. |
+| Current readiness note | `docs/20_Business_Customer_M95_SL_05_Readiness.md`; MESP-105 records the B2B-only external Customer boundary, the approved Customer-only MD-OD-001/005/008 disposition in Jira comment `10691`, and closure evidence `10693`; MD-OD-007 remains external under MESP-49. |
 | Product readiness note | `docs/18_Product_Identity_M95_SL_03_Readiness.md`; approved readiness baseline plus MESP-102 implementation evidence. |
 | Product-only bounds | MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011; they do not resolve the remaining decision register. |
 | Product implementation | **Complete at the bounded source slice:** Product/Item single identity, Tenant-wide server-derived scope, Tenant-unique SKU/barcodes, active Category/Base UOM references, Product tracking configuration, Active/Inactive lifecycle, Product-owned authorization, audit, concurrency, API contracts, and focused tests. No migration was added or executed because the configured SQL/provider gate is unavailable; no production readiness claim is made. |

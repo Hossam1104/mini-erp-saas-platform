@@ -5,8 +5,9 @@
 **Parent:** MESP-6 - EPIC 06 - Master Data and Product Catalog
 **Status:** Done; Owner-disposed readiness gate
 **Owner disposition evidence:** Jira comment `10691`
+**Closure evidence:** Jira comment `10693`
 **Implementation activation:** MESP-107; Jira comment `10692`
-**Review PR:** [#40](https://github.com/Hossam1104/mini-erp-saas-platform/pull/40) (documentation-only readiness/state handoff; pending merge during this session)
+**Review PR:** [#40](https://github.com/Hossam1104/mini-erp-saas-platform/pull/40) (documentation-only readiness/state handoff; merged to `main` at `aa778038a509ad24ffabcd5d0fbb1824002451df`)
 **Shared follow-up:** MESP-106 - Master Data authorization and duplicate-audit classification hardening (To Do, non-blocking)
 
 ## 1. Readiness verdict
@@ -352,9 +353,10 @@ approved Customer slice.
 ## 17. Handoff
 
 MESP-105 is Done with the Customer-only Owner disposition in Jira comment
-`10691`; MESP-107 is In Progress with activation evidence in comment `10692`.
-Review PR #40 carries the documentation/state handoff and is pending merge in
-this session. No Customer source behavior was added by the readiness or
-activation handoff. The exact next bounded session is **MESP-107 Business
+`10691` and closure evidence in comment `10693`; MESP-107 is In Progress with
+activation evidence in comment `10692`. Review PR #40 carries the
+documentation/state handoff and merged to `main` at
+`aa778038a509ad24ffabcd5d0fbb1824002451df`. No Customer source behavior was
+added by the readiness or activation handoff. The exact next bounded session is **MESP-107 Business
 Customer master-data implementation only**. It must not execute the next root
 `TASK.md` automatically.

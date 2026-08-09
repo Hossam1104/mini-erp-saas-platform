@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-10 01:45 +03:00
+**Last Updated:** 2026-08-10 01:53 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -967,7 +967,9 @@ Current strategic state:
   Owner disposition evidence `10691`; MESP-107 is now the single active
   M95-SL-05 implementation item with activation evidence `10692`. No Customer
   source behavior was added by the readiness/activation handoff. PR #40
-  carries the docs-only handoff and is pending merge in this session.
+  carried the docs-only handoff and merged to `main` at
+  `aa778038a509ad24ffabcd5d0fbb1824002451df`; MESP-105 closure evidence is
+  Jira comment `10693`.
 - MESP-106 is the single To Do, non-blocking shared hardening follow-up for
   authorization dependency classification and deterministic Supplier duplicate
   audit classification. It does not change production-capability percentages.
@@ -986,6 +988,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-10 01:53 +03:00 | **29%** | **42%** | **33%** | **15%** | PR #40 merged the documentation-only Customer readiness/activation handoff at `aa778038a509ad24ffabcd5d0fbb1824002451df`; MESP-105 closure evidence `10693`; MESP-107 remains the single active implementation item; live Jira non-Epic 45 Done / 2 In Progress / 45 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 01:45 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-105 Customer readiness closed after Owner disposition `10691`; MESP-107 Business Customer implementation item created/activated with evidence `10692`; PR #40 carries the docs-only handoff; live Jira non-Epic 45 Done / 2 In Progress / 45 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 01:20 +03:00 | **29%** | **42%** | **33%** | **15%** | Draft PR #40 opened from the pushed Customer readiness branch; it remains intentionally unmerged while the MESP-105 Customer Owner bundle is open; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 01:12 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-105 Business Customer readiness activated under MESP-6 with evidence `10688`; Customer MD-OD-001/005/008 remain one unresolved Owner bundle; draft PR #40 carries the docs-only handoff; MESP-106 is a single non-blocking To Do hardening follow-up; live Jira non-Epic 44 Done / 2 In Progress / 45 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |

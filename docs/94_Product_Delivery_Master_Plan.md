@@ -125,8 +125,8 @@
 | Current implementation item | `MESP-107 / M95-SL-05 Business Customer master-data implementation - In Progress; no Customer source behavior was added by the readiness/activation handoff.` |
 | Merged-main baseline | `PR #39` merged implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` at `721adeb27c366d2b8aedde66d006ac6a49956f99`; the last synchronized reconciliation commit before this readiness branch is `b22ed4f6bb664e929bc1032d52f7f4651a17746d`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `PR #40 from agent/mesp-105-business-customer-readiness carries the documentation/state handoff and is pending merge in this session; Supplier implementation PR #39 is merged at 721adeb27c366d2b8aedde66d006ac6a49956f99; earlier readiness/implementation PRs are merged.` |
-| Current review checkpoint | `MESP-105 is Done and MESP-107 is the single active Customer implementation item; PR #40 contains no Customer source behavior; SQL/provider/production gates remain unclaimed.` |
+| Open Pull Request | `None; PR #40 from agent/mesp-105-business-customer-readiness merged to main at aa778038a509ad24ffabcd5d0fbb1824002451df; Supplier implementation PR #39 is merged at 721adeb27c366d2b8aedde66d006ac6a49956f99; earlier readiness/implementation PRs are merged.` |
+| Current review checkpoint | `MESP-105 is Done with closure evidence in Jira comment 10693 and MESP-107 is the single active Customer implementation item; PR #40 contains no Customer source behavior and is merged; SQL/provider/production gates remain unclaimed.` |
 
 ---
 
