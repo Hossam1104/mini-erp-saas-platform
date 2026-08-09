@@ -221,6 +221,27 @@ public sealed class MasterDataCategoryUomTests
     }
 
     [Fact]
+    public async Task Persistence_failure_is_audited_as_internal_failure_not_authorization_denial()
+    {
+        var persistence = new PersistenceUnavailablePersistence();
+        var authorization = new MasterDataResourceAuthorizationService(
+            new GrantingCapabilityResolver(),
+            new CategoryUomResourcePolicy(),
+            new CategoryUomApprovalPolicy(),
+            new CategoryUomScopePolicy());
+        var service = new MasterDataCategoryUomService(authorization, persistence);
+
+        var result = await service.ListCategoriesAsync(ResolveContext(TenantA, "corr-persistence-failure"));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("persistence_unavailable", result.Code);
+        Assert.NotNull(result.Evidence);
+        Assert.Equal(FoundationAuditReason.InternalFailure, result.Evidence!.Reason);
+        Assert.NotEqual(FoundationAuditReason.AuthorizationDenied, result.Evidence.Reason);
+        Assert.Equal(result.Evidence, persistence.AppendedEvidence);
+    }
+
+    [Fact]
     public void Master_data_audit_type_has_no_constructible_public_or_internal_constructor()
     {
         Assert.Empty(typeof(MasterDataAuditEvidence).GetConstructors());
@@ -289,6 +310,138 @@ public sealed class MasterDataCategoryUomTests
     {
         public IReadOnlySet<MasterDataCapability> Resolve(MasterDataRequestContext context) =>
             new HashSet<MasterDataCapability>();
+    }
+
+    private sealed class PersistenceUnavailablePersistence : IMasterDataCatalogPersistence
+    {
+        public MasterDataAuditEvidence? AppendedEvidence { get; private set; }
+
+        public Task<IReadOnlyList<MasterDataCategoryRecord>> ListCategoriesAsync(
+            TenantContext tenantContext,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Simulated persistence outage.");
+
+        public Task<MasterDataCategoryRecord?> FindCategoryAsync(
+            TenantContext tenantContext,
+            Guid categoryId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataPersistenceResult<MasterDataCategoryRecord>> CreateCategoryAsync(
+            TenantContext tenantContext,
+            Guid categoryId,
+            CreateMasterDataCategoryCommand command,
+            MasterDataAuditEvidence evidence,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataPersistenceResult<MasterDataCategoryRecord>> EditCategoryAsync(
+            TenantContext tenantContext,
+            EditMasterDataCategoryCommand command,
+            MasterDataAuditEvidence evidence,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataPersistenceResult<MasterDataCategoryRecord>> SetCategoryLifecycleAsync(
+            TenantContext tenantContext,
+            Guid categoryId,
+            MasterDataLifecycleState lifecycleState,
+            byte[] expectedVersion,
+            MasterDataAuditEvidence evidence,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<IReadOnlyList<MasterDataUnitOfMeasureRecord>> ListUnitsOfMeasureAsync(
+            TenantContext tenantContext,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataUnitOfMeasureRecord?> FindUnitOfMeasureAsync(
+            TenantContext tenantContext,
+            Guid unitOfMeasureId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataPersistenceResult<MasterDataUnitOfMeasureRecord>> CreateUnitOfMeasureAsync(
+            TenantContext tenantContext,
+            Guid unitOfMeasureId,
+            CreateMasterDataUnitOfMeasureCommand command,
+            MasterDataAuditEvidence evidence,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataPersistenceResult<MasterDataUnitOfMeasureRecord>> EditUnitOfMeasureAsync(
+            TenantContext tenantContext,
+            EditMasterDataUnitOfMeasureCommand command,
+            MasterDataAuditEvidence evidence,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataPersistenceResult<MasterDataUnitOfMeasureRecord>> SetUnitOfMeasureLifecycleAsync(
+            TenantContext tenantContext,
+            Guid unitOfMeasureId,
+            MasterDataLifecycleState lifecycleState,
+            byte[] expectedVersion,
+            MasterDataAuditEvidence evidence,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataPersistenceResult<MasterDataConversionRecord>> CreateConversionAsync(
+            TenantContext tenantContext,
+            Guid conversionId,
+            CreateMasterDataConversionCommand command,
+            MasterDataAuditEvidence evidence,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataQuantityConversionResult> ConvertQuantityAsync(
+            TenantContext tenantContext,
+            Guid conversionId,
+            decimal quantity,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<bool> HasActiveConversionReferenceAsync(
+            TenantContext tenantContext,
+            Guid unitOfMeasureId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(
+            TenantContext tenantContext,
+            MasterDataAuditEvidence evidence,
+            CancellationToken cancellationToken = default)
+        {
+            AppendedEvidence = evidence;
+            var audit = new MasterDataAuditRecord(
+                evidence.EvidenceId,
+                evidence.OccurredAt,
+                evidence.OperationId,
+                evidence.CorrelationId,
+                tenantContext.TenantId,
+                evidence.ActorId,
+                evidence.SessionId,
+                tenantContext.AuthorizationPath,
+                evidence.ResourceKind,
+                evidence.ResourceId,
+                evidence.BusinessCode,
+                evidence.Scope,
+                evidence.Operation,
+                evidence.PolicyOutcome,
+                evidence.Decision,
+                evidence.Reason,
+                evidence.BeforeSummary,
+                evidence.AfterSummary,
+                evidence.ApproverId);
+            return Task.FromResult(MasterDataPersistenceResult<MasterDataAuditRecord>.Success(audit));
+        }
+
+        public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(
+            TenantContext tenantContext,
+            MasterDataResourceKind resourceKind,
+            Guid? resourceId = null,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 
     private sealed class Fixture : IAsyncDisposable

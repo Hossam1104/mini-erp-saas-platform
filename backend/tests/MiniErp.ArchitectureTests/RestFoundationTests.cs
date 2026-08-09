@@ -69,10 +69,11 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/api/v1/module-registration");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
         var body = await ReadJsonAsync(response);
         var masterData = body.GetProperty("masterData");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("master-data-catalog", masterData.GetProperty("module").GetString());
         Assert.Equal("Master Data and Catalog", masterData.GetProperty("name").GetString());
         Assert.Equal("MasterDataAndCatalog", masterData.GetProperty("boundary").GetString());
