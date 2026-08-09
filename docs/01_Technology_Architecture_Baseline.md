@@ -2,17 +2,20 @@
 
 > **Authoritative current Product-readiness overlay - 9 August 2026.**
 > MESP-99 / M95-SL-02 Category and UOM is Done through PR #33, correction PR
-> #34, and final audit-semantics correction PR #35. MESP-101 is the single
-> active readiness item for M95-SL-03 Product identity under Jira comment
-> `10671`; PR #36 merged the readiness baseline to `main` at
-> `c7392a55e0b60fd83e48447e3f9218f82cfaccea`, with closure evidence `10672`;
-> the readiness work adds no Product source behavior. The approved
+> #34, and final audit-semantics correction PR #35. MESP-101 completed the
+> M95-SL-03 Product identity readiness gate through PR #36 at
+> `c7392a55e0b60fd83e48447e3f9218f82cfaccea`, with closure evidence `10672`.
+> MESP-102 completed the bounded Product implementation through PR #37 at
+> `202d59068caac5d1fac402794627e41d7f452456`; Jira activation, validation,
+> and closure evidence are `10675`, `10676`, and `10677`. The approved
 > Product-only bounds are MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008,
 > MD-OD-010, and MD-OD-011. ADR-002's four-project topology remains binding:
 > `MiniErp.Api`, `MiniErp.App`, `MiniErp.Contracts`, and
 > `MiniErp.Infrastructure`; ADR-006 remains authoritative for shared SQL
 > Server, Tenant ownership, module-owned contexts/schemas/migrations, and
-> provider/production gates. ADR-005 remains the approved baseline policy and
+> provider/production gates. Product persistence remains module-owned and no
+> migration or production/provider validation is claimed because the SQL safety
+> gate is unavailable. ADR-005 remains the approved baseline policy and
 > resource-authorization record; ADR-011 is a required future decision before
 > localized search, forms, or bilingual/RTL document behavior. MESP-48,
 > MESP-49, and MESP-50 remain open.

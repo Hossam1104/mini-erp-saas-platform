@@ -3,16 +3,18 @@
 > **Authoritative current Product-readiness overlay — 9 August 2026.** MESP-99
 > / M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
 > final audit-semantics correction PR #35, all merged to `main`; the final
-> synchronized main baseline is recorded in `.ai/CURRENT_STATE.md`. M95-SL-03
-> is the completed bounded Product identity readiness baseline under Jira
-> MESP-101, merged through PR #36 at
-> `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; closure evidence is comment
-> `10672`. Hossam's six Product-only bounds for
-> MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011 are
-> recorded in `docs/18_Product_Identity_M95_SL_03_Readiness.md` and Jira
-> comment `10671`. No Product persistence or Product behavior is implemented
-> by this readiness session. The remaining Open Decision Register and
-> MESP-48/MESP-49/MESP-50 gates remain preserved.
+> synchronized main baseline is recorded in `.ai/CURRENT_STATE.md`. MESP-101
+> completed the bounded Product identity readiness baseline through PR #36 at
+> `c7392a55e0b60fd83e48447e3f9218f82cfaccea`. MESP-102 completed the bounded
+> M95-SL-03 Product identity implementation through PR #37, merged at
+> `202d59068caac5d1fac402794627e41d7f452456`; Jira activation, validation,
+> and closure evidence are comments `10675`, `10676`, and `10677`. The six
+> Product-only bounds remain limited to MD-OD-001, MD-OD-003, MD-OD-005,
+> MD-OD-008, MD-OD-010, and MD-OD-011. Build and non-SQL validation are green;
+> no migration/provider/production claim is made because the SQL safety gate
+> remains unavailable. The next exact session is M95-SL-04 Supplier readiness
+> and decision gate only; the remaining decision register and MESP-48/MESP-49/
+> MESP-50 gates remain preserved.
 
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch
@@ -32,16 +34,17 @@
 > Jira validation evidence is comment `10665`, final closure evidence is comment
 > `10666`, and post-merge correction evidence is comment `10667`; MESP-99 is
 > Done. Stale MESP-97/MESP-98 administrative duplicates are terminally
-> reconciled with comments `10669`/`10668`. MESP-101 has now completed the
-> Product identity readiness gate through PR #36. The next exact session is
-> M95-SL-03 Product Identity implementation only and must not start automatically.
+> reconciled with comments `10669`/`10668`. MESP-101 completed the Product
+> identity readiness gate through PR #36 and MESP-102 completed the bounded
+> implementation through PR #37. The next exact session is M95-SL-04 Supplier
+> readiness and decision gate only and must not start automatically.
 
-> The next exact session is M95-SL-03 Product Identity implementation only. It
-> must not start automatically; the completed MESP-101 readiness gate and PR #36
-> are the required entry evidence.
+> The next exact session is M95-SL-04 Supplier readiness and decision gate only.
+> It must not start automatically; MESP-102 Product implementation is complete
+> and the fresh session must create/revalidate its own Supplier readiness item.
 
 **Version:** v0.1
-**Status:** Completed implementation-readiness baseline; MESP-95 is Done
+**Status:** Completed implementation-readiness baseline; MESP-95 and bounded MESP-102 Product implementation are Done
 **Jira:** MESP-95 - Produce Master Data and Product Catalog Lean Implementation Specification
 **Parent Epic:** MESP-6 - EPIC 06 - Master Data and Product Catalog
 **Branch:** `docs/MESP-95-master-data-lean-implementation-spec`
@@ -67,12 +70,13 @@
 
 This document is the implementation-readiness and technical-design baseline for
 the approved MESP-31 business baseline. It is a design and backlog document;
-MESP-96 was the separately activated coding item that implemented only the
-non-persistent M95-SL-01 contract boundary. This document itself creates no
-application code, entities in the repository, EF mapping, migration, database,
-endpoint, controller, Angular screen, or automated implementation test. The
-remaining data-bearing implementation slices remain unactivated until their
-own bounded Definition of Ready and decision gates are satisfied.
+MESP-96 separately implemented the non-persistent M95-SL-01 contract boundary,
+and MESP-102 separately implemented the bounded M95-SL-03 Product identity
+slice. This document itself creates no application code, entities in the
+repository, EF mapping, migration, database, endpoint, controller, Angular
+screen, or automated implementation test. The remaining data-bearing slices
+remain unactivated until their own bounded Definition of Ready and decision
+gates are satisfied.
 
 > **Historical MESP-100 readiness overlay - 9 August 2026.** MESP-100 was the
 > active bounded correction for M95-SL-02. MESP-96 is Done, MESP-99 remains To

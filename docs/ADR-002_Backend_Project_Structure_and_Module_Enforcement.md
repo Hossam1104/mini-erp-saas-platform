@@ -9,6 +9,16 @@
 | Supersedes | The ADR-002 timing placeholder in `docs/Decisions.md` and the three-project wording in the Technology Architecture Baseline |
 | Superseded by | None |
 
+> **Current MESP-102 implementation evidence - 9 August 2026.** The bounded
+> Product identity slice confirmed this four-project topology in source: public
+> Product contracts remain in `MiniErp.Contracts`, Product application behavior
+> and policy remain in `MiniErp.App`, Product EF/module persistence remains in
+> `MiniErp.Infrastructure`, and API endpoint composition remains in
+> `MiniErp.Api`. No fifth project, direct cross-module persistence path, or
+> alternate composition route was introduced. Provider, migration, and
+> production validation remain gated by ADR-006 and the open MESP-48/MESP-49/
+> MESP-50 controls.
+
 ## Context
 
 The approved Release 1 architecture is a modular monolith. The repository has

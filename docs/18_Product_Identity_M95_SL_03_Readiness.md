@@ -6,19 +6,21 @@
 |---|---|
 | Slice | M95-SL-03 — Product identity |
 | Jira readiness item | MESP-101 — Prepare M95-SL-03 Product identity readiness and decision gate |
+| Jira implementation item | MESP-102 — Implement M95-SL-03 Product Identity; Done with PR #37 and Jira closure evidence `10677` |
 | Parent Epic | MESP-6 — EPIC 06 - Master Data and Product Catalog |
-| Status | Completed bounded readiness baseline; PR #36 merged to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; MESP-101 Done with Jira closure evidence `10672` |
+| Status | Approved readiness baseline plus MESP-102 implementation complete; PR #37 merged to `main` at `202d59068caac5d1fac402794627e41d7f452456`; MESP-102 Done with Jira closure evidence `10677` |
 | Readiness PR | #36 — merged cleanly from `09d2e09f6a382187e8cdba32cd594f2b9ad15ab7` |
 | Owner | Hossam / Product Owner |
-| Scope | Product identity only; documentation/readiness only in this session |
-| Product implementation | Explicitly not started by M95-SL-03 readiness |
+| Scope | Product identity only; readiness baseline and bounded MESP-102 implementation evidence |
+| Product implementation | Implemented separately under MESP-102; the MESP-101 readiness session itself remained documentation-only |
 | Release boundary | Release 1 B2B ERP; no Retail POS and no Wafra-specific core behavior |
 
-This note is the execution gate for the next Product source session. It does
-not create a Product entity, table, migration, repository, service, endpoint,
-API implementation, or business behavior. It records the approved Product-only
-decision bounds and the exact technical boundary that the next separately
-activated implementation session must honor.
+This note records the approved Product-only decision bounds and the exact
+technical boundary used by the separately activated MESP-102 implementation
+session. The MESP-101 readiness session itself did not create a Product entity,
+table, migration, repository, service, endpoint, API implementation, or
+business behavior; MESP-102 supplied the bounded source implementation under
+those bounds. The remaining decision register and later slices remain gated.
 
 ## Authority and reviewed sources
 
@@ -38,6 +40,7 @@ not rewrite approved historical requirements.
 | `docs/94_Product_Delivery_Master_Plan.md` | Delivery sequence, active-item discipline, MESP-99 completion, M95-SL-03 handoff, and production-gate preservation. |
 | Jira MESP-99 comments `10664`–`10667`, `10668`–`10670` | Category/UOM SL-02 activation, validation, closure, PR #34/#35 correction, and duplicate-artifact reconciliation. |
 | Jira MESP-101 comment `10671` | M95-SL-03 activation and Hossam's six Product-only decision bounds. |
+| Jira MESP-102 comments `10675`–`10677` | Product implementation activation, validation/merge, and closure evidence. |
 
 ADR-005 is the approved policy/resource authorization baseline. It does not
 permit a caller to select an arbitrary capability. The existing immutable
@@ -466,15 +469,17 @@ guardrails:
 | Inventory tracking | **Explicitly excluded.** Product carries configuration only; Inventory owns operational enforcement and traceability. |
 
 No material security, Tenant-isolation, accounting, data-integrity, or
-architecture conflict was found in the foundation review. The Product-specific
-policy, persistence, and downstream integrity work remains a required part of
-the next activated implementation task and is not claimed as implemented here.
+architecture conflict was found in the foundation review. The bounded
+Product-specific policy, persistence, and downstream-integrity work was then
+implemented under MESP-102; the readiness session itself remained
+documentation-only.
 
 ## Acceptance and validation traceability
 
-The following checks are the minimum acceptance evidence for the next Product
-implementation session. They are not run or implemented by this readiness
-session; they make the next session executable and reviewable.
+The following checks were the minimum acceptance catalogue for the separately
+activated MESP-102 Product implementation. The readiness session itself did not
+run or implement them; their results are recorded below and in Jira comments
+`10676` and `10677`.
 
 | ID | Acceptance/validation evidence | Trace |
 |---|---|---|
@@ -494,10 +499,32 @@ session; they make the next session executable and reviewable.
 | PROD-VAL-014 | Product endpoints expose stable identifiers/version/error contracts, derive Tenant authority on the server, and do not leak cross-Tenant existence through list, get, duplicate, or audit responses. | MD-BR-001/044; ADR-005; Foundation REST/Tenant rules |
 | PROD-VAL-015 | Source and diff scans prove no Product implementation was added by the readiness session; no variant, Inventory, downstream, production-provider, or migration behavior is introduced outside the next task. | MESP-101 hard exclusions; session boundary |
 
-## Next exact implementation boundary
+## MESP-102 implementation evidence
 
-When MESP-101 is closed and Hossam/ChatGPT reviews the merged readiness
-evidence, a fresh session may execute only:
+MESP-102 implemented the bounded Product identity slice through PR #37, merged
+to `main` at `202d59068caac5d1fac402794627e41d7f452456` from implementation head
+`f984835b28fe6d29156246b45917b12f1933b75b`. The implementation preserves the
+approved Product-only bounds: Product and Item are one identity; scope is
+Tenant-wide and server-derived; SKU and zero-or-more barcodes are Tenant-unique
+without EAN/GS1 semantics; routine lifecycle operations require permission,
+exact server-derived authority, and audit without a separate approver; create
+is Active with Deactivate/Reactivate; Product stores tracking configuration
+only; and Product-owned policy, audit, concurrency, and reference integrity are
+bounded to this slice.
+
+| Evidence | Result |
+|---|---|
+| PROD-VAL-001/002/003/004/006/007/008/009/010/011/013/014 | **Passed** through the focused Product suite (8/8), non-SQL suite (602/602), and source/boundary scans. |
+| PROD-VAL-005 | **Passed by source boundary:** no EAN/GS1 or Wafra-specific Product coding semantics were introduced. |
+| PROD-VAL-012 | **Passed:** English name is required, Arabic name is optional, and no ADR-011 search/collation/RTL/document behavior was introduced. |
+| PROD-VAL-015 | **Passed for the readiness boundary:** MESP-101 itself remained documentation-only; MESP-102 introduced only the approved Product slice. |
+| SQL/provider/migration gate | **Not claimed:** release build passed with 0 warnings/0 errors, but the 21-test SQL Server safety gate remains blocked by missing `MESP_SQLSERVER_CONNECTION_STRING`; no migration was executed and no production readiness claim is made. |
+| Audit failure safety | **Passed:** missing audit persistence returns `audit_unavailable` and leaves no Product effect. |
+
+## Historical next exact implementation boundary (fulfilled by MESP-102)
+
+When MESP-101 was closed and Hossam/ChatGPT reviewed the merged readiness
+evidence, the fresh MESP-102 session executed only:
 
 - Product public contracts;
 - Product application behavior and Product-owned authorization/scope/resource/
@@ -511,6 +538,14 @@ evidence, a fresh session may execute only:
 - Active/Inactive lifecycle, Tenant authorization, audit, concurrency, and
   focused Product tests listed above.
 
-That future session must not start a different Master Data slice or broaden
-the Product boundary. No Product source behavior is started by this readiness
-session.
+That session did not start a different Master Data slice or broaden the
+Product boundary. No Product source behavior was started by the MESP-101
+readiness session.
+
+## Next session boundary
+
+The next fresh root `TASK.md` session is **M95-SL-04 Supplier readiness and
+decision gate only**. It must create or revalidate its own dedicated Jira item
+and may produce only Supplier readiness/specification/decision-gate evidence.
+It must not implement Supplier source behavior, entities, tables, migrations,
+API, UI, or business workflow in this Product session.

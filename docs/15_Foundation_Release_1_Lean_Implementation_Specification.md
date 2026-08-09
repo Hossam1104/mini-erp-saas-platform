@@ -5,11 +5,15 @@
 > final audit-semantics correction PR #35. MESP-101 is **Done** for the
 > documentation/readiness gate for M95-SL-03 Product identity after PR #36
 > merged to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; Jira closure
-> evidence is comment `10672`, under the
-> Product-only bounds recorded in Jira comment `10671` and
-> `docs/18_Product_Identity_M95_SL_03_Readiness.md`. No Product source
-> behavior, persistence, migration, endpoint, or UI is authorized by this
-> session. The actual backend topology is four projects: `MiniErp.Api`,
+> evidence is comment `10672`. MESP-102 completed the bounded Product
+> implementation through PR #37 at
+> `202d59068caac5d1fac402794627e41d7f452456`; Jira activation, validation,
+> and closure evidence are comments `10675`, `10676`, and `10677`. The
+> Product-only bounds are recorded in Jira comment `10671` and
+> `docs/18_Product_Identity_M95_SL_03_Readiness.md`. Product behavior uses
+> server-derived authorization, module-owned persistence, audit, and
+> concurrency within the four-project topology; no migration, provider, or
+> production readiness claim is made. The actual backend topology is four projects: `MiniErp.Api`,
 > `MiniErp.App`, `MiniErp.Contracts`, and `MiniErp.Infrastructure`; ADR-002
 > governs their project/module boundaries and ADR-006 governs shared SQL
 > Server, Tenant ownership, module-owned persistence, and provider/production

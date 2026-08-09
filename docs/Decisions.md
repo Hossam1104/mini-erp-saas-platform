@@ -8,17 +8,21 @@ MESP-99 / M95-SL-02 Category and UOM is Done through PR #33, correction PR
 #34, and final audit-semantics correction PR #35. MESP-101 is **Done** for the
 documentation/readiness gate for M95-SL-03 Product identity after PR #36
 merged at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; closure evidence is Jira
-comment `10672` and activation/owner evidence is `10671`. Its Product-only bounds are
+comment `10672` and activation/owner evidence is `10671`. MESP-102 is **Done**
+for the bounded Product implementation through PR #37, merged at
+`202d59068caac5d1fac402794627e41d7f452456`, with Jira evidence `10675`,
+`10676`, and `10677`. Its Product-only bounds are
 MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011. The
 readiness note records the one Product/Item Release-1 identity, hybrid
 Tenant-unique SKU/barcode boundary, Product-side tracking configuration only,
 Active-on-create lifecycle, Product-owned authorization/audit/concurrency, and
-Tenant isolation. No Product source behavior or new ADR is created by this
-readiness session. ADR-002 is the published four-project enforcement record;
+Tenant isolation. The implementation introduced no new ADR; ADR-002 is the
+published four-project enforcement record;
 ADR-005 remains the approved baseline authorization policy record; ADR-006
 remains authoritative for shared SQL Server/module-owned persistence; ADR-011
 is still required before localized search, forms, or bilingual/RTL document
-behavior. MESP-48, MESP-49, and MESP-50 remain open.
+behavior. The remaining decision register is preserved, and MESP-48, MESP-49,
+and MESP-50 remain open.
 
 ## Historical authoritative execution state at MESP-99 activation - 9 August 2026
 

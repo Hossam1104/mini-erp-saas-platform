@@ -5,14 +5,17 @@
 > final audit-semantics correction PR #35. MESP-101 is **Done** for the
 > M95-SL-03 Product identity readiness gate after PR #36 merged to `main` at
 > `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; closure evidence is Jira comment
-> `10672` and activation/owner evidence is `10671`. The six Product-only bounds are MD-OD-001,
-> MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011. They define
-> Tenant-wide Product ownership, hybrid Tenant-unique SKU/barcode coding,
-> permissioned/audited routine lifecycle without separate approval,
-> Active-on-create with Deactivate/Reactivate, Product-side tracking
-> configuration only, and one Product/Item Release-1 identity without variant
-> behavior. This overlay does not resolve the remaining register, does not
-> generalize Category/UOM policy, and authorizes no Product source behavior.
+> `10672` and activation/owner evidence is `10671`. MESP-102 delivered the
+> bounded Product identity implementation through PR #37, merged at
+> `202d59068caac5d1fac402794627e41d7f452456`; activation, validation, and
+> closure evidence are Jira comments `10675`, `10676`, and `10677`. The six
+> Product-only bounds remain MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008,
+> MD-OD-010, and MD-OD-011: Tenant-wide ownership, hybrid Tenant-unique
+> SKU/barcode coding, permissioned/audited routine lifecycle without separate
+> approval, Active-on-create with Deactivate/Reactivate, Product-side tracking
+> configuration only, and one Product/Item identity without variant behavior.
+> The approved BRD requirements and remaining decision register are unchanged;
+> no downstream behavior, migration, or production readiness claim is made.
 
 > **Historical MESP-100/MESP-99 state overlay - 9 August 2026.** MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 was In Progress with activation evidence 10664 for M95-SL-02. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. The approved v0.3 business requirements and all other Open Decisions remain preserved; no MESP-99 behavior was implemented by MESP-100.
 
@@ -56,7 +59,7 @@
 | Related approved BRDs | `docs/11_SaaS_Platform_Administration_BRD.md`; `docs/12_Identity_and_Access_BRD.md`; `docs/13_Multi_Tenancy_BRD.md`; `docs/14_Organization_and_Company_Structure_BRD.md` |
 | Architecture reference | `docs/01_Technology_Architecture_Baseline.md` (constraint reference only; does not dictate business requirements) |
 | Delivery reference | `docs/94_Product_Delivery_Master_Plan.md`; `docs/90_MVP_Founder_Decision_Pack.md` |
-| Jira state | MESP-31 is **Done**. Owner authorization comments `10615` and `10616`, approval comment `10649`, and closure evidence `10650` are recorded in live Jira. PR #29 closed MESP-95, which is **Done** with closure evidence `10654`; MESP-96 is the active contract-only/non-persistent implementation item. No Master Data persistence exists. |
+| Jira state | MESP-31 is **Done**. Owner authorization comments `10615` and `10616`, approval comment `10649`, and closure evidence `10650` are recorded in live Jira. MESP-95 is **Done** with closure evidence `10654`; MESP-102 is **Done** for the bounded Product implementation through PR #37 with closure evidence `10677`. Product implementation is separate from BRD authorization; no unrelated Master Data persistence, downstream behavior, migration, or production claim is implied. |
 | Development environment decision (non-business) | The Owner has selected local SQL Server (instance `.`, database `MESP`) as the development environment for the later, separately gated implementation phase. This is an implementation/environment decision, not a business rule, carries no business meaning, and is Out of Scope for this BRD's content. No credential of any kind appears in this document. |
 | Classification summary | See §43 Coverage Checklist for the exact rule/scenario/decision counts produced by this draft. |
 

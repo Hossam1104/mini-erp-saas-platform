@@ -1,86 +1,89 @@
-# Next session - M95-SL-03 Product Identity implementation only
+# Next session - M95-SL-04 Supplier readiness and decision gate only
 
-This is the exact next bounded implementation session after the completed
-MESP-101 readiness/documentation gate. Do not start this task automatically in
-the current chat. The next fresh session must re-read the current Jira item,
-the approved Product-readiness baseline, the BRD/LIS, ADR-002, ADR-005,
-ADR-006, ADR-011, the Foundation specification, the glossary, the delivery
-plan, and `.ai/CURRENT_STATE.md` before changing source.
+MESP-102 / M95-SL-03 Product Identity implementation is complete. PR #37
+merged to `main` at
+`202d59068caac5d1fac402794627e41d7f452456`, and Jira closure evidence is
+comment `10677` (activation `10675`, validation/merge `10676`). This
+Product session is complete. Do not start this Supplier task automatically in
+the current chat; a fresh session executes exactly this root TASK.md once and
+then stops for review.
 
 ## Exact objective
 
-Implement only the approved M95-SL-03 Product identity slice. Product and Item
-remain one Release-1 master-data identity with no separate variant/Item entity
-or variant behavior. The implementation must preserve Tenant isolation,
-server-derived authority, Product-owned authorization, append-before-effect
-audit evidence, optimistic concurrency, and the bounded lifecycle and
-identifier rules from MESP-101.
+Prepare and, if all gates remain satisfied, close the M95-SL-04 Supplier
+readiness/specification and decision gate only. Supplier is an external
+Business Party role and does not create a login or credential path. Define only
+the approved Supplier role ownership, scope, duplicate/contact, lifecycle, and
+statutory-field decision gates needed for a later bounded implementation.
+Preserve the approved BRD/LIS/glossary meaning and do not invent Saudi legal,
+tax, procurement, or external-validation behavior.
 
 ## Entry gates
 
-- MESP-101 is Done in Jira with its merged readiness PR and final repository
-  state recorded in `.ai/CURRENT_STATE.md`.
-- The dedicated Product implementation Jira item is explicitly activated and
-  is the only active implementation item for this session.
-- The six Product-only bounds remain unchanged: MD-OD-001, MD-OD-003,
-  MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011. Do not generalize the
-  Category/UOM policy or silently resolve unrelated decisions.
-- ADR-002 and ADR-006 are revalidated: `MiniErp.Api` is the composition root,
-  `MiniErp.App` is EF-free, `MiniErp.Contracts` is infrastructure-free, and
-  `MiniErp.Infrastructure` owns provider/EF/module persistence seams.
-- The configured SQL Server/provider and migration gates are explicitly
-  available before any migration or production-database claim is made.
+- Re-read the current Jira state and confirm MESP-102 is Done with PR #37
+  merged, Jira comment `10677`, and the repository state in
+  `.ai/CURRENT_STATE.md`.
+- In this fresh session, create or revalidate a dedicated Supplier readiness
+  Jira item under MESP-6, activate it explicitly, and ensure it is the only
+  active implementation/readiness item. Do not create or activate it in the
+  completed Product session.
+- Re-read the approved `docs/16_Master_Data_and_Product_Catalog_BRD.md`,
+  `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`,
+  `docs/00_ERP_Business_Glossary.md`, the Foundation specification,
+  `docs/01_Technology_Architecture_Baseline.md`, ADR-002, ADR-005, ADR-006,
+  ADR-011's indexed baseline, `docs/94_Product_Delivery_Master_Plan.md`,
+  `docs/staticts.md`, and `.ai/CURRENT_STATE.md`.
+- Confirm MD-OD-001, MD-OD-005, and MD-OD-008 are explicitly bounded for the
+  affected Supplier scope. MD-OD-007 Saudi statutory fields remain an
+  external-validation/production gate and must not be guessed or silently
+  resolved.
+- Preserve ADR-002 four-project/module enforcement, ADR-005 authorization,
+  ADR-006 shared SQL Server/module-owned persistence and provider gates, and
+  ADR-011 localization/search/RTL/document timing. MESP-48, MESP-49, and
+  MESP-50 remain open.
 
-## Allowed implementation boundary
+## Allowed readiness boundary
 
-- Product master identity and Product-owned persistence in the module-owned
-  infrastructure boundary.
-- Product/Item identity fields, English-required and Arabic-conditional names,
-  Category/Base-UOM references, hybrid Tenant-unique SKU/barcode identifiers,
-  Product-side tracking configuration, and Active/Inactive lifecycle.
-- Server-derived Tenant and capability authorization using Product-owned policy
-  identifiers; no client-supplied Tenant or scope authority.
-- Append-before-effect audit evidence, correlation/actor/session context,
-  before/after payloads, reason, and stale-write/concurrency behavior.
-- Focused API/application contracts and tests needed to demonstrate this slice,
-  without implementing downstream Inventory, Procurement, Sales, Tax, or UI
-  behavior.
+- Supplier role ownership as an external Business Party role, including its
+  relationship to the later Business Parties seam.
+- Supplier scope, same-role duplicate policy, cross-role match treatment,
+  contact/reference expectations, lifecycle/history, no-login proof, and
+  audit/concurrency/readiness acceptance criteria.
+- Explicit decision-register treatment for unresolved Supplier and Saudi
+  statutory/external-validation questions.
+- Documentation, traceability, Jira evidence, and a precise handoff for a
+  later separately activated Supplier implementation task.
 
 ## Hard exclusions
 
-- No Product variants, separate Item identity, Wafra-specific semantics, or
-  Retail POS behavior.
-- No Inventory batch/lot/serial/expiry records or operational tracking
-  behavior; Product stores configuration only until a separately authorized
-  Inventory slice consumes it.
-- No Tax master/classification behavior, Price List, Supplier, Business
-  Customer, approval catalogue, or downstream transaction behavior.
-- No EAN/GS1/barcode symbology or checksum policy, SKU sequence/generator
-  policy, localized search/collation/tokenization, RTL document behavior, or
-  other ADR-011 decision without a separately approved gate.
-- No cross-Tenant sharing, direct cross-module table access, production
-  database provisioning, or migration execution without the applicable gates.
+- No Supplier source code, entity, table, EF mapping, migration, repository,
+  service, endpoint, API contract implementation, UI, or business behavior.
+- No Product changes, Product/Item/SKU/Barcode/tracking work, or changes to
+  the completed M95-SL-03 implementation.
+- No Business Customer, Procurement workflow, purchasing transaction,
+  approval catalogue, Tax, Finance, Inventory, Sales, or downstream behavior.
+- No user credentials, login, authentication identity, anonymous consumer path,
+  Retail POS, or Wafra-specific core behavior.
+- No Saudi statutory/legal conclusion, external compliance certification,
+  production database provisioning, migration execution, or provider claim.
 
 ## Required validation and handoff
 
-- Run the focused Product tests plus applicable non-SQL architecture,
-  composition, authorization, Tenant-isolation, audit, concurrency, and API
-  boundary tests.
-- Prove no client Tenant/scope authority, no cross-Tenant reference, no
-  Product-owned policy reuse of Category/UOM policy, no false success after
-  audit failure, and no source outside the allowed Product boundary.
-- Record migration/provider/SQL validation truthfully; do not claim production
-  readiness from a build or unit tests alone.
-- Review the complete diff, update `.ai/CURRENT_STATE.md`, every genuinely
-  affected state/plan/tracker document, Jira, and this task to the next exact
-  bounded session. Commit, push, merge only when clean and unblocked, then
-  stop for ChatGPT review. Never execute the following task automatically.
+- Validate the dedicated Jira item, reviewed sources, decision register,
+  Supplier-only scope, and the no-source implementation boundary.
+- Record unresolved decisions and external-validation gates explicitly; do not
+  convert a readiness document into a business or legal approval.
+- Review the complete documentation/Jira diff, update `.ai/CURRENT_STATE.md`,
+  every genuinely affected Markdown state/plan file, `docs/staticts.md`, Jira,
+  and this TASK.md to the next exact bounded session.
+- Commit and push the bounded readiness work, merge only when clean and
+  unblocked, and stop. Never execute the next task automatically.
 
 ## Stop conditions
 
-Stop on unresolved Product decisions, Tenant-isolation or authorization
-weakness, accounting/data-integrity risk, destructive migration/data-loss risk,
-legal/privacy or external-validation dependency, missing credentials or
-production/provider infrastructure, or material scope/architecture change.
+Stop on unresolved Supplier ownership/scope decisions, Tenant-isolation or
+authorization weakness, credential/login ambiguity, legal/privacy or Saudi
+external-validation dependency, destructive migration/data-loss risk, missing
+provider/production infrastructure, or material scope/architecture change.
 Keep MESP-48, MESP-49, and MESP-50 open unless their own separately authorized
-work resolves them.
+gates are satisfied.
