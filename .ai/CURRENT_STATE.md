@@ -18,7 +18,7 @@ has not started.
 | Readiness branch | `docs/MESP-101-m95-sl-03-product-readiness`. |
 | Readiness PR | **#36**, merged cleanly from `09d2e09f6a382187e8cdba32cd594f2b9ad15ab7` to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`. |
 | Implementation branch | `agent/mesp-102-product-identity`; PR #37 merged; the branch is retained remotely for auditability. |
-| Final synchronized main | `main` and `origin/main` are synchronized at tracked-state reconciliation commit `95cb314` (Product merge baseline `202d59068caac5d1fac402794627e41d7f452456`). |
+| Final synchronized main | `main` and `origin/main` are synchronized at the final tracked-state reconciliation commit; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
 | Readiness note | `docs/18_Product_Identity_M95_SL_03_Readiness.md`; approved readiness baseline plus MESP-102 implementation evidence. |
 | Product-only bounds | MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011; they do not resolve the remaining decision register. |
 | Product implementation | **Complete at the bounded source slice:** Product/Item single identity, Tenant-wide server-derived scope, Tenant-unique SKU/barcodes, active Category/Base UOM references, Product tracking configuration, Active/Inactive lifecycle, Product-owned authorization, audit, concurrency, API contracts, and focused tests. No migration was added or executed because the configured SQL/provider gate is unavailable; no production readiness claim is made. |

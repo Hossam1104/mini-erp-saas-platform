@@ -70,7 +70,7 @@
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
 | Current activity | `MESP-102 / M95-SL-03 Product identity implementation — Done through merged PR #37 at 202d59068caac5d1fac402794627e41d7f452456; no later slice is active.` |
 | Current implementation item | `MESP-102 is Done with Jira activation/validation/closure evidence 10675/10676/10677; MESP-101 readiness is Done with closure evidence 10672; the bounded Product implementation evidence is recorded in .ai/CURRENT_STATE.md.` |
-| Merged-main baseline | `main` and `origin/main` are synchronized at tracked-state reconciliation commit `95cb314`; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
+| Merged-main baseline | `main` and `origin/main` are synchronized at the final tracked-state reconciliation commit; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
 | Open Pull Request | `None; PR #37 Product implementation is merged, as are PR #36, #33, #34, and #35.` |
 | Current review checkpoint | `MESP-99/SL-02, MESP-101 readiness, and MESP-102/M95-SL-03 Product implementation are complete at their bounded scopes; the exact next task is M95-SL-04 Supplier readiness and decision gate only, prepared for a fresh session; unrelated decisions and production gates remain preserved.` |
