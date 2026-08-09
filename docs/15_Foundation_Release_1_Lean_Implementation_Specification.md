@@ -1,5 +1,18 @@
 # Foundation Release 1 Lean Implementation Specification
 
+> **Authoritative current delivery overlay - 9 August 2026.** MESP-99 /
+> M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
+> final audit-semantics correction PR #35. MESP-101 is the single active
+> documentation/readiness item for M95-SL-03 Product identity, under the
+> Product-only bounds recorded in Jira comment `10671` and
+> `docs/18_Product_Identity_M95_SL_03_Readiness.md`. No Product source
+> behavior, persistence, migration, endpoint, or UI is authorized by this
+> session. The actual backend topology is four projects: `MiniErp.Api`,
+> `MiniErp.App`, `MiniErp.Contracts`, and `MiniErp.Infrastructure`; ADR-002
+> governs their project/module boundaries and ADR-006 governs shared SQL
+> Server, Tenant ownership, module-owned persistence, and provider/production
+> gates. MESP-48, MESP-49, and MESP-50 remain open.
+
 > **Current delivery overlay - 8 August 2026:** This Foundation
 > specification is historical and does not define the current active item.
 > MESP-31 and MESP-95 are **Done**; PR #29 merged at
@@ -168,9 +181,12 @@ implementation:
 | Testing tools | xUnit; Playwright TypeScript | Backend isolation and API validation plus critical browser journeys |
 
 The baseline is a design constraint, not permission to add infrastructure. The
-existing three production projects remain `MiniErp.Api`, `MiniErp.App`, and
-`MiniErp.Contracts`; module internals remain internal to `MiniErp.App` and
-public composition contracts remain explicit.
+approved four-project production topology is `MiniErp.Api`, `MiniErp.App`,
+`MiniErp.Contracts`, and `MiniErp.Infrastructure`. Module internals remain
+owned by their module in `MiniErp.Infrastructure`, application contracts remain
+in `MiniErp.App`, and public composition contracts remain explicit. The logical
+context map below focuses on application boundaries; it does not erase the
+provider/persistence project boundary recorded in ADR-002.
 
 ## 7. Context Map
 

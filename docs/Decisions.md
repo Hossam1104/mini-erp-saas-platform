@@ -2,6 +2,23 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
+## Current Product-readiness state - 9 August 2026
+
+MESP-99 / M95-SL-02 Category and UOM is Done through PR #33, correction PR
+#34, and final audit-semantics correction PR #35. MESP-101 is the single
+active documentation/readiness item for M95-SL-03 Product identity, activated
+with owner evidence in Jira comment `10671`. Its Product-only bounds are
+MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011. The
+readiness note records the one Product/Item Release-1 identity, hybrid
+Tenant-unique SKU/barcode boundary, Product-side tracking configuration only,
+Active-on-create lifecycle, Product-owned authorization/audit/concurrency, and
+Tenant isolation. No Product source behavior or new ADR is created by this
+readiness session. ADR-002 is the published four-project enforcement record;
+ADR-005 remains the approved baseline authorization policy record; ADR-006
+remains authoritative for shared SQL Server/module-owned persistence; ADR-011
+is still required before localized search, forms, or bilingual/RTL document
+behavior. MESP-48, MESP-49, and MESP-50 remain open.
+
 ## Current authoritative execution state - 9 August 2026
 
 MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at
@@ -13,7 +30,7 @@ catalogue is implemented and tested. No Category/UOM persistence or MESP-99
 business behavior was added by MESP-100. The older readiness overlay below is
 retained as provenance; this section governs current status.
 
-## Current execution overlay - 9 August 2026 (MESP-100 readiness correction)
+## Historical execution overlay - 9 August 2026 (MESP-100 readiness correction)
 
 MESP-100 is the single active readiness-correction item for M95-SL-02. The
 reviewed starting baseline is `c948a4fba8cf1ac9620474b42d56ce95f9effd52`;
@@ -173,7 +190,7 @@ unresolved MD-OD-001 through MD-OD-011 decisions. It may not create Master
 Data persistence, EF entities/tables, migrations, or `MESP` database access
 solely for the slice, and may not invent Product/Item, SKU/Barcode, tracking,
 business-availability, approval-catalogue, or Draft/Active behavior. ADR-002
-and the actual three-project application direction remain mandatory before
+and the actual four-project application direction remain mandatory before
 backend structure changes. MESP-48, MESP-49, and MESP-50 remain open gates.
 
 ## Superseding MESP-96 correction state - 8 August 2026

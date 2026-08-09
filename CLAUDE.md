@@ -1,15 +1,17 @@
 @AGENTS.md
 
-## Current execution overlay - 9 August 2026 (MESP-100 closed; MESP-99 active)
+## Current execution overlay - 9 August 2026 (MESP-101 Product readiness)
 
-MESP-100 is Done with closure evidence `10663`; PR #32 merged at
-`511f6be9f005e54930f993aead9758d7a66b75a8` from correction commit
-`a009616f5b5c3a46d9ea0b369b4f3e3a4c143129`. MESP-99 is the single active
-implementation item, In Progress, with activation evidence `10664`. The root
-`TASK.md` contains only the exact MESP-99 / M95-SL-02 implementation session;
-this readiness session added no Category/UOM persistence or behavior.
-The only approved Category/UOM bounds are MD-OD-001, MD-OD-005, MD-OD-008,
-MD-OD-002, and MD-OD-006 as recorded in Jira MESP-100 comment `10662`.
+MESP-100 is Done with closure evidence `10663`. MESP-99 / M95-SL-02 is Done
+through PR #33, correction PR #34, and final audit-semantics correction PR #35,
+with final correction merge `3e51f98f8c80b9989632499632605894c18570cf`.
+MESP-101 is the single active bounded readiness item for M95-SL-03 Product
+identity, activated with owner evidence in Jira comment `10671`.
+The Product-only bounds are MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008,
+MD-OD-010, and MD-OD-011 as recorded in `docs/18_Product_Identity_M95_SL_03_Readiness.md`.
+This readiness session adds no Product source behavior, persistence, migration,
+endpoint, or UI. The root `TASK.md` is being handed off to the exact next
+Product identity implementation session.
 The actual backend consists of `MiniErp.Api`, `MiniErp.App`,
 `MiniErp.Contracts`, and `MiniErp.Infrastructure`; detailed project/module
 enforcement is in ADR-002 and shared SQL Server/Tenant/module persistence

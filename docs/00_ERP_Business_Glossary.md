@@ -689,11 +689,16 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 ## Item
 
-**Approved definition:** The transactable form of a Product used on business documents and in the stock ledger.
+**Approved definition:** In Release 1, the Product master record is the
+transactable Item concept used on business documents and in the stock ledger;
+Product and Item are one master-data identity unless a later variant decision
+explicitly changes that boundary.
 
 **Business meaning:** What is actually ordered, received, issued, sold, and valued.
 
-**What it is not:** Not a document line by itself. Not a Batch or Serial Number, which identify specific instances of an item. In Release 1, Product and Item are used as one concept unless variant handling is separately approved.
+**What it is not:** Not a document line by itself. Not a Batch or Serial Number,
+which identify specific instances of an item. Not a separate variant or second
+master-data entity in the M95-SL-03 Product slice.
 
 **Owning module:** Master Data and Catalog.
 
@@ -701,13 +706,18 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** The item appearing on a goods receipt line with an accepted quantity of 100.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** PRD v1.2 — catalog requirements. Product-versus-variant modelling requires confirmation in the Master Data and Product Catalog BRD (MESP-31).
+**Source:** Approved MESP-31 business baseline and MESP-101 Product-only owner
+decision evidence (Jira comment `10671`). Product-versus-variant behavior is
+not part of the Release-1 Product identity slice.
 
 ## SKU
 
-**Approved definition:** The unique, stable identifier used by the Company to reference a specific sellable and stockable item.
+**Approved definition:** The unique, stable identifier used within a Tenant to
+reference a specific Product/Item. The value may be manually entered,
+imported, or generated; the Product slice does not define a generator or
+sequence policy.
 
 **Business meaning:** The single code everyone uses to mean the same thing across procurement, inventory, sales, and reporting.
 
@@ -719,17 +729,22 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** An internal SKU printed on the stock count sheet.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** Standard ERP practice. Coding rules require confirmation in MESP-31.
+**Source:** MESP-31 approved business baseline and MESP-101 MD-OD-003
+Product-only owner decision evidence (Jira comment `10671`).
 
 ## Barcode
 
-**Approved definition:** A scannable code mapped to an Item, used to identify it during physical handling.
+**Approved definition:** A scannable code mapped to a Product/Item and used to
+identify it during physical handling. A Product may have zero or more
+Tenant-unique barcode values.
 
 **Business meaning:** Speeds and de-risks receiving, transfer, counting, and picking.
 
-**What it is not:** Not the SKU, although it may carry the same value. Not proof of ownership or stock. An item may have several barcodes, including supplier and manufacturer codes.
+**What it is not:** Not the SKU, although it may carry the same value. Not
+proof of ownership or stock. No EAN, GS1, symbology, or checksum rule is
+invented by the Product slice.
 
 **Owning module:** Master Data and Catalog.
 
@@ -737,9 +752,10 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** Scanning a carton barcode while recording a goods receipt.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** Standard ERP practice. Requires confirmation in MESP-31.
+**Source:** MESP-31 approved business baseline and MESP-101 MD-OD-003
+Product-only owner decision evidence (Jira comment `10671`).
 
 ## Category
 

@@ -1,5 +1,15 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
+> **Authoritative current execution overlay — 9 August 2026.** MESP-99 /
+> M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
+> final audit-semantics correction PR #35. MESP-101 is the single active
+> bounded implementation/readiness item for M95-SL-03 Product identity and is
+> documentation/readiness only. Hossam's Product-only bounds for MD-OD-001,
+> MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011 are recorded in
+> `docs/18_Product_Identity_M95_SL_03_Readiness.md` and Jira comment `10671`.
+> Product source behavior has not started. No later Master Data or downstream
+> decision is silently resolved; MESP-48, MESP-49, and MESP-50 remain open.
+
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > MESP-99 / M95-SL-02 Category and UOM is implementation-complete on branch
 > `agent/mesp-99-category-uom` at its approved bounded scope: Tenant-wide
@@ -36,7 +46,7 @@
 > MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. No Category/UOM
 > persistence or M95-SL-02 business implementation is part of MESP-100.
 
-> **Current execution overlay - 8 August 2026 (supersedes older progress claims below).** MESP-31, MESP-95, and MESP-96 are **Done** at their bounded scope. MESP-96/M95-SL-01 is contract-only/non-persistent and PR #30 merged at actual commit `87f150d95f583168a86aa56200916343c6404f7f`; Jira completion evidence is comment `10655`. M95-SL-02 Category and UOM is the next exact session and is not started. MD-OD-001 through MD-OD-011 remain unresolved, MESP-48/MESP-49/MESP-50 remain open gates, and no Master Data persistence exists.
+> **Historical execution overlay - 8 August 2026.** MESP-31, MESP-95, and MESP-96 are **Done** at their bounded scope. MESP-96/M95-SL-01 is contract-only/non-persistent and PR #30 merged at actual commit `87f150d95f583168a86aa56200916343c6404f7f`; Jira completion evidence is comment `10655`. M95-SL-02 Category and UOM was then the next exact session and was not started. MD-OD-001 through MD-OD-011 remained unresolved, MESP-48/MESP-49/MESP-50 remained open gates, and no Master Data persistence existed.
 >
 > Hossam standing Owner approval covers normal BRD/specification/readiness, merge/closure, and next-session activation within approved scope and architecture. A fresh Codex/Luna chat executes exactly one root `TASK.md` session, validates, updates affected state/Jira, commits/pushes, merges only when clean, then stops for ChatGPT review. Stop only for a real security, Tenant-isolation, accounting/data-integrity, destructive migration/data-loss, legal/external-validation, credential/infrastructure, unresolved-decision, or material scope/architecture blocker. Independent Opus review is due after every five sessions or earlier at a critical checkpoint.
 
@@ -50,12 +60,12 @@
 | Last updated | 9 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-99 / M95-SL-02 Category and UOM — complete through PR #33 and post-merge correction PR #34; M95-SL-03 Product identity readiness is the next exact task but is not active.` |
-| Current implementation item | `MESP-99 is Done; activation evidence is 10664; validation evidence is 10665; closure evidence is 10666.` |
-| Merged-main baseline | `35417d35c076d1318474a7e4b31144cc9d94279b` (PR #34 correction merge; bounded Category/UOM code baseline) |
+| Current activity | `MESP-101 / M95-SL-03 Product identity readiness and decision gate — active documentation/readiness session; Product implementation is not started.` |
+| Current implementation item | `MESP-101 is In Progress during the readiness session; MESP-99 is Done with activation evidence 10664, validation evidence 10665, closure evidence 10666, PR #35 correction evidence, and final merge baseline recorded in .ai/CURRENT_STATE.md.` |
+| Merged-main baseline | `3e51f98f8c80b9989632499632605894c18570cf` (PR #35 final audit-semantics correction; Category/UOM code baseline) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; PR #33 and correction PR #34 merged. No later implementation PR is open.` |
-| Current review checkpoint | `MESP-99 is complete at its bounded Category/UOM scope; PR #33 and post-merge correction PR #34 are merged, MESP-97/MESP-98 are reconciled stale administrative duplicates, the five affected bounds remain Category/UOM-only, later domain decisions remain preserved, and MESP-48/MESP-49/MESP-50 remain open gates.` |
+| Open Pull Request | `The M95-SL-03 readiness PR will be opened from the session branch after final validation; PR #33, #34, and #35 are merged. Product implementation PR is not open.` |
+| Current review checkpoint | `MESP-99/SL-02 is complete; M95-SL-03/MESP-101 is the single active Product readiness item; six Product-only decision bounds are recorded; unrelated Master Data/downstream decisions and production gates remain preserved.` |
 
 ---
 
@@ -624,7 +634,7 @@ Capture the implementation-readiness decisions for the approved slice across sol
 - [x] MESP-57 Definition of Done defined.
 - [x] MESP-57 branch created.
 - [x] MESP-57 Sprint activated.
-- [x] Implement the three-project Modular Monolith seam.
+- [x] Implement the four-project Modular Monolith seam.
 - [x] Add targeted architecture validation.
 - [x] Build and demonstrate the API host/module-registration seam.
 - [x] Review the MESP-57 implementation.
