@@ -1342,11 +1342,21 @@ public sealed class MasterDataCategoryUomService
     {
         "cross_tenant_target_denied" => FoundationAuditReason.CrossTenantTargetDenied,
         "permission_denied" => FoundationAuditReason.PermissionDenied,
-        "resource_scope_denied" => FoundationAuditReason.AuthorizationDenied,
-        "category_not_found" or "uom_not_found" => FoundationAuditReason.NotFound,
+        "authorization_denied" or "resource_scope_denied" => FoundationAuditReason.AuthorizationDenied,
+        "category_not_found" or "uom_not_found" or "conversion_not_found" => FoundationAuditReason.NotFound,
         "concurrency_conflict" => FoundationAuditReason.ConcurrencyConflict,
-        "audit_unavailable" or "audit_evidence_invalid" => FoundationAuditReason.EvidenceAppendFailed,
-        "validation_failed" or "category_duplicate" or "uom_duplicate" => FoundationAuditReason.ValidationFailed,
+        "persistence_unavailable"
+            or "audit_unavailable"
+            or "audit_evidence_invalid"
+            or "audit_evidence_unavailable"
+            or "audit_context_mismatch" => FoundationAuditReason.InternalFailure,
+        "validation_failed"
+            or "category_duplicate"
+            or "uom_duplicate"
+            or "parent_category_not_found"
+            or "conversion_duplicate"
+            or "precision_invalid"
+            or "uom_in_use" => FoundationAuditReason.ValidationFailed,
         _ when code.Contains("inactive", StringComparison.Ordinal)
             || code.Contains("reference", StringComparison.Ordinal)
             || code.Contains("depth", StringComparison.Ordinal)

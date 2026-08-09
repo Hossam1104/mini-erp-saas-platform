@@ -2,10 +2,10 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-09  
+**Last Updated:** 2026-08-09 10:19 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
-**Overall Production-Ready Completion:** **~26%**
+**Overall Production-Ready Completion:** **~27%**
 
 ---
 
@@ -60,17 +60,17 @@ Every future execution prompt should include:
 |---|---:|
 | Product / Requirements Definition | **~45%** |
 | Architecture & Technical Foundation | **~85%** |
-| Backend Overall | **~32%** |
-| Database / Persistence Overall | **~22%** |
+| Backend Overall | **~34%** |
+| Database / Persistence Overall | **~25%** |
 | Frontend Overall | **~15%** |
-| Automated Technical Safety Foundation | **~45%** |
-| Full End-to-End Business System | **~20%** |
-| Production Readiness | **~26%** |
-| **Remaining to Real Production** | **~74%** |
+| Automated Technical Safety Foundation | **~47%** |
+| Full End-to-End Business System | **~21%** |
+| Production Readiness | **~27%** |
+| **Remaining to Real Production** | **~73%** |
 
 ## Current management headline
 
-> **Mini ERP SaaS Platform Release 1 is approximately 26% complete toward a genuinely production-ready system.**
+> **Mini ERP SaaS Platform Release 1 is approximately 27% complete toward a genuinely production-ready system.**
 
 This percentage is intentionally lower than the raw Jira completion percentage because many completed Jira items represent architecture, governance, BRD, authorization, and technical-foundation work rather than completed business capabilities.
 
@@ -84,18 +84,21 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **37** | **43.5%** |
-| In Progress | **3** | **3.5%** |
-| To Do | **45** | **52.9%** |
+| Done | **40** | **47.1%** |
+| In Progress | **1** | **1.2%** |
+| To Do | **44** | **51.8%** |
 | **Total Non-Epic** | **85** | **100%** |
 
 Major Release-1 Epics:
 
 **15 Epics**
 
+Across all 100 MESP issues, including the 15 Epics, the final workflow state is
+40 Done, 6 In Progress, and 54 To Do.
+
 ## Interpretation
 
-Raw Jira completion can make the project appear approximately **44% complete**.
+Raw Jira completion currently makes the project appear approximately **47% complete**.
 
 That number must NOT be used as the production-completion percentage.
 
@@ -103,8 +106,14 @@ Many future implementation tickets have not yet been generated because several m
 
 Therefore the current project should be represented as:
 
-> **Jira-created-work completion: ~44%**  
-> **Actual Release-1 production completion: ~26%**
+> **Jira-created-work completion: ~47%**
+> **Actual Release-1 production completion: ~27%**
+
+**Jira hygiene note:** MESP-97 and MESP-98 were stale duplicate/superseded
+SL-02 administrative artifacts. They have now been reconciled to terminal Done
+with explicit superseded/duplicate comments; MESP-99 and MESP-100 remain the
+authoritative implementation/readiness records. No duplicate Product issue was
+created.
 
 ---
 
@@ -117,7 +126,7 @@ The following model represents progress toward a complete production Release 1.
 | 1. Product governance, requirements, business decisions | 8% | **45%** | 3.6% |
 | 2. Architecture, security & technical foundation | 12% | **85%** | 10.2% |
 | 3. Platform Admin / IAM / Tenancy / Organization | 8% | **55%** | 4.4% |
-| 4. Master Data & Product Catalog | 10% | **20%** | 2.0% |
+| 4. Master Data & Product Catalog | 10% | **27%** | 2.7% |
 | 5. Procurement / Purchase-to-Pay | 9% | **3%** | 0.3% |
 | 6. Inventory / Warehouse | 9% | **3%** | 0.3% |
 | 7. Finance / Accounting / AR / AP / Cash | 12% | **3%** | 0.4% |
@@ -128,11 +137,11 @@ The following model represents progress toward a complete production Release 1.
 | 12. Migration / Tenant Onboarding | 2% | **3%** | 0.1% |
 | 13. E2E QA, Performance, UAT, Deployment & Go-Live | 5% | **20%** | 1.0% |
 
-**Weighted overall result:** approximately **24–26%**.
+**Weighted overall result:** approximately **25–27%**.
 
 For project reporting use:
 
-> **Overall production-ready completion = 26%**
+> **Overall production-ready completion = 27%**
 
 Do not present decimal precision as certainty.
 
@@ -149,7 +158,7 @@ These percentages measure **usable production capability**, not Jira workflow st
 | MESP-3 | Identity & Access Management | **65%** |
 | MESP-4 | Multi-Tenancy | **75%** |
 | MESP-5 | Organization & Company Structure | **50%** |
-| MESP-6 | Master Data & Product Catalog | **20%** |
+| MESP-6 | Master Data & Product Catalog | **27%** |
 | MESP-7 | Procurement & Purchase-to-Pay | **3–5%** |
 | MESP-8 | Inventory & Warehouse | **3–5%** |
 | MESP-9 | B2B Sales & Order-to-Cash | **3–5%** |
@@ -175,7 +184,7 @@ The approved Master Data implementation specification contains 12 slices.
 | Slice | Scope | Status |
 |---|---|---|
 | SL-01 | Shared Boundary & Tenant/Scope Contracts | ✅ Done |
-| SL-02 | Category & UOM | 🟡 Current |
+| SL-02 | Category & UOM | ✅ Implemented, corrected, and merged |
 | SL-03 | Product Identity | ⬜ Not Started |
 | SL-04 | Supplier | ⬜ Not Started |
 | SL-05 | Business Customer | ⬜ Not Started |
@@ -191,15 +200,16 @@ The approved Master Data implementation specification contains 12 slices.
 
 Pure implementation-slice completion:
 
-**~8–12%**
+**~16–17%**
 
-Total lifecycle completion including BRD, lean specification, architecture, authorization contracts, and persistence-readiness work:
+Total lifecycle completion including BRD, lean specification, architecture, authorization contracts, persistence-readiness work, and the completed Category/UOM data-bearing slice:
 
-**~20%**
+**~27%**
 
-Expected after successful completion of Category/UOM SL-02:
+Current post-SL-02 position:
 
-**~27–30%**
+**~27%**, with the bounded post-merge quality correction complete. M95-SL-03
+readiness is the next exact session and has not started.
 
 ---
 
@@ -270,7 +280,7 @@ Major remaining areas include:
 
 ## Combined backend progress
 
-> **Backend Overall: ~32%**
+> **Backend Overall: ~34%**
 
 ---
 
@@ -278,7 +288,7 @@ Major remaining areas include:
 
 Current estimate:
 
-> **Database / Persistence Overall: ~22%**
+> **Database / Persistence Overall: ~25%**
 
 ## Strong foundation already established
 
@@ -617,7 +627,7 @@ The intended production-readiness curve is:
 
 | Milestone | Expected Overall Completion |
 |---|---:|
-| Current state | **26%** |
+| Current state after MESP-99 / SL-02 | **27%** |
 | Master Data complete | **~35%** |
 | Procurement complete | **~43%** |
 | Inventory complete | **~52%** |
@@ -876,13 +886,19 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **Master Data / M95-SL-02 — Category & UOM**
+> **MESP-99 / M95-SL-02 Category & UOM merged; post-merge correction gate before M95-SL-03 Product Identity readiness**
 
 Current strategic state:
 
 - Foundation architecture is mostly established.
 - Tenant isolation and authorization foundations are materially mature.
-- Master Data is entering real data-bearing implementation.
+- Category/UOM is now the first completed data-bearing Master Data slice.
+- Master Data lifecycle completion is now estimated at ~27%.
+- The bounded post-merge correction gate is complete before SL-03 readiness:
+  - Tenant ownership-verifier EF lookups are truly asynchronous and honor cancellation;
+  - `persistence_unavailable` audit evidence is classified as an internal failure rather than authorization denial;
+  - the two low-risk test-quality findings from PR #33 are cleaned up;
+  - stale duplicate Jira artifacts MESP-97/MESP-98 are reconciled as superseded historical work.
 - Core ERP transaction engines are still ahead.
 - Frontend foundation exists but most ERP business screens remain.
 - Production readiness is still dominated by future Finance, Inventory, Sales, Saudi compliance, migration, and end-to-end hardening.
@@ -896,6 +912,8 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
 | 2026-08-09 | **26%** | **32%** | **22%** | **15%** | Foundation mostly established; Master Data entering first data-bearing Category/UOM implementation | Production-ready target: Late Oct–Mid Nov 2026 |
+| 2026-08-09 02:34 +03:00 | **27%** | **34%** | **25%** | **15%** | MESP-99 Category/UOM merged; first data-bearing Master Data slice complete; small post-merge correction gate identified before SL-03 readiness | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
+| 2026-08-09 10:19 +03:00 | **27%** | **34%** | **25%** | **15%** | MESP-99 post-merge async, audit-reason, test-quality, and Jira-hygiene corrections complete; SL-03 readiness remains next and not started; non-Epic Jira 40 Done / 1 In Progress / 44 To Do | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
 
 ---
 
@@ -905,7 +923,7 @@ Update this table as milestones complete.
 
 | Trigger | Expected Updated Overall Range |
 |---|---:|
-| Category/UOM SL-02 complete | **27–28%** |
+| Category/UOM SL-02 complete | **✅ Achieved — ~27%** |
 | Master Data halfway complete | **30–32%** |
 | Master Data complete | **~35%** |
 | Procurement complete | **~43%** |
@@ -954,12 +972,12 @@ Do not answer from percentages alone. Check the 100% Production Ready Definition
 
 > ## Mini ERP SaaS Platform — Release 1
 >
-> **Overall Production-Ready Completion:** ~26%  
-> **Architecture/Foundation:** ~85%  
-> **Backend:** ~32%  
-> **Database:** ~22%  
-> **Frontend:** ~15%  
-> **End-to-End Business System:** ~20%  
+> **Overall Production-Ready Completion:** ~27%
+> **Architecture/Foundation:** ~85%
+> **Backend:** ~34%
+> **Database:** ~25%
+> **Frontend:** ~15%
+> **End-to-End Business System:** ~21%
 >
 > **Backend + DB Feature Complete Forecast:** Mid–Late September 2026  
 > **Full Feature Complete Forecast:** Late September–Mid October 2026  
