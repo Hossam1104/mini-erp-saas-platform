@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-10 00:30 +03:00
+**Last Updated:** 2026-08-10 01:12 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -84,18 +84,19 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **44** | **49.4%** |
-| In Progress | **1** | **1.1%** |
-| To Do | **44** | **49.4%** |
-| **Total Non-Epic** | **89** | **100%** |
+| Done | **44** | **48.4%** |
+| In Progress | **2** | **2.2%** |
+| To Do | **45** | **49.5%** |
+| **Total Non-Epic** | **91** | **100%** |
 
 Major Release-1 Epics:
 
 **15 Epics**
 
-Across all 104 MESP issues, including the 15 Epics, the current workflow state
-is 44 Done, 6 In Progress, and 54 To Do. These counts were re-checked in live
-Jira on 10 August 2026; the non-Epic In Progress item is MESP-23.
+Across all 106 MESP issues, including the 15 Epics, the current workflow state
+is 44 Done, 7 In Progress, and 55 To Do. These counts were re-checked in live
+Jira on 10 August 2026; the non-Epic In Progress items are MESP-23 and
+MESP-105.
 
 ## Interpretation
 
@@ -107,7 +108,7 @@ Many future implementation tickets have not yet been generated because several m
 
 Therefore the current project should be represented as:
 
-> **Jira-created-work completion: ~49%**
+> **Jira-created-work completion: ~48%**
 > **Actual Release-1 production completion: ~29%**
 
 **Jira hygiene note:** MESP-97 and MESP-98 were stale duplicate/superseded
@@ -119,9 +120,11 @@ implementation with activation/validation/closure comments `10675`/`10676`/
 `10677`. MESP-103 is Done with Supplier-only Owner disposition and closure
 evidence in comments `10681`/`10682`; MESP-104 is Done through PR #39 with
 activation, validation, and closure evidence in comments `10685`/`10686`/`10687`.
-Live Jira non-Epic state is now 44 Done / 1 In Progress / 44 To Do. The next
-sequence position is M95-SL-05 Business Customer readiness only, but no
-dedicated live Jira item or `MESP-105` key exists and no next item is active.
+MESP-105 is now In Progress under MESP-6 with activation evidence in comment
+`10688`, and MESP-106 is a single To Do non-blocking shared hardening task.
+Live Jira non-Epic state is now 44 Done / 2 In Progress / 45 To Do. The
+Customer-specific MD-OD-001/005/008 decision bundle remains open, so no
+Business Customer source implementation is active.
 
 ---
 
@@ -201,7 +204,7 @@ SL-03 status is recorded in the current assessment immediately below it.
 | SL-02 | Category & UOM | ✅ Implemented, corrected, and merged |
 | SL-03 | Product Identity | Done: bounded implementation merged through PR #37 |
 | SL-04 | Supplier | Done: bounded implementation merged through PR #39 |
-| SL-05 | Business Customer | ⬜ Not Started |
+| SL-05 | Business Customer | In Progress: readiness/decision gate only; no source behavior |
 | SL-06 | Currency | ⬜ Not Started |
 | SL-07 | Payment Term | ⬜ Not Started |
 | SL-08 | Tax | ⬜ Not Started |
@@ -215,8 +218,9 @@ SL-03 status is recorded in the current assessment immediately below it.
 The planning rows above preserve the prior sequential baseline. Current
 delivery status is authoritative here: **SL-03 Product Identity is bounded,
 validated, and merged through PR #37; SL-04 Supplier is implemented through PR
-#39 at its bounded source scope. SL-05 Business Customer is the next readiness
-and decision-gate position, with no dedicated Jira item currently active.**
+#39 at its bounded source scope. SL-05 Business Customer is now In Progress for
+readiness and decision gating only; its three Customer-scoped Owner decisions
+remain open and no source behavior is active.**
 
 ## Master Data current assessment
 
@@ -239,10 +243,10 @@ Current post-SL-04 position:
 **~38%**, with the bounded M95-SL-03 Product identity implementation complete
 through PR #37 and M95-SL-04 Supplier implementation complete through PR #39.
 The 21 SQL safety tests remain gated by the unavailable connection string; no
-Supplier production/provider claim is made. M95-SL-05 Business Customer is the
-next readiness-only sequence position, with no dedicated Jira item, and
-MD-OD-007 remains an external Saudi statutory/legal validation and production
-gate.
+Supplier production/provider claim is made. M95-SL-05 Business Customer
+readiness is active under MESP-105, with MD-OD-001/005/008 still awaiting
+Customer-scoped Owner disposition; MD-OD-007 remains an external Saudi
+statutory/legal validation and production gate.
 
 ---
 
@@ -921,7 +925,7 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **MESP-104 / M95-SL-04 Supplier implementation is Done through PR #39; M95-SL-05 Business Customer readiness is the next sequence position but has no dedicated Jira item; Product implementation is complete through PR #37 and MESP-99/SL-02 plus MESP-101 readiness are also complete**
+> **MESP-105 / M95-SL-05 Business Customer readiness is In Progress under MESP-6; the Customer-scoped MD-OD-001/005/008 decision bundle remains open and no Customer source implementation is active; Supplier implementation is Done through PR #39 and Product implementation is complete through PR #37**
 
 Current strategic state:
 
@@ -955,13 +959,12 @@ Current strategic state:
   Supplier source slice is implemented and validated, but the 21 SQL safety
   tests remain gated by the unavailable connection string; no migration,
   provider, or production claim was made. MD-OD-007 remains an external
-  Saudi-validation and production gate. M95-SL-05 Business Customer is the
-  next readiness-only position, with no dedicated Jira item and no automatic
-  activation.
-- A non-blocking Product hardening follow-up is recorded in the Supplier
-  readiness note and current-state handoff: dependency/policy unavailability
-  must eventually be classified as an internal/service failure while genuine
-  permission denial remains authorization denial. No Product source changed.
+  Saudi-validation and production gate. MESP-105 is now the single active
+  M95-SL-05 readiness item with activation evidence `10688`; its Customer
+  decision bundle remains unresolved and no source implementation is active.
+- MESP-106 is the single To Do, non-blocking shared hardening follow-up for
+  authorization dependency classification and deterministic Supplier duplicate
+  audit classification. It does not change production-capability percentages.
 - Correction commit `e527f8a0cc32a72cef554e2bd93ab6322e9b1064` merged through PR #34 at
   `35417d35c076d1318474a7e4b31144cc9d94279b`; Jira evidence is comments
   `10667` (MESP-99), `10669` (MESP-97), and `10668` (MESP-98).
@@ -977,6 +980,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-10 01:12 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-105 Business Customer readiness activated under MESP-6 with evidence `10688`; Customer MD-OD-001/005/008 remain one unresolved Owner bundle; MESP-106 is a single non-blocking To Do hardening follow-up; live Jira non-Epic 44 Done / 2 In Progress / 45 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 00:30 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-104 bounded Supplier implementation merged through PR #39 at `721adeb27c366d2b8aedde66d006ac6a49956f99`; Release build 0/0, Supplier 7/7, non-SQL 609/609; 21 SQL safety tests remain connection-gated; live Jira non-Epic 44 Done / 1 In Progress / 44 To Do; next M95-SL-05 readiness has no dedicated Jira item | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-09 23:42 +03:00 | **28%** | **39%** | **30%** | **15%** | MESP-103 Supplier readiness/state reconciliation merged through PR #38 at `b850b32a9666c5f42531ffd9b6720182fa03c0b7`; MESP-104 remains To Do; no Supplier source implementation; live Jira non-Epic 43 Done / 1 In Progress / 45 To Do | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-09 23:36 +03:00 | **28%** | **39%** | **30%** | **15%** | MESP-103 Supplier readiness closed after Owner disposition `10681` and Jira closure evidence `10682`; MESP-104 handoff comment `10683`; MD-OD-001/005/008 are Supplier-only bounds, MD-OD-007 stays external, no Supplier source implementation; MESP-104 remains To Do; live Jira non-Epic 43 Done / 1 In Progress / 45 To Do | Production-ready target unchanged: Late Oct-Mid Nov 2026 |

@@ -50,15 +50,44 @@ Finance, Tax, payment/banking, or other downstream policy. MD-OD-007 remains an
 external Saudi statutory/legal validation and production gate owned by MESP-49.
 The Supplier-only dispositions do not resolve Business Customer, unified Party,
 consumer, Procurement, Finance, Tax, payment/banking, or other downstream
-policy. The next sequence position is M95-SL-05 Business Customer readiness and
-decision gate only. Live Jira currently has no dedicated Business Customer
-issue and no `MESP-105` key exists; no readiness item is activated and no source
-implementation starts automatically.
+policy. The next sequence position is now active as MESP-105 for M95-SL-05
+Business Customer readiness and decision gate only. MESP-105 is In Progress
+under MESP-6 with activation evidence in Jira comment `10688`; no Customer
+source implementation starts automatically.
+
+## Current Business Customer readiness state - 10 August 2026
+
+MESP-105 is the single active M95-SL-05 readiness item under MESP-6. The
+dedicated readiness record is
+[`20_Business_Customer_M95_SL_05_Readiness.md`](20_Business_Customer_M95_SL_05_Readiness.md).
+It records the B2B-only external Customer boundary, no User/login/membership/
+credential/consumer identity, no unified Party, Tenant isolation, role-local
+duplicate handling, cross-role Supplier match review without rejection, and
+future authorization/audit/concurrency/lifecycle boundaries without adding
+source behavior.
+
+The Customer-specific decision bundle is still open and is not inherited from
+Supplier: MD-OD-001 (Tenant-wide versus Company/Branch Customer availability),
+MD-OD-005 (routine approval catalogue), and MD-OD-008 (Draft/Active lifecycle).
+The working recommendation is Tenant-wide within the owning Tenant, no
+separate approver for routine maintenance with mandatory authorization/audit/
+concurrency/fail-closed controls, and no Draft with Active-on-authorized-create
+plus guarded Deactivate/Reactivate and preserved history. These are
+recommendations only until Hossam records an explicit Customer-scoped
+disposition. MD-OD-007 remains an external Saudi statutory/legal and production
+gate under MESP-49; MESP-46, MESP-47, MESP-48, MESP-50 and other downstream
+ownership remain unchanged. MESP-106 is the single To Do, non-blocking shared
+authorization/duplicate-audit hardening follow-up.
+
+MESP-105 remains In Progress. No separate Business Customer implementation
+item has been created or activated. No new ADR is required during this stop;
+ADR-002, ADR-005, ADR-006 and ADR-011 remain authoritative at their existing
+status.
 
 ADR-002, ADR-005, ADR-006, ADR-011, and MESP-48/MESP-49/MESP-50 remain
-authoritative/open at their existing status. No new ADR is required during this
-readiness stop. A non-blocking Product hardening follow-up is recorded in the
-readiness note and current-state handoff; no duplicate Jira issue was opened.
+authoritative/open at their existing status. The earlier Product hardening
+observation remains carried forward; MESP-106 is the single shared follow-up,
+so no duplicate hardening issue was opened.
 
 ## Historical authoritative execution state at MESP-99 activation - 9 August 2026
 

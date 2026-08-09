@@ -1,4 +1,4 @@
-# Next session - M95-SL-05 Business Customer readiness and decision gate only
+# Next session - M95-SL-05 Owner disposition review and implementation-item activation only
 
 MESP-104 / M95-SL-04 Supplier master-data implementation is complete and
 closed. The bounded implementation was delivered from
@@ -11,12 +11,20 @@ safety tests remain gated by the unavailable
 `MESP_SQLSERVER_CONNECTION_STRING`; no migration, provider, or production
 readiness claim was made.
 
-The next exact bounded sequence position is M95-SL-05 Business Customer
-readiness and decision gate only. Live Jira currently has no dedicated
-Business Customer issue after MESP-104 and no `MESP-105` key exists. Therefore
-this handoff is not an activation or implementation authorization: a fresh
-session must verify the live Jira item and Owner gate first, must not invent a
-key, and must not start Business Customer source behavior automatically.
+The bounded M95-SL-05 Business Customer readiness analysis is now recorded in
+`docs/20_Business_Customer_M95_SL_05_Readiness.md`. Live Jira MESP-105 is the
+dedicated item under MESP-6, is In Progress, and has activation evidence in
+comment `10688`. MESP-106 is a separate To Do, non-blocking shared hardening
+follow-up. The Customer-specific MD-OD-001, MD-OD-005, and MD-OD-008 decisions
+remain one unresolved Owner bundle. No Customer source behavior was added.
+
+The next exact bounded sequence position is Owner disposition review for that
+single bundle. A fresh session must verify explicit Owner evidence first. If
+the bundle remains unresolved, keep MESP-105 In Progress and stop. If the Owner
+has disposed all three Customer-scoped decisions, create and activate a
+separate Business Customer implementation item under MESP-6 only after its
+Definition of Ready is checked; do not implement Customer source behavior
+automatically in the same handoff.
 
 A fresh Codex/Luna chat executes this root TASK.md exactly once, completes only
 the bounded readiness/decision work described below, updates the repository
@@ -43,14 +51,13 @@ Business Customer roles.
 
 ## Exact objective
 
-Prepare and independently review the M95-SL-05 Business Customer readiness and
-decision gate only. Read the approved BRD/LIS and the existing architecture,
+Review the completed M95-SL-05 readiness record and obtain or record one
+explicit Customer-scoped Owner disposition for MD-OD-001, MD-OD-005, and
+MD-OD-008. Re-read the approved BRD/LIS and the existing architecture,
 glossary, ADR, decision-register, foundation, and delivery-plan baselines;
-identify the Business Customer-specific business, ownership, identity,
-availability, lifecycle, authorization, audit, concurrency, localization,
-legal/tax, and downstream dependencies; and present only the decisions that
-require explicit Owner disposition before any Business Customer
-implementation.
+confirm that the decision bundle is not inherited from Supplier or Product;
+and, only if all three decisions are explicitly disposed, establish the
+separate implementation item and handoff boundary.
 
 This session is documentation/readiness work. It must not add Business
 Customer source behavior, entities, tables, schemas, migrations, database
@@ -68,13 +75,14 @@ It must not modify the completed Supplier implementation or Product source.
   `docs/Decisions.md`, and the completed
   `docs/19_Supplier_M95_SL_04_Readiness.md` record.
 - Verify live Jira first: MESP-104 is Done with comments `10685`/`10686`/
-  `10687`, PR #39 is merged, and there is no active implementation item. If a
-  dedicated Business Customer readiness item does not exist, do not fabricate
-  `MESP-105`, do not activate an unrelated issue, and record the missing Jira
-  item as a readiness handoff condition.
+  `10687`, MESP-105 is the single active In Progress readiness item with
+  activation evidence `10688`, and MESP-106 is To Do/non-blocking. Confirm no
+  Business Customer implementation item is active. Do not activate an
+  unrelated issue or infer Owner approval from Supplier/Product evidence.
 - Confirm that no Business Customer Owner decisions have been silently
-  inherited from Supplier, Product, or the global decision register. Keep
-  unresolved decisions explicit and scoped to Business Customer.
+  inherited from Supplier, Product, or the global decision register. Keep the
+  three-row decision bundle explicit and scoped to Business Customer; an
+  analysis recommendation is not an Owner disposition.
 - Confirm MESP-48, MESP-49, and MESP-50 remain open and that no credential,
   production connection string, migration, or Saudi legal conclusion is
   required or invented for this documentation-only slice.
@@ -120,9 +128,8 @@ It must not modify the completed Supplier implementation or Product source.
   Supplier source files and the merged `main` baseline are unchanged by this
   readiness session.
 - Update every genuinely affected Markdown state/plan file, `.ai/CURRENT_STATE.md`,
-  `docs/staticts.md` only if production progress or Jira state materially
-  changes, Jira evidence if a dedicated item exists, and this TASK.md to the
-  next exact bounded session.
+  `docs/staticts.md` because the Jira state materially changed, Jira evidence
+  on MESP-105/MESP-106, and this TASK.md to the next exact bounded session.
 - Commit and push the documentation/readiness work, merge only when the
   authorized dedicated item and review gates are satisfied, synchronize local
   `main`, and stop for ChatGPT review. Do not execute the next root TASK.md in
@@ -134,5 +141,7 @@ Stop and report a blocker on unresolved Business Customer ownership or scope,
 Tenant-isolation or authorization weakness, credential/login ambiguity,
 accounting or data-integrity risk, destructive migration/data loss, required
 Saudi legal/external validation, missing authorization for a Jira item, or a
-material scope/architecture change. Keep MESP-48, MESP-49, and MESP-50 open
-unless their own separately authorized gates are satisfied.
+material scope/architecture change. If the three Customer decisions remain
+unresolved, keep MESP-105 In Progress, do not create/activate the implementation
+item, and stop with the one consolidated Owner bundle. Keep MESP-48, MESP-49,
+and MESP-50 open unless their own separately authorized gates are satisfied.

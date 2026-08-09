@@ -17,9 +17,9 @@
 > recorded in Jira comment `10681` and MESP-103 is closed with comment `10682`.
 > The disposition does not resolve the global register; MD-OD-007 and
 > MESP-48/MESP-49/MESP-50 remain preserved/open. MESP-104 is now Done through
-> PR #39 at merge `721adeb27c366d2b8aedde66d006ac6a49956f99`; the next
-> sequence position is M95-SL-05 Business Customer readiness only, with no
-> dedicated Jira item or automatic activation.
+> PR #39 at merge `721adeb27c366d2b8aedde66d006ac6a49956f99`; MESP-105 is now
+> the active M95-SL-05 Business Customer readiness item with activation
+> evidence `10688`; no Customer source behavior is authorized automatically.
 
 > **Authoritative current Supplier implementation overlay - 10 August 2026.**
 > MESP-104 / M95-SL-04 Supplier implementation is **Done** through PR #39,
@@ -31,9 +31,22 @@
 > limited to Supplier identity/contact/reference/lifecycle behavior. Supplier
 > readiness decisions do not generalize to Business Customer; MD-OD-007 and
 > MESP-48/MESP-49/MESP-50 remain open gates. The next sequence position is
-> M95-SL-05 Business Customer readiness and decision gate only. Live Jira has
-> no dedicated item or `MESP-105` key, so no Business Customer source behavior
-> is active or authorized automatically.
+> MESP-105 is now the active M95-SL-05 Business Customer readiness and
+> decision-gate item with activation evidence `10688`; no Business Customer
+> source behavior is active or authorized automatically.
+
+> **Authoritative current Business Customer-readiness overlay - 10 August 2026.**
+> MESP-105 is **In Progress** as the dedicated M95-SL-05 readiness and
+> decision-gate item under MESP-6, activated with Jira comment `10688`. The
+> detailed readiness record is
+> [`20_Business_Customer_M95_SL_05_Readiness.md`](20_Business_Customer_M95_SL_05_Readiness.md).
+> The Customer remains an external B2B role with no User/login/credential/
+> membership/consumer identity and no unified Party. Customer-specific
+> MD-OD-001, MD-OD-005, and MD-OD-008 are one unresolved Owner bundle; the
+> Supplier-only dispositions do not generalize. No Customer entities, tables,
+> mappings, migrations, repositories, services, endpoints, contracts, UI, or
+> downstream behavior were added. MESP-106 is a single non-blocking shared
+> hardening follow-up; MD-OD-007 and MESP-48/MESP-49/MESP-50 remain open gates.
 
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch

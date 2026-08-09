@@ -1,6 +1,6 @@
 # Current State
 
-## Current authoritative position - 10 August 2026 (MESP-104 Supplier implementation complete; next readiness not activated)
+## Current authoritative position - 10 August 2026 (MESP-105 Business Customer readiness active; Owner bundle open)
 
 MESP-99 / M95-SL-02 Category and UOM, MESP-101 / M95-SL-03 Product identity
 readiness, and MESP-102 / M95-SL-03 Product identity implementation remain
@@ -11,10 +11,11 @@ implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` merged to
 `main` at `721adeb27c366d2b8aedde66d006ac6a49956f99`. Jira activation,
 validation, and closure evidence are comments `10685`, `10686`, and `10687`.
 Supplier source behavior is now present only within the bounded Supplier scope;
-no migration, provider, or production-readiness claim was made. The next
-sequence position is M95-SL-05 Business Customer readiness and decision gate
-only. Live Jira has no dedicated Business Customer issue after MESP-104 and no
-`MESP-105` key exists, so no next item is active or authorized automatically.
+no migration, provider, or production-readiness claim was made. MESP-105 is
+now the dedicated and single active M95-SL-05 Business Customer readiness and
+decision-gate item under MESP-6, In Progress with activation evidence in Jira
+comment `10688`. MESP-106 is a single To Do, non-blocking shared hardening
+follow-up. No Business Customer source behavior is active.
 
 | Current fact | Verified value |
 |---|---|
@@ -24,19 +25,20 @@ only. Live Jira has no dedicated Business Customer issue after MESP-104 and no
 | MESP-102 | **Done** for the bounded M95-SL-03 Product identity implementation; PR #37 merged at `202d59068caac5d1fac402794627e41d7f452456` from head `f984835b28fe6d29156246b45917b12f1933b75b`; Jira activation/validation/closure evidence is comments `10675`, `10676`, and `10677`. |
 | MESP-103 | **Done** for the bounded M95-SL-04 Supplier readiness and decision gate; Owner comment `10681` approves MD-OD-001/005/008 for Supplier only, and closure evidence is `10682`. MD-OD-007 remains an external Saudi statutory/legal validation and production gate under MESP-49. |
 | MESP-104 | **Done** for the bounded M95-SL-04 Supplier implementation; activation/validation/closure evidence is Jira comments `10685`/`10686`/`10687`; PR #39 merged at `721adeb27c366d2b8aedde66d006ac6a49956f99` from implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3`. |
-| Current branch | `main`; PR #39 is merged and the local branch is synchronized; the Supplier implementation branch is retained remotely for auditability. |
+| Current branch | `agent/mesp-105-business-customer-readiness`; documentation/readiness changes only; no Customer implementation branch or source behavior. |
 | Prior readiness PR | **#36**, merged cleanly from `09d2e09f6a382187e8cdba32cd594f2b9ad15ab7` to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; Product readiness branch is retained for auditability. |
 | Prior implementation branch | `agent/mesp-102-product-identity`; PR #37 merged; the branch is retained remotely for auditability. |
-| Final synchronized main | `main` and `origin/main` are synchronized at `721adeb27c366d2b8aedde66d006ac6a49956f99`; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
-| Current readiness note | `docs/19_Supplier_M95_SL_04_Readiness.md`; Supplier-only readiness evidence remains recorded, with the separate MESP-104 implementation and closure evidence now complete. |
+| Final synchronized main | `PR #39` merged implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` at `721adeb27c366d2b8aedde66d006ac6a49956f99`; the subsequent synchronized reconciliation commit is `b22ed4f6bb664e929bc1032d52f7f4651a17746d`; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
+| Current readiness note | `docs/20_Business_Customer_M95_SL_05_Readiness.md`; MESP-105 records the B2B-only external Customer boundary, Tenant isolation, role-local duplicate handling, downstream ownership, and one unresolved Customer Owner bundle. |
 | Product readiness note | `docs/18_Product_Identity_M95_SL_03_Readiness.md`; approved readiness baseline plus MESP-102 implementation evidence. |
 | Product-only bounds | MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011; they do not resolve the remaining decision register. |
 | Product implementation | **Complete at the bounded source slice:** Product/Item single identity, Tenant-wide server-derived scope, Tenant-unique SKU/barcodes, active Category/Base UOM references, Product tracking configuration, Active/Inactive lifecycle, Product-owned authorization, audit, concurrency, API contracts, and focused tests. No migration was added or executed because the configured SQL/provider gate is unavailable; no production readiness claim is made. |
 | Supplier implementation | **Complete at the bounded source slice:** Tenant-wide external Supplier role with server-derived Tenant authorization, localized identity/reference/contact data, exact same-role duplicate controls, cross-role non-blocking match evidence, Active/Inactive lifecycle, optimistic concurrency, append-before-effect audit, module-owned Business Parties persistence/API, and focused tests. MD-OD-007 remains external under MESP-49; no migration or production/provider claim was made. |
 | Validation | Release build 0 warnings/0 errors; Supplier-focused tests 7/7; non-SQL suite 609/609; the 21 SQL Server safety tests remain gated by missing `MESP_SQLSERVER_CONNECTION_STRING`; no SQL Server or production validation claim is made. |
 | Backend topology | `MiniErp.Api -> MiniErp.Infrastructure -> MiniErp.App -> MiniErp.Contracts`, with API host composition into App/Contracts; ADR-002 is binding. |
-| Next exact task | `M95-SL-05 Business Customer readiness and decision gate only`; live Jira has no dedicated item or `MESP-105` key, so verify/establish the authorized item and affected Owner decisions before activation; no source implementation starts automatically. |
-| Non-blocking Product follow-up | Product authorization fails closed, but future hardening should classify `permission_unavailable`, `scope_policy_unavailable`, `approval_policy_unavailable`, `resource_policy_unavailable`, and `authorization_operation_unmapped` consistently as internal/service failures where dependencies are unavailable; genuine permission denial remains authorization denial. No Product source changed and no duplicate Jira item was opened. |
+| Next exact task | `M95-SL-05 Owner disposition review and separate implementation-item activation only`; dispose the Customer-scoped MD-OD-001/005/008 bundle, then create/activate a separate implementation item only if Ready; do not start source behavior automatically. |
+| Customer decision gate | **Open:** MD-OD-001 Customer availability scope, MD-OD-005 routine approval catalogue, and MD-OD-008 Draft/Active lifecycle. Supplier-only Owner comment `10681` is not inherited; MD-OD-007 remains external under MESP-49. |
+| Non-blocking shared follow-up | MESP-106 covers consistent classification of authorization dependency unavailability versus genuine denial and deterministic Supplier duplicate audit outcomes; it is To Do and does not authorize Customer source behavior. |
 | Open production gates | MESP-48, MESP-49, and MESP-50 remain open. |
 
 ## Historical position at MESP-99 post-merge correction - 9 August 2026
