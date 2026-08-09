@@ -9,14 +9,16 @@ namespace MiniErp.App.Modules.MasterData;
 public sealed record CreateMasterDataCategoryCommand(
     string Code,
     LocalizedName Name,
-    Guid? ParentCategoryId = null);
+    Guid? ParentCategoryId = null,
+    bool TrackingDefaultEnabled = false);
 
 public sealed record EditMasterDataCategoryCommand(
     Guid CategoryId,
     string Code,
     LocalizedName Name,
     Guid? ParentCategoryId,
-    byte[] ExpectedVersion);
+    byte[] ExpectedVersion,
+    bool TrackingDefaultEnabled = false);
 
 public sealed record CreateMasterDataUnitOfMeasureCommand(
     string Code,
@@ -40,7 +42,8 @@ public sealed record MasterDataCategoryRecord(
     LocalizedName Name,
     Guid? ParentCategoryId,
     MasterDataLifecycleState LifecycleState,
-    byte[] Version);
+    byte[] Version,
+    bool TrackingDefaultEnabled = false);
 
 public sealed record MasterDataUnitOfMeasureRecord(
     Guid Id,

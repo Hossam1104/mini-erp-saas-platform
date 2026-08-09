@@ -23,10 +23,29 @@ public static class MasterDataPersistenceServiceCollectionExtensions
 
         var optionsBuilder = new DbContextOptionsBuilder();
         configureOptions(optionsBuilder);
-        services.AddSingleton<IMasterDataCatalogPersistence>(
-            new MasterDataCatalogPersistence(optionsBuilder.Options));
+        var persistence = new MasterDataCatalogPersistence(optionsBuilder.Options);
+        services.AddSingleton<IMasterDataCatalogPersistence>(persistence);
+        services.AddSingleton<IProductIdentityPersistence>(persistence);
         services.AddSingleton<MasterDataCategoryUomService>();
         return services;
+    }
+
+    /// <summary>
+    /// Composition-root adapter for an explicitly supplied SQL Server
+    /// connection. The API project does not reference EF Core directly and
+    /// this method never creates a database or executes migrations.
+    /// </summary>
+    public static IServiceCollection AddMasterDataSqlServerPersistence(
+        this IServiceCollection services,
+        string connectionString)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new ArgumentException("A SQL Server connection string is required.", nameof(connectionString));
+        }
+
+        return services.AddMasterDataPersistence(options => options.UseSqlServer(connectionString));
     }
 }
 

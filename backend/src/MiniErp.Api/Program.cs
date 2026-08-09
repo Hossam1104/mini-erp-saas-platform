@@ -12,12 +12,20 @@ using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Platform;
 using MiniErp.Contracts.Modules.MasterData;
+using MiniErp.Infrastructure.Persistence.Modules.MasterData;
+using MiniErp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IPlatformAdministrationModule>(_ => PlatformModuleRegistration.Create());
 builder.Services.AddSingleton<IMasterDataCatalogModule>(_ => MasterDataModuleRegistration.Create());
 builder.Services.AddMasterDataAuthorization();
+builder.Services.AddProductIdentity();
+var sqlServerConnectionString = builder.Configuration["MESP_SQLSERVER_CONNECTION_STRING"];
+if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
+{
+    builder.Services.AddMasterDataSqlServerPersistence(sqlServerConnectionString);
+}
 builder.Services.AddIdentityAuthorization();
 builder.Services.AddAuthentication(options =>
 {
@@ -430,6 +438,8 @@ app.MapPost("/api/v1/foundation/probe", async (
     })
     .WithName("foundation.probe.write")
     .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("foundation.probe.write")));
+
+app.MapProductIdentityEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

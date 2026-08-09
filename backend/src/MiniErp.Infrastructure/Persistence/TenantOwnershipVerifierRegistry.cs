@@ -86,6 +86,8 @@ internal sealed class TenantOwnershipVerifierRegistry
             MasterDataTenantOwnershipVerifier.For<MasterDataCategoryEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataUnitOfMeasureEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataConversionEntity>(),
+            MasterDataTenantOwnershipVerifier.For<MasterDataProductEntity>(),
+            MasterDataTenantOwnershipVerifier.For<MasterDataProductBarcodeEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataAuditEventEntity>()
         ]);
     }

@@ -13,7 +13,7 @@ namespace MiniErp.Infrastructure.Persistence.Modules.MasterData;
 /// Master Data context, mappings, transaction boundary, and append-before-
 /// effect audit write; it exposes only the application persistence contract.
 /// </summary>
-public sealed class MasterDataCatalogPersistence : IMasterDataCatalogPersistence
+public sealed class MasterDataCatalogPersistence : IMasterDataCatalogPersistence, IProductIdentityPersistence
 {
     private readonly DbContextOptions options;
 
@@ -82,7 +82,8 @@ public sealed class MasterDataCatalogPersistence : IMasterDataCatalogPersistence
                     tenantContext.TenantId,
                     command.Code,
                     command.Name,
-                    command.ParentCategoryId);
+                    command.ParentCategoryId,
+                    command.TrackingDefaultEnabled);
                 db.Categories.Add(entity);
                 return MasterDataPersistenceResult<MasterDataCategoryRecord>.Success(ToCategoryRecord(entity));
             },
@@ -138,7 +139,11 @@ public sealed class MasterDataCatalogPersistence : IMasterDataCatalogPersistence
                         "parent_category_not_found");
                 }
 
-                entity.Edit(command.Code, command.Name, command.ParentCategoryId);
+                entity.Edit(
+                    command.Code,
+                    command.Name,
+                    command.ParentCategoryId,
+                    command.TrackingDefaultEnabled);
                 entity.TouchVersion();
                 return MasterDataPersistenceResult<MasterDataCategoryRecord>.Success(ToCategoryRecord(entity));
             },
@@ -454,6 +459,287 @@ public sealed class MasterDataCatalogPersistence : IMasterDataCatalogPersistence
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<ProductIdentityRecord>> ListProductsAsync(
+        TenantContext tenantContext,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(tenantContext);
+        var entities = await db.Products
+            .AsNoTracking()
+            .OrderBy(item => item.Sku)
+            .ToListAsync(cancellationToken);
+        var records = new List<ProductIdentityRecord>(entities.Count);
+        foreach (var entity in entities)
+        {
+            records.Add(await ToProductRecordAsync(db, entity, cancellationToken));
+        }
+
+        return records;
+    }
+
+    public async Task<ProductIdentityRecord?> FindProductAsync(
+        TenantContext tenantContext,
+        Guid productId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(tenantContext);
+        var entity = await db.Products
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == productId, cancellationToken);
+        return entity is null
+            ? null
+            : await ToProductRecordAsync(db, entity, cancellationToken);
+    }
+
+    public async Task<ProductReferenceValidation> ValidateReferencesAsync(
+        TenantContext tenantContext,
+        Guid categoryId,
+        Guid baseUnitOfMeasureId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(tenantContext);
+        return await ReadProductReferencesAsync(
+            db,
+            categoryId,
+            baseUnitOfMeasureId,
+            cancellationToken);
+    }
+
+    public Task<MasterDataPersistenceResult<ProductIdentityRecord>> CreateProductAsync(
+        TenantContext tenantContext,
+        Guid productId,
+        CreateProductIdentityCommand command,
+        ProductReferenceValidation references,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(references);
+        return CommitAsync(
+            tenantContext,
+            evidence,
+            "duplicate_or_relationship_conflict",
+            async db =>
+            {
+                var currentReferences = await ReadProductReferencesAsync(
+                    db,
+                    command.CategoryId,
+                    command.BaseUnitOfMeasureId,
+                    cancellationToken);
+                if (!currentReferences.IsValid)
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.InvalidReference,
+                        currentReferences.Code);
+                }
+
+                var skuKey = ProductIdentityValuePolicy.ComparisonKey(command.Sku);
+                if (await db.Products.AnyAsync(item => item.SkuKey == skuKey, cancellationToken))
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.Duplicate,
+                        "product_duplicate");
+                }
+
+                var normalizedBarcodes = (command.Barcodes ?? [])
+                    .Select(ProductIdentityValuePolicy.NormalizeBarcode)
+                    .ToArray();
+                var barcodeKeys = normalizedBarcodes
+                    .Select(ProductIdentityValuePolicy.ComparisonKey)
+                    .ToArray();
+                if (barcodeKeys.Distinct(StringComparer.Ordinal).Count() != barcodeKeys.Length
+                    || await db.ProductBarcodes.AnyAsync(
+                        item => barcodeKeys.Contains(item.ComparisonKey),
+                        cancellationToken))
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.Duplicate,
+                        "product_barcode_duplicate");
+                }
+
+                var entity = new MasterDataProductEntity(
+                    productId,
+                    tenantContext.TenantId,
+                    command.Sku,
+                    command.Name,
+                    command.Description,
+                    command.CategoryId,
+                    command.BaseUnitOfMeasureId,
+                    command.TrackingEnabledOverride,
+                    command.IsSellable,
+                    command.IsPurchasable,
+                    command.IsInventoryRelevant);
+                db.Products.Add(entity);
+                var barcodeEntities = normalizedBarcodes
+                    .Select(value => new MasterDataProductBarcodeEntity(
+                        Guid.NewGuid(),
+                        tenantContext.TenantId,
+                        productId,
+                        value))
+                    .ToArray();
+                db.ProductBarcodes.AddRange(barcodeEntities);
+                return MasterDataPersistenceResult<ProductIdentityRecord>.Success(
+                    await ToProductRecordAsync(db, entity, cancellationToken));
+            },
+            cancellationToken);
+    }
+
+    public Task<MasterDataPersistenceResult<ProductIdentityRecord>> EditProductAsync(
+        TenantContext tenantContext,
+        EditProductIdentityCommand command,
+        ProductReferenceValidation references,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(references);
+        return CommitAsync(
+            tenantContext,
+            evidence,
+            "duplicate_or_relationship_conflict",
+            async db =>
+            {
+                var entity = await db.Products.SingleOrDefaultAsync(
+                    item => item.Id == command.ProductId,
+                    cancellationToken);
+                if (entity is null)
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.NotFound,
+                        "product_not_found");
+                }
+
+                if (!VersionMatches(entity.Version, command.ExpectedVersion))
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.Conflict,
+                        "concurrency_conflict");
+                }
+
+                var currentReferences = await ReadProductReferencesAsync(
+                    db,
+                    command.CategoryId,
+                    command.BaseUnitOfMeasureId,
+                    cancellationToken);
+                if (!currentReferences.IsValid)
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.InvalidReference,
+                        currentReferences.Code);
+                }
+
+                var skuKey = ProductIdentityValuePolicy.ComparisonKey(command.Sku);
+                if (await db.Products.AnyAsync(
+                        item => item.Id != command.ProductId && item.SkuKey == skuKey,
+                        cancellationToken))
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.Duplicate,
+                        "product_duplicate");
+                }
+
+                var normalizedBarcodes = (command.Barcodes ?? [])
+                    .Select(ProductIdentityValuePolicy.NormalizeBarcode)
+                    .ToArray();
+                var barcodeKeys = normalizedBarcodes
+                    .Select(ProductIdentityValuePolicy.ComparisonKey)
+                    .ToArray();
+                if (barcodeKeys.Distinct(StringComparer.Ordinal).Count() != barcodeKeys.Length
+                    || await db.ProductBarcodes.AnyAsync(
+                        item => item.ProductId != command.ProductId
+                            && barcodeKeys.Contains(item.ComparisonKey),
+                        cancellationToken))
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.Duplicate,
+                        "product_barcode_duplicate");
+                }
+
+                entity.Edit(
+                    command.Sku,
+                    command.Name,
+                    command.Description,
+                    command.CategoryId,
+                    command.BaseUnitOfMeasureId,
+                    command.TrackingEnabledOverride,
+                    command.IsSellable,
+                    command.IsPurchasable,
+                    command.IsInventoryRelevant);
+                entity.TouchVersion();
+
+                var existingBarcodes = await db.ProductBarcodes
+                    .Where(item => item.ProductId == command.ProductId)
+                    .ToListAsync(cancellationToken);
+                db.ProductBarcodes.RemoveRange(existingBarcodes);
+                db.ProductBarcodes.AddRange(normalizedBarcodes.Select(value =>
+                    new MasterDataProductBarcodeEntity(
+                        Guid.NewGuid(),
+                        tenantContext.TenantId,
+                        command.ProductId,
+                        value)));
+
+                return MasterDataPersistenceResult<ProductIdentityRecord>.Success(
+                    await ToProductRecordAsync(db, entity, cancellationToken));
+            },
+            cancellationToken);
+    }
+
+    public Task<MasterDataPersistenceResult<ProductIdentityRecord>> SetProductLifecycleAsync(
+        TenantContext tenantContext,
+        Guid productId,
+        MasterDataLifecycleState lifecycleState,
+        byte[] expectedVersion,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default)
+    {
+        return CommitAsync(
+            tenantContext,
+            evidence,
+            "concurrency_conflict",
+            async db =>
+            {
+                var entity = await db.Products.SingleOrDefaultAsync(
+                    item => item.Id == productId,
+                    cancellationToken);
+                if (entity is null)
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.NotFound,
+                        "product_not_found");
+                }
+
+                if (!VersionMatches(entity.Version, expectedVersion))
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.Conflict,
+                        "concurrency_conflict");
+                }
+
+                if (entity.LifecycleState == lifecycleState)
+                {
+                    return MasterDataPersistenceResult<ProductIdentityRecord>.Denied(
+                        MasterDataPersistenceOutcome.Failure,
+                        "product_lifecycle_no_change");
+                }
+
+                entity.SetLifecycle(lifecycleState);
+                entity.TouchVersion();
+                return MasterDataPersistenceResult<ProductIdentityRecord>.Success(
+                    await ToProductRecordAsync(db, entity, cancellationToken));
+            },
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(
+        TenantContext tenantContext,
+        Guid productId,
+        CancellationToken cancellationToken = default) =>
+        ReadAuditHistoryAsync(
+            tenantContext,
+            MasterDataResourceKind.Product,
+            productId,
+            cancellationToken);
+
     public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(
         TenantContext tenantContext,
         MasterDataAuditEvidence evidence,
@@ -586,6 +872,28 @@ public sealed class MasterDataCatalogPersistence : IMasterDataCatalogPersistence
             return entity is null ? value : (T)(object)ToConversionRecord(entity);
         }
 
+        if (value is ProductIdentityRecord product)
+        {
+            var entity = db.Products.Local.SingleOrDefault(candidate => candidate.Id == product.Id);
+            if (entity is null)
+            {
+                return value;
+            }
+
+            var barcodeVersions = db.ProductBarcodes.Local
+                .Where(candidate => candidate.ProductId == product.Id)
+                .ToDictionary(candidate => candidate.Id, candidate => candidate.Version.ToArray());
+            return (T)(object)(product with
+            {
+                Version = entity.Version.ToArray(),
+                Barcodes = product.Barcodes
+                    .Select(barcode => barcodeVersions.TryGetValue(barcode.Id, out var version)
+                        ? barcode with { Version = version }
+                        : barcode)
+                    .ToArray()
+            });
+        }
+
         return value;
     }
 
@@ -596,7 +904,83 @@ public sealed class MasterDataCatalogPersistence : IMasterDataCatalogPersistence
         entity.Name,
         entity.ParentCategoryId,
         entity.LifecycleState,
-        entity.Version.ToArray());
+        entity.Version.ToArray(),
+        entity.TrackingDefaultEnabled);
+
+    private static async Task<ProductReferenceValidation> ReadProductReferencesAsync(
+        MasterDataDbContext db,
+        Guid categoryId,
+        Guid baseUnitOfMeasureId,
+        CancellationToken cancellationToken)
+    {
+        var category = await db.Categories
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == categoryId, cancellationToken);
+        var unit = await db.UnitsOfMeasure
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == baseUnitOfMeasureId, cancellationToken);
+        var categoryActive = category?.LifecycleState == MasterDataLifecycleState.Active;
+        var unitActive = unit?.LifecycleState == MasterDataLifecycleState.Active;
+        return new ProductReferenceValidation(
+            Available: true,
+            CategoryActive: categoryActive,
+            BaseUnitOfMeasureActive: unitActive,
+            TrackingDefaultEnabled: categoryActive && category is not null
+                ? category.TrackingDefaultEnabled
+                : false);
+    }
+
+    private static async Task<ProductIdentityRecord> ToProductRecordAsync(
+        MasterDataDbContext db,
+        MasterDataProductEntity entity,
+        CancellationToken cancellationToken)
+    {
+        var category = await db.Categories
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == entity.CategoryId, cancellationToken);
+        var trackedBarcodes = db.ChangeTracker
+            .Entries<MasterDataProductBarcodeEntity>()
+            .Where(entry => entry.Entity.ProductId == entity.Id)
+            .Where(entry => entry.State != EntityState.Deleted)
+            .Select(entry => entry.Entity)
+            .OrderBy(item => item.Value)
+            .ToArray();
+        IReadOnlyList<MasterDataProductBarcodeEntity> barcodeEntities = trackedBarcodes.Length != 0
+            || db.ChangeTracker.Entries<MasterDataProductBarcodeEntity>()
+                .Any(entry => entry.Entity.ProductId == entity.Id)
+            ? trackedBarcodes
+            : await db.ProductBarcodes
+                .AsNoTracking()
+                .Where(item => item.ProductId == entity.Id)
+                .OrderBy(item => item.Value)
+                .ToListAsync(cancellationToken);
+        var barcodes = barcodeEntities
+            .Select(item => new ProductBarcodeRecord(
+                item.Id,
+                item.TenantId,
+                item.ProductId,
+                item.Value,
+                item.Version.ToArray()))
+            .ToArray();
+        var trackingDefaultEnabled = category?.TrackingDefaultEnabled ?? false;
+        return new ProductIdentityRecord(
+            entity.Id,
+            entity.TenantId,
+            entity.Sku,
+            entity.Name,
+            entity.Description,
+            entity.CategoryId,
+            entity.BaseUnitOfMeasureId,
+            trackingDefaultEnabled,
+            entity.TrackingEnabledOverride,
+            entity.TrackingEnabledOverride ?? trackingDefaultEnabled,
+            entity.IsSellable,
+            entity.IsPurchasable,
+            entity.IsInventoryRelevant,
+            entity.LifecycleState,
+            entity.Version.ToArray(),
+            barcodes);
+    }
 
     private static MasterDataUnitOfMeasureRecord ToUnitRecord(MasterDataUnitOfMeasureEntity entity) => new(
         entity.Id,
