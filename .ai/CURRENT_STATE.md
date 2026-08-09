@@ -16,6 +16,7 @@ behavior or persistence.
 | MESP-101 | **Done** for the bounded M95-SL-03 Product identity readiness gate; PR #36 merged at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; closure evidence is comment `10672`; activation/owner evidence is comment `10671`. |
 | Readiness branch | `docs/MESP-101-m95-sl-03-product-readiness`. |
 | Readiness PR | **#36**, merged cleanly from `09d2e09f6a382187e8cdba32cd594f2b9ad15ab7` to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`. |
+| Final synchronized main | `cb27962e3324718e9198524d4a18c2190b684ad5`; post-merge tracker/state closure commit, pushed to `origin/main`; Jira synchronization evidence is comment `10673`. |
 | Readiness note | `docs/18_Product_Identity_M95_SL_03_Readiness.md`; documentation/readiness only. |
 | Product-only bounds | MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011; they do not resolve the remaining decision register. |
 | Product implementation | Not started; no Product/Item/SKU/Barcode/tracking entity, table, migration, endpoint, UI, or business behavior is part of MESP-101. |
