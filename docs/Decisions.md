@@ -24,6 +24,28 @@ is still required before localized search, forms, or bilingual/RTL document
 behavior. The remaining decision register is preserved, and MESP-48, MESP-49,
 and MESP-50 remain open.
 
+## Current Supplier-readiness state - 9 August 2026
+
+MESP-103 is **In Progress** as the single active M95-SL-04 Supplier
+readiness/decision-gate item under MESP-6. The independent readiness analysis
+is recorded in [`19_Supplier_M95_SL_04_Readiness.md`](19_Supplier_M95_SL_04_Readiness.md).
+Supplier is an external Business Party role with no login, credential,
+membership, authentication identity, or consumer session. No Supplier source
+implementation has started.
+
+MD-OD-001, MD-OD-005, and MD-OD-008 remain open for Supplier. A single
+consolidated Owner decision bundle recommends Tenant-wide business
+availability, no separate approver for routine Supplier maintenance, and no
+Draft-before-Active lifecycle, but none is silently treated as approved. The
+alternatives and implementation consequences are documented in the readiness
+note. MD-OD-007 remains an external Saudi statutory-validation gate owned by
+MESP-49. The Product-only bounds from MESP-102 do not generalize to Supplier.
+
+ADR-002, ADR-005, ADR-006, ADR-011, and MESP-48/MESP-49/MESP-50 remain
+authoritative/open at their existing status. No new ADR is required during this
+readiness stop. A non-blocking Product hardening follow-up is recorded in the
+readiness note and current-state handoff; no duplicate Jira issue was opened.
+
 ## Historical authoritative execution state at MESP-99 activation - 9 August 2026
 
 MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at

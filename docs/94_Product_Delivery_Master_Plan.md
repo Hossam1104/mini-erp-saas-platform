@@ -17,6 +17,20 @@
 > later Master Data or downstream decision is silently resolved. MESP-48,
 > MESP-49, and MESP-50 remain open.
 
+> **Authoritative Supplier-readiness overlay - 9 August 2026.** MESP-103 is
+> **In Progress** as the single active M95-SL-04 Supplier readiness and
+> decision-gate item under MESP-6; Jira activation evidence is comment `10679`.
+> Independent readiness is complete, but closure is blocked by one consolidated
+> Supplier Owner decision bundle for MD-OD-001 business availability, MD-OD-005
+> approval catalogue, and MD-OD-008 Draft/Active lifecycle. The bundle's
+> recommendations are not treated as approved. Supplier remains an external
+> Business Party role with no login, credential, membership, or consumer
+> session. MD-OD-007 remains an external Saudi statutory-validation gate under
+> MESP-49. No Supplier source implementation, persistence, API, UI, migration,
+> or Procurement transaction behavior has started. The detailed handoff is
+> `docs/19_Supplier_M95_SL_04_Readiness.md`; MESP-48, MESP-49, and MESP-50
+> remain open.
+
 > **Historical MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > MESP-99 / M95-SL-02 Category and UOM is implementation-complete on branch
 > `agent/mesp-99-category-uom` at its approved bounded scope: Tenant-wide
@@ -38,8 +52,9 @@
 
 > MESP-101 completed the M95-SL-03 Product identity readiness gate through PR
 > #36. MESP-102 then completed the bounded Product implementation through PR
-> #37. The next exact session is M95-SL-04 Supplier readiness and decision gate
-> only, and must not start automatically.
+> #37. MESP-103 is now the active M95-SL-04 Supplier readiness item. The next
+> exact session is Supplier readiness revalidation after the consolidated Owner
+> decision bundle, and must not start automatically.
 
 > **Historical current overlay at MESP-99 activation - MESP-100 closed; MESP-99 active, 9 August 2026.** MESP-100 is Done with Jira closure evidence `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. MESP-99 was In Progress with activation evidence `10664` and was the single active implementation item. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. No Category/UOM persistence or MESP-99 behavior was implemented by MESP-100; the root TASK.md then contained the exact MESP-99 session.
 
@@ -68,12 +83,12 @@
 | Last updated | 9 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-102 / M95-SL-03 Product identity implementation — Done through merged PR #37 at 202d59068caac5d1fac402794627e41d7f452456; no later slice is active.` |
-| Current implementation item | `MESP-102 is Done with Jira activation/validation/closure evidence 10675/10676/10677; MESP-101 readiness is Done with closure evidence 10672; the bounded Product implementation evidence is recorded in .ai/CURRENT_STATE.md.` |
+| Current activity | `MESP-103 / M95-SL-04 Supplier readiness and decision gate - In Progress; independent readiness complete, pending one consolidated Supplier Owner decision bundle.` |
+| Current implementation item | `MESP-103 is In Progress with activation evidence 10679; MESP-102 Product implementation is Done with Jira evidence 10675/10676/10677; no Supplier source implementation has started.` |
 | Merged-main baseline | `main` and `origin/main` are synchronized at the final tracked-state reconciliation commit; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; PR #37 Product implementation is merged, as are PR #36, #33, #34, and #35.` |
-| Current review checkpoint | `MESP-99/SL-02, MESP-101 readiness, and MESP-102/M95-SL-03 Product implementation are complete at their bounded scopes; the exact next task is M95-SL-04 Supplier readiness and decision gate only, prepared for a fresh session; unrelated decisions and production gates remain preserved.` |
+| Open Pull Request | `Supplier readiness PR is pending publication from the active branch; Product PR #37 is merged, as are PR #36, #33, #34, and #35.` |
+| Current review checkpoint | `MESP-103 Supplier readiness is independently complete but cannot close until one Owner evidence comment disposes MD-OD-001/005/008 for Supplier; MD-OD-007 and production gates remain external/open.` |
 
 ---
 

@@ -17,6 +17,17 @@
 > The approved BRD requirements and remaining decision register are unchanged;
 > no downstream behavior, migration, or production readiness claim is made.
 
+> **Authoritative current Supplier-readiness overlay - 9 August 2026.** MESP-103
+> is **In Progress** as the single active M95-SL-04 Supplier readiness item.
+> Independent analysis is complete, but MD-OD-001, MD-OD-005, and MD-OD-008
+> still require one consolidated Supplier-specific Owner decision bundle. The
+> recommendations are not silently approved from Product or Category/UOM.
+> Supplier remains an external Business Party role with no login, credentials,
+> membership, or consumer session; no Supplier source behavior has started.
+> MD-OD-007 remains an external Saudi statutory-validation gate under MESP-49.
+> See `docs/19_Supplier_M95_SL_04_Readiness.md` for the bounded contract and
+> exact revalidation handoff.
+
 > **Historical MESP-100/MESP-99 state overlay - 9 August 2026.** MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 was In Progress with activation evidence 10664 for M95-SL-02. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. The approved v0.3 business requirements and all other Open Decisions remain preserved; no MESP-99 behavior was implemented by MESP-100.
 
 > **Historical MESP-100 readiness-correction overlay - 9 August 2026.** MESP-100 was the bounded readiness item for M95-SL-02. MESP-96 was Done, MESP-99 remained To Do until that correction was validated, merged, and activated, and no Category/UOM persistence or behavior was implemented here. The five Category/UOM-only bounds were MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006; the rest of the Open Decision Register remains preserved.
@@ -995,3 +1006,36 @@ Tax, Supplier, Business Customer, Currency, Exchange Rate, Inventory,
 Procurement, Sales, Finance, legal/privacy, Saudi, MESP-48, MESP-49, or MESP-50
 decisions. The Product implementation remains separately gated by MESP-101 and
 must not begin in this documentation session.
+
+## M95-SL-04 Supplier readiness overlay - 9 August 2026
+
+This delivery overlay records the bounded Supplier readiness analysis for
+MESP-103. It does not amend the approved BRD v0.3, silently resolve the global
+MD-OD-001/005/008 register, or make a Saudi/legal decision. The BRD's Supplier
+recommendations remain recommendations until one consolidated Owner decision
+bundle records a Supplier-specific disposition.
+
+Supplier remains an external Business Party role: it is not a User, Tenant,
+membership, credential holder, login identity, or consumer session. The future
+bounded slice may cover Tenant ownership, approved business scope, localized
+identity/reference fields, same-role duplicate evidence, cross-role
+Supplier/Business Customer review or optional linkage, contacts, Active/Inactive
+lifecycle, authorization, audit, concurrency, historical preservation, and
+import traceability. It must not create a unified Party record or implement
+Procurement transactions, Tax, Finance, payment/bank behavior, or downstream
+workflow.
+
+The single pending Owner bundle is:
+
+| Decision | Supplier recommendation awaiting Owner disposition |
+|---|---|
+| MD-OD-001 | Tenant-wide inside the owning Tenant, reusable by its Companies/Branches, with no cross-Tenant sharing and server-derived authority. |
+| MD-OD-005 | No separate approver for routine Supplier identity/contact/code/lifecycle maintenance; permission, exact resource scope, audit, concurrency, and fail-closed policy remain mandatory. Sensitive statutory/tax or later payment/bank changes stay out of the base slice unless their owning policy explicitly requires approval. |
+| MD-OD-008 | No Draft for the bounded master record; validated authorized create is Active, with Deactivate/Reactivate and preserved history. |
+
+MD-OD-007 remains an external Saudi statutory-validation gate. The approved
+conditional VAT/registration baseline is retained, but fields beyond VAT are
+not guessed or declared legally complete. MESP-49 remains open. The detailed
+readiness contract, alternatives, acceptance traceability, exclusions,
+non-blocking Product hardening follow-up, and exact revalidation handoff are in
+[`19_Supplier_M95_SL_04_Readiness.md`](19_Supplier_M95_SL_04_Readiness.md).
