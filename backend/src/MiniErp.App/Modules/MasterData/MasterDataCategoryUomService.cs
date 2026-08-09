@@ -210,7 +210,11 @@ public sealed class MasterDataCategoryUomService
             authorized.Decision,
             FoundationAuditReason.Allowed,
             beforeSummary: null,
-            afterSummary: CategorySummary(code, command.Name, MasterDataLifecycleState.Active));
+            afterSummary: CategorySummary(
+                code,
+                command.Name,
+                MasterDataLifecycleState.Active,
+                command.TrackingDefaultEnabled));
 
         try
         {
@@ -340,8 +344,16 @@ public sealed class MasterDataCategoryUomService
             MasterDataOperation.Edit,
             authorized.Decision,
             FoundationAuditReason.Allowed,
-            CategorySummary(current.Code, current.Name, current.LifecycleState),
-            CategorySummary(code, command.Name, current.LifecycleState));
+            CategorySummary(
+                current.Code,
+                current.Name,
+                current.LifecycleState,
+                current.TrackingDefaultEnabled),
+            CategorySummary(
+                code,
+                command.Name,
+                current.LifecycleState,
+                command.TrackingDefaultEnabled));
 
         try
         {
@@ -485,8 +497,16 @@ public sealed class MasterDataCategoryUomService
             operation,
             authorized.Decision,
             FoundationAuditReason.Allowed,
-            CategorySummary(current.Code, current.Name, current.LifecycleState),
-            CategorySummary(current.Code, current.Name, lifecycleState));
+            CategorySummary(
+                current.Code,
+                current.Name,
+                current.LifecycleState,
+                current.TrackingDefaultEnabled),
+            CategorySummary(
+                current.Code,
+                current.Name,
+                lifecycleState,
+                current.TrackingDefaultEnabled));
 
         if (current.LifecycleState == lifecycleState)
         {
@@ -1320,8 +1340,10 @@ public sealed class MasterDataCategoryUomService
     private static string CategorySummary(
         string code,
         LocalizedName name,
-        MasterDataLifecycleState state) =>
-        $"code={code};en={name.English ?? string.Empty};ar={name.Arabic ?? string.Empty};state={state}";
+        MasterDataLifecycleState state,
+        bool trackingDefaultEnabled = false) =>
+        $"code={code};en={name.English ?? string.Empty};ar={name.Arabic ?? string.Empty};"
+        + $"tracking-default={trackingDefaultEnabled};state={state}";
 
     private static string UomSummary(
         string code,

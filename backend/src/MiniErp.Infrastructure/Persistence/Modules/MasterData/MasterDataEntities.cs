@@ -18,7 +18,8 @@ internal sealed class MasterDataCategoryEntity : ITenantOwned
         TenantId tenantId,
         string code,
         LocalizedName name,
-        Guid? parentCategoryId)
+        Guid? parentCategoryId,
+        bool trackingDefaultEnabled = false)
     {
         Id = id;
         TenantId = tenantId;
@@ -27,6 +28,7 @@ internal sealed class MasterDataCategoryEntity : ITenantOwned
         ArabicName = name.Arabic;
         NameKey = (name.English ?? name.Arabic ?? string.Empty).ToUpperInvariant();
         ParentCategoryId = parentCategoryId;
+        TrackingDefaultEnabled = trackingDefaultEnabled;
         LifecycleState = MasterDataLifecycleState.Active;
     }
 
@@ -44,6 +46,8 @@ internal sealed class MasterDataCategoryEntity : ITenantOwned
 
     internal Guid? ParentCategoryId { get; private set; }
 
+    internal bool TrackingDefaultEnabled { get; private set; }
+
     internal MasterDataLifecycleState LifecycleState { get; private set; }
 
     internal byte[] Version { get; private set; } = Guid.NewGuid().ToByteArray();
@@ -52,13 +56,18 @@ internal sealed class MasterDataCategoryEntity : ITenantOwned
         string.IsNullOrWhiteSpace(EnglishName) ? null : EnglishName,
         ArabicName);
 
-    internal void Edit(string code, LocalizedName name, Guid? parentCategoryId)
+    internal void Edit(
+        string code,
+        LocalizedName name,
+        Guid? parentCategoryId,
+        bool trackingDefaultEnabled = false)
     {
         Code = code;
         EnglishName = name.English ?? string.Empty;
         ArabicName = name.Arabic;
         NameKey = (name.English ?? name.Arabic ?? string.Empty).ToUpperInvariant();
         ParentCategoryId = parentCategoryId;
+        TrackingDefaultEnabled = trackingDefaultEnabled;
     }
 
     internal void SetLifecycle(MasterDataLifecycleState lifecycleState) => LifecycleState = lifecycleState;
@@ -152,6 +161,141 @@ internal sealed class MasterDataConversionEntity : ITenantOwned
     internal Guid ToUnitOfMeasureId { get; private set; }
 
     internal decimal Factor { get; private set; }
+
+    internal byte[] Version { get; private set; } = Guid.NewGuid().ToByteArray();
+}
+
+internal sealed class MasterDataProductEntity : ITenantOwned
+{
+    private MasterDataProductEntity()
+    {
+        Sku = string.Empty;
+        SkuKey = string.Empty;
+        EnglishName = string.Empty;
+    }
+
+    internal MasterDataProductEntity(
+        Guid id,
+        TenantId tenantId,
+        string sku,
+        LocalizedName name,
+        string? description,
+        Guid categoryId,
+        Guid baseUnitOfMeasureId,
+        bool? trackingEnabledOverride,
+        bool isSellable,
+        bool isPurchasable,
+        bool isInventoryRelevant)
+    {
+        Id = id;
+        TenantId = tenantId;
+        Sku = sku;
+        SkuKey = sku.ToUpperInvariant();
+        EnglishName = name.English ?? string.Empty;
+        ArabicName = name.Arabic;
+        Description = description;
+        CategoryId = categoryId;
+        BaseUnitOfMeasureId = baseUnitOfMeasureId;
+        TrackingEnabledOverride = trackingEnabledOverride;
+        IsSellable = isSellable;
+        IsPurchasable = isPurchasable;
+        IsInventoryRelevant = isInventoryRelevant;
+        LifecycleState = MasterDataLifecycleState.Active;
+    }
+
+    internal Guid Id { get; private set; }
+
+    public TenantId TenantId { get; private set; }
+
+    internal string Sku { get; private set; }
+
+    internal string SkuKey { get; private set; }
+
+    internal string EnglishName { get; private set; }
+
+    internal string? ArabicName { get; private set; }
+
+    internal string? Description { get; private set; }
+
+    internal Guid CategoryId { get; private set; }
+
+    internal Guid BaseUnitOfMeasureId { get; private set; }
+
+    internal bool? TrackingEnabledOverride { get; private set; }
+
+    internal bool IsSellable { get; private set; }
+
+    internal bool IsPurchasable { get; private set; }
+
+    internal bool IsInventoryRelevant { get; private set; }
+
+    internal MasterDataLifecycleState LifecycleState { get; private set; }
+
+    internal byte[] Version { get; private set; } = Guid.NewGuid().ToByteArray();
+
+    internal LocalizedName Name => new(
+        string.IsNullOrWhiteSpace(EnglishName) ? null : EnglishName,
+        ArabicName);
+
+    internal void Edit(
+        string sku,
+        LocalizedName name,
+        string? description,
+        Guid categoryId,
+        Guid baseUnitOfMeasureId,
+        bool? trackingEnabledOverride,
+        bool isSellable,
+        bool isPurchasable,
+        bool isInventoryRelevant)
+    {
+        Sku = sku;
+        SkuKey = sku.ToUpperInvariant();
+        EnglishName = name.English ?? string.Empty;
+        ArabicName = name.Arabic;
+        Description = description;
+        CategoryId = categoryId;
+        BaseUnitOfMeasureId = baseUnitOfMeasureId;
+        TrackingEnabledOverride = trackingEnabledOverride;
+        IsSellable = isSellable;
+        IsPurchasable = isPurchasable;
+        IsInventoryRelevant = isInventoryRelevant;
+    }
+
+    internal void SetLifecycle(MasterDataLifecycleState lifecycleState) => LifecycleState = lifecycleState;
+
+    internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
+}
+
+internal sealed class MasterDataProductBarcodeEntity : ITenantOwned
+{
+    private MasterDataProductBarcodeEntity()
+    {
+        Value = string.Empty;
+        ComparisonKey = string.Empty;
+    }
+
+    internal MasterDataProductBarcodeEntity(
+        Guid id,
+        TenantId tenantId,
+        Guid productId,
+        string value)
+    {
+        Id = id;
+        TenantId = tenantId;
+        ProductId = productId;
+        Value = value;
+        ComparisonKey = value.ToUpperInvariant();
+    }
+
+    internal Guid Id { get; private set; }
+
+    public TenantId TenantId { get; private set; }
+
+    internal Guid ProductId { get; private set; }
+
+    internal string Value { get; private set; }
+
+    internal string ComparisonKey { get; private set; }
 
     internal byte[] Version { get; private set; } = Guid.NewGuid().ToByteArray();
 }

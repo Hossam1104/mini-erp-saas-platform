@@ -23,4 +23,25 @@ public static class MasterDataServiceCollectionExtensions
         services.AddSingleton<MasterDataCategoryHierarchyPolicy>();
         return services;
     }
+
+    /// <summary>
+    /// Registers Product's independently owned authorization and application
+    /// seam. Persistence remains fail-closed until the host supplies the
+    /// module-owned provider adapter.
+    /// </summary>
+    public static IServiceCollection AddProductIdentity(
+        this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddSingleton<ProductScopePolicy>();
+        services.AddSingleton<ProductResourcePolicy>();
+        services.AddSingleton<ProductApprovalPolicy>();
+        services.AddSingleton<ProductResourceAuthorizationService>();
+        services.AddSingleton<MasterDataTenantContextResolver>();
+        services.AddSingleton<IProductIdentityPersistence, UnavailableProductIdentityPersistence>();
+        services.AddSingleton<IProductBaseUomChangePolicy, ProductBaseUomChangePolicyUnavailable>();
+        services.AddSingleton<ProductIdentityService>();
+        return services;
+    }
 }

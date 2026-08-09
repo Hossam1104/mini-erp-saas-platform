@@ -126,7 +126,7 @@ public sealed class MasterDataBoundaryTests
     }
 
     [Fact]
-    public void M95_SL_01_production_surface_has_no_persistence_or_unresolved_business_behavior()
+    public void M95_SL_03_application_surface_has_no_provider_or_excluded_inventory_behavior()
     {
         var appSourcePath = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
@@ -160,15 +160,18 @@ public sealed class MasterDataBoundaryTests
             "Migration",
             "SqlConnection",
             "CreateTable",
-            "Item",
-            "SKU",
-            "Barcode",
             "Batch",
             "Lot",
             "Serial",
             "Expiry",
             "Draft",
-            "TenantWide"
+            "TenantWide",
+            "Procurement",
+            "Sales",
+            "Finance",
+            "Inventory",
+            "Variant",
+            "ProductFamily"
         };
 
         Assert.NotEmpty(sourceFiles);

@@ -24,6 +24,10 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
 
     internal DbSet<MasterDataConversionEntity> Conversions => Set<MasterDataConversionEntity>();
 
+    internal DbSet<MasterDataProductEntity> Products => Set<MasterDataProductEntity>();
+
+    internal DbSet<MasterDataProductBarcodeEntity> ProductBarcodes => Set<MasterDataProductBarcodeEntity>();
+
     internal DbSet<MasterDataAuditEventEntity> AuditEvents => Set<MasterDataAuditEventEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -40,6 +44,7 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
         category.Property(item => item.ArabicName).HasMaxLength(256).IsRequired(false);
         category.Property(item => item.NameKey).HasMaxLength(256).IsRequired();
         category.Property(item => item.ParentCategoryId);
+        category.Property(item => item.TrackingDefaultEnabled).IsRequired();
         category.Property(item => item.LifecycleState).IsRequired();
         ConfigureVersion(category.Property(item => item.Version));
         category.HasIndex(item => new { item.TenantId, item.Code }).IsUnique();
@@ -94,6 +99,56 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         conversion.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var product = modelBuilder.Entity<MasterDataProductEntity>();
+        product.ToTable("Products", "masterdata");
+        product.HasKey(item => item.Id);
+        product.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(product.Property(item => item.TenantId));
+        product.Property(item => item.Sku).HasMaxLength(128).IsRequired();
+        product.Property(item => item.SkuKey).HasMaxLength(128).IsRequired();
+        product.Property(item => item.EnglishName).HasMaxLength(256).IsRequired();
+        product.Property(item => item.ArabicName).HasMaxLength(256).IsRequired(false);
+        product.Property(item => item.Description).HasMaxLength(2048).IsRequired(false);
+        product.Property(item => item.CategoryId).IsRequired();
+        product.Property(item => item.BaseUnitOfMeasureId).IsRequired();
+        product.Property(item => item.TrackingEnabledOverride).IsRequired(false);
+        product.Property(item => item.IsSellable).IsRequired();
+        product.Property(item => item.IsPurchasable).IsRequired();
+        product.Property(item => item.IsInventoryRelevant).IsRequired();
+        product.Property(item => item.LifecycleState).IsRequired();
+        ConfigureVersion(product.Property(item => item.Version));
+        product.HasIndex(item => new { item.TenantId, item.SkuKey }).IsUnique();
+        product.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        product.HasOne<MasterDataCategoryEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.CategoryId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        product.HasOne<MasterDataUnitOfMeasureEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.BaseUnitOfMeasureId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        product.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var barcode = modelBuilder.Entity<MasterDataProductBarcodeEntity>();
+        barcode.ToTable("ProductBarcodes", "masterdata");
+        barcode.HasKey(item => item.Id);
+        barcode.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(barcode.Property(item => item.TenantId));
+        barcode.Property(item => item.ProductId).IsRequired();
+        barcode.Property(item => item.Value).HasMaxLength(128).IsRequired();
+        barcode.Property(item => item.ComparisonKey).HasMaxLength(128).IsRequired();
+        ConfigureVersion(barcode.Property(item => item.Version));
+        barcode.HasIndex(item => new { item.TenantId, item.ComparisonKey }).IsUnique();
+        barcode.HasIndex(item => new { item.TenantId, item.ProductId });
+        barcode.HasOne<MasterDataProductEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.ProductId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        barcode.HasQueryFilter(item => item.TenantId == TrustedTenantId);
 
         var audit = modelBuilder.Entity<MasterDataAuditEventEntity>();
         audit.ToTable("AuditEvents", "masterdata");

@@ -171,13 +171,12 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     [Fact]
     public void Every_non_anonymous_unsafe_handler_is_structurally_bound_to_protected_evidence()
     {
-        var sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "MiniErp.Api", "Program.cs"));
-        var source = File.ReadAllText(sourcePath);
-        var tree = CSharpSyntaxTree.ParseText(source);
-        var root = tree.GetRoot();
-        var mapPosts = root.DescendantNodes()
-            .OfType<InvocationExpressionSyntax>()
-            .Where(invocation => invocation.Expression.ToString().EndsWith("MapPost", StringComparison.Ordinal))
+        var sourceRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "MiniErp.Api"));
+        var mapPosts = Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
+            .SelectMany(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path).GetRoot()
+                .DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Where(invocation => invocation.Expression.ToString().EndsWith("MapPost", StringComparison.Ordinal)))
             .ToArray();
 
         foreach (var descriptor in FoundationOperationCatalog.PublicOperations
@@ -197,9 +196,15 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
                 Assert.DoesNotContain("auditCoordinator is null", applicationSource, StringComparison.Ordinal);
                 Assert.DoesNotContain("fallback", applicationSource, StringComparison.OrdinalIgnoreCase);
             }
+            else if (handler.Contains("ExecuteProtectedAsync", StringComparison.Ordinal))
+            {
+                // The handler directly owns the mandatory audit boundary.
+            }
             else
             {
-                Assert.Contains("ExecuteProtectedAsync", handler, StringComparison.Ordinal);
+                Assert.Contains("ExecuteMutationAsync", handler, StringComparison.Ordinal);
+                var endpointSource = File.ReadAllText(Path.Combine(sourceRoot, "ProductIdentityEndpoints.cs"));
+                Assert.Contains("ExecuteProtectedAsync", endpointSource, StringComparison.Ordinal);
             }
         }
     }
