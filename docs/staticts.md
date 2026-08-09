@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-10 01:12 +03:00
+**Last Updated:** 2026-08-10 01:20 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -981,6 +981,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-10 01:20 +03:00 | **29%** | **42%** | **33%** | **15%** | Draft PR #40 opened from pushed Customer readiness head `631706f8a0ef16a1584daf3cc7aae5c509297090`; it remains intentionally unmerged while the MESP-105 Customer Owner bundle is open; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 01:12 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-105 Business Customer readiness activated under MESP-6 with evidence `10688`; Customer MD-OD-001/005/008 remain one unresolved Owner bundle; draft PR #40 carries the docs-only handoff; MESP-106 is a single non-blocking To Do hardening follow-up; live Jira non-Epic 44 Done / 2 In Progress / 45 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 00:30 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-104 bounded Supplier implementation merged through PR #39 at `721adeb27c366d2b8aedde66d006ac6a49956f99`; Release build 0/0, Supplier 7/7, non-SQL 609/609; 21 SQL safety tests remain connection-gated; live Jira non-Epic 44 Done / 1 In Progress / 44 To Do; next M95-SL-05 readiness has no dedicated Jira item | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-09 23:42 +03:00 | **28%** | **39%** | **30%** | **15%** | MESP-103 Supplier readiness/state reconciliation merged through PR #38 at `b850b32a9666c5f42531ffd9b6720182fa03c0b7`; MESP-104 remains To Do; no Supplier source implementation; live Jira non-Epic 43 Done / 1 In Progress / 45 To Do | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
