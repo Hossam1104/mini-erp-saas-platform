@@ -17,9 +17,11 @@
 > recorded in Jira comment `10681` and MESP-103 is closed with comment `10682`.
 > The disposition does not resolve the global register; MD-OD-007 and
 > MESP-48/MESP-49/MESP-50 remain preserved/open. MESP-104 is now Done through
-> PR #39 at merge `721adeb27c366d2b8aedde66d006ac6a49956f99`; MESP-105 is now
-> the active M95-SL-05 Business Customer readiness item with activation
-> evidence `10688`; no Customer source behavior is authorized automatically.
+> PR #39 at merge `721adeb27c366d2b8aedde66d006ac6a49956f99`; MESP-105 is
+> Done for the M95-SL-05 Business Customer readiness gate with Owner
+> disposition evidence `10691`; MESP-107 is now the separate active
+> implementation item with activation evidence `10692`; no Customer source
+> behavior was added by the readiness/activation handoff.
 
 > **Authoritative current Supplier implementation overlay - 10 August 2026.**
 > MESP-104 / M95-SL-04 Supplier implementation is **Done** through PR #39,
@@ -30,23 +32,28 @@
 > module-owned, server-authorized, concurrency-safe, audited before effect, and
 > limited to Supplier identity/contact/reference/lifecycle behavior. Supplier
 > readiness decisions do not generalize to Business Customer; MD-OD-007 and
-> MESP-48/MESP-49/MESP-50 remain open gates. The next sequence position is
-> MESP-105 is now the active M95-SL-05 Business Customer readiness and
-> decision-gate item with activation evidence `10688`; no Business Customer
-> source behavior is active or authorized automatically.
+> MESP-48/MESP-49/MESP-50 remain open gates. MESP-105 is Done for the
+> M95-SL-05 Business Customer readiness and decision gate with Owner evidence
+> `10691`; MESP-107 is now the separate active implementation item with
+> activation evidence `10692`; no Business Customer source behavior was added
+> by the readiness/activation handoff.
 
-> **Authoritative current Business Customer-readiness overlay - 10 August 2026.**
-> MESP-105 is **In Progress** as the dedicated M95-SL-05 readiness and
-> decision-gate item under MESP-6, activated with Jira comment `10688`. The
-> detailed readiness record is
+> **Authoritative current Business Customer implementation overlay - 10 August 2026.**
+> MESP-105 is **Done** for the dedicated M95-SL-05 readiness and decision-gate
+> item under MESP-6; the Customer-only Owner disposition is Jira comment
+> `10691`. MESP-107 is the separate active implementation item, activated in
+> Jira comment `10692`. The detailed readiness record is
 > [`20_Business_Customer_M95_SL_05_Readiness.md`](20_Business_Customer_M95_SL_05_Readiness.md).
 > The Customer remains an external B2B role with no User/login/credential/
-> membership/consumer identity and no unified Party. Customer-specific
-> MD-OD-001, MD-OD-005, and MD-OD-008 are one unresolved Owner bundle; the
-> Supplier-only dispositions do not generalize. No Customer entities, tables,
-> mappings, migrations, repositories, services, endpoints, contracts, UI, or
-> downstream behavior were added. MESP-106 is a single non-blocking shared
-> hardening follow-up; MD-OD-007 and MESP-48/MESP-49/MESP-50 remain open gates.
+> membership/consumer identity and no unified Party. The approved bounds are
+> Tenant-wide identity inside the owning Tenant with no cross-Tenant sharing,
+> server-derived Tenant/resource authority, no separate approver for routine
+> maintenance, and no Draft with Active-on-authorized-create plus guarded
+> Deactivate/Reactivate. No Customer entities, tables, mappings, migrations,
+> repositories, services, endpoints, contracts, UI, or downstream behavior
+> were added by this readiness/activation handoff. MESP-106 is a single
+> non-blocking shared hardening follow-up; MD-OD-007 and
+> MESP-48/MESP-49/MESP-50 remain open gates.
 
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch
@@ -882,7 +889,7 @@ check.
 | M95-SL-02 Category and UOM | Implement Category/UOM identity and safe conversion boundary after SL-01. | MD-BR-016-021; MD-VR-003/004/010/012; MD-AC-005-007/026-027. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Category/UOM scope; additionally MD-OD-002/006 resolved or explicitly bounded; ADR-002/006; ADR-011 before affected localized search/forms/documents. | Owner selects/bounds hierarchy, precision, lifecycle creation, and business scope; conversion policy is explicit. | Category deactivation and UOM positive-factor/concurrency/isolation validation; demonstrate Product-reference impact without Product persistence. |
 | M95-SL-03 Product identity | Prepare/implement the bounded Product master identity, Category/Base UOM references, Product-side tracking configuration, identifiers, and lifecycle; Tax behavior and downstream operations remain outside this slice. | MD-BR-001-015, MD-BR-044/046; MD-VR-001-003/010-012; MD-AC-001-004/026-028/030/032. | Product-only dispositions for MD-OD-001/003/005/008/010/011 are recorded in MESP-101 and `docs/18_Product_Identity_M95_SL_03_Readiness.md`; ADR-002/005/006/011 remain applicable. | Product/Item one-concept model, hybrid SKU/barcode boundary, Product tracking configuration ownership, lifecycle, Tenant-wide scope, Product-owned policies, audit/concurrency, and downstream reference contract are explicit. | Product duplicate, barcode multiplicity/uniqueness, active-reference, deactivation/reactivation, stale-write, audit, localization-requiredness, and Tenant-isolation validation; demonstrate historical reference preservation without Inventory behavior. |
 | M95-SL-04 Supplier | Implement external Supplier role master boundary and duplicate/contact lifecycle. Depends on SL-01 and Business Parties seam. | MD-BR-022-024/045; MD-VR-001/002/010/014; MD-AC-008-010/026/028-029/035. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Supplier scope; MD-OD-007 remains an external-validation/production gate for Saudi fields; ADR-002/005/006/011. | Supplier role-local duplicate and statutory-field policy are explicit; no user path; procurement reference contract is approved. | Same-role duplicate, cross-role non-blocking match, no-login proof, deactivation/history, scope denial, and audit checks. Demonstrate a Supplier record cannot create a credential. |
-| M95-SL-05 Business Customer | Implement distinct B2B Business Customer role master boundary. Depends on SL-01 and Business Parties seam. | MD-BR-025-028/045; MD-VR-001/002/010/014; MD-AC-011-012/026/028-032/035. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Business Customer scope; MD-OD-007 remains an external-validation/production gate for Saudi fields; ADR-002/005/006/011. | B2B scope, statutory fields, role-local duplicate, customer/sales reference contract, and no anonymous consumer behavior are approved. | Retail-consumer rejection, cross-role match, deactivation/history, Tenant isolation, bilingual validation, and audit checks. Demonstrate Sales receives a stable B2B reference only. |
+| M95-SL-05 Business Customer | Implement distinct B2B Business Customer role master boundary. Depends on SL-01 and Business Parties seam. | MD-BR-025-028/045; MD-VR-001/002/010/014; MD-AC-011-012/026/028-032/035. | Customer-only MD-OD-001/005/008 disposition is approved in MESP-105/Jira comment `10691`; MD-OD-007 remains an external-validation/production gate for Saudi fields; ADR-002/005/006/011. | B2B Customer identity, Tenant-wide ownership, server-derived authorization, routine no-separate-approver boundary, Active-on-create lifecycle, role-local duplicate/reference/contact boundary, and no anonymous consumer behavior are approved. Statutory fields remain external-gated. | Retail-consumer rejection, cross-role match, deactivation/history, Tenant isolation, concurrency, authorization, audit, and applicable bilingual validation. Demonstrate only a stable B2B reference boundary; do not implement Sales behavior. |
 | M95-SL-06 Currency | Establish reusable Currency identity and lifecycle before monetary dependent slices. Depends on SL-01. | MD-BR-037-038; MD-VR-001/002/010; MD-AC-020-021/026/028-029. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Currency scope; ADR-002/006/011 for localized names. | Currency scope and active-reference rule are approved; Finance contract for functional/transaction/reporting roles is signed. | Same-code cross-Tenant, active-reference deactivation, bilingual names, concurrency, and audit checks. Demonstrate a second currency can be referenced without SAR-only logic. |
 | M95-SL-07 Payment Term | Establish reusable Payment Term identity/lifecycle and party assignment contracts. Depends on SL-04, SL-05, and SL-06. | MD-BR-035-036; MD-VR-010/012; MD-AC-019/026/032. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Payment Term scope; Finance due-date detail remains MESP-34; ADR-002/005/006. | Term shape is supplied by MESP-34 or explicitly bounded; historical-value contract is approved. | Assignment isolation, deactivation/history preservation, concurrency, audit, and downstream contract checks. Demonstrate the term's meaning is preserved without implementing AP/AR. |
 | M95-SL-08 Tax | Establish generic effective-dated Tax configuration and policy hook. Depends on SL-01 and SL-06. | MD-BR-032-034/046; MD-VR-001/006/010-012; MD-AC-016-018/026-027/032. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Tax scope; MD-OD-009 applies to final effective-dated reactivation; MD-OD-007 remains an external-validation/production gate; MESP-49; ADR-002/005/006/011. | Approval catalogue and statutory boundary are explicit; tax treatment and historical snapshot contract are approved. | Effective-date overlap, no-hard-code, self-approval only where policy says required, deactivation/history, Tenant denial, and audit checks. Demonstrate future rate does not rewrite a posted-value contract. |

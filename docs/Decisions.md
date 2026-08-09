@@ -50,41 +50,41 @@ Finance, Tax, payment/banking, or other downstream policy. MD-OD-007 remains an
 external Saudi statutory/legal validation and production gate owned by MESP-49.
 The Supplier-only dispositions do not resolve Business Customer, unified Party,
 consumer, Procurement, Finance, Tax, payment/banking, or other downstream
-policy. The next sequence position is now active as MESP-105 for M95-SL-05
-Business Customer readiness and decision gate only. MESP-105 is In Progress
-under MESP-6 with activation evidence in Jira comment `10688`; no Customer
-source implementation starts automatically.
+policy. MESP-105 subsequently completed the M95-SL-05 Business Customer
+readiness and decision gate after the Customer-only disposition in Jira comment
+`10691`; MESP-107 is now the separate active implementation item under
+MESP-6, with activation evidence in comment `10692`. No Customer source
+implementation behavior was added by the readiness/activation handoff.
 
-## Current Business Customer readiness state - 10 August 2026
+## Current Business Customer implementation state - 10 August 2026
 
-MESP-105 is the single active M95-SL-05 readiness item under MESP-6. The
-dedicated readiness record is
+MESP-105 is **Done** as the M95-SL-05 readiness/decision-gate item under
+MESP-6. Hossam's Customer-only Owner disposition is recorded in Jira comment
+`10691`. The dedicated readiness record is
 [`20_Business_Customer_M95_SL_05_Readiness.md`](20_Business_Customer_M95_SL_05_Readiness.md).
 It records the B2B-only external Customer boundary, no User/login/membership/
 credential/consumer identity, no unified Party, Tenant isolation, role-local
-duplicate handling, cross-role Supplier match review without rejection, and
-future authorization/audit/concurrency/lifecycle boundaries without adding
-source behavior.
+duplicate handling, and cross-role Supplier match review without rejection.
 
-The Customer-specific decision bundle is still open and is not inherited from
-Supplier: MD-OD-001 (Tenant-wide versus Company/Branch Customer availability),
-MD-OD-005 (routine approval catalogue), and MD-OD-008 (Draft/Active lifecycle).
-The working recommendation is Tenant-wide within the owning Tenant, no
-separate approver for routine maintenance with mandatory authorization/audit/
-concurrency/fail-closed controls, and no Draft with Active-on-authorized-create
-plus guarded Deactivate/Reactivate and preserved history. These are
-recommendations only until Hossam records an explicit Customer-scoped
-disposition. MD-OD-007 remains an external Saudi statutory/legal and production
+The approved Customer-only bounds are: MD-OD-001/BC-OD-001 Tenant-wide
+Customer identity inside the owning Tenant with no cross-Tenant sharing and
+trusted server-derived Tenant/resource authorization; MD-OD-005/BC-OD-005 no
+separate approver for routine Customer master-data maintenance while
+permission, authorization, concurrency, audit, fail-closed handling, and
+integrity remain mandatory; and MD-OD-008/BC-OD-008 no Draft with
+Active-on-authorized-create plus guarded Deactivate/Reactivate and preserved
+history. Downstream commercial and sensitive policies remain with their owning
+domains. MD-OD-007 remains an external Saudi statutory/legal and production
 gate under MESP-49; MESP-46, MESP-47, MESP-48, MESP-50 and other downstream
 ownership remain unchanged. MESP-106 is the single To Do, non-blocking shared
 authorization/duplicate-audit hardening follow-up.
 
-MESP-105 remains In Progress. Draft PR #40 carries the documentation-only
-readiness handoff and is intentionally unmerged while the bundle is open. No
-separate Business Customer implementation item has been created or activated.
-No new ADR is required during this stop;
-ADR-002, ADR-005, ADR-006 and ADR-011 remain authoritative at their existing
-status.
+MESP-107 is the separately created and activated single Customer
+implementation item under MESP-6, with activation evidence in Jira comment
+`10692`. PR #40 carries the documentation-only readiness/state handoff and is
+pending merge in this session. No Customer source behavior was added by that
+handoff, and no new ADR is required; ADR-002, ADR-005, ADR-006 and ADR-011
+remain authoritative at their existing status.
 
 ADR-002, ADR-005, ADR-006, ADR-011, and MESP-48/MESP-49/MESP-50 remain
 authoritative/open at their existing status. The earlier Product hardening

@@ -3,31 +3,22 @@
 **Date:** 10 August 2026
 **Jira:** MESP-105 - Prepare M95-SL-05 Business Customer readiness and decision gate
 **Parent:** MESP-6 - EPIC 06 - Master Data and Product Catalog
-**Status:** In Progress; documentation/readiness only
-**Activation evidence:** Jira comment `10688`
-**Review PR:** [#40](https://github.com/Hossam1104/mini-erp-saas-platform/pull/40) (Draft; intentionally not mergeable while the Owner bundle remains open)
+**Status:** Done; Owner-disposed readiness gate
+**Owner disposition evidence:** Jira comment `10691`
+**Implementation activation:** MESP-107; Jira comment `10692`
+**Review PR:** [#40](https://github.com/Hossam1104/mini-erp-saas-platform/pull/40) (documentation-only readiness/state handoff; pending merge during this session)
 **Shared follow-up:** MESP-106 - Master Data authorization and duplicate-audit classification hardening (To Do, non-blocking)
 
 ## 1. Readiness verdict
 
-M95-SL-05 is **not ready for Business Customer implementation** at the end of
-this session. The non-dependent analysis is complete, but one consolidated
-Business Customer Owner decision bundle remains open for the affected scope:
-
-1. Customer business availability and reuse scope (MD-OD-001).
-2. Customer routine approval catalogue and separation-of-duties boundary
-   (MD-OD-005).
-3. Customer Draft/Active lifecycle (MD-OD-008).
-
-The working recommendations in this document are analysis, not Owner approval.
-They must not be converted into source behavior, a schema, or an implementation
-ticket that is activated until the Owner explicitly disposes the three
-Customer-scoped decisions. MD-OD-007 remains an external Saudi statutory,
-legal/tax, and production gate under MESP-49; it is not silently resolved here.
-
-MESP-105 remains **In Progress**. No Business Customer implementation item was
-created or activated. MESP-106 is a single shared hardening follow-up and is
-intentionally not active.
+M95-SL-05 is **ready for the separate Business Customer implementation item**.
+Hossam's Customer-only Owner disposition is recorded in Jira comment `10691`.
+MESP-105 is **Done**, and MESP-107 is the separately created and activated
+implementation item under MESP-6, with activation evidence in comment `10692`.
+This readiness/state handoff adds no Customer source behavior, persistence,
+migration, API, UI, or downstream transaction behavior. MD-OD-007 remains an
+external Saudi statutory, legal/tax, and production gate under MESP-49; it is
+not silently resolved here.
 
 ## 2. Authority and scope
 
@@ -49,9 +40,11 @@ material. The primary sources reviewed were:
   Owner dispositions are explicitly Supplier-only.
 
 MESP-105 was created because the live Jira search found no dedicated
-Business Customer readiness issue after completed MESP-104. It is the single
-active item under MESP-6. The activation comment records that MESP-35, MESP-46,
-and the remaining Master Data decisions are separate ownership boundaries.
+Business Customer readiness issue after completed MESP-104. It was the single
+active readiness item under MESP-6. After the Owner disposition, MESP-105 was
+closed and MESP-107 was created and activated as the single implementation
+item. The Jira activation records that MESP-35, MESP-46, and the remaining
+Master Data decisions are separate ownership boundaries.
 
 This session is bounded to readiness, decision analysis, traceability, and
 handoff. It adds no Business Customer source behavior, persistence, migration,
@@ -89,14 +82,14 @@ commitment.
 |---|---|
 | Legal name | Arabic and English localized legal names are required according to the approved bilingual rule; exact normalization/search behavior waits for ADR-011 implementation timing and must not be invented here. |
 | Trading name | Arabic and English localized trading names are supported where the BRD requires them; requiredness and validation remain the approved BRD rule, not a new legal-field decision. |
-| Customer code | Required and unique in the Owner-approved Customer scope; it is not a Tenant-wide code until MD-OD-001 is disposed for this role. |
+| Customer code | Required and unique within the approved Tenant-owned Customer identity scope; downstream Company/business-context references must not redefine Customer ownership. |
 | VAT/tax registration | Conditional reference only. Fields beyond the approved VAT/registration baseline remain subject to MD-OD-007, external validation, and MESP-49. |
 | Contacts | Optional Customer contacts are external-party contacts, not Users and not portal identities. |
 | Default Payment Term | Optional active reference; Payment Terms remain Finance-owned and are not implemented here. |
 | Default Price List | Optional active reference; Sales owns price-list precedence and behavior under MESP-35. |
 | Default Currency | Optional active reference; Currency and exchange-rate ownership remains MESP-34/MESP-54. |
 | Credit Limit | Reference/placeholder only. Finance and MESP-46 own value, enforcement, warning, blocking, override, and approval mechanics. |
-| Status | Active/Inactive behavior is subject to the Customer-scoped MD-OD-008 decision below. |
+| Status | No Draft state; authorized creation is Active, with guarded Deactivate/Reactivate under the approved Customer-only MD-OD-008 disposition. |
 
 No bank account, payment method, settlement, tax certificate catalogue,
 invoice profile, credit engine, or customer login field is added by this
@@ -111,12 +104,12 @@ come through the Foundation-approved ordinary Tenant membership or support
 grant context, entitlement, permission, resource policy, and applicable
 Company/Branch business scope.
 
-The working recommendation for Customer is **Tenant-wide inside its owning
-Tenant, reusable by that Tenant's Companies/Branches, with no cross-Tenant
-sharing**. This is consistent with the Business Customer identity being an
-external Tenant-owned master reference and with the Supplier/Product bounded
-precedents, but it is not inherited approval. MD-OD-001 must be explicitly
-disposed for Business Customer before persistence or final authorization design.
+The approved Customer-only scope is **Tenant-wide inside its owning Tenant,
+reusable by that Tenant's Companies/Branches, with no cross-Tenant sharing**.
+It is recorded in Jira comment `10691` and is not inherited from the
+Supplier/Product precedents or generalized to another domain. Customer
+ownership remains Tenant-wide even when downstream Sales or Finance profiles
+later carry Company/business-context configuration.
 
 Company/Branch selection may affect downstream Sales use and access scope. It
 must not be treated as a client-supplied ownership override. An unset or
@@ -147,12 +140,12 @@ records are not rewritten or deleted merely because the Customer becomes
 Inactive. Deletion is not a substitute for deactivation where posted or
 historical references exist.
 
-The working recommendation is **no Draft; authorized creation is Active, with
-guarded Deactivate/Reactivate and preserved history**. This recommendation is
-not approved for Customer until MD-OD-008 is explicitly disposed. The future
-implementation must define operation-level permission, exact server-derived
-Tenant/resource authorization, optimistic concurrency, audit, and any approved
-effective-date policy before a lifecycle command is implemented.
+The approved Customer-only lifecycle is **no Draft; authorized creation is
+Active, with guarded Deactivate/Reactivate and preserved history**. It is
+recorded in Jira comment `10691`. The implementation must enforce
+operation-level permission, exact server-derived Tenant/resource
+authorization, optimistic concurrency, duplicate/integrity checks, and audit;
+no unapproved effective-date or statutory rule may be invented.
 
 Inactive Customer records may remain visible to authorized history/reporting
 queries but must be rejected as new selectable Customer references where the
@@ -177,14 +170,14 @@ resource policy, or required approval is unavailable. Safe error responses must
 not disclose whether a record exists in another Tenant. Authorization is a
 server-side application/resource policy, not a UI visibility rule.
 
-The Customer-scoped MD-OD-005 decision is open. The working recommendation is
-no separate approver for routine Customer identity, contact, code, and
-Active/Inactive maintenance, while retaining permission, Tenant/resource
-authorization, audit, concurrency, fail-closed dependency handling, and an
-approval extension point for any separately approved sensitive operation.
-Credit, banking, payment, statutory, and financial controls are not implicitly
-included in that recommendation. The generic no-self-approval rule applies
-only where an approved policy actually requires an approver.
+The approved Customer-only MD-OD-005 policy requires no separate approver for
+routine Customer creation, identity/name, code/reference, contacts,
+activation, deactivation, or reactivation. Permission, Tenant/resource
+authorization, audit, concurrency, fail-closed dependency handling, and
+integrity remain mandatory. Credit, banking/payment, statutory/tax-sensitive,
+Finance/AR, Sales override, and settlement operations remain with their owning
+domains; the generic approval architecture remains available where a separate
+policy is later approved.
 
 ## 9. Concurrency, idempotency, audit, and import evidence
 
@@ -208,8 +201,8 @@ create an import endpoint, migration, seed data, or production database.
 
 ## 10. Future code and persistence boundary
 
-If and only if the Owner bundle is disposed and a separate implementation item
-is activated, the work must preserve the ADR-002 topology:
+MESP-107 is the separate activated implementation item. Its work must preserve
+the ADR-002 topology:
 
 `MiniErp.Api -> MiniErp.Infrastructure -> MiniErp.App -> MiniErp.Contracts`
 
@@ -260,7 +253,7 @@ behavior exists:
 | MD-AC-032 | Audit must capture actor, Tenant, operation, before/after, result, time and correlation/evidence context. |
 | MD-BR-045 / MD-AC-035 | Cross-role Supplier/Customer match is review/optional link evidence, succeeds without rejection, and is not a unified Party. |
 | MD-VR-001 / MD-VR-002 / MD-VR-010 / MD-VR-014 | Tenant ownership, server authority, duplicate/lifecycle integrity, and auditable conflict outcomes must be tested in the later implementation. |
-| MD-OD-001 / MD-OD-005 / MD-OD-008 | Customer-specific Owner disposition is a prerequisite to final data-bearing DoR; Supplier-only approvals do not satisfy it. |
+| MD-OD-001 / MD-OD-005 / MD-OD-008 | Customer-specific Owner disposition is recorded in Jira comment `10691`; it applies only to the bounded Customer identity slice and is a prerequisite now satisfied for MESP-107. |
 
 The future focused suite must include positive and negative Tenant isolation,
 safe cross-Tenant not-found/denial behavior, B2B-only rejection, same-role
@@ -269,16 +262,17 @@ behavior, bilingual requiredness, audit fidelity, stale-write rejection, and
 no-login/no-credential proof. The suite must not be presented as run in this
 readiness session.
 
-## 13. Consolidated Owner decision bundle
+## 13. Owner disposition - Business Customer only
 
-The following three decisions are one bundle for MESP-105. They are deliberately
-scoped to Business Customer and must not be treated as global resolutions.
+The following disposition is recorded in Jira comment `10691`. It is scoped
+only to Business Customer and must not be treated as a global resolution of the
+preserved decision register or as approval for downstream commercial policy.
 
-| Decision | Working recommendation (not approved) | Owner choice needed and consequence |
-|---|---|---|
-| **BC-OD-001 / MD-OD-001 - Customer availability** | Tenant-wide inside the owning Tenant, reusable by that Tenant's Companies/Branches, with no cross-Tenant sharing; server-derived Tenant/resource policy remains authoritative. | Approve this Customer-only scope, or choose Company/Legal Entity or Branch ownership. The choice changes the Customer key/duplicate scope, read/write authorization, downstream reference contract, and isolation tests. No persistence or final policy can proceed while it is unset. |
-| **BC-OD-005 / MD-OD-005 - Customer approval catalogue** | No separate approver for routine Customer identity, code, contacts, and lifecycle maintenance; mandatory permission, exact Tenant/resource authorization, concurrency, audit, fail-closed handling and approval extension point remain. Sensitive statutory, banking, payment and credit operations remain with owning domains. | Approve the routine no-separate-approver boundary, or identify the exact Customer operations/fields that require separate approval and the approver/separation-of-duties catalogue. A vague approval requirement is not implementable. |
-| **BC-OD-008 / MD-OD-008 - Customer lifecycle** | No Draft; authorized create is Active; Deactivate/Reactivate are guarded; inactive records preserve history and are unavailable for new downstream use. | Approve the lifecycle, or require Draft/approval-before-Active or a different reactivation/effective-date rule. The choice changes commands, state transitions, audit, concurrency and Sales selection contracts. |
+| Decision | Approved Customer-only disposition |
+|---|---|
+| **BC-OD-001 / MD-OD-001 - Customer availability** | Customer master identity is Tenant-wide inside its owning Tenant and may be reused by authorized Companies and Branches in that Tenant. Cross-Tenant sharing is prohibited. Tenant ownership and resource authorization are derived from trusted server-side context; client-supplied Tenant, Company, Branch, or scope values cannot expand authority. Company/business-context Sales and Finance configuration remains separately owned and must reference this Tenant-owned identity without duplicating ownership. |
+| **BC-OD-005 / MD-OD-005 - Customer approval policy** | No separate Release-1 approver is required for routine Customer creation, identity/name maintenance, Customer code/reference maintenance, contact maintenance, activation, deactivation, or reactivation. Permission, trusted Tenant/resource authorization, optimistic concurrency, audit, fail-closed dependency handling, and applicable integrity checks remain mandatory. Credit-control, banking/payment, statutory/tax-sensitive, Finance/AR, Sales override, and payment/settlement operations remain governed by their owning domains. |
+| **BC-OD-008 / MD-OD-008 - Customer lifecycle** | Customer has no Draft state in Release 1. A valid authorized Customer is created Active. Deactivate and Reactivate are explicit guarded operations. Deactivation prevents selection for new applicable downstream transactions where an Active Customer is required while preserving historical references, posted-document references, reporting visibility, and audit history. Reactivation requires current authorization, Tenant/resource validation, optimistic concurrency, duplicate/integrity validation, and audit. |
 
 MD-OD-007 is intentionally not part of this Owner bundle. Saudi statutory,
 legal/tax fields beyond the approved conditional baseline require external
@@ -291,27 +285,34 @@ to cross-match a Supplier for review without rejection; those boundaries are
 already supported by the approved BRD. They must still be preserved in the
 implementation DoR.
 
-## 14. Definition of Ready after Owner disposition
+This disposition does not resolve or implicitly approve MESP-46 credit-control
+policy, MESP-47 payment/receipt methods, B2B Sales behavior, AR/Finance,
+Price List precedence, Payment Term behavior, Currency or Exchange Rate
+behavior, Tax behavior, Saudi statutory requirements, customer portal/login,
+unified Party architecture, or Retail POS behavior.
 
-M95-SL-05 may be reconsidered for a separate implementation item only after:
+## 14. Definition of Ready and implementation activation
 
-- the Owner records one explicit disposition for each row in the bundle;
-- the repository and Jira record the exact Customer-scoped outcome without
-  rewriting the global decision register or Supplier history;
+The readiness gate is satisfied for the bounded Customer slice because:
+
+- the Owner recorded one explicit Customer-only disposition for MD-OD-001,
+  MD-OD-005, and MD-OD-008 in Jira comment `10691`;
+- the repository and Jira record the exact Customer outcome without rewriting
+  the global decision register or Supplier history;
 - Business Parties/common identity and Sales Customer reference ownership are
-  confirmed at the implementation boundary;
-- ADR-011 timing is satisfied before localized search/forms/RTL/bilingual
-  implementation, and no unapproved collation or legal rule is invented;
-- the future authorization, audit, lifecycle, concurrency, idempotency,
-  import, and failure contracts are testable and Tenant-safe; and
-- a **separate** Business Customer implementation issue is created under
-  MESP-6, reviewed, and explicitly activated. MESP-105 must not activate the
-  implementation item by implication.
+  preserved as implementation boundaries rather than silently expanded;
+- ADR-011 timing remains required before localized search/forms/RTL/bilingual
+  behavior, and no unapproved collation or legal rule is invented;
+- authorization, audit, lifecycle, concurrency, integrity, idempotency,
+  import, and failure contracts remain required and Tenant-safe; and
+- MESP-107 was created under MESP-6 and explicitly activated with Jira comment
+  `10692` as the single next implementation item.
 
-Until then, MESP-105 remains In Progress and no source implementation starts.
-The next session is Owner disposition review for this single bundle; if
-disposed, it may create/activate the separate implementation item, but it must
-not implement Customer behavior in the same readiness handoff automatically.
+MESP-105 is Done. The next implementation session is **MESP-107 Business
+Customer master-data implementation only**. It may add only the bounded
+Customer source behavior and required tests/documentation; it must not begin
+downstream commercial or statutory behavior in the same or a later automatic
+handoff.
 
 ## 15. Hard exclusions and preserved gates
 
@@ -345,14 +346,15 @@ without changing this gate:
   conflict audit classification rather than a generic internal failure.
 
 MESP-106 is To Do and non-blocking. It does not authorize Customer source
-behavior, broaden Supplier/Product scope, or replace the Owner bundle.
+behavior, broaden Supplier/Product scope, or expand MESP-107 beyond the
+approved Customer slice.
 
 ## 17. Handoff
 
-MESP-105 remains the single active Jira item with readiness evidence in this
-file and activation comment `10688`. Review PR #40 is open as a draft from the
-docs-only commit; it must remain unmerged while the Owner bundle is unresolved.
-The repository state/task files record the same status. The exact next bounded
-session is **M95-SL-05 Owner disposition review and implementation-item
-activation only**. It must stop if the three Customer decisions remain
-unresolved and must not execute the next root `TASK.md` automatically.
+MESP-105 is Done with the Customer-only Owner disposition in Jira comment
+`10691`; MESP-107 is In Progress with activation evidence in comment `10692`.
+Review PR #40 carries the documentation/state handoff and is pending merge in
+this session. No Customer source behavior was added by the readiness or
+activation handoff. The exact next bounded session is **MESP-107 Business
+Customer master-data implementation only**. It must not execute the next root
+`TASK.md` automatically.
