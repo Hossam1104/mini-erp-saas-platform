@@ -8,9 +8,9 @@ the bounded Product identity implementation through PR #37. Jira activation
 evidence is comment `10675`, validation/merge evidence is `10676`, and closure
 evidence is `10677`. MESP-103 is the single active M95-SL-04 Supplier
 readiness/decision-gate item under MESP-6, activated in Jira comment `10679`.
-Independent Supplier readiness is complete, but one consolidated Owner decision
-bundle for MD-OD-001/005/008 is still required; no Supplier source work has
-started.
+Independent Supplier readiness and the consolidated decision bundle are recorded
+in Jira comment `10680`, but one Supplier-specific Owner disposition for
+MD-OD-001/005/008 is still required; no Supplier source work has started.
 
 | Current fact | Verified value |
 |---|---|
@@ -18,8 +18,8 @@ started.
 | MESP-99 | **Done** through PR #33, PR #34, and PR #35; final audit-semantics correction merge is `3e51f98f8c80b9989632499632605894c18570cf`; Jira validation/closure evidence is comments `10665`, `10666`, and `10670`. |
 | MESP-101 | **Done** for the bounded M95-SL-03 Product identity readiness gate; PR #36 merged at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; closure evidence is comment `10672`; activation/owner evidence is comment `10671`. |
 | MESP-102 | **Done** for the bounded M95-SL-03 Product identity implementation; PR #37 merged at `202d59068caac5d1fac402794627e41d7f452456` from head `f984835b28fe6d29156246b45917b12f1933b75b`; Jira activation/validation/closure evidence is comments `10675`, `10676`, and `10677`. |
-| MESP-103 | **In Progress** for the bounded M95-SL-04 Supplier readiness and decision gate; activation evidence is Jira comment `10679`; independent readiness is complete, but MD-OD-001/005/008 remain Supplier-specific Owner decision gates. |
-| Current branch | `agent/mesp-103-supplier-readiness`; no Supplier source implementation has started. |
+| MESP-103 | **In Progress** for the bounded M95-SL-04 Supplier readiness and decision gate; activation evidence is Jira comment `10679`, analysis/decision-bundle evidence is `10680`; independent readiness is complete, but MD-OD-001/005/008 remain Supplier-specific Owner decision gates. |
+| Current branch | `agent/mesp-103-supplier-readiness` at local commit `ea602c1`; no Supplier source implementation has started. GitHub publication is pending an available push path. |
 | Prior readiness PR | **#36**, merged cleanly from `09d2e09f6a382187e8cdba32cd594f2b9ad15ab7` to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; Product readiness branch is retained for auditability. |
 | Prior implementation branch | `agent/mesp-102-product-identity`; PR #37 merged; the branch is retained remotely for auditability. |
 | Final synchronized main | `main` and `origin/main` are synchronized at the final tracked-state reconciliation commit; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |

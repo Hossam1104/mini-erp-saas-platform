@@ -11,8 +11,9 @@ then stops for review.
 ## Current Supplier readiness stop - 9 August 2026
 
 MESP-103 is the single active Supplier readiness item under MESP-6 and is
-**In Progress** with activation evidence in Jira comment `10679`. Independent
-readiness analysis is complete in
+**In Progress** with activation evidence in Jira comment `10679` and
+analysis/decision-bundle evidence in comment `10680`. Independent readiness
+analysis is complete in
 `docs/19_Supplier_M95_SL_04_Readiness.md`. Closure is intentionally pending one
 consolidated Owner evidence comment disposing MD-OD-001, MD-OD-005, and
 MD-OD-008 for Supplier. Their recommendations are not approved by analogy to

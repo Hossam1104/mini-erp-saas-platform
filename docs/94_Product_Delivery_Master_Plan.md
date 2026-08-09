@@ -19,7 +19,8 @@
 
 > **Authoritative Supplier-readiness overlay - 9 August 2026.** MESP-103 is
 > **In Progress** as the single active M95-SL-04 Supplier readiness and
-> decision-gate item under MESP-6; Jira activation evidence is comment `10679`.
+> decision-gate item under MESP-6; Jira activation evidence is comment `10679`
+> and readiness/decision-bundle evidence is comment `10680`.
 > Independent readiness is complete, but closure is blocked by one consolidated
 > Supplier Owner decision bundle for MD-OD-001 business availability, MD-OD-005
 > approval catalogue, and MD-OD-008 Draft/Active lifecycle. The bundle's
@@ -83,8 +84,8 @@
 | Last updated | 9 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-103 / M95-SL-04 Supplier readiness and decision gate - In Progress; independent readiness complete, pending one consolidated Supplier Owner decision bundle.` |
-| Current implementation item | `MESP-103 is In Progress with activation evidence 10679; MESP-102 Product implementation is Done with Jira evidence 10675/10676/10677; no Supplier source implementation has started.` |
+| Current activity | `MESP-103 / M95-SL-04 Supplier readiness and decision gate - In Progress; independent readiness and one consolidated bundle are recorded in Jira 10680, pending Supplier-specific Owner disposition.` |
+| Current implementation item | `MESP-103 is In Progress with activation/analysis evidence 10679/10680; MESP-102 Product implementation is Done with Jira evidence 10675/10676/10677; no Supplier source implementation has started.` |
 | Merged-main baseline | `main` and `origin/main` are synchronized at the final tracked-state reconciliation commit; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
 | Open Pull Request | `Supplier readiness PR is pending publication from the active branch; Product PR #37 is merged, as are PR #36, #33, #34, and #35.` |

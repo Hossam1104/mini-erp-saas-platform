@@ -5,6 +5,9 @@
 **Scope:** Supplier readiness and decision gate only
 **Status:** Independent readiness complete; closure is blocked by one consolidated Owner decision bundle
 
+**Jira evidence:** activation comment `10679`; readiness analysis and decision
+bundle comment `10680`.
+
 ## 1. Readiness verdict
 
 M95-SL-04 is ready for Owner disposition, but it is not ready to close as an
