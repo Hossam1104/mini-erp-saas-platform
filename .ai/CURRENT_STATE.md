@@ -1,6 +1,27 @@
 # Current State
 
-## Current authoritative position - 9 August 2026 (MESP-99 post-merge correction complete; PR #34 merged)
+## Current authoritative position - 9 August 2026 (MESP-101 Product readiness active)
+
+MESP-99 / M95-SL-02 Category and UOM is complete at its approved bounded
+scope through PR #33, correction PR #34, and final audit-semantics correction
+PR #35. MESP-101 is the single active documentation/readiness item for
+M95-SL-03 Product identity. The Product-only owner evidence is Jira comment
+`10671`; this session creates no Product source behavior or persistence.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-100 | **Done**; closure evidence is Jira comment `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. |
+| MESP-99 | **Done** through PR #33, PR #34, and PR #35; final audit-semantics correction merge is `3e51f98f8c80b9989632499632605894c18570cf`; Jira validation/closure evidence is comments `10665`, `10666`, and `10670`. |
+| MESP-101 | **In Progress** for the bounded M95-SL-03 Product identity readiness gate; activated with owner evidence in comment `10671`. |
+| Readiness branch | `docs/MESP-101-m95-sl-03-product-readiness`. |
+| Readiness note | `docs/18_Product_Identity_M95_SL_03_Readiness.md`; documentation/readiness only. |
+| Product-only bounds | MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011; they do not resolve the remaining decision register. |
+| Product implementation | Not started; no Product/Item/SKU/Barcode/tracking entity, table, migration, endpoint, UI, or business behavior is part of MESP-101. |
+| Backend topology | `MiniErp.Api -> MiniErp.Infrastructure -> MiniErp.App -> MiniErp.Contracts`, with API host composition into App/Contracts; ADR-002 is binding. |
+| Next exact task after this session | `M95-SL-03 Product Identity implementation only`; do not execute it automatically in this chat. |
+| Open production gates | MESP-48, MESP-49, and MESP-50 remain open. |
+
+## Historical position at MESP-99 post-merge correction - 9 August 2026
 
 This is the current handoff for the completed bounded MESP-99 / M95-SL-02
 Category/UOM implementation and its verified post-merge correction. The

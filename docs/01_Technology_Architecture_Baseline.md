@@ -1,6 +1,21 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
-> **Authoritative current overlay - 9 August 2026.** MESP-100 is Done
+> **Authoritative current Product-readiness overlay - 9 August 2026.**
+> MESP-99 / M95-SL-02 Category and UOM is Done through PR #33, correction PR
+> #34, and final audit-semantics correction PR #35. MESP-101 is the single
+> active readiness item for M95-SL-03 Product identity under Jira comment
+> `10671`; the readiness work adds no Product source behavior. The approved
+> Product-only bounds are MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008,
+> MD-OD-010, and MD-OD-011. ADR-002's four-project topology remains binding:
+> `MiniErp.Api`, `MiniErp.App`, `MiniErp.Contracts`, and
+> `MiniErp.Infrastructure`; ADR-006 remains authoritative for shared SQL
+> Server, Tenant ownership, module-owned contexts/schemas/migrations, and
+> provider/production gates. ADR-005 remains the approved baseline policy and
+> resource-authorization record; ADR-011 is a required future decision before
+> localized search, forms, or bilingual/RTL document behavior. MESP-48,
+> MESP-49, and MESP-50 remain open.
+
+> **Historical MESP-100 state overlay - 9 August 2026.** MESP-100 is Done
 > (closure evidence Jira comment `10663`) and MESP-99 is In Progress
 > (activation evidence `10664`). PR #32 merged at
 > `511f6be9f005e54930f993aead9758d7a66b75a8`. ADR-002 is now published and

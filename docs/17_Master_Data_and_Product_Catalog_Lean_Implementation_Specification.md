@@ -1,5 +1,17 @@
 # Master Data and Product Catalog Lean Implementation Specification
 
+> **Authoritative current Product-readiness overlay — 9 August 2026.** MESP-99
+> / M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
+> final audit-semantics correction PR #35, all merged to `main`; the final
+> synchronized main baseline is recorded in `.ai/CURRENT_STATE.md`. M95-SL-03
+> is the current bounded Product identity readiness session under Jira
+> MESP-101, In Progress during execution. Hossam's six Product-only bounds for
+> MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011 are
+> recorded in `docs/18_Product_Identity_M95_SL_03_Readiness.md` and Jira
+> comment `10671`. No Product persistence or Product behavior is implemented
+> by this readiness session. The remaining Open Decision Register and
+> MESP-48/MESP-49/MESP-50 gates remain preserved.
+
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch
 > `agent/mesp-99-category-uom` and remains limited to the five approved bounds:
@@ -34,9 +46,9 @@
 **Owner:** Hossam / Product Owner
 **Date:** 8 August 2026
 
-> **Authoritative current overlay - MESP-100 closed; MESP-99 active, 9 August 2026.** MESP-100 is Done with closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 is In Progress with activation evidence 10664. This specification remains the readiness baseline, while TASK.md now contains only the exact MESP-99 implementation session. No Category/UOM persistence or MESP-99 behavior was added by MESP-100.
+> **Historical MESP-100/MESP-99 state overlay - 9 August 2026.** MESP-100 is Done with closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 was In Progress with activation evidence 10664. This specification remains the readiness baseline, while the historical TASK.md then contained the exact MESP-99 implementation session. No Category/UOM persistence or MESP-99 behavior was added by MESP-100.
 
-> **Authoritative current overlay - MESP-100 readiness correction, 9 August 2026.** MESP-100 is the active bounded readiness item for M95-SL-02. MESP-96 is Done, MESP-99 remains To Do until this correction is fully validated, merged, and activated, and no Category/UOM persistence or behavior is implemented here. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006; the remaining Open Decision Register stays preserved.
+> **Historical MESP-100 readiness-correction overlay - 9 August 2026.** MESP-100 was the bounded readiness item for M95-SL-02. MESP-96 was Done, MESP-99 remained To Do until that correction was fully validated, merged, and activated, and no Category/UOM persistence or behavior was implemented here. The five Category/UOM-only bounds were MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006; the remaining Open Decision Register stays preserved.
 
 > **Current delivery overlay - 8 August 2026.** MESP-95 is **Done** after
 > ChatGPT final review passed and PR #29 merged normally. This specification
@@ -59,7 +71,7 @@ endpoint, controller, Angular screen, or automated implementation test. The
 remaining data-bearing implementation slices remain unactivated until their
 own bounded Definition of Ready and decision gates are satisfied.
 
-> **Current MESP-100 readiness overlay - 9 August 2026.** MESP-100 is the
+> **Historical MESP-100 readiness overlay - 9 August 2026.** MESP-100 was the
 > active bounded correction for M95-SL-02. MESP-96 is Done, MESP-99 remains To
 > Do until readiness is fully validated and activated, and no Category/UOM
 > persistence or production behavior is authorized in this session. The
@@ -750,7 +762,7 @@ must leave every out-of-boundary decision explicitly gated.
 
 | ADR | MESP-95 result | Timing consequence |
 |---|---|---|
-| ADR-002 - backend project structure and module enforcement | Evaluated; no new ADR file created | Must be completed before the first Master Data/Business Parties backend module is implemented. The first coding item must honor the three-project modular-monolith baseline and architecture tests. |
+| ADR-002 - backend project structure and module enforcement | Published and approved at `docs/ADR-002_Backend_Project_Structure_and_Module_Enforcement.md` | Product implementation must honor the actual four-project direction and module-owned persistence/architecture tests. |
 | ADR-005 - policy and resource authorization | Existing approved baseline remains applicable | MESP-95 supplies the Master Data resource-policy inputs and open approval hook; no conflicting policy or new ADR is created. |
 | ADR-006 - module schemas, EF Core contexts, migrations, transactions | Existing Foundation implementation baseline remains applicable | Physical schema, migrations, context mapping, and cross-module transaction details are deferred to the relevant Ready slice. No migration is created here. |
 | ADR-011 - runtime localization, Arabic search, RTL, bilingual documents | Evaluated as a mandatory pre-code dependency | The required locale/search boundary is recorded here; ADR-011 must be completed before affected localized forms/search/documents are implemented. No collation decision is invented. |
@@ -828,7 +840,7 @@ check.
 |---|---|---|---|---|---|
 | M95-SL-01 Shared boundary and Tenant/scope contracts | Establish the Master Data/Catalog and Business Parties seams, trusted Tenant context, policy-neutral BusinessScope, authorization/audit contracts, and stable reference vocabulary. Depends on the approved Foundation baseline. | MD-BR-001/006/008/044/046; MD-VR-010/011; MD-AC-028/029/032. | No MD-OD is resolved for this contract-only slice; it must not encode MD-OD-001 availability, MD-OD-005 approval catalogue, MD-OD-008 lifecycle defaults, or MD-OD-011 Product identity. ADR-002 before module structure; ADR-011 before affected localized search/forms/documents. | Contract-only scope; no persisted master record, no lifecycle default, no Product identity choice, no business-availability scope, and no approval catalogue. | Tenant-positive/negative authorization, same-code different-Tenant proof, cross-Tenant denial, audit contract inspection, architecture dependency proof. Demonstrate a policy-neutral request context without a database record. |
 | M95-SL-02 Category and UOM | Implement Category/UOM identity and safe conversion boundary after SL-01. | MD-BR-016-021; MD-VR-003/004/010/012; MD-AC-005-007/026-027. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Category/UOM scope; additionally MD-OD-002/006 resolved or explicitly bounded; ADR-002/006; ADR-011 before affected localized search/forms/documents. | Owner selects/bounds hierarchy, precision, lifecycle creation, and business scope; conversion policy is explicit. | Category deactivation and UOM positive-factor/concurrency/isolation validation; demonstrate Product-reference impact without Product persistence. |
-| M95-SL-03 Product identity | Implement Product master identity, category/UOM references, flags, tax linkage, and lifecycle. | MD-BR-010-015; MD-VR-001-003/010/012; MD-AC-001-004/026-027. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Product scope; MD-OD-003/010/011 must be resolved before dependent Product identity, SKU/Barcode, or tracking implementation; ADR-002/005/006/011. | Product/Item model, SKU/Barcode rules, tracking decision, lifecycle, and scope are approved; downstream snapshot contract is signed. | Product duplicate, active-reference, deactivation, stale-write, and Tenant-isolation validation; demonstrate historical reference preservation without inventory implementation. |
+| M95-SL-03 Product identity | Prepare/implement the bounded Product master identity, Category/Base UOM references, Product-side tracking configuration, identifiers, and lifecycle; Tax behavior and downstream operations remain outside this slice. | MD-BR-001-015, MD-BR-044/046; MD-VR-001-003/010-012; MD-AC-001-004/026-028/030/032. | Product-only dispositions for MD-OD-001/003/005/008/010/011 are recorded in MESP-101 and `docs/18_Product_Identity_M95_SL_03_Readiness.md`; ADR-002/005/006/011 remain applicable. | Product/Item one-concept model, hybrid SKU/barcode boundary, Product tracking configuration ownership, lifecycle, Tenant-wide scope, Product-owned policies, audit/concurrency, and downstream reference contract are explicit. | Product duplicate, barcode multiplicity/uniqueness, active-reference, deactivation/reactivation, stale-write, audit, localization-requiredness, and Tenant-isolation validation; demonstrate historical reference preservation without Inventory behavior. |
 | M95-SL-04 Supplier | Implement external Supplier role master boundary and duplicate/contact lifecycle. Depends on SL-01 and Business Parties seam. | MD-BR-022-024/045; MD-VR-001/002/010/014; MD-AC-008-010/026/028-029/035. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Supplier scope; MD-OD-007 remains an external-validation/production gate for Saudi fields; ADR-002/005/006/011. | Supplier role-local duplicate and statutory-field policy are explicit; no user path; procurement reference contract is approved. | Same-role duplicate, cross-role non-blocking match, no-login proof, deactivation/history, scope denial, and audit checks. Demonstrate a Supplier record cannot create a credential. |
 | M95-SL-05 Business Customer | Implement distinct B2B Business Customer role master boundary. Depends on SL-01 and Business Parties seam. | MD-BR-025-028/045; MD-VR-001/002/010/014; MD-AC-011-012/026/028-032/035. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Business Customer scope; MD-OD-007 remains an external-validation/production gate for Saudi fields; ADR-002/005/006/011. | B2B scope, statutory fields, role-local duplicate, customer/sales reference contract, and no anonymous consumer behavior are approved. | Retail-consumer rejection, cross-role match, deactivation/history, Tenant isolation, bilingual validation, and audit checks. Demonstrate Sales receives a stable B2B reference only. |
 | M95-SL-06 Currency | Establish reusable Currency identity and lifecycle before monetary dependent slices. Depends on SL-01. | MD-BR-037-038; MD-VR-001/002/010; MD-AC-020-021/026/028-029. | First-data-bearing gates MD-OD-001/005/008 resolved or owner-bounded for the affected Currency scope; ADR-002/006/011 for localized names. | Currency scope and active-reference rule are approved; Finance contract for functional/transaction/reporting roles is signed. | Same-code cross-Tenant, active-reference deactivation, bilingual names, concurrency, and audit checks. Demonstrate a second currency can be referenced without SAR-only logic. |
@@ -1035,3 +1047,36 @@ before/after, policy outcome, approver where applicable, correlation/evidence
 identity, timestamp/reason); use production-owned Category/UOM scope behavior;
 and make module-registration evidence reflect actual composition. These
 follow-ups do not authorize any data-bearing work in MESP-100.
+
+## 25. M95-SL-03 Product identity readiness overlay — 9 August 2026
+
+MESP-99 / M95-SL-02 Category and UOM is complete through PR #33, correction
+PR #34, and final audit-semantics correction PR #35. M95-SL-03 is the current
+bounded Product readiness session under MESP-101. This overlay is traceability
+for the next Product implementation session; it does not add Product source
+behavior to this specification.
+
+Hossam's Product-only dispositions are:
+
+| Decision | Product disposition | Boundary |
+|---|---|---|
+| MD-OD-011 | Product and Item are one Release-1 concept; no separate variant/product-family layer. | No variant architecture or separate Item persistence. |
+| MD-OD-003 | Hybrid Tenant-unique SKU; manual/imported and optional Tenant-configured generated values; optional zero-or-many Tenant-unique barcodes; no mandatory EAN/GS1/core format. | Generation and format validation remain configuration/integration-led; no Wafra rule. |
+| MD-OD-010 | Product-side tracking configuration is disabled by default; Category default plus Product override. | Inventory owns stock/transaction enforcement and traceability. |
+| MD-OD-001 | Product catalogue is Tenant-wide inside its owning Tenant and reusable across Companies/Branches. | No cross-Tenant sharing; Warehouse stock availability remains Inventory-owned. |
+| MD-OD-005 | Routine Product Create/Edit/Activate/Deactivate/Reactivate need no separate approver. | Permission, server-derived Tenant/scope authorization, audit, concurrency, and fail-closed policy remain mandatory. |
+| MD-OD-008 | No Draft; authorized creation is Active; Deactivate/Reactivate preserve history. | Downstream new-use restrictions and integrity guards remain owned by the consuming domain. |
+
+The detailed Product identity model, policy separation, API boundary, future
+schema expectations, downstream contracts, exclusions, and validation matrix
+are in `docs/18_Product_Identity_M95_SL_03_Readiness.md`. The Product task
+must create Product-owned resource/scope/approval policies and must not reuse
+`CategoryUomScopePolicy` as a general Master Data policy. It must preserve the
+ADR-002 four-project graph, ADR-006 module-owned persistence, the App EF-free
+and Contracts provider-free boundaries, and the ADR-011 pre-code gate for
+localized search/forms/RTL/bilingual documents.
+
+MESP-101 is readiness/documentation only. No Product/Item/SKU/Barcode/tracking
+entity, table, migration, repository, service, endpoint, or business behavior
+is authorized in this session. The original MD-OD-001 through MD-OD-011
+register remains preserved; these dispositions apply only to Product identity.

@@ -1,8 +1,21 @@
 # Mini ERP SaaS Platform — Master Data and Product Catalog BRD
 
-> **Authoritative current overlay - MESP-100 closed; MESP-99 active, 9 August 2026.** MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 is In Progress with activation evidence 10664 and is the single active implementation item for M95-SL-02. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. The approved v0.3 business requirements and all other Open Decisions remain preserved; no MESP-99 behavior was implemented by MESP-100.
+> **Authoritative current Product-slice overlay - 9 August 2026.** MESP-99 /
+> M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
+> final audit-semantics correction PR #35. MESP-101 is the single active
+> readiness item for M95-SL-03 Product identity; its activated owner evidence
+> is Jira comment `10671`. The six Product-only bounds are MD-OD-001,
+> MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011. They define
+> Tenant-wide Product ownership, hybrid Tenant-unique SKU/barcode coding,
+> permissioned/audited routine lifecycle without separate approval,
+> Active-on-create with Deactivate/Reactivate, Product-side tracking
+> configuration only, and one Product/Item Release-1 identity without variant
+> behavior. This overlay does not resolve the remaining register, does not
+> generalize Category/UOM policy, and authorizes no Product source behavior.
 
-> **Authoritative current overlay - MESP-100 readiness correction, 9 August 2026.** MESP-100 is the active bounded readiness item for M95-SL-02. MESP-96 is Done, MESP-99 remains To Do until this correction is fully validated, merged, and activated, and no Category/UOM persistence or behavior is implemented here. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006; the rest of the Open Decision Register remains preserved.
+> **Historical MESP-100/MESP-99 state overlay - 9 August 2026.** MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 was In Progress with activation evidence 10664 for M95-SL-02. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. The approved v0.3 business requirements and all other Open Decisions remain preserved; no MESP-99 behavior was implemented by MESP-100.
+
+> **Historical MESP-100 readiness-correction overlay - 9 August 2026.** MESP-100 was the bounded readiness item for M95-SL-02. MESP-96 was Done, MESP-99 remained To Do until that correction was validated, merged, and activated, and no Category/UOM persistence or behavior was implemented here. The five Category/UOM-only bounds were MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006; the rest of the Open Decision Register remains preserved.
 
 > **Current delivery overlay - 8 August 2026 (supersedes older status wording below; approved business baseline unchanged).** MESP-31 is **Done**. PR #28 remains merged at final head `8396197b54189cb550f07bd4bb6779fd38ac30cb` and actual merge commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`. MESP-95 is **Done** after PR #29 merged at approved head `c465d660e49a254f2fffbb95e0d07c5fcf17a193` with actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; closure evidence is Jira comment `10654`. MESP-96 is **In Progress** for contract-only/non-persistent M95-SL-01. MD-OD-001 through MD-OD-011 remain open and unresolved; no Master Data persistence exists.
 >
@@ -12,7 +25,7 @@
 >
 > The approved requirements, classifications, recommendations, acceptance criteria, and Open Decision Register below are unchanged. Historical status paragraphs are retained for provenance and are superseded by this overlay for current-state purposes.
 
-> **Current MESP-100 readiness overlay - 9 August 2026.** MESP-100 is the
+> **Historical MESP-100 readiness overlay - 9 August 2026.** MESP-100 was the
 > active, bounded readiness correction for M95-SL-02 and MESP-99 remains To Do
 > until the correction is validated, merged, and activated. The five
 > Category/UOM-only Owner bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002,
@@ -911,3 +924,70 @@ traceability. The MESP-99 task must carry these five Category/UOM bounds into
 its implementation and must leave Product/Item, SKU/Barcode, tracking,
 Supplier, Business Customer, Price List, Tax, Currency, Exchange Rate, and
 production-gate decisions outside this scope.
+
+## M95-SL-03 Product-only Owner-decision overlay — 9 August 2026
+
+This overlay records Hossam's later Product-only decision package for the
+M95-SL-03 Product identity readiness gate. It is evidence for the affected
+Product slice and does not rewrite the approved v0.3 historical requirements or
+globally close the Open Decision Register. The dedicated readiness item is
+MESP-101. Owner evidence is Jira comment `10671`.
+
+### MD-OD-011 — Product versus Item
+
+For Release 1, Product and Item are one business concept. No separate
+Product/Item model, variant layer, or product-family layer is introduced. No
+future-looking variant architecture is added without a later explicit
+requirement. SKU and Barcode identify the Product under the separately
+approved coding rules.
+
+### MD-OD-003 — SKU and Barcode
+
+Product uses a hybrid SKU model. Every Product has a Tenant-unique SKU; manual
+or imported values are allowed, and Tenant-configured server-side generation
+may be supported. SKU does not require embedded business semantics and no
+Wafra-specific coding rule is introduced. Barcode is an optional alternate
+Product identifier: a Product may have zero or multiple barcodes, and barcode
+values are unique inside the owning Tenant. Core SaaS does not require EAN,
+GS1, or another specific barcode format; validation is configuration- or
+integration-led.
+
+### MD-OD-010 — Product tracking configuration
+
+Tracking is configurable and disabled by default. Category may provide a
+default and Product may explicitly override that default. Product Identity
+owns only the Product-side configuration contract. Inventory owns stock
+structures, transactions, operational enforcement, and batch/lot/serial/expiry
+traceability. This overlay does not implement or decide Inventory tracking
+behavior.
+
+### MD-OD-001 — Product business availability
+
+Product master data is Tenant-wide inside the owning Tenant and reusable by
+all Companies and Branches in that Tenant. No cross-Tenant sharing exists.
+Client-supplied Tenant or scope hints never replace trusted server-derived
+Tenant authority. Warehouse/location stock availability is a later Inventory
+concern and does not change Product master-data ownership.
+
+### MD-OD-005 — Product approval policy
+
+Routine Product Create, Edit, Activate, Deactivate, and Reactivate do not
+require a separate approver in Release 1. Permission, exact server-derived
+Tenant/scope authorization, optimistic concurrency, audit evidence, and
+fail-closed authorization remain mandatory. The generic approval architecture
+remains available for a future configured policy. This Product disposition
+does not resolve approval catalogue behavior for other Master Data domains.
+
+### MD-OD-008 — Product lifecycle
+
+Product has no Draft state. A valid authorized Product is created Active and
+supports Deactivate and Reactivate. Deactivation prevents new business use
+where applicable while historical references remain valid and auditable.
+Reactivation remains subject to permission, Tenant authorization, concurrency,
+and applicable integrity rules.
+
+These six dispositions are Product-only. They do not resolve later Price List,
+Tax, Supplier, Business Customer, Currency, Exchange Rate, Inventory,
+Procurement, Sales, Finance, legal/privacy, Saudi, MESP-48, MESP-49, or MESP-50
+decisions. The Product implementation remains separately gated by MESP-101 and
+must not begin in this documentation session.

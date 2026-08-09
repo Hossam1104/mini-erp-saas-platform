@@ -17,27 +17,33 @@ velocity, or forecast:
    that the repository tracker was updated; Hossam/ChatGPT inspects the
    tracked GitHub version directly when needed.
 
-## Current execution overlay - 9 August 2026 (MESP-100 closed; MESP-99 active)
+## Current execution overlay - 9 August 2026 (MESP-101 Product readiness)
 
-MESP-100 is Done with closure evidence in Jira comment `10663`. Its focused
-PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8` from source/document
-correction commit `a009616f5b5c3a46d9ea0b369b4f3e3a4c143129`. MESP-99 is now the
-single active implementation item, In Progress, with activation evidence in
-comment `10664`. The root `TASK.md` contains only the exact MESP-99 / M95-SL-02
-implementation session; this chat did not implement Category/UOM persistence
-or business behavior.
+MESP-100 is Done with closure evidence in Jira comment `10663`. MESP-99 /
+M95-SL-02 Category and UOM is Done through focused PR #33, correction PR #34,
+and final audit-semantics correction PR #35; the final correction merge is
+`3e51f98f8c80b9989632499632605894c18570cf`. MESP-101 is the single active
+bounded readiness item for M95-SL-03 Product identity, activated in Jira with
+owner evidence in comment `10671`.
 
-The approved Category/UOM-only bounds are MD-OD-001 (Tenant-wide inside the
-owning Tenant, reusable by its Companies/Branches, no cross-Tenant sharing),
-MD-OD-005 (routine lifecycle actions need no separate approver but do require
-permission, exact server-derived authority, and audit), MD-OD-008 (no Draft;
-authorized creation is Active with Deactivate/Reactivate), MD-OD-002 (optional
-same-Tenant parent, maximum three levels, no cycles), and MD-OD-006 (quantity
-precision 6, conversion precision 8, positive/non-zero factors, AwayFromZero
-calculation rounding, reject over-precision input). These bounds apply only to
-MESP-99 Category/UOM work and do not resolve the rest of the decision register.
+The approved Product-only bounds are MD-OD-001 (Product master data is
+Tenant-wide inside its owning Tenant, reusable by that Tenant's
+Companies/Branches, with no cross-Tenant sharing), MD-OD-003 (hybrid
+Tenant-unique SKU and barcode coding: manual/import/generate SKU values and
+zero-or-more Tenant-unique barcodes, without inventing EAN/GS1 rules),
+MD-OD-005 (routine lifecycle actions need permission, exact server-derived
+authority, and audit but no separate approver), MD-OD-008 (no Draft; authorized
+creation is Active with Deactivate/Reactivate), MD-OD-010 (Product stores
+tracking configuration only; Inventory owns operational batch/lot/serial/expiry
+behavior), and MD-OD-011 (Product and Item are one Release-1 master-data
+identity; no separate variant/Item entity or variant behavior in this slice).
+These bounds apply only to M95-SL-03 Product identity and do not resolve the
+remaining decision register.
 
-The actual backend topology is four projects: `MiniErp.Api`, `MiniErp.App`,
+The root `TASK.md` is being handed off to the exact next Product identity
+implementation session. This readiness session adds no Product/Item/SKU/Barcode
+source behavior, entities, tables, migrations, endpoints, or UI. The actual
+backend topology is four projects: `MiniErp.Api`, `MiniErp.App`,
 `MiniErp.Contracts`, and `MiniErp.Infrastructure`. ADR-002 is the detailed
 project/module enforcement record and ADR-006 remains authoritative for shared
 SQL Server, Tenant ownership, module-owned contexts/schemas/migrations, and
