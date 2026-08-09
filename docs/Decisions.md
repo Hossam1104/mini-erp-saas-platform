@@ -26,20 +26,26 @@ and MESP-50 remain open.
 
 ## Current Supplier-readiness state - 9 August 2026
 
-MESP-103 is **In Progress** as the single active M95-SL-04 Supplier
-readiness/decision-gate item under MESP-6. The independent readiness analysis
-is recorded in [`19_Supplier_M95_SL_04_Readiness.md`](19_Supplier_M95_SL_04_Readiness.md).
+MESP-103 is **Done** as the bounded M95-SL-04 Supplier readiness/decision-gate
+item under MESP-6. The Owner disposition is recorded in Jira comment `10681`
+and closure evidence in `10682`; the detailed analysis is in
+[`19_Supplier_M95_SL_04_Readiness.md`](19_Supplier_M95_SL_04_Readiness.md).
 Supplier is an external Business Party role with no login, credential,
 membership, authentication identity, or consumer session. No Supplier source
 implementation has started.
 
-MD-OD-001, MD-OD-005, and MD-OD-008 remain open for Supplier. A single
-consolidated Owner decision bundle recommends Tenant-wide business
-availability, no separate approver for routine Supplier maintenance, and no
-Draft-before-Active lifecycle, but none is silently treated as approved. The
-alternatives and implementation consequences are documented in the readiness
-note. MD-OD-007 remains an external Saudi statutory-validation gate owned by
-MESP-49. The Product-only bounds from MESP-102 do not generalize to Supplier.
+MD-OD-001, MD-OD-005, and MD-OD-008 are approved only for the bounded Supplier
+slice: Tenant-wide availability inside the owning Tenant with no cross-Tenant
+sharing and trusted server-derived authorization; no separate approver for
+routine Supplier identity/contact/reference and lifecycle maintenance while
+permission, Tenant authorization, optimistic concurrency, audit, and fail-
+closed controls remain mandatory; and no Draft with Active-on-authorized-create
+plus guarded Deactivate/Reactivate and preserved history. These dispositions do
+not resolve the global register or define Business Customer, Procurement,
+Finance, Tax, payment/banking, or other downstream policy. MD-OD-007 remains an
+external Saudi statutory/legal validation and production gate owned by MESP-49.
+MESP-104 is the next separately prepared Supplier implementation item and
+remains To Do for a fresh session.
 
 ADR-002, ADR-005, ADR-006, ADR-011, and MESP-48/MESP-49/MESP-50 remain
 authoritative/open at their existing status. No new ADR is required during this

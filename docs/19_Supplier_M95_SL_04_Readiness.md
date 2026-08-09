@@ -1,20 +1,25 @@
 # M95-SL-04 Supplier Readiness and Decision Gate
 
 **Date:** 9 August 2026
-**Jira:** MESP-103 (In Progress)
+**Jira:** MESP-103 (Done)
 **Scope:** Supplier readiness and decision gate only
-**Status:** Independent readiness complete; closure is blocked by one consolidated Owner decision bundle
+**Status:** Supplier-only readiness complete and closed; implementation has not started
 
 **Jira evidence:** activation comment `10679`; readiness analysis and decision
-bundle comment `10680`.
+bundle comment `10680`; Owner disposition comment `10681`; closure comment
+`10682`; next-item handoff comment `10683`; implementation item `MESP-104` is
+prepared and remains To Do.
 
 ## 1. Readiness verdict
 
-M95-SL-04 is ready for Owner disposition, but it is not ready to close as an
-implementation-ready data-bearing slice. MD-OD-001, MD-OD-005, and MD-OD-008
-still have no Supplier-specific Owner disposition in the verified repository or
-Jira evidence. Their BRD recommendations are preserved as recommendations,
-not treated as approved requirements.
+M95-SL-04 is complete and closed as a Supplier-only readiness and decision
+gate. The Owner disposition recorded in Jira comment `10681` resolves
+MD-OD-001, MD-OD-005, and MD-OD-008 for this bounded Supplier slice only:
+Tenant-wide business availability inside the owning Tenant, no separate
+approver for routine Supplier maintenance, and Active-on-authorized-create with
+guarded Deactivate/Reactivate and preserved history. Permission, server-derived
+Tenant authorization, optimistic concurrency, audit, and fail-closed controls
+remain mandatory. Jira closure evidence is comment `10682`.
 
 MESP-103 was activated as the single Supplier readiness item under MESP-6 in
 Jira comment `10679`, after MESP-102 was verified Done and Product PR #37 was
@@ -22,7 +27,8 @@ verified merged. This document completes the independent analysis and presents
 one consolidated decision bundle. It does not create Supplier source behavior,
 persistence, API behavior, UI, or a migration.
 
-The current stop is a real business-scope gate, not a technical failure:
+The completed readiness boundary is a real business-scope disposition, not a
+technical implementation claim:
 
 - Supplier is an external Business Party role, never a User, Tenant member,
   credential holder, login identity, or consumer session.
@@ -31,10 +37,15 @@ The current stop is a real business-scope gate, not a technical failure:
   are sufficiently specified for a later bounded implementation once the
   affected decision register entries are disposed.
 - The business-availability, approval-catalogue, and Draft/Active choices are
-  not globally resolved by the Product or Category/UOM sessions and must not be
-  copied into Supplier by analogy.
+  resolved for Supplier only by comment `10681`; the global decision register
+  remains preserved and these choices must not be copied into Business Customer,
+  Procurement, Finance, Tax, payment/banking, or another downstream domain.
 - MD-OD-007 remains a Saudi statutory/external-validation gate. No legal field
   set beyond the approved conditional VAT/registration baseline is invented.
+
+No Supplier source behavior, persistence, API, UI, migration, or downstream
+business behavior was added. MESP-104 is the separately prepared next Jira
+implementation item and remains To Do for a fresh implementation session.
 
 ## 2. Baseline and authority
 
@@ -68,9 +79,9 @@ row in the same Jira evidence comment.
 
 | Decision | Strongest bounded recommendation | Alternatives and implementation impact | Current status |
 |---|---|---|---|
-| **MD-OD-001 - Supplier business availability** | Make Supplier master data Tenant-wide inside its owning Tenant and reusable by that Tenant's Companies and Branches. Keep no cross-Tenant sharing. Use trusted server-derived Tenant authority and a future explicit Supplier scope policy. | Company/Legal Entity scope would require a narrower scope anchor, scope-aware uniqueness, downward-access tests, and downstream Procurement reference rules. Branch scope would add still more scope transitions and historical-reference complexity. A generic absent-scope fallback is not acceptable. | **Owner decision required for Supplier.** The BRD's Tenant-wide recommendation is not silently adopted. |
-| **MD-OD-005 - Supplier approval catalogue** | Do not require a separate approver for routine Supplier identity, localized-name, contact, code, ordinary reference, Deactivate, and Reactivate operations. Keep permission, exact server-derived Tenant/resource authorization, audit, optimistic concurrency, and fail-closed behavior mandatory. Keep statutory/tax-sensitive or future payment/bank-detail changes out of this base slice; if later owned by the applicable domain, require an explicit configured approval policy before effect. | Approving every Supplier write adds approval state, separation-of-duties, pending/rejection transitions, and publication semantics to ordinary master maintenance. Approving only sensitive fields requires a field-level policy/effective-value model and clear Procurement/Finance ownership. No approval rule would make the base slice simpler but would not safely cover future sensitive data. | **Owner decision required for Supplier.** No exact Supplier approval catalogue is currently approved. |
-| **MD-OD-008 - Supplier lifecycle** | Do not introduce Draft for the bounded Supplier master record. A valid authorized create becomes Active; Deactivate changes it to Inactive; Reactivate is separately authorized and guarded. Inactive Suppliers cannot be selected for new Procurement use, while historical references remain readable and auditable. | Draft-before-Active requires draft storage, visibility rules, validation timing, publication/approval semantics, duplicate behavior during draft, and migration handling. A no-Draft rule keeps lifecycle small and preserves the existing Active/Inactive contract. | **Owner decision required for Supplier.** The Product and Category/UOM no-Draft choices do not resolve this row. |
+| **MD-OD-001 - Supplier business availability** | Make Supplier master data Tenant-wide inside its owning Tenant and reusable by that Tenant's Companies and Branches. Keep no cross-Tenant sharing. Use trusted server-derived Tenant authority and a future explicit Supplier scope policy. | Company/Legal Entity scope would require a narrower scope anchor, scope-aware uniqueness, downward-access tests, and downstream Procurement reference rules. Branch scope would add still more scope transitions and historical-reference complexity. A generic absent-scope fallback is not acceptable. | **Owner-approved for the bounded Supplier slice in Jira comment `10681`.** Client-supplied Company, Branch, Tenant, or scope values cannot override server authority. |
+| **MD-OD-005 - Supplier approval catalogue** | Do not require a separate approver for routine Supplier identity, localized-name, contact, code, ordinary reference, Deactivate, and Reactivate operations. Keep permission, exact server-derived Tenant/resource authorization, audit, optimistic concurrency, and fail-closed behavior mandatory. Keep statutory/tax-sensitive or future payment/bank-detail changes out of this base slice; the owning domain must apply its own approved controls. | Approving every Supplier write adds approval state, separation-of-duties, pending/rejection transitions, and publication semantics to ordinary master maintenance. Approving only sensitive fields requires a field-level policy/effective-value model and clear Procurement/Finance ownership. | **Owner-approved for the bounded Supplier slice in Jira comment `10681`.** Saudi statutory and future payment/banking/settlement changes are outside this base disposition. |
+| **MD-OD-008 - Supplier lifecycle** | Do not introduce Draft for the bounded Supplier master record. A valid authorized create becomes Active; Deactivate changes it to Inactive; Reactivate is separately authorized and guarded. Inactive Suppliers cannot be selected for new Procurement use, while historical references remain readable and auditable. | Draft-before-Active requires draft storage, visibility rules, validation timing, publication/approval semantics, duplicate behavior during draft, and migration handling. A no-Draft rule keeps lifecycle small and preserves the existing Active/Inactive contract. | **Owner-approved for the bounded Supplier slice in Jira comment `10681`.** Historical references and audit history remain preserved. |
 
 **MD-OD-007 is intentionally outside this Owner bundle.** The approved baseline
 supports conditional Saudi tax/registration requirements where applicable, but
@@ -160,8 +171,9 @@ operation or silently converted into an ordinary business denial.
 
 ## 6. Persistence, API, import, and integration readiness
 
-No persistence or API is created by M95-SL-04. Once the decisions and remaining
-Definition-of-Ready gates are complete, the future implementation must use
+No persistence or API was created by M95-SL-04. The Supplier-specific decision
+gates are now complete, while the remaining Definition-of-Ready and production
+gates still apply. The future implementation must use
 module-owned persistence in `MiniErp.Infrastructure`, a Tenant-owned Supplier
 aggregate, explicit Tenant ownership verification, a policy-neutral but
 non-optional business-scope envelope, concurrency tokens, same-role uniqueness
@@ -236,14 +248,10 @@ hardening item rather than by changing the completed Product slice here.
 
 ## 10. Next exact session
 
-The next fresh root `TASK.md` session is **M95-SL-04 Supplier readiness
-revalidation after the consolidated Owner decision bundle**. It must:
-
-1. verify one Jira evidence comment disposing MD-OD-001, MD-OD-005, and
-   MD-OD-008 for Supplier, without changing the global decision register;
-2. preserve MD-OD-007 as an external-validation gate;
-3. re-check the Supplier Definition of Ready and this traceability package;
-4. close MESP-103 only if the decision evidence and all non-business gates are
-   genuinely complete; and
-5. create a separately activated Supplier implementation item only after this
-   readiness gate is closed. No Supplier source work starts automatically.
+The next fresh root `TASK.md` session is **MESP-104 / M95-SL-04 Supplier
+master-data implementation only**. It must re-read the Owner disposition and
+closure evidence (`10681`/`10682`), verify that MESP-104 is the intended
+separate To Do item, and implement only the approved Supplier boundary. It must
+preserve MD-OD-007 as an external-validation/production gate and must not
+generalize the Supplier disposition to another domain. No Supplier source work
+starts automatically in this session.

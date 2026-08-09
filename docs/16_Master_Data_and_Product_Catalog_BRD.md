@@ -18,15 +18,20 @@
 > no downstream behavior, migration, or production readiness claim is made.
 
 > **Authoritative current Supplier-readiness overlay - 9 August 2026.** MESP-103
-> is **In Progress** as the single active M95-SL-04 Supplier readiness item.
-> Independent analysis is complete, but MD-OD-001, MD-OD-005, and MD-OD-008
-> still require one consolidated Supplier-specific Owner decision bundle. The
-> recommendations are not silently approved from Product or Category/UOM.
-> Supplier remains an external Business Party role with no login, credentials,
-> membership, or consumer session; no Supplier source behavior has started.
-> MD-OD-007 remains an external Saudi statutory-validation gate under MESP-49.
-> See `docs/19_Supplier_M95_SL_04_Readiness.md` for the bounded contract and
-> exact revalidation handoff.
+> is **Done** as the bounded M95-SL-04 Supplier readiness item. The Owner
+> disposition in Jira comment `10681`, with closure evidence `10682`, resolves
+> MD-OD-001, MD-OD-005, and MD-OD-008 for Supplier only: Tenant-wide
+> availability inside the owning Tenant, no separate approver for routine
+> Supplier maintenance, and Active-on-authorized-create with guarded
+> Deactivate/Reactivate and preserved history. Permission, trusted
+> server-derived Tenant authorization, optimistic concurrency, audit, and
+> fail-closed controls remain mandatory. Supplier remains an external Business
+> Party role with no login, credentials, membership, or consumer session; no
+> Supplier source behavior has started. MD-OD-007 remains an external Saudi
+> statutory-validation/production gate under MESP-49. MESP-104 is the next
+> separately prepared implementation item and remains To Do. See
+> `docs/19_Supplier_M95_SL_04_Readiness.md` for the bounded contract and exact
+> implementation handoff.
 
 > **Historical MESP-100/MESP-99 state overlay - 9 August 2026.** MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 was In Progress with activation evidence 10664 for M95-SL-02. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. The approved v0.3 business requirements and all other Open Decisions remain preserved; no MESP-99 behavior was implemented by MESP-100.
 
@@ -1009,11 +1014,11 @@ must not begin in this documentation session.
 
 ## M95-SL-04 Supplier readiness overlay - 9 August 2026
 
-This delivery overlay records the bounded Supplier readiness analysis for
-MESP-103. It does not amend the approved BRD v0.3, silently resolve the global
-MD-OD-001/005/008 register, or make a Saudi/legal decision. The BRD's Supplier
-recommendations remain recommendations until one consolidated Owner decision
-bundle records a Supplier-specific disposition.
+This delivery overlay records the bounded Supplier readiness analysis and
+Owner disposition for MESP-103. It does not amend the approved BRD v0.3,
+resolve the global MD-OD-001/005/008 register, or make a Saudi/legal decision.
+The disposition applies only to Supplier and is recorded in Jira comment
+`10681`, with MESP-103 closure evidence in `10682`.
 
 Supplier remains an external Business Party role: it is not a User, Tenant,
 membership, credential holder, login identity, or consumer session. The future
@@ -1025,13 +1030,13 @@ import traceability. It must not create a unified Party record or implement
 Procurement transactions, Tax, Finance, payment/bank behavior, or downstream
 workflow.
 
-The single pending Owner bundle is:
+The bounded Supplier disposition is:
 
-| Decision | Supplier recommendation awaiting Owner disposition |
+| Decision | Supplier-only Owner disposition |
 |---|---|
-| MD-OD-001 | Tenant-wide inside the owning Tenant, reusable by its Companies/Branches, with no cross-Tenant sharing and server-derived authority. |
-| MD-OD-005 | No separate approver for routine Supplier identity/contact/code/lifecycle maintenance; permission, exact resource scope, audit, concurrency, and fail-closed policy remain mandatory. Sensitive statutory/tax or later payment/bank changes stay out of the base slice unless their owning policy explicitly requires approval. |
-| MD-OD-008 | No Draft for the bounded master record; validated authorized create is Active, with Deactivate/Reactivate and preserved history. |
+| MD-OD-001 | **Approved for Supplier only:** Tenant-wide inside the owning Tenant, reusable by its Companies/Branches, with no cross-Tenant sharing. Client Company, Branch, Tenant, or scope values cannot override trusted server-derived authorization. |
+| MD-OD-005 | **Approved for Supplier only:** no separate approver for routine Supplier identity/contact/reference and lifecycle maintenance; permission, exact server-derived Tenant/resource authorization, optimistic concurrency, audit, and fail-closed controls remain mandatory. Saudi statutory and future payment/banking/settlement changes stay outside this base disposition and their owning controls. |
+| MD-OD-008 | **Approved for Supplier only:** no Draft; valid authorized creation is Active, with guarded Deactivate/Reactivate, prevention of new applicable use when inactive, and preserved historical references/audit history. |
 
 MD-OD-007 remains an external Saudi statutory-validation gate. The approved
 conditional VAT/registration baseline is retained, but fields beyond VAT are
