@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
 using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 
 namespace MiniErp.Infrastructure.Persistence;
@@ -89,6 +90,20 @@ internal sealed class TenantOwnershipVerifierRegistry
             MasterDataTenantOwnershipVerifier.For<MasterDataProductEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataProductBarcodeEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataAuditEventEntity>()
+        ]);
+    }
+
+    internal static TenantOwnershipVerifierRegistry CreateBusinessParties()
+    {
+        return new TenantOwnershipVerifierRegistry(
+        [
+            new TenantOwnershipVerifierRegistration(
+                typeof(TenantOwnedRecord),
+                TenantOwnershipStoreVerifier.ReadStoredTenantId,
+                TenantOwnershipStoreVerifier.ReadStoredTenantIdAsync),
+            BusinessPartiesTenantOwnershipVerifier.For<BusinessPartiesSupplierEntity>(),
+            BusinessPartiesTenantOwnershipVerifier.For<BusinessPartiesSupplierContactEntity>(),
+            BusinessPartiesTenantOwnershipVerifier.For<BusinessPartiesAuditEventEntity>()
         ]);
     }
 

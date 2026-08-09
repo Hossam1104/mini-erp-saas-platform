@@ -44,4 +44,5 @@ public static class MasterDataServiceCollectionExtensions
         services.AddSingleton<ProductIdentityService>();
         return services;
     }
+
 }
