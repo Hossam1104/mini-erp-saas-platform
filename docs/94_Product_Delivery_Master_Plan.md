@@ -90,9 +90,9 @@
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
 | Current activity | `MESP-103 / M95-SL-04 Supplier readiness and decision gate - Done; Supplier-only Owner disposition and closure are recorded in Jira comments 10681/10682. MESP-104 non-activated handoff is comment 10683 and the item remains To Do.` |
 | Current implementation item | `MESP-104 / M95-SL-04 Supplier master-data implementation - To Do; MESP-102 Product implementation is Done with Jira evidence 10675/10676/10677; no Supplier source implementation has started.` |
-| Merged-main baseline | `main` and `origin/main` are synchronized at the final tracked-state reconciliation commit; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
+| Merged-main baseline | `main` and `origin/main` are synchronized at the MESP-103 documentation/state merge `b850b32a9666c5f42531ffd9b6720182fa03c0b7`; Product merge baseline is `202d59068caac5d1fac402794627e41d7f452456`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `Supplier readiness documentation PR is pending publication from the active branch; Product PR #37 is merged, as are PR #36, #33, #34, and #35.` |
+| Open Pull Request | `None; Supplier readiness/state PR #38 is merged at b850b32a9666c5f42531ffd9b6720182fa03c0b7; Product PR #37 is merged, as are PR #36, #33, #34, and #35.` |
 | Current review checkpoint | `MESP-103 is closed with Supplier-only Owner evidence 10681 and closure evidence 10682; MESP-104 remains To Do for a fresh bounded implementation session; MD-OD-007 and MESP-48/MESP-49/MESP-50 remain external/open.` |
 
 ---
