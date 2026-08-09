@@ -1,6 +1,6 @@
 # Master Data and Product Catalog Lean Implementation Specification
 
-> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 merged).**
+> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch
 > `agent/mesp-99-category-uom` and remains limited to the five approved bounds:
 > MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. It adds
@@ -12,10 +12,14 @@
 > `MESP_SQLSERVER_CONNECTION_STRING`. No migration, production database,
 > Product/Item behavior, or later Master Data slice was added. MESP-99 closure,
 > PR #33 merged to `main` at `8364a67bce4d7d782115b7347e4e6607f02f9be4` from
-> implementation commits `430996c`, `0cf6906`, and `964766b`. Jira validation
-> evidence is comment `10665`; final closure evidence is comment `10666` and
-> MESP-99 is Done. The next exact session is M95-SL-03 Product identity
-> readiness only and must not start automatically.
+> implementation commits `430996c`, `0cf6906`, and `964766b`. The verified
+> post-merge correction commit is `e527f8a0cc32a72cef554e2bd93ab6322e9b1064`;
+> focused PR #34 merged to `main` at `35417d35c076d1318474a7e4b31144cc9d94279b`.
+> Jira validation evidence is comment `10665`, final closure evidence is comment
+> `10666`, and post-merge correction evidence is comment `10667`; MESP-99 is
+> Done. Stale MESP-97/MESP-98 administrative duplicates are terminally
+> reconciled with comments `10669`/`10668`. The next exact session is M95-SL-03
+> Product identity readiness only and must not start automatically.
 
 > The next exact session is M95-SL-03 Product identity readiness only. It must
 > not start automatically and requires a dedicated activated Jira item plus
@@ -76,7 +80,7 @@ own bounded Definition of Ready and decision gates are satisfied.
 | Canonical PRD | `docs/MESP_PRD_v1.2.docx` |
 | Protected PRD Git blob | `1f9163b9412cb343a19a98312eb642ad26c1efaa` |
 | Jira activation | MESP-95 transitioned to Done after PR #29 merged; MESP-96 separately activated and completed M95-SL-01 |
-| Delivery state | MESP-31 Done; MESP-95 Done; MESP-96 Done for M95-SL-01; MESP-99/M95-SL-02 Done through PR #33 and merge commit `8364a67bce4d7d782115b7347e4e6607f02f9be4` |
+| Delivery state | MESP-31 Done; MESP-95 Done; MESP-96 Done for M95-SL-01; MESP-99/M95-SL-02 Done through PR #33 and correction PR #34, with correction merge commit `35417d35c076d1318474a7e4b31144cc9d94279b` |
 
 The approval of MESP-31 preserves MD-OD-001 through MD-OD-011. This
 specification identifies their implementation impact but does not answer,

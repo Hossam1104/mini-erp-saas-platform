@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-09 10:19 +03:00
+**Last Updated:** 2026-08-09 10:23 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~27%**
@@ -886,7 +886,7 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **MESP-99 / M95-SL-02 Category & UOM merged; post-merge correction gate before M95-SL-03 Product Identity readiness**
+> **MESP-99 / M95-SL-02 Category & UOM and post-merge correction PR #34 merged; M95-SL-03 Product Identity readiness is next**
 
 Current strategic state:
 
@@ -899,6 +899,9 @@ Current strategic state:
   - `persistence_unavailable` audit evidence is classified as an internal failure rather than authorization denial;
   - the two low-risk test-quality findings from PR #33 are cleaned up;
   - stale duplicate Jira artifacts MESP-97/MESP-98 are reconciled as superseded historical work.
+- Correction commit `e527f8a0cc32a72cef554e2bd93ab6322e9b1064` merged through PR #34 at
+  `35417d35c076d1318474a7e4b31144cc9d94279b`; Jira evidence is comments
+  `10667` (MESP-99), `10669` (MESP-97), and `10668` (MESP-98).
 - Core ERP transaction engines are still ahead.
 - Frontend foundation exists but most ERP business screens remain.
 - Production readiness is still dominated by future Finance, Inventory, Sales, Saudi compliance, migration, and end-to-end hardening.
@@ -914,6 +917,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 | 2026-08-09 | **26%** | **32%** | **22%** | **15%** | Foundation mostly established; Master Data entering first data-bearing Category/UOM implementation | Production-ready target: Late Oct–Mid Nov 2026 |
 | 2026-08-09 02:34 +03:00 | **27%** | **34%** | **25%** | **15%** | MESP-99 Category/UOM merged; first data-bearing Master Data slice complete; small post-merge correction gate identified before SL-03 readiness | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
 | 2026-08-09 10:19 +03:00 | **27%** | **34%** | **25%** | **15%** | MESP-99 post-merge async, audit-reason, test-quality, and Jira-hygiene corrections complete; SL-03 readiness remains next and not started; non-Epic Jira 40 Done / 1 In Progress / 44 To Do | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
+| 2026-08-09 10:23 +03:00 | **27%** | **34%** | **25%** | **15%** | PR #34 correction merged; MESP-97/MESP-98 reconciled as terminal superseded/duplicate history; final tracked handoff evidence recorded; SL-03 readiness remains next and not started | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
 
 ---
 

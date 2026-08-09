@@ -1,29 +1,34 @@
 # Current State
 
-## Current authoritative position - 9 August 2026 (MESP-99 complete; PR #33 merged)
+## Current authoritative position - 9 August 2026 (MESP-99 post-merge correction complete; PR #34 merged)
 
 This is the current handoff for the completed bounded MESP-99 / M95-SL-02
-Category/UOM implementation. The implementation is complete, reviewed, and
-merged to `main` through focused PR #33. Jira validation evidence is comment
-`10665`, final closure evidence is comment `10666`, and MESP-99 is Done. No
-later slice is active.
+Category/UOM implementation and its verified post-merge correction. The
+implementation is complete, reviewed, and merged through PR #33; correction PR
+#34 is also merged to `main`. Jira validation evidence is comment `10665`,
+implementation closure evidence is comment `10666`, and post-merge correction
+evidence is comment `10667`. No later slice is active.
 
 | Current fact | Verified value |
 |---|---|
 | MESP-100 | **Done**; closure evidence is Jira comment `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. |
-| MESP-99 | **Done** after focused PR #33 merged; activation evidence is comment `10664`; validation evidence is comment `10665`; final closure evidence is comment `10666`. |
-| Implementation branch | `agent/mesp-99-category-uom` (merged; remote feature ref deleted). |
+| MESP-99 | **Done** after focused PR #33 and correction PR #34 merged; activation evidence is comment `10664`; validation evidence is comment `10665`; final closure evidence is comment `10666`; post-merge correction evidence is comment `10667`. |
+| MESP-97 | **Done** as a stale superseded/duplicate administrative artifact; reconciliation comment `10669`; MESP-99 is the authoritative implementation item. |
+| MESP-98 | **Done** as a stale superseded/duplicate administrative artifact; reconciliation comment `10668`; MESP-100 is the authoritative readiness item. |
+| Implementation branch | `agent/mesp-99-category-uom` and `fix/MESP-99-post-merge-review` (merged; remote feature refs may be deleted after handoff). |
 | Implementation commits | `430996cac3c3b184c4006010898d9eb964aaecad`, `0cf690672801f252969d212583e904d863d65709`, and `964766b8b6983d68e5e72bd79394d1eea7884b61`. |
-| Focused PR | **#33**, merged cleanly with no configured CI checks. |
+| Focused PR | **#33** implementation and correction PR **#34**, both merged cleanly with no configured CI checks. |
+| Correction commit | `e527f8a0cc32a72cef554e2bd93ab6322e9b1064`; PR **#34** merged cleanly with no configured CI checks. |
 | Functional merge commit | `8364a67bce4d7d782115b7347e4e6607f02f9be4`; local `main` and `origin/main` are synchronized to this commit before the final metadata update. |
+| Post-merge correction merge commit | `35417d35c076d1318474a7e4b31144cc9d94279b`; this is the merged correction code baseline, with final handoff metadata recorded in the subsequent `main` commit. |
 | Category/UOM scope | Tenant-wide inside the owning Tenant; server-derived exact Category/UOM policy; no cross-Tenant sharing or client Tenant/scope authority; Active-on-create, Deactivate/Reactivate; three-level cycle-free Category hierarchy; quantity precision 6, conversion precision 8, positive factors, AwayFromZero rounding. |
 | Persistence ownership | Module-owned Category/UOM entities, `masterdata` EF context/tables, Tenant query filters/ownership verifiers, append-before-effect audit transactions, and application-owned concurrency tokens in `MiniErp.Infrastructure`; no migration or production database provisioning. |
-| Authorization/audit corrections | Identifier-aware M95-SL-01 exclusion scan; private validated audit-evidence construction; persistent first audit fidelity; authorized queries and commands; actual API module registration; Reactivate mapped to the existing Activate capability. |
-| Validation | Release build 0 warnings/0 errors; focused Category/UOM, composition, and architecture tests 142/142 passed; non-SQL architecture suite 592/592 passed; `git diff --check` clean. |
+| Authorization/audit corrections | Identifier-aware M95-SL-01 exclusion scan; private validated audit-evidence construction; persistent first audit fidelity; authorized queries and commands; actual API module registration; Reactivate mapped to the existing Activate capability; persistence/audit-infrastructure failures map to `InternalFailure`; async Tenant ownership verification honors cancellation. |
+| Validation | Release build 0 warnings/0 errors; focused Category/UOM, boundary, composition, REST, and Tenant tests 138/138 passed; non-SQL architecture suite 593/593 passed; `git diff --check` clean. |
 | SQL safety gate | The 21 existing SQL Server safety tests still require the explicitly configured `MESP_SQLSERVER_CONNECTION_STRING`; no credential or production infrastructure was invented. |
 | Exclusions | No Product/Item/SKU/Barcode/tracking/batch/lot/serial/expiry, other Master Data domain, Retail POS/Wafra core behavior, migration, production provider, or production database. |
 | Next exact task | M95-SL-03 Product identity readiness and decision gate; documentation/readiness only after a dedicated Jira item and MD-OD-003/010/011 owner decisions. Do not start automatically. |
-| Current branch | `main`; PR #33 is merged and no later implementation item is active. |
+| Current branch | `main`; PR #33 and correction PR #34 are merged and no later implementation item is active. |
 | Open production gates | MESP-48, MESP-49, and MESP-50 remain open. |
 
 ## Historical position at MESP-99 session start - 9 August 2026
