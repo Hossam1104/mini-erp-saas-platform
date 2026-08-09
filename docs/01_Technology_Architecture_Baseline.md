@@ -4,7 +4,9 @@
 > MESP-99 / M95-SL-02 Category and UOM is Done through PR #33, correction PR
 > #34, and final audit-semantics correction PR #35. MESP-101 is the single
 > active readiness item for M95-SL-03 Product identity under Jira comment
-> `10671`; the readiness work adds no Product source behavior. The approved
+> `10671`; PR #36 merged the readiness baseline to `main` at
+> `c7392a55e0b60fd83e48447e3f9218f82cfaccea`, with closure evidence `10672`;
+> the readiness work adds no Product source behavior. The approved
 > Product-only bounds are MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008,
 > MD-OD-010, and MD-OD-011. ADR-002's four-project topology remains binding:
 > `MiniErp.Api`, `MiniErp.App`, `MiniErp.Contracts`, and

@@ -2,9 +2,10 @@
 
 > **Authoritative current Product-slice overlay - 9 August 2026.** MESP-99 /
 > M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
-> final audit-semantics correction PR #35. MESP-101 is the single active
-> readiness item for M95-SL-03 Product identity; its activated owner evidence
-> is Jira comment `10671`. The six Product-only bounds are MD-OD-001,
+> final audit-semantics correction PR #35. MESP-101 is **Done** for the
+> M95-SL-03 Product identity readiness gate after PR #36 merged to `main` at
+> `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; closure evidence is Jira comment
+> `10672` and activation/owner evidence is `10671`. The six Product-only bounds are MD-OD-001,
 > MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011. They define
 > Tenant-wide Product ownership, hybrid Tenant-unique SKU/barcode coding,
 > permissioned/audited routine lifecycle without separate approval,
@@ -17,11 +18,11 @@
 
 > **Historical MESP-100 readiness-correction overlay - 9 August 2026.** MESP-100 was the bounded readiness item for M95-SL-02. MESP-96 was Done, MESP-99 remained To Do until that correction was validated, merged, and activated, and no Category/UOM persistence or behavior was implemented here. The five Category/UOM-only bounds were MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006; the rest of the Open Decision Register remains preserved.
 
-> **Current delivery overlay - 8 August 2026 (supersedes older status wording below; approved business baseline unchanged).** MESP-31 is **Done**. PR #28 remains merged at final head `8396197b54189cb550f07bd4bb6779fd38ac30cb` and actual merge commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`. MESP-95 is **Done** after PR #29 merged at approved head `c465d660e49a254f2fffbb95e0d07c5fcf17a193` with actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; closure evidence is Jira comment `10654`. MESP-96 is **In Progress** for contract-only/non-persistent M95-SL-01. MD-OD-001 through MD-OD-011 remain open and unresolved; no Master Data persistence exists.
+> **Historical delivery overlay - 8 August 2026 (approved business baseline unchanged).** MESP-31 is **Done**. PR #28 remains merged at final head `8396197b54189cb550f07bd4bb6779fd38ac30cb` and actual merge commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`. MESP-95 is **Done** after PR #29 merged at approved head `c465d660e49a254f2fffbb95e0d07c5fcf17a193` with actual merge commit `93f4e83992ef46f498cfbfacbb513cfc3d8dda7d`; closure evidence is Jira comment `10654`. MESP-96 was **In Progress** for contract-only/non-persistent M95-SL-01 at that historical point. MD-OD-001 through MD-OD-011 remained open and unresolved; no Master Data persistence existed.
 >
 > The approved requirements, classifications, recommendations, acceptance criteria, and Open Decision Register below are unchanged. This overlay records delivery state only and does not authorize Product/Item, SKU/Barcode, tracking, business-availability, approval-catalogue, or Draft/Active behavior.
 
-> **Post-merge live-state overlay — 8 August 2026 (supersedes historical status wording below; approved business baseline unchanged).** MESP-31 is **Done**. PR #28 is merged: final PR head `8396197b54189cb550f07bd4bb6779fd38ac30cb`, actual merge commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`; Hossam's approval is recorded in Jira comment `10649` and final closure evidence in comment `10650`. MESP-95 is **In Progress**, and PR #29 is the active, open, non-draft implementation-readiness review. MD-OD-001 through MD-OD-011 remain open and unresolved; Master Data source implementation has not started.
+> **Historical post-merge state overlay — 8 August 2026 (approved business baseline unchanged).** MESP-31 is **Done**. PR #28 is merged: final PR head `8396197b54189cb550f07bd4bb6779fd38ac30cb`, actual merge commit `1dc4d2092d6e9a5bf8f6cfc3347e552a5ddbad1b`; Hossam's approval is recorded in Jira comment `10649` and final closure evidence in comment `10650`. MESP-95 was **In Progress**, and PR #29 was the active, open, non-draft implementation-readiness review at that historical point. MD-OD-001 through MD-OD-011 remained open and unresolved; Master Data source implementation had not started.
 >
 > The approved requirements, classifications, recommendations, acceptance criteria, and Open Decision Register below are unchanged. Historical status paragraphs are retained for provenance and are superseded by this overlay for current-state purposes.
 

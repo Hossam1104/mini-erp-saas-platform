@@ -2,15 +2,16 @@
 
 > **Authoritative current execution overlay — 9 August 2026.** MESP-99 /
 > M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
-> final audit-semantics correction PR #35. MESP-101 is the single active
-> bounded implementation/readiness item for M95-SL-03 Product identity and is
-> documentation/readiness only. Hossam's Product-only bounds for MD-OD-001,
+> final audit-semantics correction PR #35. MESP-101 is **Done** for the
+> bounded M95-SL-03 Product identity readiness gate after PR #36 merged at
+> `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; Jira closure evidence is comment
+> `10672`. Hossam's Product-only bounds for MD-OD-001,
 > MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011 are recorded in
 > `docs/18_Product_Identity_M95_SL_03_Readiness.md` and Jira comment `10671`.
 > Product source behavior has not started. No later Master Data or downstream
 > decision is silently resolved; MESP-48, MESP-49, and MESP-50 remain open.
 
-> **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
+> **Historical MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > MESP-99 / M95-SL-02 Category and UOM is implementation-complete on branch
 > `agent/mesp-99-category-uom` at its approved bounded scope: Tenant-wide
 > Category/UOM policy, server-derived authorization, lifecycle/concurrency,
@@ -29,13 +30,13 @@
 > administrative duplicates are terminally reconciled with comments
 > `10669`/`10668`. MESP-48, MESP-49, and MESP-50 remain open.
 
-> The next exact session is M95-SL-03 Product identity readiness only, gated by
-> a dedicated activated Jira item and owner decisions/bounds for MD-OD-003,
-> MD-OD-010, and MD-OD-011. It must not start automatically.
+> MESP-101 completed the M95-SL-03 Product identity readiness gate through PR
+> #36. The next exact session is M95-SL-03 Product Identity implementation
+> only and must not start automatically.
 
 > **Historical current overlay at MESP-99 activation - MESP-100 closed; MESP-99 active, 9 August 2026.** MESP-100 is Done with Jira closure evidence `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. MESP-99 was In Progress with activation evidence `10664` and was the single active implementation item. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. No Category/UOM persistence or MESP-99 behavior was implemented by MESP-100; the root TASK.md then contained the exact MESP-99 session.
 
-> **Current MESP-100 readiness overlay — 9 August 2026.** MESP-100 is the
+> **Historical MESP-100 readiness overlay — 9 August 2026.** MESP-100 was the
 > single active bounded readiness-correction item between completed MESP-96 /
 > M95-SL-01 and MESP-99 / M95-SL-02. MESP-99 remains To Do until this session
 > is fully validated, merged, and activated. The actual production topology is
@@ -60,12 +61,12 @@
 | Last updated | 9 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-101 / M95-SL-03 Product identity readiness and decision gate — active documentation/readiness session; Product implementation is not started.` |
-| Current implementation item | `MESP-101 is In Progress during the readiness session; MESP-99 is Done with activation evidence 10664, validation evidence 10665, closure evidence 10666, PR #35 correction evidence, and final merge baseline recorded in .ai/CURRENT_STATE.md.` |
-| Merged-main baseline | `3e51f98f8c80b9989632499632605894c18570cf` (PR #35 final audit-semantics correction; Category/UOM code baseline) |
+| Current activity | `MESP-101 / M95-SL-03 Product identity readiness and decision gate — Done through merged PR #36; Product implementation is not started.` |
+| Current implementation item | `MESP-101 is Done with Jira closure evidence 10672; MESP-99 is Done with activation evidence 10664, validation evidence 10665, closure evidence 10666, PR #35 correction evidence, and final merge baseline recorded in .ai/CURRENT_STATE.md.` |
+| Merged-main baseline | `c7392a55e0b60fd83e48447e3f9218f82cfaccea` (PR #36 readiness merge; Product readiness baseline and Category/UOM code baseline) |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `The M95-SL-03 readiness PR will be opened from the session branch after final validation; PR #33, #34, and #35 are merged. Product implementation PR is not open.` |
-| Current review checkpoint | `MESP-99/SL-02 is complete; M95-SL-03/MESP-101 is the single active Product readiness item; six Product-only decision bounds are recorded; unrelated Master Data/downstream decisions and production gates remain preserved.` |
+| Open Pull Request | `None; readiness PR #36 is merged, as are PR #33, #34, and #35. Product implementation PR is not open.` |
+| Current review checkpoint | `MESP-99/SL-02 and MESP-101/M95-SL-03 readiness are complete; six Product-only decision bounds are recorded; the exact next Product implementation task is prepared but not activated or started; unrelated Master Data/downstream decisions and production gates remain preserved.` |
 
 ---
 

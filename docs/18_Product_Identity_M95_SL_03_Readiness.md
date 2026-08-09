@@ -7,7 +7,8 @@
 | Slice | M95-SL-03 — Product identity |
 | Jira readiness item | MESP-101 — Prepare M95-SL-03 Product identity readiness and decision gate |
 | Parent Epic | MESP-6 — EPIC 06 - Master Data and Product Catalog |
-| Status | Bounded readiness baseline; ready for the next Product implementation session after this document is merged and MESP-101 is closed |
+| Status | Completed bounded readiness baseline; PR #36 merged to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; MESP-101 Done with Jira closure evidence `10672` |
+| Readiness PR | #36 — merged cleanly from `09d2e09f6a382187e8cdba32cd594f2b9ad15ab7` |
 | Owner | Hossam / Product Owner |
 | Scope | Product identity only; documentation/readiness only in this session |
 | Product implementation | Explicitly not started by M95-SL-03 readiness |

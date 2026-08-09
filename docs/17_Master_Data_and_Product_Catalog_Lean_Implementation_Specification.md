@@ -4,8 +4,10 @@
 > / M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
 > final audit-semantics correction PR #35, all merged to `main`; the final
 > synchronized main baseline is recorded in `.ai/CURRENT_STATE.md`. M95-SL-03
-> is the current bounded Product identity readiness session under Jira
-> MESP-101, In Progress during execution. Hossam's six Product-only bounds for
+> is the completed bounded Product identity readiness baseline under Jira
+> MESP-101, merged through PR #36 at
+> `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; closure evidence is comment
+> `10672`. Hossam's six Product-only bounds for
 > MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011 are
 > recorded in `docs/18_Product_Identity_M95_SL_03_Readiness.md` and Jira
 > comment `10671`. No Product persistence or Product behavior is implemented
@@ -30,12 +32,13 @@
 > Jira validation evidence is comment `10665`, final closure evidence is comment
 > `10666`, and post-merge correction evidence is comment `10667`; MESP-99 is
 > Done. Stale MESP-97/MESP-98 administrative duplicates are terminally
-> reconciled with comments `10669`/`10668`. The next exact session is M95-SL-03
-> Product identity readiness only and must not start automatically.
+> reconciled with comments `10669`/`10668`. MESP-101 has now completed the
+> Product identity readiness gate through PR #36. The next exact session is
+> M95-SL-03 Product Identity implementation only and must not start automatically.
 
-> The next exact session is M95-SL-03 Product identity readiness only. It must
-> not start automatically and requires a dedicated activated Jira item plus
-> owner resolution or explicit bounding of MD-OD-003, MD-OD-010, and MD-OD-011.
+> The next exact session is M95-SL-03 Product Identity implementation only. It
+> must not start automatically; the completed MESP-101 readiness gate and PR #36
+> are the required entry evidence.
 
 **Version:** v0.1
 **Status:** Completed implementation-readiness baseline; MESP-95 is Done
@@ -1051,10 +1054,10 @@ follow-ups do not authorize any data-bearing work in MESP-100.
 ## 25. M95-SL-03 Product identity readiness overlay — 9 August 2026
 
 MESP-99 / M95-SL-02 Category and UOM is complete through PR #33, correction
-PR #34, and final audit-semantics correction PR #35. M95-SL-03 is the current
-bounded Product readiness session under MESP-101. This overlay is traceability
-for the next Product implementation session; it does not add Product source
-behavior to this specification.
+PR #34, and final audit-semantics correction PR #35. M95-SL-03 Product
+readiness is complete through PR #36 under MESP-101. This overlay is
+traceability for the next Product implementation session; it does not add
+Product source behavior to this specification.
 
 Hossam's Product-only dispositions are:
 

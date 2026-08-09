@@ -2,8 +2,10 @@
 
 > **Authoritative current delivery overlay - 9 August 2026.** MESP-99 /
 > M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
-> final audit-semantics correction PR #35. MESP-101 is the single active
-> documentation/readiness item for M95-SL-03 Product identity, under the
+> final audit-semantics correction PR #35. MESP-101 is **Done** for the
+> documentation/readiness gate for M95-SL-03 Product identity after PR #36
+> merged to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; Jira closure
+> evidence is comment `10672`, under the
 > Product-only bounds recorded in Jira comment `10671` and
 > `docs/18_Product_Identity_M95_SL_03_Readiness.md`. No Product source
 > behavior, persistence, migration, endpoint, or UI is authorized by this

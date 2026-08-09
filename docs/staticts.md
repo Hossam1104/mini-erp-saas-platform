@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-09 15:16 +03:00
+**Last Updated:** 2026-08-09 15:23 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~27%**
@@ -84,8 +84,8 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **40** | **46.5%** |
-| In Progress | **2** | **2.3%** |
+| Done | **41** | **47.7%** |
+| In Progress | **1** | **1.2%** |
 | To Do | **44** | **51.2%** |
 | **Total Non-Epic** | **86** | **100%** |
 
@@ -94,11 +94,11 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 101 MESP issues, including the 15 Epics, the current workflow state
-is 40 Done, 7 In Progress, and 54 To Do.
+is 41 Done, 6 In Progress, and 54 To Do.
 
 ## Interpretation
 
-Raw Jira completion currently makes the project appear approximately **47% complete**.
+Raw Jira completion currently makes the project appear approximately **48% complete**.
 
 That number must NOT be used as the production-completion percentage.
 
@@ -106,15 +106,15 @@ Many future implementation tickets have not yet been generated because several m
 
 Therefore the current project should be represented as:
 
-> **Jira-created-work completion: ~47%**
+> **Jira-created-work completion: ~48%**
 > **Actual Release-1 production completion: ~27%**
 
 **Jira hygiene note:** MESP-97 and MESP-98 were stale duplicate/superseded
 SL-02 administrative artifacts. They have now been reconciled to terminal Done
 with explicit superseded/duplicate comments; MESP-99 and MESP-100 remain the
 authoritative completed implementation/readiness records, and MESP-101 is the
-single active Product readiness record. No Product implementation issue was
-created or started.
+completed Product readiness record. No Product implementation issue was created
+or started.
 
 ---
 
@@ -887,7 +887,7 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **MESP-99 / M95-SL-02 Category & UOM and final correction PR #35 merged; MESP-101 / M95-SL-03 Product Identity readiness is active**
+> **MESP-99 / M95-SL-02 Category & UOM and final correction PR #35 merged; MESP-101 / M95-SL-03 Product Identity readiness is complete**
 
 Current strategic state:
 
@@ -901,7 +901,7 @@ Current strategic state:
   - `parent_category_not_found` audit evidence is classified as `NotFound`, while depth and cycle hierarchy validation remains unchanged;
   - the two low-risk test-quality findings from PR #33 are cleaned up;
 - stale duplicate Jira artifacts MESP-97/MESP-98 are reconciled as superseded historical work.
-- MESP-101 is the single active readiness item for Product identity. Its
+- MESP-101 completed the Product identity readiness gate through PR #36. Its
   documentation baseline records six Product-only owner bounds, Product-owned
   authorization/audit/concurrency requirements, Tenant isolation, localization
   limits, downstream contracts, and explicit no-source exclusions. This
@@ -927,6 +927,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 | 2026-08-09 10:23 +03:00 | **27%** | **34%** | **25%** | **15%** | PR #34 correction merged; MESP-97/MESP-98 reconciled as terminal superseded/duplicate history; final tracked handoff evidence recorded; SL-03 readiness remains next and not started | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
 | 2026-08-09 11:33 +03:00 | **27%** | **34%** | **25%** | **15%** | Final MESP-99 audit-semantics correction classifies missing parent Category as `NotFound`; hierarchy behavior remains unchanged; SL-03 readiness remains next and not started | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
 | 2026-08-09 15:16 +03:00 | **27%** | **34%** | **25%** | **15%** | MESP-101 Product identity readiness baseline prepared and activated with six Product-only bounds; no production-capability percentage change; readiness PR pending | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
+| 2026-08-09 15:23 +03:00 | **27%** | **34%** | **25%** | **15%** | MESP-101 Product identity readiness baseline merged through PR #36 and Jira closed with evidence 10672; root TASK now points to Product implementation only; production-capability percentages unchanged; non-Epic Jira 41 Done / 1 In Progress / 44 To Do | Production-ready target unchanged: Late Oct–Mid Nov 2026 |
 
 ---
 

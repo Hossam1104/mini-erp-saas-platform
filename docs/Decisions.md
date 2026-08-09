@@ -5,9 +5,10 @@ This file is the lightweight ADR index for Release 1. The approved architecture 
 ## Current Product-readiness state - 9 August 2026
 
 MESP-99 / M95-SL-02 Category and UOM is Done through PR #33, correction PR
-#34, and final audit-semantics correction PR #35. MESP-101 is the single
-active documentation/readiness item for M95-SL-03 Product identity, activated
-with owner evidence in Jira comment `10671`. Its Product-only bounds are
+#34, and final audit-semantics correction PR #35. MESP-101 is **Done** for the
+documentation/readiness gate for M95-SL-03 Product identity after PR #36
+merged at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; closure evidence is Jira
+comment `10672` and activation/owner evidence is `10671`. Its Product-only bounds are
 MD-OD-001, MD-OD-003, MD-OD-005, MD-OD-008, MD-OD-010, and MD-OD-011. The
 readiness note records the one Product/Item Release-1 identity, hybrid
 Tenant-unique SKU/barcode boundary, Product-side tracking configuration only,
@@ -19,7 +20,7 @@ remains authoritative for shared SQL Server/module-owned persistence; ADR-011
 is still required before localized search, forms, or bilingual/RTL document
 behavior. MESP-48, MESP-49, and MESP-50 remain open.
 
-## Current authoritative execution state - 9 August 2026
+## Historical authoritative execution state at MESP-99 activation - 9 August 2026
 
 MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at
 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 is In Progress with

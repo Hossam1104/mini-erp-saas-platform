@@ -17,14 +17,16 @@ velocity, or forecast:
    that the repository tracker was updated; Hossam/ChatGPT inspects the
    tracked GitHub version directly when needed.
 
-## Current execution overlay - 9 August 2026 (MESP-101 Product readiness)
+## Current execution overlay - 9 August 2026 (MESP-101 readiness complete)
 
 MESP-100 is Done with closure evidence in Jira comment `10663`. MESP-99 /
 M95-SL-02 Category and UOM is Done through focused PR #33, correction PR #34,
 and final audit-semantics correction PR #35; the final correction merge is
-`3e51f98f8c80b9989632499632605894c18570cf`. MESP-101 is the single active
-bounded readiness item for M95-SL-03 Product identity, activated in Jira with
-owner evidence in comment `10671`.
+`3e51f98f8c80b9989632499632605894c18570cf`. MESP-101 was the bounded
+readiness item for M95-SL-03 Product identity and is now **Done** after
+readiness PR #36 merged to `main` at
+`c7392a55e0b60fd83e48447e3f9218f82cfaccea`; Jira closure evidence is comment
+`10672`, with activation/owner evidence in comment `10671`.
 
 The approved Product-only bounds are MD-OD-001 (Product master data is
 Tenant-wide inside its owning Tenant, reusable by that Tenant's
@@ -40,8 +42,8 @@ identity; no separate variant/Item entity or variant behavior in this slice).
 These bounds apply only to M95-SL-03 Product identity and do not resolve the
 remaining decision register.
 
-The root `TASK.md` is being handed off to the exact next Product identity
-implementation session. This readiness session adds no Product/Item/SKU/Barcode
+The root `TASK.md` is handed off to the exact next Product identity
+implementation session. The completed readiness session added no Product/Item/SKU/Barcode
 source behavior, entities, tables, migrations, endpoints, or UI. The actual
 backend topology is four projects: `MiniErp.Api`, `MiniErp.App`,
 `MiniErp.Contracts`, and `MiniErp.Infrastructure`. ADR-002 is the detailed
