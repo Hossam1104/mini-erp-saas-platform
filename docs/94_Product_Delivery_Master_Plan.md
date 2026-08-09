@@ -63,7 +63,7 @@
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
 | Current activity | `MESP-101 / M95-SL-03 Product identity readiness and decision gate — Done through merged PR #36; Product implementation is not started.` |
 | Current implementation item | `MESP-101 is Done with Jira closure evidence 10672; MESP-99 is Done with activation evidence 10664, validation evidence 10665, closure evidence 10666, PR #35 correction evidence, and final merge baseline recorded in .ai/CURRENT_STATE.md.` |
-| Merged-main baseline | `cb27962e3324718e9198524d4a18c2190b684ad5` final synchronized main (PR #36 readiness merge at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`, followed by tracked closure metadata commit; Jira synchronization evidence `10673`) |
+| Merged-main baseline | Final `main`/`origin/main` synchronization is verified at handoff; PR #36 readiness merge is `c7392a55e0b60fd83e48447e3f9218f82cfaccea`, and Jira comment `10674` records the terminal repository SHA after tracked closure metadata commits. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
 | Open Pull Request | `None; readiness PR #36 is merged, as are PR #33, #34, and #35. Product implementation PR is not open.` |
 | Current review checkpoint | `MESP-99/SL-02 and MESP-101/M95-SL-03 readiness are complete; six Product-only decision bounds are recorded; the exact next Product implementation task is prepared but not activated or started; unrelated Master Data/downstream decisions and production gates remain preserved.` |
