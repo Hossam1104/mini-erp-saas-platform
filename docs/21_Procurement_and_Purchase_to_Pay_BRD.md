@@ -15,7 +15,8 @@
 | Jira | MESP-32 - Produce Procurement and Purchase-to-Pay BRD |
 | Parent Epic | `MESP-7 - EPIC 07 - Procurement and Purchase-to-Pay` |
 | BRD sequence | Position 7 of 15, confirmed by MESP-25 comment `10057` |
-| Version | v0.1 - Draft for Owner review at initial publication; approval evidence is recorded in the Jira handoff after review |
+| Version | v0.1 - Approved Business Baseline |
+| Status | **Approved Business Baseline.** This document is a business baseline only and does not authorize source implementation by itself. |
 | Accountable Owner | Hossam, Product Owner and founder approver; Finance, Procurement, Inventory, Security, Reporting, and Saudi validation owners are consulted within their decision boundaries |
 | Prepared for | Release 1 B2B ERP |
 | Date | 10 August 2026 |
@@ -24,6 +25,8 @@
 | Required glossary | `docs/00_ERP_Business_Glossary.md` |
 | Related approved BRDs | `docs/11_SaaS_Platform_Administration_BRD.md`; `docs/12_Identity_and_Access_BRD.md`; `docs/13_Multi_Tenancy_BRD.md`; `docs/14_Organization_and_Company_Structure_BRD.md`; `docs/16_Master_Data_and_Product_Catalog_BRD.md` |
 | Decision register | MESP-23 and its Jira-decomposed rows MESP-41 through MESP-56 |
+| Jira approval evidence | MESP-32 comment `10739` |
+| Approved reviewed content head | `5e4e2122fe3346af96a90a7152602410769f0cf9` on draft PR #45 |
 | Delivery reference | `docs/94_Product_Delivery_Master_Plan.md` |
 | Architecture references | `docs/Decisions.md`; ADR-002, ADR-004, ADR-006, ADR-007, ADR-008, ADR-009, and ADR-018; constraint references only |
 
@@ -975,12 +978,12 @@ decision process remains open for the named owners above.
 | Operational requirements | Section 20 | Covered without production claims |
 | Given/When/Then scenarios | Section 21 | Covered by 28 business scenarios |
 | Open decisions and named owners | Section 22 | Covered; no open answer inferred |
-| Business-owner approval | Jira handoff and final document-control update | Recorded only after review and Jira closure evidence |
+| Business-owner approval | Jira handoff and final document-control update | Recorded in MESP-32 Jira comment `10739`; approval is limited to the business baseline and preserves all open decision gates |
 
 ## 25. Review and Approval Status
 
-At initial publication this document is a draft for Owner review. The review
-must verify that:
+This v0.1 document is an Approved Business Baseline. The Owner review verified
+that:
 
 - the PRD primary anchors and BR-005 are covered;
 - all required Procurement/P2P lifecycle stages and partial/exception paths
@@ -994,8 +997,8 @@ must verify that:
   implementation instruction has been introduced; and
 - the next implementation or domain BRD is not activated by this document.
 
-Final approval, reviewed-content identity, Jira transition, closure evidence,
-and the next exact session are recorded in the repository state and the live
-MESP-32 Jira handoff after this review. Approval of this BRD is a business
-requirements baseline only; it is not source implementation authorization.
-
+Owner approval is recorded in MESP-32 comment `10739` against reviewed content
+head `5e4e2122fe3346af96a90a7152602410769f0cf9`. The normal PR merge and Jira
+closure evidence are tracked separately from this business content. Approval
+of this BRD is a business requirements baseline only; it is not source
+implementation authorization.
