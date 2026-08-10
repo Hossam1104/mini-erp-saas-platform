@@ -1,45 +1,49 @@
 # Current State
 
-## Current authoritative position - 10 August 2026 (MESP-33 Inventory BRD Done)
+## Current authoritative position - 10 August 2026 (MESP-34 Finance BRD Done)
 
-MESP-33 is **Done** as the approved, documentation-only Release 1 B2B
-Inventory and Warehouse Management business baseline. The canonical artifact
-is docs/22_Inventory_and_Warehouse_Management_BRD.md, v0.1 Approved Business
-Baseline. It covers the eight required Inventory flows, immutable stock-ledger
-and projection invariants, Moving Weighted Average valuation, ownership and
-integration boundaries, controls, audit, reconciliation, reporting,
-migration, localization, and production gates. It adds no application source,
-API, database/schema, migration, UI, provider, or production behavior.
+MESP-34 is **Done** as the approved, documentation-only Release 1 B2B
+Finance and Accounting business baseline. The canonical artifact is
+`docs/23_Finance_and_Accounting_BRD.md`, v0.1 Approved Business Baseline. It
+covers AP, AR, GL, journals, the Procurement/Inventory/B2B Sales posting
+foundation, tax, cash/bank, periods, reconciliation, multi-currency,
+statements, source-to-GL lineage, immutable posted history, reversal/correction,
+permissions/SoD, failure/unknown outcomes, reporting, migration,
+Saudi/localization, and explicit production gates. It adds no application
+source, API, database/schema, migration, UI, provider, or production behavior.
 
-Focused PR #46 merged cleanly to main at
-cd6f57de329b7d193c5d75e2e4268ae87c8aac67 from final branch head 94f3b7e.
-Jira activation, validation, Owner approval, and closure evidence are
-comments 10741, 10742, 10743, and 10745. The MESP-23 Inventory-linked
-register handoff is comment 10744.
+Focused PR #47 merged cleanly to main at
+`a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b` from final branch head
+`72aa210d462f783671f1b3b33fcdea4955567b9c`; the approved requirements were
+reviewed at `7d9de5d1556114d443b95db9547d6c083dcd804d` and the second commit
+records approval metadata only. Jira activation, validation, Owner approval,
+final validation, and MESP-23 handoff evidence are comments `10746`, `10747`,
+`10748`, `10749`, and `10750`.
 
 MESP-41 through MESP-55 remain open except the exact approved MESP-52 / PD-020
-and MESP-56 / PD-021 scopes. The MESP-33 decision bundle preserves tracking,
-negative stock/reservation, approval/delegation, transfer/count/issue,
+and MESP-56 / PD-021 scopes. The MESP-34 decision bundle preserves payment,
+matching, approvals/delegation, negative stock/tracking dependencies,
 migration, reports, exchange-rate, Saudi, retention, and volume decisions as
 open or gated. No recommendation was promoted to a requirement. MESP-48,
 MESP-49, and MESP-50 remain open production/external gates.
 
-MESP-23 remains the only active governance item. MESP-34 Finance and
-Accounting is the next separately authorized To Do BRD under MESP-10 and is
-not activated by this session. TASK.md contains only the exact MESP-34
-handoff. Do not execute it automatically.
+MESP-23 remains the only active governance item. No source implementation item
+is active. MESP-35 B2B Sales and Order-to-Cash is the next separately
+authorized To Do BRD under MESP-10, and Currency plus later work remain
+unstarted. TASK.md contains only the exact MESP-35 handoff; do not execute it
+automatically.
 
 The canonical PRD was reviewed structurally. No visual-rendering claim is
-made because optional LibreOffice/pdf2image dependencies are unavailable.
+made because optional LibreOffice/`soffice` support was unavailable.
 
 | Current fact | Verified value |
 |---|---|
-| MESP-33 | **Done**; v0.1 Approved Business Baseline in docs/22_Inventory_and_Warehouse_Management_BRD.md; closure evidence 10745. |
-| Focused PR | **#46**; merged to main at cd6f57de329b7d193c5d75e2e4268ae87c8aac67; final branch head 94f3b7e. |
-| Current branch | main; synchronized to the PR #46 merge before this required handoff metadata commit. |
-| Jira handoff | MESP-25 Done; MESP-26 Done; MESP-33 Done; MESP-34 To Do; MESP-23 In Progress; Inventory-affecting decision rows remain open except MESP-52/MESP-56. |
+| MESP-34 | **Done**; v0.1 Approved Business Baseline in `docs/23_Finance_and_Accounting_BRD.md`; closure evidence is recorded in the final MESP-34 Jira closure record after the approved BRD and synchronized state handoff. |
+| Focused PR | **#47**; merged to main at `a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b`; final branch head `72aa210d462f783671f1b3b33fcdea4955567b9c`; approved requirements head `7d9de5d1556114d443b95db9547d6c083dcd804d`. |
+| Current branch | `main` after the MESP-34 documentation closure handoff; no implementation branch is active. |
+| Jira handoff | MESP-25 Done; MESP-26 Done; MESP-33 Done; MESP-34 Done; MESP-23 In Progress; MESP-35 To Do; open decision rows remain open except MESP-52/MESP-56. |
 | Production-capability percentages | Unchanged by this documentation-only BRD session; no source behavior or usable production capability was added. |
-| Next exact task | MESP-34 Finance and Accounting BRD only, in a fresh session after the live baseline and Finance entry gate are reverified. Do not activate or execute it automatically. |
+| Next exact task | MESP-35 B2B Sales and Order-to-Cash BRD only, in a fresh session after the live Finance baseline and Sales entry gate are reverified. Do not activate or execute it automatically. |
 
 ## Historical authoritative position - 10 August 2026 (MESP-32 Procurement BRD Done)
 
