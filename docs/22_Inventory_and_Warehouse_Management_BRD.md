@@ -15,8 +15,8 @@
 | Jira | MESP-33 - Produce Inventory and Warehouse Management BRD |
 | Parent Epic | MESP-8 - EPIC 08 - Inventory and Warehouse Management |
 | BRD sequence | Position 8 of 15, confirmed by MESP-25 comment 10057 |
-| Version | v0.1 - Draft for Owner approval |
-| Status | **Draft for Owner approval.** This document is a business-requirements baseline only and does not authorize source implementation by itself. |
+| Version | v0.1 - Approved Business Baseline |
+| Status | **Approved Business Baseline.** This document is a business-requirements baseline only and does not authorize source implementation by itself. |
 | Accountable Owner | Hossam, Product Owner and founder approver; Inventory, Organization, Master Data, Procurement, Finance, Sales, Reporting, Security, Migration, and Saudi validation owners are consulted within their decision boundaries |
 | Prepared for | Release 1 B2B ERP |
 | Date | 10 August 2026 |
@@ -26,7 +26,7 @@
 | Related approved BRDs | docs/11_SaaS_Platform_Administration_BRD.md; docs/12_Identity_and_Access_BRD.md; docs/13_Multi_Tenancy_BRD.md; docs/14_Organization_and_Company_Structure_BRD.md; docs/16_Master_Data_and_Product_Catalog_BRD.md; docs/21_Procurement_and_Purchase_to_Pay_BRD.md |
 | Decision register | MESP-23 and its Jira-decomposed rows MESP-41 through MESP-56 |
 | Jira activation evidence | MESP-33 comment 10741 |
-| Jira approval evidence | Pending Owner review |
+| Jira approval evidence | MESP-33 comment 10743 |
 | Delivery reference | docs/94_Product_Delivery_Master_Plan.md |
 | Architecture references | docs/Decisions.md; ADR-002, ADR-004, ADR-006, ADR-007, ADR-008, ADR-009, and ADR-018; constraint references only |
 
@@ -1206,11 +1206,12 @@ decision record.
 | Operational readiness and production gates | Section 20 and open rows 005-007 | Covered without production claim |
 | Given/When/Then scenarios | Section 21 | Covered by 35 business scenarios |
 | Open decisions and named owners | Section 22 | Covered; no open answer inferred |
-| Owner approval | Jira handoff and final document-control update | Pending at draft stage |
+| Owner approval | Jira handoff and final document-control update | Approved in Jira comment 10743 against reviewed content head f17720fa5e574212856c547279672c1fcb8b1c42 |
 
 ## 25. Review and Approval Status
 
-This v0.1 document is a Draft for Owner approval. The review must verify that:
+This v0.1 document is an Approved Business Baseline. The completed review
+verified that:
 
 - PRD anchors INV-001 through INV-008 and BR-006/BR-007 are covered;
 - all eight Inventory flows, partial paths, exception paths, and correction
@@ -1225,7 +1226,9 @@ This v0.1 document is a Draft for Owner approval. The review must verify that:
   implementation instruction has been introduced; and
 - MESP-34 and later work are not activated by this BRD.
 
-Owner approval, if granted, must be recorded in Jira against the reviewed
-content head. Approval of this BRD is a business-requirements baseline only;
-it is not source implementation authorization and does not close the named
-decision or production gates.
+Owner approval is recorded in MESP-33 comment 10743 against reviewed content
+head f17720fa5e574212856c547279672c1fcb8b1c42. Approval of this BRD is a
+business-requirements baseline only; it is not source implementation
+authorization and does not close the named decision or production gates. The
+normal PR merge and Jira closure evidence are tracked separately from this
+business content.
