@@ -7,7 +7,8 @@ Finance and Accounting business baseline. Its canonical artifact is
 `72aa210d462f783671f1b3b33fcdea4955567b9c`; the approved requirements head
 was `7d9de5d1556114d443b95db9547d6c083dcd804d`. Jira activation, validation,
 Owner approval, final validation, and MESP-23 handoff evidence are comments
-`10746`, `10747`, `10748`, `10749`, and `10750`. MESP-34 is Done in live Jira.
+`10746`, `10747`, `10748`, `10749`, and `10750`; final MESP-34 closure
+evidence is comment `10751`. MESP-34 is Done in live Jira.
 
 MESP-35 remains **To Do** under MESP-9 with the separately controlled BRD
 sequence. It must be activated only in a fresh session after the live MESP-34
