@@ -6,8 +6,8 @@ namespace MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 
 /// <summary>
 /// Business Parties module-owned EF context. It is internal so ordinary
-/// application callers can only obtain the explicit Tenant-bound Supplier
-/// persistence contract.
+/// application callers can only obtain explicit Tenant-bound Business Parties
+/// persistence contracts.
 /// </summary>
 internal sealed class BusinessPartiesDbContext : TenantPersistenceDbContext
 {
@@ -21,6 +21,10 @@ internal sealed class BusinessPartiesDbContext : TenantPersistenceDbContext
     internal DbSet<BusinessPartiesSupplierEntity> Suppliers => Set<BusinessPartiesSupplierEntity>();
 
     internal DbSet<BusinessPartiesSupplierContactEntity> SupplierContacts => Set<BusinessPartiesSupplierContactEntity>();
+
+    internal DbSet<BusinessPartiesCustomerEntity> Customers => Set<BusinessPartiesCustomerEntity>();
+
+    internal DbSet<BusinessPartiesCustomerContactEntity> CustomerContacts => Set<BusinessPartiesCustomerContactEntity>();
 
     internal DbSet<BusinessPartiesAuditEventEntity> AuditEvents => Set<BusinessPartiesAuditEventEntity>();
 
@@ -81,6 +85,55 @@ internal sealed class BusinessPartiesDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         contact.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var customer = modelBuilder.Entity<BusinessPartiesCustomerEntity>();
+        customer.ToTable("Customers", "businessparties");
+        customer.HasKey(item => item.Id);
+        customer.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(customer.Property(item => item.TenantId));
+        customer.Property(item => item.Code).HasMaxLength(128).IsRequired();
+        customer.Property(item => item.CodeKey).HasMaxLength(128).IsRequired();
+        customer.Property(item => item.EnglishLegalName).HasMaxLength(256).IsRequired();
+        customer.Property(item => item.ArabicLegalName).HasMaxLength(256).IsRequired(false);
+        customer.Property(item => item.EnglishLegalNameKey).HasMaxLength(256).IsRequired();
+        customer.Property(item => item.ArabicLegalNameKey).HasMaxLength(256).IsRequired(false);
+        customer.Property(item => item.EnglishTradingName).HasMaxLength(256).IsRequired(false);
+        customer.Property(item => item.ArabicTradingName).HasMaxLength(256).IsRequired(false);
+        customer.Property(item => item.EnglishTradingNameKey).HasMaxLength(256).IsRequired(false);
+        customer.Property(item => item.ArabicTradingNameKey).HasMaxLength(256).IsRequired(false);
+        customer.Property(item => item.LifecycleState).IsRequired();
+        ConfigureVersion(customer.Property(item => item.Version));
+        customer.HasIndex(item => new { item.TenantId, item.CodeKey }).IsUnique();
+        customer.HasIndex(item => new { item.TenantId, item.EnglishLegalNameKey }).IsUnique();
+        customer.HasIndex(item => new { item.TenantId, item.ArabicLegalNameKey })
+            .IsUnique()
+            .HasFilter("[ArabicLegalNameKey] IS NOT NULL");
+        customer.HasIndex(item => new { item.TenantId, item.EnglishTradingNameKey })
+            .IsUnique()
+            .HasFilter("[EnglishTradingNameKey] IS NOT NULL");
+        customer.HasIndex(item => new { item.TenantId, item.ArabicTradingNameKey })
+            .IsUnique()
+            .HasFilter("[ArabicTradingNameKey] IS NOT NULL");
+        customer.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        customer.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var customerContact = modelBuilder.Entity<BusinessPartiesCustomerContactEntity>();
+        customerContact.ToTable("CustomerContacts", "businessparties");
+        customerContact.HasKey(item => item.Id);
+        customerContact.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(customerContact.Property(item => item.TenantId));
+        customerContact.Property(item => item.CustomerId).IsRequired();
+        customerContact.Property(item => item.Name).HasMaxLength(256).IsRequired();
+        customerContact.Property(item => item.Email).HasMaxLength(256).IsRequired(false);
+        customerContact.Property(item => item.Phone).HasMaxLength(256).IsRequired(false);
+        ConfigureVersion(customerContact.Property(item => item.Version));
+        customerContact.HasIndex(item => new { item.TenantId, item.CustomerId });
+        customerContact.HasOne<BusinessPartiesCustomerEntity>()
+            .WithMany(item => item.Contacts)
+            .HasForeignKey(item => new { item.TenantId, item.CustomerId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        customerContact.HasQueryFilter(item => item.TenantId == TrustedTenantId);
 
         var audit = modelBuilder.Entity<BusinessPartiesAuditEventEntity>();
         audit.ToTable("AuditEvents", "businessparties");

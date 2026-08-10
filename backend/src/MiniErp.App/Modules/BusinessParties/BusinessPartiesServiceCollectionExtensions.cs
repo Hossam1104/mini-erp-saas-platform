@@ -26,6 +26,25 @@ public static class BusinessPartiesServiceCollectionExtensions
         services.AddSingleton<SupplierService>();
         return services;
     }
+
+    /// <summary>
+    /// Registers the separately owned Business Customer authorization and
+    /// application seam. Persistence remains fail-closed until the host
+    /// supplies the Business Parties module-owned provider adapter.
+    /// </summary>
+    public static IServiceCollection AddCustomerIdentity(
+        this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddSingleton<CustomerScopePolicy>();
+        services.AddSingleton<CustomerResourcePolicy>();
+        services.AddSingleton<CustomerApprovalPolicy>();
+        services.AddSingleton<CustomerResourceAuthorizationService>();
+        services.AddSingleton<ICustomerPersistence, UnavailableCustomerPersistence>();
+        services.AddSingleton<CustomerService>();
+        return services;
+    }
 }
 
 #pragma warning restore CS1591

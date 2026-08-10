@@ -38,16 +38,19 @@
 > **Authoritative current Business Customer implementation overlay - 10 August 2026.**
 > MESP-105 is **Done** for the dedicated M95-SL-05 readiness and decision-gate
 > item under MESP-6; the Customer-only Owner disposition is Jira comment
-> `10691`. MESP-107 is the separate active implementation item, activated in
-> Jira comment `10692`. Business Customer remains an external B2B role, not a
-> User, login, membership, credential holder, consumer, or unified Party. The
-> approved Customer-only bounds are Tenant-wide identity inside the owning
-> Tenant with no cross-Tenant sharing, server-derived Tenant/resource
-> authorization, no separate approver for routine master-data maintenance,
-> and no Draft with Active-on-authorized-create plus guarded
-> Deactivate/Reactivate. No Customer source behavior, persistence, migration,
-> API, UI, or downstream Sales/AR/Finance behavior was added by this
-> readiness/activation handoff. MD-OD-007 remains an external Saudi
+> `10691`. MESP-107 is the separate implementation item, activated in Jira
+> comment `10692`; its bounded source implementation is complete on branch
+> `agent/mesp-107-business-customer` at commit
+> `8d8d8fddfa79a8e08f2566fcdd2499dfd594277d` and is under review in PR #41.
+> Business Customer remains an external B2B role, not a User, login,
+> membership, credential holder, consumer, or unified Party. The implemented
+> boundary is Tenant-wide identity inside the owning Tenant with no cross-Tenant
+> sharing, server-derived Tenant/resource authorization, no separate approver
+> for routine master-data maintenance, no Draft, Active-on-authorized-create,
+> guarded Deactivate/Reactivate, same-role integrity, contacts, concurrency,
+> audit, contracts/routes, and module-owned persistence. No statutory
+> registration, downstream Sales/AR/Finance behavior, migration, provider, or
+> production-readiness claim is made. MD-OD-007 remains an external Saudi
 > statutory/legal and production gate under MESP-49; MESP-106 is a non-blocking
 > shared follow-up; MESP-48, MESP-49, and MESP-50 remain open.
 
