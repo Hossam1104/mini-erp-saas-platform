@@ -1,6 +1,6 @@
 # Finance and Accounting Business Requirements Document
 
-> **Version:** v0.1 — Draft candidate for Owner approval
+> **Version:** v0.1 — Approved Business Baseline
 >
 > **Jira:** MESP-34 — Produce Finance and Accounting BRD
 >
@@ -11,7 +11,7 @@
 > **Date:** 10 August 2026
 >
 > **Scope:** Release 1 B2B ERP only; Wafra is validation-only
-> **Status:** Documentation baseline only; no implementation authorization
+> **Status:** Approved business baseline; documentation-only; no implementation authorization
 
 ## 1. Document control and reading rules
 
@@ -1135,13 +1135,13 @@ but **not executed** MESP-35 next-session handoff.
 
 ## 24. Approval record
 
-| Item                  | Evidence                                                                |
-| --------------------- | ----------------------------------------------------------------------- |
-| Entry activation      | MESP-34 Jira comment `10746`; status In Progress.                       |
-| Owner approval        | To be recorded after focused BRD validation in the normal Jira process. |
-| Reviewed content head | To be recorded after final document correction.                         |
-| Merge/closure         | To be recorded after clean focused PR review and merge.                 |
-| Open decisions        | MESP-23 register; no open decision is silently resolved here.           |
+| Item                  | Evidence                                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| Entry activation      | MESP-34 Jira comment `10746`; status In Progress.                                                        |
+| Owner approval        | MESP-34 Jira comment `10748`; Hossam standing Owner approval for the bounded BRD session.                |
+| Reviewed content head | `7d9de5d` — approved requirements head; the later evidence metadata update does not change requirements. |
+| Merge/closure         | To be recorded after clean focused PR review and merge.                                                  |
+| Open decisions        | MESP-23 register; no open decision is silently resolved here.                                            |
 
 **Stop condition:** This document must not be followed in this session by
 MESP-35, Currency work, implementation, or any later task. After the MESP-34
