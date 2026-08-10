@@ -90,6 +90,7 @@ public sealed class ProductIdentityTests
             Product(" SAME-SKU ", categoryA.Id, unitA.Id, ["SAME-BARCODE"]));
         Assert.False(duplicate.Succeeded);
         Assert.Equal("product_duplicate", duplicate.Code);
+        Assert.Equal(FoundationAuditReason.ValidationFailed, duplicate.Evidence!.Reason);
 
         var categoryB = await fixture.CreateCategoryAsync(fixture.ContextB, "B");
         var unitB = await fixture.CreateUnitAsync(fixture.ContextB, "EA");
@@ -226,6 +227,84 @@ public sealed class ProductIdentityTests
         Assert.Empty(products.Value!);
     }
 
+    [Fact]
+    public async Task Product_authorization_dependency_outages_are_internal_failures_and_have_no_effect()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var category = await fixture.CreateCategoryAsync(fixture.ContextA, "AUTH-OUTAGE");
+        var unit = await fixture.CreateUnitAsync(fixture.ContextA, "EA");
+        var cases = new[]
+        {
+            (
+                ExpectedCode: "permission_unavailable",
+                Authorization: ProductAuthorization(
+                    new ThrowingCapabilityResolver(),
+                    new ProductResourcePolicy(),
+                    new ProductApprovalPolicy(),
+                    new ProductScopePolicy())),
+            (
+                ExpectedCode: "scope_policy_unavailable",
+                Authorization: ProductAuthorization(
+                    new GrantingCapabilityResolver(),
+                    new ProductResourcePolicy(),
+                    new ProductApprovalPolicy(),
+                    new ThrowingScopePolicy())),
+            (
+                ExpectedCode: "approval_policy_unavailable",
+                Authorization: ProductAuthorization(
+                    new GrantingCapabilityResolver(),
+                    new ProductResourcePolicy(),
+                    new ThrowingApprovalPolicy(),
+                    new ProductScopePolicy())),
+            (
+                ExpectedCode: "resource_policy_unavailable",
+                Authorization: ProductAuthorization(
+                    new GrantingCapabilityResolver(),
+                    new ThrowingResourcePolicy(),
+                    new ProductApprovalPolicy(),
+                    new ProductScopePolicy()))
+        };
+
+        foreach (var (expectedCode, authorization) in cases)
+        {
+            var result = await fixture.CreateService(authorization).CreateProductAsync(
+                fixture.ContextA,
+                Product("auth-" + expectedCode, category.Id, unit.Id, []));
+
+            Assert.False(result.Succeeded);
+            Assert.Equal(expectedCode, result.Code);
+            Assert.Equal(FoundationAuditReason.InternalFailure, result.Evidence!.Reason);
+            Assert.Null(result.Value);
+        }
+
+        var products = await fixture.ProductService.ListProductsAsync(fixture.ContextA);
+        Assert.True(products.Succeeded, products.Code);
+        Assert.Empty(products.Value!);
+    }
+
+    [Fact]
+    public async Task Product_genuine_permission_denial_remains_denial_and_has_no_effect()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var category = await fixture.CreateCategoryAsync(fixture.ContextA, "PERMISSION-DENIED");
+        var unit = await fixture.CreateUnitAsync(fixture.ContextA, "EA");
+        var authorization = ProductAuthorization(
+            new DenyAllMasterDataCapabilityResolver(),
+            new ProductResourcePolicy(),
+            new ProductApprovalPolicy(),
+            new ProductScopePolicy());
+
+        var result = await fixture.CreateService(authorization).CreateProductAsync(
+            fixture.ContextA,
+            Product("permission-denied", category.Id, unit.Id, []));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("permission_denied", result.Code);
+        Assert.Equal(FoundationAuditReason.PermissionDenied, result.Evidence!.Reason);
+        Assert.Null(result.Value);
+        Assert.Empty((await fixture.ProductService.ListProductsAsync(fixture.ContextA)).Value!);
+    }
+
     private static MasterDataRequestContext ResolveContext(
         Guid tenantId,
         string correlation,
@@ -316,6 +395,45 @@ public sealed class ProductIdentityTests
         public IReadOnlySet<MasterDataCapability> Resolve(MasterDataRequestContext context) => capabilities;
     }
 
+    private sealed class ThrowingCapabilityResolver : IMasterDataCapabilityResolver
+    {
+        public IReadOnlySet<MasterDataCapability> Resolve(MasterDataRequestContext context) =>
+            throw new InvalidOperationException("capability dependency unavailable");
+    }
+
+    private sealed class ThrowingScopePolicy : IMasterDataScopePolicy
+    {
+        public MasterDataScopeDecision Evaluate(
+            MasterDataRequestContext context,
+            MasterDataResourceReference resource) =>
+            throw new InvalidOperationException("scope dependency unavailable");
+    }
+
+    private sealed class ThrowingApprovalPolicy : IMasterDataApprovalPolicy
+    {
+        public MasterDataApprovalPolicyResult Evaluate(
+            MasterDataRequestContext context,
+            MasterDataResourceReference resource,
+            MasterDataOperation operation) =>
+            throw new InvalidOperationException("approval dependency unavailable");
+    }
+
+    private sealed class ThrowingResourcePolicy : IMasterDataResourcePolicy
+    {
+        public MasterDataPolicyDecision Evaluate(MasterDataPolicyInput input) =>
+            throw new InvalidOperationException("resource dependency unavailable");
+    }
+
+    private static ProductResourceAuthorizationService ProductAuthorization(
+        IMasterDataCapabilityResolver capabilityResolver,
+        IMasterDataResourcePolicy resourcePolicy,
+        IMasterDataApprovalPolicy approvalPolicy,
+        IMasterDataScopePolicy scopePolicy) => new(
+        capabilityResolver,
+        resourcePolicy,
+        approvalPolicy,
+        scopePolicy);
+
     private sealed class Fixture : IAsyncDisposable
     {
         private readonly SqliteConnection connection;
@@ -356,6 +474,9 @@ public sealed class ProductIdentityTests
         public MasterDataCategoryUomService CategoryUomService { get; }
 
         public ProductIdentityService ProductService { get; }
+
+        public ProductIdentityService CreateService(ProductResourceAuthorizationService authorization) =>
+            new(authorization, Persistence);
 
         public static async Task<Fixture> CreateAsync()
         {

@@ -229,7 +229,7 @@ public sealed class ProductIdentityService
                 resource,
                 MasterDataOperation.Create,
                 "persistence_unavailable",
-                cancellationToken) with { Evidence = evidence };
+                cancellationToken);
         }
     }
 
@@ -402,7 +402,7 @@ public sealed class ProductIdentityService
                 resource,
                 MasterDataOperation.Edit,
                 "persistence_unavailable",
-                cancellationToken) with { Evidence = evidence };
+                cancellationToken);
         }
     }
 
@@ -592,7 +592,7 @@ public sealed class ProductIdentityService
                 resource,
                 operation,
                 "persistence_unavailable",
-                cancellationToken) with { Evidence = evidence };
+                cancellationToken);
         }
     }
 
@@ -669,7 +669,7 @@ public sealed class ProductIdentityService
             operation,
             result.Code,
             cancellationToken);
-        return failed with { Evidence = evidence };
+        return failed;
     }
 
     private async Task<MasterDataOperationResult<T>> DeniedAsync<T>(
@@ -838,10 +838,22 @@ public sealed class ProductIdentityService
         "permission_denied" => FoundationAuditReason.PermissionDenied,
         "authorization_denied"
             or "resource_scope_denied"
-            or "resource_policy_not_configured" => FoundationAuditReason.AuthorizationDenied,
+            or "resource_policy_not_configured"
+            or "approval_required"
+            or "approval_pending"
+            or "approval_rejected"
+            or "approval_policy_not_configured"
+            or "approval_identity_missing"
+            or "approval_policy_invalid"
+            or "self_approval_denied" => FoundationAuditReason.AuthorizationDenied,
         "product_not_found" => FoundationAuditReason.NotFound,
         "concurrency_conflict" => FoundationAuditReason.ConcurrencyConflict,
-        "persistence_unavailable"
+        "permission_unavailable"
+            or "scope_policy_unavailable"
+            or "approval_policy_unavailable"
+            or "resource_policy_unavailable"
+            or "authorization_operation_unmapped"
+            or "persistence_unavailable"
             or "reference_persistence_unavailable"
             or "audit_unavailable"
             or "audit_evidence_invalid"

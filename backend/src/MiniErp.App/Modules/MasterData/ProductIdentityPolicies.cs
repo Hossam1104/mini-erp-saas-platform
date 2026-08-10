@@ -99,6 +99,19 @@ public sealed class ProductResourceAuthorizationService
         ProductResourcePolicy resourcePolicy,
         ProductApprovalPolicy approvalPolicy,
         ProductScopePolicy scopePolicy)
+        : this(
+            capabilityResolver,
+            (IMasterDataResourcePolicy)resourcePolicy,
+            (IMasterDataApprovalPolicy)approvalPolicy,
+            (IMasterDataScopePolicy)scopePolicy)
+    {
+    }
+
+    internal ProductResourceAuthorizationService(
+        IMasterDataCapabilityResolver capabilityResolver,
+        IMasterDataResourcePolicy resourcePolicy,
+        IMasterDataApprovalPolicy approvalPolicy,
+        IMasterDataScopePolicy scopePolicy)
     {
         this.capabilityResolver = capabilityResolver ?? throw new ArgumentNullException(nameof(capabilityResolver));
         this.resourcePolicy = resourcePolicy ?? throw new ArgumentNullException(nameof(resourcePolicy));
