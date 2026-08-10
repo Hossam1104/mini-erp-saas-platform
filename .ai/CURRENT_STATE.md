@@ -18,7 +18,8 @@ Focused PR #47 merged cleanly to main at
 reviewed at `7d9de5d1556114d443b95db9547d6c083dcd804d` and the second commit
 records approval metadata only. Jira activation, validation, Owner approval,
 final validation, and MESP-23 handoff evidence are comments `10746`, `10747`,
-`10748`, `10749`, and `10750`.
+`10748`, `10749`, and `10750`; final MESP-34 closure evidence is comment
+`10751`.
 
 MESP-41 through MESP-55 remain open except the exact approved MESP-52 / PD-020
 and MESP-56 / PD-021 scopes. The MESP-34 decision bundle preserves payment,

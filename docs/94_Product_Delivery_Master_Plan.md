@@ -8,7 +8,8 @@
 > a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b from final branch head
 > 72aa210d462f783671f1b3b33fcdea4955567b9c; Jira activation, validation,
 > Owner approval, final-validation, and MESP-23 handoff evidence are comments
-> 10746, 10747, 10748, 10749, and 10750.
+> 10746, 10747, 10748, 10749, and 10750; final MESP-34 closure evidence is
+> Jira comment 10751.
 >
 > The BRD covers GL, journals, AP, AR, cash/bank, tax, periods,
 > reconciliation, multi-currency, source-to-GL lineage, immutable posted
@@ -208,7 +209,7 @@
 | Merged-main baseline | `PR #47` merged the approved MESP-34 Finance BRD to `main` at `a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b`; required state/TASK/statistics handoff metadata follows in this session. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
 | Open Pull Request | `None; PR #47 and all preceding implementation/documentation PRs are merged.` |
-| Current review checkpoint | `MESP-34 closure evidence is Jira comments 10746/10747/10748/10749/10750, with PR #47 merged at a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b; MESP-41 through MESP-55 remain open except MESP-52/PD-020 and MESP-56/PD-021; MESP-48/MESP-49/MESP-50 remain open. No source or production validation is claimed. MESP-35 is the next separately authorized BRD and remains unactivated.` |
+| Current review checkpoint | `MESP-34 approval/final-validation evidence is Jira comments 10746/10747/10748/10749/10750 and final closure evidence is comment 10751, with PR #47 merged at a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b; MESP-41 through MESP-55 remain open except MESP-52/PD-020 and MESP-56/PD-021; MESP-48/MESP-49/MESP-50 remain open. No source or production validation is claimed. MESP-35 is the next separately authorized BRD and remains unactivated.` |
 
 ---
 
