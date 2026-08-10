@@ -3,9 +3,8 @@
 MESP-106 / Master Data authorization and duplicate-audit classification
 hardening is **Done**. Its bounded Product/Supplier correction merged through
 PR #42 at `0f712edcf58119057d614000721fe41227383bc1` from reviewed head
-`678a5598877f55f1b32b012de692ebdf28408acd`. Jira activation and validation
-evidence are comments `10728` and `10729`; the closure evidence is recorded on
-MESP-106 after the final state reconciliation.
+`678a5598877f55f1b32b012de692ebdf28408acd`. Jira activation, validation, and
+closure evidence are comments `10728`, `10729`, and `10730`.
 
 MESP-107 / M95-SL-05 Business Customer master-data implementation is **Done**
 through PR #41 at `fb632982d06fd4f6bf965fb15dff7701a0bddcec`; its activation,
@@ -16,7 +15,9 @@ audit-evidence preservation, and focused regression coverage. Customer source
 behavior was not changed. No new fields, tables, migrations, routes, UI,
 provider, production, downstream, or cross-Tenant scope behavior was added.
 
-The repository is synchronized on `main` at the MESP-106 merge baseline. Live
+The repository is synchronized on `main` at
+`09d4471ffc2df1a54adf7fe74f74929b90f3ecb8`, including the MESP-106 merge and
+the tracked state/tracker/TASK reconciliation. Live
 Jira counts must be re-checked at session start. At handoff, MESP-23 is the
 existing non-Epic **In Progress** governance/open-questions register; it is
 not a new implementation activation. MESP-48, MESP-49, and MESP-50 remain

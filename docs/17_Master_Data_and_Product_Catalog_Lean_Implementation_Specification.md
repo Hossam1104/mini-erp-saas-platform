@@ -71,6 +71,8 @@
 > new domain behavior, persistence, migration, provider, production, Customer,
 > downstream, or cross-Tenant scope behavior; the 21 SQL safety tests remain
 > environment-gated.
+> Jira activation, validation, and closure evidence are comments
+> `10728`/`10729`/`10730`.
 
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch

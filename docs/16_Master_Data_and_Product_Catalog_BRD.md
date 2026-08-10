@@ -69,6 +69,8 @@
 > Customer source behavior, domain fields, tables, migrations, provider,
 > production, downstream, and cross-Tenant scope behavior are unchanged. The
 > 21 SQL safety tests remain gated by the missing connection string.
+> Jira activation, validation, and closure evidence are comments
+> `10728`/`10729`/`10730`.
 
 > **Historical MESP-100/MESP-99 state overlay - 9 August 2026.** MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 was In Progress with activation evidence 10664 for M95-SL-02. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. The approved v0.3 business requirements and all other Open Decisions remain preserved; no MESP-99 behavior was implemented by MESP-100.
 

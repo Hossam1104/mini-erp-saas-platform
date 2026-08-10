@@ -109,8 +109,9 @@ duplicate hardening issue was opened.
 MESP-106 is **Done** through [PR #42](https://github.com/Hossam1104/mini-erp-saas-platform/pull/42),
 merged normally to `main` at `0f712edcf58119057d614000721fe41227383bc1`
 from reviewed head `678a5598877f55f1b32b012de692ebdf28408acd`. Jira activation
-and validation evidence are comments `10728` and `10729`; the final closure
-evidence is recorded on MESP-106 after state reconciliation.
+and validation evidence are comments `10728` and `10729`; closure evidence is
+comment `10730`. Final tracked handoff metadata is synchronized at
+`09d4471ffc2df1a54adf7fe74f74929b90f3ecb8`.
 
 The correction is limited to Product/Supplier authorization dependency-outage
 versus genuine-denial classification, deterministic Supplier duplicate
