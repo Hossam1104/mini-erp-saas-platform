@@ -2,6 +2,27 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
+## Current Independent Opus 5 reconciliation - 10 August 2026
+
+MESP-108 records the accepted Independent Opus 5 checkpoint at reviewed
+`main` baseline `4c25330055b7c5b64a2f351b22d143b91a2646be`: **PASS - SAFE
+TO PROCEED TO NEXT DOMAIN**, 0 Critical, 0 High, 3 Medium, and 4 Low. The full
+finding disposition is
+[`98_Independent_Opus_5_Checkpoint_Reconciliation.md`](98_Independent_Opus_5_Checkpoint_Reconciliation.md).
+It changes no ADR or application/test behavior.
+
+ADR-011 remains required and not completed by the existence of localized
+Arabic/English storage fields. SQL Server comparison/unique-index parity for
+Master Data and Business Parties, Arabic normalization and linguistic
+search/sort/tokenization, localized fallback, RTL forms, and bilingual
+documents remain unproved until the owning ADR/provider evidence is completed.
+The 21-case `SqlServerSafetyTests` suite is Foundation-only: it exercises the
+disposable `MiniErpFoundation_*` LocalDB harness and
+`TenantPersistenceDbContext`, not `MasterDataDbContext` or
+`BusinessPartiesDbContext`. Current checkpoint arithmetic is 670 passing
+non-SQL tests plus 21 separately gated Foundation SQL cases = 691; older
+11-SQL/493-backend figures below are dated historical evidence.
+
 ## Current Product-readiness state - 9 August 2026
 
 MESP-99 / M95-SL-02 Category and UOM is Done through PR #33, correction PR

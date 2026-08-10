@@ -1,6 +1,18 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative current execution overlay — 9 August 2026.** MESP-99 /
+> **Authoritative Independent Opus 5 reconciliation overlay - 10 August
+> 2026.** MESP-108 records **PASS - SAFE TO PROCEED TO NEXT DOMAIN** against
+> reviewed `main` baseline `4c25330055b7c5b64a2f351b22d143b91a2646be`, with
+> 0 Critical, 0 High, 3 Medium, and 4 Low findings. The detailed acceptance is
+> `docs/98_Independent_Opus_5_Checkpoint_Reconciliation.md`. Current validation
+> is 670 passing non-SQL tests plus a separately gated 21-case Foundation-only
+> SQL harness (691 total); that SQL harness does not validate Master Data or
+> Business Parties contexts. ADR-011/localized linguistic behavior and the
+> open provider/production gates remain unresolved. MESP-25/MESP-26 are Done,
+> MESP-32 remains To Do, and `TASK.md` hands off only the Procurement BRD to a
+> fresh session. No application source or test behavior changed.
+
+> **Historical current execution overlay — 9 August 2026.** MESP-99 /
 > M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
 > final audit-semantics correction PR #35. MESP-101 is **Done** for the
 > bounded M95-SL-03 Product identity readiness gate after PR #36 merged at

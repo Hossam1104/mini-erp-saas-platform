@@ -1,5 +1,17 @@
 # Master Data and Product Catalog Lean Implementation Specification
 
+> **Authoritative MESP-108 checkpoint overlay - 10 August 2026.** Independent
+> Opus 5 passed the reviewed baseline safe to proceed to the next domain with
+> 0 Critical, 0 High, 3 Medium, and 4 Low findings. The accepted reconciliation
+> is `docs/98_Independent_Opus_5_Checkpoint_Reconciliation.md`. Product source
+> scope remains bounded: the host has no mapped Category/UOM creation API, so
+> no complete external Category/UOM-to-Product API workflow is claimed.
+> Master Data/Business Parties SQL Server collation and Arabic linguistic
+> behavior remain unproved and ADR-011 remains required. The 21 SQL safety
+> cases are Foundation-only and do not exercise either module-owned context;
+> current arithmetic is 670 non-SQL + 21 Foundation SQL = 691. No source or
+> test behavior is changed by this overlay.
+
 > **Authoritative current Product-readiness overlay — 9 August 2026.** MESP-99
 > / M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
 > final audit-semantics correction PR #35, all merged to `main`; the final

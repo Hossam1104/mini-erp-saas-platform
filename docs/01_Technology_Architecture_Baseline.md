@@ -1,5 +1,14 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
+> **MESP-108 validation-scope clarification - 10 August 2026.** The current
+> normal backend gate is 670/670. The separately gated 21 SQL safety cases are
+> Foundation-only and exercise the disposable LocalDB
+> `TenantPersistenceDbContext` harness, not `MasterDataDbContext` or
+> `BusinessPartiesDbContext`. They do not prove module SQL mappings, indexes,
+> transactions, collation, or Arabic linguistic behavior. ADR-011 and
+> module-owned provider validation remain open at their existing scope; see
+> `docs/98_Independent_Opus_5_Checkpoint_Reconciliation.md`.
+
 > **Authoritative current Product-readiness overlay - 9 August 2026.**
 > MESP-99 / M95-SL-02 Category and UOM is Done through PR #33, correction PR
 > #34, and final audit-semantics correction PR #35. MESP-101 completed the
