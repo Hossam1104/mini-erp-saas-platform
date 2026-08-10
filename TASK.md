@@ -9,7 +9,8 @@ Register entries PD-020/PD-021 in MESP-22 comments `10062`/`10063`.
 
 The repository handoff is synchronized on `main` after focused PR #43 merged
 at `75a2a7743e9357b23c369a9c991bcb5ef9bd4c32` from reviewed head
-`31d8b3a65a2ded3317a9099b1bba7cf392afd296`. MESP-106 and MESP-107 remain
+`31d8b3a65a2ded3317a9099b1bba7cf392afd296`; final handoff metadata is at
+`6b8ecfd75934d184a531ea15064116eb703f93f1`. MESP-106 and MESP-107 remain
 Done. There is no active source implementation item. MESP-48, MESP-49, and
 MESP-50 remain open performance, external legal/privacy, and production gates.
 Production-capability percentages remain unchanged.
