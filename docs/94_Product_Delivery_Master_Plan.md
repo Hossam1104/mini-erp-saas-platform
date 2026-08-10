@@ -1,6 +1,30 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative current MESP-32 completion overlay - 10 August 2026.**
+> **Authoritative current MESP-33 completion overlay - 10 August 2026.**
+> MESP-33 is **Done** as the approved, documentation-only Release 1 B2B
+> Inventory and Warehouse Management BRD. The canonical artifact is
+> docs/22_Inventory_and_Warehouse_Management_BRD.md, v0.1 Approved Business
+> Baseline. Focused PR #46 merged cleanly to main at
+> cd6f57de329b7d193c5d75e2e4268ae87c8aac67 from final branch head 94f3b7e;
+> Jira activation, validation, Owner approval, and closure evidence are
+> comments 10741, 10742, 10743, and 10745. The MESP-23 Inventory-linked
+> register handoff is comment 10744.
+>
+> The BRD covers the eight required Inventory flows, immutable stock-ledger
+> and projection invariants, Moving Weighted Average valuation, ownership and
+> integration boundaries, controls, audit, reconciliation, reports,
+> migration, localization, and production gates. It adds no application
+> source, API, database/schema, migration, UI, provider, or production
+> behavior. MESP-41 through MESP-55 remain open except the exact approved
+> MESP-52 / PD-020 and MESP-56 / PD-021 scopes. MESP-48, MESP-49, and MESP-50
+> remain open gates.
+>
+> MESP-23 remains the bounded In Progress governance register. MESP-34
+> Finance and Accounting is the next separately authorized To Do BRD and is
+> not activated by this session. The root TASK.md contains only the exact
+> MESP-34 handoff. Do not execute it automatically.
+
+> **Historical MESP-32 completion overlay - 10 August 2026.**
 > MESP-32 is **Done** as the approved, documentation-only Release 1 B2B
 > Procurement and Purchase-to-Pay BRD. The canonical artifact is
 > `docs/21_Procurement_and_Purchase_to_Pay_BRD.md`, v0.1 Approved Business
@@ -178,12 +202,12 @@
 | Last updated | 10 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-23 remains the bounded In Progress governance register; MESP-32 Procurement/P2P BRD is Done as an approved documentation baseline. No implementation item is active.` |
-| Current implementation item | `None. MESP-32 is merged documentation only; MESP-33 Inventory BRD is To Do and is not activated.` |
-| Merged-main baseline | `PR #45` merged the approved MESP-32 BRD to `main` at `6dec81f3520decdf7d50ef40a44186988ba516d5`; required state/TASK/statistics handoff metadata follows in this session. |
+| Current activity | `MESP-23 remains the bounded In Progress governance register; MESP-33 Inventory/Warehouse is Done as an approved documentation baseline. No implementation item is active.` |
+| Current implementation item | `None. MESP-33 is merged documentation only; MESP-34 Finance and Accounting BRD is To Do and is not activated.` |
+| Merged-main baseline | `PR #46` merged the approved MESP-33 BRD to `main` at `cd6f57de329b7d193c5d75e2e4268ae87c8aac67`; required state/TASK/statistics handoff metadata follows in this session. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; PR #45 and all preceding implementation/documentation PRs are merged.` |
-| Current review checkpoint | `MESP-32 closure evidence is Jira comment 10740, with activation/validation/Owner approval comments 10736/10738/10739; MESP-23 register handoff is comment 10737. MESP-41 through MESP-55 remain open except MESP-52/PD-020 and MESP-56/PD-021; MESP-48/MESP-49/MESP-50 remain open. No source or production validation is claimed.` |
+| Open Pull Request | `None; PR #46 and all preceding implementation/documentation PRs are merged.` |
+| Current review checkpoint | `MESP-33 closure evidence is Jira comment 10745, with activation/validation/Owner approval comments 10741/10742/10743; MESP-23 register handoff is comment 10744. MESP-41 through MESP-55 remain open except MESP-52/PD-020 and MESP-56/PD-021; MESP-48/MESP-49/MESP-50 remain open. No source or production validation is claimed.` |
 
 ---
 
@@ -209,10 +233,10 @@ It is a living progress tracker. Completed work is marked as **Done**, the curre
 
 ### Product-wide position
 
-The latest bounded BRD position is MESP-31 **Done** and MESP-32 **Done** as
-approved business baselines. MESP-33 Inventory and Warehouse Management is
-the next separately authorized BRD and remains To Do; it is not activated by
-the MESP-32 completion.
+The latest bounded BRD position is MESP-31 **Done**, MESP-32 **Done**, and
+MESP-33 **Done** as approved business baselines. MESP-34 Finance and
+Accounting is the next separately authorized BRD and remains To Do; it is not
+activated by MESP-33 completion.
 
 The project is currently in **Phase 2 — Business Requirements Documents**, because the full set of business-domain BRDs has not yet been completed.
 
@@ -306,7 +330,7 @@ live branch, head and Pull Request.
 - [x] `MESP-61` is **Done**; PR #17 merged to `main` at `7db49a88e11232f055c2016b8bb033a61de629ec` and merged-main validation passed.
 - [x] `MESP-64` is **Done**; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`, merged-main validation passed, and its branch was deleted.
 - [x] `MESP-91` is **Done**; PR #20 merged at `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT security review approval; branch `fix/MESP-91-verified-work-scope-authority` deleted after merge.
-- [x] `MESP-31` through `MESP-40` remain **To Do**; no downstream BRD was started.
+- [x] `MESP-31`, `MESP-32`, and `MESP-33` are **Done** as approved documentation-only BRD baselines; `MESP-34` through `MESP-40` remain **To Do** and no implementation slice is active.
 - [x] `MESP-92` is **Done** (7 August 2026). PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT security review approval.
 - 🔄 `MESP-93` is **In Progress**; it is now the only active bounded implementation item. `MESP-94` remains **To Do** and must not start before MESP-93 closes.
 - [x] No Sprint is active; MESP-89 and MESP-63 were delivered outside a Sprint.
@@ -460,9 +484,9 @@ Define the business meaning of each domain before technical implementation. Each
 - [x] Master Data and Catalog BRD — MESP-31 Done; v0.3 at `docs/16_Master_Data_and_Product_Catalog_BRD.md` is an Owner Approved Business Baseline. MD-OD-001 through MD-OD-011 remain open and governed.
 - [ ] Business Parties BRD.
 - [x] Procurement BRD — MESP-32 Done; v0.1 Approved Business Baseline at `docs/21_Procurement_and_Purchase_to_Pay_BRD.md`; PR #45 merged to `main` at `6dec81f3520decdf7d50ef40a44186988ba516d5`; MESP-41 through MESP-55 remain open except approved MESP-52/MESP-56.
-- [ ] Inventory BRD — MESP-33 To Do; next exact session, not activated automatically.
+- [x] Inventory BRD — MESP-33 Done; v0.1 Approved Business Baseline at docs/22_Inventory_and_Warehouse_Management_BRD.md; PR #46 merged to main at cd6f57de329b7d193c5d75e2e4268ae87c8aac67; MESP-41 through MESP-55 remain open except approved MESP-52/MESP-56.
 - [ ] B2B Sales BRD.
-- [ ] Finance BRD.
+- [ ] Finance BRD — MESP-34 To Do; next exact session, not activated automatically.
 - [ ] Reporting and Analytics BRD.
 - [ ] Saudi Country Pack BRD.
 - [ ] Files and Integrations BRD.
@@ -494,14 +518,16 @@ Define the business meaning of each domain before technical implementation. Each
 - [x] Deferred decisions have owners and explicit implementation or production gates.
 - [ ] No technical behavior is invented to fill a business gap.
 
-MESP-28, MESP-29 and MESP-30 are the approved BRD baselines for the current
-foundation slice. MESP-31 is In Progress for final BRD closure; v0.3 is an
-Owner Approved Business Baseline on open PR #28, with MD-OD-001 through
-MD-OD-011 preserved (see `.ai/CURRENT_STATE.md`); MESP-32
-through MESP-40 remain To Do and are not implied to be approved by any prior
-approval; each requires its own controlled BRD decision.
+MESP-28, MESP-29, MESP-30, MESP-31, MESP-32, and MESP-33 are approved
+business baselines at their bounded documentation scopes. MESP-34 through
+MESP-40 remain To Do and are not implied to be approved by any prior approval;
+each requires its own controlled BRD decision. MESP-41 through MESP-55 remain
+open except the exact approved MESP-52/MESP-56 scopes.
 
-**Phase 2 status: IN PROGRESS — MESP-28 v0.3, MESP-29 v0.2, and MESP-30 v0.2 are approved and Done; MESP-5 remains In Progress. MESP-31 is In Progress for finalization with an Owner Approved v0.3 BRD on open PR #28; the PR must merge before MESP-31 is closed. MESP-32 through MESP-40 remain To Do and require separate approval. MESP-86 v0.4 is approved and Done; no remaining BRD is implicitly approved by that decision.**
+**Phase 2 status: IN PROGRESS — the approved BRD sequence is complete through
+MESP-33 Inventory and Warehouse Management; MESP-34 Finance and Accounting is
+the next separate To Do BRD. MESP-28 through MESP-33 are not implementation
+authorization, and no later BRD is implicitly approved by this status.**
 
 ---
 

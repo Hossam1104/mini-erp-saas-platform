@@ -1,6 +1,47 @@
 # Current State
 
-## Current authoritative position - 10 August 2026 (MESP-32 Procurement BRD Done)
+## Current authoritative position - 10 August 2026 (MESP-33 Inventory BRD Done)
+
+MESP-33 is **Done** as the approved, documentation-only Release 1 B2B
+Inventory and Warehouse Management business baseline. The canonical artifact
+is docs/22_Inventory_and_Warehouse_Management_BRD.md, v0.1 Approved Business
+Baseline. It covers the eight required Inventory flows, immutable stock-ledger
+and projection invariants, Moving Weighted Average valuation, ownership and
+integration boundaries, controls, audit, reconciliation, reporting,
+migration, localization, and production gates. It adds no application source,
+API, database/schema, migration, UI, provider, or production behavior.
+
+Focused PR #46 merged cleanly to main at
+cd6f57de329b7d193c5d75e2e4268ae87c8aac67 from final branch head 94f3b7e.
+Jira activation, validation, Owner approval, and closure evidence are
+comments 10741, 10742, 10743, and 10745. The MESP-23 Inventory-linked
+register handoff is comment 10744.
+
+MESP-41 through MESP-55 remain open except the exact approved MESP-52 / PD-020
+and MESP-56 / PD-021 scopes. The MESP-33 decision bundle preserves tracking,
+negative stock/reservation, approval/delegation, transfer/count/issue,
+migration, reports, exchange-rate, Saudi, retention, and volume decisions as
+open or gated. No recommendation was promoted to a requirement. MESP-48,
+MESP-49, and MESP-50 remain open production/external gates.
+
+MESP-23 remains the only active governance item. MESP-34 Finance and
+Accounting is the next separately authorized To Do BRD under MESP-10 and is
+not activated by this session. TASK.md contains only the exact MESP-34
+handoff. Do not execute it automatically.
+
+The canonical PRD was reviewed structurally. No visual-rendering claim is
+made because optional LibreOffice/pdf2image dependencies are unavailable.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-33 | **Done**; v0.1 Approved Business Baseline in docs/22_Inventory_and_Warehouse_Management_BRD.md; closure evidence 10745. |
+| Focused PR | **#46**; merged to main at cd6f57de329b7d193c5d75e2e4268ae87c8aac67; final branch head 94f3b7e. |
+| Current branch | main; synchronized to the PR #46 merge before this required handoff metadata commit. |
+| Jira handoff | MESP-25 Done; MESP-26 Done; MESP-33 Done; MESP-34 To Do; MESP-23 In Progress; Inventory-affecting decision rows remain open except MESP-52/MESP-56. |
+| Production-capability percentages | Unchanged by this documentation-only BRD session; no source behavior or usable production capability was added. |
+| Next exact task | MESP-34 Finance and Accounting BRD only, in a fresh session after the live baseline and Finance entry gate are reverified. Do not activate or execute it automatically. |
+
+## Historical authoritative position - 10 August 2026 (MESP-32 Procurement BRD Done)
 
 MESP-32 is **Done** as the approved, documentation-only Release 1 B2B
 Procurement and Purchase-to-Pay business baseline. The canonical artifact is
