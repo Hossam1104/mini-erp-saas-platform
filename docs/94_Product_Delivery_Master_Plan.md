@@ -1,7 +1,9 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
 > **Authoritative Independent Opus 5 reconciliation overlay - 10 August
-> 2026.** MESP-108 records **PASS - SAFE TO PROCEED TO NEXT DOMAIN** against
+> 2026.** MESP-108 is Done through PR #44, merged at
+> `1f2db0a0b5ca0f39be8db06cc4c442c67b70e786`, and records **PASS - SAFE TO
+> PROCEED TO NEXT DOMAIN** against
 > reviewed `main` baseline `4c25330055b7c5b64a2f351b22d143b91a2646be`, with
 > 0 Critical, 0 High, 3 Medium, and 4 Low findings. The detailed acceptance is
 > `docs/98_Independent_Opus_5_Checkpoint_Reconciliation.md`. Current validation

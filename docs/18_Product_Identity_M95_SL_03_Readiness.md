@@ -6,7 +6,7 @@
 > therefore establish a complete public API workflow from Category/UOM creation
 > through Product creation. SQL Server collation/Arabic linguistic parity also
 > remains unproved; the 21 SQL safety cases are Foundation-only. O5-001,
-> O5-002, O5-003, O5-004, and O5-006 are recorded without changing Product
+> O5-002, and O5-003 are recorded without changing Product
 > behavior in `docs/98_Independent_Opus_5_Checkpoint_Reconciliation.md`.
 
 ## Document control

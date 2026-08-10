@@ -2,7 +2,8 @@
 
 | Field | Value |
 |---|---|
-| Jira | MESP-108 - Reconcile Independent Opus 5 checkpoint before Procurement BRD; validation/reconciliation evidence comment `10732` |
+| Jira | MESP-108 - Reconcile Independent Opus 5 checkpoint before Procurement BRD; **Done**; validation/reconciliation comment `10732`; closure comment `10733`; exact finding-ID/live-state verification comment `10734` |
+| Pull Request | [#44](https://github.com/Hossam1104/mini-erp-saas-platform/pull/44), merged at `1f2db0a0b5ca0f39be8db06cc4c442c67b70e786` from reviewed head `f1739660ccd3a008a2607984dcc5ee305682a802` |
 | Review baseline | `4c25330055b7c5b64a2f351b22d143b91a2646be` on `main` |
 | Prior checkpoint | `docs/97_Foundation_Completion_Review_Checkpoint.md` and the 6 August 2026 project-wide checkpoint |
 | Scope reviewed | Merged Foundation closure and the Master Data Category/UOM, Product, Supplier, Customer, hardening, and governance work through the MESP-23 reconciliation handoff |
@@ -46,17 +47,7 @@ provider-validation item must prove duplicate, equality, and lifecycle behavior
 against the configured SQL Server collation before production readiness is
 claimed.
 
-### O5-003 - Arabic linguistic behavior and ADR-011 (Medium)
-
-Localized Arabic/English storage fields exist in the implemented bounded
-slices. That is not evidence of Arabic linguistic search, sort, tokenization,
-normalization, fallback, RTL form behavior, or bilingual business-document
-generation. ADR-011 remains an indexed required decision with no standalone
-completed ADR in the repository. Its affected behavior and SQL collation
-evidence remain open and must be resolved before the relevant localized
-search/forms/documents are declared complete.
-
-### O5-004 - Foundation SQL harness scope (Low)
+### O5-003 - Foundation SQL harness scope (Medium)
 
 The 21 `SqlServerSafetyTests` are a separately gated **Foundation-only** suite.
 Their fixture requires `MESP_SQLSERVER_CONNECTION_STRING` to identify a safe,
@@ -66,7 +57,18 @@ instantiate or validate `MasterDataDbContext` or `BusinessPartiesDbContext`.
 Passing it therefore does not prove Master Data/Business Parties SQL mappings,
 indexes, transactions, or collation behavior.
 
-### O5-005 - Current validation arithmetic (Low)
+The missing connection string remains an environment gate, not a runtime
+product defect. Supplying it would validate only this Foundation harness, not
+the Master Data or Business Parties schemas.
+
+### O5-004 - Stale validation figures (Low)
+
+The current checkpoint arithmetic is **670 non-SQL + 21 Foundation SQL = 691
+backend tests**, subject to the SQL fixture's safe LocalDB preconditions.
+Earlier 11-SQL and 493-backend totals are retained only as dated historical
+Foundation checkpoint evidence, not as current repository totals.
+
+### O5-005 - Reproducible validation commands (Low)
 
 At the reviewed checkpoint the normal non-SQL backend command is:
 
@@ -76,8 +78,6 @@ dotnet test .\backend\MiniErp.sln --configuration Release --filter "FullyQualifi
 
 This reconciliation re-ran that exact command: **670 passed, 0 failed, 0
 skipped**. The separately gated Foundation suite contains **21** test cases.
-The checkpoint arithmetic is therefore **670 non-SQL + 21 Foundation SQL = 691
-backend tests**, subject to the SQL fixture's safe LocalDB preconditions.
 
 The canonical complete Foundation validation command remains:
 
@@ -87,19 +87,29 @@ The canonical complete Foundation validation command remains:
 
 It creates, locks, configures, and cleans a disposable
 `MiniErpFoundation_*` LocalDB database for the Foundation suite. It must not be
-described as Master Data/Business Parties provider validation. Earlier 11-SQL
-and 493-backend totals are dated historical Foundation checkpoint evidence,
-not the current repository totals.
+described as Master Data/Business Parties provider validation.
 
-### O5-006 - Product integration evidence (Low)
+For a direct SQL-suite run, first set `MESP_SQLSERVER_CONNECTION_STRING` to a
+safe LocalDB connection whose database name starts with
+`MiniErpFoundation_`, then run:
 
-The implemented Product slice has focused contract, authorization, persistence
-boundary, lifecycle, reference, isolation, audit, and API-composition tests.
-Because Category/UOM are not currently externally creatable through mapped API
-routes, those tests are not equivalent to an end-to-end public API workflow
-from Category/UOM creation through Product creation. Future integration
-readiness must add observable provider/API evidence at the owning boundary;
-this reconciliation changes no tests.
+```powershell
+dotnet test .\backend\tests\MiniErp.ArchitectureTests\MiniErp.ArchitectureTests.csproj --configuration Release --filter "FullyQualifiedName~SqlServerSafetyTests"
+```
+
+The fixture rejects an unsafe server/database target. The filter was verified
+with test listing and selects exactly 21 cases; it was not executed without the
+required safe disposable environment.
+
+### O5-006 - ADR-011 boundary clarification (Low)
+
+Localized Arabic/English storage fields and bounded Arabic-specific uniqueness
+keys exist in Supplier/Customer persistence. That is not evidence of an
+approved Arabic linguistic search, sort, tokenization, normalization, fallback,
+RTL form, or bilingual business-document policy, and no Saudi/legal conclusion
+follows from those stored fields. ADR-011 remains an indexed required decision
+with no standalone completed ADR in the repository. The provider/collation
+risk in O5-002 remains open.
 
 ### O5-007 - Customer HTTP classification parity (Low)
 
@@ -113,13 +123,18 @@ documentation-only scope.
 
 ## 3. Preserved gates and MESP-32 handoff
 
-- MESP-23 remains In Progress as the one living decision register. No open
-  entry is answered, deferred, or superseded by this review.
+- MESP-23 remains In Progress as the one living decision register: 16
+  Jira-decomposed entries from 12 broader PRD section 13.2 prompts, 14 still
+  open, with MESP-52/PD-020 and MESP-56/PD-021 closed only at their approved
+  scopes. No open entry is answered, deferred, or superseded by this review.
 - MESP-48 supported-volume/performance, MESP-49 Saudi legal/tax/external
   validation, and MESP-50 privacy/residency/retention/legal-hold/purge/backup/
   restoration remain open production gates.
 - Procurement-affecting open decisions remain live in MESP-41 through MESP-56
   according to their recorded ownership. Recommendations are not approvals.
+- Live handoff verification leaves MESP-42, MESP-43, and MESP-44 To Do.
+- M95-SL-06 Currency remains premature because Finance-owned currency behavior
+  and MESP-54 remain unresolved.
 - MESP-32 must treat Suppliers as external business parties, never application
   users, and must remain Release-1 B2B ERP only. Retail POS and Wafra-specific
   core behavior remain excluded.

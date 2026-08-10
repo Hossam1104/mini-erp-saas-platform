@@ -4,7 +4,9 @@ This file is the lightweight ADR index for Release 1. The approved architecture 
 
 ## Current Independent Opus 5 reconciliation - 10 August 2026
 
-MESP-108 records the accepted Independent Opus 5 checkpoint at reviewed
+MESP-108 is Done through PR #44, merged at
+`1f2db0a0b5ca0f39be8db06cc4c442c67b70e786`, and records the accepted
+Independent Opus 5 checkpoint at reviewed
 `main` baseline `4c25330055b7c5b64a2f351b22d143b91a2646be`: **PASS - SAFE
 TO PROCEED TO NEXT DOMAIN**, 0 Critical, 0 High, 3 Medium, and 4 Low. The full
 finding disposition is
