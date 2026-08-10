@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-10 17:28 +03:00
+**Last Updated:** 2026-08-10 18:18 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -84,9 +84,9 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **48** | **51.6%** |
+| Done | **49** | **52.7%** |
 | In Progress | **1** | **1.1%** |
-| To Do | **44** | **47.3%** |
+| To Do | **43** | **46.2%** |
 | **Total Non-Epic** | **93** | **100%** |
 
 Major Release-1 Epics:
@@ -94,12 +94,12 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 108 MESP issues, including the 15 Epics, the current workflow state
-is 48 Done, 6 In Progress, and 54 To Do. These counts were re-checked in live
+is 49 Done, 6 In Progress, and 53 To Do. These counts were re-checked in live
 Jira on 10 August 2026; the only non-Epic In Progress item is MESP-23.
 
 ## Interpretation
 
-Raw Jira completion currently makes the project appear approximately **51% complete**.
+Raw Jira completion currently makes the project appear approximately **53% complete**.
 
 That number must NOT be used as the production-completion percentage.
 
@@ -107,7 +107,7 @@ Many future implementation tickets have not yet been generated because several m
 
 Therefore the current project should be represented as:
 
-> **Jira-created-work completion: ~48%**
+> **Jira-created-work completion: ~53%**
 > **Actual Release-1 production completion: ~29%**
 
 **Jira hygiene note:** MESP-97 and MESP-98 were stale duplicate/superseded
@@ -125,11 +125,16 @@ comment `10691`; MESP-107 is Done through PR #41 at merge
 closure evidence in Jira comments `10692`, `10726`, and `10727`; and MESP-106
 is Done through PR #42 at merge `0f712edcf58119057d614000721fe41227383bc1`,
 with activation/validation/closure evidence in comments `10728`/`10729`/`10730`.
-Live Jira state is now 48 Done / 6 In
-Progress / 54 To Do across all issues, and 48 Done / 1 In Progress / 44 To Do
+MESP-32 is Done through approved BRD PR #45 at merge
+`6dec81f3520decdf7d50ef40a44186988ba516d5`, with Jira activation/validation/
+approval/closure evidence `10736`/`10738`/`10739`/`10740` and MESP-23 register
+handoff `10737`. Live Jira state is now 49 Done / 6 In
+Progress / 53 To Do across all issues, and 49 Done / 1 In Progress / 43 To Do
 for non-Epic work. The Customer-specific
 MD-OD-001/005/008 decisions are approved only for the bounded Customer slice;
-the merged Customer source remains limited to that slice.
+the merged Customer source remains limited to that slice. No production-
+capability percentage changed in the documentation-only MESP-32 session; the
+next exact BRD handoff is MESP-33 Inventory and Warehouse Management.
 
 ---
 
@@ -1003,6 +1008,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-10 18:18 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-32 Procurement/P2P v0.1 Approved Business Baseline published in `docs/21_Procurement_and_Purchase_to_Pay_BRD.md`; PR #45 merged at `6dec81f3520decdf7d50ef40a44186988ba516d5`; Jira activation/validation/approval/closure evidence `10736`/`10738`/`10739`/`10740`; MESP-23 register handoff `10737`; live Jira all-issue 49 Done / 6 In Progress / 53 To Do and non-Epic 49 Done / 1 In Progress / 43 To Do; no production-capability percentage change; next exact BRD is MESP-33 | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 17:28 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-108 Done with reconciliation evidence `10732` and closure evidence `10733`; PR #44 merged at `1f2db0a0b5ca0f39be8db06cc4c442c67b70e786`; disposition PASS with 0 Critical / 0 High / 3 Medium / 4 Low; current validation is 670 non-SQL plus 21 separately gated Foundation-only SQL cases (691 total); live Jira all-issue 48 Done / 6 In Progress / 54 To Do and non-Epic 48 Done / 1 In Progress / 44 To Do; MESP-32 remains To Do and production-capability percentages are unchanged | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 15:53 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-23 living-register reconciliation recorded in Jira comment `10731`; 16 Jira-decomposed entries verified, 14 remain Open / To Do, MESP-52/PD-020 and MESP-56/PD-021 closures preserved, and MESP-48/MESP-49/MESP-50 remain open gates; live Jira all-issue 47 Done / 6 In Progress / 54 To Do and non-Epic 47 Done / 1 In Progress / 44 To Do; focused PR #43 merged to `main` at `75a2a7743e9357b23c369a9c991bcb5ef9bd4c32`; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 15:02 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-106 transitioned to Done with Jira closure evidence `10730`; final tracked handoff metadata is synchronized at `09d4471ffc2df1a54adf7fe74f74929b90f3ecb8`; live Jira all-issue 47 Done / 6 In Progress / 54 To Do and non-Epic 47 Done / 1 In Progress / 44 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |

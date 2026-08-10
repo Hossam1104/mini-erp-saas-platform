@@ -1,6 +1,52 @@
 # Current State
 
-## Current authoritative position - 10 August 2026 (MESP-108 Opus checkpoint reconciliation)
+## Current authoritative position - 10 August 2026 (MESP-32 Procurement BRD Done)
+
+MESP-32 is **Done** as the approved, documentation-only Release 1 B2B
+Procurement and Purchase-to-Pay business baseline. The canonical artifact is
+`docs/21_Procurement_and_Purchase_to_Pay_BRD.md`, v0.1 Approved Business
+Baseline. It covers the request-to-order-to-manual-supplier-confirmation to
+receipt-to-invoice-to-payment chain, supplier returns, partials, exceptions,
+permissions, approval/SoD boundaries, matching, audit, concurrency, reporting,
+integration, migration, Saudi/external gates, and 28 business acceptance
+scenarios. No application source, API, database/schema, migration, UI,
+provider, or production behavior was changed.
+
+Focused PR #45 merged cleanly to `main` at
+`6dec81f3520decdf7d50ef40a44186988ba516d5`, from reviewed head
+`9df9ac3df3383d6c7cdecc80a2889dc61997deaf`. Jira activation, validation,
+Owner approval, and closure evidence are comments `10736`, `10738`, `10739`,
+and `10740`. The MESP-23 living-register handoff is comment `10737`.
+
+MESP-41 through MESP-55 remain open except the separately approved MESP-52 /
+PD-020 and MESP-56 / PD-021. MESP-42, MESP-43, MESP-44, MESP-47, MESP-54,
+and MESP-55 are represented as policy branches and implementation gates, not
+answered by a recommendation. Suppliers remain external business parties and
+never receive User, login, credential, Tenant-membership, or session semantics.
+Retail POS and Wafra-specific core behavior remain excluded. MESP-48, MESP-49,
+and MESP-50 remain open production/external gates.
+
+MESP-23 remains the living open-questions register and the only active
+governance item. MESP-33 is the next separately authorized **To Do** domain BRD
+under MESP-8; it is not activated by this session. The root `TASK.md` now
+contains only the exact MESP-33 Inventory and Warehouse Management BRD
+handoff. Do not execute it automatically.
+
+The canonical PRD text was structurally reviewed. Visual rendering was
+attempted but could not run because the environment lacks the document
+rendering dependency (`pdf2image`) and LibreOffice; no visual verification
+claim is made.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-32 | **Done**; v0.1 Approved Business Baseline in `docs/21_Procurement_and_Purchase_to_Pay_BRD.md`; closure evidence `10740`. |
+| Focused PR | **#45**; merged to `main` at `6dec81f3520decdf7d50ef40a44186988ba516d5`; reviewed head `9df9ac3df3383d6c7cdecc80a2889dc61997deaf`. |
+| Current branch | `main`; synchronized to the PR #45 merge before this required handoff metadata commit. |
+| Jira handoff | MESP-25 Done; MESP-26 Done; MESP-32 Done; MESP-33 To Do; MESP-23 In Progress; Procurement/Inventory-affecting open decision rows remain open. |
+| Production-capability percentages | Unchanged by this documentation-only BRD session; no source behavior or usable production capability was added. |
+| Next exact task | MESP-33 Inventory and Warehouse Management BRD only, in a fresh session after the live baseline and entry gate are reverified. Do not activate or execute it automatically. |
+
+## Historical checkpoint position - 10 August 2026 (MESP-108 Opus checkpoint reconciliation)
 
 Independent Opus 5 issued **PASS - SAFE TO PROCEED TO NEXT DOMAIN** against
 reviewed `main` baseline `4c25330055b7c5b64a2f351b22d143b91a2646be`, with

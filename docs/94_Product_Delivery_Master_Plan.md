@@ -1,6 +1,27 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative Independent Opus 5 reconciliation overlay - 10 August
+> **Authoritative current MESP-32 completion overlay - 10 August 2026.**
+> MESP-32 is **Done** as the approved, documentation-only Release 1 B2B
+> Procurement and Purchase-to-Pay BRD. The canonical artifact is
+> `docs/21_Procurement_and_Purchase_to_Pay_BRD.md`, v0.1 Approved Business
+> Baseline. Focused PR #45 merged cleanly to `main` at
+> `6dec81f3520decdf7d50ef40a44186988ba516d5` from reviewed head
+> `9df9ac3df3383d6c7cdecc80a2889dc61997deaf`; Jira activation, validation,
+> Owner approval, and closure evidence are comments `10736`, `10738`,
+> `10739`, and `10740`. The MESP-23 living-register handoff is comment
+> `10737`.
+>
+> The BRD is business-requirements and governance content only. It adds no
+> application source, API, database/schema, migration, UI, provider, or
+> production behavior. It preserves MESP-41 through MESP-55 as open except
+> the separately approved MESP-52 / PD-020 and MESP-56 / PD-021. Suppliers
+> remain external business parties; Retail POS and Wafra-specific core
+> behavior remain excluded. MESP-48, MESP-49, and MESP-50 remain open gates.
+> MESP-33 Inventory and Warehouse Management is the next separately
+> authorized **To Do** BRD and is not activated by this session. The root
+> `TASK.md` contains only the exact MESP-33 handoff.
+
+> **Historical Independent Opus 5 reconciliation overlay - 10 August
 > 2026.** MESP-108 is Done through PR #44, merged at
 > `1f2db0a0b5ca0f39be8db06cc4c442c67b70e786`, and records **PASS - SAFE TO
 > PROCEED TO NEXT DOMAIN** against
@@ -157,12 +178,12 @@
 | Last updated | 10 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-23 / Open Questions Register reconciliation is the bounded In Progress governance activity; MESP-106 Master Data authorization and duplicate-audit classification hardening is Done through PR #42.` |
-| Current implementation item | `None. MESP-23 is governance-only; no source implementation item is active. MESP-106 remains merged to main at 0f712edcf58119057d614000721fe41227383bc1.` |
-| Merged-main baseline | `PR #43` merged reviewed head `31d8b3a65a2ded3317a9099b1bba7cf392afd296` at `75a2a7743e9357b23c369a9c991bcb5ef9bd4c32`; it carries the bounded MESP-23 reconciliation and the preceding PR #42 baseline at `0f712edcf58119057d614000721fe41227383bc1`; final session handoff metadata is at `6b8ecfd75934d184a531ea15064116eb703f93f1`; local `main` is synchronized. |
+| Current activity | `MESP-23 remains the bounded In Progress governance register; MESP-32 Procurement/P2P BRD is Done as an approved documentation baseline. No implementation item is active.` |
+| Current implementation item | `None. MESP-32 is merged documentation only; MESP-33 Inventory BRD is To Do and is not activated.` |
+| Merged-main baseline | `PR #45` merged the approved MESP-32 BRD to `main` at `6dec81f3520decdf7d50ef40a44186988ba516d5`; required state/TASK/statistics handoff metadata follows in this session. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; PR #42, PR #41, PR #40, and PR #39 are merged; no implementation or documentation review PR remains open.` |
-| Current review checkpoint | `MESP-23 reconciliation evidence is Jira comment 10731: 16 Jira-decomposed register entries, 14 remaining open, MESP-52/PD-020 and MESP-56/PD-021 preserved as approved closures, and MESP-48/MESP-49/MESP-50 still open. This is documentation/Jira governance only; no source or production validation is claimed.` |
+| Open Pull Request | `None; PR #45 and all preceding implementation/documentation PRs are merged.` |
+| Current review checkpoint | `MESP-32 closure evidence is Jira comment 10740, with activation/validation/Owner approval comments 10736/10738/10739; MESP-23 register handoff is comment 10737. MESP-41 through MESP-55 remain open except MESP-52/PD-020 and MESP-56/PD-021; MESP-48/MESP-49/MESP-50 remain open. No source or production validation is claimed.` |
 
 ---
 
@@ -187,6 +208,11 @@ It is a living progress tracker. Completed work is marked as **Done**, the curre
 ## 3. Current position
 
 ### Product-wide position
+
+The latest bounded BRD position is MESP-31 **Done** and MESP-32 **Done** as
+approved business baselines. MESP-33 Inventory and Warehouse Management is
+the next separately authorized BRD and remains To Do; it is not activated by
+the MESP-32 completion.
 
 The project is currently in **Phase 2 — Business Requirements Documents**, because the full set of business-domain BRDs has not yet been completed.
 
@@ -431,10 +457,10 @@ Define the business meaning of each domain before technical implementation. Each
 
 ### Core ERP domains
 
-- [ ] 🔄 Master Data and Catalog BRD — MESP-31 In Progress; v0.3 at `docs/16_Master_Data_and_Product_Catalog_BRD.md` is an Owner Approved Business Baseline at reviewed content head `1e2d055354f0ddde833190948d09fa426707484c`. PR #28 must merge and MESP-31 must be closed before the BRD sequence item is marked Done. MD-OD-001 through MD-OD-011 remain open and governed.
+- [x] Master Data and Catalog BRD — MESP-31 Done; v0.3 at `docs/16_Master_Data_and_Product_Catalog_BRD.md` is an Owner Approved Business Baseline. MD-OD-001 through MD-OD-011 remain open and governed.
 - [ ] Business Parties BRD.
-- [ ] Procurement BRD.
-- [ ] Inventory BRD.
+- [x] Procurement BRD — MESP-32 Done; v0.1 Approved Business Baseline at `docs/21_Procurement_and_Purchase_to_Pay_BRD.md`; PR #45 merged to `main` at `6dec81f3520decdf7d50ef40a44186988ba516d5`; MESP-41 through MESP-55 remain open except approved MESP-52/MESP-56.
+- [ ] Inventory BRD — MESP-33 To Do; next exact session, not activated automatically.
 - [ ] B2B Sales BRD.
 - [ ] Finance BRD.
 - [ ] Reporting and Analytics BRD.

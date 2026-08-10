@@ -1,76 +1,88 @@
-# Next session - MESP-32 Procurement and Purchase-to-Pay BRD only
+# Next session - MESP-33 Inventory and Warehouse Management BRD only
 
-MESP-108 has accepted and reconciled the non-blocking Independent Opus 5
-checkpoint findings in
-`docs/98_Independent_Opus_5_Checkpoint_Reconciliation.md`. MESP-25 and MESP-26
-are Done. MESP-32 remains **To Do** under MESP-7 and must not be activated or
-executed until a fresh session verifies the live baseline and begins this exact
-bounded task.
+MESP-32 is **Done** as the approved Release 1 B2B Procurement and
+Purchase-to-Pay business baseline. Its canonical artifact is
+`docs/21_Procurement_and_Purchase_to_Pay_BRD.md`; focused PR #45 merged to
+`main` at `6dec81f3520decdf7d50ef40a44186988ba516d5`. Jira activation,
+validation, Owner approval, and closure evidence are comments `10736`,
+`10738`, `10739`, and `10740`. MESP-33 remains **To Do** under MESP-8 and
+must not be activated or executed until a fresh session verifies the live
+baseline and begins this exact bounded task.
 
 ## Exact objective
 
-Execute only **MESP-32 - Create Procurement and Purchase-to-Pay BRD**. Produce
-the Release-1 business-requirements baseline for Procurement/Purchase-to-Pay;
-obtain and record any genuinely blocking named-Owner decisions through the
-normal decision process; publish the bounded documentation/Jira handoff; then
-stop. Do not begin implementation, a Lean Implementation Specification, or the
-next domain.
+Execute only **MESP-33 - Produce Inventory and Warehouse Management BRD**.
+Produce the Release 1 B2B business-requirements baseline for Inventory and
+Warehouse Management; obtain and record any genuinely blocking named-Owner
+decisions through the normal process; publish the bounded documentation/Jira
+handoff; then stop. Do not begin implementation, a Lean Implementation
+Specification, MESP-34 Finance, or any later domain.
 
 ## Required evidence
 
-Read `AGENTS.md`, `.ai/CURRENT_STATE.md`, this `TASK.md`, `docs/staticts.md`,
-the canonical approved PRD `docs/MESP_PRD_v1.2.docx`, the approved glossary,
-the approved upstream BRDs and ADR/index evidence, the Product Decision
-Register, MESP-23, and the Product Delivery Master Plan before changing scope.
-Use PRD anchors PROC-001 through PROC-008 and BR-005 as the primary Procurement
-baseline and trace supporting cross-domain requirements explicitly.
+Read `AGENTS.md`, `.ai/CURRENT_STATE.md`, this `TASK.md`,
+`docs/staticts.md`, the canonical approved PRD `docs/MESP_PRD_v1.2.docx`, the
+approved glossary, approved upstream BRDs and ADR/index evidence, the Product
+Decision Register, MESP-23, `docs/21_Procurement_and_Purchase_to_Pay_BRD.md`,
+and the Product Delivery Master Plan before changing scope.
+
+Use PRD anchors `INV-001` through `INV-008`, `BR-006`, and `BR-007` as the
+primary Inventory baseline. Trace procurement receipt/return handoffs,
+Product/UOM/tracking boundaries, Organization/Warehouse scope, Finance
+valuation/posting, Saudi/localization, reporting, migration, and production
+gates explicitly.
 
 Verify live Jira before activation, including MESP-25, MESP-26, MESP-32,
-MESP-23, MESP-42, MESP-43, MESP-44, and every other open MESP-41--MESP-56
-decision that can affect Procurement. Preserve approved answers at their exact
+MESP-33, MESP-23, MESP-41, MESP-45, and every other open MESP-41--MESP-56
+decision that can affect Inventory. Preserve approved answers at their exact
 scope and keep recommended defaults visibly unapproved.
 
 ## BRD coverage
 
 The BRD must define, without inventing unresolved policy:
 
-- Purchase Request, Purchase Order, Supplier Confirmation, Goods Receipt,
-  Purchase Invoice, Supplier Payment, and supplier-return business flows;
-- partial ordering, confirmation, receipt, invoicing, payment, cancellation,
-  rejection, return, reopening, and exception behavior where Release 1 needs
-  it;
-- matching and exception ownership across order, receipt, invoice, and payment,
-  including tolerances only when supported by approved evidence;
+- Opening Balance, Goods Receipt, Warehouse Transfer, Stock Adjustment,
+  Inventory Count, Supplier Return, Customer Return, and Stock Issue flows;
+- Inventory ownership, the immutable stock ledger, projected balances,
+  availability, reservations only if approved, tracking attributes, and
+  Release 1 Moving Weighted Average valuation;
+- partial receipt/return/transfer/count/issue, cancellation, rejection,
+  correction, reopening, negative-stock and other exception behavior only
+  where supported by approved evidence;
 - permissions, approval boundaries, separation of duties, delegation,
-  concurrency, audit evidence, immutable historical references, and failure
-  handling;
-- Supplier/master-data reuse, Inventory receipt/return ownership, Finance AP,
-  posting/payment ownership, tax, multi-currency/exchange-rate boundaries, and
-  integration contracts without redefining those domains;
-- Saudi launch implications and external-validation gates without making legal,
-  tax, ZATCA, banking, or statutory conclusions;
-- reporting, notifications, imports/exports, migration, observability,
-  retention/privacy, supported volume, recovery, and operational-readiness
-  requirements at the business level; and
-- traceable Given/When/Then acceptance scenarios for happy paths, partials,
-  exceptions, denial, Tenant isolation, audit, concurrency, and downstream
-  handoffs.
+  concurrency, audit evidence, immutable historical references, failure and
+  reconciliation handling;
+- Product/UOM/tracking master reuse, Procurement receipt/return ownership,
+  Finance valuation/accounting/AP impact, multi-currency/exchange boundaries,
+  and integration contracts without redefining those domains;
+- Saudi launch implications and external-validation gates without legal, tax,
+  ZATCA, banking, or statutory conclusions;
+- reports, KPIs, availability and ledger reconciliation, notifications,
+  imports/exports, migration, observability, retention/privacy, supported
+  volume, recovery, and operational-readiness requirements at the business
+  level; and
+- traceable Given/When/Then scenarios for happy paths, partials, exceptions,
+  denial, Tenant isolation, immutable ledger/audit, concurrency, valuation,
+  reconciliation, and downstream handoffs.
 
-Suppliers are external business parties. They are never application Users and
-receive no login, credential, Tenant membership, or user-session semantics from
-this BRD. Release 1 remains B2B ERP only; Retail POS and Wafra-specific core
-behavior are prohibited. Wafra may be used only as explicitly labelled
-validation evidence.
+Release 1 remains B2B ERP only. Retail POS and Wafra-specific core behavior
+are prohibited; Wafra may be used only as explicitly labelled validation
+evidence. Suppliers, Customers, and other external business parties are not
+Users and receive no login, credential, Tenant membership, or session semantics
+from this BRD.
 
 ## Decision discipline
 
-Do not infer an unresolved business rule from existing code, common ERP
-practice, a recommended default, or model judgement. Consolidate any decisions
-that truly block a coherent Procurement BRD into a small Owner decision bundle
+Do not infer an unresolved business rule from existing code, common inventory
+practice, a recommended default, or model judgement. Consolidate decisions
+that truly block a coherent Inventory BRD into a small Owner decision bundle
 that states recommendation, alternatives, consequences, scope, and due point.
 A decision is approved only with named human evidence in Jira or the immutable
-decision record. Keep MESP-42, MESP-43, MESP-44 and other Procurement-affecting
-open decisions open unless qualifying evidence explicitly resolves them.
+decision record. Keep MESP-41 tracking, MESP-45 negative stock, MESP-48 volume,
+MESP-49 Saudi production validation, MESP-50 retention/privacy, MESP-51
+migration, MESP-53 reports/reconciliation, MESP-54 exchange rates, MESP-55
+delegation, and every other affected open row open unless qualifying evidence
+explicitly resolves it.
 
 ## Required boundary
 
@@ -78,10 +90,13 @@ open decisions open unless qualifying evidence explicitly resolves them.
 - No application source, EF entity, table, migration, endpoint, API contract,
   UI, provider, database, infrastructure, or automated-test behavior change.
 - Do not execute a migration or provision production/external infrastructure.
+- Preserve the Inventory rules that the stock ledger is immutable, balances
+  are projections that reconcile to movements, Moving Weighted Average is the
+  Release 1 valuation baseline, and opening balances do not bypass the ledger.
 - Do not resolve MESP-48, MESP-49, MESP-50, ADR-011, or another domain's
   policy by implication.
-- Do not activate or execute MESP-33, MESP-34, another Jira issue, or a
-  Procurement implementation slice automatically.
+- Do not activate or execute MESP-34, another Jira issue, or an Inventory
+  implementation slice automatically.
 
 ## Required completion and handoff
 
