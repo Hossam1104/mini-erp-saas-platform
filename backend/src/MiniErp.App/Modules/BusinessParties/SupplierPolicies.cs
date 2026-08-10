@@ -106,6 +106,19 @@ public sealed class SupplierResourceAuthorizationService
         SupplierResourcePolicy resourcePolicy,
         SupplierApprovalPolicy approvalPolicy,
         SupplierScopePolicy scopePolicy)
+        : this(
+            capabilityResolver,
+            (IMasterDataResourcePolicy)resourcePolicy,
+            (IMasterDataApprovalPolicy)approvalPolicy,
+            (IMasterDataScopePolicy)scopePolicy)
+    {
+    }
+
+    internal SupplierResourceAuthorizationService(
+        IMasterDataCapabilityResolver capabilityResolver,
+        IMasterDataResourcePolicy resourcePolicy,
+        IMasterDataApprovalPolicy approvalPolicy,
+        IMasterDataScopePolicy scopePolicy)
     {
         this.capabilityResolver = capabilityResolver ?? throw new ArgumentNullException(nameof(capabilityResolver));
         this.resourcePolicy = resourcePolicy ?? throw new ArgumentNullException(nameof(resourcePolicy));

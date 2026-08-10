@@ -221,7 +221,7 @@ public sealed class SupplierService
                 resource,
                 MasterDataOperation.Create,
                 "persistence_unavailable",
-                cancellationToken) with { Evidence = evidence };
+                cancellationToken);
         }
     }
 
@@ -354,7 +354,7 @@ public sealed class SupplierService
                 resource,
                 MasterDataOperation.Edit,
                 "persistence_unavailable",
-                cancellationToken) with { Evidence = evidence };
+                cancellationToken);
         }
     }
 
@@ -540,7 +540,7 @@ public sealed class SupplierService
                 resource,
                 operation,
                 "persistence_unavailable",
-                cancellationToken) with { Evidence = evidence };
+                cancellationToken);
         }
     }
 
@@ -617,7 +617,7 @@ public sealed class SupplierService
             operation,
             result.Code,
             cancellationToken);
-        return failed with { Evidence = evidence };
+        return failed;
     }
 
     private async Task<MasterDataOperationResult<T>> DeniedAsync<T>(
@@ -806,19 +806,31 @@ public sealed class SupplierService
         "permission_denied" => FoundationAuditReason.PermissionDenied,
         "authorization_denied"
             or "resource_scope_denied"
-            or "resource_policy_not_configured" => FoundationAuditReason.AuthorizationDenied,
+            or "resource_policy_not_configured"
+            or "approval_required"
+            or "approval_pending"
+            or "approval_rejected"
+            or "approval_policy_not_configured"
+            or "approval_identity_missing"
+            or "approval_policy_invalid"
+            or "self_approval_denied" => FoundationAuditReason.AuthorizationDenied,
         "supplier_not_found" => FoundationAuditReason.NotFound,
         "concurrency_conflict" => FoundationAuditReason.ConcurrencyConflict,
         "supplier_lifecycle_no_change"
             or "deactivation_reason_required" => FoundationAuditReason.LifecycleDenied,
         "validation_failed" => FoundationAuditReason.ValidationFailed,
-        "persistence_unavailable"
+        "supplier_duplicate"
+            or "supplier_code_duplicate"
+            or "supplier_registration_duplicate" => FoundationAuditReason.ValidationFailed,
+        "permission_unavailable"
+            or "scope_policy_unavailable"
+            or "approval_policy_unavailable"
+            or "resource_policy_unavailable"
+            or "authorization_operation_unmapped"
+            or "persistence_unavailable"
             or "audit_unavailable"
             or "audit_evidence_invalid"
             or "audit_evidence_unavailable"
-            or "supplier_duplicate"
-            or "supplier_code_duplicate"
-            or "supplier_registration_duplicate"
             or "cross_role_review_unavailable" => FoundationAuditReason.InternalFailure,
         _ => FoundationAuditReason.InternalFailure
     };

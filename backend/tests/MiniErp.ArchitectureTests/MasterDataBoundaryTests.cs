@@ -75,6 +75,55 @@ public sealed class MasterDataBoundaryTests
     }
 
     [Fact]
+    public void Authorization_dependency_outages_fail_closed_with_distinct_internal_codes()
+    {
+        var context = ResolveContext();
+        var resource = Resource(TenantA, CompanyA, "product-001");
+        var cases = new[]
+        {
+            (
+                ExpectedCode: "permission_unavailable",
+                Authorization: new MasterDataResourceAuthorizationService(
+                    new ThrowingCapabilityResolver(),
+                    new AllowingResourcePolicy(),
+                    new FixedApprovalPolicy(new MasterDataApprovalPolicyResult(
+                        MasterDataApprovalPolicyStatus.NotApplicable)),
+                    new ExactTrustedScopePolicy())),
+            (
+                ExpectedCode: "scope_policy_unavailable",
+                Authorization: new MasterDataResourceAuthorizationService(
+                    new GrantingCapabilityResolver(MasterDataCapability.Create),
+                    new AllowingResourcePolicy(),
+                    new FixedApprovalPolicy(new MasterDataApprovalPolicyResult(
+                        MasterDataApprovalPolicyStatus.NotApplicable)),
+                    new ThrowingScopePolicy())),
+            (
+                ExpectedCode: "approval_policy_unavailable",
+                Authorization: new MasterDataResourceAuthorizationService(
+                    new GrantingCapabilityResolver(MasterDataCapability.Create),
+                    new AllowingResourcePolicy(),
+                    new ThrowingApprovalPolicy(),
+                    new ExactTrustedScopePolicy())),
+            (
+                ExpectedCode: "resource_policy_unavailable",
+                Authorization: new MasterDataResourceAuthorizationService(
+                    new GrantingCapabilityResolver(MasterDataCapability.Create),
+                    new ThrowingResourcePolicy(),
+                    new FixedApprovalPolicy(new MasterDataApprovalPolicyResult(
+                        MasterDataApprovalPolicyStatus.NotApplicable)),
+                    new ExactTrustedScopePolicy()))
+        };
+
+        foreach (var (expectedCode, authorization) in cases)
+        {
+            var result = authorization.Authorize(context, resource, MasterDataOperation.Create);
+
+            Assert.False(result.Allowed);
+            Assert.Equal(expectedCode, result.Code);
+        }
+    }
+
+    [Fact]
     public void Caller_cannot_pair_an_operation_with_a_weaker_unrelated_capability()
     {
         var service = AllowingAuthorizationService(MasterDataCapability.View);
@@ -542,6 +591,12 @@ public sealed class MasterDataBoundaryTests
         }
     }
 
+    private sealed class ThrowingCapabilityResolver : IMasterDataCapabilityResolver
+    {
+        public IReadOnlySet<MasterDataCapability> Resolve(MasterDataRequestContext context) =>
+            throw new InvalidOperationException("capability dependency unavailable");
+    }
+
     private sealed class AllowingResourcePolicy : IMasterDataResourcePolicy
     {
         public MasterDataPolicyDecision Evaluate(MasterDataPolicyInput input)
@@ -562,6 +617,12 @@ public sealed class MasterDataBoundaryTests
         }
     }
 
+    private sealed class ThrowingResourcePolicy : IMasterDataResourcePolicy
+    {
+        public MasterDataPolicyDecision Evaluate(MasterDataPolicyInput input) =>
+            throw new InvalidOperationException("resource dependency unavailable");
+    }
+
     private sealed class ExactTrustedScopePolicy : IMasterDataScopePolicy
     {
         public MasterDataScopeDecision Evaluate(
@@ -578,6 +639,14 @@ public sealed class MasterDataBoundaryTests
 
             return MasterDataScopeDecision.Success();
         }
+    }
+
+    private sealed class ThrowingScopePolicy : IMasterDataScopePolicy
+    {
+        public MasterDataScopeDecision Evaluate(
+            MasterDataRequestContext context,
+            MasterDataResourceReference resource) =>
+            throw new InvalidOperationException("scope dependency unavailable");
     }
 
     private sealed class FixedApprovalPolicy : IMasterDataApprovalPolicy
@@ -598,5 +667,14 @@ public sealed class MasterDataBoundaryTests
             Assert.NotNull(resource);
             return result;
         }
+    }
+
+    private sealed class ThrowingApprovalPolicy : IMasterDataApprovalPolicy
+    {
+        public MasterDataApprovalPolicyResult Evaluate(
+            MasterDataRequestContext context,
+            MasterDataResourceReference resource,
+            MasterDataOperation operation) =>
+            throw new InvalidOperationException("approval dependency unavailable");
     }
 }

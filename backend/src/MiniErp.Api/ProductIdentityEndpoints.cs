@@ -337,10 +337,23 @@ public static class ProductIdentityEndpoints
         var status = code switch
         {
             "permission_denied"
-                or "permission_unavailable"
                 or "resource_scope_denied"
                 or "cross_tenant_target_denied"
-                or "tenant_context_failed" => StatusCodes.Status403Forbidden,
+                or "tenant_context_failed"
+                or "authorization_denied"
+                or "approval_required"
+                or "approval_pending"
+                or "approval_rejected"
+                or "approval_policy_not_configured"
+                or "approval_identity_missing"
+                or "approval_policy_invalid"
+                or "resource_policy_not_configured"
+                or "self_approval_denied" => StatusCodes.Status403Forbidden,
+            "permission_unavailable"
+                or "scope_policy_unavailable"
+                or "approval_policy_unavailable"
+                or "resource_policy_unavailable"
+                or "authorization_operation_unmapped" => StatusCodes.Status503ServiceUnavailable,
             "product_not_found" => StatusCodes.Status404NotFound,
             "concurrency_conflict"
                 or "product_duplicate"
@@ -349,6 +362,9 @@ public static class ProductIdentityEndpoints
             "persistence_unavailable"
                 or "reference_persistence_unavailable"
                 or "audit_unavailable"
+                or "audit_evidence_invalid"
+                or "audit_evidence_unavailable"
+                or "audit_context_mismatch"
                 or "base_uom_integrity_unavailable" => StatusCodes.Status503ServiceUnavailable,
             _ => StatusCodes.Status400BadRequest
         };

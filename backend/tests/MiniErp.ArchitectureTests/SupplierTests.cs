@@ -65,18 +65,21 @@ public sealed class SupplierTests
             Supplier(" SAME-CODE ", "Different Legal Name", null, "different-registration"));
         Assert.False(duplicateCode.Succeeded);
         Assert.Equal("supplier_code_duplicate", duplicateCode.Code);
+        Assert.Equal(FoundationAuditReason.ValidationFailed, duplicateCode.Evidence!.Reason);
 
         var duplicateRegistration = await fixture.SupplierService.CreateSupplierAsync(
             fixture.ContextA,
             Supplier("different-code", "Another Legal Name", null, " SAME-REGISTRATION "));
         Assert.False(duplicateRegistration.Succeeded);
         Assert.Equal("supplier_registration_duplicate", duplicateRegistration.Code);
+        Assert.Equal(FoundationAuditReason.ValidationFailed, duplicateRegistration.Evidence!.Reason);
 
         var duplicateName = await fixture.SupplierService.CreateSupplierAsync(
             fixture.ContextA,
             Supplier("another-code", " SAME LEGAL NAME ", null, "another-registration"));
         Assert.False(duplicateName.Succeeded);
         Assert.Equal("supplier_duplicate", duplicateName.Code);
+        Assert.Equal(FoundationAuditReason.ValidationFailed, duplicateName.Evidence!.Reason);
 
         var otherTenant = await fixture.SupplierService.CreateSupplierAsync(
             fixture.ContextB,
@@ -173,6 +176,80 @@ public sealed class SupplierTests
         var suppliers = await fixture.SupplierService.ListSuppliersAsync(fixture.ContextA);
         Assert.True(suppliers.Succeeded, suppliers.Code);
         Assert.Empty(suppliers.Value!);
+    }
+
+    [Fact]
+    public async Task Supplier_authorization_dependency_outages_are_internal_failures_and_have_no_effect()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var cases = new[]
+        {
+            (
+                ExpectedCode: "permission_unavailable",
+                Authorization: SupplierAuthorization(
+                    new ThrowingCapabilityResolver(),
+                    new SupplierResourcePolicy(),
+                    new SupplierApprovalPolicy(),
+                    new SupplierScopePolicy())),
+            (
+                ExpectedCode: "scope_policy_unavailable",
+                Authorization: SupplierAuthorization(
+                    new GrantingCapabilityResolver(),
+                    new SupplierResourcePolicy(),
+                    new SupplierApprovalPolicy(),
+                    new ThrowingScopePolicy())),
+            (
+                ExpectedCode: "approval_policy_unavailable",
+                Authorization: SupplierAuthorization(
+                    new GrantingCapabilityResolver(),
+                    new SupplierResourcePolicy(),
+                    new ThrowingApprovalPolicy(),
+                    new SupplierScopePolicy())),
+            (
+                ExpectedCode: "resource_policy_unavailable",
+                Authorization: SupplierAuthorization(
+                    new GrantingCapabilityResolver(),
+                    new ThrowingResourcePolicy(),
+                    new SupplierApprovalPolicy(),
+                    new SupplierScopePolicy()))
+        };
+
+        foreach (var (expectedCode, authorization) in cases)
+        {
+            var result = await fixture.CreateService(authorization).CreateSupplierAsync(
+                fixture.ContextA,
+                Supplier("auth-" + expectedCode, "Authorization " + expectedCode, null, null));
+
+            Assert.False(result.Succeeded);
+            Assert.Equal(expectedCode, result.Code);
+            Assert.Equal(FoundationAuditReason.InternalFailure, result.Evidence!.Reason);
+            Assert.Null(result.Value);
+        }
+
+        var suppliers = await fixture.SupplierService.ListSuppliersAsync(fixture.ContextA);
+        Assert.True(suppliers.Succeeded, suppliers.Code);
+        Assert.Empty(suppliers.Value!);
+    }
+
+    [Fact]
+    public async Task Supplier_genuine_permission_denial_remains_denial_and_has_no_effect()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var authorization = SupplierAuthorization(
+            new DenyAllMasterDataCapabilityResolver(),
+            new SupplierResourcePolicy(),
+            new SupplierApprovalPolicy(),
+            new SupplierScopePolicy());
+
+        var result = await fixture.CreateService(authorization).CreateSupplierAsync(
+            fixture.ContextA,
+            Supplier("permission-denied", "Permission Denied Supplier", null, null));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("permission_denied", result.Code);
+        Assert.Equal(FoundationAuditReason.PermissionDenied, result.Evidence!.Reason);
+        Assert.Null(result.Value);
+        Assert.Empty((await fixture.SupplierService.ListSuppliersAsync(fixture.ContextA)).Value!);
     }
 
     [Fact]
@@ -299,6 +376,45 @@ public sealed class SupplierTests
         public IReadOnlySet<MasterDataCapability> Resolve(MasterDataRequestContext context) => capabilities;
     }
 
+    private sealed class ThrowingCapabilityResolver : IMasterDataCapabilityResolver
+    {
+        public IReadOnlySet<MasterDataCapability> Resolve(MasterDataRequestContext context) =>
+            throw new InvalidOperationException("capability dependency unavailable");
+    }
+
+    private sealed class ThrowingScopePolicy : IMasterDataScopePolicy
+    {
+        public MasterDataScopeDecision Evaluate(
+            MasterDataRequestContext context,
+            MasterDataResourceReference resource) =>
+            throw new InvalidOperationException("scope dependency unavailable");
+    }
+
+    private sealed class ThrowingApprovalPolicy : IMasterDataApprovalPolicy
+    {
+        public MasterDataApprovalPolicyResult Evaluate(
+            MasterDataRequestContext context,
+            MasterDataResourceReference resource,
+            MasterDataOperation operation) =>
+            throw new InvalidOperationException("approval dependency unavailable");
+    }
+
+    private sealed class ThrowingResourcePolicy : IMasterDataResourcePolicy
+    {
+        public MasterDataPolicyDecision Evaluate(MasterDataPolicyInput input) =>
+            throw new InvalidOperationException("resource dependency unavailable");
+    }
+
+    private static SupplierResourceAuthorizationService SupplierAuthorization(
+        IMasterDataCapabilityResolver capabilityResolver,
+        IMasterDataResourcePolicy resourcePolicy,
+        IMasterDataApprovalPolicy approvalPolicy,
+        IMasterDataScopePolicy scopePolicy) => new(
+        capabilityResolver,
+        resourcePolicy,
+        approvalPolicy,
+        scopePolicy);
+
     private sealed class ReviewingCrossRoleMatchPolicy : ISupplierCrossRoleMatchPolicy
     {
         public SupplierCrossRoleMatchReview Evaluate(
@@ -344,6 +460,9 @@ public sealed class SupplierTests
         public MasterDataRequestContext ContextB { get; }
 
         public SupplierService SupplierService { get; }
+
+        public SupplierService CreateService(SupplierResourceAuthorizationService authorization) =>
+            new(authorization, Persistence);
 
         public static Task<Fixture> CreateAsync(
             ISupplierCrossRoleMatchPolicy? crossRoleMatchPolicy = null) =>
