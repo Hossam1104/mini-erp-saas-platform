@@ -392,6 +392,31 @@ Confirm all of the following:
 - No new Jira issue was created.
 - No Retail POS work was created.
 
+## Current MESP-23 reconciliation - 10 August 2026
+
+The Jira issue is the authoritative living register; this note is a traceability
+pointer, not a second register. The current reconciliation is recorded in Jira
+comment `10731`. The historical v0.1/v0.2 register comments remain preserved,
+while comment `10055` remains the timing baseline and comment `10067` records
+the later MESP-52/MESP-56 closure evidence.
+
+- MESP-23 remains **In Progress** with the 16 Jira-decomposed entries
+  OQ-001--OQ-016 for MESP-41--MESP-56. The canonical PRD v1.2 section 13.2
+  contains 12 broader clarification prompts; the 16-entry count is the Jira
+  decision-register decomposition, not a claim that the PRD has 16 separate
+  paragraphs.
+- MESP-41--MESP-51, MESP-53, MESP-54, and MESP-55 remain Open / To Do (14
+  entries). MESP-52 is Done with PD-020 and MESP-56 is Done with PD-021.
+- MESP-52 closure is evidenced by Jira comments `10065` and `10062`; MESP-56
+  closure is evidenced by comments `10066` and `10063`. The glossary's
+  Subscription/Plan/Entitlement and Company/Legal Entity baselines reflect
+  those approvals; remaining decision-dependent terms remain open.
+- MESP-48, MESP-49, and MESP-50 remain open external/performance/production
+  gates. No recommended default, Wafra observation, assistant analysis, or
+  source behavior is an approved answer. MESP-20 comment `10052` supplies the
+  interim Hossam accountability baseline, but binding domain and qualified
+  external validation remains required where stated.
+
 ## Copy-ready Claude Sonnet execution prompt
 
 ```text

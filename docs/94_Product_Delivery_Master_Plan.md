@@ -143,12 +143,12 @@
 | Last updated | 10 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-106 / Master Data authorization and duplicate-audit classification hardening - Done through PR #42; MESP-23 remains the existing In Progress governance/open-questions register.` |
-| Current implementation item | `MESP-106 bounded Product/Supplier correction merged to main at 0f712edcf58119057d614000721fe41227383bc1; Customer behavior and production/provider claims remain unchanged.` |
+| Current activity | `MESP-23 / Open Questions Register reconciliation is the bounded In Progress governance activity; MESP-106 Master Data authorization and duplicate-audit classification hardening is Done through PR #42.` |
+| Current implementation item | `None. MESP-23 is governance-only; no source implementation item is active. MESP-106 remains merged to main at 0f712edcf58119057d614000721fe41227383bc1.` |
 | Merged-main baseline | `PR #42` merged reviewed head `678a5598877f55f1b32b012de692ebdf28408acd` at `0f712edcf58119057d614000721fe41227383bc1`; final tracked handoff metadata is at `09d4471ffc2df1a54adf7fe74f74929b90f3ecb8`; local `main` is synchronized. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
 | Open Pull Request | `None; PR #42, PR #41, PR #40, and PR #39 are merged; no implementation or documentation review PR remains open.` |
-| Current review checkpoint | `MESP-106 is Done with Jira activation/validation/closure evidence 10728/10729/10730 and PR #42 merge evidence; focused classification tests 82/82, Release build 0/0, and non-SQL suite 670/670 pass; 21 SQL safety tests and production/provider gates remain unclaimed.` |
+| Current review checkpoint | `MESP-23 reconciliation evidence is Jira comment 10731: 16 Jira-decomposed register entries, 14 remaining open, MESP-52/PD-020 and MESP-56/PD-021 preserved as approved closures, and MESP-48/MESP-49/MESP-50 still open. This is documentation/Jira governance only; no source or production validation is claimed.` |
 
 ---
 

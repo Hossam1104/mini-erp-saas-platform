@@ -1,6 +1,6 @@
 # Current State
 
-## Current authoritative position - 10 August 2026 (MESP-106 hardening Done; PR #42 merged)
+## Current authoritative position - 10 August 2026 (MESP-23 reconciliation complete; MESP-106 hardening Done)
 
 MESP-99 / M95-SL-02 Category and UOM, MESP-101 / M95-SL-03 Product identity
 readiness, and MESP-102 / M95-SL-03 Product identity implementation remain
@@ -26,6 +26,16 @@ authorization dependency-outage versus genuine-denial classification,
 Supplier deterministic duplicate classification, and failure audit-evidence
 preservation; Customer source behavior was unchanged.
 
+MESP-23 remains the single In Progress non-Epic governance register. Its
+bounded reconciliation is recorded in Jira comment `10731`: the register
+retains 16 Jira-decomposed OQ-001--OQ-016 entries linked to MESP-41--MESP-56,
+14 remain Open / To Do, and MESP-52 and MESP-56 remain the only answered
+entries, preserved through PD-020/PD-021 and Jira comments `10062`/`10063`.
+The canonical PRD v1.2 section 13.2 has 12 broader prompts; the 16-count is
+the Jira decomposition, not a claim of 16 separate PRD paragraphs. No
+unresolved decision was inferred or closed. MESP-48, MESP-49, and MESP-50
+remain open external/performance/production gates.
+
 | Current fact | Verified value |
 |---|---|
 | MESP-100 | **Done**; closure evidence is Jira comment `10663`; PR #32 merged at `511f6be9f005e54930f993aead9758d7a66b75a8`. |
@@ -37,6 +47,7 @@ preservation; Customer source behavior was unchanged.
 | MESP-105 | **Done** for the bounded Customer readiness gate; Owner disposition evidence is Jira comment `10691`; closure evidence is Jira comment `10693`; PR #40 merged the documentation handoff. |
 | MESP-107 | **Done** for the bounded Customer master-data implementation; activation, validation, and closure evidence are Jira comments `10692`, `10726`, and `10727`; PR **#41** merged at `fb632982d06fd4f6bf965fb15dff7701a0bddcec`. |
 | MESP-106 | **Done** for the bounded Product/Supplier authorization and duplicate-audit classification hardening; activation/validation/closure evidence are comments `10728`/`10729`/`10730`; PR **#42** merged normally at `0f712edcf58119057d614000721fe41227383bc1` from reviewed head `678a5598877f55f1b32b012de692ebdf28408acd`. |
+| MESP-23 | **In Progress** as the existing living open-questions register; reconciliation evidence is Jira comment `10731`; 14 linked decision Tasks remain Open / To Do and MESP-52/MESP-56 are preserved as the two approved closures. |
 | Current branch | `main`; PR #42 and PR #41 are merged and the bounded source implementations plus final handoff metadata are synchronized locally and remotely. |
 | Open implementation PR | **None.** PR #42 and PR #41 merged cleanly to `main`; feature branches are retained remotely for auditability. |
 | Prior readiness PR | **#36**, merged cleanly from `09d2e09f6a382187e8cdba32cd594f2b9ad15ab7` to `main` at `c7392a55e0b60fd83e48447e3f9218f82cfaccea`; Product readiness branch is retained for auditability. |
@@ -50,7 +61,7 @@ preservation; Customer source behavior was unchanged.
 | Customer implementation | **Complete at the bounded source slice:** external B2B Customer role with Tenant-wide server-derived scope, no cross-Tenant sharing or client scope expansion, Customer-owned authorization, same-role code/name integrity, contacts, Active/Inactive lifecycle, optimistic concurrency, append-before-effect audit, module-owned Business Parties persistence/API, contracts/routes, and focused tests. PR #41 merged at `fb632982d06fd4f6bf965fb15dff7701a0bddcec`; no statutory/downstream/provider/production claim was made. |
 | Validation | MESP-106 focused classification tests 82/82; Release build 0 warnings/0 errors; full non-SQL suite 670/670; the 21 SQL Server safety tests remain gated by missing `MESP_SQLSERVER_CONNECTION_STRING`; no SQL Server or production validation claim is made. |
 | Backend topology | `MiniErp.Api -> MiniErp.Infrastructure -> MiniErp.App -> MiniErp.Contracts`, with API host composition into App/Contracts; ADR-002 is binding. |
-| Next exact task | `MESP-23 / Create Open Questions Register only`; it is the existing In Progress governance register, not a new implementation/readiness activation. Do not activate or execute another item automatically. |
+| Next exact task | `MESP-23 / Open Questions Register maintenance only when new Owner or qualified external evidence exists`; it remains governance-only, not an implementation/readiness activation. Do not activate or execute another item automatically. |
 | Customer decision gate | **Resolved for this slice only:** BC-OD-001/MD-OD-001, BC-OD-005/MD-OD-005, and BC-OD-008/MD-OD-008 are approved in Jira comment `10691`. MD-OD-007 remains external under MESP-49; downstream commercial policies remain separately owned. |
 | Non-blocking shared follow-up | MESP-106 is Done through PR #42; it does not authorize new Customer, Supplier, Product, or downstream behavior. |
 | Open production gates | MESP-48, MESP-49, and MESP-50 remain open. |
