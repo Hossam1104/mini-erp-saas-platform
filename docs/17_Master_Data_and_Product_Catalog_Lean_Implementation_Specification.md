@@ -41,19 +41,22 @@
 > **Authoritative current Business Customer implementation overlay - 10 August 2026.**
 > MESP-105 is **Done** for the dedicated M95-SL-05 readiness and decision-gate
 > item under MESP-6; the Customer-only Owner disposition is Jira comment
-> `10691`. MESP-107 is the separate active implementation item, activated in
-> Jira comment `10692`. The detailed readiness record is
+> `10691`. MESP-107 is the separate implementation item, activated in Jira
+> comment `10692`; its bounded source implementation is complete on branch
+> `agent/mesp-107-business-customer` at commit
+> `8d8d8fddfa79a8e08f2566fcdd2499dfd594277d` and is under review in [PR #41](https://github.com/Hossam1104/mini-erp-saas-platform/pull/41).
+> The detailed readiness record is
 > [`20_Business_Customer_M95_SL_05_Readiness.md`](20_Business_Customer_M95_SL_05_Readiness.md).
 > The Customer remains an external B2B role with no User/login/credential/
-> membership/consumer identity and no unified Party. The approved bounds are
-> Tenant-wide identity inside the owning Tenant with no cross-Tenant sharing,
-> server-derived Tenant/resource authority, no separate approver for routine
-> maintenance, and no Draft with Active-on-authorized-create plus guarded
-> Deactivate/Reactivate. No Customer entities, tables, mappings, migrations,
-> repositories, services, endpoints, contracts, UI, or downstream behavior
-> were added by this readiness/activation handoff. MESP-106 is a single
-> non-blocking shared hardening follow-up; MD-OD-007 and
-> MESP-48/MESP-49/MESP-50 remain open gates.
+> membership/consumer identity and no unified Party. The implementation is
+> limited to Tenant-wide identity inside the owning Tenant with no cross-Tenant
+> sharing, server-derived Tenant/resource authority, no separate approver for
+> routine maintenance, no Draft, Active-on-authorized-create, guarded
+> Deactivate/Reactivate, same-role integrity, contacts, concurrency, audit,
+> contracts/routes, and module-owned persistence. No statutory registration,
+> downstream commercial behavior, migration, provider, or production-readiness
+> claim is made. MESP-106 is a single non-blocking shared hardening follow-up;
+> MD-OD-007 and MESP-48/MESP-49/MESP-50 remain open gates.
 
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch

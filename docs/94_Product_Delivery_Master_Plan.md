@@ -37,18 +37,23 @@
 > **Authoritative current Business Customer implementation overlay - 10 August 2026.**
 > MESP-105 is **Done** for the dedicated M95-SL-05 Business Customer
 > readiness and decision-gate item under MESP-6; the Customer-only Owner
-> disposition is Jira comment `10691`. MESP-107 is the separate active
-> implementation item with activation evidence `10692`. The bounded analysis
-> is recorded in `docs/20_Business_Customer_M95_SL_05_Readiness.md`. The
-> Customer is an external B2B role with no login, credential, membership,
-> consumer identity, or unified Party. The approved bounds are Tenant-wide
-> identity inside the owning Tenant with no cross-Tenant sharing,
-> server-derived Tenant/resource authority, no separate approver for routine
-> maintenance, and no Draft with Active-on-authorized-create plus guarded
-> Deactivate/Reactivate. No Customer source behavior, persistence, migration,
-> API, UI, or downstream behavior was added by the readiness/activation
-> handoff. MESP-106 is the single non-blocking shared hardening follow-up;
-> MD-OD-007 and MESP-48/MESP-49/MESP-50 remain open gates.
+> disposition is Jira comment `10691`. MESP-107 is the separate
+> implementation item with activation evidence `10692`; its bounded source
+> implementation is complete on branch `agent/mesp-107-business-customer` at
+> commit `8d8d8fddfa79a8e08f2566fcdd2499dfd594277d` and is under review in
+> [PR #41](https://github.com/Hossam1104/mini-erp-saas-platform/pull/41).
+> The bounded analysis is recorded in
+> `docs/20_Business_Customer_M95_SL_05_Readiness.md`. The Customer is an
+> external B2B role with no login, credential, membership, consumer identity,
+> or unified Party. The implementation provides Tenant-wide identity inside
+> the owning Tenant with no cross-Tenant sharing, server-derived
+> Tenant/resource authority, no separate approver for routine maintenance,
+> no Draft, Active-on-authorized-create, guarded Deactivate/Reactivate,
+> same-role integrity, contacts, concurrency, audit, contracts/routes, and
+> module-owned persistence. No statutory registration, downstream commercial
+> behavior, migration, provider, or production-readiness claim is made.
+> MESP-106 is the single non-blocking shared hardening follow-up; MD-OD-007
+> and MESP-48/MESP-49/MESP-50 remain open gates.
 
 > **Historical Supplier-readiness overlay - 9 August 2026.** MESP-103 is
 > **Done** as the bounded M95-SL-04 Supplier readiness and decision-gate item
@@ -121,12 +126,12 @@
 | Last updated | 10 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-107 / M95-SL-05 Business Customer master-data implementation - In Progress; MESP-105 readiness is Done; Owner disposition evidence is Jira comment 10691 and implementation activation evidence is 10692.` |
-| Current implementation item | `MESP-107 / M95-SL-05 Business Customer master-data implementation - In Progress; no Customer source behavior was added by the readiness/activation handoff.` |
+| Current activity | `MESP-107 / M95-SL-05 Business Customer master-data implementation - In Progress pending PR #41 review/merge; MESP-105 readiness is Done; Owner disposition evidence is Jira comment 10691 and implementation activation evidence is 10692.` |
+| Current implementation item | `MESP-107 / M95-SL-05 Business Customer master-data implementation - bounded source implementation complete on `agent/mesp-107-business-customer` at `8d8d8fddfa79a8e08f2566fcdd2499dfd594277d`; PR #41 open; no statutory/downstream/provider/production claim.` |
 | Merged-main baseline | `PR #39` merged implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` at `721adeb27c366d2b8aedde66d006ac6a49956f99`; the last synchronized reconciliation commit before this readiness branch is `b22ed4f6bb664e929bc1032d52f7f4651a17746d`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; PR #40 from agent/mesp-105-business-customer-readiness merged to main at aa778038a509ad24ffabcd5d0fbb1824002451df; Supplier implementation PR #39 is merged at 721adeb27c366d2b8aedde66d006ac6a49956f99; earlier readiness/implementation PRs are merged.` |
-| Current review checkpoint | `MESP-105 is Done with closure evidence in Jira comment 10693 and MESP-107 is the single active Customer implementation item; PR #40 contains no Customer source behavior and is merged; SQL/provider/production gates remain unclaimed.` |
+| Open Pull Request | `PR #41 from agent/mesp-107-business-customer is open for the bounded Customer implementation; PR #40 from agent/mesp-105-business-customer-readiness merged to main at aa778038a509ad24ffabcd5d0fbb1824002451df; Supplier implementation PR #39 is merged at 721adeb27c366d2b8aedde66d006ac6a49956f99.` |
+| Current review checkpoint | `MESP-105 is Done with closure evidence in Jira comment 10693; MESP-107 implementation source is complete and under review in PR #41; Customer tests 14/14 and non-SQL suite 623/623 pass; SQL/provider/production gates remain unclaimed.` |
 
 ---
 
