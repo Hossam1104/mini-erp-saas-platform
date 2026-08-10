@@ -26,6 +26,7 @@ builder.Services.AddSingleton<IBusinessPartiesModule>(_ => BusinessPartiesModule
 builder.Services.AddMasterDataAuthorization();
 builder.Services.AddProductIdentity();
 builder.Services.AddSupplierIdentity();
+builder.Services.AddCustomerIdentity();
 var sqlServerConnectionString = builder.Configuration["MESP_SQLSERVER_CONNECTION_STRING"];
 if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
 {
@@ -455,6 +456,7 @@ app.MapPost("/api/v1/foundation/probe", async (
 
 app.MapProductIdentityEndpoints();
 app.MapSupplierEndpoints();
+app.MapCustomerEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

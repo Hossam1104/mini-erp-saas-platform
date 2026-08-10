@@ -6,12 +6,13 @@ using MiniErp.App.Modules.BusinessParties;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 
-/// <summary>Composition helpers for the module-owned Supplier adapter.</summary>
+/// <summary>Composition helpers for the module-owned Business Parties adapters.</summary>
 public static class BusinessPartiesPersistenceServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the Supplier persistence adapter with caller-supplied provider
-    /// options. It never creates a database or executes migrations.
+    /// Registers the Supplier and Business Customer persistence adapters with
+    /// caller-supplied provider options. It never creates a database or
+    /// executes migrations.
     /// </summary>
     public static IServiceCollection AddBusinessPartiesPersistence(
         this IServiceCollection services,
@@ -24,6 +25,8 @@ public static class BusinessPartiesPersistenceServiceCollectionExtensions
         configureOptions(optionsBuilder);
         services.AddSingleton<ISupplierPersistence>(
             new BusinessPartiesSupplierPersistence(optionsBuilder.Options));
+        services.AddSingleton<ICustomerPersistence>(
+            new BusinessPartiesCustomerPersistence(optionsBuilder.Options));
         return services;
     }
 

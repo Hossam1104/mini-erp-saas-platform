@@ -154,6 +154,140 @@ internal sealed class BusinessPartiesSupplierContactEntity : ITenantOwned
     internal byte[] Version { get; private set; } = Guid.NewGuid().ToByteArray();
 }
 
+internal sealed class BusinessPartiesCustomerEntity : ITenantOwned
+{
+    private BusinessPartiesCustomerEntity()
+    {
+        Code = string.Empty;
+        CodeKey = string.Empty;
+        EnglishLegalName = string.Empty;
+        EnglishLegalNameKey = string.Empty;
+        Contacts = new List<BusinessPartiesCustomerContactEntity>();
+    }
+
+    internal BusinessPartiesCustomerEntity(
+        Guid id,
+        TenantId tenantId,
+        string code,
+        LocalizedName legalName,
+        LocalizedName? tradingName)
+    {
+        Id = id;
+        TenantId = tenantId;
+        Code = code;
+        CodeKey = code.ToUpperInvariant();
+        SetNames(legalName, tradingName);
+        LifecycleState = MasterDataLifecycleState.Active;
+        Contacts = new List<BusinessPartiesCustomerContactEntity>();
+    }
+
+    internal Guid Id { get; private set; }
+
+    public TenantId TenantId { get; private set; }
+
+    internal string Code { get; private set; }
+
+    internal string CodeKey { get; private set; }
+
+    internal string EnglishLegalName { get; private set; } = string.Empty;
+
+    internal string? ArabicLegalName { get; private set; }
+
+    internal string EnglishLegalNameKey { get; private set; } = string.Empty;
+
+    internal string? ArabicLegalNameKey { get; private set; }
+
+    internal string? EnglishTradingName { get; private set; }
+
+    internal string? ArabicTradingName { get; private set; }
+
+    internal string? EnglishTradingNameKey { get; private set; }
+
+    internal string? ArabicTradingNameKey { get; private set; }
+
+    internal MasterDataLifecycleState LifecycleState { get; private set; }
+
+    internal byte[] Version { get; private set; } = Guid.NewGuid().ToByteArray();
+
+    internal ICollection<BusinessPartiesCustomerContactEntity> Contacts { get; private set; }
+
+    internal LocalizedName LegalName => new(EnglishLegalName, ArabicLegalName);
+
+    internal LocalizedName? TradingName =>
+        EnglishTradingName is null && ArabicTradingName is null
+            ? null
+            : new LocalizedName(EnglishTradingName, ArabicTradingName);
+
+    internal void Edit(
+        string code,
+        LocalizedName legalName,
+        LocalizedName? tradingName)
+    {
+        Code = code;
+        CodeKey = code.ToUpperInvariant();
+        SetNames(legalName, tradingName);
+    }
+
+    internal void SetLifecycle(MasterDataLifecycleState lifecycleState) => LifecycleState = lifecycleState;
+
+    internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
+
+    private void SetNames(LocalizedName legalName, LocalizedName? tradingName)
+    {
+        EnglishLegalName = legalName.English ?? string.Empty;
+        ArabicLegalName = legalName.Arabic;
+        EnglishLegalNameKey = ToKey(EnglishLegalName);
+        ArabicLegalNameKey = ToOptionalKey(ArabicLegalName);
+        EnglishTradingName = tradingName?.English;
+        ArabicTradingName = tradingName?.Arabic;
+        EnglishTradingNameKey = ToOptionalKey(EnglishTradingName);
+        ArabicTradingNameKey = ToOptionalKey(ArabicTradingName);
+    }
+
+    private static string ToKey(string value) => value.Trim().ToUpperInvariant();
+
+    private static string? ToOptionalKey(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : ToKey(value);
+}
+
+internal sealed class BusinessPartiesCustomerContactEntity : ITenantOwned
+{
+    private BusinessPartiesCustomerContactEntity()
+    {
+        Name = string.Empty;
+    }
+
+    internal BusinessPartiesCustomerContactEntity(
+        Guid id,
+        TenantId tenantId,
+        Guid customerId,
+        string name,
+        string? email,
+        string? phone)
+    {
+        Id = id;
+        TenantId = tenantId;
+        CustomerId = customerId;
+        Name = name;
+        Email = email;
+        Phone = phone;
+    }
+
+    internal Guid Id { get; private set; }
+
+    public TenantId TenantId { get; private set; }
+
+    internal Guid CustomerId { get; private set; }
+
+    internal string Name { get; private set; }
+
+    internal string? Email { get; private set; }
+
+    internal string? Phone { get; private set; }
+
+    internal byte[] Version { get; private set; } = Guid.NewGuid().ToByteArray();
+}
+
 internal sealed class BusinessPartiesAuditEventEntity : ITenantOwned
 {
     private BusinessPartiesAuditEventEntity()

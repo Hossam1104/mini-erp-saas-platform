@@ -103,6 +103,8 @@ internal sealed class TenantOwnershipVerifierRegistry
                 TenantOwnershipStoreVerifier.ReadStoredTenantIdAsync),
             BusinessPartiesTenantOwnershipVerifier.For<BusinessPartiesSupplierEntity>(),
             BusinessPartiesTenantOwnershipVerifier.For<BusinessPartiesSupplierContactEntity>(),
+            BusinessPartiesTenantOwnershipVerifier.For<BusinessPartiesCustomerEntity>(),
+            BusinessPartiesTenantOwnershipVerifier.For<BusinessPartiesCustomerContactEntity>(),
             BusinessPartiesTenantOwnershipVerifier.For<BusinessPartiesAuditEventEntity>()
         ]);
     }
