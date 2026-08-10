@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-10 01:53 +03:00
+**Last Updated:** 2026-08-10 12:48 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -94,9 +94,8 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 107 MESP issues, including the 15 Epics, the current workflow state
-is 45 Done, 7 In Progress, and 55 To Do. These counts were re-checked in live
-Jira on 10 August 2026; the non-Epic In Progress items are MESP-23 and
-MESP-107.
+is 46 Done, 6 In Progress, and 55 To Do. These counts were re-checked in live
+Jira on 10 August 2026; the only non-Epic In Progress item is MESP-23.
 
 ## Interpretation
 
@@ -121,12 +120,13 @@ implementation with activation/validation/closure comments `10675`/`10676`/
 evidence in comments `10681`/`10682`; MESP-104 is Done through PR #39 with
 activation, validation, and closure evidence in comments `10685`/`10686`/`10687`.
 MESP-105 is Done under MESP-6 with Customer-only Owner disposition evidence in
-comment `10691`; MESP-107 is the separately activated implementation item with
-activation evidence in comment `10692`; and MESP-106 is a single To Do
-non-blocking shared hardening task. Live Jira non-Epic state is now 45 Done /
-2 In Progress / 45 To Do. The Customer-specific MD-OD-001/005/008 decisions
-are approved only for the bounded Customer slice; no Customer source behavior
-was added by the readiness/activation handoff.
+comment `10691`; MESP-107 is Done through PR #41 at merge
+`fb632982d06fd4f6bf965fb15dff7701a0bddcec`, with activation, validation, and
+closure evidence in Jira comments `10692`, `10726`, and `10727`; and MESP-106
+is a single To Do non-blocking shared hardening task. Live Jira non-Epic state
+is now 46 Done / 1 In Progress / 45 To Do. The Customer-specific
+MD-OD-001/005/008 decisions are approved only for the bounded Customer slice;
+the merged Customer source remains limited to that slice.
 
 ---
 
@@ -139,7 +139,7 @@ The following model represents progress toward a complete production Release 1.
 | 1. Product governance, requirements, business decisions | 8% | **45%** | 3.6% |
 | 2. Architecture, security & technical foundation | 12% | **85%** | 10.2% |
 | 3. Platform Admin / IAM / Tenancy / Organization | 8% | **55%** | 4.4% |
-| 4. Master Data & Product Catalog | 10% | **38%** | 3.8% |
+| 4. Master Data & Product Catalog | 10% | **40%** | 4.0% |
 | 5. Procurement / Purchase-to-Pay | 9% | **3%** | 0.3% |
 | 6. Inventory / Warehouse | 9% | **3%** | 0.3% |
 | 7. Finance / Accounting / AR / AP / Cash | 12% | **3%** | 0.4% |
@@ -152,9 +152,9 @@ The following model represents progress toward a complete production Release 1.
 
 **Weighted overall result:** approximately **27–29%**.
 
-The weighted model remains an approximate planning band; the bounded Product
-implementation supports the conservative current 28% headline below without
-resolving the SQL/provider or production gates.
+The weighted model remains an approximate planning band; the bounded Product,
+Supplier, and Customer implementations support the conservative current 29%
+headline below without resolving the SQL/provider or production gates.
 
 For project reporting use:
 
@@ -175,7 +175,7 @@ These percentages measure **usable production capability**, not Jira workflow st
 | MESP-3 | Identity & Access Management | **65%** |
 | MESP-4 | Multi-Tenancy | **75%** |
 | MESP-5 | Organization & Company Structure | **50%** |
-| MESP-6 | Master Data & Product Catalog | **38%** |
+| MESP-6 | Master Data & Product Catalog | **40%** |
 | MESP-7 | Procurement & Purchase-to-Pay | **3–5%** |
 | MESP-8 | Inventory & Warehouse | **3–5%** |
 | MESP-9 | B2B Sales & Order-to-Cash | **3–5%** |
@@ -206,7 +206,7 @@ SL-03 status is recorded in the current assessment immediately below it.
 | SL-02 | Category & UOM | ✅ Implemented, corrected, and merged |
 | SL-03 | Product Identity | Done: bounded implementation merged through PR #37 |
 | SL-04 | Supplier | Done: bounded implementation merged through PR #39 |
-| SL-05 | Business Customer | In Progress: bounded implementation item activated; no source behavior added by readiness/activation handoff |
+| SL-05 | Business Customer | Done: bounded implementation merged through PR #41 |
 | SL-06 | Currency | ⬜ Not Started |
 | SL-07 | Payment Term | ⬜ Not Started |
 | SL-08 | Tax | ⬜ Not Started |
@@ -220,36 +220,35 @@ SL-03 status is recorded in the current assessment immediately below it.
 The planning rows above preserve the prior sequential baseline. Current
 delivery status is authoritative here: **SL-03 Product Identity is bounded,
 validated, and merged through PR #37; SL-04 Supplier is implemented through PR
-#39 at its bounded source scope. SL-05 Business Customer readiness is Done,
-its Customer-only MD-OD-001/005/008 disposition is recorded in Jira comment
-`10691`, and MESP-107 is the single active implementation item; no Customer
-source behavior was added by the readiness/activation handoff.**
+#39 at its bounded source scope; and SL-05 Business Customer is implemented and
+merged through PR #41 at its bounded source scope.** MESP-105 readiness and
+Customer-only MD-OD-001/005/008 disposition remain recorded in Jira comments
+`10691` and `10693`; MESP-107 activation, validation, and closure evidence are
+`10692`, `10726`, and `10727`.
 
 ## Master Data current assessment
 
-Current post-SL-04 pure implementation-slice completion:
+Current post-SL-05 pure implementation-slice completion:
 
-**~28-29%**, with Product identity and Supplier now bounded, validated, and
-merged through PR #37 and PR #39. The SQL/provider gate remains open, so this
-is not a production-ready claim.
+**~30-31%**, with Product identity, Supplier, and Customer now bounded,
+validated, and merged through PR #37, PR #39, and PR #41. The SQL/provider gate
+remains open, so this is not a production-ready claim.
 
 Historical pre-SL-03 pure implementation-slice completion:
 
 **~16–17%**
 
-Total lifecycle completion including BRD, lean specification, architecture, authorization contracts, persistence-readiness work, and the completed Category/UOM, Product identity, and bounded Supplier data-bearing slices:
+Total lifecycle completion including BRD, lean specification, architecture, authorization contracts, persistence-readiness work, and the completed Category/UOM, Product identity, Supplier, and bounded Customer data-bearing slices:
 
-**~38%**
+**~40%**
 
-Current post-SL-04 position:
+Current post-SL-05 position:
 
-**~38%**, with the bounded M95-SL-03 Product identity implementation complete
-through PR #37 and M95-SL-04 Supplier implementation complete through PR #39.
-The 21 SQL safety tests remain gated by the unavailable connection string; no
-Supplier production/provider claim is made. M95-SL-05 Business Customer
-readiness is complete under MESP-105 and MESP-107 is the active bounded
-implementation item; no Customer source behavior was added by this
-readiness/activation handoff. MD-OD-007 remains an external Saudi
+**~40%**, with the bounded M95-SL-03 Product identity implementation complete
+through PR #37, M95-SL-04 Supplier implementation complete through PR #39, and
+M95-SL-05 Customer implementation complete through PR #41. The 21 SQL safety
+tests remain gated by the unavailable connection string; no Customer
+production/provider claim is made. MD-OD-007 remains an external Saudi
 statutory/legal validation and production gate.
 
 ---
@@ -349,7 +348,7 @@ Current estimate:
 - Product catalog;
 - Category/UOM production persistence;
 - Suppliers;
-- Customers;
+- Customer downstream/commercial persistence and production provisioning;
 - Price Lists;
 - Tax;
 - Currency;
@@ -373,9 +372,10 @@ Current estimate:
 - reporting/read models;
 - integration state.
 
-Category/UOM, Product identity, and Supplier now represent the first bounded
-business data-bearing Master Data implementations. SQL/provider and production
-gates remain open.
+Category/UOM, Product identity, Supplier, and Customer now represent the
+bounded business data-bearing Master Data implementations. Customer source
+tables/mappings are present in the module-owned context, but SQL/provider and
+production gates remain open.
 
 ---
 
@@ -929,17 +929,17 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **MESP-107 / M95-SL-05 Business Customer implementation is In Progress under MESP-6; MESP-105 readiness is Done with Customer-only Owner disposition in Jira comment `10691`; no Customer source behavior was added by the readiness/activation handoff; Supplier implementation is Done through PR #39 and Product implementation is complete through PR #37**
+> **MESP-107 / M95-SL-05 Business Customer implementation is Done through PR #41 under MESP-6; MESP-105 readiness is Done with Customer-only Owner disposition in Jira comment `10691`; Supplier implementation is Done through PR #39 and Product implementation is complete through PR #37**
 
 Current strategic state:
 
 - Foundation architecture is mostly established.
 - Tenant isolation and authorization foundations are materially mature.
-- Category/UOM, Product identity, and Supplier are now the first completed
-  bounded data-bearing Master Data slices.
-- Master Data lifecycle completion remains estimated at ~38% after the bounded
-  Product identity and Supplier implementations; Business Customer readiness
-  is complete and MESP-107 is the next exact implementation position.
+- Category/UOM, Product identity, Supplier, and Business Customer are now the
+  completed bounded data-bearing Master Data slices.
+- Master Data lifecycle completion is conservatively estimated at ~40% after
+  the bounded Product identity, Supplier, and Customer implementations; MESP-106
+  is the next exact non-blocking hardening position.
 - The bounded post-merge correction gate is complete before SL-03 readiness:
   - Tenant ownership-verifier EF lookups are truly asynchronous and honor cancellation;
   - `persistence_unavailable` audit evidence is classified as an internal failure rather than authorization denial;
@@ -964,12 +964,15 @@ Current strategic state:
   tests remain gated by the unavailable connection string; no migration,
   provider, or production claim was made. MD-OD-007 remains an external
   Saudi-validation and production gate. MESP-105 is Done with Customer-only
-  Owner disposition evidence `10691`; MESP-107 is now the single active
-  M95-SL-05 implementation item with activation evidence `10692`. No Customer
-  source behavior was added by the readiness/activation handoff. PR #40
-  carried the docs-only handoff and merged to `main` at
-  `aa778038a509ad24ffabcd5d0fbb1824002451df`; MESP-105 closure evidence is
-  Jira comment `10693`.
+  Owner disposition evidence `10691`; MESP-107 is Done through PR #41 at merge
+  `fb632982d06fd4f6bf965fb15dff7701a0bddcec`, with activation/validation/
+  closure evidence `10692`/`10726`/`10727`. PR #40 carried the docs-only
+  handoff and merged to `main` at
+  `aa778038a509ad24ffabcd5d0fbb1824002451df`; the Customer implementation
+  remains limited to external B2B identity, Tenant-safe authorization,
+  integrity, lifecycle, concurrency, audit, contacts, contracts/routes, and
+  module-owned persistence. No statutory/downstream/provider/production claim
+  was made.
 - MESP-106 is the single To Do, non-blocking shared hardening follow-up for
   authorization dependency classification and deterministic Supplier duplicate
   audit classification. It does not change production-capability percentages.
@@ -988,6 +991,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-10 12:48 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-107 / M95-SL-05 Business Customer implementation merged through PR #41 at `fb632982d06fd4f6bf965fb15dff7701a0bddcec`; bounded Master Data lifecycle estimate moves conservatively to ~40%; Release build 0/0, Customer 14/14, non-SQL 623/623; 21 SQL safety tests remain connection-gated; live Jira non-Epic 46 Done / 1 In Progress / 45 To Do | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 01:53 +03:00 | **29%** | **42%** | **33%** | **15%** | PR #40 merged the documentation-only Customer readiness/activation handoff at `aa778038a509ad24ffabcd5d0fbb1824002451df`; MESP-105 closure evidence `10693`; MESP-107 remains the single active implementation item; live Jira non-Epic 45 Done / 2 In Progress / 45 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 01:45 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-105 Customer readiness closed after Owner disposition `10691`; MESP-107 Business Customer implementation item created/activated with evidence `10692`; PR #40 carries the docs-only handoff; live Jira non-Epic 45 Done / 2 In Progress / 45 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 01:20 +03:00 | **29%** | **42%** | **33%** | **15%** | Draft PR #40 opened from the pushed Customer readiness branch; it remains intentionally unmerged while the MESP-105 Customer Owner bundle is open; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |

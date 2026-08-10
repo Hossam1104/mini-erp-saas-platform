@@ -30,7 +30,9 @@
 > Supplier source behavior has started. MD-OD-007 remains an external Saudi
 > statutory-validation/production gate under MESP-49. MESP-104 is now Done
 > through PR #39; MESP-105 is Done for the separately activated Customer
-> readiness item and MESP-107 is the active implementation item.
+> readiness item and MESP-107 is Done through PR #41 at
+> `fb632982d06fd4f6bf965fb15dff7701a0bddcec`, with Jira activation,
+> validation, and closure evidence `10692`/`10726`/`10727`.
 > See
 > `docs/19_Supplier_M95_SL_04_Readiness.md` for the bounded contract and exact
 > implementation handoff.
@@ -41,7 +43,8 @@
 > `10691`. MESP-107 is the separate implementation item, activated in Jira
 > comment `10692`; its bounded source implementation is complete on branch
 > `agent/mesp-107-business-customer` at commit
-> `8d8d8fddfa79a8e08f2566fcdd2499dfd594277d` and is under review in PR #41.
+> `8d8d8fddfa79a8e08f2566fcdd2499dfd594277d`; PR #41 merged to `main` at
+> `fb632982d06fd4f6bf965fb15dff7701a0bddcec`.
 > Business Customer remains an external B2B role, not a User, login,
 > membership, credential holder, consumer, or unified Party. The implemented
 > boundary is Tenant-wide identity inside the owning Tenant with no cross-Tenant

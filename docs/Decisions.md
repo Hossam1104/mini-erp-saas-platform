@@ -52,9 +52,10 @@ The Supplier-only dispositions do not resolve Business Customer, unified Party,
 consumer, Procurement, Finance, Tax, payment/banking, or other downstream
 policy. MESP-105 subsequently completed the M95-SL-05 Business Customer
 readiness and decision gate after the Customer-only disposition in Jira comment
-`10691`; MESP-107 is now the separate active implementation item under
-MESP-6, with activation evidence in comment `10692`. No Customer source
-implementation behavior was added by the readiness/activation handoff.
+`10691`; MESP-107 is now Done through PR #41 at
+`fb632982d06fd4f6bf965fb15dff7701a0bddcec`, with activation, validation, and
+closure evidence in comments `10692`, `10726`, and `10727`. No Customer
+decision is generalized beyond the bounded Customer slice.
 
 ## Current Business Customer implementation state - 10 August 2026
 
@@ -81,15 +82,18 @@ authorization/duplicate-audit hardening follow-up.
 
 MESP-107 is the separately created and activated single Customer
 implementation item under MESP-6, with activation evidence in Jira comment
-`10692`. MESP-105 closure evidence is Jira comment `10693`. The bounded
-Customer implementation is complete on branch
+`10692`. MESP-105 closure evidence is Jira comment `10693`. MESP-107 is Done
+through PR #41: the bounded Customer implementation is complete on branch
 `agent/mesp-107-business-customer` at commit
-`8d8d8fddfa79a8e08f2566fcdd2499dfd594277d` and is under review in PR #41.
+`8d8d8fddfa79a8e08f2566fcdd2499dfd594277d` and merged to `main` at
+`fb632982d06fd4f6bf965fb15dff7701a0bddcec`.
 It adds only the external B2B Customer identity, Tenant-safe authorization,
 same-role integrity, Active/Inactive lifecycle, concurrency, audit, contacts,
 contracts/routes, and module-owned Business Parties persistence boundary. It
 does not add statutory registration, downstream commercial behavior, a
 unified Party, login/credentials, a migration, or a production/provider claim.
+Validation is Release 0/0, Customer 14/14, and non-SQL 623/623; the 21 SQL
+safety tests remain gated by the missing connection string.
 PR #40 carried the documentation-only readiness/state handoff and merged to
 `main` at `aa778038a509ad24ffabcd5d0fbb1824002451df`. No new ADR is required;
 ADR-002, ADR-005, ADR-006 and ADR-011 remain authoritative at their existing

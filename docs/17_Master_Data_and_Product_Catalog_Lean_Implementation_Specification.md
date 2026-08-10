@@ -19,9 +19,10 @@
 > MESP-48/MESP-49/MESP-50 remain preserved/open. MESP-104 is now Done through
 > PR #39 at merge `721adeb27c366d2b8aedde66d006ac6a49956f99`; MESP-105 is
 > Done for the M95-SL-05 Business Customer readiness gate with Owner
-> disposition evidence `10691`; MESP-107 is now the separate active
-> implementation item with activation evidence `10692`; no Customer source
-> behavior was added by the readiness/activation handoff.
+> disposition evidence `10691`; MESP-107 is now Done through PR #41 at
+> `fb632982d06fd4f6bf965fb15dff7701a0bddcec`, with activation/validation/
+> closure evidence `10692`/`10726`/`10727`; Customer source behavior is present
+> only within the bounded Customer slice described below.
 
 > **Authoritative current Supplier implementation overlay - 10 August 2026.**
 > MESP-104 / M95-SL-04 Supplier implementation is **Done** through PR #39,
@@ -34,9 +35,10 @@
 > readiness decisions do not generalize to Business Customer; MD-OD-007 and
 > MESP-48/MESP-49/MESP-50 remain open gates. MESP-105 is Done for the
 > M95-SL-05 Business Customer readiness and decision gate with Owner evidence
-> `10691`; MESP-107 is now the separate active implementation item with
-> activation evidence `10692`; no Business Customer source behavior was added
-> by the readiness/activation handoff.
+> `10691`; MESP-107 is now Done through PR #41 at
+> `fb632982d06fd4f6bf965fb15dff7701a0bddcec`, with activation/validation/
+> closure evidence `10692`/`10726`/`10727`; no downstream or statutory Customer
+> behavior was added beyond the bounded implementation slice.
 
 > **Authoritative current Business Customer implementation overlay - 10 August 2026.**
 > MESP-105 is **Done** for the dedicated M95-SL-05 readiness and decision-gate
@@ -44,7 +46,8 @@
 > `10691`. MESP-107 is the separate implementation item, activated in Jira
 > comment `10692`; its bounded source implementation is complete on branch
 > `agent/mesp-107-business-customer` at commit
-> `8d8d8fddfa79a8e08f2566fcdd2499dfd594277d` and is under review in [PR #41](https://github.com/Hossam1104/mini-erp-saas-platform/pull/41).
+> `8d8d8fddfa79a8e08f2566fcdd2499dfd594277d`; [PR #41](https://github.com/Hossam1104/mini-erp-saas-platform/pull/41) merged to `main` at
+> `fb632982d06fd4f6bf965fb15dff7701a0bddcec`.
 > The detailed readiness record is
 > [`20_Business_Customer_M95_SL_05_Readiness.md`](20_Business_Customer_M95_SL_05_Readiness.md).
 > The Customer remains an external B2B role with no User/login/credential/
