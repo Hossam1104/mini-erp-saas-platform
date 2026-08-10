@@ -53,8 +53,21 @@
 > same-role integrity, contacts, concurrency, audit, contracts/routes, and
 > module-owned persistence. No statutory registration, downstream commercial
 > behavior, migration, provider, or production-readiness claim is made.
-> MESP-106 is the single non-blocking shared hardening follow-up; MD-OD-007
-> and MESP-48/MESP-49/MESP-50 remain open gates.
+> MESP-106 is now Done through PR #42; MD-OD-007 and MESP-48/MESP-49/MESP-50
+> remain open gates.
+
+> **Authoritative current MESP-106 closure overlay - 10 August 2026.**
+> MESP-106 is **Done** through [PR #42](https://github.com/Hossam1104/mini-erp-saas-platform/pull/42),
+> merged to `main` at `0f712edcf58119057d614000721fe41227383bc1` from reviewed
+> head `678a5598877f55f1b32b012de692ebdf28408acd`. The bounded correction
+> hardens Product/Supplier authorization outage versus genuine-denial
+> classification, Supplier duplicate validation/conflict classification, and
+> failure audit-evidence preservation. Focused tests are 82/82, the full
+> non-SQL suite is 670/670, and the Release build is 0/0. Customer behavior is
+> unchanged; no new fields, tables, migrations, routes, UI, provider,
+> production, downstream, or cross-Tenant scope behavior was added. MESP-23 is
+> the existing In Progress governance/open-questions register handoff; no new
+> Master Data implementation is activated. MESP-48/MESP-49/MESP-50 remain open.
 
 > **Historical Supplier-readiness overlay - 9 August 2026.** MESP-103 is
 > **Done** as the bounded M95-SL-04 Supplier readiness and decision-gate item
@@ -127,12 +140,12 @@
 | Last updated | 10 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-107 / M95-SL-05 Business Customer master-data implementation - Done through PR #41; MESP-105 readiness is Done; Owner disposition evidence is Jira comment 10691 and implementation activation evidence is 10692.` |
-| Current implementation item | `MESP-107 / M95-SL-05 Business Customer master-data implementation - bounded source implementation merged to main at fb632982d06fd4f6bf965fb15dff7701a0bddcec; no statutory/downstream/provider/production claim.` |
-| Merged-main baseline | `PR #39` merged implementation head `9bf9afcd8a9ea427ed32b63ad9b655081e9592d3` at `721adeb27c366d2b8aedde66d006ac6a49956f99`; the last synchronized reconciliation commit before this readiness branch is `b22ed4f6bb664e929bc1032d52f7f4651a17746d`. |
+| Current activity | `MESP-106 / Master Data authorization and duplicate-audit classification hardening - Done through PR #42; MESP-23 remains the existing In Progress governance/open-questions register.` |
+| Current implementation item | `MESP-106 bounded Product/Supplier correction merged to main at 0f712edcf58119057d614000721fe41227383bc1; Customer behavior and production/provider claims remain unchanged.` |
+| Merged-main baseline | `PR #42` merged reviewed head `678a5598877f55f1b32b012de692ebdf28408acd` at `0f712edcf58119057d614000721fe41227383bc1`; local `main` is synchronized to that merge. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None; PR #41 from agent/mesp-107-business-customer merged to main at fb632982d06fd4f6bf965fb15dff7701a0bddcec; PR #40 from agent/mesp-105-business-customer-readiness merged to main at aa778038a509ad24ffabcd5d0fbb1824002451df; Supplier implementation PR #39 is merged at 721adeb27c366d2b8aedde66d006ac6a49956f99.` |
-| Current review checkpoint | `MESP-105 is Done with closure evidence in Jira comment 10693; MESP-107 is Done through PR #41; Customer tests 14/14 and non-SQL suite 623/623 pass; SQL/provider/production gates remain unclaimed.` |
+| Open Pull Request | `None; PR #42, PR #41, PR #40, and PR #39 are merged; no implementation or documentation review PR remains open.` |
+| Current review checkpoint | `MESP-106 is Done with Jira activation/validation evidence 10728/10729 and PR #42 merge evidence; focused classification tests 82/82, Release build 0/0, and non-SQL suite 670/670 pass; 21 SQL safety tests and production/provider gates remain unclaimed.` |
 
 ---
 

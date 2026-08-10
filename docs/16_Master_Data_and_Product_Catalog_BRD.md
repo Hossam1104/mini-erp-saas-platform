@@ -54,8 +54,21 @@
 > audit, contracts/routes, and module-owned persistence. No statutory
 > registration, downstream Sales/AR/Finance behavior, migration, provider, or
 > production-readiness claim is made. MD-OD-007 remains an external Saudi
-> statutory/legal and production gate under MESP-49; MESP-106 is a non-blocking
-> shared follow-up; MESP-48, MESP-49, and MESP-50 remain open.
+> statutory/legal and production gate under MESP-49; MESP-106 is now Done
+> through PR #42; MESP-48, MESP-49, and MESP-50 remain open.
+
+> **Authoritative current MESP-106 hardening overlay - 10 August 2026.**
+> MESP-106 is **Done** through [PR #42](https://github.com/Hossam1104/mini-erp-saas-platform/pull/42),
+> merged to `main` at `0f712edcf58119057d614000721fe41227383bc1` from reviewed
+> head `678a5598877f55f1b32b012de692ebdf28408acd`. The bounded correction
+> classifies Product/Supplier authorization dependency outages as internal
+> service/configuration failures, preserves genuine permission/resource/scope/
+> Tenant denials, classifies deterministic Supplier duplicates as validation
+> conflicts, and preserves failure audit evidence. Focused classification tests
+> are 82/82, the full non-SQL suite is 670/670, and the Release build is 0/0.
+> Customer source behavior, domain fields, tables, migrations, provider,
+> production, downstream, and cross-Tenant scope behavior are unchanged. The
+> 21 SQL safety tests remain gated by the missing connection string.
 
 > **Historical MESP-100/MESP-99 state overlay - 9 August 2026.** MESP-100 is Done with Jira closure evidence 10663; PR #32 merged at 511f6be9f005e54930f993aead9758d7a66b75a8. MESP-99 was In Progress with activation evidence 10664 for M95-SL-02. The five Category/UOM-only bounds are MD-OD-001, MD-OD-005, MD-OD-008, MD-OD-002, and MD-OD-006. The approved v0.3 business requirements and all other Open Decisions remain preserved; no MESP-99 behavior was implemented by MESP-100.
 

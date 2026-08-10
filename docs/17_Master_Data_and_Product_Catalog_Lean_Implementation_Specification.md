@@ -58,8 +58,19 @@
 > Deactivate/Reactivate, same-role integrity, contacts, concurrency, audit,
 > contracts/routes, and module-owned persistence. No statutory registration,
 > downstream commercial behavior, migration, provider, or production-readiness
-> claim is made. MESP-106 is a single non-blocking shared hardening follow-up;
-> MD-OD-007 and MESP-48/MESP-49/MESP-50 remain open gates.
+> claim is made. MESP-106 is now Done through PR #42; MD-OD-007 and
+> MESP-48/MESP-49/MESP-50 remain open gates.
+
+> **Authoritative current MESP-106 hardening overlay - 10 August 2026.**
+> PR #42 merged the bounded Product/Supplier classification correction to
+> `main` at `0f712edcf58119057d614000721fe41227383bc1` from reviewed head
+> `678a5598877f55f1b32b012de692ebdf28408acd`. It corrects dependency outage
+> versus genuine-denial semantics, Supplier duplicate validation/conflict
+> semantics, and failure audit-evidence preservation. Focused tests are 82/82,
+> the full non-SQL suite is 670/670, and the Release build is 0/0. It adds no
+> new domain behavior, persistence, migration, provider, production, Customer,
+> downstream, or cross-Tenant scope behavior; the 21 SQL safety tests remain
+> environment-gated.
 
 > **Authoritative MESP-99 completion overlay - 9 August 2026 (PR #33 and post-merge correction PR #34 merged).**
 > The bounded M95-SL-02 Category/UOM implementation is complete on branch

@@ -77,8 +77,8 @@ Active-on-authorized-create plus guarded Deactivate/Reactivate and preserved
 history. Downstream commercial and sensitive policies remain with their owning
 domains. MD-OD-007 remains an external Saudi statutory/legal and production
 gate under MESP-49; MESP-46, MESP-47, MESP-48, MESP-50 and other downstream
-ownership remain unchanged. MESP-106 is the single To Do, non-blocking shared
-authorization/duplicate-audit hardening follow-up.
+ownership remain unchanged. MESP-106 is now Done through PR #42 for the
+bounded authorization/duplicate-audit hardening follow-up.
 
 MESP-107 is the separately created and activated single Customer
 implementation item under MESP-6, with activation evidence in Jira comment
@@ -101,8 +101,27 @@ status.
 
 ADR-002, ADR-005, ADR-006, ADR-011, and MESP-48/MESP-49/MESP-50 remain
 authoritative/open at their existing status. The earlier Product hardening
-observation remains carried forward; MESP-106 is the single shared follow-up,
-so no duplicate hardening issue was opened.
+observation was carried forward and is now closed through MESP-106/PR #42; no
+duplicate hardening issue was opened.
+
+## Current MESP-106 classification-hardening state - 10 August 2026
+
+MESP-106 is **Done** through [PR #42](https://github.com/Hossam1104/mini-erp-saas-platform/pull/42),
+merged normally to `main` at `0f712edcf58119057d614000721fe41227383bc1`
+from reviewed head `678a5598877f55f1b32b012de692ebdf28408acd`. Jira activation
+and validation evidence are comments `10728` and `10729`; the final closure
+evidence is recorded on MESP-106 after state reconciliation.
+
+The correction is limited to Product/Supplier authorization dependency-outage
+versus genuine-denial classification, deterministic Supplier duplicate
+validation/conflict audit classification, and preservation of failure evidence
+through the completion path. Focused classification tests are 82/82, the full
+non-SQL suite is 670/670, and the Release build is 0 warnings/0 errors. Customer
+source behavior is unchanged. No new ADR, domain field, table, migration,
+provider, production, downstream, or cross-Tenant scope behavior was added.
+ADR-002, ADR-005, ADR-006, and ADR-011 retain their existing authority; the
+remaining decision register is not resolved by this hardening. MESP-48,
+MESP-49, and MESP-50 remain open.
 
 ## Historical authoritative execution state at MESP-99 activation - 9 August 2026
 

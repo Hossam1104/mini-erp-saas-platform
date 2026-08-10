@@ -1,126 +1,113 @@
-# Next session - MESP-106 / Master Data authorization and duplicate-audit classification hardening only
+# Next session - MESP-23 / Create Open Questions Register only
 
-MESP-107 / M95-SL-05 Business Customer master-data implementation is **Done**.
-The bounded implementation merged through PR #41 at
-`fb632982d06fd4f6bf965fb15dff7701a0bddcec`; its implementation head was
-`acd3f399f17c9f551efa65b9dd284a797ae31ec6`. Jira activation, validation, and
-closure evidence are comments `10692`, `10726`, and `10727`.
+MESP-106 / Master Data authorization and duplicate-audit classification
+hardening is **Done**. Its bounded Product/Supplier correction merged through
+PR #42 at `0f712edcf58119057d614000721fe41227383bc1` from reviewed head
+`678a5598877f55f1b32b012de692ebdf28408acd`. Jira activation and validation
+evidence are comments `10728` and `10729`; the closure evidence is recorded on
+MESP-106 after the final state reconciliation.
 
-The repository is synchronized on `main`. The completed Customer slice adds
-only the approved external B2B Customer identity, Tenant-wide ownership inside
-the owning Tenant, server-derived authority, same-role integrity, contacts,
-Active/Inactive lifecycle, concurrency, audit, contracts/routes, and
-module-owned Business Parties persistence. It adds no login, credential,
-membership, portal, consumer, unified Party, statutory registration, Saudi
-legal conclusion, downstream commercial behavior, migration, provider, or
-production-readiness claim.
+MESP-107 / M95-SL-05 Business Customer master-data implementation is **Done**
+through PR #41 at `fb632982d06fd4f6bf965fb15dff7701a0bddcec`; its activation,
+validation, and closure evidence are comments `10692`, `10726`, and `10727`.
+MESP-106 changed only Product/Supplier authorization dependency and denial
+classification, Supplier deterministic duplicate classification, failure
+audit-evidence preservation, and focused regression coverage. Customer source
+behavior was not changed. No new fields, tables, migrations, routes, UI,
+provider, production, downstream, or cross-Tenant scope behavior was added.
 
-MESP-106 is the single next exact sequence position. It is currently **To Do**
-and non-blocking. Do not activate it, change its Jira status, or execute its
-source work automatically in the preceding MESP-107 session. A fresh session
-must verify its separate activation/Definition of Ready before changing source.
+The repository is synchronized on `main` at the MESP-106 merge baseline. Live
+Jira counts must be re-checked at session start. At handoff, MESP-23 is the
+existing non-Epic **In Progress** governance/open-questions register; it is
+not a new implementation activation. MESP-48, MESP-49, and MESP-50 remain
+open production and external-decision gates. Do not activate or execute any
+other Jira item automatically.
 
 ## Exact objective
 
-Execute only MESP-106, **Master Data authorization and duplicate-audit
-classification hardening**. Review and, if required, correct the shared
-classification seam so that:
+Execute only the bounded continuation of **MESP-23 - Create Open Questions
+Register** as a governance artifact. Reconcile the living register with the
+approved PRD v1.2 clarification backlog, the Product Decision Register, the
+glossary, the current Decisions register, and live Jira. Preserve every
+unresolved question as unresolved unless a named Owner has explicitly recorded
+an approved answer or deferral with evidence.
 
-- unavailable or unmapped authorization dependencies such as
-  `permission_unavailable`, `scope_policy_unavailable`,
-  `approval_policy_unavailable`, `resource_policy_unavailable`, and
-  `authorization_operation_unmapped` remain fail-closed but are represented as
-  service/configuration unavailability rather than a genuine caller denial;
-- genuine permission, resource, scope, Tenant, and cross-Tenant denials remain
-  denials and never become availability successes;
-- deterministic Supplier duplicate outcomes such as `supplier_duplicate`,
-  `supplier_code_duplicate`, and `supplier_registration_duplicate` use the
-  approved validation/conflict audit classification rather than generic
-  internal-failure classification;
-- the already-implemented Customer classification is reviewed for consistency
-  without expanding Customer, Supplier, or Product behavior; and
-- no effect, false success, audit loss, or Tenant existence leakage occurs on
-  any hardened failure path.
+The session must:
 
-The deliverable may be the smallest safe source/test correction, or a bounded
-implementation note and targeted tests proving that the existing behavior is
-already correct. Do not create unrelated refactoring merely to increase ticket
-coverage.
+- verify the register structure and the sixteen PRD clarification questions;
+- reconcile timing classifications, affected BRD tasks, owners, evidence,
+  status, and links to MESP-41 through MESP-56;
+- preserve the recorded closure/evidence for MESP-52 and MESP-56 without
+  treating recommendations or historical defaults as new approvals;
+- keep MESP-48, MESP-49, MESP-50 and all other still-open decisions visibly
+  open, including their external legal/privacy/production gates; and
+- produce only the smallest documentation/Jira update needed to keep the
+  living register accurate and traceable.
+
+Do not infer an answer from code, Wafra evidence, general knowledge, or an
+assistant recommendation. If the current register is already accurate, record
+the evidence and add no duplicate artifact.
 
 ## Entry gates
 
 - Read `AGENTS.md`, `.ai/CURRENT_STATE.md`, this `TASK.md`, and the current
   `docs/staticts.md` before changing scope.
-- Read the approved `docs/16_Master_Data_and_Product_Catalog_BRD.md`,
-  `docs/17_Master_Data_and_Product_Catalog_Lean_Implementation_Specification.md`,
-  `docs/00_ERP_Business_Glossary.md`, the Foundation specification,
-  `docs/01_Technology_Architecture_Baseline.md`, ADR-002, ADR-005, ADR-006,
-  ADR-011's indexed baseline, `docs/94_Product_Delivery_Master_Plan.md`,
-  `docs/Decisions.md`, and the Supplier and Customer readiness/implementation
-  evidence.
-- Verify live Jira: MESP-107 is Done with closure evidence `10727`; MESP-106
-  is the single next To Do/non-blocking hardening item and is separately
-  activated before source work; MESP-48, MESP-49, and MESP-50 remain open.
-- Confirm the actual topology remains
-  `MiniErp.Api -> MiniErp.Infrastructure -> MiniErp.App -> MiniErp.Contracts`.
-  Do not add cross-module EF access, a new ADR, a migration, or a production
-  connection assumption.
-- Inspect the current branch, complete diff, existing Supplier/Customer
-  authorization and audit paths, and current test conventions before editing.
+- Read the approved `docs/MESP_PRD_v1.2.docx`, `docs/90_MVP_Founder_Decision_Pack.md`,
+  `docs/91_Jira_Simplification_Update.md`, `docs/Decisions.md`,
+  `docs/00_ERP_Business_Glossary.md`, the relevant BRD/plan traceability
+  sections, and the current Product Decision Register evidence.
+- Verify live Jira status and comments for MESP-23, MESP-22, MESP-19,
+  MESP-18, and MESP-41 through MESP-56. Confirm MESP-106 and MESP-107 remain
+  Done and MESP-48/MESP-49/MESP-50 remain open.
+- Confirm this is documentation/Jira governance work only. The backend
+  topology remains `MiniErp.Api -> MiniErp.Infrastructure -> MiniErp.App ->
+  MiniErp.Contracts`; no source, persistence, provider, or production change
+  is authorized by this handoff.
 
 ## Required boundary
 
-- Keep the change cross-cutting only to the approved authorization/audit
-  classification seam and its focused tests/evidence.
-- Preserve server-derived Tenant/resource authority, fail-closed behavior,
-  append-before-effect audit, optimistic concurrency, and no-false-success
-  guarantees.
-- Preserve the separate Supplier and Customer role records and the Customer
-  external B2B/no-login/no-unified-Party boundary.
-- If existing behavior is already correct, do not alter Product, Supplier, or
-  Customer business rules; record the evidence and add only missing regression
-  coverage if genuinely needed.
-- Keep the SQL/provider/production gate truthful. Missing
-  `MESP_SQLSERVER_CONNECTION_STRING` does not block ordinary non-SQL hardening,
-  but it prevents claiming SQL Server or production readiness.
+- Keep the register decision-neutral: open is a valid state, and an approved
+  answer requires named human Owner evidence on the applicable decision record.
+- Keep MESP-23 as the living governance register; do not create a second
+  shadow register or duplicate BRD/LIS artifact.
+- Preserve the distinction between business decisions, external legal/privacy
+  validation, architecture gates, production gates, and implementation work.
+- Preserve Release 1 B2B ERP scope and the explicit Retail POS/Wafra-core
+  exclusions.
 
 ## Hard exclusions
 
-- No new Customer/Supplier/Product fields, tables, migrations, routes, UI, or
-  downstream commercial behavior beyond a necessary classification fix.
-- No Product/Item/SKU/Barcode/Category/UOM changes, unified Party, login,
-  credentials, membership, consumer, portal, Retail POS, or Wafra-specific
-  core behavior.
-- No Sales, AR/AP, Finance, Tax, credit, payment, banking, settlement, Price
-  List, Payment Terms, Currency, Exchange Rate, Inventory, statutory, Saudi
-  legal, data-retention, purge, residency, or production-infrastructure work.
-- No automatic activation or execution of another Jira item after MESP-106.
+- No application source, EF entity, table, migration, endpoint, API contract,
+  UI, provider, database, production provisioning, or test behavior changes.
+- No Product, Supplier, Customer, Inventory, Procurement, Sales, AR/AP,
+  Finance, Tax, payment, banking, settlement, Price List, Payment Terms,
+  Currency, Exchange Rate, statutory, Saudi legal, privacy, retention, purge,
+  residency, or downstream implementation work.
+- No decision may be marked approved from a recommended default, Wafra-only
+  observation, assistant analysis, or unvalidated external assumption.
+- Do not activate or execute another Jira item automatically after MESP-23.
 
 ## Required validation and handoff
 
-- Add focused tests for dependency outage versus genuine denial, the Supplier
-  duplicate audit reason/outcome, Customer consistency where applicable, no
-  effect/no false success, and Tenant isolation/no existence leakage.
-- Run the focused tests, relevant full non-SQL suite, Release build, and
-  `git diff --check`. Run SQL safety checks only when the explicit connection
-  gate is available; otherwise record the exact gate without fabricating a
-  pass.
-- Review the complete task diff for denial/outage misclassification, audit
-  loss, Tenant leakage, false success, cross-module access, and accidental
-  scope expansion.
+- Review the complete documentation/Jira diff for silent decisions, dropped
+  questions, incorrect task mappings, missing owners/evidence, duplicated
+  artifacts, scope expansion, or stale current-state claims.
+- Run documentation link/reference checks and the repository checks relevant
+  to Markdown-only changes. Do not claim source, SQL Server, or production
+  validation from a governance update.
 - Update genuinely affected Markdown state/plan files, `.ai/CURRENT_STATE.md`,
-  `docs/staticts.md`, and this `TASK.md`. Update MESP-106 with activation,
-  validation, and closure evidence. Keep MESP-107 Done and MESP-48/MESP-49/
-  MESP-50 open.
-- Commit and push the bounded work, publish a focused MESP-106 PR, inspect
-  review threads, address valid findings, rerun validation, merge only when
-  clean and authorized, synchronize local `main`, close MESP-106 only with
-  implementation/validation/merge evidence, and then stop for ChatGPT review.
-- Do not execute the next root `TASK.md` automatically in the same chat.
+  `docs/staticts.md`, and this `TASK.md`. Update MESP-23 with bounded evidence
+  only; do not close it without the required Owner approval and register
+  acceptance evidence.
+- Commit and push the bounded documentation/Jira work. Use a focused review
+  PR when repository content changes, inspect review threads, address valid
+  findings, synchronize local `main`, and record the final handoff.
+- Stop after this single MESP-23 session for ChatGPT review. Do not execute the
+  next root `TASK.md` automatically in the same chat.
 
 ## Stop conditions
 
-Stop and report a blocker on Tenant leakage, authentication/authorization
-weakness, audit or data-integrity risk, destructive migration/data loss,
-unresolved scope/decision, legal or external validation, credential/
-production-infrastructure failure, or material scope/architecture change.
+Stop and report a blocker on an invented or disputed business answer,
+unresolved Owner or legal/external validation, Tenant/security or accounting
+integrity risk, destructive data change, credential/production-infrastructure
+requirement, or material scope/architecture change.

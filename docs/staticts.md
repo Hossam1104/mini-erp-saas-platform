@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-10 12:48 +03:00
+**Last Updated:** 2026-08-10 14:55 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -84,9 +84,9 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **45** | **48.9%** |
-| In Progress | **2** | **2.2%** |
-| To Do | **45** | **48.9%** |
+| Done | **47** | **51.1%** |
+| In Progress | **1** | **1.1%** |
+| To Do | **44** | **47.8%** |
 | **Total Non-Epic** | **92** | **100%** |
 
 Major Release-1 Epics:
@@ -94,12 +94,12 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 107 MESP issues, including the 15 Epics, the current workflow state
-is 46 Done, 6 In Progress, and 55 To Do. These counts were re-checked in live
+is 47 Done, 6 In Progress, and 54 To Do. These counts were re-checked in live
 Jira on 10 August 2026; the only non-Epic In Progress item is MESP-23.
 
 ## Interpretation
 
-Raw Jira completion currently makes the project appear approximately **49% complete**.
+Raw Jira completion currently makes the project appear approximately **51% complete**.
 
 That number must NOT be used as the production-completion percentage.
 
@@ -123,8 +123,11 @@ MESP-105 is Done under MESP-6 with Customer-only Owner disposition evidence in
 comment `10691`; MESP-107 is Done through PR #41 at merge
 `fb632982d06fd4f6bf965fb15dff7701a0bddcec`, with activation, validation, and
 closure evidence in Jira comments `10692`, `10726`, and `10727`; and MESP-106
-is a single To Do non-blocking shared hardening task. Live Jira non-Epic state
-is now 46 Done / 1 In Progress / 45 To Do. The Customer-specific
+is Done through PR #42 at merge `0f712edcf58119057d614000721fe41227383bc1`,
+with activation/validation evidence in comments `10728`/`10729` and final
+closure evidence recorded on the issue. Live Jira state is now 47 Done / 6 In
+Progress / 54 To Do across all issues, and 47 Done / 1 In Progress / 44 To Do
+for non-Epic work. The Customer-specific
 MD-OD-001/005/008 decisions are approved only for the bounded Customer slice;
 the merged Customer source remains limited to that slice.
 
@@ -938,8 +941,9 @@ Current strategic state:
 - Category/UOM, Product identity, Supplier, and Business Customer are now the
   completed bounded data-bearing Master Data slices.
 - Master Data lifecycle completion is conservatively estimated at ~40% after
-  the bounded Product identity, Supplier, and Customer implementations; MESP-106
-  is the next exact non-blocking hardening position.
+  the bounded Product identity, Supplier, and Customer implementations;
+  MESP-106 hardening is complete without a production-capability percentage
+  change.
 - The bounded post-merge correction gate is complete before SL-03 readiness:
   - Tenant ownership-verifier EF lookups are truly asynchronous and honor cancellation;
   - `persistence_unavailable` audit evidence is classified as an internal failure rather than authorization denial;
@@ -973,9 +977,12 @@ Current strategic state:
   integrity, lifecycle, concurrency, audit, contacts, contracts/routes, and
   module-owned persistence. No statutory/downstream/provider/production claim
   was made.
-- MESP-106 is the single To Do, non-blocking shared hardening follow-up for
-  authorization dependency classification and deterministic Supplier duplicate
-  audit classification. It does not change production-capability percentages.
+- MESP-106 is Done through PR #42 for authorization dependency classification,
+  deterministic Supplier duplicate audit classification, and failure-evidence
+  preservation. Focused classification tests are 82/82, the full non-SQL suite
+  is 670/670, and the Release build is 0/0. It does not change
+  production-capability percentages; MESP-23 remains the existing In Progress
+  governance/open-questions register.
 - Correction commit `e527f8a0cc32a72cef554e2bd93ab6322e9b1064` merged through PR #34 at
   `35417d35c076d1318474a7e4b31144cc9d94279b`; Jira evidence is comments
   `10667` (MESP-99), `10669` (MESP-97), and `10668` (MESP-98).
@@ -991,6 +998,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-10 14:55 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-106 authorization/duplicate-audit hardening merged through PR #42 at `0f712edcf58119057d614000721fe41227383bc1`; focused classification tests 82/82, Release build 0/0, non-SQL 670/670; 21 SQL safety tests remain connection-gated; live Jira all-issue 47 Done / 6 In Progress / 54 To Do and non-Epic 47 Done / 1 In Progress / 44 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 12:48 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-107 / M95-SL-05 Business Customer implementation merged through PR #41 at `fb632982d06fd4f6bf965fb15dff7701a0bddcec`; bounded Master Data lifecycle estimate moves conservatively to ~40%; Release build 0/0, Customer 14/14, non-SQL 623/623; 21 SQL safety tests remain connection-gated; live Jira non-Epic 46 Done / 1 In Progress / 45 To Do | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 01:53 +03:00 | **29%** | **42%** | **33%** | **15%** | PR #40 merged the documentation-only Customer readiness/activation handoff at `aa778038a509ad24ffabcd5d0fbb1824002451df`; MESP-105 closure evidence `10693`; MESP-107 remains the single active implementation item; live Jira non-Epic 45 Done / 2 In Progress / 45 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 01:45 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-105 Customer readiness closed after Owner disposition `10691`; MESP-107 Business Customer implementation item created/activated with evidence `10692`; PR #40 carries the docs-only handoff; live Jira non-Epic 45 Done / 2 In Progress / 45 To Do; no production-capability percentage change | Production-ready target unchanged: Late Oct-Mid Nov 2026 |

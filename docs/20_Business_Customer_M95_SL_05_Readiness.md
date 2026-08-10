@@ -9,7 +9,7 @@
 **Implementation activation:** MESP-107; Jira comment `10692`
 **Implementation evidence:** [PR #41](https://github.com/Hossam1104/mini-erp-saas-platform/pull/41) merged to `main` at `fb632982d06fd4f6bf965fb15dff7701a0bddcec`
 **Review PR:** [#40](https://github.com/Hossam1104/mini-erp-saas-platform/pull/40) (documentation-only readiness/state handoff; merged to `main` at `aa778038a509ad24ffabcd5d0fbb1824002451df`)
-**Shared follow-up:** MESP-106 - Master Data authorization and duplicate-audit classification hardening (To Do, non-blocking)
+**Shared follow-up:** MESP-106 - Master Data authorization and duplicate-audit classification hardening (Done through PR #42; non-blocking)
 
 ## 1. Readiness verdict
 
@@ -347,9 +347,14 @@ without changing this gate:
   `supplier_registration_duplicate` so they use the approved validation/
   conflict audit classification rather than a generic internal failure.
 
-MESP-106 is To Do and non-blocking. It does not authorize Customer source
-behavior, broaden Supplier/Product scope, or expand MESP-107 beyond the
-approved Customer slice.
+MESP-106 is **Done** and non-blocking through PR #42, merged to `main` at
+`0f712edcf58119057d614000721fe41227383bc1`. Its Product/Supplier-only
+correction preserved genuine denials, fail-closed outage behavior, deterministic
+Supplier duplicate conflict classification, and failure audit evidence. It did
+not change Customer source behavior, broaden Supplier/Product scope, or expand
+MESP-107 beyond the approved Customer slice. Focused classification tests are
+82/82, the full non-SQL suite is 670/670, and the Release build is 0/0; the 21
+SQL safety tests remain gated by the missing connection string.
 
 ## 17. Handoff
 
@@ -366,5 +371,6 @@ focused Customer tests are 14/14 and the non-SQL architecture suite is
 documentation/state handoff and merged to `main` at
 `aa778038a509ad24ffabcd5d0fbb1824002451df`. No statutory registration,
 downstream commercial behavior, migration, provider, or production-readiness
-claim is made. The next exact bounded session is MESP-106 hardening only; it
-must not execute the next root `TASK.md` automatically.
+claim is made. MESP-106 hardening is complete. The next exact root `TASK.md`
+session is the existing MESP-23 governance/open-questions register only; it
+must not execute another Jira item automatically.
