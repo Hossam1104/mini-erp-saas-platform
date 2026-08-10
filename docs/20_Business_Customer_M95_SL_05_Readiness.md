@@ -1,5 +1,15 @@
 # Business Customer - M95-SL-05 Readiness and Decision Gate
 
+> **MESP-108 checkpoint clarification - 10 August 2026.** Independent Opus 5
+> accepted Customer failure-classification coverage as a non-blocking Low
+> finding (O5-007). A future bounded hardening item should prove observable
+> HTTP-level parity with Product/Supplier for denial versus authorization
+> outage, duplicate/conflict, concurrency, not-found, validation, and internal
+> failure responses. This readiness record and Customer behavior are unchanged.
+> The 21 SQL safety cases referenced historically are Foundation-only and do
+> not validate `BusinessPartiesDbContext`; current backend arithmetic is 670
+> non-SQL + 21 separately gated Foundation SQL = 691.
+
 **Date:** 10 August 2026
 **Jira:** MESP-105 - Prepare M95-SL-05 Business Customer readiness and decision gate
 **Parent:** MESP-6 - EPIC 06 - Master Data and Product Catalog

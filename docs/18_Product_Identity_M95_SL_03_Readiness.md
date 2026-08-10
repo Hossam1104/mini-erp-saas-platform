@@ -1,5 +1,14 @@
 # M95-SL-03 Product Identity Readiness and Decision Gate
 
+> **MESP-108 checkpoint clarification - 10 August 2026.** Product creation
+> enforces active same-Tenant Category/Base UOM references, but Category/UOM
+> creation is not currently exposed by mapped API routes. Product tests do not
+> therefore establish a complete public API workflow from Category/UOM creation
+> through Product creation. SQL Server collation/Arabic linguistic parity also
+> remains unproved; the 21 SQL safety cases are Foundation-only. O5-001,
+> O5-002, O5-003, O5-004, and O5-006 are recorded without changing Product
+> behavior in `docs/98_Independent_Opus_5_Checkpoint_Reconciliation.md`.
+
 ## Document control
 
 | Field | Value |

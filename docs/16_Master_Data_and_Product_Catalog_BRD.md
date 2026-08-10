@@ -1,5 +1,13 @@
 # Mini ERP SaaS Platform — Master Data and Product Catalog BRD
 
+> **MESP-108 checkpoint clarification - 10 August 2026.** The 21 SQL safety
+> tests referenced in historical overlays are a separately gated
+> Foundation-only LocalDB harness; they do not validate Master Data or Business
+> Parties SQL behavior. Current arithmetic is 670 passing non-SQL tests plus
+> 21 Foundation SQL cases = 691. SQL Server collation/unique-index parity,
+> Arabic linguistic behavior, and ADR-011 remain open at their existing scope.
+> The checkpoint changes no approved business requirement.
+
 > **Authoritative current Product-slice overlay - 9 August 2026.** MESP-99 /
 > M95-SL-02 Category and UOM is Done through PR #33, correction PR #34, and
 > final audit-semantics correction PR #35. MESP-101 is **Done** for the

@@ -1,5 +1,13 @@
 # M95-SL-04 Supplier Readiness and Decision Gate
 
+> **MESP-108 checkpoint clarification - 10 August 2026.** Existing Supplier
+> localized storage and SQLite/unit evidence do not prove SQL Server
+> collation/unique-index parity or Arabic linguistic search behavior. ADR-011
+> remains required. The separately gated 21 SQL safety cases are
+> Foundation-only and do not validate `BusinessPartiesDbContext`. See
+> `docs/98_Independent_Opus_5_Checkpoint_Reconciliation.md`; no Supplier source
+> or test behavior changes here.
+
 **Date:** 9 August 2026
 **Jira:** MESP-103 (Done)
 **Scope:** Supplier readiness and decision gate only
