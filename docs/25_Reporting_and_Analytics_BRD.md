@@ -1,12 +1,13 @@
-# Reporting and Analytics Business Requirements Documen
+# Reporting and Analytics Business Requirements Document
 
-> **Version:** v0.1 - Draft for Owner Review
+> **Version:** v0.1 - Approved Business Baseline
 > **Jira:** MESP-36 - Produce Reporting and Analytics BRD
 > **Parent:** MESP-11 - EPIC 11 - Reporting and Analytics
 > **BRD sequence:** Position 11 of 15, following the approved B2B Sales baseline
 > **Date:** 11 August 2026
 > **Scope:** Release 1 B2B ERP only; Wafra is validation-only
-> **Status:** Draft; documentation-only; no implementation authorization
+> **Status:** Approved business baseline; documentation-only; no implementation authorization
+> **Approval evidence:** Jira comments 10770 (validation) and 10771 (Owner approval), reviewed content head a7a7ae8aed0d601bd16609acc3edf8ab27bdd97f
 
 ## 1. Document control and reading rules
 
@@ -49,12 +50,12 @@ not close a domain decision or take ownership of a source process.
 | **External validation** | Qualified tax, Saudi, legal, banking, privacy, security, or other specialist validation required before the affected release or production gate. |
 | **Out of scope** | Excluded from Release 1 or from this Reporting domain baseline. |
 
-The Founder Decision Pack is not an approval catalogue. Its defaults are no
+The Founder Decision Pack is not an approval catalogue. Its defaults are not
 requirements unless a named approval record says otherwise. The MESP-23 living
 register remains the control point for unresolved decisions. MESP-52 / PD-020
 (entitlement approval) and MESP-56 / PD-021 (multiple legal entities with no
 Release 1 consolidation, intercompany, elimination, or transfer pricing) are
-the applicable approved decisions carried into this baseline; they do no
+the applicable approved decisions carried into this baseline; they do not
 resolve Reporting-specific open decisions.
 
 ### 1.2 Critical entry and dependency position
@@ -109,12 +110,12 @@ Reporting consumes source truth as follows:
 - SaaS Administration and audit sources own platform access, entitlement,
   support, job, and audit event meaning.
 - Reporting owns the publication boundary, report metadata, source lineage,
-  freshness presentation, and read-only reconciliation evidence. It does no
+  freshness presentation, and read-only reconciliation evidence. It does not
   own or mutate the facts above.
 
 The core invariant is:
 
-> A report is an authorized, time- and scope-bounded view of source facts. I
+> A report is an authorized, time- and scope-bounded view of source facts. It
 > may expose a difference or a pending/unknown state, but it cannot repair the
 > difference, post a financial entry, change stock, or silently select an
 > unapproved policy.
@@ -129,7 +130,7 @@ The Reporting domain must provide these business outcomes:
   missing, denied, and unknown source information;
 - repeatable report parameters and a data-as-of point that allow an authorized
   user to understand what was included;
-- drill-through or traceable references to authorized source records withou
+- drill-through or traceable references to authorized source records without
   leaking records outside the user's server-derived scope;
 - lineage from master data and each operational or financial source to the
   report figure or row;
@@ -153,13 +154,13 @@ The Reporting domain must provide these business outcomes:
 - operational dashboards and standard reports for the PRD minimum baseline;
 - report definition, publication, version, effective-date, and supersession
   requirements;
-- report filters, server-derived scope, drill-through, and bounded expor
+- report filters, server-derived scope, drill-through, and bounded export
   requirements;
 - source semantics and lineage across master data, Procurement, Inventory,
   B2B Sales, Finance, SaaS Administration, and audit;
 - data freshness and data-as-of requirements for transactional and projected
   results;
-- posted, pending, unknown, partial, stale, rejected, and unavailable resul
+- posted, pending, unknown, partial, stale, rejected, and unavailable result
   presentation;
 - reconciliation paths, difference evidence, and unresolved owner gates;
 - permissions, approval controls, separation of duties, audit, privacy, and
@@ -182,9 +183,9 @@ The Reporting domain must provide these business outcomes:
   or any other Master Data implementation;
 - Inventory posting, stock ledger, reservation, receipt, valuation, batch,
   lot, serial, or expiry mechanics;
-- Procurement request, quote, order, receipt, invoice, supplier, or paymen
+- Procurement request, quote, order, receipt, invoice, supplier, or payment
   process ownership;
-- B2B Sales quotation, order, fulfillment, invoice, receipt, return, or credi
+- B2B Sales quotation, order, fulfillment, invoice, receipt, return, or credit
   process ownership;
 - Finance posting, fiscal period, fiscal year, year-end, subledger, GL, tax,
   AR/AP, cash, Payment Term, aging, rate, rounding, or posting-dimension
@@ -284,7 +285,7 @@ This baseline was checked against:
 | Report definition, publication metadata, lineage, freshness display, and result evidence | Reporting | Own the read-only publication boundary, subject to MESP-53 and the unresolved decisions. |
 
 Source ownership in this table is not the final named business-owner or
-reconciliation-owner decision. MESP-53 remains the critical dependency tha
+reconciliation-owner decision. MESP-53 remains the critical dependency that
 must assign and approve those fields before a final catalogue or implementation
 scope is declared.
 
@@ -328,7 +329,7 @@ Before a report or dashboard is shown as a valid result:
 6. Required source lineage and reconciliation path are present. A named
    reconciliation owner is a required unresolved field until MESP-53 assigns
    one.
-7. Any conditional dependency is approved or the result clearly displays tha
+7. Any conditional dependency is approved or the result clearly displays that
    the branch is unavailable, pending, or not applicable.
 8. The requested scope and filters do not cross a Company or other boundary
    without an explicit approved aggregation rule. Release 1 financial
@@ -364,9 +365,9 @@ API, UI, database, or implementation sequence.
    rejected, and unavailable facts distinct. It does not choose a formula,
    exchange-rate source, rounding rule, Payment Term rule, fiscal rule, tax
    conclusion, or posting dimension that is not approved.
-6. **Check lineage and reconciliation.** Each posted financial or stock fac
+6. **Check lineage and reconciliation.** Each posted financial or stock fact
    points to its source chain and reconciliation evidence. Missing, stale,
-   mismatched, or unresolved evidence is shown as a state or exception, no
+   mismatched, or unresolved evidence is shown as a state or exception, not
    silently cleared.
 7. **Present the result.** The dashboard/report shows scope, filters,
    time/currency basis, data-as-of, freshness, source status, definition
@@ -375,7 +376,7 @@ API, UI, database, or implementation sequence.
    bounded export. The output keeps the same scope, filters, lineage,
    freshness, privacy, and audit evidence. Large output may be asynchronous.
    No default frequency, recipient, schedule, or delivery channel is chosen.
-9. **Record evidence.** The report access, generation result, source snapsho
+9. **Record evidence.** The report access, generation result, source snapshot
    references, definition version, exceptions, export artifact, and
    reconciliation review are retained subject to MESP-50.
 10. **Correct at the source.** When a difference is found, the responsible
@@ -386,53 +387,53 @@ API, UI, database, or implementation sequence.
 
 ## 9. Alternative and exception paths
 
-### 9.1 Valid transactional resul
+### 9.1 Valid transactional result
 
 When all required sources are available and current for the requested
 definition, the result is shown with a transactional data-as-of point and
 links to authorized source records. “Current” is a reported state; a numeric
 freshness SLA is not invented here.
 
-### 9.2 Valid projected resul
+### 9.2 Valid projected result
 
 When a report uses an asynchronously projected source, it must say so, show
 the projection data-as-of and generation time, and identify the source
 projection/version. A projection must not be presented as an immutable source
 ledger or posted GL record.
 
-### 9.3 Partial resul
+### 9.3 Partial result
 
 If an allowed source or partition is unavailable while the remaining data can
 be safely identified, the result is labeled Partial and identifies included,
 excluded, and unavailable sources or scopes. Totals and KPIs must not imply
 complete coverage.
 
-### 9.4 Stale resul
+### 9.4 Stale result
 
 If the data-as-of point falls outside the approved freshness condition for the
 definition, the result is labeled Stale. The report may remain viewable if the
-definition permits it, but it cannot be presented as current. A user canno
+definition permits it, but it cannot be presented as current. A user cannot
 override Stale by changing a client field.
 
-### 9.5 Unknown resul
+### 9.5 Unknown result
 
 If the system cannot prove whether a source delivery, job, or reconciliation
 effect was applied, the result is labeled Unknown or unavailable for the
 affected scope. The unknown state is retained for scoped reconciliation. A
-retry must not duplicate a delivered source fact or claim success withou
+retry must not duplicate a delivered source fact or claim success without
 evidence.
 
-### 9.6 Pending or unposted source fac
+### 9.6 Pending or unposted source fact
 
-Operational in-flight records may be shown as Pending when the approved repor
-includes them. Financial reports that represent posted accounting truth mus
+Operational in-flight records may be shown as Pending when the approved report
+includes them. Financial reports that represent posted accounting truth must
 exclude or separately label pending/unposted facts. Reporting must not promote
 a pending fact to posted status.
 
 ### 9.7 Denied or redacted drill-through
 
-When the aggregate result is authorized but a source record is not, the repor
-shows a permitted aggregate or a neutral unavailable/redacted outcome. I
+When the aggregate result is authorized but a source record is not, the report
+shows a permitted aggregate or a neutral unavailable/redacted outcome. It
 does not expose identifiers, amounts, names, attachments, or error details
 that reveal the denied record.
 
@@ -440,21 +441,21 @@ that reveal the denied record.
 
 If an approved report depends on tracking/expiry, Payment Term/aging,
 Reporting Currency, exchange rates, tax/localization validation, or another
-open decision, the result must state the blocked or conditional branch. I
+open decision, the result must state the blocked or conditional branch. It
 must not select a default policy to produce a more convenient number.
 
 ### 9.9 Concurrent definition or source change
 
 If a definition or source version changes while generation is in progress, the
 result uses one captured version or fails with a retryable/concurrency
-outcome. It must never combine incompatible definition versions withou
+outcome. It must never combine incompatible definition versions without
 identifying the boundary.
 
 ### 9.10 Correction, reversal, or return
 
-A report rerun after an approved source correction links the corrected resul
+A report rerun after an approved source correction links the corrected result
 to the original evidence and source correction. Prior generated evidence is
-immutable and remains discoverable according to retention policy. A repor
+immutable and remains discoverable according to retention policy. A report
 does not rewrite history to make the original result appear never to have
 existed.
 
@@ -633,7 +634,7 @@ Reporting must distinguish, when applicable:
 - requested period boundary.
 
 Reporting does not define fiscal-year start, fiscal period close, year-end
-rollover, Payment Term due date, aging interval, or historical settlemen
+rollover, Payment Term due date, aging interval, or historical settlement
 mechanics. Those remain FIN-OD-09 / MESP-110 gates.
 
 ### 12.5 Currency facts
@@ -653,12 +654,12 @@ Pending, Unavailable, or explicitly limited; it is not silently converted.
 
 ## 13. Source lineage and semantic ownership
 
-### 13.1 Lineage requiremen
+### 13.1 Lineage requirement
 
 A report must allow an authorized reviewer to follow a figure or row through
 the report definition, source snapshot/version, source domain record or
 approved aggregate, and applicable reconciliation evidence. The path can be
-an aggregate lineage group when row-level exposure is not authorized, but i
+  an aggregate lineage group when row-level exposure is not authorized, but it
 must remain explainable without disclosing protected data.
 
 Lineage records are references and evidence. They do not copy ownership of the
@@ -715,7 +716,7 @@ operational/volume decisions must set any report-specific threshold.
 
 ### 14.2 Reconciliation minimum
 
-Every report that presents a posted financial or stock quantity/value fact mus
+Every report that presents a posted financial or stock quantity/value fact must
 carry a documented reconciliation path containing:
 
 1. the independent records being compared;
@@ -765,12 +766,12 @@ any configurable, saved-view, scheduled, or distribution behavior.
 | Finance | Trial balance, GL, P&L, balance sheet, cash movement, AP/AR aging, tax summary, and bank reconciliation | Subledgers/source documents to GL | Posted Finance truth only; aging/period/year-end/dimensions require MESP-110; tax/bank/Saudi branches require relevant gates. |
 | SaaS/Admin | Tenant status, entitlement usage, privileged access, audit activity, and integration failures | Platform events, jobs, and support records | Support scope, privacy, retention, and scheduled delivery remain gated by platform decisions and MESP-50. |
 
-The table establishes coverage to validate against the PRD. It does no
+The table establishes coverage to validate against the PRD. It does not
 approve a user-facing report name, formula, frequency, owner, schedule, or
 distribution rule. A later owner decision may narrow or configure it only with
 traceable superseding evidence.
 
-### 15.2 KPI definition contrac
+### 15.2 KPI definition contract
 
 Before any KPI is approved for publication, its definition must record:
 
@@ -821,7 +822,7 @@ authorization error.
 RPT-002 requires bounded exports and asynchronous generation for large
 datasets. That requirement does not approve scheduled distribution.
 
-If MESP-53 later approves a scheduled/export branch, the later definition mus
+If MESP-53 later approves a scheduled/export branch, the later definition must
 also specify, before implementation:
 
 - who may create, run, cancel, or receive an export;
@@ -926,11 +927,11 @@ At minimum, later implementation must preserve these separations:
 Any future delegation or approval-substitution rule must be explicitly
 approved under the owning decision and cannot be inferred from a report role.
 
-## 18. Inventory, accounting, currency, and localization impac
+## 18. Inventory, accounting, currency, and localization impact
 
-### 18.1 Inventory impac
+### 18.1 Inventory impact
 
-Reporting consumes the Inventory-owned immutable stock ledger, movemen
+Reporting consumes the Inventory-owned immutable stock ledger, movement
 history, projected balances, availability, count evidence, tracking facts, and
 valuation evidence according to the approved Inventory BRD.
 
@@ -948,7 +949,7 @@ Reporting cannot reserve, release, receive, transfer, count, adjust, revalue,
 or otherwise change stock. Finance remains the owner of accounting valuation
 policy and its reconciliation to the Inventory ledger.
 
-### 18.2 Accounting impac
+### 18.2 Accounting impact
 
 Financial reports consume Finance-owned posted subledger and GL truth and
 preserve the source-document-to-subledger-to-GL path. Reporting cannot post,
@@ -956,7 +957,7 @@ allocate, close a period, reopen a period, reverse, revalue, alter tax, or
 change a posting dimension.
 
 Trial balance, GL, P&L, balance sheet, cash movement, AP/AR aging, tax
-summary, and bank reconciliation are PRD minimum baseline branches, subjec
+summary, and bank reconciliation are PRD minimum baseline branches, subject
 to Finance source availability and the open decisions. In particular:
 
 - Payment Term, due date, aging buckets, settlement, and historical
@@ -967,7 +968,7 @@ to Finance source availability and the open decisions. In particular:
   validation as applicable; and
 - MESP-54 remains the gate for Reporting Currency, rates, and rounding.
 
-### 18.3 Multi-currency impac
+### 18.3 Multi-currency impact
 
 Reporting preserves the currency and rate facts supplied by the owning source.
 It may show a transaction amount in Transaction Currency and a Finance-owned
@@ -980,7 +981,7 @@ choose an update/approval workflow, derive realized/unrealized treatment,
 or choose rounding. If currencies cannot be compared under an approved
 definition, the result is clearly limited or unavailable.
 
-### 18.4 Saudi and localization impac
+### 18.4 Saudi and localization impact
 
 The PRD supports Arabic and English and a Saudi launch context. Reporting
 must support language-aware labels, RTL-safe presentation, approved date/time
@@ -1030,7 +1031,7 @@ earlier result. A later report may be more current while still preserving the
 historical data-as-of point.
 
 Reporting never edits the source record to reconcile a report. The owning
-source process must produce the correction, and the reconciliation result mus
+source process must produce the correction, and the reconciliation result must
 show the difference before and after the correction where authorized.
 
 ### 19.3 Privacy, retention, and private artifacts
@@ -1038,7 +1039,7 @@ show the difference before and after the correction where authorized.
 Report rows, drill-through details, exports, attachments, and audit evidence
 must follow the Tenant, privacy, retention, legal-hold, purge, residency,
 backup, and restoration gates in MESP-50 and ADR-009. This BRD requires
-private, authorized access and auditability but does not select an objec
+private, authorized access and auditability but does not select an object
 storage provider or retention duration.
 
 ## 20. Integration, migration, and operational requirements
@@ -1073,7 +1074,7 @@ Under MESP-51, reporting for migration must retain:
 - preview and validation result before commit;
 - immutable batch and row outcomes;
 - opening master/configuration, inventory quantity/value, customer/supplier
-  balances, AR/AP, cash/bank, GL/trial balance, tax, and document-coun
+  balances, AR/AP, cash/bank, GL/trial balance, tax, and document-count
   reconciliation where applicable;
 - two dry runs, timed rehearsal, rollback/continuity evidence, and sign-off;
 - distinction between migrated/opening, posted-live, pending, rejected, and
@@ -1085,7 +1086,7 @@ valuation, fiscal period, or cutover approval.
 
 ### 20.3 Observability and recovery gates
 
-The future implementation must expose enough evidence to monitor repor
+The future implementation must expose enough evidence to monitor report
 generation, freshness, source delivery, partial/stale/unknown outcomes,
 reconciliation differences, export failures, retry/dead-letter queues, and
 authorization denials. MESP-48 remains the supported-volume, performance,
@@ -1104,7 +1105,7 @@ not authorize implementation and do not close the named open decisions.
 
 **RPT-GWT-001 — Authorized Tenant dashboard**
 
-**Given** an authenticated user has an approved dashboard permission in Tenan
+**Given** an authenticated user has an approved dashboard permission in Tenant
 T and a permitted Company/Branch scope
 **When** the user opens an approved dashboard
 **Then** the result uses the server-derived scope and shows its definition
@@ -1125,8 +1126,8 @@ includes C2 records.
 
 **RPT-GWT-004 — Branch and Warehouse boundary**
 
-**Given** a user is permitted for one Branch and Warehouse se
-**When** the user drills into a stock or sales resul
+**Given** a user is permitted for one Branch and Warehouse set
+**When** the user drills into a stock or sales result
 **Then** each drill-through is independently checked against the same
 server-derived boundaries.
 
@@ -1134,7 +1135,7 @@ server-derived boundaries.
 
 **Given** a support operator has an approved, time-bounded grant for one
 Tenant and scope
-**When** the operator requests a repor
+**When** the operator requests a report
 **Then** the result is limited to that grant, revalidated before any async
 effect, and fully audited.
 
@@ -1142,7 +1143,7 @@ effect, and fully audited.
 
 **Given** a platform administrator has platform-governance permissions
 **When** the administrator requests Tenant business reporting without a
-Tenant-scoped business gran
+Tenant-scoped business grant
 **Then** the request is denied and no platform path becomes a business-data
 shortcut.
 
@@ -1159,7 +1160,7 @@ effective dates and source lineage.
 
 **Given** a report label exists in the PRD minimum baseline but its formula or
 MESP-53 approval is not complete
-**When** a user requests i
+**When** a user requests it
 **Then** the result is Pending definition or Unavailable and does not invent a
 formula, zero, owner, or frequency.
 
@@ -1180,7 +1181,7 @@ and projected classification.
 **RPT-GWT-011 — Stale source**
 
 **Given** the projection or source is outside the approved freshness condition
-**When** a user views the resul
+**When** a user views the result
 **Then** it is labeled Stale, with the affected source and data-as-of, and is
 not presented as current.
 
@@ -1201,9 +1202,9 @@ audited, and a scoped reconciliation path is created.
 
 **RPT-GWT-014 — Delayed source**
 
-**Given** a source event is delayed beyond the report's known data-as-of poin
+**Given** a source event is delayed beyond the report's known data-as-of point
 **When** the report is viewed
-**Then** the report shows the delay or stale/partial status and does no
+**Then** the report shows the delay or stale/partial status and does not
 silently add or estimate the missing event.
 
 ### 21.3 Lineage and reconciliation
@@ -1217,14 +1218,14 @@ Tenant and organization scope.
 
 **RPT-GWT-016 — Denied drill-through**
 
-**Given** an aggregate is authorized but a source row is no
+**Given** an aggregate is authorized but a source row is not
 **When** the user drills through
 **Then** the result is redacted or unavailable without leaking identifiers,
 amounts, filenames, or sensitive authorization details.
 
 **RPT-GWT-017 — Posted financial lineage**
 
-**Given** a Finance report displays a posted amoun
+**Given** a Finance report displays a posted amount
 **When** the result is generated
 **Then** it identifies the Finance source status and source-document,
 subledger, and GL path required by the definition.
@@ -1255,7 +1256,7 @@ publication/implementation gate remains blocked; no person is invented.
 **Given** independent records match under the same scope, time, currency, and
 data-as-of basis
 **When** the reconciliation is reviewed
-**Then** the result records the independent evidence and matched status; i
+**Then** the result records the independent evidence and matched status; it
 does not imply broader scope or a different accounting policy.
 
 **RPT-GWT-022 — Source correction**
@@ -1270,7 +1271,7 @@ result and its original data-as-of.
 
 **RPT-GWT-023 — Procurement chain**
 
-**Given** a procurement report includes an order, receipt, invoice, or paymen
+**Given** a procurement report includes an order, receipt, invoice, or payment
 reference
 **When** a user follows the chain
 **Then** each source status and missing/delayed link is visible and Reporting
@@ -1309,7 +1310,7 @@ not infer rollover, close, or opening mechanics.
 **RPT-GWT-028 — Finance dimensions gate**
 
 **Given** Finance posting dimensions remain open
-**When** a user requests a dimensioned repor
+**When** a user requests a dimensioned report
 **Then** the report does not invent Cost Center or another dimension and
 identifies the missing Finance decision.
 
@@ -1317,14 +1318,14 @@ identifies the missing Finance decision.
 
 **Given** MESP-54 has not approved Reporting Currency or exchange-rate/rounding
 policy
-**When** a user requests a presentation-currency repor
+**When** a user requests a presentation-currency report
 **Then** the result preserves available Transaction/Base Currency facts and
 shows Reporting Currency as unavailable or conditional.
 
 **RPT-GWT-030 — Source rate facts**
 
-**Given** a source provides a currency and rate fac
-**When** an approved report displays i
+**Given** a source provides a currency and rate fact
+**When** an approved report displays it
 **Then** the report identifies the source-provided fact and does not choose a
 different source, date, approval workflow, or rounding method.
 
@@ -1353,7 +1354,7 @@ consolidation, intercompany, elimination, or transfer-pricing figures.
 
 **RPT-GWT-034 — Authorized bounded export**
 
-**Given** a user has separate export permission for an approved repor
+**Given** a user has separate export permission for an approved report
 **When** the user requests an export within permitted scope
 **Then** the export preserves parameters, source status, data-as-of,
 freshness, lineage, privacy, and audit metadata.
@@ -1415,8 +1416,8 @@ it as superseding or correcting evidence.
 
 **RPT-GWT-043 — Worker revalidation**
 
-**Given** an authorized user requested an asynchronous resul
-**When** the worker begins producing the result or artifac
+**Given** an authorized user requested an asynchronous result
+**When** the worker begins producing the result or artifact
 **Then** it revalidates the initiating Tenant, scope, permission, entitlement,
 and definition before effect.
 
@@ -1424,7 +1425,7 @@ and definition before effect.
 
 **Given** MESP-50 has not approved retention, purge, legal hold, residency, or
 attachment rules
-**When** a report includes sensitive rows or an export artifac
+**When** a report includes sensitive rows or an export artifact
 **Then** the result remains subject to the gate and does not invent a
 retention period, public link, or deletion policy.
 
@@ -1449,7 +1450,7 @@ are distinguishable with batch and sign-off evidence.
 
 **Given** an authorized user selects Arabic or English
 **When** the same report is displayed
-**Then** labels, direction, dates, and number presentation adapt withou
+**Then** labels, direction, dates, and number presentation adapt without
 changing source meaning, scope, amount, or status.
 
 **RPT-GWT-048 — No Retail POS behavior**
@@ -1469,7 +1470,7 @@ Wafra-specific core reporting behavior.
 **RPT-GWT-050 — No source mutation**
 
 **Given** a report shows a mismatch or exception
-**When** a user attempts to correct it through the repor
+**When** a user attempts to correct it through the report
 **Then** Reporting offers only an authorized source-domain path or evidence
 reference and never mutates the source.
 
@@ -1538,18 +1539,16 @@ implementation, it must demonstrate:
 
 ## 24. Business-owner approval
 
-This section is reserved for the bounded Owner approval of the documen
-baseline. Approval means that this document correctly records the approved
-PRD minimum reporting baseline, source ownership boundaries, lineage,
-freshness, reconciliation requirements, conditional branches, and decision
-gates. It does not answer MESP-53, MESP-54, FIN-OD-09 / MESP-110, MESP-37,
-Currency, MESP-41, MESP-48, MESP-49, MESP-50, MESP-51, or any other open
-decision.
+The bounded Owner approval of this document baseline is recorded in Jira
+comment 10771, following focused validation in comment 10770, against the
+reviewed content head identified in the document control block. Approval means
+that this document correctly records the approved PRD minimum reporting
+baseline, source ownership boundaries, lineage, freshness, reconciliation
+requirements, conditional branches, and decision gates.
 
-Approval evidence must be recorded in Jira MESP-36 and must identify the
-reviewed content head. The document may be marked **Approved Business
-Baseline** only after focused validation finds no unresolved blocker within
-the bounded documentation scope.
+The approval does not answer MESP-53, MESP-54, FIN-OD-09 / MESP-110, MESP-37,
+Currency, MESP-41, MESP-48, MESP-49, MESP-50, MESP-51, or any other open
+decision. It does not authorize implementation.
 
 ## 25. Completion and handoff record
 
@@ -1566,7 +1565,7 @@ must show:
 - Jira activation, validation, Owner approval, MESP-23 handoff, and closure
   evidence;
 - the focused review Pull Request merged cleanly to main;
-- TASK.md updated to the exact next separately authorized task withou
+- TASK.md updated to the exact next separately authorized task without
   executing it;
 - .ai/CURRENT_STATE.md, the delivery plan, genuinely affected state files,
   and docs/staticts.md updated conservatively; and
