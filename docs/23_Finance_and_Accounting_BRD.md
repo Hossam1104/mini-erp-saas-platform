@@ -13,7 +13,8 @@
 > **Scope:** Release 1 B2B ERP only; Wafra is validation-only
 > **Status:** Approved business baseline; documentation-only; no implementation authorization
 
-> **Independent-review reconciliation overlay:** MESP-109 is reconciling the
+> **Independent-review reconciliation overlay:** MESP-109 is **Done** after
+> reconciling the
 > accepted non-blocking findings O5-FIN-001 through O5-FIN-010 from the
 > independent Opus 5 Finance checkpoint. The approved MESP-34 baseline remains
 > historically Done; this overlay adds traceability and bounded governance
@@ -1181,10 +1182,10 @@ This BRD is ready for Owner approval when the following are true:
   or next Jira activation is implied.
 
 The original Owner approval, reviewed content head, focused PR, and MESP-34
-closure are recorded in the table below. A later bounded correction may merge
-only after the complete diff is reviewed and validation is clean. The
-independent-review reconciliation must link the canonical document, correction
-PR merge evidence, Jira validation and MESP-23 handoff comments, updated
+closure are recorded in the table below. The bounded independent-review
+correction was reviewed and merged after the complete documentation diff passed
+validation. The reconciliation links the canonical document, correction PR
+merge evidence, Jira validation and MESP-23 handoff comments, updated
 repository state/tracker, the open FIN-OD-09 decision, and the separately
 prepared but **not executed** MESP-35 next-session handoff. MESP-34 remains
 historically Done; this correction does not reopen or redesign its approved
@@ -1197,9 +1198,10 @@ Finance domain.
 | Entry activation      | MESP-34 Jira comment `10746`; status In Progress.                                                        |
 | Owner approval        | MESP-34 Jira comment `10748`; Hossam standing Owner approval for the bounded BRD session.                |
 | Reviewed content head | `7d9de5d` — approved requirements head; the later evidence metadata update does not change requirements. |
-| Merge/closure         | Original MESP-34 closure: PR #47 merged at `a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b`; final branch head `72aa210d462f783671f1b3b33fcdea4955567b9c`; Jira closure comment `10751`. The independent-review correction is tracked separately in MESP-109 and `docs/99_Independent_Opus_5_Finance_BRD_Reconciliation.md`. |
+| Merge/closure         | Original MESP-34 closure: PR #47 merged at `a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b`; final branch head `72aa210d462f783671f1b3b33fcdea4955567b9c`; Jira closure comment `10751`. Independent-review correction MESP-109: PR #50 reviewed at `cf3f6941523551a3d8a0ecdca39256b3e349c6f2` and merged at `cfb17878a0145cb99fc571da211e01dec6a66f28`; live Jira carries the post-merge validation, closure, and MESP-23 handoff evidence. |
 | Open decisions        | MESP-23 register; no open decision is silently resolved here.                                            |
 
 **Stop condition:** This document must not be followed in this session by
-MESP-35, Currency work, implementation, or any later task. After the MESP-34
-closure handoff is synchronized, stop for ChatGPT review.
+MESP-35, Currency work, implementation, or any later task. After the MESP-109
+correction and MESP-34 closure handoffs are synchronized, stop for ChatGPT
+review.

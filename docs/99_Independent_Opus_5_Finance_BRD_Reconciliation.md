@@ -74,12 +74,12 @@ posting-contract decisions.
 
 ## 5. Validation and completion evidence
 
-Focused PR #50 is open as a draft from reviewed head
-`56696d32f6a2fb4a6fd17a939286d22ff59f2f22`. The implementation session must
-record the merge SHA, final synchronized `main` SHA, Jira validation/closure
-comments, and the MESP-23 handoff here after the documentation diff is
-reviewed and merged. Until those values are recorded, MESP-109 remains In
-Progress.
+Focused PR #50 was reviewed at head
+`cf3f6941523551a3d8a0ecdca39256b3e349c6f2` and merged cleanly to `main` at
+`cfb17878a0145cb99fc571da211e01dec6a66f28`. The final synchronized `main`
+state includes the documentation/tracker closure metadata, and live Jira
+records the post-merge validation, MESP-109 closure, and MESP-23 handoff.
+MESP-109 is **Done**; no source implementation item is activated.
 
 The repository validation must confirm:
 

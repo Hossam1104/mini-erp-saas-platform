@@ -1,11 +1,12 @@
 # Current State
 
-## Current authoritative position - 11 August 2026 (MESP-109 Finance checkpoint reconciliation)
+## Current authoritative position - 11 August 2026 (MESP-109 Finance checkpoint reconciliation complete)
 
-MESP-109 is the single active bounded Finance reconciliation item. It
+MESP-109 is **Done** as the single bounded Finance reconciliation item. It
 reconciles accepted independent Opus 5 findings O5-FIN-001 through O5-FIN-010
 against the approved MESP-34 Finance BRD. The verdict is **PASS WITH
-NON-BLOCKING FINDINGS**. Jira activation evidence is comment `10752`.
+NON-BLOCKING FINDINGS**. Jira activation evidence is comment `10752`, and
+post-merge validation/closure evidence is recorded on MESP-109 in live Jira.
 The work is documentation, Jira, traceability, and governance only: no source,
 test, database, schema, migration, EF, API, UI, provider, infrastructure, or
 production configuration behavior is authorized.
@@ -26,18 +27,20 @@ MESP-48/MESP-50 production gates remain unchanged.
 The canonical Finance artifact is still
 `docs/23_Finance_and_Accounting_BRD.md`, with the bounded reconciliation
 recorded in `docs/99_Independent_Opus_5_Finance_BRD_Reconciliation.md`.
-Focused correction PR #50 is open as a draft from reviewed branch head
-`56696d32f6a2fb4a6fd17a939286d22ff59f2f22`; merge evidence is to be added
-after the complete branch diff is reviewed and merged. The root `TASK.md` remains the complete,
-exact MESP-35 fresh-session prompt and is not executed in this session.
+Focused correction PR #50 was reviewed at branch head
+`cf3f6941523551a3d8a0ecdca39256b3e349c6f2` and merged cleanly to `main` at
+`cfb17878a0145cb99fc571da211e01dec6a66f28`; the final closure metadata and
+tracker synchronization are recorded in the final handoff. The root `TASK.md`
+remains the complete, exact MESP-35 fresh-session prompt and is not executed in
+this session.
 
 | Current fact | Verified value |
 |---|---|
-| MESP-109 | **In Progress**; independent Opus 5 Finance reconciliation; activation comment `10752`. |
+| MESP-109 | **Done**; independent Opus 5 Finance reconciliation; activation comment `10752`; PR #50 reviewed head `cf3f6941523551a3d8a0ecdca39256b3e349c6f2` merged at `cfb17878a0145cb99fc571da211e01dec6a66f28`; live Jira post-merge closure evidence recorded. |
 | FIN-OD-09 / MESP-110 | **To Do / unapproved**; Finance year-end, Payment Term, and posting-dimension policy; creation/scope comment `10753`. |
 | MESP-34 / MESP-35 | MESP-34 **Done**; MESP-35 **To Do** and not activated. |
 | MESP-23 / MESP-54 | MESP-23 **In Progress**; MESP-54 **To Do/open**. |
-| Current branch | `agent/MESP-109-finance-opus-reconciliation`; PR #50 draft at reviewed head `56696d32f6a2fb4a6fd17a939286d22ff59f2f22`; based on synchronized main `24d7112bf5bf1dfdb14d5e9c38bfc46dfaeeb62e`. |
+| Current branch | `main` after PR #50 merge and final documentation/tracker synchronization; no implementation branch is active. |
 | Production-capability percentages | Unchanged; this session adds no usable production capability. |
 
 ## Historical authoritative position - 10 August 2026 (MESP-34 Finance BRD Done)
