@@ -1427,8 +1427,8 @@ evidence without changing the business meaning above:
 |---|---|
 | Live entry-gate recheck | MESP-109 Done with PASS WITH NON-BLOCKING FINDINGS; MESP-110 / FIN-OD-09 To Do and unapproved; MESP-34 Done; MESP-23 In Progress; MESP-35 activated only for this session. |
 | Canonical artifact | docs/24_Sales_and_Order_to_Cash_BRD.md |
-| Jira validation | To be recorded in the final session evidence comment. |
-| Owner approval | To be recorded in the final session evidence comment. |
-| MESP-23 handoff | To be recorded without closing MESP-54 or any other open row. |
-| Review and merge | To be recorded after focused PR review and clean merge. |
+| Jira validation | MESP-35 comment 10763 records the focused content validation and local checks. |
+| Owner approval | MESP-35 comment 10764 records bounded Owner approval for review and merge; it does not close any open decision. |
+| MESP-23 handoff | MESP-23 comment 10765 records the Sales handoff and preserves 14 open rows plus the exact MESP-52/MESP-56 closures. |
+| Review and merge | Focused PR #51; the final clean merge outcome is recorded in the MESP-35 closure evidence and repository state. |
 | Implementation authorization | None. Currency, MESP-36, MESP-37, and all implementation work remain unstarted. |
