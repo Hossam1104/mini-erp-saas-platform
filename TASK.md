@@ -1,90 +1,167 @@
-# Next session — qualified Saudi external-validation and owner-decision handoff
+# Next session — MESP-37 — Release 1 Saudi Localization BRD only
 
-MESP-111 — Prepare Saudi regulatory evidence and external-validation readiness
-is complete at its bounded documentation/research/governance scope. The
-canonical artifact is
-docs/26_Saudi_Regulatory_Evidence_and_External_Validation_Readiness.md.
-Focused PR #53 merged cleanly to main at
-1bcf1aa75292b927bc165a2a4fb1a8ca737763cf from reviewed branch head
-51aee480319412ca43a7d97d1af295e1aab775d8. Jira activation and closure
-evidence are comments 10809 and 10810.
+## Session boundary
 
-The recorded verdict is:
+This is the exact next executable session after the completed MESP-112 Release
+1 Saudi scope rebaseline. Execute only the MESP-37 documentation-only BRD
+boundary below. Do not start the next task automatically.
 
-> READY FOR MESP-37 DRAFT ONLY — EXTERNAL VALIDATION OUTSTANDING
+MESP-37 — Produce Saudi Localization and Compliance BRD is **To Do** and must
+remain To Do until this fresh session verifies its entry evidence and the
+normal activation decision is made. MESP-37 was not activated or executed by
+MESP-112.
 
-The artifact contains the dated official ZATCA and SDAIA/NDMO source register,
-KSA-001–KSA-008 / BR-002 traceability, evidence classifications,
-ZATCA/FATOORA and VAT boundaries, PDPL/privacy/residency boundaries,
-MESP-49/MESP-50 gap records, and qualified-adviser/owner question packs. It
-contains no software source, database, migration, API, UI, infrastructure,
-credentials, FATOORA implementation, legal advice, tax advice, certification,
-or production-readiness claim.
+The canonical current scope overlay is
+docs/27_Release_1_Saudi_Localization_Scope_Rebaseline.md.
+The approved PRD and earlier Saudi-readiness artifact remain historical
+evidence and must not be silently rewritten.
 
-## Exact next objective
+## Objective
 
-In one fresh bounded session, obtain, record, and reconcile qualified Saudi
-external validation and owner decisions needed to determine whether MESP-37
-can later be activated. This is a readiness handoff, not MESP-37 activation.
+Produce a bounded Release 1 Saudi Localization BRD for a reusable multi-Tenant
+B2B ERP. The BRD must specify localization and configurable Saudi country-pack
+behavior without implementing or specifying statutory, tax-certification,
+government-integration, legal-compliance, privacy-regulatory, or production
+infrastructure functionality.
 
-Do not activate or execute MESP-37 automatically. MESP-37 remains **To Do**.
+Use the product position **Saudi-localized Core ERP Release 1** or **Saudi
+localization baseline**. Do not call the product ZATCA/FATOORA/Saudi
+statutory/tax/legal/PDPL compliant, certified, or government-integrated.
 
-## Required entry evidence
+## Required entry reading and verification
 
-Before any MESP-37 activation decision, read and reverify:
+Before changing anything, read completely:
 
-- AGENTS.md, .ai/CURRENT_STATE.md, this TASK.md, docs/staticts.md, and the
-  canonical readiness artifact;
-- the approved PRD, glossary, approved Procurement/Inventory/Finance/Sales/
-  Reporting BRDs, Decisions.md, applicable ADRs, and the Product Delivery
-  Master Plan;
-- live Jira MESP-111 closure evidence and the current statuses of MESP-37,
-  MESP-49, MESP-50, MESP-23, MESP-53, MESP-54, and MESP-110; and
-- current official ZATCA and SDAIA/NDMO sources, recording any changed or
-  superseded source instead of rewriting the approved PRD silently.
+1. AGENTS.md;
+2. .ai/CURRENT_STATE.md;
+3. this TASK.md;
+4. docs/27_Release_1_Saudi_Localization_Scope_Rebaseline.md;
+5. docs/26_Saudi_Regulatory_Evidence_and_External_Validation_Readiness.md;
+6. docs/94_Product_Delivery_Master_Plan.md;
+7. docs/staticts.md;
+8. docs/MESP_PRD_v1.2.docx;
+9. the Product Decision Register in Jira MESP-22;
+10. docs/Decisions.md and applicable ADRs;
+11. approved Procurement, Inventory, Finance, B2B Sales, and Reporting BRDs;
+12. live Jira MESP-23, MESP-37, MESP-48, MESP-49, MESP-50, MESP-53,
+    MESP-54, MESP-110, MESP-111, and MESP-112; and
+13. the current Git branch, status, and relevant merged-main baseline.
 
-## Required external evidence
+Recheck current official evidence only if the BRD makes a future-boundary
+reference that requires it. Do not use a source check to introduce statutory
+scope into this BRD.
 
-Obtain dated, source-cited written answers from:
+## In scope for the MESP-37 BRD
 
-1. A qualified Saudi tax/compliance adviser for TAX-01 through TAX-10,
-   including Release 1 invoice/note scope, Phase 1/Phase 2 and taxpayer-wave
-   applicability, clearance/reporting, fields/identifiers/Arabic/timestamps/
-   QR/XML/security, correction/failure handling, archive/retention, VAT-safe
-   BRD wording, country-pack versus taxpayer configuration, certification
-   evidence, and permitted product claims.
-2. A qualified Saudi privacy/legal adviser for PRIV-01 through PRIV-12,
-   including controller/processor roles, legal bases/notices, rights, breach
-   duties/times, DPO, controller registration, data flows, cross-border
-   hosting/backups/support/subprocessors/observability/integrations, TIA,
-   SCC/BCR/safeguards, sensitive data, retention/destruction/legal hold, and
-   legal versus commercial residency.
-3. Product Owner, Finance Controller, and relevant Platform/Privacy owners for
-   OWN-01 through OWN-05. Owner approval must not substitute for missing
-   qualified-adviser validation.
+The BRD may define business requirements, ownership, boundary terms,
+configuration facts, and Given/When/Then acceptance scenarios for:
 
-Preserve all unresolved items in MESP-23. MESP-49 and MESP-50 remain open until
-their exact evidence gates are genuinely satisfied. MESP-53, MESP-54, and
-MESP-110 remain open and are not implied to be resolved by this handoff.
+- Arabic language support;
+- English language support;
+- RTL page structure, forms, tables, and visual usability;
+- bilingual navigation, labels, validation messages, generic documents,
+  reports, and exports where those are in core ERP scope;
+- Saudi locale behavior and configurable defaults;
+- SAR/default configuration for a Saudi-oriented country pack;
+- configurable timezone and locale behavior, including Asia/Riyadh as a
+  configurable Saudi-oriented default;
+- reusable Saudi country-pack configuration and Tenant-safe ownership;
+- cross-module localization impacts on Procurement, Inventory, Finance, Sales,
+  Reporting, Platform, audit, configuration, and generic ERP documents;
+- dates, numbers, currency presentation, search, sort, filtering, fallback,
+  and mixed Arabic/English content as localization acceptance concerns;
+- audit and configuration evidence;
+- multi-Tenant configuration and server-derived authority;
+- localization error/fallback and visual acceptance scenarios; and
+- explicit future external-compliance/integration extension boundaries.
 
-## Allowed scope
+The BRD may preserve generic configurable ERP tax or accounting facts already
+owned by Finance, but it must not select Saudi statutory treatment, tax rates,
+tax returns, statutory invoice content, or a compliance claim.
 
-Documentation, official-source evidence, Jira, traceability, and governance
-only. No source, test, EF entity, table, migration, endpoint, API contract,
-UI, provider, database, infrastructure, credential, FATOORA integration,
-production configuration, Retail POS behavior, or Wafra-specific core
-behavior.
+## Explicitly out of scope and deferred
 
-Only if the required external and owner evidence is complete may a later
-session decide whether to activate MESP-37. If evidence is still incomplete,
-record the remaining gaps and keep MESP-37 To Do. Do not create or execute a
-different next task automatically.
+Do not specify or implement:
 
-## Completion requirements
+- ZATCA or FATOORA integration, clearance, reporting, onboarding, sandbox,
+  credentials, signing keys, submission, XML, QR, security, certification,
+  or taxpayer activation;
+- statutory VAT automation or a Saudi tax engine;
+- statutory e-invoicing or regulator submission;
+- taxpayer phase, wave, obligation, or date logic;
+- government, regulator, banking, commercial, or other production external
+  integrations;
+- legal-compliance automation;
+- PDPL-specific regulatory rights/legal-basis workflow, DPO workflow,
+  controller registration, TIA, SCC/BCR, regulator submission, or
+  legal/privacy certification;
+- Saudi tax, statutory, legal, or PDPL certification;
+- provider, hosting, primary-data location, backup, DR, support geography,
+  retention, deletion, purge, subprocessors, or production infrastructure
+  decisions;
+- Currency implementation or exchange-rate source policy;
+- later Finance, Integration, Tax, Privacy, Infrastructure, Production,
+  Master Data, or other tasks;
+- Retail POS behavior; or
+- Wafra-specific core behavior, customer forks, or hard-coded customer rules.
 
-Validate the full task-related diff, update every genuinely affected Markdown
-state/plan file, conservatively update docs/staticts.md, synchronize Jira
-comments/statuses without closing MESP-37/MESP-49/MESP-50 by inference, publish
-only the bounded evidence change through a focused PR, merge only when clean
-and unblocked, update this TASK.md with the next exact separately authorized
-handoff, and stop for ChatGPT review.
+Name deferred areas only as future external-compliance/integration boundaries.
+Do not infer a legal conclusion or taxpayer applicability from the scope
+exclusion.
+
+## Required BRD outputs
+
+The fresh MESP-37 session must produce or update only the bounded BRD and
+genuinely affected governance evidence:
+
+- an explicit status, purpose, owner, and source baseline;
+- localization in-scope and out-of-scope matrices;
+- Arabic/English/RTL and bilingual document/report requirements;
+- locale, timezone, SAR, country-pack, and Tenant configuration boundaries;
+- cross-module ownership and dependency table;
+- audit/configuration and server-authority requirements;
+- localization Given/When/Then acceptance catalogue;
+- generic document/report/export/fallback/mixed-content scenarios;
+- non-claims and future external-compliance/integration boundaries;
+- MESP-23 decision traceability without closing unrelated open rows; and
+- clear future implementation/test handoff without creating source tasks.
+
+Do not silently change the approved PRD or close MESP-54, MESP-48, MESP-50,
+MESP-53, or MESP-110.
+
+## Jira and activation discipline
+
+Use the existing MESP-37 Jira item. Do not create a duplicate. Move only the
+authorized MESP-37 item through its lifecycle. Keep MESP-49 Done only for its
+R1 deferred disposition, keep MESP-50 open, and preserve MESP-23 as the living
+register. Do not activate a Currency, Integration, Tax, Privacy, Production,
+or implementation item.
+
+Record owner approval and any open decision in the Product Decision Register
+before treating a recommendation as a requirement. Preserve the MESP-112
+scope overlay and closure evidence as the entry boundary.
+
+## Validation and completion
+
+Before completion:
+
+- inspect every changed file and the complete base-to-final diff;
+- run git diff --check;
+- verify that only documentation, TASK/state/plan/statistics, and Jira
+  governance changed;
+- verify no source, tests, entities, tables, EF models, migrations, APIs,
+  UI, providers, credentials, integrations, tax, ZATCA/FATOORA, privacy/legal
+  workflows, production configuration, or Wafra behavior changed;
+- verify MESP-37 status and all affected Jira evidence live;
+- preserve historical PRD wording and traceability;
+- update docs/staticts.md conservatively without increasing production
+  percentages for documentation alone;
+- update .ai/CURRENT_STATE.md, the Product Delivery Master Plan, and every
+  genuinely affected Markdown state file;
+- update this TASK.md with the next exact separately authorized session;
+- publish a focused PR, review it, and merge only if clean and unblocked; and
+- verify main is synchronized, the worktree is clean, and stop for ChatGPT
+  review.
+
+Do not begin another task in this session. Do not implement MESP-37. This
+prompt is the next session boundary only.

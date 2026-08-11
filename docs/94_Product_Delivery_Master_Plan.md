@@ -1,5 +1,40 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
+> **Authoritative current Release 1 Saudi scope overlay - 11 August 2026
+> (MESP-112 active).**
+> MESP-112 - Rebaseline Release 1 Saudi localization and compliance scope is
+> the single active bounded documentation/Jira/Product Decision/governance task
+> under MESP-12. The canonical overlay is
+> docs/27_Release_1_Saudi_Localization_Scope_Rebaseline.md; PD-023 was
+> appended to the immutable MESP-22 Product Decision Register with Jira
+> evidence 10849, and activation evidence is 10848.
+>
+> The approved Release 1 position is **Saudi-localized Core ERP Release 1**
+> / **Saudi localization baseline** for reusable B2B ERP. Arabic, English,
+> RTL, bilingual core-ERP presentation/document/report boundaries,
+> SAR/default Saudi locale configuration, reusable country-pack architecture,
+> Tenant isolation, authorization, audit, and generic ERP capability remain
+> in scope. Production external integrations, Saudi statutory/tax-compliance
+> functionality, ZATCA/FATOORA implementation or certification, and dedicated
+> legal/regulatory/privacy-compliance automation are deferred/out of scope for
+> R1. This is a product-scope decision, not a legal or taxpayer-applicability
+> conclusion.
+>
+> MESP-49 is **Done for R1 scope only** with explicit deferred/out-of-scope
+> evidence in comment 10843. MESP-50 remains **To Do/open** for deferred
+> legal/privacy product features and minimum production/platform governance
+> (comment 10844). MESP-37 remains **To Do and not activated**, with its future
+> localization-only BRD boundary in comment 10845. MESP-23 remains
+> **In Progress** with reconciliation evidence 10846; MESP-111 remains Done
+> with historical evidence preserved and addendum 10847. MESP-48, MESP-53,
+> MESP-54, and MESP-110 remain open. No source or production capability was
+> added and all production percentages remain unchanged.
+>
+> The prior MESP-111 external-validation overlay and all older completion
+> overlays below remain historical evidence. Root TASK.md now hands off the
+> exact next session MESP-37 - Release 1 Saudi Localization BRD only; it must
+> not start automatically.
+
 > **Authoritative current Saudi regulatory-readiness overlay — 11 August 2026 (MESP-111 complete).**
 > MESP-111 — Prepare Saudi regulatory evidence and external-validation
 > readiness is **Done** at its bounded documentation/research/governance scope
@@ -277,12 +312,12 @@
 | Last updated | 11 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-36 is Done as the documentation-only Reporting and Analytics BRD; MESP-35 and MESP-109 remain Done; MESP-23 remains In Progress; MESP-53 is the critical open Reporting dependency; MESP-54 and FIN-OD-09 / MESP-110 remain To Do and unapproved; Currency remains unexecuted.` |
-| Current implementation item | `None. No source implementation item is active. MESP-37 Saudi Localization and Compliance is the next separate To Do BRD and is not activated.` |
-| Merged-main baseline | `PR #52` merged the MESP-36 Reporting BRD at `cd3ad20876a0569245ccc6e1ff677315dfcc1a2a` from reviewed head `7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb`; PR #51 remains the historical Sales baseline at `1daffde06106ab2f1b93ae1773ccd317ddc52089`. |
+| Current activity | `MESP-112 is the single active documentation/Jira/Product Decision/governance rebaseline task under MESP-12; MESP-49 is Done for Release 1 scope only; MESP-50 remains open; MESP-23 remains In Progress; MESP-48/MESP-53/MESP-54/MESP-110 remain open; no source implementation item is active.` |
+| Current implementation item | `None. MESP-37 Saudi Localization and Compliance remains To Do and is not activated; the exact next session is localization/core ERP BRD only.` |
+| Merged-main baseline | `The current branch is the focused MESP-112 documentation branch from the merged MESP-111 baseline PR #53 at 1bcf1aa75292b927bc165a2a4fb1a8ca737763cf; the MESP-112 PR is pending review/merge.` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None. PR #52 is merged; no implementation item is active.` |
-| Current review checkpoint | `MESP-36 is Done with Jira evidence 10769-10775 and PR #52 merge cd3ad20876a0569245ccc6e1ff677315dfcc1a2a from reviewed head 7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb. MESP-35 and MESP-109 remain Done. MESP-53 is To Do/unapproved and critical; MESP-110 / FIN-OD-09 and MESP-54 remain To Do/unapproved. MESP-23 remains In Progress; Currency is unexecuted. MESP-37 is To Do and not activated. No source or production validation is claimed.` |
+| Open Pull Request | `Focused MESP-112 documentation-only PR is pending review/merge; no implementation item is active.` |
+| Current review checkpoint | `MESP-112 has recorded the Owner-approved R1 Saudi scope, PD-023, MESP-49 R1-only closure, MESP-50 open production-governance boundary, MESP-37 localization-only boundary, MESP-23 reconciliation, and MESP-111 historical addendum. Full diff review and merge evidence remain to be completed. No source or production validation is claimed.` |
 
 ---
 

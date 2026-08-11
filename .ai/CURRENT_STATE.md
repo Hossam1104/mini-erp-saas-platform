@@ -1,5 +1,48 @@
 # Current State
 
+## Current authoritative position - 11 August 2026 (MESP-112 Saudi scope rebaseline)
+
+MESP-112 - Rebaseline Release 1 Saudi localization and compliance scope is
+the single active bounded documentation/Jira/Product Decision/governance task
+under MESP-12. Its Owner-approved scope decision is recorded in
+docs/27_Release_1_Saudi_Localization_Scope_Rebaseline.md and Product Decision
+PD-023 appended to the immutable MESP-22 register. Jira activation evidence is
+comment 10848. The task is not application implementation.
+
+The current Release 1 product position is **Saudi-localized Core ERP Release
+1** / **Saudi localization baseline** for reusable B2B ERP. Arabic, English,
+RTL, bilingual core-ERP presentation/document/report boundaries, SAR/default
+Saudi locale configuration, reusable country-pack architecture, Tenant
+isolation, authorization, audit, and generic ERP capabilities remain in
+scope. Release 1 contains no production external integrations, Saudi
+statutory/tax-compliance functionality, ZATCA/FATOORA implementation or
+certification, or dedicated legal/regulatory/privacy-compliance automation.
+Those capabilities are deferred to separately approved future releases. This
+is product scope, not a legal or taxpayer-applicability conclusion.
+
+Live Jira reconciliation is:
+
+| Current fact | Verified value |
+|---|---|
+| MESP-112 | **In Progress**; single active rebaseline task under MESP-12; activation evidence 10848. |
+| MESP-49 | **Done for Release 1 scope only**; explicit statutory/ZATCA/FATOORA deferral/out-of-scope evidence 10843. |
+| MESP-50 | **To Do / open**; dedicated legal/privacy features deferred, minimum production/platform governance remains open; evidence 10844. |
+| MESP-37 | **To Do**; not activated or executed; future BRD narrowed to localization/core ERP; evidence 10845. |
+| MESP-23 | **In Progress**; exact Saudi scope reconciliation recorded in comment 10846; unrelated open rows remain open. |
+| MESP-111 | **Done**; history preserved; R1 scope addendum 10847; historical activation/closure evidence 10809/10810. |
+| MESP-22 / PD-023 | **Done / append-only register updated**; PD-023 evidence 10849. |
+| Other gates | MESP-48, MESP-53, MESP-54, and MESP-110 remain open and are not implied resolved. |
+| Current branch | docs/MESP-112-release1-saudi-scope-rebaseline; focused documentation PR is pending review/merge. |
+| Source implementation | None. No source, tests, EF/entity/schema, migration, API, UI, provider, credentials, integration, tax, privacy/legal workflow, production configuration, or Wafra-specific behavior changed. |
+| Production-capability percentages | Unchanged; this governance/rebaseline task adds no usable production capability. |
+| Next exact task | **MESP-37 - Release 1 Saudi Localization BRD only**, To Do and not activated automatically. |
+
+This overlay supersedes the immediately prior external-validation handoff only
+for the Release 1 product-scope disposition. The earlier MESP-111 readiness
+artifact, its historical verdict, the approved PRD, and all prior state
+history remain preserved. The exact next session is in root TASK.md; this
+session must not execute it.
+
 ## Current authoritative position — 11 August 2026 (MESP-111 readiness complete; MESP-37 remains To Do)
 
 MESP-111 — Prepare Saudi regulatory evidence and external-validation readiness
