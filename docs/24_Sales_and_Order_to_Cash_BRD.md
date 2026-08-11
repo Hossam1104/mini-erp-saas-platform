@@ -1,11 +1,11 @@
 # B2B Sales and Order-to-Cash Business Requirements Document
 
-> **Version:** v0.1 - Approved Business Baseline  
-> **Jira:** MESP-35 - Produce B2B Sales and Order-to-Cash BRD  
-> **Parent:** MESP-9 - EPIC 09 - Sales and Order-to-Cash  
-> **BRD sequence:** Position 10 of 15, following the approved Finance baseline  
-> **Date:** 11 August 2026  
-> **Scope:** Release 1 B2B ERP only; Wafra is validation-only  
+> **Version:** v0.1 - Approved Business Baseline
+> **Jira:** MESP-35 - Produce B2B Sales and Order-to-Cash BRD
+> **Parent:** MESP-9 - EPIC 09 - Sales and Order-to-Cash
+> **BRD sequence:** Position 10 of 15, following the approved Finance baseline
+> **Date:** 11 August 2026
+> **Scope:** Release 1 B2B ERP only; Wafra is validation-only
 > **Status:** Approved business baseline; documentation-only; no implementation authorization
 
 ## 1. Document control and reading rules
