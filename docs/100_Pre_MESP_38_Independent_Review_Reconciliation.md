@@ -8,8 +8,9 @@
 | Reviewed baseline | `main` at `fc46fc9`, the synchronized MESP-37 closure and MESP-38 handoff baseline |
 | Original verdict | `HOLD — CORRECTION REQUIRED BEFORE MESP-38` |
 | Findings | 0 Critical, 2 High, 2 Medium, 2 Low (`O5-PRE38-001` through `O5-PRE38-006`) |
-| Reconciliation task | MESP-114, completed only after the corrections below were validated |
+| Reconciliation task | MESP-114 — **Done** after validation and merge; closure evidence Jira comment 10897 |
 | Durable Inventory owner | MESP-113 under MESP-8, still `To Do` and unapproved |
+| Pull Request | #56, reviewed at `47195bcce103903775773e77788a1b53525d910c`, merged at `7ce1588ad20ea8ad1d82f6cafd39b370bedf0490` |
 | Scope result | Governance, state, handoff, Jira, and one Inventory cross-reference only; no production capability changed |
 
 ## Finding dispositions
@@ -25,9 +26,9 @@
 
 ## Preserved gates and handoff
 
-The reconciliation does not approve any open business decision or alter the
-Release 1 B2B ERP boundary. MESP-23 remains In Progress; MESP-38 remains
-`To Do` and was not executed; and MESP-48, MESP-50, MESP-53, MESP-54, and
+The reconciliation is complete and does not approve any open business decision
+or alter the Release 1 B2B ERP boundary. MESP-23 remains In Progress; MESP-38
+remains `To Do` and was not executed; and MESP-48, MESP-50, MESP-53, MESP-54, and
 MESP-110 remain open. MESP-54 still owns unresolved exchange-rate sourcing
 and update policy, and MESP-110 still owns unresolved Finance year-end,
 Payment Term, and posting-dimension detail. MESP-113 does not resolve
