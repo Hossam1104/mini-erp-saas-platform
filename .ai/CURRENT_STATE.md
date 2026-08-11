@@ -1,6 +1,46 @@
 # Current State
 
-## Current authoritative position - 10 August 2026 (MESP-34 Finance BRD Done)
+## Current authoritative position - 11 August 2026 (MESP-109 Finance checkpoint reconciliation)
+
+MESP-109 is the single active bounded Finance reconciliation item. It
+reconciles accepted independent Opus 5 findings O5-FIN-001 through O5-FIN-010
+against the approved MESP-34 Finance BRD. The verdict is **PASS WITH
+NON-BLOCKING FINDINGS**. Jira activation evidence is comment `10752`.
+The work is documentation, Jira, traceability, and governance only: no source,
+test, database, schema, migration, EF, API, UI, provider, infrastructure, or
+production configuration behavior is authorized.
+
+The minimum new open Finance detail bundle is FIN-OD-09 / MESP-110, `Decide
+Finance year-end, Payment Term, and posting-dimension policy`, under the
+MESP-23 decision-register governance. It is To Do and unapproved; creation and
+scope evidence is comment `10753`. It does not resolve MESP-54 or any existing
+MESP-41 through MESP-56 decision.
+
+MESP-34 remains historically **Done** through PR #47 and closure comment
+`10751`. MESP-35 remains **To Do** and must not be activated. MESP-23 remains
+In Progress. MESP-54 and Exchange Rate remain open; Currency is not executed,
+although M95-SL-06 is conceptually Ready for a future separate readiness path.
+M95-SL-09 Exchange Rate is not Ready. Release 1 remains B2B ERP only, and
+MESP-48/MESP-50 production gates remain unchanged.
+
+The canonical Finance artifact is still
+`docs/23_Finance_and_Accounting_BRD.md`, with the bounded reconciliation
+recorded in `docs/99_Independent_Opus_5_Finance_BRD_Reconciliation.md`.
+Focused correction PR #50 is open as a draft from reviewed branch head
+`56696d32f6a2fb4a6fd17a939286d22ff59f2f22`; merge evidence is to be added
+after the complete branch diff is reviewed and merged. The root `TASK.md` remains the complete,
+exact MESP-35 fresh-session prompt and is not executed in this session.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-109 | **In Progress**; independent Opus 5 Finance reconciliation; activation comment `10752`. |
+| FIN-OD-09 / MESP-110 | **To Do / unapproved**; Finance year-end, Payment Term, and posting-dimension policy; creation/scope comment `10753`. |
+| MESP-34 / MESP-35 | MESP-34 **Done**; MESP-35 **To Do** and not activated. |
+| MESP-23 / MESP-54 | MESP-23 **In Progress**; MESP-54 **To Do/open**. |
+| Current branch | `agent/MESP-109-finance-opus-reconciliation`; PR #50 draft at reviewed head `56696d32f6a2fb4a6fd17a939286d22ff59f2f22`; based on synchronized main `24d7112bf5bf1dfdb14d5e9c38bfc46dfaeeb62e`. |
+| Production-capability percentages | Unchanged; this session adds no usable production capability. |
+
+## Historical authoritative position - 10 August 2026 (MESP-34 Finance BRD Done)
 
 MESP-34 is **Done** as the approved, documentation-only Release 1 B2B
 Finance and Accounting business baseline. The canonical artifact is

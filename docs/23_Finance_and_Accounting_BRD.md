@@ -13,6 +13,12 @@
 > **Scope:** Release 1 B2B ERP only; Wafra is validation-only
 > **Status:** Approved business baseline; documentation-only; no implementation authorization
 
+> **Independent-review reconciliation overlay:** MESP-109 is reconciling the
+> accepted non-blocking findings O5-FIN-001 through O5-FIN-010 from the
+> independent Opus 5 Finance checkpoint. The approved MESP-34 baseline remains
+> historically Done; this overlay adds traceability and bounded governance
+> corrections only. See `docs/99_Independent_Opus_5_Finance_BRD_Reconciliation.md`.
+
 ## 1. Document control and reading rules
 
 This document is the Release 1 business-requirements baseline for Finance and
@@ -89,7 +95,7 @@ invent Finance policy.
 | `docs/00_ERP_Business_Glossary.md`                                             | Controlled meanings for Company/Legal Entity, GL, subledger, journal, posting, reversal, AP, AR, allocation, reconciliation, currency, and valuation. Terms marked Draft or Requires Business Decision remain open.                                                                                                                                                                  |
 | MESP-22 Jira Product Decision Register and MESP-23 live Jira decision register | Named approved decisions and the unresolved decision register. MESP-52/PD-020 and MESP-56/PD-021 are preserved exactly; no other decision is closed by this BRD.                                                                                                                                                                                                                     |
 | `docs/15_Foundation_Release_1_Lean_Implementation_Specification.md`            | Server-derived Tenant context, downward Company/Branch/Warehouse scope, immutable audit, approval separation, optimistic-concurrency and idempotency expectations, and explicit MESP-48/MESP-50 gates.                                                                                                                                                                               |
-| `docs/Decisions.md` and applicable ADRs                                        | ADR-002 project/module ownership, ADR-004 authorization/session seam, ADR-006 module persistence and cross-module transaction boundary, ADR-007/008 durable work and reconciliation, ADR-009 private files, ADR-011 localization requirement, ADR-012 production hosting/RPO/RTO, ADR-014 retention/privacy/purge, ADR-016 isolation review, and ADR-018 test/production-like gates. |
+| `docs/Decisions.md` and applicable ADRs                                        | ADR-002 project/module ownership, ADR-004 authorization/session seam, ADR-006 module persistence and cross-module transaction boundary, ADR-007/008 durable work and reconciliation, ADR-009 private files, ADR-010 OpenTelemetry exporter and operational-data retention, ADR-011 localization requirement, ADR-012 production hosting/RPO/RTO, ADR-014 retention/privacy/purge, ADR-015 Saudi e-invoicing adapter and credential boundary, ADR-016 isolation review, ADR-017 external partner/API authentication, and ADR-018 test/production-like gates. |
 | `docs/94_Product_Delivery_Master_Plan.md`                                      | Phase 2 BRD exit criteria, domain sequence, one active item at a time, and the separate MESP-35 handoff.                                                                                                                                                                                                                                                                             |
 
 ## 3. Business purpose and outcomes
@@ -206,8 +212,8 @@ business boundaries in this BRD:
 | Reconciliation                | A controlled comparison between source, subledger, control account, GL, bank, or inventory valuation, with variance evidence and ownership.                                                                            |
 | Functional/base currency      | Company/Legal Entity currency used for its books. For Saudi Companies, SAR is the approved product default, not a universal rule for every Tenant.                                                                     |
 | Transaction/document currency | Currency in which a source document or monetary event is expressed and preserved.                                                                                                                                      |
-| Reporting currency            | A reporting view/currency owned by Reporting where approved; it is not a consolidation currency.                                                                                                                       |
-| Exchange-rate fact            | Rate, date, source, effective context, precision, and conversion evidence used at posting. Rate source and revaluation policy remain MESP-54.                                                                          |
+| Reporting currency            | A later reporting view/currency owned by Reporting only where MESP-54 approves it; it is not consolidation, does not create second books, and does not transfer Finance ownership of monetary facts or rate evidence. |
+| Exchange-rate fact            | Rate, date, source, effective context, precision, and conversion evidence used by Finance; source, approval, conversion, rounding, and revaluation policy remain MESP-54 / FIN-OD-04. |
 
 ## 7. Non-negotiable business invariants
 
@@ -291,11 +297,12 @@ The business must be able to distinguish:
   inventory, and equity treatment where approved; and
 - account mapping versions and effective dates.
 
-Cost center and other dimensions are Finance-owned concepts but remain subject
-to MESP-34 policy confirmation where the glossary marks them Draft for BRD
-Validation. This BRD requires dimensions to be attributable and reportable
-when a posting policy requires them; it does not invent a mandatory dimension
-catalogue or a universal account tree.
+Cost center and other posting dimensions are Finance-owned concepts. This BRD
+requires dimensions to be attributable and reportable when an approved posting
+policy requires them; it does not invent a mandatory dimension catalogue or a
+universal account tree. The Release 1 dimension catalogue and Cost Center
+policy remain an explicit open Finance detail bundle in FIN-OD-09 / MESP-110,
+not a circular confirmation request against the closed MESP-34 task.
 
 ### 8.3 Posting-rule catalogue
 
@@ -314,7 +321,7 @@ The catalogue must:
 
 The exact mapping of inventory valuation, landed cost, returns, adjustments,
 negative stock, payment methods, tax, and currency differences remains an open
-decision bundle. A recommendation in section 23 is not a posted rule.
+decision bundle. A recommendation in section 22.1 is not a posted rule.
 
 ### 8.4 Journal and posting foundation
 
@@ -356,7 +363,7 @@ valuation evidence; Finance remains the owner of accounting meaning.
 
 Each workflow below states the business trigger and preconditions, main path,
 alternative path, and stop conditions. Detailed account values and decision
-rows remain in section 23.
+rows remain in section 22.1.
 
 ### 9.1 Period and configuration readiness
 
@@ -555,8 +562,15 @@ evidence. Ordinary users and source modules cannot bypass a closed period.
 Closing a period requires the named close checklist, including relevant AP/AR,
 cash/bank, tax, inventory valuation, and GL reconciliation status. A failed or
 unresolved reconciliation remains visible and blocks close when the approved
-policy says it is blocking. This BRD does not invent a universal calendar,
-close checklist threshold, or reopen authority; the policy bundle remains open.
+policy says it is blocking. Each accounting Company/Legal Entity has a
+Finance-owned Fiscal Calendar with defined Fiscal Year and Fiscal Period
+boundaries. Closing a Fiscal Year must preserve immutable posted history and
+produce controlled, attributable, and reproducible year-end evidence;
+corrections use approved reversal/adjustment and, where permitted, a
+controlled reclose rather than rewriting prior effects. The exact profit/loss
+closing or carry-forward, retained-earnings or equity entry, reopen authority,
+and derived-reporting treatment remain open in FIN-OD-01 and the bounded
+FIN-OD-09 / MESP-110 decision bundle. This BRD does not invent those mechanics.
 
 ### 9.10 Reversal, correction, and cancellation
 
@@ -598,12 +612,16 @@ enabled.
 | Purchase Request / quotation                     | Procurement                     | No AP liability or cash effect. Commercial intent remains traceable.                                                                                             | Procurement approval policy; no Finance posting.                                                          |
 | Purchase Order                                   | Procurement                     | No stock and no AP liability solely because the PO exists; commitment reporting may be exposed without GL liability.                                             | MESP-42 approval and MESP-44 matching policy remain open.                                                 |
 | Supplier confirmation                            | Procurement                     | No stock and no AP liability solely because confirmation exists.                                                                                                 | MESP-43 supplier-confirmation policy remains open.                                                        |
-| Goods Receipt                                    | Inventory                       | Physical stock ledger is authoritative. Any valuation/accounting handoff must preserve Inventory evidence and avoid creating AP.                                 | MESP-33 valuation boundary plus Finance account/valuation policy; MESP-41/45/44 dependencies remain open. |
+| Goods Receipt                                    | Inventory                       | Physical stock ledger is authoritative. Where an approved policy recognizes inventory value before a Purchase Invoice, Finance preserves a balanced, visible, source-linked interim effect without creating AP before the invoice. | MESP-33 valuation boundary plus FIN-OD-01 account/valuation policy; MESP-41/44/45 and FIN-OD-09 dependencies remain open. |
+| Warehouse Transfer                               | Inventory                       | Physical source/destination or in-transit movement remains Inventory-owned. Within the same legal/accounting boundary it is not revenue, AP, or AR; Finance interprets only an approved value/variance handoff. | Inventory transfer/valuation policy and FIN-OD-01 remain open; no double-counting and full source linkage are required. |
+| Stock Adjustment                                 | Inventory                       | Inventory records the authorized physical correction. A value-affecting adjustment or write-off reaches Finance only through an approved handoff with balanced, attributable, immutable evidence. | MESP-45 and FIN-OD-01 determine the accounting treatment; this row assigns no account or automatic write-off. |
+| Inventory Count variance                         | Inventory                       | Inventory preserves the count and variance evidence. A financial effect occurs only after the approved review/handoff; differences remain visible and are not hidden by a balancing entry. | MESP-45 and FIN-OD-01 remain open for thresholds, approval, valuation, and mapping. |
+| Stock Issue                                     | Inventory                       | A non-sales inventory-out event is physical Inventory evidence. It does not create AR or revenue merely by issue; Finance receives an effect only where approved policy requires it. | MESP-45 and FIN-OD-01 remain open; no account or COGS rule is invented here. |
 | Purchase Invoice                                 | Finance with Procurement source | AP liability and input-tax effect when valid and approved for posting; no stock effect. Source, match result, tax basis, currency/rate, and period are retained. | MESP-44 matching, MESP-47 payment, MESP-49 Saudi e-invoice, MESP-54 rate policy.                          |
 | Supplier Payment                                 | Finance / Treasury              | Cash/bank reduction and AP allocation/settlement, or visible unapplied/unknown status.                                                                           | MESP-47 payment/receipt method and bank outcome policy.                                                   |
 | Supplier Return / credit                         | Inventory + Finance             | Physical return evidence and linked supplier credit/AP correction; no silent reversal or disconnected stock/finance result.                                      | MESP-33 return policy and MESP-44/47/54 dependencies.                                                     |
 | Sales order / reservation                        | B2B Sales                       | No AR liability or revenue solely from order/reservation; Finance receives no posted effect until approved invoice/valuation event.                              | MESP-35 source lifecycle and MESP-46 credit policy.                                                       |
-| Customer delivery / authorized service milestone | B2B Sales + Inventory           | Source for later inventory/COGS and/or service accounting effect under approved policy; preserve quantity, cost, source, and Company evidence.                   | MESP-33 valuation and MESP-35 delivery/milestone policy; exact mapping remains Finance-owned.             |
+| Customer delivery / authorized service milestone | B2B Sales + Inventory           | Delivery alone does not create AR or revenue. It is a source for later inventory/COGS and/or service accounting only under an approved policy; preserve quantity, cost, source, and Company evidence without inventing unbilled revenue or revenue recognition. | MESP-33 valuation and MESP-35 delivery/milestone policy; exact mapping remains Finance-owned.             |
 | Sales Invoice                                    | Finance with Sales source       | AR, revenue, and output-tax effect when valid and approved; source totals, tax basis, currency/rate, period, and document identity are retained.                 | MESP-35 invoice source; MESP-46 credit; MESP-49 Saudi; MESP-54 rate.                                      |
 | Customer Receipt                                 | Finance / Treasury              | Cash/bank increase and AR allocation/settlement, or visible unapplied/unknown status.                                                                            | MESP-47 method and bank outcome policy.                                                                   |
 | Customer Return / credit note                    | Sales + Inventory + Finance     | Linked inventory, AR/revenue/tax correction with preserved original and reason; no silent deletion.                                                              | MESP-33 return evidence, MESP-35 lifecycle, MESP-49/54 policy.                                            |
@@ -611,6 +629,18 @@ enabled.
 | Bank statement / reconciliation adjustment       | Treasury / Finance              | Statement evidence, matching status, controlled cash/bank effect, variance, owner, and sign-off.                                                                 | MESP-47 method and MESP-53 report/reconciliation catalogue.                                               |
 
 ### 10.3 Handoff rules
+
+When Inventory Goods Receipt creates a recognized inventory value before the
+Purchase Invoice, the approved Finance posting policy must preserve a balanced,
+visible, and reconcilable interim effect linked to the receipt, accepted
+quantity, and valuation evidence. It must not create AP before the invoice.
+The later invoice clears, reclassifies, or otherwise reconciles that interim
+position under the approved policy while preserving the original receipt,
+invoice, matching, partial/unmatched, correction, and audit history. Unmatched
+or partial balances remain attributable, aged, visible, and owned; quantity,
+price, and valuation differences may not be hidden. Exact accounts, mappings,
+and clearing/accrual policy remain FIN-OD-01 and the owning decision, not a
+new requirement in this BRD.
 
 1. The source domain owns the source document lifecycle and physical or
    commercial facts; Finance owns accounting interpretation and GL effect.
@@ -676,6 +706,10 @@ Depending on the document, Finance must retain:
   settlement, and dispute status;
 - period/calendar status and any adjustment/reopen evidence;
 - source quantities/cost/valuation facts needed to reconcile Inventory effects;
+- interim receipt-to-invoice accounting status, clearing/reconciliation
+  reference, match or clear disposition, amount, age, owner, variance, and
+  correction chain where a Goods Receipt has a recognized value before the
+  Purchase Invoice;
 - bank/cash account, statement reference, matching status, and reconciliation
   disposition; and
 - audit, correlation, failure, retry, unknown-outcome, notification, import,
@@ -779,6 +813,7 @@ Finance must provide a named reconciliation path for each material balance:
 
 | Reconciliation      | From / to                                                                            | Minimum business evidence                                                                    |
 | ------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Receipt-to-invoice interim | Inventory Goods Receipt/valuation evidence -> interim Finance effect -> Purchase Invoice/clearing/reconciliation | Receipt identity, accepted quantity, valuation, balanced effect, no AP before invoice, match status, amount, age, owner, variance, and disposition. |
 | AP control          | Supplier invoices, credit notes, payments, allocations → AP control account and GL   | Item counts, gross/open balances, aged exceptions, period, owner, variance, disposition.     |
 | AR control          | Customer invoices, credits, receipts, allocations → AR control account and GL        | Same evidence plus unapplied/on-account and overdue classification.                          |
 | Cash/bank           | Bank/cash statement/evidence → Finance cash/bank balance                             | Statement identity, match status, unmatched/duplicate rows, adjustments, variance, sign-off. |
@@ -786,6 +821,7 @@ Finance must provide a named reconciliation path for each material balance:
 | Tax                 | Purchase/sales tax facts → tax control/reporting result                              | Rule/rate/version, basis, input/output classification, rounding, exceptions, owner.          |
 | Source-to-GL        | Source document/event → subledger → journal → report                                 | Stable lineage, posting status, reversals, failures, duplicates, and period.                 |
 | Opening balances    | Approved migration source → opening subledger/GL balances                            | Source extract, mapping, preview, tie-out, approval, and rollback/cutover evidence.          |
+
 
 Reconciliation is not satisfied by a matching total alone. The business must be
 able to locate the source, explain timing differences, classify unknown or
@@ -951,7 +987,14 @@ The Saudi readiness boundary is:
 - keep privacy, residency, retention, legal hold, purge, backup, and restoration
   decisions in MESP-50 with qualified privacy/legal and operations review; and
 - complete ADR-011 before localized search, forms, and bilingual business
-  document implementation, and preserve ADR-012/013/014/016 production gates.
+  document implementation, and preserve ADR-012/013/014/016 production gates;
+- keep Finance operational telemetry, exporter access, redaction, and
+  operational-data retention bounded by ADR-010;
+- keep any Saudi e-invoicing adapter and credential boundary behind qualified
+  MESP-49 validation and ADR-015; and
+- use ADR-017 only when an approved external partner/API integration requires
+  machine authentication, never by reusing first-party browser cookies or
+  inventing an integration in this BRD.
 
 No statement in this BRD is legal, tax, banking, or statutory advice.
 
@@ -971,6 +1014,12 @@ for:
   evidence-governance decisions under MESP-50;
 - Saudi e-invoicing/tax/compliance validation under MESP-49;
 - localization/Arabic/RTL and bilingual document evidence under ADR-011;
+- operational telemetry, redaction, controlled access, exporter, and retention
+  evidence under ADR-010;
+- the isolated Saudi e-invoicing adapter and credential boundary under ADR-015
+  after qualified MESP-49 validation; and
+- the approved-integration-only external partner/API authentication boundary
+  under ADR-017;
 - production hosting, availability, RPO/RTO, key/secret, storage, and
   production-like test decisions under ADR-012, ADR-013, ADR-014, ADR-016, and
   ADR-018; and
@@ -1066,14 +1115,15 @@ Decision Register with scope and effective point.
 
 | Bundle    | Decision / linked Jira                                                                                      | Recommended safe default (not approved)                                                                                                                               | Alternatives that remain open                                                                                                         | Consequence and due point                                                                                                                                              | Decision owner / specialist                                                                              |
 | --------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| FIN-OD-01 | Posting, account-determination, valuation, correction, and period policy; Finance impact of MESP-41, 44, 45 | Use explicit, versioned posting rules; require three-way/valuation exceptions to be resolved before affected posting; block negative-stock accounting until approved. | Different matching tolerance, negative-stock treatment, valuation/landed-cost/return/adjustment policy, or controlled exception path. | Without this, affected P2P, Inventory, and source posting cannot be enabled safely. Decide before Finance implementation and before MESP-35 depends on the foundation. | Finance Controller with Procurement and Inventory concurrence.                                           |
+| FIN-OD-01 | Posting, account/dimension determination, valuation, correction, period, and source-to-Finance interim policy; Finance impact of MESP-41, 44, 45 | Use explicit, versioned posting rules; require three-way/valuation exceptions to be resolved before affected posting; block negative-stock accounting until approved. | Matching tolerance, interim clearing/accrual accounts, negative-stock treatment, valuation/landed-cost/return/adjustment policy, year-end interaction, or controlled exception path. | Without this, affected P2P, Inventory, and source posting cannot be enabled safely. Decide before Finance implementation and before MESP-35 depends on the foundation. | Finance Controller with Procurement and Inventory concurrence. |
 | FIN-OD-02 | Approval and delegation policy; MESP-42, MESP-44, MESP-46, MESP-55                                          | One named approver where required, controlled reassignment with evidence, no self-approval, and no unbounded delegation.                                              | Thresholds, serial/parallel tiers, escalation, expiry, out-of-office delegation, and source-specific approval.                        | Without this, approval boundaries and SoD cannot be made implementation-ready. Decide before workflow implementation.                                                  | Finance Controller/Product Owner with Procurement and Sales owners; specialist review for SoD as needed. |
 | FIN-OD-03 | Cash, bank, payment, receipt, and external outcome policy; MESP-47                                          | Manual bank transfer/cash methods first, with explicit pending/unknown/rejected outcomes and reconciliation.                                                          | Cheque lifecycle, card/gateway, bank feed, auto-match, or other methods.                                                              | Determines cash/bank data, integration, reconciliation, and settlement behavior. Decide before cash/payment implementation and production pilot.                       | Treasury / Finance Controller; qualified banking partner where integration is chosen.                    |
-| FIN-OD-04 | Exchange-rate source, cadence, effective date, override, rounding, and revaluation; MESP-54                 | Finance-approved effective-dated rate table with manual review/override; preserve source/date and block missing rates.                                                | Approved external feed, manual override of feed, period-end revaluation, or another policy.                                           | Determines multi-currency posting and reporting; decide before multi-currency implementation and before MESP-35 money flows.                                           | Finance/Treasury; qualified accounting adviser if revaluation/statutory treatment is selected.           |
+| FIN-OD-04 | Functional/transaction/reporting currency contract, Reporting Currency presentation boundary, exchange-rate source, cadence, effective date, override, rounding, conversion evidence, and revaluation; MESP-54 | No Reporting Currency or rate policy is approved by this BRD; preserve Finance monetary facts and require an Owner decision before enabling the affected use. | Additional Release 1 Reporting Currency or no additional Reporting Currency; approved external feed, manual effective-dated rates, override, period-end revaluation, and other conversion/rate-evidence policies. | Determines multi-currency accounting and later reporting consumption; MESP-54 must be decided before multi-currency or Reporting Currency implementation and before MESP-35 money flows. Reporting Currency is not consolidation and does not create second books. | Finance/Treasury and Reporting owners; qualified accounting adviser if revaluation/statutory treatment is selected. |
 | FIN-OD-05 | Report catalogue, freshness, reconciliation ownership, saved views, scheduling/export; MESP-53              | Minimum core Finance reports with named owners, explicit freshness/status, and controlled export.                                                                     | Statutory-only, operational catalogue, configurable/saved views, scheduled delivery, and broader reconciliation.                      | Determines Finance acceptance and MESP-36 Reporting handoff. Decide before Reporting BRD implementation.                                                               | Finance Controller, Product Owner, and named report owners.                                              |
 | FIN-OD-06 | Saudi e-invoicing/evidence launch scope; MESP-49                                                            | Obtain qualified Saudi validation before committing to a production e-invoice phase; preserve configurable bilingual/tax evidence.                                    | Content/Arabic only, generate/archive, applicable integration phase, or phased pilot.                                                 | Determines external integration, invoice evidence, launch claim, and compliance risk. Decide before MESP-37 / production.                                              | Finance Controller plus qualified Saudi tax/compliance adviser.                                          |
 | FIN-OD-07 | Wafra migration and opening balances; MESP-51                                                               | Configuration/masters plus reconciled opening inventory, AP, AR, cash, and GL; no full history until explicitly approved.                                             | Open POs/SOs/unpaid invoices, historical transactions, attachments, or broader scope.                                                 | Determines cutover, reconciliation, rollback, and data-integrity risk. Decide before MESP-40/migration execution.                                                      | Wafra business owner, Finance Controller, Product Owner; migration specialist as needed.                 |
 | FIN-OD-08 | Residency, retention, privacy, legal hold, purge, backup/recovery; MESP-50                                  | Keep all production claims deferred until qualified privacy/legal and operations evidence exists.                                                                     | Single region, KSA residency, tiered, or contract-driven policy.                                                                      | Determines production, contracts, audit evidence, and recovery posture. Decide before production and affected data handling.                                           | Data Protection/Compliance, Platform Operations, qualified Saudi legal/privacy adviser.                  |
+| FIN-OD-09 | Finance detail bundle: fiscal-year/year-end closing and carry-forward, Payment Term Release 1 shape, and posting-dimension catalogue including Cost Center; MESP-110 | Keep the details open; publish an explicit versioned contract with effective point, historical preservation, reconciliation evidence, and named owner before dependent readiness. | Retained-earnings/closing-entry versus derived-reporting treatment; Payment Term base-date/interval/schedule/installment and early-discount alternatives; dimension catalogue and attribution/reportability choices. | Blocks Finance implementation detail, M95-SL-07 Payment Term readiness, and any MESP-35 money-flow dependency until the accountable owner decides. It does not resolve MESP-54. | Finance Controller / Head of Finance with Product, Procurement, Inventory, and later Sales concurrence. |
 
 ### 22.2 Preserved decision register status
 
@@ -1094,6 +1144,10 @@ MESP-41, MESP-42, MESP-43, MESP-44, MESP-45, MESP-46, MESP-47, MESP-48,
 MESP-49, MESP-50, MESP-51, MESP-53, MESP-54, and MESP-55 remain open. This
 document records their Finance impact and does not close them. Inventory
 decisions are not closed merely because Finance depends on their handoff.
+
+FIN-OD-09 is a new open Finance detail bundle recorded as MESP-110 under the
+MESP-23 governance register. It is **To Do**, unapproved, and does not alter
+the status or scope of MESP-41 through MESP-56.
 
 ### 22.3 Production and architecture gates not resolved here
 
@@ -1126,12 +1180,15 @@ This BRD is ready for Owner approval when the following are true:
 - no implementation artifact, production claim, legal/tax/banking conclusion,
   or next Jira activation is implied.
 
-After Owner approval, the exact approval comment and reviewed content head must
-be recorded on MESP-34. A focused PR may merge only after the complete diff is
-reviewed and validation is clean. MESP-34 closure must then link the canonical
-document, PR merge evidence, Jira activation/validation/approval comments, the
-MESP-23 handoff, updated repository state/tracker, and the separately prepared
-but **not executed** MESP-35 next-session handoff.
+The original Owner approval, reviewed content head, focused PR, and MESP-34
+closure are recorded in the table below. A later bounded correction may merge
+only after the complete diff is reviewed and validation is clean. The
+independent-review reconciliation must link the canonical document, correction
+PR merge evidence, Jira validation and MESP-23 handoff comments, updated
+repository state/tracker, the open FIN-OD-09 decision, and the separately
+prepared but **not executed** MESP-35 next-session handoff. MESP-34 remains
+historically Done; this correction does not reopen or redesign its approved
+Finance domain.
 
 ## 24. Approval record
 
@@ -1140,7 +1197,7 @@ but **not executed** MESP-35 next-session handoff.
 | Entry activation      | MESP-34 Jira comment `10746`; status In Progress.                                                        |
 | Owner approval        | MESP-34 Jira comment `10748`; Hossam standing Owner approval for the bounded BRD session.                |
 | Reviewed content head | `7d9de5d` — approved requirements head; the later evidence metadata update does not change requirements. |
-| Merge/closure         | To be recorded after clean focused PR review and merge.                                                  |
+| Merge/closure         | Original MESP-34 closure: PR #47 merged at `a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b`; final branch head `72aa210d462f783671f1b3b33fcdea4955567b9c`; Jira closure comment `10751`. The independent-review correction is tracked separately in MESP-109 and `docs/99_Independent_Opus_5_Finance_BRD_Reconciliation.md`. |
 | Open decisions        | MESP-23 register; no open decision is silently resolved here.                                            |
 
 **Stop condition:** This document must not be followed in this session by

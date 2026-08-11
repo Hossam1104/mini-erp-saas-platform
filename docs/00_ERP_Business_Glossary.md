@@ -291,9 +291,9 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** Maintenance costs posted to the maintenance cost center while sitting in a single expense account.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** Standard ERP practice. Requires confirmation in the Finance and Accounting BRD (MESP-34).
+**Source:** `docs/23_Finance_and_Accounting_BRD.md` §8.2 defines the Finance-owned reporting-dimension concept. The Release 1 dimension catalogue and Cost Center policy remain open in FIN-OD-09 / MESP-110; this is not a circular dependency on closed MESP-34.
 
 ## Fiscal Calendar
 
@@ -309,9 +309,9 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** A financial year running January to December with twelve monthly periods.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** PRD v1.2 — finance foundation. Period structure requires confirmation in the Finance and Accounting BRD (MESP-34).
+**Source:** `docs/23_Finance_and_Accounting_BRD.md` §9.9 defines the Finance-owned Company/Legal Entity calendar concept. Exact Fiscal Year boundary, year-end, carry-forward, retained-earnings, reopen, and reclose mechanics remain FIN-OD-01 / FIN-OD-09 / MESP-110.
 
 ## Fiscal Period
 
@@ -327,9 +327,9 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** July is closed, so a July correction is posted as a reversal dated in August.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** Standard ERP practice aligned to PRD v1.2 posting principles. Requires confirmation in MESP-34.
+**Source:** `docs/23_Finance_and_Accounting_BRD.md` §9.9 defines the open/soft-close/closed period control and immutable-history boundary. Exact close/reopen/year-end policy remains FIN-OD-01 / FIN-OD-09 / MESP-110.
 
 ## Country Pack
 
@@ -643,9 +643,9 @@ This glossary does **not** answer any open decision. Where a term depends on an 
 
 **Example:** Net 30 days from invoice date.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** PRD v1.2 — finance requirements. Term structures require confirmation in MESP-34.
+**Source:** The Payment Terms concept is defined in `docs/23_Finance_and_Accounting_BRD.md` §§6, 9.3, 9.5 and the Master Data contract. Exact Release 1 shape, base date, interval versus schedule/installments, discount semantics, due-date ownership, and historical preservation remain FIN-OD-09 / MESP-110.
 
 ## Credit Limit
 
@@ -1941,9 +1941,9 @@ Product-only owner decision evidence (Jira comment `10671`).
 
 **Example:** A purchases journal, a sales journal, and a manual journal with tighter approval control.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** Standard ERP practice aligned to PRD v1.2. Journal structure requires confirmation in MESP-34.
+**Source:** `docs/23_Finance_and_Accounting_BRD.md` §§6, 8.4 and 11 define Journal as a controlled grouping of balanced postings; exact catalogue and approval policy remain FIN-OD-01 where applicable.
 
 ## Journal Entry
 
@@ -2031,9 +2031,9 @@ Product-only owner decision evidence (Jira comment `10671`).
 
 **Example:** A rule directing goods receipts of a given item category to a specific inventory account.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** PRD v1.2 — account determination requirement. Rule dimensions require confirmation in MESP-34.
+**Source:** `docs/23_Finance_and_Accounting_BRD.md` §8.3 defines the Finance-owned Posting Rule concept and visible versioned catalogue. Exact account, dimension, valuation, and exception policy remains FIN-OD-01 / FIN-OD-09 / MESP-110.
 
 ## Reversal
 
@@ -2121,9 +2121,9 @@ Product-only owner decision evidence (Jira comment `10671`).
 
 **Example:** One receipt allocated across two invoices, partly settling the second.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** Standard ERP practice aligned to PRD v1.2. Allocation rules require confirmation in MESP-34.
+**Source:** `docs/23_Finance_and_Accounting_BRD.md` §§6, 9.6 and 15 define whole/partial matching and reconciliation evidence. Exact payment/receipt policy remains MESP-47 and applicable Finance decisions.
 
 ## Settlement
 
@@ -2139,9 +2139,9 @@ Product-only owner decision evidence (Jira comment `10671`).
 
 **Example:** An invoice moving to fully settled once the final partial payment is allocated.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Approved Product Baseline
 
-**Source:** Standard ERP practice aligned to PRD v1.2. Requires confirmation in MESP-34.
+**Source:** `docs/23_Finance_and_Accounting_BRD.md` §§6, 9.4, 9.6 and 15 define Settlement as the resulting fully discharged state under approved allocation rules. Payment methods and settlement policy remain MESP-47 and applicable Finance decisions.
 
 ## Reconciliation
 
@@ -2289,7 +2289,7 @@ Product-only owner decision evidence (Jira comment `10671`).
 
 ## Rounding Difference
 
-**Approved definition:** The small residual amount arising from currency conversion, tax calculation, or unit price multiplication, posted to a designated account so that entries remain balanced.
+**Approved definition:** The small residual amount arising from currency conversion, tax calculation, or unit price multiplication that must be preserved and routed through the approved rounding treatment so entries remain balanced.
 
 **Business meaning:** Keeps the books balanced without hiding or manually forcing differences.
 
@@ -2301,9 +2301,9 @@ Product-only owner decision evidence (Jira comment `10671`).
 
 **Example:** A minor residual on a converted foreign-currency invoice posted to the rounding account.
 
-**Approval status:** Draft for BRD Validation
+**Approval status:** Requires Business Decision
 
-**Source:** Standard ERP practice aligned to PRD v1.2. Rounding precision and treatment require confirmation in MESP-34 and MESP-37.
+**Source:** `docs/23_Finance_and_Accounting_BRD.md` §8.3 and FIN-OD-04 / MESP-54. Exact precision, destination, conversion, revaluation, and rounding treatment remain gated; MESP-37 is not authorized to infer them.
 
 ---
 
@@ -2725,13 +2725,14 @@ These terms cannot be finalised until the linked Jira decision Task is answered 
 | Reconciliation | MESP-53 — report catalogue and reconciliation ownership |
 | Exchange Rate, Exchange Rate Date, Exchange Rate Source | MESP-54 — exchange-rate source and update process |
 | Reporting Currency | MESP-54; consolidated reporting remains excluded by the approved MESP-56 decision |
+| Rounding Difference | MESP-54 / FIN-OD-04 — conversion, precision, rounding, and revaluation treatment |
 | Attachment, Audit Event retention | MESP-50 — tenant data residency and retention policy |
 
 ## Draft for BRD Validation — requires workshop confirmation
 
 These terms use standard ERP meanings proposed by business analysis. They are not product decisions and must be confirmed in the named domain BRD, but they do not block on an open decision.
 
-Department, Cost Center, Fiscal Calendar, Fiscal Period, Access Scope, Separation of Duties, Employee, Customer Contact, Payment Terms, Item, SKU, Barcode, Category, Purchase Unit, Sales Unit, Price List, Supplier Quotation, Goods Receipt Line, Rejected Quantity, Available Quantity, Expected Quantity, Damaged Quantity, In-Transit Quantity, Transfer Shipment, Transfer Receipt, Count Variance, Delivery Note, Journal, Posting Rule, Allocation, Settlement, Rounding Difference, Completed, Closed, Idempotency, Correlation Identifier.
+Department, Access Scope, Separation of Duties, Employee, Customer Contact, Item, SKU, Barcode, Category, Purchase Unit, Sales Unit, Price List, Supplier Quotation, Goods Receipt Line, Rejected Quantity, Available Quantity, Expected Quantity, Damaged Quantity, In-Transit Quantity, Transfer Shipment, Transfer Receipt, Count Variance, Delivery Note, Completed, Closed, Idempotency, Correlation Identifier.
 
 ---
 
@@ -2761,6 +2762,6 @@ To keep BRD language consistent, the following terms must not be used in any Rel
 - It does **not** answer any open decision. Every term that depends on one names the Jira decision Task and stops there.
 - It introduces **no Wafra-specific vocabulary**. Wafra is referred to only as the first validation tenant.
 - Changes follow the BRD governance and approval process defined in MESP-17. A term whose approval status changes must be versioned, with the change recorded in the Product Decision Register (MESP-22).
-- When an open decision (MESP-41 … MESP-56) is answered, the affected term moves from *Requires Business Decision* to *Approved Product Baseline* and the Traceability Matrix (MESP-19) is updated.
+- When an open decision (MESP-41 … MESP-56 or a separately recorded bundle such as FIN-OD-09 / MESP-110) is answered, the affected gated detail moves from *Requires Business Decision* to *Approved Product Baseline* and the Traceability Matrix (MESP-19) is updated. A term may already have an approved concept while its named implementation detail remains gated.
 
 **Approval required from:** Product Owner, Business Sponsor, and the Business Process Owner of each affected domain. Named owners are pending — see MESP-20.
