@@ -74,10 +74,12 @@ posting-contract decisions.
 
 ## 5. Validation and completion evidence
 
-The implementation session must record the focused PR number, reviewed head,
-merge SHA, final synchronized `main` SHA, Jira validation/closure comments,
-and the MESP-23 handoff here after the documentation diff is reviewed and
-merged. Until those values are recorded, MESP-109 remains In Progress.
+Focused PR #50 is open as a draft from reviewed head
+`56696d32f6a2fb4a6fd17a939286d22ff59f2f22`. The implementation session must
+record the merge SHA, final synchronized `main` SHA, Jira validation/closure
+comments, and the MESP-23 handoff here after the documentation diff is
+reviewed and merged. Until those values are recorded, MESP-109 remains In
+Progress.
 
 The repository validation must confirm:
 

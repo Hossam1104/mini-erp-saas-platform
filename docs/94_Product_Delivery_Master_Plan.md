@@ -225,7 +225,7 @@
 | Current implementation item | `None. No source implementation item is active. MESP-35 B2B Sales and Order-to-Cash is To Do and is not activated.` |
 | Merged-main baseline | `PR #47` remains the historical MESP-34 Finance baseline at `a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b`; this correction branch starts from synchronized main `24d7112bf5bf1dfdb14d5e9c38bfc46dfaeeb62e`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `MESP-109 correction PR will be recorded after branch publication; PR #47 and all preceding implementation/documentation PRs are merged.` |
+| Open Pull Request | `Draft PR #50 for MESP-109 at reviewed head 56696d32f6a2fb4a6fd17a939286d22ff59f2f22; PR #47 and all preceding implementation/documentation PRs are merged.` |
 | Current review checkpoint | `MESP-109 is reconciling O5-FIN-001 through O5-FIN-010 with verdict PASS WITH NON-BLOCKING FINDINGS; activation comment 10752. MESP-110 / FIN-OD-09 is To Do/unapproved with comment 10753. MESP-34 is Done; MESP-35 is To Do and unactivated; MESP-41 through MESP-55 remain open except MESP-52/PD-020 and MESP-56/PD-021; MESP-48/MESP-49/MESP-50 remain open. No source or production validation is claimed.` |
 
 ---

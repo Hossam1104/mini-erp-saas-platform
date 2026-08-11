@@ -26,8 +26,9 @@ MESP-48/MESP-50 production gates remain unchanged.
 The canonical Finance artifact is still
 `docs/23_Finance_and_Accounting_BRD.md`, with the bounded reconciliation
 recorded in `docs/99_Independent_Opus_5_Finance_BRD_Reconciliation.md`.
-Focused correction PR and merge evidence are to be added after the complete
-branch diff is reviewed and merged. The root `TASK.md` remains the complete,
+Focused correction PR #50 is open as a draft from reviewed branch head
+`56696d32f6a2fb4a6fd17a939286d22ff59f2f22`; merge evidence is to be added
+after the complete branch diff is reviewed and merged. The root `TASK.md` remains the complete,
 exact MESP-35 fresh-session prompt and is not executed in this session.
 
 | Current fact | Verified value |
@@ -36,7 +37,7 @@ exact MESP-35 fresh-session prompt and is not executed in this session.
 | FIN-OD-09 / MESP-110 | **To Do / unapproved**; Finance year-end, Payment Term, and posting-dimension policy; creation/scope comment `10753`. |
 | MESP-34 / MESP-35 | MESP-34 **Done**; MESP-35 **To Do** and not activated. |
 | MESP-23 / MESP-54 | MESP-23 **In Progress**; MESP-54 **To Do/open**. |
-| Current branch | `agent/MESP-109-finance-opus-reconciliation`; based on synchronized main `24d7112bf5bf1dfdb14d5e9c38bfc46dfaeeb62e`. |
+| Current branch | `agent/MESP-109-finance-opus-reconciliation`; PR #50 draft at reviewed head `56696d32f6a2fb4a6fd17a939286d22ff59f2f22`; based on synchronized main `24d7112bf5bf1dfdb14d5e9c38bfc46dfaeeb62e`. |
 | Production-capability percentages | Unchanged; this session adds no usable production capability. |
 
 ## Historical authoritative position - 10 August 2026 (MESP-34 Finance BRD Done)
