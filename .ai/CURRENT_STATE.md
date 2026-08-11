@@ -1,43 +1,47 @@
 # Current State
 
-+## Current authoritative position — 11 August 2026 (MESP-111 readiness artifact complete; publication pending)
+## Current authoritative position — 11 August 2026 (MESP-111 readiness complete; MESP-37 remains To Do)
 
 MESP-111 — Prepare Saudi regulatory evidence and external-validation readiness
-is **In Progress** in live Jira while its bounded repository artifact is
-reviewed and published. The canonical artifact is
-docs/26_Saudi_Regulatory_Evidence_and_External_Validation_Readiness.md. Its
-verdict is **READY FOR MESP-37 DRAFT ONLY — EXTERNAL VALIDATION OUTSTANDING**:
-the official-source and traceability pack is complete, but no qualified Saudi
-tax/compliance adviser validation, qualified Saudi privacy/legal adviser
-validation, Finance Controller decision, or Product Owner decision set is
-recorded for this task.
+is **Done** at its explicitly bounded documentation, research, traceability
+and governance scope. The canonical artifact is
+docs/26_Saudi_Regulatory_Evidence_and_External_Validation_Readiness.md.
+Focused PR #53 merged cleanly to main at
+1bcf1aa75292b927bc165a2a4fb1a8ca737763cf from reviewed branch head
+51aee480319412ca43a7d97d1af295e1aab775d8. Jira activation evidence is
+comment 10809 and closure evidence is comment 10810.
 
-MESP-37 remains **To Do** and was not activated. MESP-49 and MESP-50 remain
-**To Do/open**; MESP-23 remains **In Progress**; MESP-53, MESP-54 and
-MESP-110 remain preserved as open. No Product, Tax, e-invoicing, PDPL,
-storage, credential, integration, or production source behavior was added.
-The artifact is documentation/research/Jira/traceability/governance only and
-does not claim legal or tax advice, certification, or production readiness.
+The verdict is **READY FOR MESP-37 DRAFT ONLY — EXTERNAL VALIDATION
+OUTSTANDING**. The official-source and traceability pack is complete, but no
+qualified Saudi tax/compliance adviser validation, qualified Saudi privacy or
+legal adviser validation, Finance Controller decision, or Product Owner
+decision set is recorded. MESP-37 remains **To Do** and was not activated.
+MESP-49 and MESP-50 remain **To Do/open**; MESP-23 remains **In Progress**;
+MESP-53, MESP-54 and MESP-110 remain preserved as open. No Product, Tax,
+e-invoicing, PDPL, storage, credential, integration, or production source
+behavior was added. Production-capability percentages remain unchanged.
 
-The exact next session is qualified Saudi external-validation and owner-decision
-handoff only. It must not activate MESP-37 automatically. Required evidence
-and the activation gate are recorded in the canonical artifact and TASK.md.
-Production-capability percentages remain unchanged.
+The current branch is main at the merged MESP-111 baseline. The next exact
+session is qualified Saudi external-validation and owner-decision handoff
+only; it must not activate MESP-37 automatically. The canonical artifact and
+TASK.md record the exact evidence gate. The PRD was structurally read; visual
+rendering was attempted but unavailable because pdf2image and
+LibreOffice/soffice are not installed, so no visual claim is made.
 
 | Current fact | Verified value |
 |---|---|
-| MESP-111 | **In Progress**; Jira-assigned readiness task under parent MESP-12; activation comment 10809; canonical artifact docs/26_Saudi_Regulatory_Evidence_and_External_Validation_Readiness.md. |
+| MESP-111 | **Done**; canonical artifact docs/26_Saudi_Regulatory_Evidence_and_External_Validation_Readiness.md; PR #53 merged at 1bcf1aa75292b927bc165a2a4fb1a8ca737763cf from reviewed head 51aee480319412ca43a7d97d1af295e1aab775d8; closure evidence 10810. |
 | Readiness verdict | **READY FOR MESP-37 DRAFT ONLY — EXTERNAL VALIDATION OUTSTANDING**. |
 | MESP-37 | **To Do**; not activated or executed. |
 | MESP-49 / MESP-50 | **To Do/open**; qualified Saudi tax/compliance and privacy/legal evidence is missing. |
 | MESP-23 | **In Progress**; unresolved questions remain visible. |
 | MESP-53 / MESP-54 / MESP-110 | **To Do/open** and preserved; no decision implication. |
 | Source implementation | None; no source, test, database, schema, migration, EF, API, UI, provider, infrastructure, credential, FATOORA or production configuration change. |
-| PRD review | Structurally read; visual rendering was attempted but unavailable because pdf2image and LibreOffice/soffice are not installed; no visual claim is made. |
+| Production-capability percentages | Unchanged; this documentation/research/governance task adds no usable production capability. |
 | Next exact task | Qualified Saudi external-validation and owner-decision handoff; MESP-37 remains To Do and is not activated automatically. |
 
 
-## Current authoritative position - 11 August 2026 (MESP-36 Reporting BRD complete)
+## Historical authoritative position - 11 August 2026 (MESP-36 Reporting BRD complete)
 
 MESP-36 is **Done** as the bounded, documentation-only Release 1 B2B
 Reporting and Analytics business baseline. The canonical artifact is
