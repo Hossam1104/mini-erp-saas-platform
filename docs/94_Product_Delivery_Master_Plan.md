@@ -1,5 +1,28 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
++> **Authoritative current Saudi regulatory-readiness overlay — 11 August 2026 (MESP-111 publication pending).**
+> MESP-111 — Prepare Saudi regulatory evidence and external-validation
+> readiness is **In Progress** in live Jira for a bounded
+> documentation/research/governance task under parent MESP-12. The canonical
+> artifact is
+> docs/26_Saudi_Regulatory_Evidence_and_External_Validation_Readiness.md.
+> Its verdict is **READY FOR MESP-37 DRAFT ONLY — EXTERNAL VALIDATION
+> OUTSTANDING**. The artifact records current official ZATCA and SDAIA/NDMO
+> sources, retrieval dates, KSA-001–KSA-008 / BR-002 traceability, evidence
+> classifications, FATOORA/VAT and PDPL/privacy/residency boundaries, and the
+> MESP-49/MESP-50 gaps plus qualified-adviser/owner question packs.
+>
+> MESP-37 remains **To Do** and is not activated. MESP-49 and MESP-50 remain
+> open; MESP-23 remains In Progress; MESP-53, MESP-54 and MESP-110 remain
+> preserved. No source, database, migration, API, UI, infrastructure,
+> credential, FATOORA implementation, production configuration, legal/tax
+> advice, certification or production-readiness claim was added. Production
+> capability percentages remain unchanged. The next exact session is
+> qualified Saudi external-validation and owner-decision handoff only, not
+> MESP-37 activation. Older completion overlays below are preserved as
+> history.
+
+
 > **Authoritative current Reporting BRD completion overlay - 11 August 2026.**
 > MESP-36 is **Done** as the documentation/governance-only Release 1 B2B
 > Reporting and Analytics business baseline at
