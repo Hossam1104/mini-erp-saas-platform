@@ -1,5 +1,56 @@
 # Current State
 
+## Current authoritative position - 11 August 2026 (MESP-37 Saudi Localization BRD complete)
+
+MESP-37 - Produce Saudi Localization and Compliance BRD is **Done** at the
+bounded product-only documentation scope. The canonical artifact is
+`docs/28_Release_1_Saudi_Localization_BRD.md`, v0.1 Approved bounded
+product-only baseline. It defines Arabic/English, RTL/LTR, bilingual generic
+ERP artifacts, configurable Saudi-oriented locale/timezone/SAR presentation
+defaults, reusable Tenant-safe country-pack configuration, cross-module
+ownership, fallback/error behavior, audit/configuration evidence, and business
+acceptance scenarios. It adds no source implementation or production
+behavior.
+
+Focused PR #55 merged cleanly to `main` at
+`7d03fa5b19226b8c6368012ec90c8a09eefd4aaf` from reviewed final head
+`ff8eb5901d68a2cc366ed61722c08a7be53f50a1`. Jira evidence is activation
+comment 10854, validation comment 10855, Product Decision Register
+traceability comment 10856, Owner approval comment 10857, MESP-23 handoff
+comment 10858, and closure comment 10859.
+
+The approved scope is limited to the localization/core ERP slice. Statutory
+tax/e-invoicing, ZATCA/FATOORA, legal/privacy-regulatory automation,
+certification, external production integrations, provider/residency/retention/
+backup/DR, Currency/MESP-54, Reporting/MESP-53, Finance/MESP-110,
+supported-volume/MESP-48, MESP-50 governance, ADR-011, Retail POS, and
+Wafra-specific behavior remain open, deferred, or out of scope as named. The
+approval is not a legal, taxpayer-applicability, compliance, or production
+claim.
+
+Live Jira reconciliation is:
+
+| Current fact | Verified value |
+|---|---|
+| MESP-37 | **Done**; canonical product-only BRD `docs/28_Release_1_Saudi_Localization_BRD.md`; PR #55 merged at `7d03fa5b19226b8c6368012ec90c8a09eefd4aaf`; closure evidence 10859. |
+| MESP-112 / PD-023 | **Done / approved scope authority**; the current Saudi-localization boundary remains the MESP-112 overlay and PD-023. |
+| MESP-111 | **Done**; readiness artifact remains historical evidence with draft-only/external-validation-outstanding verdict for future deferred areas. |
+| MESP-22 | **Done / append-only**; MESP-37 added traceability comment 10856 and created no new Product Decision. |
+| MESP-23 | **In Progress**; MESP-37 handoff is comment 10858; no open row was closed. |
+| MESP-49 | **Done for Release 1 scope only**; no statutory or ZATCA/FATOORA answer was added. |
+| MESP-48 / MESP-50 / MESP-53 / MESP-54 / MESP-110 | **To Do/open** and preserved as supported-volume, production governance, Reporting, Currency, and Finance dependencies. |
+| MESP-38 | **To Do**; next exact separately authorized Security, Audit, and Data Governance BRD only; not activated automatically. |
+| Current branch | `main` contains the focused PR #55 merge; no implementation branch or source item is active. |
+| Source implementation | None. No source, tests, EF/entity/schema, migration, API, UI, provider, credentials, integration, tax, privacy/legal workflow, production configuration, Retail POS, or Wafra-specific behavior changed. |
+| Production-capability percentages | Unchanged; this documentation-only BRD adds no usable production capability. |
+| PRD visual QA | Structural PRD read completed; visual rendering was attempted but unavailable because `pdf2image` and LibreOffice/soffice are not installed. No visual claim is made. |
+| Next exact task | **MESP-38 - Security, Audit, and Data Governance BRD only**, To Do and not activated automatically. |
+
+This overlay supersedes the immediately prior MESP-112/MESP-111 handoff only
+for the completed MESP-37 product-only BRD session. All earlier scope,
+readiness, PRD, decision, and implementation history remains preserved. The
+exact next session is in root `TASK.md`; this session must not execute it.
+
 ## Current authoritative position - 11 August 2026 (MESP-112 Saudi scope rebaseline)
 
 MESP-112 - Rebaseline Release 1 Saudi localization and compliance scope is

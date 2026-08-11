@@ -8,7 +8,8 @@
 > **Scope:** Saudi-localized Core ERP Release 1; reusable multi-Tenant B2B ERP; Wafra validation-only
 > **Status:** Approved product-only business baseline; documentation-only; no implementation authorization
 > **Entry evidence:** MESP-112 Done / PD-023; MESP-111 Done with “READY FOR MESP-37 DRAFT ONLY - EXTERNAL VALIDATION OUTSTANDING”; MESP-37 activated in Jira comment 10854
-> **Approval evidence:** Jira comment 10855 (validation), Jira comment 10857 (Owner approval), MESP-22 traceability comment 10856, and MESP-23 handoff comment 10858; focused PR #55 reviewed at `6563f2158284204a83d263ff79e4971d0726eaf9`
+> **Approval evidence:** Jira comment 10855 (validation), Jira comment 10857 (Owner approval), MESP-22 traceability comment 10856, and MESP-23 handoff comment 10858; focused PR #55 reviewed at final content head `ff8eb5901d68a2cc366ed61722c08a7be53f50a1`
+> **Closure evidence:** Jira comment 10859; PR #55 merged to `main` at `7d03fa5b19226b8c6368012ec90c8a09eefd4aaf`
 > **Canonical scope overlay:** `docs/27_Release_1_Saudi_Localization_Scope_Rebaseline.md`
 
 ## 1. Document control and reading rules
@@ -1050,5 +1051,8 @@ open register and named gates.
 
 The approval does not approve or close the open decisions or the future
 statutory, tax, legal, privacy, external-integration, or production boundaries
-listed above. A later change to this baseline must use a new reviewed version
-or superseding decision; it must not silently edit the approved scope.
+listed above. MESP-37 closure is recorded in Jira comment 10859 after focused
+PR #55 merged to `main` at
+`7d03fa5b19226b8c6368012ec90c8a09eefd4aaf`. A later change to this baseline
+must use a new reviewed version or superseding decision; it must not silently
+edit the approved scope.
