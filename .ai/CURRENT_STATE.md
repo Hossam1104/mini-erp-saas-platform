@@ -3,7 +3,7 @@
 ## Current authoritative position - 11 August 2026 (MESP-112 Saudi scope rebaseline)
 
 MESP-112 - Rebaseline Release 1 Saudi localization and compliance scope is
-the single active bounded documentation/Jira/Product Decision/governance task
+complete at its bounded documentation/Jira/Product Decision/governance scope
 under MESP-12. Its Owner-approved scope decision is recorded in
 docs/27_Release_1_Saudi_Localization_Scope_Rebaseline.md and Product Decision
 PD-023 appended to the immutable MESP-22 register. Jira activation evidence is
@@ -24,7 +24,7 @@ Live Jira reconciliation is:
 
 | Current fact | Verified value |
 |---|---|
-| MESP-112 | **In Progress**; single active rebaseline task under MESP-12; activation evidence 10848. |
+| MESP-112 | **Done**; bounded rebaseline task under MESP-12; PR #54 reviewed at 65dd650776b2c3abb06c36987b68152deb776958 and merged at 6e501d1f2a018c36b76339388ce7b7f09ed9c937; activation/closure evidence 10848/10850. |
 | MESP-49 | **Done for Release 1 scope only**; explicit statutory/ZATCA/FATOORA deferral/out-of-scope evidence 10843. |
 | MESP-50 | **To Do / open**; dedicated legal/privacy features deferred, minimum production/platform governance remains open; evidence 10844. |
 | MESP-37 | **To Do**; not activated or executed; future BRD narrowed to localization/core ERP; evidence 10845. |
@@ -32,7 +32,7 @@ Live Jira reconciliation is:
 | MESP-111 | **Done**; history preserved; R1 scope addendum 10847; historical activation/closure evidence 10809/10810. |
 | MESP-22 / PD-023 | **Done / append-only register updated**; PD-023 evidence 10849. |
 | Other gates | MESP-48, MESP-53, MESP-54, and MESP-110 remain open and are not implied resolved. |
-| Current branch | docs/MESP-112-release1-saudi-scope-rebaseline; PR #54 is open for final review from candidate head 6575d76df04df2fb292b3fd4b333418e64cd60cb. |
+| Current branch | main after PR #54 merge and the final bounded tracker/state synchronization; final main verification is recorded in the Jira closure addendum. |
 | Source implementation | None. No source, tests, EF/entity/schema, migration, API, UI, provider, credentials, integration, tax, privacy/legal workflow, production configuration, or Wafra-specific behavior changed. |
 | Production-capability percentages | Unchanged; this governance/rebaseline task adds no usable production capability. |
 | Next exact task | **MESP-37 - Release 1 Saudi Localization BRD only**, To Do and not activated automatically. |
