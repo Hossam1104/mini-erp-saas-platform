@@ -10,6 +10,15 @@ Owner approval, final validation, and MESP-23 handoff evidence are comments
 `10746`, `10747`, `10748`, `10749`, and `10750`; final MESP-34 closure
 evidence is comment `10751`. MESP-34 is Done in live Jira.
 
+The bounded independent Opus 5 Finance checkpoint reconciliation is tracked
+as MESP-109. It is documentation/Jira/traceability/governance only and must
+be fully reverified in live Jira before this Sales handoff is activated. The
+accepted verdict is PASS WITH NON-BLOCKING FINDINGS; FIN-OD-09 / MESP-110
+(Finance year-end, Payment Term, and posting-dimension policy) remains To Do
+and unapproved. The corrected Finance baseline preserves MESP-54 and Exchange
+Rate as open, leaves Currency unexecuted, and adds no source or production
+behavior.
+
 MESP-35 remains **To Do** under MESP-9 with the separately controlled BRD
 sequence. It must be activated only in a fresh session after the live MESP-34
 closure, Sales entry gate, and Finance posting-foundation handoff are
