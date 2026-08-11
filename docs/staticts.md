@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-11 05:20 +03:00
+**Last Updated:** 2026-08-11 06:09 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -84,9 +84,9 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **53** | **55.8%** |
+| Done | **54** | **56.8%** |
 | In Progress | **1** | **1.1%** |
-| To Do | **41** | **43.2%** |
+| To Do | **40** | **42.1%** |
 | **Total Non-Epic** | **95** | **100%** |
 
 Major Release-1 Epics:
@@ -94,12 +94,12 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 110 MESP issues, including the 15 Epics, the current workflow state
-is 53 Done, 6 In Progress, and 51 To Do. These counts were re-checked in live
+is 54 Done, 6 In Progress, and 50 To Do. These counts were re-checked in live
 Jira on 11 August 2026; the only non-Epic In Progress item is MESP-23.
 
 ## Interpretation
 
-Raw Jira completion currently makes the project appear approximately **55% complete**.
+Raw Jira completion currently makes the project appear approximately **57% complete**.
 
 That number must NOT be used as the production-completion percentage.
 
@@ -107,7 +107,7 @@ Many future implementation tickets have not yet been generated because several m
 
 Therefore the current project should be represented as:
 
-> **Jira-created-work completion: ~55%**
+> **Jira-created-work completion: ~57%**
 > **Actual Release-1 production completion: ~29%**
 
 **Jira hygiene note:** MESP-97 and MESP-98 were stale duplicate/superseded
@@ -142,14 +142,22 @@ validation, closure, and MESP-23 handoff evidence. MESP-35 is Done through
 documentation-only PR #51 at merge
 `1daffde06106ab2f1b93ae1773ccd317ddc52089`, with Jira activation, validation,
 Owner approval, MESP-23 handoff, final-validation, and closure evidence
-`10762`/`10763`/`10764`/`10765`/`10766`/`10767`. Live Jira state is now 53
-Done / 6 In Progress / 51 To Do across all issues, and 53 Done / 1 In Progress
-/ 41 To Do for non-Epic work. The Customer-specific
+`10762`/`10763`/`10764`/`10765`/`10766`/`10767`. MESP-36 is Done through
+documentation-only PR #52 at merge
+`cd3ad20876a0569245ccc6e1ff677315dfcc1a2a`, from reviewed head
+`7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb`, with Jira activation, validation,
+Owner approval, final-audit, MESP-23 handoff, and closure evidence
+`10769`/`10770`/`10771`/`10772`/`10773`/`10774`/`10775`. MESP-53 remains the
+critical To Do/unapproved Reporting dependency; MESP-54 and FIN-OD-09 /
+MESP-110 remain To Do/unapproved, MESP-23 remains In Progress, and Currency
+remains unexecuted. Live Jira state is now 54 Done / 6 In Progress / 50 To Do
+across all issues, and 54 Done / 1 In Progress / 40 To Do for non-Epic work.
+The Customer-specific
 MD-OD-001/005/008 decisions are approved only for the bounded Customer slice;
 the merged Customer source remains limited to that slice. No production-
 capability percentage changed in the documentation-only MESP-32, MESP-33,
-MESP-34, or MESP-35 BRD sessions; the next exact BRD handoff is MESP-36
-Reporting and Analytics.
+MESP-34, MESP-35, or MESP-36 BRD sessions; the next exact BRD handoff is
+MESP-37 Saudi Localization and Compliance.
 
 ---
 
@@ -954,7 +962,7 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **No source implementation item is active. MESP-23 remains In Progress as the living Open Questions Register; its bounded reconciliation is recorded in Jira comment `10731` and its Finance handoff is recorded on MESP-23 after MESP-109. MESP-107 Customer, MESP-104 Supplier, and MESP-102 Product implementations are complete at their approved bounded scopes. MESP-33 Inventory and MESP-34 Finance are complete as approved documentation-only BRDs through PR #46 and PR #47; MESP-109 Finance reconciliation is Done through PR #50; MESP-35 B2B Sales is Done through PR #51; MESP-36 Reporting and Analytics is the next separate To Do BRD and is not activated.**
+> **No source implementation item is active. MESP-23 remains In Progress as the living Open Questions Register; its bounded reconciliation is recorded in Jira comment `10731` and its Finance handoff is recorded on MESP-23 after MESP-109. MESP-107 Customer, MESP-104 Supplier, and MESP-102 Product implementations are complete at their approved bounded scopes. MESP-33 Inventory and MESP-34 Finance are complete as approved documentation-only BRDs through PR #46 and PR #47; MESP-109 Finance reconciliation is Done through PR #50; MESP-35 B2B Sales is Done through PR #51; MESP-36 Reporting and Analytics is Done through PR #52; MESP-53 remains the critical open Reporting dependency; MESP-37 Saudi Localization and Compliance is the next separate To Do BRD and is not activated.**
 
 Current strategic state:
 
@@ -1046,6 +1054,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-11 06:09 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-36 Reporting and Analytics v0.1 Approved Business Baseline published at `docs/25_Reporting_and_Analytics_BRD.md`; PR #52 reviewed at `7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb` and merged at `cd3ad20876a0569245ccc6e1ff677315dfcc1a2a`; Jira evidence 10769/10770/10771/10772/10773/10774/10775; MESP-53 remains critical and To Do/unapproved, MESP-54 and FIN-OD-09 / MESP-110 remain To Do/unapproved, MESP-23 remains In Progress, and Currency remains unexecuted; live Jira all-issue 54 Done / 6 In Progress / 50 To Do and non-Epic 54 Done / 1 In Progress / 40 To Do; no production-capability percentage change; next exact BRD is MESP-37 Saudi Localization and Compliance | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-11 05:20 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-35 B2B Sales and Order-to-Cash v0.1 Approved Business Baseline published at `docs/24_Sales_and_Order_to_Cash_BRD.md`; PR #51 reviewed at `e5daa1048e9c54f34a23f613929a8832c6d8f8c5` and merged at `1daffde06106ab2f1b93ae1773ccd317ddc52089`; Jira evidence 10762/10763/10764/10765/10766/10767; FIN-OD-09 / MESP-110 remains To Do/unapproved and MESP-54 remains open; live Jira all-issue 53 Done / 6 In Progress / 51 To Do and non-Epic 53 Done / 1 In Progress / 41 To Do; no production-capability percentage change; next exact BRD is MESP-36 Reporting and Analytics | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-11 04:20 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-109 independent Opus 5 Finance reconciliation completed with verdict PASS WITH NON-BLOCKING FINDINGS; PR #50 reviewed at `cf3f6941523551a3d8a0ecdca39256b3e349c6f2` and merged at `cfb17878a0145cb99fc571da211e01dec6a66f28`; FIN-OD-09 / MESP-110 remains To Do/unapproved; live Jira all-issue 52 Done / 6 In Progress / 52 To Do and non-Epic 52 Done / 1 In Progress / 42 To Do; no production-capability percentage change; next exact BRD is MESP-35 B2B Sales and Order-to-Cash | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-10 21:14 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-34 Finance and Accounting v0.1 Approved Business Baseline published in docs/23_Finance_and_Accounting_BRD.md; PR #47 merged at a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b from final branch head 72aa210d462f783671f1b3b33fcdea4955567b9c; Jira activation/validation/approval/final-validation evidence 10746/10747/10748/10749 and MESP-23 handoff 10750; live Jira all-issue 51 Done / 6 In Progress / 51 To Do and non-Epic 51 Done / 1 In Progress / 41 To Do; no production-capability percentage change; next exact BRD is MESP-35 B2B Sales and Order-to-Cash | Production-ready target unchanged: Late Oct-Mid Nov 2026 |

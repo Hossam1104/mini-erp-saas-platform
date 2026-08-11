@@ -1,6 +1,45 @@
 # Current State
 
-## Current authoritative position - 11 August 2026 (MESP-35 Sales BRD complete)
+## Current authoritative position - 11 August 2026 (MESP-36 Reporting BRD complete)
+
+MESP-36 is **Done** as the bounded, documentation-only Release 1 B2B
+Reporting and Analytics business baseline. The canonical artifact is
+`docs/25_Reporting_and_Analytics_BRD.md`, v0.1 Approved Business Baseline.
+Focused PR #52 merged cleanly to `main` at
+`cd3ad20876a0569245ccc6e1ff677315dfcc1a2a` from reviewed branch head
+`7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb`. Jira activation, validation,
+Owner approval, final audit, MESP-23 handoff, and closure evidence are
+comments `10769`, `10770`, `10771`, `10772`/`10773`, `10774`, and `10775`.
+
+The Reporting BRD preserves MESP-53 as the critical open Reporting dependency
+for final catalogue, KPI/figure definitions, named business and
+reconciliation ownership, and scheduled/distribution policy. MESP-54 remains
+To Do and unapproved for currency and exchange-rate policy. FIN-OD-09 /
+MESP-110 remains To Do and unapproved for fiscal-year/year-end, Payment Term,
+aging, and Finance posting-dimension policy. MESP-23 remains In Progress;
+Currency remains unexecuted. No source, test, database, schema, migration,
+EF, API, UI, provider, infrastructure, production, transactional, stock,
+subledger, GL, or reporting mutation behavior was authorized or added.
+
+The current branch is `main` at the merged MESP-36 baseline. No source
+implementation item is active. The next exact task is MESP-37 Saudi
+Localization and Compliance BRD only; it remains To Do and is not activated
+automatically. Release 1 remains B2B ERP only, and the production-capability
+percentages are unchanged because this was documentation/governance work.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-36 | **Done**; canonical Reporting BRD `docs/25_Reporting_and_Analytics_BRD.md`; PR #52 merged at `cd3ad20876a0569245ccc6e1ff677315dfcc1a2a` from reviewed head `7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb`; closure evidence 10775. |
+| MESP-35 / MESP-109 | **Done**; prior Sales and accepted Finance reconciliation evidence remains valid. |
+| MESP-23 | **In Progress**; no open decision row was closed by Reporting. |
+| MESP-53 | **To Do / unapproved / critical Reporting dependency**; final catalogue, KPI/figure, owner, reconciliation, and schedule/distribution decisions remain open. |
+| MESP-54 / FIN-OD-09 / MESP-110 | **To Do / unapproved**; currency/exchange-rate and Finance fiscal-year, Payment Term, aging, and posting-dimension policies remain open. |
+| Currency | Unexecuted; no exchange-rate or Reporting Currency behavior was implemented. |
+| Current branch | `main` at the merged PR #52 baseline; no implementation branch is active. |
+| Next exact task | MESP-37 Saudi Localization and Compliance BRD only; **To Do** and not activated automatically. |
+| Production-capability percentages | Unchanged; this documentation-only session adds no usable production capability. |
+
+## Historical authoritative position - 11 August 2026 (MESP-35 Sales BRD complete)
 
 MESP-35 is **Done** as the bounded, documentation-only Release 1 B2B Sales
 and Order-to-Cash business baseline. The canonical artifact is

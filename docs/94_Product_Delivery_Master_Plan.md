@@ -1,6 +1,31 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative current Sales BRD completion overlay - 11 August 2026.**
+> **Authoritative current Reporting BRD completion overlay - 11 August 2026.**
+> MESP-36 is **Done** as the documentation/governance-only Release 1 B2B
+> Reporting and Analytics business baseline at
+> `docs/25_Reporting_and_Analytics_BRD.md`, v0.1 Approved Business Baseline.
+> Focused PR #52 merged cleanly to `main` at
+> `cd3ad20876a0569245ccc6e1ff677315dfcc1a2a` from reviewed head
+> `7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb`. Jira activation, validation,
+> Owner approval, final audit, MESP-23 handoff, and closure evidence are
+> comments `10769`, `10770`, `10771`, `10772`/`10773`, `10774`, and `10775`.
+>
+> MESP-53 remains **To Do and unapproved** and is the critical open Reporting
+> dependency for the final report catalogue, KPI/figure definitions, named
+> business and reconciliation ownership, and scheduled/distribution policy.
+> MESP-54 remains **To Do and unapproved** for currency and exchange-rate
+> policy. FIN-OD-09 / MESP-110 remains **To Do and unapproved** for
+> fiscal-year/year-end, Payment Term, aging, and Finance posting-dimension
+> policy. MESP-23 remains In Progress and Currency remains unexecuted. No
+> source, transaction, stock, subledger, GL, or reporting mutation behavior is
+> added.
+>
+> The next separately authorized BRD is MESP-37 Saudi Localization and
+> Compliance. It remains **To Do** and is not activated automatically. No
+> implementation item is active; Release 1 remains B2B ERP only. Older
+> completion overlays below are preserved as history.
+
+> **Historical MESP-35 Sales BRD completion overlay - 11 August 2026.**
 > MESP-35 is **Done** as the documentation/governance-only Release 1 B2B
 > Sales and Order-to-Cash baseline at
 > docs/24_Sales_and_Order_to_Cash_BRD.md. Focused PR #51 merged cleanly to
@@ -225,12 +250,12 @@
 | Last updated | 11 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-35 is Done as the documentation-only B2B Sales and Order-to-Cash BRD; MESP-109 and MESP-34 remain Done; MESP-23 remains In Progress; FIN-OD-09 / MESP-110 remains To Do and unapproved; MESP-54 remains open.` |
-| Current implementation item | `None. No source implementation item is active. MESP-36 Reporting and Analytics is the next separate To Do BRD and is not activated.` |
-| Merged-main baseline | `PR #51` merged the MESP-35 Sales BRD at `1daffde06106ab2f1b93ae1773ccd317ddc52089` from reviewed head `e5daa1048e9c54f34a23f613929a8832c6d8f8c5`; PR #50 remains the historical Finance reconciliation baseline at `cfb17878a0145cb99fc571da211e01dec6a66f28`. |
+| Current activity | `MESP-36 is Done as the documentation-only Reporting and Analytics BRD; MESP-35 and MESP-109 remain Done; MESP-23 remains In Progress; MESP-53 is the critical open Reporting dependency; MESP-54 and FIN-OD-09 / MESP-110 remain To Do and unapproved; Currency remains unexecuted.` |
+| Current implementation item | `None. No source implementation item is active. MESP-37 Saudi Localization and Compliance is the next separate To Do BRD and is not activated.` |
+| Merged-main baseline | `PR #52` merged the MESP-36 Reporting BRD at `cd3ad20876a0569245ccc6e1ff677315dfcc1a2a` from reviewed head `7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb`; PR #51 remains the historical Sales baseline at `1daffde06106ab2f1b93ae1773ccd317ddc52089`. |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None. PR #51 is merged; no implementation item is active.` |
-| Current review checkpoint | `MESP-35 is Done with Jira evidence 10762-10767 and PR #51 merge 1daffde06106ab2f1b93ae1773ccd317ddc52089. MESP-109 remains Done with PASS WITH NON-BLOCKING FINDINGS. MESP-110 / FIN-OD-09 is To Do/unapproved with comment 10753; MESP-54 remains open. MESP-23 remains In Progress with 14 open rows plus exact MESP-52/PD-020 and MESP-56/PD-021 closures. MESP-36 is To Do and not activated. No source or production validation is claimed.` |
+| Open Pull Request | `None. PR #52 is merged; no implementation item is active.` |
+| Current review checkpoint | `MESP-36 is Done with Jira evidence 10769-10775 and PR #52 merge cd3ad20876a0569245ccc6e1ff677315dfcc1a2a from reviewed head 7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb. MESP-35 and MESP-109 remain Done. MESP-53 is To Do/unapproved and critical; MESP-110 / FIN-OD-09 and MESP-54 remain To Do/unapproved. MESP-23 remains In Progress; Currency is unexecuted. MESP-37 is To Do and not activated. No source or production validation is claimed.` |
 
 ---
 
@@ -257,10 +282,10 @@ It is a living progress tracker. Completed work is marked as **Done**, the curre
 ### Product-wide position
 
 The latest bounded BRD position is MESP-31 **Done**, MESP-32 **Done**,
-MESP-33 **Done**, MESP-34 **Done**, and MESP-35 **Done** as approved
-documentation-only business baselines. MESP-36 Reporting and Analytics is
-the next separately authorized BRD and remains To Do; it is not activated by
-MESP-35 completion.
+MESP-33 **Done**, MESP-34 **Done**, MESP-35 **Done**, and MESP-36 **Done** as
+approved documentation-only business baselines. MESP-37 Saudi Localization
+and Compliance is the next separately authorized BRD and remains To Do; it is
+not activated by MESP-36 completion.
 
 The project is currently in **Phase 2 — Business Requirements Documents**, because the full set of business-domain BRDs has not yet been completed.
 
@@ -295,7 +320,8 @@ MESP-94 safety-catalogue/validation-evidence correction is **Done** through
 PR #26 merged at `06d837c958c1cb7977dc121e3aaea4e7278944fd`. No Sprint is
 active and no parallel implementation item exists. MESP-109 Finance
 reconciliation is **Done**; MESP-23 remains the active governance register and
-MESP-36 remains the next separate To Do BRD.
+MESP-37 remains the next separate To Do BRD after the completed MESP-36
+Reporting and Analytics baseline.
 
 | Area | Current status |
 |---|---|
@@ -357,9 +383,9 @@ MESP-36 remains the next separate To Do BRD.
 - [x] `MESP-61` is **Done**; PR #17 merged to `main` at `7db49a88e11232f055c2016b8bb033a61de629ec` and merged-main validation passed.
 - [x] `MESP-64` is **Done**; PR #18 merged to `main` at `2002d1c25d39022b227e89b3d70f41a53de0408c`, merged-main validation passed, and its branch was deleted.
 - [x] `MESP-91` is **Done**; PR #20 merged at `f2cde57400fed470ab048776e05b56f353b36890` after focused ChatGPT security review approval; branch `fix/MESP-91-verified-work-scope-authority` deleted after merge.
-- [x] `MESP-31`, `MESP-32`, `MESP-33`, `MESP-34`, and `MESP-35` are **Done** as approved documentation-only BRD baselines; `MESP-36` through `MESP-40` remain **To Do** and no implementation slice is active.
+- [x] `MESP-31`, `MESP-32`, `MESP-33`, `MESP-34`, `MESP-35`, and `MESP-36` are **Done** as approved documentation-only BRD baselines; `MESP-37` through `MESP-40` remain **To Do** and no implementation slice is active.
 - [x] `MESP-92` is **Done** (7 August 2026). PR #22 merged to `main` at `322341e70e56270797d5770b4b90342c20b7833e` after focused ChatGPT security review approval.
-- [x] `MESP-93` is **Done** through PR #24; `MESP-94` is **Done** through PR #26. No implementation item is active; MESP-109 Finance reconciliation is **Done**, MESP-23 remains the governance register, and MESP-36 remains the next separate To Do BRD.
+- [x] `MESP-93` is **Done** through PR #24; `MESP-94` is **Done** through PR #26. No implementation item is active; MESP-109 Finance reconciliation is **Done**, MESP-23 remains the governance register, and MESP-37 remains the next separate To Do BRD after the completed MESP-36 Reporting baseline.
 - [x] No Sprint is active; MESP-89 and MESP-63 were delivered outside a Sprint.
 - [x] MESP-63, MESP-90, MESP-61, MESP-64, MESP-91, MESP-92, MESP-93 and MESP-94 completed sequentially; no implementation item is active and no parallel implementation is authorized.
 - [x] MESP-86 v0.4 Approved Release 1 Baseline is merged to `main`; implementation refinement is controlled and is not production readiness.
@@ -514,7 +540,7 @@ Define the business meaning of each domain before technical implementation. Each
 - [x] Inventory BRD — MESP-33 Done; v0.1 Approved Business Baseline at docs/22_Inventory_and_Warehouse_Management_BRD.md; PR #46 merged to main at cd6f57de329b7d193c5d75e2e4268ae87c8aac67; MESP-41 through MESP-55 remain open except approved MESP-52/MESP-56.
 - [x] B2B Sales BRD - MESP-35 Done; v0.1 Approved Business Baseline at docs/24_Sales_and_Order_to_Cash_BRD.md; PR #51 merged to main at 1daffde06106ab2f1b93ae1773ccd317ddc52089; FIN-OD-09 / MESP-110 and MESP-54 remain open; no source implementation.
 - [x] Finance BRD — MESP-34 historically Done; v0.1 Approved Business Baseline at `docs/23_Finance_and_Accounting_BRD.md`; the bounded independent-review correction is MESP-109 with FIN-OD-09 / MESP-110 still open; no source implementation.
-- [ ] Reporting and Analytics BRD.
+- [x] Reporting and Analytics BRD - MESP-36 Done; v0.1 Approved Business Baseline at `docs/25_Reporting_and_Analytics_BRD.md`; PR #52 merged to `main` at `cd3ad20876a0569245ccc6e1ff677315dfcc1a2a` from reviewed head `7022b24dc1c9ba6d02f9b77e0038b3e9b6211eeb`; MESP-53 remains critical and open; no source implementation.
 - [ ] Saudi Country Pack BRD.
 - [ ] Files and Integrations BRD.
 - [ ] Migration and cutover requirements.
@@ -545,15 +571,16 @@ Define the business meaning of each domain before technical implementation. Each
 - [x] Deferred decisions have owners and explicit implementation or production gates.
 - [ ] No technical behavior is invented to fill a business gap.
 
-MESP-28, MESP-29, MESP-30, MESP-31, MESP-32, MESP-33, MESP-34, and MESP-35
-are approved business baselines at their bounded documentation scopes. MESP-36
-through MESP-40 remain To Do and are not implied to be approved by any prior approval;
-each requires its own controlled BRD decision. MESP-41 through MESP-55 remain
-open except the exact approved MESP-52/MESP-56 scopes.
+MESP-28, MESP-29, MESP-30, MESP-31, MESP-32, MESP-33, MESP-34, MESP-35,
+and MESP-36 are approved business baselines at their bounded documentation
+scopes. MESP-37 through MESP-40 remain To Do and are not implied to be
+approved by any prior approval; each requires its own controlled BRD decision.
+MESP-41 through MESP-55 remain open except the exact approved MESP-52/MESP-56
+scopes.
 
 **Phase 2 status: IN PROGRESS — the approved BRD sequence is complete through
-MESP-35 B2B Sales and Order-to-Cash; MESP-36 Reporting and Analytics is the
-next separate To Do BRD. MESP-28 through MESP-35 are not implementation
+MESP-36 Reporting and Analytics; MESP-37 Saudi Localization and Compliance is
+the next separate To Do BRD. MESP-28 through MESP-36 are not implementation
 authorization, and no later BRD is implicitly approved by this status.**
 
 ---
