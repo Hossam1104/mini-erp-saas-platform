@@ -1,141 +1,152 @@
-# Next session - MESP-35 B2B Sales and Order-to-Cash BRD only
+# Next session - MESP-36 Reporting and Analytics BRD only
 
-MESP-34 is **Done** as the approved, documentation-only Release 1 B2B
-Finance and Accounting business baseline. Its canonical artifact is
-`docs/23_Finance_and_Accounting_BRD.md`. Focused PR #47 merged cleanly to
-`main` at `a6f1960e9ae748c9809b6addbfd7e8d7ea510a1b` from final branch head
-`72aa210d462f783671f1b3b33fcdea4955567b9c`; the approved requirements head
-was `7d9de5d1556114d443b95db9547d6c083dcd804d`. Jira activation, validation,
-Owner approval, final validation, and MESP-23 handoff evidence are comments
-`10746`, `10747`, `10748`, `10749`, and `10750`; final MESP-34 closure
-evidence is comment `10751`. MESP-34 is Done in live Jira.
+MESP-35 is **Done** as the bounded, documentation-only Release 1 B2B Sales
+and Order-to-Cash business baseline. The canonical artifact is
+docs/24_Sales_and_Order_to_Cash_BRD.md. Focused PR #51 merged cleanly to
+main at 1daffde06106ab2f1b93ae1773ccd317ddc52089 from reviewed branch head
+e5daa1048e9c54f34a23f613929a8832c6d8f8c5. Jira activation, validation,
+Owner approval, MESP-23 handoff, final validation, and closure evidence are
+comments 10762, 10763, 10764, 10765, 10766, and 10767.
 
-The bounded independent Opus 5 Finance checkpoint reconciliation is tracked
-as MESP-109. It is now **Done** as documentation/Jira/traceability/governance
-only. PR #50 was reviewed at head
-`cf3f6941523551a3d8a0ecdca39256b3e349c6f2` and merged to `main` at
-`cfb17878a0145cb99fc571da211e01dec6a66f28`; live Jira carries the post-merge
-validation and closure evidence. The accepted verdict is PASS WITH
-NON-BLOCKING FINDINGS; FIN-OD-09 / MESP-110
-(Finance year-end, Payment Term, and posting-dimension policy) remains To Do
-and unapproved. The corrected Finance baseline preserves MESP-54 and Exchange
-Rate as open, leaves Currency unexecuted, and adds no source or production
-behavior.
+The MESP-35 BRD explicitly preserves FIN-OD-09 / MESP-110 as To Do and
+unapproved, preserves MESP-54 as a separate open Finance dependency, and
+does not define Payment Term Release 1 shape or due-date mechanics,
+fiscal-year/year-end accounting mechanics, or Finance posting-dimension
+policy. The applicable MESP-23 register remains open except the exact
+approved MESP-52 / PD-020 and MESP-56 / PD-021 scopes. No source or
+production behavior was added.
 
-MESP-35 remains **To Do** under MESP-9 with the separately controlled BRD
-sequence. It must be activated only in a fresh session after the live MESP-34
-closure, completed MESP-109 handoff, Sales entry gate, and Finance
-posting-foundation handoff are reverified. Currency and all later tasks remain
-unstarted.
+MESP-36 is the next exact separately authorized BRD task. It remains **To Do**
+and must not be activated automatically. MESP-37, Currency, implementation
+work, and all later tasks remain unstarted.
 
 ## Exact objective
 
-Execute only MESP-35 — Produce the Release 1 B2B Sales and Order-to-Cash
-business-requirements baseline. Cover the B2B quotation, sales order,
-reservation, delivery, sales invoice, customer receipt, customer return,
-credit-control, AR, Inventory, Finance, reporting, Saudi, migration, and
-integration handoffs. Obtain and record genuinely blocking named-Owner or
-qualified external decisions through the normal process; publish the bounded
-documentation/Jira handoff; then stop.
+Execute only MESP-36 - Produce the Release 1 Reporting and Analytics
+business-requirements baseline. Cover operational dashboards and the report
+catalogue across executive, Procurement, Inventory, B2B Sales, Finance,
+audit, and SaaS administration, with data-freshness indicators and
+reconciliation paths.
 
-Do not begin implementation, a Lean Implementation Specification, Currency,
-Reporting, Saudi, or any later domain. Do not execute any next task
-automatically.
+Use the live MESP-36 Jira description as the task-specific source of required
+outputs. Its primary PRD anchors are RPT-001 through RPT-003, BR-012, and the
+PRD section 19.2 minimum report catalogue. The BRD sequence position is 11 of
+15.
 
-## Required evidence
+Do not execute MESP-37, Currency, implementation, source, schema, migration,
+API, UI, provider, database, infrastructure, production, Retail POS, or
+Wafra-specific core work. Do not execute any next task automatically.
 
-Read `AGENTS.md`, `.ai/CURRENT_STATE.md`, this `TASK.md`, `docs/staticts.md`,
-the canonical approved PRD `docs/MESP_PRD_v1.2.docx`, the approved glossary,
-approved Procurement BRD `docs/21_Procurement_and_Purchase_to_Pay_BRD.md`,
-approved Inventory BRD `docs/22_Inventory_and_Warehouse_Management_BRD.md`,
-approved Finance BRD `docs/23_Finance_and_Accounting_BRD.md`, the Product
-Decision Register, MESP-23, ADR/index evidence, and the Product Delivery Master
-Plan before changing scope.
+## Required entry evidence
 
-Use PRD anchors SAL-001 through SAL-008, BR-005, and BR-009 as the primary
-Sales baseline. Reverify the corrected sequence: Finance is analysed before
-Sales. Preserve the Finance posting foundation and do not redefine AP, AR, GL,
-tax, cash/bank, period, currency, reversal, reconciliation, or consolidation
-policy.
+Before activating MESP-36 in live Jira, read:
 
-Verify live Jira before activation, including MESP-25, MESP-26, MESP-34,
-MESP-35, MESP-23, MESP-41 through MESP-56, and every Sales-affecting issue.
-Preserve exact approved MESP-52/PD-020 and MESP-56/PD-021 scopes. Keep every
-other open row open unless qualifying named evidence resolves it.
+- AGENTS.md;
+- .ai/CURRENT_STATE.md;
+- this TASK.md;
+- docs/staticts.md;
+- the canonical approved PRD docs/MESP_PRD_v1.2.docx;
+- docs/00_ERP_Business_Glossary.md;
+- the approved Procurement, Inventory, Finance, and Sales BRDs;
+- the Product Decision Register and the live MESP-23 register;
+- Decisions.md and applicable ADR/index evidence; and
+- docs/94_Product_Delivery_Master_Plan.md.
+
+Reverify the live Jira sequence and gates immediately before activation:
+
+- MESP-25 and MESP-26 are Done;
+- MESP-34 Finance, MESP-109 Finance reconciliation, and MESP-35 Sales are
+  Done, with their published evidence;
+- MESP-36 is the only intended active task and is still To Do before
+  activation;
+- MESP-23 remains In Progress;
+- FIN-OD-09 / MESP-110 remains To Do and unapproved;
+- MESP-54 and all other applicable MESP-23 rows remain open except the exact
+  MESP-52 / PD-020 and MESP-56 / PD-021 closures; and
+- MESP-37, Currency, and later tasks remain To Do/unstarted.
+
+Do not treat MESP-35 completion as approval of any Sales, Finance,
+Inventory, Saudi, migration, integration, reporting, or exchange-rate
+decision. Preserve the exact MESP-35 boundary and evidence.
 
 ## BRD coverage
 
-The Sales BRD must define, without inventing unresolved policy:
+Define business requirements without inventing unresolved policy for:
 
-- B2B quotation, sales order, approval, reservation, delivery, partial
-  delivery, sales invoice, customer receipt, allocation, customer return,
-  credit note, and reconciliation workflows;
-- triggers, preconditions, actors, permissions, approval boundaries, credit
-  control, separation of duties, delegation, lifecycle/status transitions,
-  validation, business numbering, cancellation, immutable posted history, and
-  reversal/correction;
-- source handoffs to the Finance GL/AR/revenue/tax/cash foundation and the
-  Inventory immutable stock ledger/valuation boundary;
-- Product/Item, Category/UOM, customer, Organization, Procurement,
-  Inventory, Finance, Reporting, Migration, Saudi/localization, and external
-  integration boundaries without redefining those domains;
-- partials, exceptions, denial, credit holds, stale/concurrent edits,
-  idempotent retries, unknown payment outcomes, audit, notifications,
-  reconciliation, reports/KPIs, imports/exports, observability, and recovery;
-- Saudi/localization implications and external validation without legal, tax,
-  ZATCA, banking, privacy, or statutory conclusions; and
-- traceable Given/When/Then scenarios for happy paths, partial delivery and
-  settlement, denial, Tenant isolation, immutable financial history,
-  Inventory/Finance handoffs, valuation, reconciliation, and downstream
-  reporting.
+- report purpose, users, actors, responsibilities, triggers, preconditions,
+  report ownership, catalogue, dashboards, KPIs, filters, drill-down,
+  exports, subscriptions/notifications, and lifecycle;
+- executive, Procurement, Inventory, B2B Sales, Finance, audit, platform
+  administration, Tenant, Company, Branch, Warehouse, and operational views;
+- source lineage to master data, quotes/orders/deliveries/invoices/receipts,
+  returns/credits, purchase commitments/receipts/invoices/payments, stock
+  ledger/valuation, AR/AP/GL/tax/cash, identity/access, audit, and
+  administrative events;
+- data freshness, posted-versus-pending-versus-unknown status, period and
+  currency facts, reconciliation owner, correction/reversal, and immutable
+  source history;
+- permissions, server-derived Tenant and organizational scope, Company
+  boundaries, separation of duties, delegated access, privacy, retention,
+  export, attachment, and audit controls;
+- partial, stale, duplicate, missing, denied, unauthorized, concurrent,
+  delayed, retryable, dead-lettered, and unknown data outcomes;
+- report validation, calculated measures, source snapshots, versioned
+  definitions, effective dates, rounding and currency display boundaries,
+  without resolving Finance policy;
+- Inventory quantity and valuation facts, Finance accounting truth, source
+  reconciliation, and no mutation of source transactions;
+- migration and opening-state reporting boundaries under MESP-51;
+- Saudi, tax, localization, privacy, legal, banking, and external-validation
+  implications without statutory conclusions;
+- authenticated integrations, imports/exports, observability, recovery,
+  volume, retention, residency, backup, and production gates; and
+- traceable Given/When/Then scenarios covering authorization, Tenant
+  isolation, freshness, reconciliation, partials, denial, immutable
+  financial history, Inventory/Finance sources, and downstream correction.
 
-Release 1 remains B2B ERP only. Retail POS, cashier sessions, retail checkout,
-store cash drawers, loyalty, promotions, and Wafra-specific core behavior are
-prohibited. Customers and suppliers are external business parties, not Users;
-this BRD must not grant them credentials, Tenant membership, or sessions.
+Release 1 remains B2B ERP only. Customers and suppliers remain external
+business parties, not Users. Retail POS, cashier sessions, retail checkout,
+store cash drawers, loyalty, promotions, and Wafra-specific core behavior
+remain excluded.
 
 ## Decision discipline
 
-Do not infer unresolved Sales, credit, pricing, tax, currency, approval,
-reservation, delivery, return, payment, Saudi, migration, reporting, or
-integration rules from existing code, common practice, recommended defaults, or
-model judgment. Consolidate decisions that truly block a coherent Sales BRD
-into a small Owner/external bundle stating recommendation, alternatives,
-consequences, scope, and due point. A decision is approved only with named
-human or qualified external evidence in Jira or the immutable decision record.
+Do not infer report catalogue, KPI formulas, reconciliation ownership,
+currency/rate display, fiscal-year/year-end behavior, Payment Term, tax,
+Saudi, retention, privacy, migration, integration, or permission policy from
+common practice, source code, or recommended defaults. Keep each unresolved
+decision visible with its owner and implementation or production gate.
 
-Do not close Inventory or Finance decisions merely because Sales depends on
-them. Preserve the Finance BRD's open FIN-OD rows and the exact PD-020/PD-021
-boundaries.
+FIN-OD-09 / MESP-110 remains open and unapproved. Do not define Payment Term
+shape or due-date mechanics, fiscal-year/year-end accounting mechanics, or
+Finance posting-dimension policy inside Reporting. Preserve MESP-54 and all
+other applicable open MESP-23 decisions. Do not close Sales, Finance,
+Inventory, Saudi, migration, or platform decisions merely because reports
+consume their data.
 
 ## Required boundary
 
 - Documentation, Jira, and governance only.
-- No application source, EF entity, table, migration, endpoint, API contract,
-  UI, provider, database, infrastructure, or automated-test behavior change.
-- Do not execute a migration or provision production/external infrastructure.
+- No application source, EF entity, table, migration, endpoint, API
+  contract, UI, provider, database, infrastructure, or automated-test
+  behavior change.
+- Do not execute a migration or provision production/external
+  infrastructure.
 - Do not resolve MESP-48, MESP-49, MESP-50, ADR-011, Finance policy,
-  Inventory policy, or another domain's decision by implication.
-- Do not activate or execute Currency, MESP-36, MESP-37, or any later task
+  Inventory policy, MESP-54, FIN-OD-09 / MESP-110, or another domain's
+  decision by implication.
+- Do not activate or execute MESP-37, Currency, or any later task
   automatically.
 
 ## Required completion and handoff
 
 Run focused documentation checks, inspect the complete task-related diff,
 update every genuinely affected state/plan file, review and conservatively
-update `docs/staticts.md`, and record exact Jira activation, validation, Owner
-approval, MESP-23 handoff, and closure evidence. Commit and push through a
-focused review PR; merge only when clean and unblocked. Leave the repository
-synchronized and `TASK.md` pointing to the next exact separately authorized
-session, then stop for ChatGPT review.
+update docs/staticts.md, and record exact Jira activation, validation, Owner
+approval, MESP-23 handoff, and closure evidence. Publish the canonical
+Reporting BRD through a focused review PR, merge only when clean and
+unblocked, synchronize main, then update this TASK.md with the next exact
+separately authorized task and stop for ChatGPT review.
 
-## Stop conditions
-
-Stop and report a blocker for an unresolved Owner or qualified external
-decision required to make the Sales BRD coherent; accounting/data-integrity,
-Tenant-isolation, authorization, legal/privacy/external-validation,
-destructive migration/data-loss, credential/production-infrastructure, or
-material scope/architecture risk.
-
-This handoff is the end of the MESP-34 session. Do not execute MESP-35,
-Currency, or any next task after updating this file in the current session.
+This handoff is the end of the MESP-35 session. Do not execute MESP-36,
+MESP-37, Currency, implementation, or any next task in this session.

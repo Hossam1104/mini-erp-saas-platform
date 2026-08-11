@@ -1,47 +1,38 @@
 # Current State
 
-## Current authoritative position - 11 August 2026 (MESP-109 Finance checkpoint reconciliation complete)
+## Current authoritative position - 11 August 2026 (MESP-35 Sales BRD complete)
 
-MESP-109 is **Done** as the single bounded Finance reconciliation item. It
-reconciles accepted independent Opus 5 findings O5-FIN-001 through O5-FIN-010
-against the approved MESP-34 Finance BRD. The verdict is **PASS WITH
-NON-BLOCKING FINDINGS**. Jira activation evidence is comment `10752`, and
-post-merge validation/closure evidence is recorded on MESP-109 in live Jira.
-The work is documentation, Jira, traceability, and governance only: no source,
-test, database, schema, migration, EF, API, UI, provider, infrastructure, or
-production configuration behavior is authorized.
+MESP-35 is **Done** as the bounded, documentation-only Release 1 B2B Sales
+and Order-to-Cash business baseline. The canonical artifact is
+docs/24_Sales_and_Order_to_Cash_BRD.md. Focused PR #51 merged cleanly to main
+at 1daffde06106ab2f1b93ae1773ccd317ddc52089 from reviewed branch head
+e5daa1048e9c54f34a23f613929a8832c6d8f8c5. Jira activation, validation, Owner
+approval, MESP-23 handoff, final validation, and closure evidence are comments
+10762, 10763, 10764, 10765, 10766, and 10767.
 
-The minimum new open Finance detail bundle is FIN-OD-09 / MESP-110, `Decide
-Finance year-end, Payment Term, and posting-dimension policy`, under the
-MESP-23 decision-register governance. It is To Do and unapproved; creation and
-scope evidence is comment `10753`. It does not resolve MESP-54 or any existing
-MESP-41 through MESP-56 decision.
+Before activation, live Jira explicitly reverified MESP-109 as Done with the
+accepted PASS WITH NON-BLOCKING FINDINGS verdict and FIN-OD-09 / MESP-110 as
+To Do and unapproved. MESP-110 remains the open Finance dependency for
+fiscal-year/year-end, Payment Term Release 1 shape and due-date mechanics, and
+Finance posting-dimension policy. This session did not define or approve any
+of those details and did not resolve MESP-54.
 
-MESP-34 remains historically **Done** through PR #47 and closure comment
-`10751`. MESP-35 remains **To Do** and must not be activated. MESP-23 remains
-In Progress. MESP-54 and Exchange Rate remain open; Currency is not executed,
-although M95-SL-06 is conceptually Ready for a future separate readiness path.
-M95-SL-09 Exchange Rate is not Ready. Release 1 remains B2B ERP only, and
-MESP-48/MESP-50 production gates remain unchanged.
-
-The canonical Finance artifact is still
-`docs/23_Finance_and_Accounting_BRD.md`, with the bounded reconciliation
-recorded in `docs/99_Independent_Opus_5_Finance_BRD_Reconciliation.md`.
-Focused correction PR #50 was reviewed at branch head
-`cf3f6941523551a3d8a0ecdca39256b3e349c6f2` and merged cleanly to `main` at
-`cfb17878a0145cb99fc571da211e01dec6a66f28`; the final closure metadata and
-tracker synchronization are recorded in the final handoff. The root `TASK.md`
-remains the complete, exact MESP-35 fresh-session prompt and is not executed in
-this session.
+MESP-34 remains Done, MESP-23 remains In Progress, and the 16-row
+Jira-decomposed MESP-23 register remains 14 open rows plus the exact approved
+MESP-52 / PD-020 and MESP-56 / PD-021 closures. Currency, MESP-36, MESP-37,
+and implementation work remain unstarted. Release 1 remains B2B ERP only.
+No source, test, database, schema, migration, EF, API, UI, provider,
+infrastructure, or production configuration behavior was authorized.
 
 | Current fact | Verified value |
 |---|---|
-| MESP-109 | **Done**; independent Opus 5 Finance reconciliation; activation comment `10752`; PR #50 reviewed head `cf3f6941523551a3d8a0ecdca39256b3e349c6f2` merged at `cfb17878a0145cb99fc571da211e01dec6a66f28`; live Jira post-merge closure evidence recorded. |
-| FIN-OD-09 / MESP-110 | **To Do / unapproved**; Finance year-end, Payment Term, and posting-dimension policy; creation/scope comment `10753`. |
-| MESP-34 / MESP-35 | MESP-34 **Done**; MESP-35 **To Do** and not activated. |
-| MESP-23 / MESP-54 | MESP-23 **In Progress**; MESP-54 **To Do/open**. |
-| Current branch | `main` after PR #50 merge and final documentation/tracker synchronization; no implementation branch is active. |
-| Production-capability percentages | Unchanged; this session adds no usable production capability. |
+| MESP-35 | **Done**; canonical Sales BRD docs/24_Sales_and_Order_to_Cash_BRD.md; PR #51 merged at 1daffde06106ab2f1b93ae1773ccd317ddc52089; Jira closure evidence 10767. |
+| MESP-109 | **Done**; accepted independent Opus 5 verdict PASS WITH NON-BLOCKING FINDINGS; prior reconciliation evidence remains recorded in live Jira. |
+| FIN-OD-09 / MESP-110 | **To Do / unapproved**; Finance year-end, Payment Term, and posting-dimension policy; creation/scope comment 10753. |
+| MESP-23 / MESP-54 | MESP-23 **In Progress**; MESP-54 **To Do/open**; no open row was closed by Sales. |
+| Current branch | main at the merged PR #51 baseline; no implementation branch is active. |
+| Next exact task | MESP-36 Reporting and Analytics BRD only; it remains To Do and is not activated automatically. |
+| Production-capability percentages | Unchanged; this documentation-only session adds no usable production capability. |
 
 ## Historical authoritative position - 10 August 2026 (MESP-34 Finance BRD Done)
 
