@@ -1,13 +1,14 @@
 # Release 1 Saudi Localization and Core ERP Business Requirements Document
 
-> **Version:** v0.1 - Draft bounded product-only baseline
+> **Version:** v0.1 - Approved bounded product-only baseline
 > **Jira:** MESP-37 - Produce Saudi Localization and Compliance BRD
 > **Parent:** MESP-12 - EPIC 12 - Saudi Localization and Compliance
 > **BRD sequence:** Position 12 of 15; the next BRD after Reporting and Analytics
 > **Date:** 11 August 2026
 > **Scope:** Saudi-localized Core ERP Release 1; reusable multi-Tenant B2B ERP; Wafra validation-only
-> **Status:** Draft for bounded Owner review; documentation-only; no implementation authorization
+> **Status:** Approved product-only business baseline; documentation-only; no implementation authorization
 > **Entry evidence:** MESP-112 Done / PD-023; MESP-111 Done with “READY FOR MESP-37 DRAFT ONLY - EXTERNAL VALIDATION OUTSTANDING”; MESP-37 activated in Jira comment 10854
+> **Approval evidence:** Jira comment 10855 (validation), Jira comment 10857 (Owner approval), MESP-22 traceability comment 10856, and MESP-23 handoff comment 10858; focused PR #55 reviewed at `6563f2158284204a83d263ff79e4971d0726eaf9`
 > **Canonical scope overlay:** `docs/27_Release_1_Saudi_Localization_Scope_Rebaseline.md`
 
 ## 1. Document control and reading rules
@@ -1040,15 +1041,14 @@ This bounded session is complete when:
 
 ## 20. Approval and handoff record
 
-At initial publication this document is a **Draft bounded product-only
-baseline** pending focused validation and Owner approval. The intended approval
-is limited to the requirements in sections 3 through 17 at the exact
-localization/core ERP scope. It does not approve or close the open decisions or
-the future statutory, tax, legal, privacy, external-integration, or production
-boundaries listed above.
+This document is an **Approved bounded product-only baseline**. Hossam's Owner
+approval is recorded in Jira comment 10857 after validation in comment 10855.
+The approval is limited to the requirements in sections 3 through 17 at the
+exact localization/core ERP scope. MESP-22 comment 10856 records that no new
+Product Decision was created, and MESP-23 handoff comment 10858 preserves the
+open register and named gates.
 
-After approval, this section must record the Jira validation, Owner approval,
-MESP-23 handoff, and MESP-37 closure evidence, together with the reviewed
-content head and final merge commit. A later change to this baseline must use a
-new reviewed version or superseding decision; it must not silently edit the
-approved scope.
+The approval does not approve or close the open decisions or the future
+statutory, tax, legal, privacy, external-integration, or production boundaries
+listed above. A later change to this baseline must use a new reviewed version
+or superseding decision; it must not silently edit the approved scope.
