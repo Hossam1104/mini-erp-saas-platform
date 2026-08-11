@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-11 17:01 +03:00
+**Last Updated:** 2026-08-11 17:05 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -956,7 +956,8 @@ The following categories remain important production gates and should be continu
 ## Production / External Gates
 
 - reference volume assumptions;
-- Saudi e-invoicing launch scope;
+- future Saudi Compliance / Integration release scope (MESP-49 Release 1
+  disposition is complete);
 - Saudi legal/tax validation;
 - data residency;
 - retention;
@@ -972,7 +973,7 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **No source implementation item is active. MESP-23 remains In Progress as the living Open Questions Register; its bounded reconciliation is recorded in Jira comment `10731` and its Finance handoff is recorded on MESP-23 after MESP-109. MESP-107 Customer, MESP-104 Supplier, and MESP-102 Product implementations are complete at their approved bounded scopes. MESP-33 Inventory and MESP-34 Finance are complete as approved documentation-only BRDs through PR #46 and PR #47; MESP-109 Finance reconciliation is Done through PR #50; MESP-35 B2B Sales is Done through PR #51; MESP-36 Reporting and Analytics is Done through PR #52; MESP-111 Saudi regulatory evidence readiness is Done through PR #53 with the draft-only verdict; MESP-53 remains the critical open Reporting dependency; qualified Saudi external validation and owner decisions are the next exact handoff; MESP-37 Saudi Localization and Compliance remains To Do and is not activated.**
+> **No source implementation item is active. MESP-112 is Done through documentation-only PR #54 with the Release 1 Saudi scope overlay and PD-023; MESP-49 is Done for Release 1 scope only; MESP-50 remains open for production/platform governance; MESP-23 remains In Progress as the living Open Questions Register; MESP-107 Customer, MESP-104 Supplier, and MESP-102 Product implementations are complete at their approved bounded scopes. MESP-33 Inventory and MESP-34 Finance are complete as approved documentation-only BRDs through PR #46 and PR #47; MESP-109 Finance reconciliation is Done through PR #50; MESP-35 B2B Sales is Done through PR #51; MESP-36 Reporting and Analytics is Done through PR #52; MESP-111 Saudi regulatory evidence readiness is Done through PR #53 with its historical draft-only verdict preserved; MESP-53, MESP-54, and MESP-110 remain open; the next exact handoff is MESP-37 Saudi Localization BRD only, and it remains To Do and is not activated.**
 
 Current strategic state:
 
