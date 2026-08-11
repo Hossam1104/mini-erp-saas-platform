@@ -32,7 +32,7 @@ Live Jira reconciliation is:
 | MESP-111 | **Done**; history preserved; R1 scope addendum 10847; historical activation/closure evidence 10809/10810. |
 | MESP-22 / PD-023 | **Done / append-only register updated**; PD-023 evidence 10849. |
 | Other gates | MESP-48, MESP-53, MESP-54, and MESP-110 remain open and are not implied resolved. |
-| Current branch | docs/MESP-112-release1-saudi-scope-rebaseline; focused documentation PR is pending review/merge. |
+| Current branch | docs/MESP-112-release1-saudi-scope-rebaseline; PR #54 is open for final review from candidate head 6575d76df04df2fb292b3fd4b333418e64cd60cb. |
 | Source implementation | None. No source, tests, EF/entity/schema, migration, API, UI, provider, credentials, integration, tax, privacy/legal workflow, production configuration, or Wafra-specific behavior changed. |
 | Production-capability percentages | Unchanged; this governance/rebaseline task adds no usable production capability. |
 | Next exact task | **MESP-37 - Release 1 Saudi Localization BRD only**, To Do and not activated automatically. |

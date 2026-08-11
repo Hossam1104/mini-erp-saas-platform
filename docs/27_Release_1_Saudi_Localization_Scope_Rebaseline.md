@@ -322,7 +322,7 @@ comment 10849.
 
 | Issue | Verified Release 1 position | Evidence |
 |---|---|---|
-| MESP-112 | In Progress while this bounded task is being reviewed; owns this artifact and handoff | Activation comment 10848; parent MESP-12 |
+| MESP-112 | In Progress while this bounded task is being reviewed; PR #54 is open from candidate head 6575d76df04df2fb292b3fd4b333418e64cd60cb | Activation comment 10848; parent MESP-12 |
 | MESP-49 | Done for R1 scope only; statutory/ZATCA/FATOORA scope deferred/out of scope | Disposition comment 10843 |
 | MESP-50 | To Do / open; dedicated legal/privacy features deferred, production/platform governance remains | Rebaseline comment 10844 |
 | MESP-37 | To Do; not activated; future BRD narrowed to localization/core ERP | Boundary comment 10845 |

@@ -31,7 +31,9 @@
 > added and all production percentages remain unchanged.
 >
 > The prior MESP-111 external-validation overlay and all older completion
-> overlays below remain historical evidence. Root TASK.md now hands off the
+> overlays below remain historical evidence. Focused PR #54 is open from the
+> candidate documentation head 6575d76df04df2fb292b3fd4b333418e64cd60cb.
+> Root TASK.md now hands off the
 > exact next session MESP-37 - Release 1 Saudi Localization BRD only; it must
 > not start automatically.
 
