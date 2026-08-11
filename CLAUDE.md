@@ -1,6 +1,35 @@
 @AGENTS.md
 
-## Current execution overlay - 9 August 2026 (MESP-101 readiness complete)
+## Current execution overlay - 12 August 2026 (Pre-MESP-38 reconciliation handoff)
+
+The verified live sequence is MESP-27 through MESP-37 **Done** at their
+approved bounded BRD scopes. MESP-23 remains **In Progress** as the living
+Open Questions Register. MESP-38 - Security, Audit, and Data Governance BRD is
+the single next BRD task; it is **To Do**, has not been activated, and must not
+be executed by this reconciliation. MESP-48, MESP-50, MESP-53, MESP-54, and
+MESP-110 remain open and unapproved at their existing boundaries.
+
+The root `TASK.md` contains the exact next MESP-38 session prompt, and
+`.ai/CURRENT_STATE.md` contains the current verified detailed state. MESP-38
+is documentation-only and adds no production capability. No next task starts
+automatically.
+
+Release 1 remains Saudi-localized Core ERP B2B only. Retail POS,
+Wafra-specific core behavior, statutory/tax/ZATCA/FATOORA implementation,
+external production integrations, and privacy/legal certification remain
+excluded or separately gated.
+
+Hossam's standing Owner approval continues for normal bounded BRD,
+specification, readiness, merge, closure, and next-session activation within
+approved scope and architecture. Stop only for a real security/Tenant-
+isolation, accounting/data-integrity, destructive migration/data-loss,
+unresolved-business-decision, legal/external-validation,
+credential/production-infrastructure, or material scope/architecture blocker.
+One fresh chat executes exactly one root `TASK.md` session, updates genuinely
+affected state and Jira, and stops for review; never start the next task
+automatically.
+
+## Historical execution overlay - 9 August 2026 (MESP-101 readiness complete; preserved)
 
 MESP-100 is Done with closure evidence `10663`. MESP-99 / M95-SL-02 is Done
 through PR #33, correction PR #34, and final audit-semantics correction PR #35,
@@ -49,7 +78,7 @@ independent Opus review after every five sessions or earlier at a critical
 architecture/security/financial/data-model checkpoint.
 # Mini ERP Delivery Rules
 
-## Current approval overlay — 8 August 2026
+## Historical approval overlay — 8 August 2026 (preserved)
 
 MESP-31 BRD v0.3 is an **Approved Business Baseline** and is now **Done** in
 live Jira. Hossam's approval is recorded in comment `10649`; final closure

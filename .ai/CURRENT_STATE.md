@@ -1,5 +1,38 @@
 # Current State
 
+## Current authoritative position - 12 August 2026 (Pre-MESP-38 reconciliation active)
+
+The verified baseline is `main` at `fc46fc9` (`docs: synchronize MESP-37
+closure and MESP-38 handoff`). The bounded reconciliation task is
+**MESP-114 - Reconcile Pre-MESP-38 independent review findings**, under
+governance Epic MESP-1, and is **In Progress** with activation evidence in
+Jira comment `10895`. This session is documentation/Jira/governance only.
+
+The Independent Opus 5 Pre-MESP-38 checkpoint verdict was **HOLD - CORRECTION
+REQUIRED BEFORE MESP-38**, with 0 Critical / 2 High / 2 Medium / 2 Low
+findings. The six finding IDs are O5-PRE38-001 through O5-PRE38-006. The
+approved business architecture remains materially consistent; no redesign is
+being performed.
+
+Live Jira and execution position:
+
+| Current fact | Verified value |
+|---|---|
+| MESP-27 through MESP-37 | **Done** at their approved bounded BRD scopes. |
+| MESP-23 | **In Progress** as the living Open Questions Register; INV-OD-004 reconciliation evidence is comment `10894`; no row was closed. |
+| MESP-38 | **To Do**; the single next Security, Audit, and Data Governance BRD; not activated and not executed. |
+| MESP-113 / INV-OD-004 | **To Do / unapproved** under MESP-8; durable owner for transfer, in-transit, count-window, variance, and Stock Issue policy; Inventory and Finance input required before affected Inventory LIS/implementation. |
+| MESP-48 / MESP-50 / MESP-53 / MESP-54 / MESP-110 | **To Do/open** and preserved as supported-volume, production-governance, Reporting, Currency, and Finance gates. MESP-53 is report catalogue and reconciliation ownership, not a security decision. |
+| Current branch | `agent/pre-mesp-38-reconciliation`, created from verified `main` at `fc46fc9`. |
+| Root next task | `TASK.md` contains the complete corrected MESP-38 documentation-only session prompt. |
+| Detailed entry point | This current section is authoritative; historical sections below are preserved evidence only. |
+| Production capability | No production capability was added; overall, Backend, Database, and Frontend percentages remain unchanged. |
+| Exclusions preserved | No source, tests, EF/schema/migrations, APIs, UI, providers, infrastructure, credentials, external integrations, Currency implementation, ZATCA/FATOORA/tax behavior, privacy/legal workflow, Retail POS, or Wafra-specific core behavior. |
+
+No next task starts automatically. The corrected MESP-38 prompt must be
+executed only in a fresh session after this reconciliation is reviewed,
+merged, and closed.
+
 ## Current authoritative position - 11 August 2026 (MESP-37 Saudi Localization BRD complete)
 
 MESP-37 - Produce Saudi Localization and Compliance BRD is **Done** at the
@@ -552,9 +585,12 @@ older live-state claims.
   implementation, migration, database, or secret action is authorized in this
   session.
 
-## Start here — verified position on 8 August 2026 (MESP-31 BRD v0.3 Owner Approved; PR #28 pending merge)
+## Historical position — 8 August 2026 (MESP-31 BRD v0.3 Owner Approved; PR #28 pending merge)
 
-A new agent can begin from this section with no prior chat history.
+This section is preserved historical evidence from the MESP-31 approval/merge
+sequence. It is not current guidance and must not be used as the entry point
+for a new agent; use the current authoritative section at the top of this
+file and the root `TASK.md` instead.
 
 | Fact | Verified value |
 |---|---|
