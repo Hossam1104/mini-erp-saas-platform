@@ -1,6 +1,33 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative current MESP-38 BRD completion overlay - 12 August 2026.**
+> **Authoritative current full-feature fast-track overlay — 12 August 2026
+> (MESP-115).** Release 1 remains the full-feature reusable B2B ERP. The
+> milestone is **31 August 2026 — Release 1 Integrated Preview**, a running
+> preview of the real codebase, not an MVP, throwaway/demo UI, Wafra fork, or
+> scope cut. Unfinished capability remains required after the preview.
+>
+> Canonical plan: `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`.
+> Canonical Owner Decision Pack: `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`.
+> Tax/VAT clarification: `docs/32_Release_1_Tax_VAT_Scope_Clarification.md`.
+> PD-024 records only explicit Owner directions; Pack recommendations remain
+> **NOT APPROVED UNTIL OWNER SIGNS** in MESP-116. Internal reusable
+> configuration-led Tax/VAT is restored to Release 1 without statutory,
+> ZATCA/FATOORA, legal, certification, submission, clearance, provider,
+> credential, or external-integration scope.
+>
+> MESP-38 is Done. MESP-39 remains To Do, unactivated, and not executed as a
+> future-release Integrations and External Services BRD. MESP-40 remains an
+> unactivated Release 1 migration/onboarding requirement in Wave H. MESP-23
+> remains In Progress. MESP-117–MESP-142 are To Do/not activated under the
+> existing module Epics. One active capability, one sequential executor, one
+> focused PR, Angular included, and Opus checkpoints A/B/C remain mandatory.
+> The exact next session is MESP-116; no implementation starts automatically.
+
+> **Historical pre-fast-track overlay — MESP-38 completion.** The prior
+> MESP-38/MESP-39 overlay immediately below remains preserved evidence only;
+> the current fast-track overlay above is authoritative.
+
+> **Historical current MESP-38 BRD completion overlay - 12 August 2026.**
 > MESP-38 - Produce Security, Audit, and Data Governance BRD is **Done** at
 > its approved bounded documentation-only scope. The canonical artifact is
 > docs/29_Security_Audit_and_Data_Governance_BRD.md. Focused PR #57 merged to

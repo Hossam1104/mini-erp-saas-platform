@@ -1,6 +1,37 @@
 # Current State
 
-## Current authoritative position - 12 August 2026 (MESP-38 BRD complete; MESP-39 handoff)
+## Current authoritative position - 12 August 2026 (MESP-115 full-feature fast-track rebaseline)
+
+The current Owner direction is the full-feature fast-track rebaseline. Release
+1 remains a reusable full-feature B2B ERP. **31 August 2026 — Release 1
+Integrated Preview** means a running preview of the real codebase with the
+maximum safely integrated functionality achieved by then; it is not an MVP,
+throwaway/demo UI, Wafra fork, or scope cut. Unfinished capabilities remain
+required after the preview.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-115 | **In Progress** for the bounded documentation/Jira/governance rebaseline; activation evidence is Jira comment 10941. |
+| Canonical artifacts | docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md; docs/31_Release_1_Consolidated_Owner_Decision_Pack.md; docs/32_Release_1_Tax_VAT_Scope_Clarification.md. |
+| PD-024 | Appended to MESP-22 in comment 10945 for explicit full-feature/preview, sequential-governance, external-integration-deferral, and internal-configurable-Tax/VAT directions only. |
+| Consolidated Decision Pack | 31 entries: 16 Owner-decidable, 6 specialist/input-dependent but contractable, 9 production-only/external/legal gates; all recommendations pending explicit Owner approval in MESP-116. |
+| MESP-38 | **Done** at its approved bounded Security, Audit, and Data Governance BRD scope. |
+| MESP-39 | **To Do, unactivated, not executed**; future-release Integrations and External Services BRD, outside the Release 1 critical path. |
+| MESP-40 | **To Do, unactivated, required for Release 1**; migration/onboarding Wave H, not executed by this handoff. |
+| MESP-23 | **In Progress** as the living Open Questions Register; reconciliation comment 10944 closed no row. |
+| Capability backlog | MESP-117–MESP-142 created under existing module Epics; all To Do/not activated. |
+| Tax/VAT | M95-SL-08 reclassified to **Release 1 required — Not Started** for internal reusable configuration-led Tax/VAT only; statutory/ZATCA/FATOORA/external scope remains excluded. |
+| Governance | One active capability, one sequential executor, one focused PR; Opus checkpoints A/B/C reserved as defined in the fast-track plan. |
+| Source/production capability | None added by this documentation/Jira session; production percentages remain unchanged. |
+| Next exact session | TASK.md contains MESP-116 — Release 1 Consolidated Owner Decision Approval and Implementation-Unblock Reconciliation. |
+
+This session does not execute MESP-39, activate MESP-40, implement source,
+tests, persistence, schema, migrations, APIs, UI, providers, credentials,
+infrastructure, or production configuration. Existing approved BRDs and PD-023
+remain historical/immutable evidence; current scope corrections are carried by
+the fast-track overlay, PD-024, and the three canonical artifacts above.
+
+## Historical authoritative position - 12 August 2026 (MESP-38 BRD complete; superseded by MESP-115 rebaseline)
 
 MESP-38 - Produce Security, Audit, and Data Governance BRD is **Done** at
 its approved bounded documentation-only scope. The canonical artifact is

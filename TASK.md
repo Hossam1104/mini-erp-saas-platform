@@ -1,238 +1,160 @@
-# Next session - MESP-39 - Integrations and External Services BRD only
+# Next session — MESP-116 — Release 1 Consolidated Owner Decision Approval and Implementation-Unblock Reconciliation
 
 ## Session boundary
 
-This is the exact next executable session after the completed MESP-38
-Security, Audit, and Data Governance BRD and its focused PR #57 merge. Execute
-only the bounded MESP-39 documentation-only BRD session below in a fresh chat.
-Do not execute this prompt in the current MESP-38 completion and
-state-synchronization session.
+This is the exact next bounded session after MESP-115. Execute only this
+decision-approval and implementation-unblock reconciliation in a fresh chat.
+Do not execute this prompt in the current MESP-115 completion session. Do not
+start the first capability automatically after completing it.
 
-MESP-27 through MESP-38 are Done at their approved bounded BRD scopes.
-MESP-23 remains In Progress as the living Open Questions Register. MESP-39 -
-Produce Integrations and External Services BRD - is the single next BRD task
-and remains To Do. It must be activated only by the future MESP-39 session
-after fresh live-state verification. Do not activate MESP-40 or any later
-task automatically.
+Release 1 remains the full-feature reusable B2B ERP. **31 August 2026 —
+Release 1 Integrated Preview** is an integrated preview of the real codebase,
+not an MVP, throwaway/demo UI, Wafra fork, or scope cut. Unfinished capability
+remains required after the preview.
+
+MESP-38 is Done. MESP-39 remains To Do, unactivated, and not executed as a
+future-release Integrations and External Services BRD. MESP-40 remains To Do,
+unactivated, and required for Release 1 in the migration wave. MESP-23 remains
+In Progress as the living Open Questions Register. MESP-117–MESP-142 are the
+not-activated capability backlog under existing module Epics.
 
 ## Objective
 
-Produce one bounded Release 1 B2B ERP Integrations and External Services BRD
-at business-requirements level. The canonical artifact for that session is
-docs/30_Integrations_and_External_Services_BRD.md, subject to a fresh
-availability check before creation.
+Read the canonical Consolidated Owner Decision Pack and obtain explicit
+Hossam/Owner approval, rejection, or deferral for every applicable A/B row.
+Apply only the decisions explicitly approved in this session; do not convert
+recommendations into requirements by inference. Append the next Product
+Decision entries only for explicit Owner decisions, reconcile the existing
+MESP-23 and Jira owner records without duplicates, publish the final
+dependency map, and hand off the first capability task for a separate later
+session.
 
-The BRD may define the business contract, ownership, risk boundaries,
-failure behavior, reconciliation expectations, and business-testable
-acceptance scenarios for integrations and external services. It must remain
-documentation-only. It must not implement or prescribe source code, database
-schema, EF entities, migrations, endpoint/API design, controllers, UI,
-providers, credentials, deployment, production infrastructure, or production
-configuration.
+This session is governance/readiness only. It must not implement source, tests,
+persistence, schema, migrations, APIs, UI, providers, credentials,
+infrastructure, production configuration, MESP-39, or migration execution.
 
 ## Required entry reading and live verification
 
-Before changing scope or drafting, read completely and verify:
+Read and verify, in this order:
 
-1. AGENTS.md;
-2. CLAUDE.md;
-3. .ai/CURRENT_STATE.md;
-4. this TASK.md;
-5. the canonical approved PRD docs/MESP_PRD_v1.2.docx structurally,
-   attempting visual rendering under the documents workflow when the local
-   renderer is available; record unavailable tooling without making a visual
-   claim;
-6. docs/94_Product_Delivery_Master_Plan.md;
-7. docs/staticts.md;
-8. docs/Decisions.md and docs/00_ERP_Business_Glossary.md;
-9. the approved upstream and adjacent BRDs, including:
-   - docs/11_SaaS_Platform_Administration_BRD.md;
-   - docs/12_Identity_and_Access_BRD.md;
-   - docs/13_Multi_Tenancy_BRD.md;
-   - docs/14_Organization_and_Company_Structure_BRD.md;
-   - docs/15_Foundation_Release_1_Lean_Implementation_Specification.md;
-   - docs/21_Procurement_and_Purchase_to_Pay_BRD.md;
-   - docs/22_Inventory_and_Warehouse_Management_BRD.md;
-   - docs/23_Finance_and_Accounting_BRD.md;
-   - docs/24_Sales_and_Order_to_Cash_BRD.md;
-   - docs/25_Reporting_and_Analytics_BRD.md;
-   - docs/26_Saudi_Regulatory_Evidence_and_External_Validation_Readiness.md;
-   - docs/27_Release_1_Saudi_Localization_Scope_Rebaseline.md;
-   - docs/28_Release_1_Saudi_Localization_BRD.md; and
-   - docs/29_Security_Audit_and_Data_Governance_BRD.md;
-10. docs/01_Technology_Architecture_Baseline.md, especially the actual
-    sections covering:
-    - Tenant isolation and server-derived context;
-    - authentication, authorization, and support access;
-    - private object storage and authorized downloads;
-    - business audit versus technical telemetry;
-    - external-service and integration boundaries;
-    - security controls and production gates; and
-    - the architecture decision record index;
-11. docs/Decisions.md and every available detailed record relevant to
-    integrations and external services, including ADR-002, ADR-003, ADR-004,
-    ADR-005, ADR-006, ADR-007, ADR-008, ADR-009, ADR-010, ADR-013, ADR-014,
-    ADR-016, ADR-017, and ADR-018. If an ADR is only an index entry or a
-    required future decision, do not manufacture a missing record or treat it
-    as approved. ADR-011 remains a localization dependency;
-12. live Jira MESP-23, MESP-38, MESP-39, MESP-40, MESP-48, MESP-50, MESP-53,
-    MESP-54, MESP-110, MESP-113, and the MESP-38 closure evidence; and
-13. the current branch, worktree, verified main, and origin/main.
+1. `AGENTS.md` and `CLAUDE.md`;
+2. `.ai/CURRENT_STATE.md` and this `TASK.md`;
+3. `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`;
+4. `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md` completely;
+5. `docs/32_Release_1_Tax_VAT_Scope_Clarification.md` completely;
+6. `docs/staticts.md`;
+7. `docs/Decisions.md`, the glossary, `docs/94_Product_Delivery_Master_Plan.md`,
+   and the affected ADRs/contracts only;
+8. the owning and adjacent approved BRDs for any row being approved,
+   especially Master Data, Procurement, Inventory, Finance, Sales, Reporting,
+   Localization, and Security/Audit/Governance;
+9. live Jira MESP-115, MESP-116, MESP-22, MESP-23, MESP-39, MESP-40,
+   MESP-41–MESP-55, MESP-110, MESP-113, MESP-117–MESP-142, and the named
+   MESP-48/MESP-50/production gates; and
+10. current branch, worktree, `main`, and `origin/main`.
 
-Record fresh MESP-39 activation evidence before drafting. Verify that
-MESP-27 through MESP-38 are Done, MESP-23 is still In Progress, MESP-39 is
-the single next To Do BRD and is not already being executed, MESP-40 remains
-To Do/not activated, and the named open gates remain open. Do not create a
-duplicate MESP-39 issue.
+Do not reread every BRD or the entire PRD unless an approval row creates a
+real cross-module or architecture question. Use the owning BRD and the exact
+decision row as the source of truth.
 
-## Binding ownership and consume-don't-redefine rule
+## Explicit approval protocol
 
-MESP-39 owns the business meaning of approved integration and external-service
-contracts only within its bounded scope. It consumes the already approved
-Tenant, IAM, Organization, Security/Audit/Data Governance, and domain
-baselines without creating competing sources of truth.
+The Owner Decision Pack contains 31 rows: 16 A Owner-decidable rows, 6 B
+specialist/input-dependent rows, and 9 C production/external/legal gates.
 
-Apply the ownership boundary precisely:
+- Present/record the exact row ID, current issue owner, recommended position,
+  alternatives, dependencies, specialist input, and the Owner decision.
+- Treat every recommendation as **NOT APPROVED UNTIL OWNER SIGNS**.
+- A “yes” applies only to the exact bounded position stated. It does not
+  approve statutory compliance, an external integration, production
+  credentials, a legal conclusion, a volume number, or a wider module scope.
+- A “no”, “defer”, or “needs input” remains open in MESP-23 and the original
+  Jira issue with an explicit next owner/action; do not close it ceremonially.
+- Class C rows remain gates. Do not turn them into guessed product behavior.
+- Keep MESP-39 future-release and unactivated. Keep MESP-40 unactivated while
+  retaining it in the Release 1 sequence.
 
-- MESP-27 owns Platform administration, Tenant lifecycle, support,
-  offboarding, export, and Platform governance;
-- MESP-28 owns User, Tenant Membership, Role, Permission, authentication/
-  session meaning, support fundamentals, and approved SoD;
-- MESP-29 owns Tenant meaning, context, lifecycle, isolation, default deny,
-  and Tenant-owned versus Platform-owned records;
-- MESP-30 owns Company/Legal Entity, Branch, Warehouse, organization
-  relationships, lifecycle, and downward scope;
-- MESP-31 through MESP-37 own their approved master-data, Procurement,
-  Inventory, Finance, Sales, Reporting, and Saudi-localization source facts;
-- MESP-38 owns security/audit/data-governance evidence, private artifact
-  consequences, incident evidence, and cross-module control handoffs;
-- MESP-39 owns integration-specific business actors, contracts, lifecycle,
-  statuses, failure/retry/idempotency/reconciliation consequences, and
-  external-service boundaries;
-- MESP-40 and later migration work own migration and cutover detail;
-- MESP-48, MESP-50, MESP-53, MESP-54, MESP-110, MESP-113, and named ADRs
-  remain separate gates; and
-- MESP-39 must not turn a future integration candidate into a Release 1
-  production commitment.
+The Owner directions already recorded in PD-024 are not reopened as Pack rows:
+full Release 1/preview intent, essential cycles, sequential one-person
+delivery, Luna execution, reserved Opus checkpoints A/B/C, external
+integration deferral, and internal configuration-led Tax/VAT restoration
+without statutory/external scope. PD-023 remains immutable.
 
-## Scope in focus
+## Required reconciliation work
 
-At business-requirements level only, cover as applicable:
+1. Verify that MESP-117–MESP-142 are still To Do/not activated and remain
+   attached to the existing module Epics. Do not create duplicate readiness
+   or capability tickets.
+2. Update MESP-23 with row-level decision evidence, preserving its In Progress
+   status until the living register itself has a valid closure basis.
+3. Update the original MESP-41–MESP-55, MESP-110, MESP-113, and other affected
+   Jira issues with traceability/comments only as justified. Preserve the
+   durable MESP-113 owner for INV-OD-004. Do not close MESP-48/MESP-50 or
+   production gates through this session.
+4. If an approved row materially changes the plan, update the canonical plan,
+   Tax/VAT clarification, current state, and any directly affected traceability
+   file. Do not rewrite approved historical BRDs to erase history.
+5. Append Product Decision entries after PD-024 only for explicit Owner
+   decisions. Include scope, rationale, alternatives, dependencies, owner,
+   status, and exact Jira evidence. Never append a recommendation as if it was
+   approved.
+6. Publish a final dependency map showing capability task, owning Epic,
+   prerequisite decision/BRD/ADR, source-of-truth module, backend/API/DB/UI
+   surfaces, auth/audit/localization gates, validation, and Preview/full-R1
+   acceptance. Select exactly one first capability task; do not activate it
+   automatically.
+7. Update `docs/staticts.md` conservatively. Planning/Jira/decision activity
+   does not increase production percentages. Update raw Jira counts, forecast,
+   milestone, blockers, Tax/VAT classification, and Progress History only when
+   materially applicable.
 
-- email and notification service boundaries;
-- private object storage as a business service dependency, without choosing a
-  provider or physical topology;
-- public API and webhook business contracts without defining endpoint design;
-- bank-feed and payment-service boundaries as future or gated capabilities;
-- tax and e-invoicing exchange boundaries without implementing statutory
-  behavior or selecting a Saudi regulator integration;
-- identity-provider single sign-on as a future/gated external identity
-  boundary;
-- integration security, authorization, Tenant scope, secrets/key gates,
-  privacy-oriented minimization, and external-data handling;
-- request, delivery, retry, duplicate, timeout, unavailable, rejected,
-  unknown, and reconciled outcomes;
-- idempotency and no-silent-loss business rules for inventory, tax, invoice,
-  payment, and accounting effects;
-- reconciliation ownership, evidence, correction, and operational handoff;
-- integration imports/exports, migration, reporting, audit, monitoring,
-  localization, Finance, Inventory, Sales, and Platform consequences; and
-- Given/When/Then scenarios that do not imply implementation authorization.
+## Safety and scope gates
 
-## Explicit exclusions and preserved gates
+Stop and report a real blocker if an Owner decision would require:
 
-Do not implement or claim completion of:
-
-- application source, tests, schema, persistence, EF, migrations, APIs,
-  controllers, screens, Angular code, providers, credentials, deployment,
-  infrastructure, production configuration, or external production setup;
-- statutory tax treatment, ZATCA/FATOORA, e-invoice XML/QR/signing/
-  certification, government submission, taxpayer applicability, or legal
-  compliance;
-- bank connectivity, payment-provider production use, production identity
-  provider, or any external credential/key exchange;
-- closure of MESP-23, MESP-48, MESP-50, MESP-53, MESP-54, MESP-110, MESP-113,
-  ADR-010, ADR-013, ADR-014, ADR-016, ADR-017, or any other named gate;
-- retention duration, residency/hosting, support geography, backup/
-  restoration, RPO/RTO, privacy/legal certification, or purge mechanics;
-- Currency policy, exchange-rate source, Finance period mechanics, Inventory
-  tracking policy, or Reporting catalogue;
-- Retail POS, consumer checkout, cashier, cash drawer, restaurant, retail
-  shift, or Wafra-specific core behavior; and
-- automatic activation of MESP-40 or any later item.
-
-Preserve PD-023 and the Saudi-localized Core ERP Release 1 B2B positioning.
-Release 1 contains no production external integrations and no statutory,
-legal, privacy-certification, regulator-integrated, bank, or payment-provider
-claim.
-
-## Architecture and ADR gate discipline
-
-Use current index status rather than inferring approval:
-
-- ADR-002 remains the published four-project structure; do not invent
-  projects or integration modules;
-- ADR-003/004/005/006 remain the Tenant, identity, authorization,
-  persistence, and transaction baselines;
-- ADR-007/008 define Foundation internal events, durable work, and worker
-  seams while broker, hosting, topology, delivery, and retention remain
+- Tenant leakage, client-supplied authority, authentication/authorization
+  weakness, or unsafe support access;
+- accounting imbalance, source-to-GL ambiguity, tax-posting corruption,
+  untraceable correction, or unreconciled FX/valuation;
+- stock ledger, reservation, tracking, negative-stock, count, valuation, or
+  return/data-integrity risk;
+- destructive migration, data loss, purge, rollback, or irreversible cutover;
+- a legal/statutory/external-validation conclusion that cannot be safely
   deferred;
-- ADR-009 defines the private-object-storage contract while provider, region,
-  scanning, retention, purge, residency, and keys remain gated;
-- ADR-010 requires a production decision for telemetry exporter, operational
-  data access, and retention;
-- ADR-013 requires a production decision for secrets and encryption keys;
-- ADR-014 requires a production decision for residency, retention, legal
-  hold, export, and purge;
-- ADR-016 is index-only for SQL Server RLS adoption or formal deferral;
-- ADR-017 is the external partner/API authentication dependency and must not
-  be manufactured if only an index entry is available;
-- ADR-018 preserves the Foundation testing/production-equivalence boundary;
+- credentials, external providers, production infrastructure, or deployment;
+  or
+- material scope or architecture expansion beyond the approved Release 1
+  reusable B2B baseline.
+
+Safe local contract and capability work is not blocked merely because a later
+production gate is open. This session itself remains documentation/Jira only.
+
+## Validation and delivery
+
+Before finishing:
+
+- verify MESP-38 Done and MESP-39 not executed;
+- verify MESP-40 remains an unactivated Release 1 requirement;
+- verify MESP-23 remains the living register and no recommendation was silently
+  approved;
+- verify internal Tax/VAT is classified R1 required/Not Started without
+  statutory scope;
+- verify full-feature scope, no Retail POS, no Wafra-specific core behavior,
+  and no implementation/source/test/schema/API/UI/provider/credential/
+  infrastructure change outside the later capability session;
+- run relevant documentation/Jira checks, `git diff --check`, and a complete
+  task diff/allowlist review;
+- use one focused branch/PR, review it, merge only when clean, synchronize
+  `main` and `origin/main`, and record the reviewed head and final merge SHA;
+- update MESP-116, MESP-23, current state, tracker, and the exact next TASK;
   and
-- ADR-011 remains the localization/search/RTL dependency.
+- stop. Do not execute the first capability task in this chat.
 
-The BRD may state required business outcomes and evidence before these gates
-close, but may not select a provider, credential, protocol implementation,
-region, exporter, key lifecycle, retention value, or production topology.
+## Completion report required
 
-## Documentation and Jira discipline
-
-Use one focused documentation branch and the canonical BRD file named above.
-Keep requirements at business level and preserve PRD, BRD, ADR, Product
-Decision, and MESP-23 identifiers.
-
-Use the standing Owner approval for normal bounded BRD work. Record live Jira
-activation, validation, Owner approval, MESP-23 handoff, final audit, closure,
-reviewed-content, merge, and final-main evidence on MESP-39. Keep MESP-23,
-MESP-48, MESP-50, MESP-53, MESP-54, MESP-110, and MESP-113 open unless a
-separate authorized decision changes them. Do not create implementation
-Stories, parallel work, or MESP-40 work.
-
-## Validation and handoff
-
-Before finishing the future MESP-39 session:
-
-1. Validate the BRD against the approved source scope, ownership matrix, ADR
-   statuses, open-gate boundaries, traceability, non-claims, failure/
-   unknown/idempotency rules, and business acceptance scenarios.
-2. Run git diff --check and focused Markdown/reference checks. No full
-   application test suite is required for a documentation-only BRD unless
-   governance requires a lightweight check.
-3. Review the complete base-to-final diff and verify no source, schema,
-   migration, endpoint/API, UI, provider, credential, external production,
-   statutory/tax, legal/privacy workflow, Retail POS, or Wafra-specific file
-   changed.
-4. Update .ai/CURRENT_STATE.md, docs/94_Product_Delivery_Master_Plan.md,
-   docs/staticts.md, and every genuinely affected Markdown state/plan file
-   conservatively. Do not increase production-capability percentages for a
-   BRD. Rewrite root TASK.md only with the next exact session after MESP-39
-   is genuinely complete.
-5. Update live Jira with exact activation, validation, approval, MESP-23
-   handoff, final audit, closure, reviewed head, merge, and final-main
-   evidence. MESP-39 must remain the only active task in that future session.
-6. Commit and push the focused documentation branch, merge the focused PR
-   only when clean and unblocked, verify main and origin/main agree, verify
-   the worktree is clean, and record the final synchronized SHA.
-
-Stop after handing off the completed MESP-39 BRD for independent ChatGPT
-review. Do not execute the next task in the same chat.
+Report the approved/deferred/rejected counts by class, row-level Jira keys,
+any resulting PD number/status, MESP-23 status, MESP-39/MESP-40 disposition,
+Tax/VAT boundary, unchanged production percentages, final dependency-map
+selection, first capability handoff, PR/reviewed head/merge SHA, validation,
+and exact changed files. Explicitly state that no external integration and no
+next implementation task was executed.
