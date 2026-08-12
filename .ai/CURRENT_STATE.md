@@ -20,7 +20,7 @@ is commit `864346034a035593fda788e693f7a9058e02435e`.
 | Validation | Angular 7 files/34 passed; Angular production build passed; API build passed with 0 warnings/errors; REST metadata 31 passed; Master Data filtered suite 74 passed; full non-SQL architecture suite 670 passed; full assembly 670 passed plus 21 SQL cases gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. |
 | Jira counts | 76 Done / 6 In Progress / 60 To Do across 142 issues; 76 Done / 1 In Progress / 50 To Do across 127 non-Epic issues after MESP-117 closure. |
 | Exclusions preserved | No MESP-23 decision, MESP-39 execution, MESP-40 activation, migration, external integration/provider/credential/infrastructure, Procurement Confirmation, Inventory, Finance, Sales, Tax/VAT, Currency/FX, statutory, Retail POS, or Wafra-specific core behavior was added. |
-| Current branch | `main` at `864346034a035593fda788e693f7a9058e02435e`, synchronized with `origin/main` after PR #60 and the final state/tracker update. |
+| Current branch | `main` synchronized with `origin/main` after PR #60 and the final state/tracker update. The latest tracked synchronization commit is verified locally and remotely. |
 | Next exact session | TASK.md contains MESP-118 - Implement Currency and Payment Terms complete Master Data capability. It remains To Do/not activated and must not start automatically. |
 
 MESP-117 uses PD-033, PD-035, PD-036, and PD-037 as authoritative wherever
