@@ -17,7 +17,50 @@ velocity, or forecast:
    that the repository tracker was updated; Hossam/ChatGPT inspects the
    tracked GitHub version directly when needed.
 
-## Current execution overlay - 12 August 2026 (Pre-MESP-38 reconciliation handoff)
+## Current execution overlay - 12 August 2026 (MESP-38 BRD complete; MESP-39 handoff)
+
+MESP-38 - Security, Audit, and Data Governance BRD is **Done** at its
+approved bounded documentation-only scope. The canonical artifact is
+docs/29_Security_Audit_and_Data_Governance_BRD.md. Focused PR #57 merged to
+main at 67b7fb79475fb194489bc03ed153c999d20a6eaf from reviewed head
+42f2a1cb7b15580a6a92c4603253b6ea5104c203. Jira evidence is activation 10934,
+validation 10935, Owner approval 10936, MESP-23 handoff 10937, final audit
+10938, closure 10939, and the Done transition metadata.
+
+MESP-27 through MESP-38 are Done at their approved bounded BRD scopes.
+MESP-23 remains In Progress as the living Open Questions Register. MESP-39 -
+Integrations and External Services BRD - is the single next BRD task; it is
+To Do, has not been activated, and must not be executed by this handoff.
+MESP-40 and later tasks remain unactivated. MESP-48, MESP-50, MESP-53,
+MESP-54, MESP-110, and MESP-113 remain open and unapproved at their existing
+supported-volume, production-governance, Reporting, Currency, Finance, and
+Inventory decision boundaries.
+
+MESP-38 was documentation-only. It added no source, tests, persistence,
+schema, migrations, APIs, UI, providers, credentials, infrastructure,
+production configuration, or production capability. Release 1 remains a
+Saudi-localized Core ERP B2B baseline; Retail POS, Wafra-specific core
+behavior, statutory/tax/ZATCA/FATOORA implementation, external production
+integrations, and privacy/legal certification remain excluded or separately
+gated. PRD visual rendering was attempted during the MESP-38 session but was
+unavailable because pdf2image and LibreOffice/soffice are not installed; no
+visual claim is made.
+
+The root TASK.md contains the exact next MESP-39 session prompt, and
+.ai/CURRENT_STATE.md contains the current verified detailed state. No next
+task starts automatically.
+
+Hossam's standing Owner approval continues to cover normal bounded BRD,
+specification, readiness, merge, closure, and next-session activation work
+within the approved project scope and architecture. Stop only for a real
+security/Tenant-isolation, accounting/data-integrity, destructive
+migration/data-loss, unresolved-business-decision, legal/external-validation,
+credential/production-infrastructure, or material scope/architecture blocker.
+Each fresh chat executes exactly one root TASK.md session, updates genuinely
+affected state and Jira, and stops for review; independent Opus review remains
+due after every five completed sessions or earlier at a critical checkpoint.
+
+## Historical execution overlay - 12 August 2026 (Pre-MESP-38 reconciliation handoff)
 
 The verified live sequence is MESP-27 through MESP-37 **Done** at their
 approved bounded BRD scopes. MESP-23 remains **In Progress** as the living

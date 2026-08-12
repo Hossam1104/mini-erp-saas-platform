@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-12 01:31 +03:00
+**Last Updated:** 2026-08-12 13:36 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -84,9 +84,9 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **59** | **59.6%** |
+| Done | **60** | **60.6%** |
 | In Progress | **1** | **1.0%** |
-| To Do | **39** | **39.4%** |
+| To Do | **38** | **38.4%** |
 | **Total Non-Epic** | **99** | **100%** |
 
 Major Release-1 Epics:
@@ -94,12 +94,12 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 114 MESP issues, including the 15 Epics, the current workflow state
-is 59 Done, 6 In Progress, and 49 To Do. These counts were re-checked in live
+is 60 Done, 6 In Progress, and 48 To Do. These counts were re-checked in live
 Jira on 12 August 2026; the only non-Epic In Progress item is MESP-23.
 
 ## Interpretation
 
-Raw Jira completion currently makes the project appear approximately **60% complete**.
+Raw Jira completion currently makes the project appear approximately **61% complete**.
 
 That number must NOT be used as the production-completion percentage.
 
@@ -107,7 +107,7 @@ Many future implementation tickets have not yet been generated because several m
 
 Therefore the current project should be represented as:
 
-> **Jira-created-work completion: ~59%**
+> **Jira-created-work completion: ~61%**
 > **Actual Release-1 production completion: ~29%**
 
 **Jira hygiene note:** MESP-97 and MESP-98 were stale duplicate/superseded
@@ -161,17 +161,22 @@ scope only; MESP-50 remains open; MESP-37 is Done through the bounded
 product-only Saudi Localization/Core ERP BRD; MESP-23 remains In Progress; and
 PD-023 is appended to MESP-22. MESP-114 is Done after the bounded Pre-MESP-38
 independent-review reconciliation and focused PR #56; MESP-113 is the durable
-INV-OD-004 owner and remains To Do/unapproved. Live Jira state is now 59 Done /
-6 In Progress / 49 To Do across all issues, and 59 Done / 1 In Progress / 39
-To Do for non-Epic work.
+INV-OD-004 owner and remains To Do/unapproved. Live Jira state is now 60 Done /
+6 In Progress / 48 To Do across all issues, and 60 Done / 1 In Progress / 38
+To Do for non-Epic work. MESP-38 is Done through focused documentation-only
+PR #57 at merge 67b7fb79475fb194489bc03ed153c999d20a6eaf from reviewed head
+42f2a1cb7b15580a6a92c4603253b6ea5104c203, with Jira evidence
+10934/10935/10936/10937/10938/10939. Its canonical BRD is
+docs/29_Security_Audit_and_Data_Governance_BRD.md; MESP-39 is the next exact
+BRD and remains To Do/not activated.
 The Customer-specific
 MD-OD-001/005/008 decisions are approved only for the bounded Customer slice;
 the merged Customer source remains limited to that slice. No production-
 capability percentage changed in the documentation-only MESP-32, MESP-33,
-MESP-34, MESP-35, MESP-36, MESP-37, MESP-111, or MESP-112 sessions; the
-Pre-MESP-38 reconciliation was documentation/Jira/governance-only with no
-production capability change; the next exact handoff is MESP-38 Security, Audit, and
-Data Governance BRD only, with MESP-38 still To Do and not activated.
+MESP-34, MESP-35, MESP-36, MESP-37, MESP-111, MESP-112, or MESP-38 sessions;
+the Pre-MESP-38 reconciliation was documentation/Jira/governance-only with no
+production capability change; the next exact handoff is MESP-39 Integrations
+and External Services BRD only, with MESP-39 still To Do and not activated.
 
 ---
 
@@ -977,6 +982,16 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
+> **Current completed BRD session:** MESP-38 is Done through the approved
+> bounded Security, Audit, and Data Governance BRD in
+> docs/29_Security_Audit_and_Data_Governance_BRD.md; PR #57 merged at
+> 67b7fb79475fb194489bc03ed153c999d20a6eaf from reviewed head
+> 42f2a1cb7b15580a6a92c4603253b6ea5104c203. No source or production
+> capability was added. The next exact handoff is MESP-39 Integrations and
+> External Services BRD only, To Do and not activated.
+
+The following prior handoff paragraph is retained as historical evidence.
+
 > **No source implementation item is active. MESP-37 is Done through the approved bounded product-only Saudi Localization/Core ERP BRD in docs/28_Release_1_Saudi_Localization_BRD.md, with PR #55 merged to main; MESP-112 is Done through documentation-only PR #54 with the Release 1 Saudi scope overlay and PD-023; MESP-49 is Done for Release 1 scope only; MESP-50 remains open for production/platform governance; MESP-23 remains In Progress as the living Open Questions Register; MESP-107 Customer, MESP-104 Supplier, and MESP-102 Product implementations are complete at their approved bounded scopes. MESP-33 Inventory and MESP-34 Finance are complete as approved documentation-only BRDs through PR #46 and PR #47; MESP-109 Finance reconciliation is Done through PR #50; MESP-35 B2B Sales is Done through PR #51; MESP-36 Reporting and Analytics is Done through PR #52; MESP-111 Saudi regulatory evidence readiness is Done through PR #53 with its historical draft-only verdict preserved; MESP-53, MESP-54, and MESP-110 remain open; MESP-113 remains To Do/unapproved for INV-OD-004; MESP-114 is Done through focused PR #56 for the bounded Pre-MESP-38 reconciliation; the next exact handoff is MESP-38 Security, Audit, and Data Governance BRD only, and it remains To Do and is not activated.**
 
 Current strategic state:
@@ -1069,6 +1084,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-12 13:36 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-38 Security, Audit, and Data Governance completed as the approved bounded documentation-only BRD at docs/29_Security_Audit_and_Data_Governance_BRD.md; PR #57 reviewed at 42f2a1cb7b15580a6a92c4603253b6ea5104c203 and merged at 67b7fb79475fb194489bc03ed153c999d20a6eaf; Jira evidence 10934/10935/10936/10937/10938/10939; MESP-23, MESP-48, MESP-50, MESP-53, MESP-54, MESP-110, and MESP-113 remain open/unapproved as applicable; live Jira all-issue 60 Done / 6 In Progress / 48 To Do and non-Epic 60 Done / 1 In Progress / 38 To Do; no production-capability percentage change; next exact task is MESP-39 Integrations and External Services BRD only | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-12 01:31 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-114 Pre-MESP-38 independent-review reconciliation completed through canonical artifact docs/100_Pre_MESP_38_Independent_Review_Reconciliation.md; PR #56 reviewed at `47195bcce103903775773e77788a1b53525d910c` and merged at `7ce1588ad20ea8ad1d82f6cafd39b370bedf0490`; MESP-114 is Done; MESP-113 remains To Do/unapproved; live Jira all-issue 59 Done / 6 In Progress / 49 To Do and non-Epic 59 Done / 1 In Progress / 39 To Do; no production-capability percentage change; MESP-38 remains To Do and not activated | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-12 01:25 +03:00 | **29%** | **42%** | **33%** | **15%** | Pre-MESP-38 independent-review reconciliation opened as MESP-114; MESP-113 created as the durable but unapproved INV-OD-004 owner; stale governance/current-state handoffs corrected; live Jira all-issue 58 Done / 7 In Progress / 49 To Do and non-Epic 58 Done / 2 In Progress / 39 To Do; no production-capability percentage change; MESP-38 remains To Do and not activated | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-11 17:44 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-37 completed as the approved bounded product-only Saudi Localization/Core ERP BRD at `docs/28_Release_1_Saudi_Localization_BRD.md`; PR #55 reviewed at `ff8eb5901d68a2cc366ed61722c08a7be53f50a1` and merged at `7d03fa5b19226b8c6368012ec90c8a09eefd4aaf`; Jira evidence 10854/10855/10856/10857/10858/10859; MESP-23, MESP-48, MESP-50, MESP-53, MESP-54, and MESP-110 remain open/gated as applicable; live Jira all-issue 58 Done / 6 In Progress / 48 To Do and non-Epic 58 Done / 1 In Progress / 38 To Do; no production-capability percentage change; next exact task is MESP-38 Security, Audit, and Data Governance BRD only | Production-ready target unchanged: Late Oct-Mid Nov 2026 |

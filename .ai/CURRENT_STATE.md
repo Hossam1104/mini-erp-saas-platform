@@ -1,6 +1,44 @@
 # Current State
 
-## Current authoritative position - 12 August 2026 (Pre-MESP-38 reconciliation complete)
+## Current authoritative position - 12 August 2026 (MESP-38 BRD complete; MESP-39 handoff)
+
+MESP-38 - Produce Security, Audit, and Data Governance BRD is **Done** at
+its approved bounded documentation-only scope. The canonical artifact is
+docs/29_Security_Audit_and_Data_Governance_BRD.md. Focused PR #57 merged to
+main at 67b7fb79475fb194489bc03ed153c999d20a6eaf from final reviewed head
+42f2a1cb7b15580a6a92c4603253b6ea5104c203.
+
+Jira evidence is activation 10934, validation 10935, Owner approval 10936,
+MESP-23 handoff 10937, final pre-merge audit 10938, closure 10939, and the
+Done transition metadata. The BRD contains 34 SADG-BR requirements and 40
+SADG-GWT business acceptance scenarios. It added no source, tests,
+persistence, schema, migrations, APIs, UI, providers, credentials,
+infrastructure, production configuration, or production capability.
+
+Live Jira and execution position:
+
+| Current fact | Verified value |
+|---|---|
+| MESP-27 through MESP-38 | **Done** at their approved bounded BRD scopes. |
+| MESP-23 | **In Progress** as the living Open Questions Register; MESP-38 handoff is comment 10937 and no row was closed. |
+| MESP-38 | **Done**; canonical BRD docs/29_Security_Audit_and_Data_Governance_BRD.md; PR #57 merged at 67b7fb79475fb194489bc03ed153c999d20a6eaf from reviewed head 42f2a1cb7b15580a6a92c4603253b6ea5104c203. |
+| MESP-39 | **To Do**; next exact Integrations and External Services BRD; not activated or executed. |
+| MESP-40 and later | **To Do/not activated**; no automatic next task. |
+| MESP-48 / MESP-50 / MESP-53 / MESP-54 / MESP-110 | **To Do/open** and preserved as supported-volume, production-governance, Reporting, Currency, and Finance gates. |
+| MESP-113 / INV-OD-004 | **To Do/unapproved**; durable Inventory decision owner remains unchanged. |
+| MESP-114 | **Done**; pre-MESP-38 reconciliation artifact docs/100_Pre_MESP_38_Independent_Review_Reconciliation.md and closure evidence 10897 remain preserved. |
+| Current branch | `main`; PR #57 is merged; final state/tracker synchronization is included in this post-merge metadata commit and will be verified against `origin/main`. |
+| Root next task | TASK.md contains the exact MESP-39 documentation-only session prompt. |
+| Production capability | No production capability was added; overall, Backend, Database, and Frontend percentages remain unchanged. |
+| PRD visual QA | Structural PRD read completed; rendering was attempted but unavailable because pdf2image and LibreOffice/soffice are not installed. No visual claim is made. |
+| Exclusions preserved | No external production integration, Currency implementation, statutory/tax/ZATCA/FATOORA behavior, privacy/legal workflow, Retail POS, or Wafra-specific core behavior was added. |
+
+MESP-39 remains To Do and is not activated automatically. Release 1 remains
+the Saudi-localized Core ERP B2B baseline. MESP-23, MESP-48, MESP-50, MESP-53,
+MESP-54, MESP-110, MESP-113, and named ADR/legal/external gates remain open at
+their existing boundaries.
+
+## Historical authoritative position - 12 August 2026 (Pre-MESP-38 reconciliation complete)
 
 The verified merged reconciliation baseline is `main` at
 `7ce1588ad20ea8ad1d82f6cafd39b370bedf0490`, the merge commit for focused PR
