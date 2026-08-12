@@ -1,10 +1,10 @@
 # Release 1 Full-Feature Fast-Track Delivery Plan
 
-**Status:** Current planning baseline; Owner Decision Pack approval is pending in MESP-116
+**Status:** Current planning baseline; A1-A16 and B1-B6 approved in MESP-116, C1-C9 remain open gates
 **Date:** 12 August 2026
 **Milestone:** **31 August 2026 — Release 1 Integrated Preview**
-**Governance task:** MESP-115
-**Next bounded session:** MESP-116 — Release 1 Consolidated Owner Decision Approval and Implementation-Unblock Reconciliation
+**Governance task:** MESP-115 (Done), MESP-116 (Done at bounded governance scope)
+**Next bounded session:** MESP-117 — Complete Master Data shared Angular UX for existing Category, UOM, Product, Supplier, and Customer slices
 
 ## 1. Purpose and authority
 
@@ -13,10 +13,16 @@ full-feature fast-track rebaseline. It converts the fast-track brief into a
 single sequential execution order, a capability backlog, an honest preview
 definition, and a bounded governance model.
 
-This plan does not approve the unresolved recommendations in the Consolidated
-Owner Decision Pack. Those recommendations remain **NOT APPROVED UNTIL OWNER
-SIGNS** and are applied only by the exact next MESP-116 session after explicit
-Owner approval. The plan records the explicit directions already given in the
+MESP-116 has now approved A1-A16 and B1-B6 only at the exact bounded positions
+in the Consolidated Owner Decision Pack. The append-only decisions are PD-025
+through PD-046 in MESP-22 comment `10958`, based on Owner evidence in MESP-116
+comment `10957`. Class B is a Release 1 product/implementation contract, not
+production approval: Finance, Inventory, Reporting, Migration, Security/Audit,
+SQL/provider, and named specialist validation remains mandatory before
+production or irreversible accounting/cutover decisions. C1-C9 remain open
+production/external/legal/provider/infrastructure gates.
+
+The plan continues to record the explicit directions already given in the
 Owner brief through PD-024:
 
 - Release 1 remains a reusable, full-feature B2B ERP. The August milestone is
@@ -35,10 +41,12 @@ Owner brief through PD-024:
   Release 1. This is not a statutory, ZATCA/FATOORA, certification,
   submission, clearance, or legal-compliance claim.
 
-The append-only Product Decision Register entry is PD-024. PD-023 remains
-immutable. The detailed Tax/VAT boundary is in
-`docs/32_Release_1_Tax_VAT_Scope_Clarification.md`; the unresolved decision
-records are in `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`.
+PD-023 and PD-024 remain immutable. The detailed Tax/VAT boundary is in
+`docs/32_Release_1_Tax_VAT_Scope_Clarification.md`; the approved decision
+records and row-level clarifications are in
+`docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`; and the final
+cross-module dependency map is
+`docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`.
 
 ## 2. Current verified baseline
 
@@ -47,12 +55,13 @@ records are in `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`.
 | MESP-38 | Done at its approved bounded Security, Audit, and Data Governance BRD scope. |
 | MESP-39 | To Do, not activated, not executed; future-release Integrations and External Services BRD. |
 | MESP-40 | To Do, not activated; full Release 1 migration and Tenant Onboarding requirement, scheduled in Wave H. |
-| MESP-23 | In Progress as the living Open Questions Register; no row is closed by this rebaseline. |
-| MESP-115 | In Progress while this documentation-only rebaseline is completed and reviewed. |
-| MESP-116 | To Do and not activated; exact next decision-approval/unblock session. |
+| MESP-23 | In Progress as the living Open Questions Register; reconciled by Jira comment `10976`; C gates remain open. |
+| MESP-115 | Done at the bounded documentation/Jira/governance rebaseline. |
+| MESP-116 | Done at the bounded approval/unblock reconciliation; Jira comment `10957`, closure transition, and final dependency map are recorded. |
 | MESP-117–MESP-142 | Capability backlog created under the existing module Epics; all To Do and not activated. |
 | Product implementation | Existing bounded Category, UOM, Product, Supplier, and Customer slices remain evidence; the planned capability completion and shared Angular experience are not claimed complete. |
-| Production capability | No percentage increase is justified by this planning/Jira work. |
+| First capability handoff | MESP-117 is the exact next fresh-session handoff, To Do/not activated; Jira comment `10977`. |
+| Production capability | No percentage increase is justified by this governance/Jira work. |
 
 This plan deliberately does not rewrite approved historical BRDs. Current
 scope corrections are carried by this overlay, PD-024, and the Tax/VAT
@@ -155,8 +164,9 @@ the PRD and broad architecture only at a real cross-module or release gate.
 The backlog uses existing Epics and does not duplicate the existing
 foundation/platform work. MESP-57–MESP-64 and the existing MESP-65–MESP-85
 platform stories remain their original work. MESP-117–MESP-142 are the new
-full-feature capability tasks; all are To Do/not activated until MESP-116
-reconciles Owner decisions and hands off the first one.
+full-feature capability tasks; all remain To Do/not activated. MESP-117 is the
+prepared first handoff after the completed MESP-116 reconciliation and starts
+only in a fresh session after its Definition of Ready is verified.
 
 Every task description contains the common Definition of Done: Tenant-safe
 server-derived context; permission and SoD checks; business audit; private
@@ -195,9 +205,11 @@ credentials.
 | H — Migration | MESP-141 | MESP-15 | Release 1 migration and repeatable Tenant onboarding; execute only after MESP-40 is activated and ready; cover configuration, master/openings, stock/valuation, GL/AP/AR, cash/bank, dry-run, quarantine, reconciliation, cutover, rollback, and audit. |
 | I — E2E/RC | MESP-142 | MESP-1 | Integrated stabilization, regression, performance, UAT, and RC readiness; follows coherent module waves and Opus checkpoints; no production claim until SQL/provider/infrastructure/privacy/legal/volume gates are evidenced. |
 
-The first implementation handoff is selected by MESP-116 after approved
-decisions and the final dependency map. The backlog order is the recommended
-sequence, not an automatic activation command.
+MESP-116 selected MESP-117 as the first implementation handoff after approved
+decisions and published the final dependency map in
+`docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`. The
+backlog order is the recommended sequence, not an automatic activation
+command; MESP-117 remains To Do/not activated.
 
 ## 7. Definition of Ready for each capability
 
@@ -279,9 +291,9 @@ unfinished full-feature work in Release 1.
 
 | Date/window | Optimistic | Realistic | Minimum credible |
 |---|---|---|---|
-| 12 Aug | Finish MESP-115 docs, PD-024, Jira backlog, and focused PR. | Same, with conservative validation and one review pass. | Canonical scope/decision/Tax artifacts and exact MESP-116 handoff. |
-| 13 Aug | MESP-115 merged/closed; MESP-116 activated with Owner decision review ready. | PR review and tracker/Jira synchronization complete; MESP-116 remains the next fresh session. | Clean repository handoff with MESP-39 explicitly deferred and no source changes. |
-| 14 Aug | MESP-116 approved and first capability activated. | MESP-116 decision register and dependency map completed; first capability selected. | Owner pack remains the only blocker to implementation activation. |
+| 12 Aug | Finish MESP-115 and MESP-116 governance with focused evidence. | MESP-115/MESP-116 documentation/Jira synchronization and review complete. | Canonical scope/decision/Tax artifacts, PD-025-PD-046, and exact MESP-117 handoff. |
+| 13 Aug | MESP-117 Definition of Ready and capability activation. | MESP-117 starts only after contract/source/validation review. | MESP-117 remains unactivated until a fresh session verifies readiness. |
+| 14 Aug | MESP-117 shared Angular/master-data work underway with affected tests. | MESP-117 starts after Definition of Ready and focused branch/PR setup. | No unsafe activation; approved decisions and scope remain synchronized. |
 | 15–16 Aug | MESP-117 shared Angular/master-data work underway with affected tests. | MESP-117 starts after Definition of Ready and contract review. | No unsafe activation; approved decisions and scope remain synchronized. |
 | 17–18 Aug | MESP-117 completed and MESP-118/119 begins in sequence. | Shared Master Data surface and one bounded capability integrated. | A real codebase preview path is prepared; incomplete work is labelled. |
 | 19–20 Aug | MESP-118/119 plus initial Procurement contract work integrated. | Master Data foundation and first Procurement path visibly running. | One validated capability with no fake downstream behavior. |

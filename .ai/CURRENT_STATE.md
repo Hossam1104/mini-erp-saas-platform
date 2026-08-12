@@ -1,6 +1,43 @@
 # Current State
 
-## Current authoritative position - 12 August 2026 (MESP-115 full-feature fast-track rebaseline)
+## Current authoritative position - 12 August 2026 (MESP-116 approved decision reconciliation)
+
+The current Owner direction is the full-feature fast-track rebaseline. Release
+1 remains a reusable full-feature B2B ERP. **31 August 2026 - Release 1
+Integrated Preview** means a running preview of the real codebase with the
+maximum safely integrated functionality achieved by then; it is not an MVP,
+throwaway/demo UI, Wafra fork, or scope cut. Unfinished capabilities remain
+required after the preview.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-115 | **Done** at the bounded documentation/Jira/governance rebaseline; activation evidence is Jira comment 10941; closure is Jira comment 10955; PR #58 reviewed at 0681c0182b0b6894f5f2b83db1728253ac54e279 and merged to main at a5ee9426d252901e74888bdc3ca94970c969aa20. |
+| MESP-116 | **Done** at the bounded Owner decision and implementation-unblock reconciliation; Owner approval evidence is Jira comment 10957, the decision register is MESP-22 comment 10958, and the final dependency map is docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md. No source or production capability was added. |
+| Canonical artifacts | docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md; docs/31_Release_1_Consolidated_Owner_Decision_Pack.md; docs/32_Release_1_Tax_VAT_Scope_Clarification.md; docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md. |
+| PD-024 | Appended to MESP-22 in comment 10945 for explicit full-feature/preview, sequential-governance, external-integration-deferral, and internal-configurable-Tax/VAT directions only. |
+| PD-025 through PD-046 | Appended to MESP-22 in comment 10958 for the exact approved A1-A16 and B1-B6 positions. Class B is the Release 1 product/implementation contract, subject to mandatory specialist validation before production or irreversible accounting, migration, and cutover decisions. |
+| Consolidated Decision Pack | 31 entries: 16 A Owner-decidable rows and 6 B specialist/input-dependent but contractable rows approved only at their exact bounded positions; 9 C production-only/external/legal gates remain open and are not approved or closed. |
+| MESP-38 | **Done** at its approved bounded Security, Audit and Data Governance BRD scope. |
+| MESP-23 | **In Progress** as the living Open Questions Register; MESP-116 reconciliation evidence is comment 10976, and the register remains open for future decisions and gates. |
+| Capability backlog | MESP-117-MESP-142 remain under existing module Epics, all To Do/not activated. MESP-117 is the approved first capability handoff; its detailed handoff is Jira comment 10977 and docs/33. |
+| Live Jira counts | 75 Done / 6 In Progress / 61 To Do across 142 issues; 75 Done / 1 In Progress / 51 To Do across 127 non-Epic issues. |
+| MESP-39 / MESP-40 | MESP-39 remains To Do/unactivated future-release external-integration work. MESP-40 remains To Do/unactivated but required for Release 1 migration; no migration execution is authorized by MESP-116. |
+| Open production gates | C1-C9 remain open, including MESP-48/MESP-50, statutory/external/legal boundaries, and provider/credential/infrastructure gates. MESP-49 remains Done only for its existing external disposition; it does not close C2. |
+| Tax/VAT | Internal reusable configuration-led Tax/VAT remains Release 1 required and **Not Started**. PD-024, PD-043 and PD-046 do not authorize statutory, ZATCA/FATOORA, legal, certification, filing, submission, clearance, signing or external-provider behavior. |
+| Governance | One active capability, one sequential executor, one focused PR; Opus checkpoints A/B/C reserved as defined in the fast-track plan. |
+| Source/production capability | None added by this documentation/Jira session; production percentages remain unchanged. |
+| Current branch | MESP-116 focused documentation branch during publication; the final reviewed head and merged-main SHA are recorded after the focused PR is merged and synchronized. |
+| Next exact session | TASK.md contains MESP-117 - Complete Master Data shared Angular UX for the existing Category/UOM/Product/Supplier/Customer slices. |
+
+MESP-116 did not execute MESP-39, activate MESP-40, implement source, tests,
+persistence, schema, migrations, APIs, UI, providers, credentials,
+infrastructure, or production configuration. Existing approved BRDs and PD-023
+remain historical/immutable evidence; current scope corrections are carried by
+the fast-track overlay, PD-024, PD-025 through PD-046, and the four canonical
+artifacts above. Specialist validation remains mandatory before production or
+irreversible accounting, migration, and cutover decisions.
+
+## Historical authoritative position - 12 August 2026 (MESP-115 full-feature fast-track rebaseline; superseded by MESP-116)
 
 The current Owner direction is the full-feature fast-track rebaseline. Release
 1 remains a reusable full-feature B2B ERP. **31 August 2026 — Release 1
