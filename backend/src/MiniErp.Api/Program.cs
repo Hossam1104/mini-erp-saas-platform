@@ -454,6 +454,7 @@ app.MapPost("/api/v1/foundation/probe", async (
     .WithName("foundation.probe.write")
     .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("foundation.probe.write")));
 
+app.MapCategoryUomEndpoints();
 app.MapProductIdentityEndpoints();
 app.MapSupplierEndpoints();
 app.MapCustomerEndpoints();

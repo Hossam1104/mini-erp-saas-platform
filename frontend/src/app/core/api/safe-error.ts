@@ -5,6 +5,7 @@ export type SafeErrorCode =
   | 'authentication_failed'
   | 'access_denied'
   | 'context_version_conflict'
+  | 'concurrency_conflict'
   | 'validation_failed'
   | 'network_error'
   | 'antiforgery_failed'
@@ -21,6 +22,7 @@ const knownCodes = new Set<SafeErrorCode>([
   'authentication_failed',
   'access_denied',
   'context_version_conflict',
+  'concurrency_conflict',
   'validation_failed',
   'network_error',
   'antiforgery_failed',
@@ -42,10 +44,12 @@ export function toSafeUiError(error: unknown): SafeUiError {
       : error.status === 403
         ? 'access_denied'
         : error.status === 409
-          ? 'context_version_conflict'
-          : error.status === 0
-            ? 'network_error'
-            : 'request_failed';
+          ? 'concurrency_conflict'
+          : error.status === 400
+            ? 'validation_failed'
+            : error.status === 0
+              ? 'network_error'
+              : 'request_failed';
 
   return {
     code,
