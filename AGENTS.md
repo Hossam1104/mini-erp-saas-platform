@@ -17,7 +17,74 @@ velocity, or forecast:
    that the repository tracker was updated; Hossam/ChatGPT inspects the
    tracked GitHub version directly when needed.
 
-## Current execution overlay - 12 August 2026 (MESP-115 full-feature fast-track rebaseline)
+## Current execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation)
+
+The Owner has rebaselined Release 1 as a **full-feature reusable B2B ERP**
+with a 31 August 2026 **Release 1 Integrated Preview** milestone. The
+milestone is an integrated preview of the real codebase, not an MVP,
+throwaway/demo UI, Wafra fork, or scope reduction. Unfinished functionality
+remains required Release 1 work after the preview.
+
+MESP-115 is **Done** at its bounded governance/rebaseline scope. MESP-116 is
+**Done** at its bounded Owner decision and implementation-unblock
+reconciliation scope. Owner approval evidence is MESP-116 comment `10957`;
+PD-025 through PD-046 are appended to the immutable Product Decision Register
+in MESP-22 comment `10958`; and the final dependency map is
+`docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`.
+A1-A16 and B1-B6 are approved only at their exact bounded positions. Class B
+is the Release 1 product/implementation contract, but Finance, Inventory,
+Reporting, Migration, and other named specialist validation remains mandatory
+before production or irreversible accounting, destructive migration, or
+cutover decisions. C1-C9 remain open production/external/legal gates and are
+not approved or closed.
+
+MESP-38 remains **Done** at its approved bounded Security, Audit, and Data
+Governance BRD scope. MESP-39 remains **To Do, unactivated, and not executed**
+as future-release Integrations and External Services BRD; no production
+external integration, provider, credential, webhook, payment gateway, bank
+feed, automated FX, external SSO, government submission, or external
+infrastructure is authorized. MESP-40 remains **To Do/unactivated but required
+for Release 1**, scheduled in the migration wave. MESP-23 remains **In
+Progress** as the living Open Questions Register; reconciliation evidence is
+comment `10976`. MESP-117 through MESP-142 remain To Do/not activated under
+existing Epics. MESP-117 is the approved first capability handoff, with Jira
+evidence `10977`, and must be executed only in a fresh later session.
+
+Delivery is strictly sequential: one person, one active implementation
+capability, one focused branch/PR. Luna executes; ChatGPT/Sol plan and review;
+Opus is reserved for checkpoint A after a coherent Procurement+Inventory
+spine, checkpoint B after a coherent Finance+Sales spine, and checkpoint C
+before serious RC/production review, or earlier only for a genuine critical
+security/Tenant, accounting, stock, destructive-migration, or major
+cross-module risk. Angular/frontend is included in each capability unless a
+real prerequisite is explicitly recorded. Routine readiness tickets are not
+created merely for ceremony.
+
+Every fresh chat executes exactly one root `TASK.md` session and stops. The
+current exact next session is **MESP-117 - Complete Master Data shared Angular
+UX for the existing Category/UOM/Product/Supplier/Customer slices**. It must
+use the approved MESP-116 contract and docs/33 handoff, and must not execute
+MESP-39, activate MESP-40, or widen scope. MESP-116 itself added no source,
+tests, persistence, schema, migrations, APIs, UI, providers, credentials,
+infrastructure, or production configuration.
+
+Use the efficient reading hierarchy: `AGENTS.md`, `CLAUDE.md`,
+`.ai/CURRENT_STATE.md`, `TASK.md`, the owning BRD/spec, affected ADRs/
+contracts/entities, current status/diff, and only materially dependent
+decision rows. Do not reread every BRD/PRD routinely. Preserve the complete
+Release 1 scope in the fast-track plan, the MESP-38 gates, MESP-48/MESP-50,
+SQL/provider/infrastructure/production gates, no Retail POS, and no
+Wafra-specific core behavior.
+
+This MESP-116 session was documentation/Jira/governance only. Do not claim a
+production-capability percentage increase from planning, approval, or Jira
+activity. At the end of this bounded session read and update
+`docs/staticts.md`, update current state/forecast/Jira counts conservatively,
+validate the allowlisted diff, commit and push the tracker with the focused
+PR, merge only when reviewed and clean, synchronize `main`/`origin/main`, and
+stop after the complete MESP-117 handoff.
+
+## Historical execution overlay - 12 August 2026 (MESP-115 full-feature fast-track rebaseline; superseded by MESP-116)
 
 The Owner has rebaselined Release 1 as a **full-feature reusable B2B ERP**
 with a 31 August 2026 **Release 1 Integrated Preview** milestone. The

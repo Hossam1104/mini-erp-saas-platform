@@ -1,31 +1,39 @@
 @AGENTS.md
 
-## Current execution overlay - 12 August 2026 (MESP-115 full-feature fast-track rebaseline)
+## Current execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation)
 
-The authoritative current overlay is the MESP-115 full-feature fast-track
-rebaseline in `AGENTS.md`. Release 1 remains the full-feature reusable B2B ERP
+The authoritative current overlay is the MESP-116 approved decision
+reconciliation in `AGENTS.md`. Release 1 remains the full-feature reusable B2B ERP
 and 31 August 2026 is the **Release 1 Integrated Preview** of the real
 codebase, not an MVP, throwaway/demo UI, Wafra fork, or scope cut. Unfinished
 capability remains Release 1 work after the preview.
 
 Canonical artifacts are `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`,
 `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`, and
-`docs/32_Release_1_Tax_VAT_Scope_Clarification.md`. PD-024 records only the
+`docs/32_Release_1_Tax_VAT_Scope_Clarification.md`, and the approved
+dependency map `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`.
+PD-024 records only the
 explicit Owner directions for full scope/preview, essential cycles, sequential
 one-person delivery, Luna execution, Opus checkpoints A/B/C, external
 integration deferral, and restoration of internal reusable configuration-led
-Tax/VAT without statutory/ZATCA/FATOORA/legal/external-provider scope. Decision
-Pack recommendations remain **NOT APPROVED UNTIL OWNER SIGNS**.
+Tax/VAT without statutory/ZATCA/FATOORA/legal/external-provider scope.
+MESP-116 approved A1-A16 and B1-B6 at their exact bounded positions and
+appended PD-025 through PD-046. Class B is the Release 1 product/implementation
+contract, subject to mandatory specialist validation before production or
+irreversible accounting, migration, and cutover decisions. C1-C9 remain open
+gates.
 
 MESP-38 is Done. MESP-115 is Done through focused PR #58 (reviewed head
 0681c0182b0b6894f5f2b83db1728253ac54e279; merge a5ee9426d252901e74888bdc3ca94970c969aa20).
 MESP-39 is To Do, unactivated, and not executed as future
 release work. MESP-40 is To Do/unactivated but required for Release 1 in Wave H.
-MESP-23 is In Progress. MESP-117–MESP-142 are To Do/not activated capability
-tasks under existing Epics. One active capability, one executor, one focused
-branch/PR, Angular included, and exact one-session TASK handoffs remain
-mandatory. The next session is MESP-116 and must only reconcile explicit Owner
-approval and dependencies; it must not implement source or activate MESP-39.
+MESP-23 is In Progress; reconciliation evidence is Jira comment 10976.
+MESP-117-MESP-142 are To Do/not activated capability tasks under existing
+Epics. MESP-117 is the approved first capability handoff, with detailed
+handoff evidence in Jira comment 10977 and docs/33. One active capability, one
+executor, one focused branch/PR, Angular included, and exact one-session TASK
+handoffs remain mandatory. The next session is MESP-117; it must not activate
+MESP-39 or MESP-40 or expand the approved boundaries.
 
 ## Historical execution overlay - 12 August 2026 (MESP-38 BRD complete; superseded by MESP-115 rebaseline)
 

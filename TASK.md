@@ -1,160 +1,150 @@
-# Next session — MESP-116 — Release 1 Consolidated Owner Decision Approval and Implementation-Unblock Reconciliation
+# Next session - MESP-117 - Complete Master Data shared Angular UX for existing Category/UOM/Product/Supplier/Customer slices
 
 ## Session boundary
 
-This is the exact next bounded session after MESP-115. Execute only this
-decision-approval and implementation-unblock reconciliation in a fresh chat.
-Do not execute this prompt in the current MESP-115 completion session. Do not
-start the first capability automatically after completing it.
+This is the exact next bounded session after MESP-116. MESP-116 is **Done** at
+its documentation/Jira/governance-only scope. Hossam approved A1-A16 and B1-B6
+at their exact bounded positions, subject to the amendments and clarifications
+recorded in `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`, Jira
+comment `10957` on MESP-116, and PD-025 through PD-046 in MESP-22 comment
+`10958`. Class B is the Release 1 product/implementation contract; Finance,
+Inventory, Reporting, Migration, and other named specialist validation remains
+mandatory before production or irreversible accounting, destructive migration,
+or cutover decisions. C1-C9 remain open and are not approved or closed.
 
-Release 1 remains the full-feature reusable B2B ERP. **31 August 2026 —
-Release 1 Integrated Preview** is an integrated preview of the real codebase,
-not an MVP, throwaway/demo UI, Wafra fork, or scope cut. Unfinished capability
+MESP-117 is the approved first capability handoff, but at the start of this
+fresh session it remains **To Do, not activated, and not implemented**. Verify
+its live status and Definition of Ready before activating it. Execute only this
+capability and stop after its bounded completion or a real blocker. Do not
+start MESP-118 or any other next capability automatically.
+
+Release 1 remains the full-feature reusable B2B ERP. **31 August 2026 -
+Release 1 Integrated Preview** is a running preview of the real codebase, not
+an MVP, throwaway/demo UI, Wafra fork, or scope cut. Unfinished functionality
 remains required after the preview.
-
-MESP-38 is Done. MESP-39 remains To Do, unactivated, and not executed as a
-future-release Integrations and External Services BRD. MESP-40 remains To Do,
-unactivated, and required for Release 1 in the migration wave. MESP-23 remains
-In Progress as the living Open Questions Register. MESP-117–MESP-142 are the
-not-activated capability backlog under existing module Epics.
 
 ## Objective
 
-Read the canonical Consolidated Owner Decision Pack and obtain explicit
-Hossam/Owner approval, rejection, or deferral for every applicable A/B row.
-Apply only the decisions explicitly approved in this session; do not convert
-recommendations into requirements by inference. Append the next Product
-Decision entries only for explicit Owner decisions, reconcile the existing
-MESP-23 and Jira owner records without duplicates, publish the final
-dependency map, and hand off the first capability task for a separate later
-session.
+Complete the shared Angular user experience for the existing Master Data
+Category, Unit of Measure, Product, Supplier, and Business Customer slices,
+using their approved contracts and existing platform/module boundaries. Make
+the existing bounded capability usable in the real codebase for authorized
+Tenant users, with truthful loading, validation, error, audit, localization,
+and workflow behavior.
 
-This session is governance/readiness only. It must not implement source, tests,
-persistence, schema, migrations, APIs, UI, providers, credentials,
-infrastructure, production configuration, MESP-39, or migration execution.
+This is a capability implementation session. It may add or correct only the
+minimum necessary Angular components, routes, services, API contract seams,
+server validation, and focused tests required to complete these existing
+slices. It must not redesign the domain, invent missing business decisions,
+or create a parallel Master Data model.
 
 ## Required entry reading and live verification
 
 Read and verify, in this order:
 
-1. `AGENTS.md` and `CLAUDE.md`;
-2. `.ai/CURRENT_STATE.md` and this `TASK.md`;
-3. `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`;
-4. `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md` completely;
-5. `docs/32_Release_1_Tax_VAT_Scope_Clarification.md` completely;
-6. `docs/staticts.md`;
-7. `docs/Decisions.md`, the glossary, `docs/94_Product_Delivery_Master_Plan.md`,
-   and the affected ADRs/contracts only;
-8. the owning and adjacent approved BRDs for any row being approved,
-   especially Master Data, Procurement, Inventory, Finance, Sales, Reporting,
-   Localization, and Security/Audit/Governance;
-9. live Jira MESP-115, MESP-116, MESP-22, MESP-23, MESP-39, MESP-40,
-   MESP-41–MESP-55, MESP-110, MESP-113, MESP-117–MESP-142, and the named
-   MESP-48/MESP-50/production gates; and
-10. current branch, worktree, `main`, and `origin/main`.
+1. `AGENTS.md`, `CLAUDE.md`, `.ai/CURRENT_STATE.md`, and this `TASK.md`;
+2. `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`;
+3. `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`;
+4. `docs/32_Release_1_Tax_VAT_Scope_Clarification.md` and
+   `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`;
+5. the approved Master Data/Product Catalog and adjacent BRDs/specifications
+   in `docs/16` through `docs/20`, the applicable glossary, and the existing
+   Master Data contracts/entities/ADRs;
+6. ADR-002, ADR-005, ADR-011, the shared platform/auth/audit/localization
+   contracts, and any directly affected API/UI tests;
+7. live Jira MESP-117, the prior Category/UOM/Product/Supplier/Customer issue
+   evidence, MESP-23, and the named security/audit/production gates; and
+8. current branch, worktree, `main`, `origin/main`, current diff, and the
+   actual Angular/backend topology before changing files.
 
-Do not reread every BRD or the entire PRD unless an approval row creates a
-real cross-module or architecture question. Use the owning BRD and the exact
-decision row as the source of truth.
+Do not reread every BRD or the entire PRD unless a real cross-module question
+requires it. Use the owning contract and the exact approved decision as the
+source of truth. If the Definition of Ready is not met, record the concrete
+missing prerequisite and stop without speculative implementation.
 
-## Explicit approval protocol
+## Approved scope
 
-The Owner Decision Pack contains 31 rows: 16 A Owner-decidable rows, 6 B
-specialist/input-dependent rows, and 9 C production/external/legal gates.
+The implementation may cover the shared UX and necessary existing seams for:
 
-- Present/record the exact row ID, current issue owner, recommended position,
-  alternatives, dependencies, specialist input, and the Owner decision.
-- Treat every recommendation as **NOT APPROVED UNTIL OWNER SIGNS**.
-- A “yes” applies only to the exact bounded position stated. It does not
-  approve statutory compliance, an external integration, production
-  credentials, a legal conclusion, a volume number, or a wider module scope.
-- A “no”, “defer”, or “needs input” remains open in MESP-23 and the original
-  Jira issue with an explicit next owner/action; do not close it ceremonially.
-- Class C rows remain gates. Do not turn them into guessed product behavior.
-- Keep MESP-39 future-release and unactivated. Keep MESP-40 unactivated while
-  retaining it in the Release 1 sequence.
+- Category and Unit of Measure lists, search/filter/pagination, detail/forms,
+  authorized lifecycle actions, validation, and references;
+- Product identity/list/detail/forms, Tenant-unique SKU/barcode behavior as
+  already contracted, Active/Deactivate/Reactivate behavior, and tracking
+  configuration display only; operational batch/lot/serial/expiry behavior
+  remains Inventory-owned;
+- Supplier and Business Customer list/detail/forms, authorized lifecycle and
+  confirmation behavior, and bounded references already in their contracts;
+- shared navigation, table/form patterns, bilingual EN/AR presentation,
+  RTL/LTR layout, localized validation/error/empty/loading states,
+  permission-aware actions, server-derived authority, audit visibility, and
+  optimistic-concurrency/conflict handling; and
+- focused API/client contract corrections and tests only where they are
+  required to make the existing five slices usable and preserve their module
+  ownership.
 
-The Owner directions already recorded in PD-024 are not reopened as Pack rows:
-full Release 1/preview intent, essential cycles, sequential one-person
-delivery, Luna execution, reserved Opus checkpoints A/B/C, external
-integration deferral, and internal configuration-led Tax/VAT restoration
-without statutory/external scope. PD-023 remains immutable.
+Preserve the approved boundaries: Tenant-safe ownership with no cross-Tenant
+sharing; no client-supplied authority; no invented Draft state; no hidden
+approval thresholds; no EAN/GS1 rules; no Product/Item variant entity; no
+history rewrite; no unaudited client-side business calculation; and no
+automatic approval or posting.
 
-## Required reconciliation work
+## Explicit exclusions and gates
 
-1. Verify that MESP-117–MESP-142 are still To Do/not activated and remain
-   attached to the existing module Epics. Do not create duplicate readiness
-   or capability tickets.
-2. Update MESP-23 with row-level decision evidence, preserving its In Progress
-   status until the living register itself has a valid closure basis.
-3. Update the original MESP-41–MESP-55, MESP-110, MESP-113, and other affected
-   Jira issues with traceability/comments only as justified. Preserve the
-   durable MESP-113 owner for INV-OD-004. Do not close MESP-48/MESP-50 or
-   production gates through this session.
-4. If an approved row materially changes the plan, update the canonical plan,
-   Tax/VAT clarification, current state, and any directly affected traceability
-   file. Do not rewrite approved historical BRDs to erase history.
-5. Append Product Decision entries after PD-024 only for explicit Owner
-   decisions. Include scope, rationale, alternatives, dependencies, owner,
-   status, and exact Jira evidence. Never append a recommendation as if it was
-   approved.
-6. Publish a final dependency map showing capability task, owning Epic,
-   prerequisite decision/BRD/ADR, source-of-truth module, backend/API/DB/UI
-   surfaces, auth/audit/localization gates, validation, and Preview/full-R1
-   acceptance. Select exactly one first capability task; do not activate it
-   automatically.
-7. Update `docs/staticts.md` conservatively. Planning/Jira/decision activity
-   does not increase production percentages. Update raw Jira counts, forecast,
-   milestone, blockers, Tax/VAT classification, and Progress History only when
-   materially applicable.
+This session must not:
 
-## Safety and scope gates
+- activate or execute MESP-39, activate MESP-40, or perform migration;
+- implement Tax/VAT, Currency/FX, Finance posting/valuation, Reporting
+  catalogue, Procurement, Inventory operational tracking/stock/reservation,
+  Sales, returns, credit notes, payment gateways, bank feeds, external SSO,
+  webhooks, providers, credentials, or infrastructure;
+- resolve C1-C9, MESP-48, MESP-49's external boundary, MESP-50, statutory/
+  legal/ZATCA/FATOORA behavior, certification, submission, clearance, signing,
+  or production readiness;
+- add Retail POS or Wafra-specific core behavior; or
+- broaden the approved Release 1 contract because a UI needs a convenient
+  default. Record unresolved decisions in MESP-23 and stop at the boundary.
 
-Stop and report a real blocker if an Owner decision would require:
+Apply the cross-cutting gates from docs/33: Tenant isolation and server-side
+authorization, business audit and actor/time/source evidence, EN/AR and
+RTL/LTR localization, validation/concurrency/data-integrity behavior, and the
+SQL/provider/production gates. Specialist validation remains mandatory before
+production or irreversible decisions even when this local capability is
+implemented safely.
 
-- Tenant leakage, client-supplied authority, authentication/authorization
-  weakness, or unsafe support access;
-- accounting imbalance, source-to-GL ambiguity, tax-posting corruption,
-  untraceable correction, or unreconciled FX/valuation;
-- stock ledger, reservation, tracking, negative-stock, count, valuation, or
-  return/data-integrity risk;
-- destructive migration, data loss, purge, rollback, or irreversible cutover;
-- a legal/statutory/external-validation conclusion that cannot be safely
-  deferred;
-- credentials, external providers, production infrastructure, or deployment;
-  or
-- material scope or architecture expansion beyond the approved Release 1
-  reusable B2B baseline.
+## Definition of Done and validation
 
-Safe local contract and capability work is not blocked merely because a later
-production gate is open. This session itself remains documentation/Jira only.
+MESP-117 is complete only when the real repository demonstrates the agreed
+shared UX for the five existing slices, including authorized list/detail/form
+flows, truthful loading/empty/error/conflict states, bilingual/RTL behavior,
+server-authoritative permissions and validation, audit evidence, and focused
+tests for the changed behavior. Do not claim completion for screenshots,
+placeholder data, or a disconnected demo path.
 
-## Validation and delivery
+Before handoff:
 
-Before finishing:
-
-- verify MESP-38 Done and MESP-39 not executed;
-- verify MESP-40 remains an unactivated Release 1 requirement;
-- verify MESP-23 remains the living register and no recommendation was silently
-  approved;
-- verify internal Tax/VAT is classified R1 required/Not Started without
-  statutory scope;
-- verify full-feature scope, no Retail POS, no Wafra-specific core behavior,
-  and no implementation/source/test/schema/API/UI/provider/credential/
-  infrastructure change outside the later capability session;
-- run relevant documentation/Jira checks, `git diff --check`, and a complete
-  task diff/allowlist review;
-- use one focused branch/PR, review it, merge only when clean, synchronize
-  `main` and `origin/main`, and record the reviewed head and final merge SHA;
-- update MESP-116, MESP-23, current state, tracker, and the exact next TASK;
-  and
-- stop. Do not execute the first capability task in this chat.
+- run the narrowest relevant backend, contract, and Angular tests/builds,
+  including affected regressions and lint/type checks where configured;
+- inspect the complete task diff and confirm no source or configuration change
+  crosses the allowlisted Master Data/shared UX boundary;
+- verify Tenant isolation, authorization, audit, localization, validation,
+  concurrency, and no-history-rewrite behavior in the changed paths;
+- update MESP-117 with activation, validation, review, and closure evidence;
+- update MESP-23 only for genuinely discovered open decisions or blockers;
+- update `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and the relevant plan/state
+  documents conservatively. Production percentages increase only for verified
+  usable capability, never for ticket activity or UI scaffolding alone;
+- use one focused branch and PR, review the complete diff, merge only when
+  clean, synchronize `main` and `origin/main`, and record the reviewed head and
+  final merge SHA; and
+- replace this file with the exact next bounded task and stop. Do not execute
+  that next task in the same chat.
 
 ## Completion report required
 
-Report the approved/deferred/rejected counts by class, row-level Jira keys,
-any resulting PD number/status, MESP-23 status, MESP-39/MESP-40 disposition,
-Tax/VAT boundary, unchanged production percentages, final dependency-map
-selection, first capability handoff, PR/reviewed head/merge SHA, validation,
-and exact changed files. Explicitly state that no external integration and no
-next implementation task was executed.
+Report MESP-117's activated scope, changed files, bounded decisions used,
+validation results, security/audit/localization/concurrency evidence, Jira
+status/comments, any MESP-23 additions, production-capability percentage
+change (or explicitly unchanged), PR/reviewed head/merge SHA, synchronized
+branch state, and the exact next TASK handoff. Explicitly state that MESP-39,
+MESP-40 activation, external integrations, production gates, and all other
+capabilities were not executed unless separately authorized by a later task.

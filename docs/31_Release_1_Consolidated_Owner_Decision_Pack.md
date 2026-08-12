@@ -1,6 +1,6 @@
 # Release 1 Consolidated Owner Decision Pack
 
-**Status:** Draft for explicit Owner approval in MESP-116
+**Status:** Approved A/B decision baseline after MESP-116; C1-C9 remain open gates
 **Date:** 12 August 2026
 **Decision owner:** Hossam (Owner)
 **Register owner:** MESP-23 — Open Questions Register
@@ -10,14 +10,19 @@
 
 This is one consolidated decision pack for the unresolved Release 1
 implementation boundaries. It prevents duplicate Jira owners while preserving
-the original issue and BRD row as the source of truth. Existing Jira issues are
-not closed by this pack. A row becomes approved only when the Owner signs the
-specific position in a later MESP-116 reconciliation comment or other
-append-only governance evidence.
+the original issue and BRD row as the source of truth. The pack alone does not
+close an existing Jira issue; MESP-116 supplied the explicit approval evidence
+and bounded Done transitions for the approved A/B rows. A row becomes approved
+only when the Owner signs the specific position in append-only governance
+evidence.
 
-Every recommended position below is marked:
+Before MESP-116, every recommended position below was treated as:
 
 > **NOT APPROVED UNTIL OWNER SIGNS**
+
+MESP-116 now records the Owner's exact approval for A1-A16 and B1-B6. The
+row-level approval evidence and the applied review clarifications are
+append-only governance facts; C1-C9 remain open gates.
 
 The pack contains **31 canonical entries**:
 
@@ -33,15 +38,68 @@ requirement but is not activated by this pack.
 
 ## 2. Approval record
 
-| Field | Value to be completed in MESP-116 |
+| Field | MESP-116 completion value |
 |---|---|
 | Owner | Hossam |
 | Decision-pack version | 1.0 — 12 August 2026 |
-| Owner approval status | **Pending** |
-| Approved rows | None until explicit row-level approval is recorded |
-| Rejected/deferred rows | None until explicit row-level direction is recorded |
-| Resulting Product Decision | MESP-116 appends the next available PD number only for explicit Owner decisions; PD-024 already records the explicit fast-track directions. |
-| MESP-23 effect | Reconcile/register evidence only; do not close the living register until each issue has its own valid closure basis. |
+| Owner approval status | **Approved** for A1-A16 and B1-B6 at the exact bounded positions, subject to the applied review clarifications below. |
+| Approved rows | **22** — A1-A16 and B1-B6; Class B is a Release 1 product/implementation contract with mandatory specialist validation before production or irreversible accounting/cutover decisions. |
+| Rejected/deferred rows | **0** applicable A/B rows. C1-C9 are not approved or closed; they remain production/external/legal/provider/infrastructure gates. |
+| Resulting Product Decision | **PD-025-PD-046**, appended in MESP-22 comment `10958` from Owner approval evidence in MESP-116 comment `10957`. |
+| MESP-23 effect | Reconciled by comment `10976`; remains **In Progress** as the living register because C gates and their required evidence remain open. |
+| First capability handoff | **MESP-117**, To Do/not activated, prepared in Jira comment `10977`; no capability implementation started in MESP-116. |
+
+### 2.1 Applied review amendments and clarifications
+
+The Owner approval incorporates the immediately preceding ChatGPT review. The
+following constraints are part of every approved row and are not optional
+interpretations:
+
+1. Approval is limited to the exact row scope. It does not approve statutory
+   compliance, external integrations, production credentials/providers or
+   infrastructure, legal conclusions, volume numbers, or wider module scope.
+2. A1 keeps Product tracking configuration separate from Inventory operational
+   identity, capture, movement, availability, uniqueness, and history; no
+   EAN/GS1 or external traceability rule is inferred.
+3. A2 is reusable and configuration-led, with server-derived authority, no
+   self-approval, explicit stages/returns, delegation expiry, SoD, audit, and
+   a controlled-transition block; no thresholds are invented.
+4. A3 preserves original/revised supplier values, re-enters approval for
+   material changes, and leaves an unconfirmed remainder explicitly pending;
+   A4 approves configurable matching/tolerance states but no tolerance values,
+   automatic posting, or automatic approval.
+5. A5 blocks negative stock by default; no exception role, expiry, or valuation
+   bypass is approved by implication. A6 leaves exposure components and
+   thresholds to Finance-owned validation and controlled override evidence.
+6. A7 is an internal configurable manual payment/receipt catalogue only; it
+   does not authorize a gateway, bank feed, provider, credential, or external
+   payment integration. A8 delegation is explicit, scoped, time-bounded,
+   server-authorized, conflict-checked, and cannot broaden permissions.
+7. A9 is Tenant-wide reusable identity with explicit Company/Branch
+   applicability and no cross-Tenant sharing. A10 is deterministic,
+   effective-dated price precedence with a source snapshot and no promotion
+   engine.
+8. A11 distinguishes routine authorized mutation from an explicit high-risk
+   approval catalogue and invents no generic approval or Draft lifecycle.
+   A12/A13 preserve historical references and prohibit destructive delete,
+   overlapping versions, silent reactivation, or history rewrite.
+9. A14 requires explicit Warehouse-scoped reservations, controlled
+   release/reduction, visible partial allocation/backorder, and no delivery
+   without available authority. A15 requires linked authorized returns,
+   controlled receipt/quarantine, internal Credit Note consequence, and audit;
+   no automatic external refund or statutory submission is implied. A16 is
+   server-checked invoice eligibility with traceable partial invoicing and no
+   client-side bypass.
+10. B1-B6 are approved as bounded product/implementation contracts only.
+    Finance, Inventory, Reporting, Migration, Security/Audit, and other named
+    specialist validation remains mandatory before production acceptance,
+    irreversible accounting/valuation/posting, destructive migration,
+    cutover, rollback commitment, or production distribution. MESP-40 remains
+    unactivated and no migration is executed.
+11. Internal Tax/VAT is reusable configuration-led Release 1 capability only;
+    it does not authorize ZATCA/FATOORA, statutory interpretation, government
+    submission, signing, clearance, certification, external providers,
+    credentials, or legal conclusions. C1-C9 remain open exactly as classified.
 
 ## 3. Class A — Owner-decidable now
 
@@ -65,8 +123,8 @@ requirement but is not activated by this pack.
   audit. MESP-119/128/129/130/141 depend on the contract.
 - **Input:** Product, Inventory, Finance valuation, Security/Audit; specialist
   confirmation may refine fields but may not add statutory claims.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank until MESP-116 records explicit direction.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-025**, MESP-22 comment `10958`.
 
 ### A2 — MESP-42 / PROC-OD-001 / INV-OD-003 / SAL-OD-02 / FIN-OD-02 — approvals
 
@@ -89,8 +147,8 @@ requirement but is not activated by this pack.
   136 depend on it.
 - **Input:** Finance, Security/Audit, module owners; specialist review may
   confirm thresholds without changing the security invariant.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-026**, MESP-22 comment `10958`.
 
 ### A3 — MESP-43 / PROC-OD-002 / INV-OD-011 — Supplier Confirmation
 
@@ -108,8 +166,8 @@ requirement but is not activated by this pack.
   matching, tax/currency/terms, attachments, permissions, audit, and reports;
   MESP-124/125/126 depend on it.
 - **Input:** Procurement, Finance, Inventory, Security/Audit.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-027**, MESP-22 comment `10958`.
 
 ### A4 — MESP-44 / PROC-OD-003 / INV-OD-012 / FIN-OD-01 — three-way matching
 
@@ -127,8 +185,8 @@ requirement but is not activated by this pack.
   Finance source-to-GL, AP, reports, audit, SoD, and MESP-126/133/134.
 - **Input:** Finance is the accounting owner; Procurement and Inventory
   define source evidence; Security/Audit validates authority and history.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-028**, MESP-22 comment `10958`.
 
 ### A5 — MESP-45 / INV-OD-002 — negative stock
 
@@ -145,8 +203,8 @@ requirement but is not activated by this pack.
   returns, MWA, Sales credit/availability, reporting, and migration.
 - **Input:** Inventory and Finance must confirm valuation implications;
   Security/Audit confirms exception authority.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-029**, MESP-22 comment `10958`.
 
 ### A6 — MESP-46 / PROC-OD-014 / INV-OD-013 — credit control
 
@@ -167,8 +225,8 @@ requirement but is not activated by this pack.
   reporting, MESP-136/137/138.
 - **Input:** Finance owns exposure and settlement; Sales owns operational
   holds; Security/Audit owns override evidence.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-030**, MESP-22 comment `10958`.
 
 ### A7 — MESP-47 / PROC-OD-004 / INV-OD-014 / FIN-OD-03 — payment and receipt methods
 
@@ -187,8 +245,8 @@ requirement but is not activated by this pack.
   due dates, reporting, migration, and MESP-133.
 - **Input:** Finance and Security/Audit; provider/infrastructure input is
   intentionally deferred.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-031**, MESP-22 comment `10958`.
 
 ### A8 — MESP-55 / PROC-OD-013 / INV-OD-003 / FIN-OD-02 / RPT-OD-012 — delegation
 
@@ -204,8 +262,8 @@ requirement but is not activated by this pack.
 - **Impact/dependencies:** A2 approvals, credit overrides, inventory variance,
   Finance posting/payments, reporting distribution, support access.
 - **Input:** Security/Audit, Finance, module owners.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-032**, MESP-22 comment `10958`.
 
 ### A9 — MD-OD-001 — remaining Master Data availability
 
@@ -223,8 +281,8 @@ requirement but is not activated by this pack.
 - **Impact/dependencies:** Currency, terms, tax, price lists, Products,
   Suppliers, Customers, imports, downstream APIs, reporting, migration.
 - **Input:** Master Data, Platform, Security/Audit.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-033**, MESP-22 comment `10958`.
 
 ### A10 — MD-OD-004 / SAL-OD-01 — pricing precedence
 
@@ -243,8 +301,8 @@ requirement but is not activated by this pack.
 - **Impact/dependencies:** Price List, Product/UOM, Customer, Sales Order,
   returns/credit, tax, multi-currency, reporting, MESP-121/136/137.
 - **Input:** Sales, Master Data, Finance for tax/currency interaction.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-034**, MESP-22 comment `10958`.
 
 ### A11 — MD-OD-005 — Master Data approval catalogue
 
@@ -264,8 +322,8 @@ requirement but is not activated by this pack.
   tax, terms, price lists, import, downstream snapshots, audit, MESP-117/118/
   119/121/122.
 - **Input:** Master Data, Security/Audit, Finance for accounting references.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-035**, MESP-22 comment `10958`.
 
 ### A12 — MD-OD-008 — remaining lifecycle behavior
 
@@ -283,8 +341,8 @@ requirement but is not activated by this pack.
 - **Impact/dependencies:** All master data, imports, documents, tax, price,
   migration, reporting and audit.
 - **Input:** Master Data, Security/Audit, Finance/Inventory/Sales.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-036**, MESP-22 comment `10958`.
 
 ### A13 — MD-OD-009 — effective-date reactivation
 
@@ -300,8 +358,8 @@ requirement but is not activated by this pack.
 - **Impact/dependencies:** Tax/VAT, currency/rates, price lists, payment
   terms, reports, migration, all consuming documents.
 - **Input:** Master Data, Finance, Reporting, Security/Audit.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-037**, MESP-22 comment `10958`.
 
 ### A14 — SAL-OD-03 — reservation and partial allocation
 
@@ -319,8 +377,8 @@ requirement but is not activated by this pack.
   Delivery, returns, credit control, MESP-128/129/137.
 - **Input:** Inventory owns stock truth; Sales owns order state; Finance
   confirms credit/payment interaction.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-038**, MESP-22 comment `10958`.
 
 ### A15 — SAL-OD-04 — Customer Return, Credit Note, and refund consequence
 
@@ -340,8 +398,8 @@ requirement but is not activated by this pack.
   Finance AR/tax/reversal, credit exposure, reporting, MESP-127/131/138.
 - **Input:** Finance and Inventory are required; Security/Audit validates
   authority and evidence.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-039**, MESP-22 comment `10958`.
 
 ### A16 — SAL-OD-05 — invoice eligibility
 
@@ -360,8 +418,8 @@ requirement but is not activated by this pack.
   internal tax, Payment Terms, credit, returns/credit notes, reporting.
 - **Input:** Finance owns posting eligibility; Sales and Inventory own source
   documents.
-- **Approval:** Pending Owner row-level decision.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved** by Hossam in MESP-116 comment `10957`.
+- **Resulting PD:** **PD-040**, MESP-22 comment `10958`.
 
 ## 4. Class B — specialist/input-dependent but safe to contract-bound
 
@@ -382,8 +440,8 @@ requirement but is not activated by this pack.
   volume, backup/restore, accounting and stock reconciliation.
 - **Input:** Finance, Inventory, Platform, Security/Audit, migration and
   production specialists. Contract can be prepared without running migration.
-- **Approval:** Pending Owner plus specialist input.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved contract-bound** by Hossam in MESP-116 comment `10957`; named specialist validation remains mandatory.
+- **Resulting PD:** **PD-041**, MESP-22 comment `10958`.
 
 ### B2 — MESP-53 / PROC-OD-011 / INV-OD-009 / FIN-OD-05 / RPT-OD-001–003 — report catalogue
 
@@ -404,8 +462,8 @@ requirement but is not activated by this pack.
   MESP-139, MESP-48/50/production scheduling gates.
 - **Input:** Reporting owner, Finance, Inventory, Security/Audit; volume and
   production specialists for schedule/export limits.
-- **Approval:** Pending Owner plus specialist input.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved contract-bound** by Hossam in MESP-116 comment `10957`; named specialist validation remains mandatory.
+- **Resulting PD:** **PD-042**, MESP-22 comment `10958`.
 
 ### B3 — MESP-54 / PROC-OD-012 / INV-OD-010 / FIN-OD-04 / RPT-OD-004 — currency and FX
 
@@ -425,8 +483,8 @@ requirement but is not activated by this pack.
   134/135.
 - **Input:** Finance and Reporting; legal/external validation is not replaced
   by this internal contract.
-- **Approval:** Pending Owner plus Finance/Reporting input.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved contract-bound** by Hossam in MESP-116 comment `10957`; Finance/Reporting validation remains mandatory.
+- **Resulting PD:** **PD-043**, MESP-22 comment `10958`.
 
 ### B4 — MESP-110 / FIN-OD-09 / RPT-OD-005–006 — fiscal calendar, terms, dimensions
 
@@ -445,8 +503,8 @@ requirement but is not activated by this pack.
 - **Impact/dependencies:** Finance posting/periods, AP/AR, credit, aging,
   reporting, migration, approvals, MESP-132/133/135/139/141.
 - **Input:** Finance owner, Reporting, Security/Audit, migration specialist.
-- **Approval:** Pending Owner plus Finance/Reporting input.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved contract-bound** by Hossam in MESP-116 comment `10957`; Finance/Reporting/Migration validation remains mandatory.
+- **Resulting PD:** **PD-044**, MESP-22 comment `10958`.
 
 ### B5 — MESP-113 / INV-OD-004 — transfers, counts, and Stock Issue
 
@@ -463,8 +521,8 @@ requirement but is not activated by this pack.
   Procurement/Sales returns, Finance valuation, reports, MESP-128–131.
 - **Input:** Inventory is durable owner; Finance confirms valuation; Security/
   Audit confirms authority; Reporting confirms evidence.
-- **Approval:** Pending Owner plus specialist input.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved contract-bound** by Hossam in MESP-116 comment `10957`; Inventory/Finance/Reporting/Audit validation remains mandatory.
+- **Resulting PD:** **PD-045**, MESP-22 comment `10958`.
 
 ### B6 — FIN-OD-01 and related Finance rows — posting, valuation, corrections
 
@@ -483,8 +541,8 @@ requirement but is not activated by this pack.
   MESP-125/126/131–135/138/141.
 - **Input:** Finance is required; Security/Audit, Inventory, Procurement,
   Sales, Reporting, and migration provide source evidence.
-- **Approval:** Pending Owner plus Finance specialist input.
-- **Resulting PD:** Blank.
+- **Approval:** **Approved contract-bound** by Hossam in MESP-116 comment `10957`; Finance and named specialist validation remains mandatory.
+- **Resulting PD:** **PD-046**, MESP-22 comment `10958`.
 
 ## 5. Class C — production-only, external, or legal gates
 
@@ -571,25 +629,30 @@ duplicating their Jira owners:
 - Approved MESP-38 Security/Audit/Governance requirements and named ADR/SQL,
   provider, privacy, volume, and legal gates.
 
-The pack does not replace an approved BRD, does not treat a recommendation as
-an implementation contract, and does not claim the capability backlog is
-active. MESP-117–MESP-142 remain To Do until MESP-116 produces the exact
-approved dependency map and handoff.
+The pack does not replace an approved BRD or activate implementation. The
+approved A/B rows are bounded contracts, not permission to skip specialist,
+security, accounting, stock, migration, SQL, provider, legal, or production
+validation. MESP-117–MESP-142 remain To Do/not activated; MESP-117 is the
+prepared first handoff and its implementation starts only in a fresh later
+session.
 
-## 7. MESP-116 application checklist
+## 7. MESP-116 completion record
 
-The next session must:
+MESP-116 completed the following bounded actions:
 
 1. read this pack, the full-feature plan, Tax/VAT clarification, current
    state, relevant BRDs/ADRs, and live Jira;
-2. obtain explicit Hossam approval for each applicable A/B row or record its
-   explicit defer/reject direction;
-3. apply only the approved rows and append the next PD entries only for those
-   explicit decisions;
-4. update MESP-23 and the original Jira owners without closing unrelated rows
-   or creating duplicates;
-5. publish the final dependency map and select the first capability task;
-6. keep MESP-39 unactivated and MESP-40 unactivated but in the Release 1
-   sequence; and
-7. stop with a fresh exact TASK handoff. No implementation starts in the
+2. record explicit Owner approval for A1-A16 and B1-B6 in MESP-116 comment
+   `10957`, with the review amendments and specialist conditions preserved;
+3. append PD-025-PD-046 in MESP-22 comment `10958` only for those explicit
+   decisions;
+4. reconcile MESP-23 in comment `10976` and update original decision owners
+   without creating duplicates; approved open owner issues are closed at
+   their exact scopes, while gates remain open;
+5. publish the final dependency map in
+   `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md` and
+   select MESP-117 as the first capability handoff;
+6. keep MESP-39 future-release/unactivated and MESP-40 Release-1-required but
+   unactivated; and
+7. stop with a fresh exact TASK handoff. No implementation starts in this
    decision-reconciliation session.

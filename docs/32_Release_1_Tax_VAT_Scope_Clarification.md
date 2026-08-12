@@ -3,7 +3,7 @@
 **Status:** Current Release 1 scope addendum; implementation **Not Started**
 **Date:** 12 August 2026
 **Product Decision:** PD-024 (explicit Owner fast-track direction)
-**Related Jira:** MESP-22, MESP-23, MESP-49, MESP-54, MESP-110, MESP-119, MESP-134
+**Related Jira:** MESP-22, MESP-23, MESP-49, MESP-54, MESP-110, MESP-116, MESP-119, MESP-134
 **Related plan:** `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`
 
 ## 1. Decision and boundary
@@ -127,9 +127,14 @@ decision items in the consolidated pack and must not be inferred:
 - migration source formats, validation/quarantine, and historical evidence;
 - any statutory field needed only for a later external/legal integration.
 
-The recommended positions are in
-`docs/31_Release_1_Consolidated_Owner_Decision_Pack.md` and remain **NOT
-APPROVED UNTIL OWNER SIGNS**.
+The detailed positions are in
+`docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`. The applicable
+internal Release 1 contract positions were approved by Hossam in MESP-116
+comment `10957` and recorded as PD-025 through PD-046 in MESP-22 comment
+`10958`. Approval is bounded by the exact row text and by the specialist
+validation and production gates recorded there; it does not approve the
+remaining Tax/VAT implementation details below, statutory behavior, or an
+external integration.
 
 ## 7. Current classification and traceability
 
@@ -143,8 +148,39 @@ APPROVED UNTIL OWNER SIGNS**.
 - MESP-141 consumes the contract for migration/onboarding validation.
 - MESP-49 remains the external statutory/e-invoice boundary; MESP-39 remains
   the future external integration BRD and is not executed.
-- MESP-23 remains the living register; no row is closed by this clarification.
+- MESP-23 remains the living register; this clarification itself does not
+  close a row. MESP-116 reconciled the applicable approved contract rows and
+  preserved the remaining Tax/VAT detail decisions as implementation and
+  specialist-validation work.
 
 No Tax/VAT source, test, entity, table, migration, API, UI, provider,
 credential, infrastructure, or production configuration was added by this
 scope clarification.
+
+## 8. MESP-116 approval overlay
+
+MESP-116 approved the following bounded Release 1 contract positions relevant
+to this clarification:
+
+- **B3 / PD-043 — Currency and FX:** internal manual/configured currency and
+  FX policy remains contract-bound to Finance/Reporting ownership. No
+  automated FX source, bank feed, external provider, or production decision is
+  implied.
+- **B6 / PD-046 — Finance posting and valuation:** internal tax amounts and
+  related posting/valuation evidence remain Finance-owned, balanced,
+  traceable, reversible, and subject to Finance and named specialist
+  validation. No irreversible accounting or cutover decision is approved by
+  the governance session.
+- **PD-024 / internal Tax/VAT:** reusable configuration-led Tax/VAT remains a
+  Release 1 requirement and is still **Not Started**. It is not statutory
+  compliance, ZATCA/FATOORA behavior, legal advice, certification, filing,
+  clearance, signing, submission, or external-provider integration.
+
+Before implementation or any production/irreversible accounting decision,
+Finance, Inventory/operational owners where affected, Reporting, and
+Migration specialists must validate the detailed contract, including
+inclusive/exclusive treatment, taxable base, exemption behavior, account
+mapping, period/correction policy, report evidence, migration quarantine, and
+historical traceability. MESP-40 remains To Do and unactivated; this approval
+does not authorize migration execution. C2/C3 and all other C1-C9 gates remain
+open.
