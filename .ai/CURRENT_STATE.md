@@ -8,7 +8,8 @@ PR #61 was reviewed at final head
 `265b9211a2586cdd4e1014454da8c86cca90ba08` and merged to `main` at
 `e085032eac3555dfaf2a700830063b67f3c23858`. Jira activation is comment
 `10984`, validation/review is comment `10985`, closure evidence is comment
-`10986`, and MESP-118 is **Done**.
+`10986`, and MESP-118 is **Done**. Post-merge state/tracker synchronization
+is commit `01a6d92` on synchronized `main`/`origin/main`.
 
 | Current fact | Verified value |
 |---|---|
