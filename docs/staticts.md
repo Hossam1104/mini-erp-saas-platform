@@ -208,16 +208,16 @@ PR #57 at merge 67b7fb79475fb194489bc03ed153c999d20a6eaf from reviewed head
 10934/10935/10936/10937/10938/10939. Its canonical BRD is
 docs/29_Security_Audit_and_Data_Governance_BRD.md; MESP-39 remains a future-
 release BRD and is To Do/not activated/not executed.
-The Customer-specific
-MD-OD-001/005/008 decisions are approved only for the bounded Customer slice;
-the merged Customer source remains limited to that slice. No production-
-capability percentage changed in the documentation-only MESP-32, MESP-33,
-MESP-34, MESP-35, MESP-36, MESP-37, MESP-111, MESP-112, or MESP-38 sessions;
-the Pre-MESP-38 reconciliation was documentation/Jira/governance-only with no
-production capability change; MESP-115 likewise changed no production
-capability; MESP-116 is now Done at its bounded governance scope and the next
-exact handoff is MESP-117 shared Master Data Angular UX, with MESP-39 still
-future-release To Do and not activated.
+The Customer-specific MD-OD-001/005/008 disposition and the preceding
+documentation-only session notes are retained as historical slice evidence.
+MESP-116 is Done at its bounded governance scope. MESP-117 is now the
+completed first capability implementation, with its shared five-slice Angular
+workspace and Category/UOM public REST seam recorded in the authoritative
+snapshot above; the exact next handoff is MESP-118. PD-033, PD-035, PD-036, and
+PD-037 are authoritative at their exact approved global Master Data boundaries,
+while Procurement Supplier Confirmation remains MESP-124. MESP-39 remains
+future-release To Do and not activated, and MESP-40 remains an unactivated
+Release 1 migration requirement.
 
 ---
 
