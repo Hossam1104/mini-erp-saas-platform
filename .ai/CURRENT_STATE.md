@@ -12,7 +12,7 @@ required after the preview.
 | Current fact | Verified value |
 |---|---|
 | MESP-115 | **Done** at the bounded documentation/Jira/governance rebaseline; activation evidence is Jira comment 10941; closure is Jira comment 10955; PR #58 reviewed at 0681c0182b0b6894f5f2b83db1728253ac54e279 and merged to main at a5ee9426d252901e74888bdc3ca94970c969aa20. |
-| MESP-116 | **Done** at the bounded Owner decision and implementation-unblock reconciliation; Owner approval evidence is Jira comment 10957, the decision register is MESP-22 comment 10958, and the final dependency map is docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md. No source or production capability was added. |
+| MESP-116 | **Done** at the bounded Owner decision and implementation-unblock reconciliation; Owner approval evidence is Jira comment 10957, the decision register is MESP-22 comment 10958, and the final dependency map is docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md. Focused PR #59 was reviewed at 8b3f7b61c0128f97aa6a775dec23e623c1fde70e and merged to main at b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd. No source or production capability was added. |
 | Canonical artifacts | docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md; docs/31_Release_1_Consolidated_Owner_Decision_Pack.md; docs/32_Release_1_Tax_VAT_Scope_Clarification.md; docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md. |
 | PD-024 | Appended to MESP-22 in comment 10945 for explicit full-feature/preview, sequential-governance, external-integration-deferral, and internal-configurable-Tax/VAT directions only. |
 | PD-025 through PD-046 | Appended to MESP-22 in comment 10958 for the exact approved A1-A16 and B1-B6 positions. Class B is the Release 1 product/implementation contract, subject to mandatory specialist validation before production or irreversible accounting, migration, and cutover decisions. |
@@ -26,7 +26,7 @@ required after the preview.
 | Tax/VAT | Internal reusable configuration-led Tax/VAT remains Release 1 required and **Not Started**. PD-024, PD-043 and PD-046 do not authorize statutory, ZATCA/FATOORA, legal, certification, filing, submission, clearance, signing or external-provider behavior. |
 | Governance | One active capability, one sequential executor, one focused PR; Opus checkpoints A/B/C reserved as defined in the fast-track plan. |
 | Source/production capability | None added by this documentation/Jira session; production percentages remain unchanged. |
-| Current branch | MESP-116 focused documentation branch during publication; the final reviewed head and merged-main SHA are recorded after the focused PR is merged and synchronized. |
+| Current branch | `main` at b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd; PR #59 reviewed at 8b3f7b61c0128f97aa6a775dec23e623c1fde70e and merged; local `main` is synchronized with `origin/main`. |
 | Next exact session | TASK.md contains MESP-117 - Complete Master Data shared Angular UX for the existing Category/UOM/Product/Supplier/Customer slices. |
 
 MESP-116 did not execute MESP-39, activate MESP-40, implement source, tests,

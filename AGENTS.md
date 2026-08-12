@@ -31,6 +31,10 @@ reconciliation scope. Owner approval evidence is MESP-116 comment `10957`;
 PD-025 through PD-046 are appended to the immutable Product Decision Register
 in MESP-22 comment `10958`; and the final dependency map is
 `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`.
+Focused PR #59 was reviewed at
+`8b3f7b61c0128f97aa6a775dec23e623c1fde70e` and merged to `main` at
+`b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`; `main`/`origin/main` are
+synchronized.
 A1-A16 and B1-B6 are approved only at their exact bounded positions. Class B
 is the Release 1 product/implementation contract, but Finance, Inventory,
 Reporting, Migration, and other named specialist validation remains mandatory

@@ -57,7 +57,7 @@ cross-module dependency map is
 | MESP-40 | To Do, not activated; full Release 1 migration and Tenant Onboarding requirement, scheduled in Wave H. |
 | MESP-23 | In Progress as the living Open Questions Register; reconciled by Jira comment `10976`; C gates remain open. |
 | MESP-115 | Done at the bounded documentation/Jira/governance rebaseline. |
-| MESP-116 | Done at the bounded approval/unblock reconciliation; Jira comment `10957`, closure transition, and final dependency map are recorded. |
+| MESP-116 | Done at the bounded approval/unblock reconciliation; Jira comment `10957`, closure transition, final dependency map, PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e`, and merge `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd` are recorded. |
 | MESP-117–MESP-142 | Capability backlog created under the existing module Epics; all To Do and not activated. |
 | Product implementation | Existing bounded Category, UOM, Product, Supplier, and Customer slices remain evidence; the planned capability completion and shared Angular experience are not claimed complete. |
 | First capability handoff | MESP-117 is the exact next fresh-session handoff, To Do/not activated; Jira comment `10977`. |
