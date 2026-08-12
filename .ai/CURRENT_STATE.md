@@ -1,28 +1,29 @@
 # Current State
 
-## Current authoritative position - 12 August 2026 (MESP-118 complete; PR #61 merged)
+## Current authoritative position - 13 August 2026 (MESP-119 complete; PR #62 merged)
 
-MESP-118 is complete at its single bounded Currency and Payment Terms Master
-Data implementation scope. Source implementation commit is `c6ccd4f`; focused
-PR #61 was reviewed at final head
-`265b9211a2586cdd4e1014454da8c86cca90ba08` and merged to `main` at
-`e085032eac3555dfaf2a700830063b67f3c23858`. Jira activation is comment
-`10984`, validation/review is comment `10985`, closure evidence is comment
-`10986`, and MESP-118 is **Done**. Post-merge state/tracker synchronization
-is commit `01a6d92` on synchronized `main`/`origin/main`.
+MESP-119 is complete at its single bounded internal configuration-led Tax/VAT
+Master Data and deterministic engine-contract scope. Source implementation
+commit is `ec280a5`; focused PR #62 was reviewed at final head
+`ec280a552f328416a52adbda212170a9c1c059fa` and merged to `main` at
+`fd34dadb7fb96a680f61765ad3c67d3ec1a26572`. Jira activation is comment
+`10987`, validation/review is comment `10988`, closure evidence is comment
+`10989`, and MESP-119 is **Done**. The post-merge state/tracker
+synchronization is the current tracked handoff commit on synchronized
+`main`/`origin/main`.
 
 | Current fact | Verified value |
 |---|---|
-| MESP-118 scope | Reusable Tenant-safe Currency identity/lifecycle and deterministic functional/transaction/Reporting Currency references; reusable Payment Term identity, versioned effective-dated history, configurable base-date rule, single due date or installment schedule, day/month offsets, exact 100% installment validation, early-settlement discount configuration, deterministic due-date preview, and historical snapshot/reference behavior without rewriting prior versions. |
-| Ownership boundary | Master Data owns reusable identity, lifecycle, configuration, effective selection, and deterministic read references. Finance owns AP/AR aging, settlement, posting, discount accounting, due-date accounting consequences, exchange-rate maintenance, conversion, realized/unrealized FX, revaluation, and FX accounting. |
-| Approved decisions consumed | PD-033 (Tenant ownership), PD-035 (server-derived authority/audit/concurrency), PD-036 (Active/Inactive lifecycle), PD-037 (effective dating/history), PD-043 (Currency/FX bounded contract), and PD-044 (Finance/Payment Terms bounded contract), each only at its approved boundary. MESP-110 and MESP-54 are consumed as Done, not treated as legacy blockers. |
-| API/persistence/UI | Backend contracts, Tenant-filtered persistence, audit/concurrency/idempotency seams, deterministic reads/previews, public REST routes, and Angular EN/AR/RTL responsive configuration journeys are implemented and tested. No external provider or production configuration was added. |
-| Validation | `dotnet build` passed with 0 warnings/errors; full non-SQL backend suite 674/674 passed; focused Foundation/REST/MESP-118 suite 43/43 passed; Angular 35/35 passed across 7 files; Angular production build passed. The 21 SQL Server safety cases remain environment-gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. |
-| Jira counts | 77 Done / 6 In Progress / 59 To Do across 142 issues; 77 Done / 1 In Progress / 49 To Do across 127 non-Epic issues after MESP-118 closure. |
-| MESP-23 | Remains In Progress as the living Open Questions Register. No new decision or blocker was added by MESP-118. |
-| Exclusions preserved | No AP/AR accounting consequence, FX engine, MESP-39 execution, MESP-40 activation, migration/cutover, external integration/provider/credential/infrastructure, statutory Tax/VAT, Retail POS, Wafra-specific core behavior, or other capability was executed. |
-| Current branch | `main` is synchronized with `origin/main` after PR #61 merge; the post-merge state/tracker synchronization is recorded in the current tracked commits. |
-| Next exact session | `TASK.md` contains **MESP-119 - Implement internal configuration-led Tax/VAT master and engine contract**. It is the only next capability and must start only in a fresh session. |
+| MESP-119 scope | Reusable Tenant-owned bilingual Tax/VAT identity, category/code configuration, Active/Inactive lifecycle, effective-dated non-overlapping rate versions, deterministic historical references, explicit-input calculation, applied-rate evidence, audit, optimistic concurrency, idempotent mutation seams, public REST, generated OpenAPI/Scalar developer reference, and connected Angular EN/AR/RTL journeys. |
+| Ownership boundary | Master Data owns reusable Tax identity, configuration, effective selection, historical reference evidence, and the deterministic engine contract over explicit inputs. Finance owns accounting posting, valuation, period, reversal, reconciliation, and irreversible downstream consequences. |
+| Approved decisions consumed | PD-024, PD-033, PD-035, PD-036, PD-037, PD-040, PD-043, and PD-046, each only at its exact approved boundary. No statutory, external, Finance posting, or migration recommendation was promoted to a requirement. |
+| API/persistence/UI | Backend contracts, Tenant-filtered Tax/rate persistence, mandatory audit/concurrency/idempotency seams, ten public Tax REST operations, generated OpenAPI operation documentation, Development/QA-only Scalar v1 with its agent capability disabled, and bilingual responsive Angular Tax catalogue/edit/history/calculation journeys are implemented and tested. No external provider or production configuration was added. |
+| Validation | API build passed with 0 warnings/errors; complete non-SQL backend suite passed 679/679; focused Foundation/REST/OpenAPI/Scalar suite passed 33/33; Angular tests passed 35/35 across 7 files; Angular production build passed with a 516.48 kB initial bundle, 16.48 kB above the existing 500 kB warning budget. The 21 SQL Server safety cases remain environment-gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. |
+| Jira counts | 78 Done / 6 In Progress / 58 To Do across 142 issues; 78 Done / 1 In Progress / 48 To Do across 127 non-Epic issues after MESP-119 closure. |
+| MESP-23 | Remains In Progress as the living Open Questions Register. No new decision or blocker was added by MESP-119. |
+| Exclusions preserved | No statutory/ZATCA/FATOORA behavior, legal or government submission, Finance posting, migration/cutover, MESP-39 execution, MESP-40 activation, external integration/provider/credential/infrastructure, Retail POS, Wafra-specific core behavior, or other capability was executed. |
+| Current branch | `main` is synchronized with `origin/main` after PR #62 merge; the required state/tracker/TASK synchronization is the final handoff for this session. |
+| Next exact session | `TASK.md` contains **MESP-120 - Implement Exchange Rate and multi-currency master-data capability**. It is To Do/not activated, must independently reverify its PD-043/MESP-54 contract-bound prerequisites, and must start only in a fresh session. |
 
 Finance/Reporting specialist validation, SQL/provider/production, migration,
 privacy/legal, and named external gates remain open before production or
