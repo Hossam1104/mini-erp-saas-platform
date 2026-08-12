@@ -398,3 +398,16 @@ by source implementation automatically.
   unchanged file.
 - `.ai/CURRENT_STATE.md` is the entry point for the verified current branch,
   head, active item, open Pull Request and open findings.
+
+## Permanent REST/API Definition of Done
+
+Every public REST operation must be complete as one connected contract. Before
+the owning capability can close, the operation must be present in the
+Foundation operation catalogue with its exact route, permission, scope,
+antiforgery, audit, and unsafe-effect metadata; be mapped by the real API;
+appear in the generated OpenAPI document with a stable `operationId`, useful
+summary and boundary description, and explicit response outcomes; and be
+covered by an architecture/contract test that rejects missing or placeholder
+documentation. Scalar is only the developer-facing rendering of that
+generated document in Development/QA, with agent actions disabled; it is not a
+second handwritten contract and must not be exposed as a production feature.

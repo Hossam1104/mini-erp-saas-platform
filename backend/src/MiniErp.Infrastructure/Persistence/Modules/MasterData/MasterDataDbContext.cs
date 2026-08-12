@@ -36,6 +36,10 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
 
     internal DbSet<MasterDataPaymentTermInstallmentEntity> PaymentTermInstallments => Set<MasterDataPaymentTermInstallmentEntity>();
 
+    internal DbSet<MasterDataTaxEntity> Taxes => Set<MasterDataTaxEntity>();
+
+    internal DbSet<MasterDataTaxRateVersionEntity> TaxRateVersions => Set<MasterDataTaxRateVersionEntity>();
+
     internal DbSet<MasterDataAuditEventEntity> AuditEvents => Set<MasterDataAuditEventEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -243,6 +247,50 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         paymentTermInstallment.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var tax = modelBuilder.Entity<MasterDataTaxEntity>();
+        tax.ToTable("Taxes", "masterdata");
+        tax.HasKey(item => item.Id);
+        tax.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(tax.Property(item => item.TenantId));
+        tax.Property(item => item.Code).HasMaxLength(32).IsRequired();
+        tax.Property(item => item.CodeKey).HasMaxLength(32).IsRequired();
+        tax.Property(item => item.CategoryCode).HasMaxLength(64).IsRequired();
+        tax.Property(item => item.CategoryCodeKey).HasMaxLength(64).IsRequired();
+        tax.Property(item => item.CategoryEnglishName).HasMaxLength(256).IsRequired();
+        tax.Property(item => item.CategoryArabicName).HasMaxLength(256).IsRequired(false);
+        tax.Property(item => item.EnglishName).HasMaxLength(256).IsRequired();
+        tax.Property(item => item.ArabicName).HasMaxLength(256).IsRequired(false);
+        tax.Property(item => item.NameKey).HasMaxLength(256).IsRequired();
+        tax.Property(item => item.Applicability).IsRequired();
+        tax.Property(item => item.LifecycleState).IsRequired();
+        tax.Property(item => item.CurrentVersionNumber).IsRequired();
+        ConfigureVersion(tax.Property(item => item.Version));
+        tax.HasIndex(item => new { item.TenantId, item.CodeKey }).IsUnique();
+        tax.HasIndex(item => new { item.TenantId, item.NameKey }).IsUnique();
+        tax.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        tax.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var taxRateVersion = modelBuilder.Entity<MasterDataTaxRateVersionEntity>();
+        taxRateVersion.ToTable("TaxRateVersions", "masterdata");
+        taxRateVersion.HasKey(item => item.Id);
+        taxRateVersion.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(taxRateVersion.Property(item => item.TenantId));
+        taxRateVersion.Property(item => item.TaxId).IsRequired();
+        taxRateVersion.Property(item => item.VersionNumber).IsRequired();
+        taxRateVersion.Property(item => item.EffectiveFrom).IsRequired();
+        taxRateVersion.Property(item => item.EffectiveTo).IsRequired(false);
+        taxRateVersion.Property(item => item.RatePercentage).HasPrecision(9, 6).IsRequired();
+        ConfigureVersion(taxRateVersion.Property(item => item.Version));
+        taxRateVersion.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        taxRateVersion.HasIndex(item => new { item.TenantId, item.TaxId, item.VersionNumber }).IsUnique();
+        taxRateVersion.HasIndex(item => new { item.TenantId, item.TaxId, item.EffectiveFrom }).IsUnique();
+        taxRateVersion.HasOne<MasterDataTaxEntity>()
+            .WithMany(item => item.RateVersions)
+            .HasForeignKey(item => new { item.TenantId, item.TaxId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        taxRateVersion.HasQueryFilter(item => item.TenantId == TrustedTenantId);
 
         var audit = modelBuilder.Entity<MasterDataAuditEventEntity>();
         audit.ToTable("AuditEvents", "masterdata");

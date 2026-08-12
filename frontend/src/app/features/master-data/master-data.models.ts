@@ -1,6 +1,6 @@
 import { TranslationKey } from '../../core/i18n/language.service';
 
-export type MasterDataResourceKey = 'categories' | 'units' | 'products' | 'suppliers' | 'customers' | 'currencies' | 'payment-terms';
+export type MasterDataResourceKey = 'categories' | 'units' | 'products' | 'suppliers' | 'customers' | 'currencies' | 'payment-terms' | 'taxes';
 
 export type MasterDataLifecycleState = 'Active' | 'Inactive' | string;
 
@@ -118,6 +118,54 @@ export interface PaymentTermRecord extends MasterDataRecordBase {
   versions: PaymentTermVersionRecord[];
 }
 
+export type TaxDirection = 'Purchase' | 'Sales' | 'Both';
+export type TaxRoundingMode = 'ToEven' | 'AwayFromZero';
+
+export interface TaxRateVersionRecord {
+  id: string;
+  versionNumber: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  ratePercentage: number;
+}
+
+export interface TaxRecord extends MasterDataRecordBase {
+  code: string;
+  categoryCode: string;
+  categoryEnglishName: string | null;
+  categoryArabicName: string | null;
+  englishName: string | null;
+  arabicName: string | null;
+  applicability: TaxDirection | string;
+  currentVersionNumber: number;
+  rateVersions: TaxRateVersionRecord[];
+}
+
+export interface TaxCalculationRequest {
+  effectiveOn: string;
+  transactionDirection: Exclude<TaxDirection, 'Both'>;
+  taxableBase: number;
+  currencyCode: string;
+  roundingScale: number;
+  roundingMode: TaxRoundingMode;
+  sourceLineage: string;
+}
+
+export interface TaxCalculationResponse extends TaxCalculationRequest {
+  taxId: string;
+  tenantId: string;
+  code: string;
+  categoryCode: string;
+  applicability: TaxDirection | string;
+  rateVersionId: string;
+  rateVersionNumber: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  ratePercentage: number;
+  taxAmount: number;
+  referenceValue: string;
+}
+
 export type MasterDataRecord =
   | CategoryRecord
   | UnitOfMeasureRecord
@@ -125,7 +173,8 @@ export type MasterDataRecord =
   | SupplierRecord
   | CustomerRecord
   | CurrencyRecord
-  | PaymentTermRecord;
+  | PaymentTermRecord
+  | TaxRecord;
 
 export interface ContactDraft {
   name: string;
@@ -201,7 +250,20 @@ export interface PaymentTermDraft {
   earlySettlementDiscountMonths: number;
 }
 
-export type MasterDataDraft = CategoryDraft | UnitDraft | ProductDraft | PartyDraft | CurrencyDraft | PaymentTermDraft;
+export interface TaxDraft {
+  code: string;
+  categoryCode: string;
+  categoryEnglishName: string;
+  categoryArabicName: string;
+  englishName: string;
+  arabicName: string;
+  applicability: TaxDirection;
+  effectiveFrom: string;
+  effectiveTo: string;
+  ratePercentage: number;
+}
+
+export type MasterDataDraft = CategoryDraft | UnitDraft | ProductDraft | PartyDraft | CurrencyDraft | PaymentTermDraft | TaxDraft;
 
 export type MasterDataWritePayload =
   | {
@@ -254,6 +316,16 @@ export type MasterDataWritePayload =
       dueOffset: { days: number; months: number };
       installments: Array<{ sequence: number; percentage: number; days: number; months: number }>;
       earlySettlementDiscount: { enabled: boolean; percentage: number | null; days: number; months: number };
+    }
+  | {
+      code: string;
+      categoryCode: string;
+      categoryEnglishName: string | null;
+      categoryArabicName: string | null;
+      englishName: string | null;
+      arabicName: string | null;
+      applicability: TaxDirection;
+      rateVersion: { effectiveFrom: string; effectiveTo: string | null; ratePercentage: number };
     };
 
 export interface MasterDataAuditEntry {
@@ -331,6 +403,13 @@ export const RESOURCE_DEFINITIONS: readonly MasterDataResourceDefinition[] = [
     leadKey: 'paymentTermLead',
     endpoint: '/master-data/payment-terms',
     accent: 'orange',
+  },
+  {
+    key: 'taxes',
+    labelKey: 'taxes',
+    leadKey: 'taxLead',
+    endpoint: '/master-data/taxes',
+    accent: 'violet',
   },
 ] as const;
 
