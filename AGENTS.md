@@ -17,7 +17,78 @@ velocity, or forecast:
    that the repository tracker was updated; Hossam/ChatGPT inspects the
    tracked GitHub version directly when needed.
 
-## Current execution overlay - 12 August 2026 (MESP-38 BRD complete; MESP-39 handoff)
+## Current execution overlay - 12 August 2026 (MESP-115 full-feature fast-track rebaseline)
+
+The Owner has rebaselined Release 1 as a **full-feature reusable B2B ERP**
+with a 31 August 2026 **Release 1 Integrated Preview** milestone. The
+milestone is an integrated preview of the real codebase, not an MVP,
+throwaway/demo UI, Wafra fork, or scope reduction. Unfinished functionality
+remains required Release 1 work after the preview.
+
+MESP-115 is the single bounded governance/rebaseline task for this session.
+Its canonical artifacts are:
+
+- `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`;
+- `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`; and
+- `docs/32_Release_1_Tax_VAT_Scope_Clarification.md`.
+
+PD-024 is appended to the immutable Product Decision Register for explicit
+Owner directions only: full Release 1/preview intent, essential cycles,
+sequential one-person delivery, Luna as primary executor, reserved Opus
+checkpoints A/B/C, external integrations excluded from Release 1, and
+internal reusable configuration-led Tax/VAT restored without statutory,
+ZATCA/FATOORA, legal, certification, submission, signing, clearance, or
+external-provider scope. The recommendations in the Consolidated Owner
+Decision Pack are **NOT APPROVED UNTIL OWNER SIGNS** and are not silently
+implemented by this session.
+
+MESP-38 remains **Done** at its approved bounded Security, Audit, and Data
+Governance BRD scope. MESP-39 remains **To Do, unactivated, and not executed**
+as a future-release Integrations and External Services BRD; no production
+external integration, provider, credential, webhook, payment gateway, bank
+feed, automated FX, external SSO, government submission, or external
+infrastructure is authorized. MESP-40 remains **To Do/unactivated but required
+for Release 1**, scheduled in the migration wave. MESP-23 remains **In
+Progress** as the living Open Questions Register. MESP-117 through MESP-142
+are capability backlog tasks under existing Epics; all remain To Do and not
+activated.
+
+Delivery is strictly sequential: one person, one active implementation
+capability, one focused branch/PR. Luna executes; ChatGPT/Sol plan and review;
+Opus is reserved for checkpoint A after a coherent Procurement+Inventory
+spine, checkpoint B after a coherent Finance+Sales spine, and checkpoint C
+before serious RC/production review, or earlier only for a genuine critical
+security/Tenant, accounting, stock, destructive-migration, or major
+cross-module risk. Angular/frontend is included in each capability unless a
+real prerequisite is explicitly recorded. Routine readiness tickets are not
+created merely for ceremony.
+
+Every fresh chat executes exactly one root `TASK.md` session and stops. The
+current exact next session is **MESP-116 — Release 1 Consolidated Owner
+Decision Approval and Implementation-Unblock Reconciliation**. It must read
+the Owner Decision Pack, obtain explicit Hossam approval for applicable rows,
+apply only approved decisions, reconcile MESP-23 and existing Jira owners,
+publish the final dependency map, and hand off the first capability. It must
+not execute MESP-39, activate MESP-40, or add source, tests, persistence,
+schema, migrations, APIs, UI, providers, credentials, infrastructure, or
+production configuration.
+
+Use the efficient reading hierarchy: `AGENTS.md`, `CLAUDE.md`,
+`.ai/CURRENT_STATE.md`, `TASK.md`, the owning BRD/spec, affected ADRs/
+contracts/entities, current status/diff, and only materially dependent
+decision rows. Do not reread every BRD/PRD routinely. Preserve the complete
+Release 1 scope in the fast-track plan, the MESP-38 gates, MESP-48/MESP-50,
+SQL/provider/infrastructure/production gates, no Retail POS, and no
+Wafra-specific core behavior.
+
+This rebaseline is documentation/Jira/governance only. Do not claim a
+production-capability percentage increase from planning or Jira creation.
+At the end of the bounded session read and update `docs/staticts.md`, update
+current state/forecast/Jira counts conservatively, validate the allowlisted
+diff, commit and push the tracker with the focused PR, merge only when
+reviewed and clean, synchronize `main`/`origin/main`, and stop for review.
+
+## Historical execution overlay - 12 August 2026 (MESP-38 BRD complete; superseded by MESP-115 rebaseline)
 
 MESP-38 - Security, Audit, and Data Governance BRD is **Done** at its
 approved bounded documentation-only scope. The canonical artifact is
