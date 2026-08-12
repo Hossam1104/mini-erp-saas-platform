@@ -24,7 +24,9 @@ public static class MasterDataPersistenceServiceCollectionExtensions
         var optionsBuilder = new DbContextOptionsBuilder();
         configureOptions(optionsBuilder);
         var persistence = new MasterDataCatalogPersistence(optionsBuilder.Options);
+        var currencyPaymentTermPersistence = new MasterDataCurrencyPaymentTermPersistence(optionsBuilder.Options);
         services.AddSingleton<IMasterDataCatalogPersistence>(persistence);
+        services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence>(currencyPaymentTermPersistence);
         services.AddSingleton<IProductIdentityPersistence>(persistence);
         services.AddSingleton<MasterDataCategoryUomService>();
         return services;

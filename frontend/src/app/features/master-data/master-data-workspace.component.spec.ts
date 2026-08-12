@@ -5,7 +5,7 @@ import { signal } from '@angular/core';
 import { BehaviorSubject, of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
-import { CustomerRecord, MasterDataRecord, SupplierRecord } from './master-data.models';
+import { CurrencyRecord, CustomerRecord, MasterDataRecord, PaymentTermRecord, SupplierRecord } from './master-data.models';
 import { MasterDataService } from './master-data.service';
 import { MasterDataWorkspaceComponent } from './master-data-workspace.component';
 
@@ -51,6 +51,46 @@ const customer: CustomerRecord = {
   contacts: [],
 };
 
+const currency: CurrencyRecord = {
+  id: 'currency-1',
+  tenantId: 'tenant-a',
+  code: 'SAR',
+  englishName: 'Saudi Riyal',
+  arabicName: null,
+  revision: 2,
+  lifecycleState: 'Active',
+  version: 'BA==',
+};
+
+const paymentTerm: PaymentTermRecord = {
+  id: 'term-1',
+  tenantId: 'tenant-a',
+  lifecycleState: 'Active',
+  version: 'BA==',
+  code: 'NET30',
+  englishName: 'Net 30',
+  arabicName: null,
+  currentVersionNumber: 1,
+  versions: [{
+    id: 'term-version-1',
+    versionNumber: 1,
+    effectiveFrom: '2026-01-01',
+    effectiveTo: null,
+    baseDateRule: 'InvoiceDate',
+    scheduleMode: 'SingleDueDate',
+    dueOffsetDays: 30,
+    dueOffsetMonths: 0,
+    installments: [],
+    earlySettlementDiscountEnabled: false,
+    earlySettlementDiscountPercentage: null,
+    earlySettlementDiscountDays: 0,
+    earlySettlementDiscountMonths: 0,
+    code: 'NET30',
+    englishName: 'Net 30',
+    arabicName: null,
+  }],
+};
+
 function routeMap(resource: string, id?: string): ParamMap {
   return convertToParamMap(id ? { resource, id } : { resource });
 }
@@ -74,8 +114,8 @@ describe('MasterDataWorkspaceComponent', () => {
   beforeEach(async () => {
     routeParams = new BehaviorSubject(routeMap('categories'));
     data = {
-      list: vi.fn((resource: string) => of(resource === 'categories' ? [category] : resource === 'suppliers' ? [supplier] : resource === 'customers' ? [customer] : [])),
-      get: vi.fn((resource: string) => of(resource === 'suppliers' ? supplier : resource === 'customers' ? customer : category)),
+      list: vi.fn((resource: string) => of(resource === 'categories' ? [category] : resource === 'suppliers' ? [supplier] : resource === 'customers' ? [customer] : resource === 'currencies' ? [currency] : resource === 'payment-terms' ? [paymentTerm] : [])),
+      get: vi.fn((resource: string) => of(resource === 'suppliers' ? supplier : resource === 'customers' ? customer : resource === 'currencies' ? currency : resource === 'payment-terms' ? paymentTerm : category)),
       audit: vi.fn(() => of([])),
       create: vi.fn(),
       edit: vi.fn(),
@@ -109,9 +149,9 @@ describe('MasterDataWorkspaceComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders all five bounded resource entries and a connected category list', () => {
+  it('renders all seven bounded resource entries and a connected category list', () => {
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelectorAll('.resource-link')).toHaveLength(5);
+    expect(element.querySelectorAll('.resource-link')).toHaveLength(7);
     expect(element.textContent).toContain('Categories');
     expect(element.textContent).toContain('CAT-01');
     expect(data.list).toHaveBeenCalledWith('categories');
@@ -149,5 +189,18 @@ describe('MasterDataWorkspaceComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Inactive');
     expect(fixture.nativeElement.textContent).toContain('No Draft or delete path is exposed.');
     expect(fixture.nativeElement.textContent).not.toContain('Approve');
+  });
+
+  it('renders Payment Term history and configuration boundaries without Finance effects', async () => {
+    routeParams.next(routeMap('payment-terms', paymentTerm.id));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await settleAsyncWork();
+    fixture.detectChanges();
+
+    expect(data.get).toHaveBeenCalledWith('payment-terms', paymentTerm.id);
+    expect(fixture.nativeElement.textContent).toContain('Configuration version');
+    expect(fixture.nativeElement.textContent).toContain('AP/AR aging, settlement, posting, and discount accounting are Finance scope.');
+    expect(fixture.nativeElement.textContent).not.toContain('Post payment');
   });
 });
