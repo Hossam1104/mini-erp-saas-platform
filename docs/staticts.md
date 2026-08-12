@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-12 21:28 +03:00
+**Last Updated:** 2026-08-12 21:33 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~30%**
@@ -19,6 +19,7 @@ Unfinished capability remains required after the preview.
 |---|---|
 | MESP-115 | Done at the bounded documentation/Jira/governance rebaseline; PR #58 reviewed at 0681c0182b0b6894f5f2b83db1728253ac54e279 and merged at a5ee9426d252901e74888bdc3ca94970c969aa20. |
 | MESP-116 | Done at the bounded Owner decision and implementation-unblock reconciliation; Owner approval evidence is MESP-116 comment 10957, the decision register is MESP-22 comment 10958, PR #59 was reviewed at 8b3f7b61c0128f97aa6a775dec23e623c1fde70e, merge b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd is recorded, and post-merge synchronization is 66183c1. |
+| MESP-117 | Done at its bounded implementation scope; PR #60 was reviewed at 4c183eac38a31637a15f873a80ee31557cd8e2bb and merged at d406a6ef4fade3b8d3e95117ee10cfd41301ac60; Jira closure evidence is comment 10983. |
 | MESP-38 | Done at approved bounded BRD scope. |
 | MESP-39 | To Do, unactivated, not executed; future-release Integrations and External Services BRD. |
 | MESP-40 | To Do, unactivated, but required for Release 1 in the migration wave. |
@@ -27,10 +28,10 @@ Unfinished capability remains required after the preview.
 | Decision Pack | 31 canonical entries: A1-A16 and B1-B6 approved only at their exact bounded positions; Class B is contract-bound with mandatory specialist validation before production or irreversible decisions; C1-C9 remain open gates. |
 | Tax/VAT | Internal reusable configuration-led Tax/VAT restored as Release 1 required/Not Started; statutory/ZATCA/FATOORA/external scope remains excluded. |
 | MESP-39 / MESP-40 | MESP-39 remains future-release and unactivated; MESP-40 remains an unactivated Release 1 migration requirement and was not activated by MESP-116. |
-| Source/production capability | MESP-117 added verified local Master Data capability: shared Angular UX for five existing slices and only the missing Category/UOM public REST seam. SQL/provider/production gates remain open. |
+| Source/production capability | MESP-117 added verified local Master Data capability: shared Angular UX for five existing slices and only the missing Category/UOM public REST seam. PR #60 is merged; SQL/provider/production gates remain open. |
 
-Live Jira while MESP-117 is active is **75 Done / 7 In Progress / 60 To Do across
-142 issues** and **75 Done / 2 In Progress / 50 To Do across 127 non-Epic
+Live Jira after MESP-117 closure is **76 Done / 6 In Progress / 60 To Do across
+142 issues** and **76 Done / 1 In Progress / 50 To Do across 127 non-Epic
 issues**. These are administrative counts and must not be used as
 the production-capability percentage.
 
@@ -118,8 +119,8 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **75** | **59.1%** |
-| In Progress | **2** | **1.6%** |
+| Done | **76** | **59.8%** |
+| In Progress | **1** | **0.8%** |
 | To Do | **50** | **39.4%** |
 | **Total Non-Epic** | **127** | **100%** |
 
@@ -128,14 +129,14 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 142 MESP issues, including the 15 Epics, the current workflow state
-is 75 Done, 7 In Progress, and 60 To Do. These counts were re-checked in live
+is 76 Done, 6 In Progress, and 60 To Do. These counts were re-checked in live
 Jira on 12 August 2026; the two non-Epic In Progress items are MESP-23 and
 MESP-117.
 
 ## Interpretation
 
 Raw Jira completion currently makes the non-Epic board appear approximately
-**59% complete** (75 of 127 non-Epic issues Done).
+**60% complete** (76 of 127 non-Epic issues Done).
 
 That number must NOT be used as the production-completion percentage.
 
@@ -145,7 +146,7 @@ production capability.
 
 Therefore the current project should be represented as:
 
-> **Jira-created-work completion: ~59% of non-Epic issues**
+> **Jira-created-work completion: ~60% of non-Epic issues**
 > **Actual Release-1 production completion: ~30%**
 
 **Jira hygiene note:** MESP-97 and MESP-98 were stale duplicate/superseded
@@ -589,7 +590,7 @@ promise to mark the full Release 1 scope complete by that date.
 
 | Window | Optimistic | Realistic | Minimum credible |
 |---|---|---|---|
-| 12 Aug | MESP-115 and MESP-116 synchronized; MESP-117 implemented through focused PR #60, with closure pending. | One approved capability at a time; MESP-118 remains To Do/not activated until the MESP-117 merge/closure handoff is complete. | Shared five-slice Angular workspace, Category/UOM seam, focused validation, and exact MESP-118 TASK handoff are clean; SQL/provider/production gates remain open. |
+| 12 Aug | MESP-115 and MESP-116 synchronized; MESP-117 implemented, reviewed, merged through focused PR #60, and closed in Jira. | One approved capability at a time; MESP-118 remains To Do/not activated and is the exact next handoff. | Shared five-slice Angular workspace, Category/UOM seam, focused validation, closure evidence, and exact MESP-118 TASK handoff are clean; SQL/provider/production gates remain open. |
 | 15–22 Aug | Shared Angular/Master Data plus initial Procurement/Inventory spine integrated. | One approved capability at a time, with the first visible Master Data/Procurement path validated. | No unsafe activation; real repository preview path and dependencies are verified. |
 | 23–28 Aug | Coherent Procurement+Inventory spine with Finance/Sales foundations and early Opus checkpoint A. | Strongest safely integrated capability, affected tests, auth/audit/localization, and correction work. | Buildable real codebase with truthful pending/blocked/gated list. |
 | 29–31 Aug | Broadest safely integrated preview of Master Data, P2P, Inventory, and Finance/Sales foundations. | Running real Release 1 preview with coherent completed slices and an explicit remaining-work map. | Running real codebase preview with no fake UI, no MVP reclassification, and no external integration claim. |
@@ -1039,10 +1040,10 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **Current implementation session:** MESP-117 is complete at its bounded
+> **Current completed implementation:** MESP-117 is complete at its bounded
 > shared Master Data Angular UX and Category/UOM public REST seam scope; focused
-> PR #60 is pending clean review/merge and Jira closure. PD-033, PD-035, PD-036,
-> and PD-037 were consumed only at their exact approved Master Data boundaries;
+> PR #60 was reviewed and merged, and Jira is Done. PD-033, PD-035, PD-036, and
+> PD-037 were consumed only at their exact approved Master Data boundaries;
 > Supplier work does not include Procurement Supplier Confirmation, which
 > remains MESP-124. The exact next handoff is MESP-118 Currency and Payment
 > Terms, not automatic execution.
@@ -1141,6 +1142,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-12 21:33 +03:00 | **30%** | **43%** | **33%** | **18%** | MESP-117 completed at its bounded implementation scope: PR #60 reviewed at 4c183eac38a31637a15f873a80ee31557cd8e2bb and merged at d406a6ef4fade3b8d3e95117ee10cfd41301ac60; Jira Done with closure comment 10983; shared five-slice Angular workspace and Category/UOM public REST seam; exact PD-033/035/036/037 boundaries preserved; Supplier Confirmation remains MESP-124; live Jira all-issue 76 Done / 6 In Progress / 60 To Do and non-Epic 76 Done / 1 In Progress / 50 To Do; TASK/current-state/tracker final synchronization follows on main; production-readiness gates remain unchanged; exact next handoff is MESP-118 | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-12 21:28 +03:00 | **30%** | **43%** | **33%** | **18%** | MESP-117 bounded implementation completed through focused PR #60 pending closure: shared Angular Category/UOM/Product/Supplier/Business Customer workspace; only the missing Category/UOM public REST seam; exact PD-033/035/036/037 boundaries preserved; Procurement Supplier Confirmation remains MESP-124; Angular 34/34, API build 0 warnings/errors, REST 31/31, Master Data 74/74, non-SQL 670/670, and 21 SQL cases remain gated by `MESP_SQLSERVER_CONNECTION_STRING`; live Jira while active is all-issue 75 Done / 7 In Progress / 60 To Do and non-Epic 75 Done / 2 In Progress / 50 To Do; production-readiness gates remain unchanged; exact next handoff is MESP-118 | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-12 17:28 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-116 completed the bounded Owner reconciliation: A1-A16 and B1-B6 approved at exact scope; PD-025 through PD-046 appended; C1-C9 remain open; MESP-23 remains In Progress; MESP-117 is the first To Do/not-activated capability handoff; MESP-39 remains future-release and MESP-40 remains unactivated; PR #59 reviewed at 8b3f7b61c0128f97aa6a775dec23e623c1fde70e and merged at b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd; post-merge synchronization is 66183c1; live Jira all-issue 75 Done / 6 In Progress / 61 To Do and non-Epic 75 Done / 1 In Progress / 51 To Do; no production-capability percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-12 16:13 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-115 closed through focused PR #58, reviewed at 0681c0182b0b6894f5f2b83db1728253ac54e279 and merged at a5ee9426d252901e74888bdc3ca94970c969aa20; canonical full-feature plan/decision pack/Tax-VAT clarification, PD-024, Jira capability backlog MESP-117–MESP-142, governance overlays, and exact MESP-116 TASK handoff are synchronized; MESP-39 remains future-release and unexecuted; MESP-40 remains an unactivated Release 1 migration requirement; live Jira all-issue 61 Done / 6 In Progress / 75 To Do and non-Epic 61 Done / 1 In Progress / 65 To Do; no production-capability percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct–mid Nov 2026 |
