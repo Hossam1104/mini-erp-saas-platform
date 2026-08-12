@@ -4,7 +4,7 @@
 > **Parent:** MESP-13 - EPIC 13 - Security, Audit, and Data Governance
 > **Scope:** Release 1 Saudi-localized Core ERP B2B baseline; Wafra is
 > validation-only
-> **Status:** Draft for bounded validation
+> **Status:** Approved bounded business baseline
 > **Canonical artifact:** docs/29_Security_Audit_and_Data_Governance_BRD.md
 > **Document type:** Documentation-only business-requirements baseline
 
@@ -44,8 +44,9 @@ MESP-113 remain open or unapproved as named below. MESP-39 was verified as To
 Do and is not activated by this document.
 
 The entry verification is recorded in Jira MESP-38 activation comment 10934.
-The final validation, Owner approval, MESP-23 handoff, audit, and closure
-evidence are recorded in Jira after the focused artifact review.
+The focused validation is comment 10935, Owner approval is comment 10936, and
+the MESP-23 handoff is comment 10937. Final audit, closure, merge, and
+final-main evidence are recorded in Jira after the focused artifact review.
 
 ### 1.3 Documentation-only rule
 
@@ -1265,13 +1266,18 @@ The bounded MESP-38 BRD session is complete when:
 
 ### 21.2 Approval and handoff record
 
-This document is intended to become an **Approved bounded Security, Audit,
-and Data Governance business baseline** after the focused validation and
-standing Owner approval. The approval is limited to the business
-requirements and scenarios in this document. It authorizes no implementation,
-production configuration, legal conclusion, external integration, or closure
-of MESP-23, MESP-48, MESP-50, MESP-53, MESP-54, MESP-110, MESP-113, or any ADR
-gate.
+This document is an **Approved bounded Security, Audit, and Data Governance
+business baseline**. The approval is limited to the business requirements
+and scenarios in this document. It authorizes no implementation, production
+configuration, legal conclusion, external integration, or closure of MESP-23,
+MESP-48, MESP-50, MESP-53, MESP-54, MESP-110, MESP-113, or any ADR gate.
+
+Validation is recorded in Jira comment 10935 and Hossam's standing Owner
+approval is recorded in comment 10936. The MESP-23 handoff is comment 10937.
+The approved content was initially reviewed at focused PR #57 head
+315709856afc85dc0937880637af78e33e34a0e7; the final reviewed artifact head,
+merge commit, and final-main synchronization are recorded in the final Jira
+audit and closure evidence.
 
 Jira evidence is the authoritative record for:
 
