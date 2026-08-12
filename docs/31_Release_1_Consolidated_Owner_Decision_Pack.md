@@ -48,7 +48,7 @@ requirement but is not activated by this pack.
 | Resulting Product Decision | **PD-025-PD-046**, appended in MESP-22 comment `10958` from Owner approval evidence in MESP-116 comment `10957`. |
 | MESP-23 effect | Reconciled by comment `10976`; remains **In Progress** as the living register because C gates and their required evidence remain open. |
 | First capability handoff | **MESP-117**, To Do/not activated, prepared in Jira comment `10977`; no capability implementation started in MESP-116. |
-| Repository evidence | Focused PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e` and merged to `main` at `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`; `main`/`origin/main` synchronized. |
+| Repository evidence | Focused PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e` and merged to `main` at `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`; post-merge state/tracker synchronization is `66183c1`; `main`/`origin/main` synchronized. |
 
 ### 2.1 Applied review amendments and clarifications
 

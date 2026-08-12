@@ -26,7 +26,7 @@ required after the preview.
 | Tax/VAT | Internal reusable configuration-led Tax/VAT remains Release 1 required and **Not Started**. PD-024, PD-043 and PD-046 do not authorize statutory, ZATCA/FATOORA, legal, certification, filing, submission, clearance, signing or external-provider behavior. |
 | Governance | One active capability, one sequential executor, one focused PR; Opus checkpoints A/B/C reserved as defined in the fast-track plan. |
 | Source/production capability | None added by this documentation/Jira session; production percentages remain unchanged. |
-| Current branch | `main` at b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd; PR #59 reviewed at 8b3f7b61c0128f97aa6a775dec23e623c1fde70e and merged; local `main` is synchronized with `origin/main`. |
+| Current branch | `main` at 66183c1 (post-merge state/tracker synchronization); PR #59 reviewed at 8b3f7b61c0128f97aa6a775dec23e623c1fde70e and merged at b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd; local `main` is synchronized with `origin/main`. |
 | Next exact session | TASK.md contains MESP-117 - Complete Master Data shared Angular UX for the existing Category/UOM/Product/Supplier/Customer slices. |
 
 MESP-116 did not execute MESP-39, activate MESP-40, implement source, tests,
