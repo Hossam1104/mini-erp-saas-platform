@@ -2,10 +2,10 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-12 17:28 +03:00
+**Last Updated:** 2026-08-12 21:28 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
-**Overall Production-Ready Completion:** **~29%**
+**Overall Production-Ready Completion:** **~30%**
 
 ## Current authoritative fast-track snapshot — 12 August 2026
 
@@ -23,14 +23,14 @@ Unfinished capability remains required after the preview.
 | MESP-39 | To Do, unactivated, not executed; future-release Integrations and External Services BRD. |
 | MESP-40 | To Do, unactivated, but required for Release 1 in the migration wave. |
 | MESP-23 | In Progress as the living Open Questions Register; MESP-116 reconciliation evidence is comment 10976 and the register remains open. |
-| Capability backlog | MESP-117-MESP-142 remain under existing Epics; all To Do/not activated. MESP-117 is the approved first capability handoff, with evidence in comment 10977 and docs/33. |
+| Capability backlog | MESP-118-MESP-142 remain under existing Epics and are To Do/not activated. MESP-117 is the completed first capability implementation; its activation/validation/closure evidence and focused PR are recorded in the current state and Jira. |
 | Decision Pack | 31 canonical entries: A1-A16 and B1-B6 approved only at their exact bounded positions; Class B is contract-bound with mandatory specialist validation before production or irreversible decisions; C1-C9 remain open gates. |
 | Tax/VAT | Internal reusable configuration-led Tax/VAT restored as Release 1 required/Not Started; statutory/ZATCA/FATOORA/external scope remains excluded. |
 | MESP-39 / MESP-40 | MESP-39 remains future-release and unactivated; MESP-40 remains an unactivated Release 1 migration requirement and was not activated by MESP-116. |
-| Source/production capability | No implementation or production capability added; percentages remain unchanged. |
+| Source/production capability | MESP-117 added verified local Master Data capability: shared Angular UX for five existing slices and only the missing Category/UOM public REST seam. SQL/provider/production gates remain open. |
 
-Live Jira after MESP-116 closure is **75 Done / 6 In Progress / 61 To Do across
-142 issues** and **75 Done / 1 In Progress / 51 To Do across 127 non-Epic
+Live Jira while MESP-117 is active is **75 Done / 7 In Progress / 60 To Do across
+142 issues** and **75 Done / 2 In Progress / 50 To Do across 127 non-Epic
 issues**. These are administrative counts and must not be used as
 the production-capability percentage.
 
@@ -94,17 +94,17 @@ Every future execution prompt should include:
 |---|---:|
 | Product / Requirements Definition | **~45%** |
 | Architecture & Technical Foundation | **~85%** |
-| Backend Overall | **~42%** |
+| Backend Overall | **~43%** |
 | Database / Persistence Overall | **~33%** |
-| Frontend Overall | **~15%** |
+| Frontend Overall | **~18%** |
 | Automated Technical Safety Foundation | **~50%** |
-| Full End-to-End Business System | **~21%** |
+| Full End-to-End Business System | **~22%** |
 | Production Readiness | **~29%** |
 | **Remaining to Real Production** | **~71%** |
 
 ## Current management headline
 
-> **Mini ERP SaaS Platform Release 1 is approximately 29% complete toward a genuinely production-ready system.**
+> **Mini ERP SaaS Platform Release 1 is approximately 30% complete toward a genuinely production-ready system.**
 
 This percentage is intentionally lower than the raw Jira completion percentage because many completed Jira items represent architecture, governance, BRD, authorization, and technical-foundation work rather than completed business capabilities.
 
@@ -118,9 +118,9 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **60** | **47.2%** |
+| Done | **75** | **59.1%** |
 | In Progress | **2** | **1.6%** |
-| To Do | **65** | **51.2%** |
+| To Do | **50** | **39.4%** |
 | **Total Non-Epic** | **127** | **100%** |
 
 Major Release-1 Epics:
@@ -128,14 +128,14 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 142 MESP issues, including the 15 Epics, the current workflow state
-is 60 Done, 7 In Progress, and 75 To Do. These counts were re-checked in live
+is 75 Done, 7 In Progress, and 60 To Do. These counts were re-checked in live
 Jira on 12 August 2026; the two non-Epic In Progress items are MESP-23 and
-MESP-115.
+MESP-117.
 
 ## Interpretation
 
 Raw Jira completion currently makes the non-Epic board appear approximately
-**47% complete** (60 of 127 non-Epic issues Done).
+**59% complete** (75 of 127 non-Epic issues Done).
 
 That number must NOT be used as the production-completion percentage.
 
@@ -145,8 +145,8 @@ production capability.
 
 Therefore the current project should be represented as:
 
-> **Jira-created-work completion: ~47% of non-Epic issues**
-> **Actual Release-1 production completion: ~29%**
+> **Jira-created-work completion: ~59% of non-Epic issues**
+> **Actual Release-1 production completion: ~30%**
 
 **Jira hygiene note:** MESP-97 and MESP-98 were stale duplicate/superseded
 SL-02 administrative artifacts. They have now been reconciled to terminal Done
@@ -230,28 +230,28 @@ The following model represents progress toward a complete production Release 1.
 | 1. Product governance, requirements, business decisions | 8% | **45%** | 3.6% |
 | 2. Architecture, security & technical foundation | 12% | **85%** | 10.2% |
 | 3. Platform Admin / IAM / Tenancy / Organization | 8% | **55%** | 4.4% |
-| 4. Master Data & Product Catalog | 10% | **40%** | 4.0% |
+| 4. Master Data & Product Catalog | 10% | **45%** | 4.5% |
 | 5. Procurement / Purchase-to-Pay | 9% | **3%** | 0.3% |
 | 6. Inventory / Warehouse | 9% | **3%** | 0.3% |
 | 7. Finance / Accounting / AR / AP / Cash | 12% | **3%** | 0.4% |
 | 8. B2B Sales / Order-to-Cash | 9% | **3%** | 0.3% |
 | 9. Reporting & Analytics | 4% | **2%** | 0.1% |
-| 10. Complete Angular Frontend / EN-AR / RTL | 8% | **15%** | 1.2% |
+| 10. Complete Angular Frontend / EN-AR / RTL | 8% | **18%** | 1.4% |
 | 11. Saudi Compliance & External Integrations | 4% | **8%** | 0.3% |
 | 12. Migration / Tenant Onboarding | 2% | **3%** | 0.1% |
 | 13. E2E QA, Performance, UAT, Deployment & Go-Live | 5% | **20%** | 1.0% |
 
-**Weighted overall result:** approximately **27–29%**.
+**Weighted overall result:** approximately **28–30%**.
 
-The weighted model remains an approximate planning band; the bounded Product,
-Supplier, and Customer implementations support the conservative current 29%
+The weighted model remains an approximate planning band; the bounded five-slice
+Master Data UX/API implementation supports the conservative current 30%
 headline below without resolving the SQL/provider or production gates. The
 approved MESP-33 Inventory BRD is a documentation baseline only and does not
 increase usable Inventory or overall production capability.
 
 For project reporting use:
 
-> **Overall production-ready completion = 29%**
+> **Overall production-ready completion = 30%**
 
 Do not present decimal precision as certainty.
 
@@ -268,7 +268,7 @@ These percentages measure **usable production capability**, not Jira workflow st
 | MESP-3 | Identity & Access Management | **65%** |
 | MESP-4 | Multi-Tenancy | **75%** |
 | MESP-5 | Organization & Company Structure | **50%** |
-| MESP-6 | Master Data & Product Catalog | **40%** |
+| MESP-6 | Master Data & Product Catalog | **45%** |
 | MESP-7 | Procurement & Purchase-to-Pay | **3–5%** |
 | MESP-8 | Inventory & Warehouse | **3–5%** |
 | MESP-9 | B2B Sales & Order-to-Cash | **3–5%** |
@@ -321,28 +321,30 @@ Customer-only MD-OD-001/005/008 disposition remain recorded in Jira comments
 
 ## Master Data current assessment
 
-Current post-SL-05 pure implementation-slice completion:
+Current post-MESP-117 bounded implementation-slice completion:
 
-**~30-31%**, with Product identity, Supplier, and Customer now bounded,
-validated, and merged through PR #37, PR #39, and PR #41. The SQL/provider gate
-remains open, so this is not a production-ready claim.
+**~35-37%**, with shared Angular maintenance journeys now covering Category,
+UOM, Product, Supplier, and Business Customer, and the missing Category/UOM
+public REST seam added over existing services. The SQL/provider gate remains
+open, so this is not a production-ready claim.
 
 Historical pre-SL-03 pure implementation-slice completion:
 
 **~16–17%**
 
-Total lifecycle completion including BRD, lean specification, architecture, authorization contracts, persistence-readiness work, and the completed Category/UOM, Product identity, Supplier, and bounded Customer data-bearing slices:
+Total lifecycle completion including BRD, lean specification, architecture,
+authorization contracts, persistence-readiness work, the completed bounded
+source slices, and the shared MESP-117 UX/API seam:
 
-**~40%**
+**~45%**
 
-Current post-SL-05 position:
+Current post-MESP-117 position:
 
-**~40%**, with the bounded M95-SL-03 Product identity implementation complete
-through PR #37, M95-SL-04 Supplier implementation complete through PR #39, and
-M95-SL-05 Customer implementation complete through PR #41. The 21 SQL safety
-tests remain gated by the unavailable connection string; no Customer
-production/provider claim is made. MD-OD-007 remains an external Saudi
-statutory/legal validation and production gate.
+**~45%**, with the shared five-slice Angular workspace and Category/UOM public
+REST seam validated locally. The 21 SQL safety tests remain gated by the
+unavailable connection string; no production/provider claim is made. Approved
+PD-033, PD-035, PD-036, and PD-037 were consumed only at their exact bounded
+Master Data positions, and Procurement Supplier Confirmation remains MESP-124.
 
 ---
 
@@ -413,7 +415,7 @@ Major remaining areas include:
 
 ## Combined backend progress
 
-> **Backend Overall: ~42%**
+> **Backend Overall: ~43%**
 
 ---
 
@@ -476,7 +478,7 @@ production gates remain open.
 
 Current estimate:
 
-> **Frontend Overall: ~15%**
+> **Frontend Overall: ~18%**
 
 ## Existing frontend foundation
 
@@ -494,11 +496,9 @@ Current estimate:
 
 ## Major frontend work still required
 
-- Master Data maintenance screens;
-- Category/UOM screens;
-- Product Catalog;
-- Suppliers;
-- Customers;
+- Remaining Master Data maintenance beyond the shared MESP-117 workspace;
+- Product Catalog depth and commercial configuration;
+- Supplier and Customer downstream/commercial workflows;
 - pricing;
 - tax;
 - currency/FX;
@@ -589,7 +589,7 @@ promise to mark the full Release 1 scope complete by that date.
 
 | Window | Optimistic | Realistic | Minimum credible |
 |---|---|---|---|
-| 12-14 Aug | MESP-115 and MESP-116 synchronized; MESP-117 handoff prepared. | One approved capability at a time; MESP-117 remains To Do/not activated pending its fresh-session Definition of Ready. | Canonical plan, pack, Tax/VAT scope, dependency map, Jira evidence, and exact handoff are clean. |
+| 12 Aug | MESP-115 and MESP-116 synchronized; MESP-117 implemented through focused PR #60, with closure pending. | One approved capability at a time; MESP-118 remains To Do/not activated until the MESP-117 merge/closure handoff is complete. | Shared five-slice Angular workspace, Category/UOM seam, focused validation, and exact MESP-118 TASK handoff are clean; SQL/provider/production gates remain open. |
 | 15–22 Aug | Shared Angular/Master Data plus initial Procurement/Inventory spine integrated. | One approved capability at a time, with the first visible Master Data/Procurement path validated. | No unsafe activation; real repository preview path and dependencies are verified. |
 | 23–28 Aug | Coherent Procurement+Inventory spine with Finance/Sales foundations and early Opus checkpoint A. | Strongest safely integrated capability, affected tests, auth/audit/localization, and correction work. | Buildable real codebase with truthful pending/blocked/gated list. |
 | 29–31 Aug | Broadest safely integrated preview of Master Data, P2P, Inventory, and Finance/Sales foundations. | Running real Release 1 preview with coherent completed slices and an explicit remaining-work map. | Running real codebase preview with no fake UI, no MVP reclassification, and no external integration claim. |
@@ -1039,14 +1039,13 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **Current fast-track governance session:** MESP-115 is the bounded
-> documentation/Jira full-feature rebaseline. MESP-38 is Done through the
-> approved Security, Audit, and Data Governance BRD; no source or production
-> capability was added. The canonical plan/decision/Tax artifacts are
-> docs/30, docs/31, and docs/32. MESP-39 is future-release To Do and was not
-> executed. MESP-40 remains a Release 1 migration requirement. The exact next
-> handoff is MESP-116 Owner Decision Approval and Implementation-Unblock
-> Reconciliation, not implementation.
+> **Current implementation session:** MESP-117 is complete at its bounded
+> shared Master Data Angular UX and Category/UOM public REST seam scope; focused
+> PR #60 is pending clean review/merge and Jira closure. PD-033, PD-035, PD-036,
+> and PD-037 were consumed only at their exact approved Master Data boundaries;
+> Supplier work does not include Procurement Supplier Confirmation, which
+> remains MESP-124. The exact next handoff is MESP-118 Currency and Payment
+> Terms, not automatic execution.
 
 The following prior handoff paragraph is retained as historical evidence.
 
@@ -1142,6 +1141,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-12 21:28 +03:00 | **30%** | **43%** | **33%** | **18%** | MESP-117 bounded implementation completed through focused PR #60 pending closure: shared Angular Category/UOM/Product/Supplier/Business Customer workspace; only the missing Category/UOM public REST seam; exact PD-033/035/036/037 boundaries preserved; Procurement Supplier Confirmation remains MESP-124; Angular 34/34, API build 0 warnings/errors, REST 31/31, Master Data 74/74, non-SQL 670/670, and 21 SQL cases remain gated by `MESP_SQLSERVER_CONNECTION_STRING`; live Jira while active is all-issue 75 Done / 7 In Progress / 60 To Do and non-Epic 75 Done / 2 In Progress / 50 To Do; production-readiness gates remain unchanged; exact next handoff is MESP-118 | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-12 17:28 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-116 completed the bounded Owner reconciliation: A1-A16 and B1-B6 approved at exact scope; PD-025 through PD-046 appended; C1-C9 remain open; MESP-23 remains In Progress; MESP-117 is the first To Do/not-activated capability handoff; MESP-39 remains future-release and MESP-40 remains unactivated; PR #59 reviewed at 8b3f7b61c0128f97aa6a775dec23e623c1fde70e and merged at b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd; post-merge synchronization is 66183c1; live Jira all-issue 75 Done / 6 In Progress / 61 To Do and non-Epic 75 Done / 1 In Progress / 51 To Do; no production-capability percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-12 16:13 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-115 closed through focused PR #58, reviewed at 0681c0182b0b6894f5f2b83db1728253ac54e279 and merged at a5ee9426d252901e74888bdc3ca94970c969aa20; canonical full-feature plan/decision pack/Tax-VAT clarification, PD-024, Jira capability backlog MESP-117–MESP-142, governance overlays, and exact MESP-116 TASK handoff are synchronized; MESP-39 remains future-release and unexecuted; MESP-40 remains an unactivated Release 1 migration requirement; live Jira all-issue 61 Done / 6 In Progress / 75 To Do and non-Epic 61 Done / 1 In Progress / 65 To Do; no production-capability percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct–mid Nov 2026 |
 | 2026-08-12 16:07 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-115 full-feature fast-track rebaseline recorded in canonical docs/30, docs/31, and docs/32; PD-024 appended for explicit Owner directions only; internal configuration-led Tax/VAT restored as Release 1 required/Not Started without statutory scope; MESP-39 remains future-release and unexecuted; MESP-40 remains an unactivated Release 1 migration requirement; MESP-117–MESP-142 created under existing Epics; MESP-23 remains In Progress; live Jira all-issue 60 Done / 7 In Progress / 75 To Do and non-Epic 60 Done / 2 In Progress / 65 To Do; no production-capability percentage change; next exact task is MESP-116 | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct–mid Nov 2026 |
@@ -1236,12 +1236,12 @@ Do not answer from percentages alone. Check the 100% Production Ready Definition
 
 > ## Mini ERP SaaS Platform — Release 1
 >
-> **Overall Production-Ready Completion:** ~29%
+> **Overall Production-Ready Completion:** ~30%
 > **Architecture/Foundation:** ~85%
-> **Backend:** ~42%
+> **Backend:** ~43%
 > **Database:** ~33%
-> **Frontend:** ~15%
-> **End-to-End Business System:** ~21%
+> **Frontend:** ~18%
+> **End-to-End Business System:** ~22%
 >
 > **Backend + DB Feature Complete Forecast:** Mid–Late September 2026  
 > **Full Feature Complete Forecast:** Late September–Mid October 2026  

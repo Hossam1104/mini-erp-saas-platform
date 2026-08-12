@@ -1,22 +1,29 @@
-# Next session - MESP-117 - Complete Master Data shared Angular UX for existing Category/UOM/Product/Supplier/Customer slices
+# Next session - MESP-118 - Implement Currency and Payment Terms complete Master Data capability
 
 ## Session boundary
 
-This is the exact next bounded session after MESP-116. MESP-116 is **Done** at
-its documentation/Jira/governance-only scope. Hossam approved A1-A16 and B1-B6
-at their exact bounded positions, subject to the amendments and clarifications
-recorded in `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`, Jira
-comment `10957` on MESP-116, and PD-025 through PD-046 in MESP-22 comment
-`10958`. Class B is the Release 1 product/implementation contract; Finance,
-Inventory, Reporting, Migration, and other named specialist validation remains
-mandatory before production or irreversible accounting, destructive migration,
-or cutover decisions. C1-C9 remain open and are not approved or closed.
+MESP-117 is complete at its bounded implementation scope: shared Angular
+Master Data UX for Category, Unit of Measure, Product, Supplier, and Business
+Customer, plus only the missing Category/UOM public REST seam over the existing
+application and module-owned persistence contracts. The focused review is PR
+#60 from `feature/mesp-117-master-data-angular-ux`; the implementation head is
+recorded in the current state and Jira evidence. Supplier work remained limited
+to master-data identity, contacts, lifecycle, audit, and concurrency. Procurement
+Supplier Confirmation remains downstream MESP-124 and was not implemented.
 
-MESP-117 is the approved first capability handoff, but at the start of this
-fresh session it remains **To Do, not activated, and not implemented**. Verify
-its live status and Definition of Ready before activating it. Execute only this
-capability and stop after its bounded completion or a real blocker. Do not
-start MESP-118 or any other next capability automatically.
+MESP-116 is **Done** at its bounded Owner decision and implementation-unblock
+reconciliation scope. PD-025 through PD-046 in MESP-22 comment `10958` and the
+approved dependency map in `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`
+remain authoritative. PD-033, PD-035, PD-036, and PD-037 apply at their exact
+approved global Master Data boundaries wherever MESP-118 consumes them; do not
+reopen or generalize those decisions.
+
+The exact next capability is **MESP-118 - Implement Currency and Payment Terms
+complete Master Data capability**. It remains **To Do, not activated, and not
+executed** at handoff. Verify its live Jira status, Definition of Ready, and
+decision gates in a fresh session before activation. Execute only MESP-118 and
+stop after its bounded completion or a real blocker. Do not start MESP-119 or
+any other capability automatically.
 
 Release 1 remains the full-feature reusable B2B ERP. **31 August 2026 -
 Release 1 Integrated Preview** is a running preview of the real codebase, not
@@ -25,18 +32,19 @@ remains required after the preview.
 
 ## Objective
 
-Complete the shared Angular user experience for the existing Master Data
-Category, Unit of Measure, Product, Supplier, and Business Customer slices,
-using their approved contracts and existing platform/module boundaries. Make
-the existing bounded capability usable in the real codebase for authorized
-Tenant users, with truthful loading, validation, error, audit, localization,
-and workflow behavior.
+Implement Currency and Payment Terms as one usable, Tenant-safe Master Data
+vertical slice with its applicable domain, application, persistence, API,
+authorization, audit, concurrency/idempotency, and Angular EN/AR/RTL behavior.
+Master Data owns reusable identity, lifecycle, effective-dated configuration,
+and deterministic read references. Finance owns transaction and accounting
+meaning; do not silently implement Finance posting, valuation, aging, or
+settlement behavior in this capability.
 
-This is a capability implementation session. It may add or correct only the
-minimum necessary Angular components, routes, services, API contract seams,
-server validation, and focused tests required to complete these existing
-slices. It must not redesign the domain, invent missing business decisions,
-or create a parallel Master Data model.
+This is one capability implementation session. It may add or correct only the
+minimum necessary Currency/Payment Terms contracts, entities, persistence,
+migrations, endpoints, Angular screens, validation, and focused tests required
+by the approved bounded contract. Do not create a parallel configuration model
+or invent an unresolved Finance decision.
 
 ## Required entry reading and live verification
 
@@ -47,104 +55,94 @@ Read and verify, in this order:
 3. `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`;
 4. `docs/32_Release_1_Tax_VAT_Scope_Clarification.md` and
    `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`;
-5. the approved Master Data/Product Catalog and adjacent BRDs/specifications
-   in `docs/16` through `docs/20`, the applicable glossary, and the existing
-   Master Data contracts/entities/ADRs;
-6. ADR-002, ADR-005, ADR-011, the shared platform/auth/audit/localization
-   contracts, and any directly affected API/UI tests;
-7. live Jira MESP-117, the prior Category/UOM/Product/Supplier/Customer issue
-   evidence, MESP-23, and the named security/audit/production gates; and
-8. current branch, worktree, `main`, `origin/main`, current diff, and the
-   actual Angular/backend topology before changing files.
+5. the approved Master Data/Product Catalog, Finance, and Reporting
+   BRDs/specifications, especially `docs/16` through `docs/20`, and the
+   Currency/Payment Terms source contracts;
+6. PD-033, PD-035, PD-036, and PD-037 as the approved global Master Data
+   boundaries, plus the directly applicable PD-031, PD-043, and PD-044 rows;
+7. ADR-002, ADR-005, ADR-006, ADR-011, shared auth/audit/localization,
+   existing Master Data models, and directly affected tests;
+8. live Jira MESP-118, MESP-110, MESP-54, MESP-53, MESP-23, and the named
+   security/audit/SQL/provider/production gates; and
+9. current branch, worktree, `main`, `origin/main`, current diff, and actual
+   backend/Angular topology before changing files.
 
-Do not reread every BRD or the entire PRD unless a real cross-module question
-requires it. Use the owning contract and the exact approved decision as the
-source of truth. If the Definition of Ready is not met, record the concrete
-missing prerequisite and stop without speculative implementation.
+Do not reread every BRD or the entire PRD routinely. Use the owning contract
+and exact approved decision as the source of truth. If MESP-110/FIN-OD-09 or
+MESP-54/FIN-OD-04 leaves a material Payment Term or currency/rate rule
+unresolved, record the concrete blocker in MESP-23 and stop rather than
+choosing a silent default.
 
-## Approved scope
+## Approved boundaries and scope
 
-The implementation may cover the shared UX and necessary existing seams for:
+The implementation may cover:
 
-- Category and Unit of Measure lists, search/filter/pagination, detail/forms,
-  authorized lifecycle actions, validation, and references;
-- Product identity/list/detail/forms, Tenant-unique SKU/barcode behavior as
-  already contracted, Active/Deactivate/Reactivate behavior, and tracking
-  configuration display only; operational batch/lot/serial/expiry behavior
-  remains Inventory-owned;
-- Supplier and Business Customer list/detail/forms, authorized lifecycle and
-  confirmation behavior, and bounded references already in their contracts;
-- shared navigation, table/form patterns, bilingual EN/AR presentation,
-  RTL/LTR layout, localized validation/error/empty/loading states,
-  permission-aware actions, server-derived authority, audit visibility, and
-  optimistic-concurrency/conflict handling; and
-- focused API/client contract corrections and tests only where they are
-  required to make the existing five slices usable and preserve their module
-  ownership.
-
-Preserve the approved boundaries: Tenant-safe ownership with no cross-Tenant
-sharing; no client-supplied authority; no invented Draft state; no hidden
-approval thresholds; no EAN/GS1 rules; no Product/Item variant entity; no
-history rewrite; no unaudited client-side business calculation; and no
-automatic approval or posting.
+- Tenant-owned Currency identity and lifecycle, with no cross-Tenant sharing
+  and no client-supplied authority or scope;
+- Payment Terms identity, deterministic configuration, effective dates/history,
+  validation, and bounded downstream read references only after the applicable
+  Finance contract is verified;
+- Active/Inactive guarded lifecycle with no invented Draft/delete path, server-
+  derived permission authority, optimistic concurrency, mandatory business
+  audit, and no history rewrite;
+- bilingual English/Arabic forms and lists, RTL/LTR layout, accessibility,
+  loading/empty/error/denied/unknown/conflict states, and responsive Angular UX;
+- safe references and effective-date behavior that are deterministic and
+  historical, without external rate sourcing or accounting calculations; and
+- focused backend, API, persistence, migration, and Angular tests required by
+  the changed capability, with SQL/provider validation reported honestly.
 
 ## Explicit exclusions and gates
 
 This session must not:
 
-- activate or execute MESP-39, activate MESP-40, or perform migration;
-- implement Tax/VAT, Currency/FX, Finance posting/valuation, Reporting
-  catalogue, Procurement, Inventory operational tracking/stock/reservation,
-  Sales, returns, credit notes, payment gateways, bank feeds, external SSO,
-  webhooks, providers, credentials, or infrastructure;
-- resolve C1-C9, MESP-48, MESP-49's external boundary, MESP-50, statutory/
-  legal/ZATCA/FATOORA behavior, certification, submission, clearance, signing,
-  or production readiness;
+- activate or execute MESP-39, activate MESP-40, or perform migration/cutover
+  without the separately required migration readiness and production gates;
+- implement external FX providers, automated external rates, bank feeds,
+  payment gateways, webhooks, external SSO, credentials, or infrastructure;
+- implement Finance posting, valuation, realized/unrealized FX, revaluation,
+  aging, settlement, cash/bank, or Reporting catalogue behavior;
+- implement Tax/VAT, ZATCA/FATOORA, statutory/legal/certification/submission
+  behavior, Procurement, Supplier Confirmation, Inventory, Sales, or returns;
 - add Retail POS or Wafra-specific core behavior; or
-- broaden the approved Release 1 contract because a UI needs a convenient
-  default. Record unresolved decisions in MESP-23 and stop at the boundary.
+- widen PD-033/035/036/037 or resolve MESP-110/MESP-54 by assumption.
 
-Apply the cross-cutting gates from docs/33: Tenant isolation and server-side
-authorization, business audit and actor/time/source evidence, EN/AR and
-RTL/LTR localization, validation/concurrency/data-integrity behavior, and the
-SQL/provider/production gates. Specialist validation remains mandatory before
-production or irreversible decisions even when this local capability is
-implemented safely.
+Preserve G-SEC, G-AUD, G-LOC, G-DATA, G-PROD, MESP-48, MESP-50, SQL/provider,
+privacy/legal, and specialist Finance/Reporting validation gates. No external
+production integration is authorized.
 
 ## Definition of Done and validation
 
-MESP-117 is complete only when the real repository demonstrates the agreed
-shared UX for the five existing slices, including authorized list/detail/form
-flows, truthful loading/empty/error/conflict states, bilingual/RTL behavior,
-server-authoritative permissions and validation, audit evidence, and focused
-tests for the changed behavior. Do not claim completion for screenshots,
-placeholder data, or a disconnected demo path.
+MESP-118 is complete only when the real repository demonstrates the approved
+Currency and Payment Terms capability end to end for authorized Tenant users,
+including applicable persistence/migration, API contracts, server-derived
+authorization, audit, effective-date/history, idempotency/concurrency,
+validation and unknown outcomes, bilingual/RTL Angular journeys, and focused
+tests. Do not claim completion for placeholder data or a disconnected demo.
 
 Before handoff:
 
-- run the narrowest relevant backend, contract, and Angular tests/builds,
-  including affected regressions and lint/type checks where configured;
-- inspect the complete task diff and confirm no source or configuration change
-  crosses the allowlisted Master Data/shared UX boundary;
-- verify Tenant isolation, authorization, audit, localization, validation,
-  concurrency, and no-history-rewrite behavior in the changed paths;
-- update MESP-117 with activation, validation, review, and closure evidence;
+- run the narrowest relevant domain, backend, contract, SQL/provider, and
+  Angular tests/builds, including affected regressions;
+- inspect the complete diff for Tenant isolation, Finance ownership, audit,
+  concurrency, localization, no-history-rewrite, and source-scope boundaries;
+- update MESP-118 with activation, validation, review, and closure evidence;
 - update MESP-23 only for genuinely discovered open decisions or blockers;
-- update `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and the relevant plan/state
-  documents conservatively. Production percentages increase only for verified
-  usable capability, never for ticket activity or UI scaffolding alone;
+- update `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and relevant plan/state
+  documents conservatively; percentages reflect verified usable capability,
+  never Jira or documentation activity alone;
 - use one focused branch and PR, review the complete diff, merge only when
-  clean, synchronize `main` and `origin/main`, and record the reviewed head and
+  clean, synchronize `main` and `origin/main`, and record reviewed head and
   final merge SHA; and
 - replace this file with the exact next bounded task and stop. Do not execute
   that next task in the same chat.
 
 ## Completion report required
 
-Report MESP-117's activated scope, changed files, bounded decisions used,
-validation results, security/audit/localization/concurrency evidence, Jira
+Report MESP-118's activated scope, decision rows used, validation results,
+security/audit/localization/concurrency/effective-date evidence, Jira
 status/comments, any MESP-23 additions, production-capability percentage
-change (or explicitly unchanged), PR/reviewed head/merge SHA, synchronized
-branch state, and the exact next TASK handoff. Explicitly state that MESP-39,
-MESP-40 activation, external integrations, production gates, and all other
-capabilities were not executed unless separately authorized by a later task.
+changes or unchanged status, PR/reviewed head/merge SHA, synchronized branch
+state, and the exact next TASK handoff. Explicitly state that MESP-39,
+MESP-40 activation, external providers/integrations, production gates, and all
+other capabilities were not executed unless separately authorized.

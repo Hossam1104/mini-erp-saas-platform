@@ -1,6 +1,36 @@
 # Current State
 
-## Current authoritative position - 12 August 2026 (MESP-116 approved decision reconciliation)
+## Current authoritative position - 12 August 2026 (MESP-117 implementation complete; PR closure pending)
+
+MESP-117 is the single bounded implementation session executed after the
+MESP-116 reconciliation. Its source implementation is complete at commit
+`722c74f72891ff13e61cf7f4a61dde2cb6b0cb31` on branch
+`feature/mesp-117-master-data-angular-ux`, and focused PR #60 is open against
+`main`. Jira activation is comment `10977`; implementation validation is
+comment `10982`. The Jira transition remains In Progress until the clean PR
+merge and closure evidence are recorded.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-117 scope | Shared Angular Master Data workspace for Category, Unit of Measure, Product, Supplier, and Business Customer: real list/detail/create/edit/lifecycle/audit journeys, search/status filtering/pagination, loading/empty/error/conflict states, EN/AR and RTL-ready fields, responsive/accessibility/reduced-motion behavior, and server-aware mutation paths. |
+| Category/UOM seam | Added only the missing public contracts/routes over the existing `MasterDataCategoryUomService` and module-owned persistence contract. No new entity model, EF context, schema, migration, provider, credential, or production configuration was added. |
+| Approved decisions consumed | PD-033/MD-OD-001: Tenant-owned reusable identity; PD-035/MD-OD-005: server-derived permission authority, concurrency, and audit; PD-036/MD-OD-008: Active/Inactive with no Draft/delete; PD-037/MD-OD-009: effective/history integrity without history rewrite. These are used only at their exact approved Master Data boundaries. |
+| Supplier boundary | Supplier master-data identity, registration reference, contacts, lifecycle, audit, and concurrency only. Procurement Supplier Confirmation, rejection, partial/change, and reapproval behavior remains downstream MESP-124 and is not implemented. |
+| Validation | Angular 7 files/34 passed; Angular production build passed; API build passed with 0 warnings/errors; REST metadata 31 passed; Master Data filtered suite 74 passed; full non-SQL architecture suite 670 passed; full assembly 670 passed plus 21 SQL cases gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. |
+| Jira counts | 75 Done / 7 In Progress / 60 To Do across 142 issues; 75 Done / 2 In Progress / 50 To Do across 127 non-Epic issues while PR #60 and MESP-117 closure remain pending. |
+| Exclusions preserved | No MESP-23 decision, MESP-39 execution, MESP-40 activation, migration, external integration/provider/credential/infrastructure, Procurement Confirmation, Inventory, Finance, Sales, Tax/VAT, Currency/FX, statutory, Retail POS, or Wafra-specific core behavior was added. |
+| Current branch | `feature/mesp-117-master-data-angular-ux` at the focused PR #60 head; `main` remains unchanged until merge. |
+| Next exact session | After PR #60 closure, TASK.md contains MESP-118 - Implement Currency and Payment Terms complete Master Data capability. It remains To Do/not activated and must not start automatically. |
+
+MESP-117 uses PD-033, PD-035, PD-036, and PD-037 as authoritative wherever
+its existing Master Data slices consume MD-OD-001, MD-OD-005, MD-OD-008, or
+MD-OD-009. The implementation does not generalize them beyond their approved
+scope. MESP-39 remains future-release and unactivated; MESP-40 remains an
+unactivated Release 1 migration requirement; SQL/provider/production,
+specialist, legal, and external gates remain open. No production readiness
+claim is made from the local implementation without those gates.
+
+## Historical authoritative position - 12 August 2026 (MESP-116 approved decision reconciliation; superseded by MESP-117)
 
 The current Owner direction is the full-feature fast-track rebaseline. Release
 1 remains a reusable full-feature B2B ERP. **31 August 2026 - Release 1
