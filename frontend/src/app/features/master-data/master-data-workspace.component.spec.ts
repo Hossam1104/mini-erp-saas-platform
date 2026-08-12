@@ -149,9 +149,9 @@ describe('MasterDataWorkspaceComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders all seven bounded resource entries and a connected category list', () => {
+  it('renders all eight bounded resource entries and a connected category list', () => {
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelectorAll('.resource-link')).toHaveLength(7);
+    expect(element.querySelectorAll('.resource-link')).toHaveLength(8);
     expect(element.textContent).toContain('Categories');
     expect(element.textContent).toContain('CAT-01');
     expect(data.list).toHaveBeenCalledWith('categories');

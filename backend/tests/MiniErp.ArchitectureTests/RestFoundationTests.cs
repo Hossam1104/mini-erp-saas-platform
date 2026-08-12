@@ -64,6 +64,52 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     }
 
     [Fact]
+    public async Task Generated_openapi_documents_every_public_operation_and_tax_contract()
+    {
+        using var client = factory.CreateClient();
+
+        using var document = JsonDocument.Parse(await client.GetStringAsync("/openapi/v1.json"));
+        var paths = document.RootElement.GetProperty("paths");
+        // The document endpoint serves the document and therefore is not
+        // represented as a self-referential path inside that document.
+        var publicOperations = FoundationOperationCatalog.PublicOperations
+            .Where(descriptor => descriptor.OperationId != "platform.openapi");
+
+        foreach (var descriptor in publicOperations)
+        {
+            var route = descriptor.Route.Replace(":guid", string.Empty, StringComparison.Ordinal);
+            Assert.True(paths.TryGetProperty(route, out var path), $"OpenAPI path missing for {descriptor.OperationId}: {route}");
+            var method = descriptor.HttpMethod.ToLowerInvariant();
+            Assert.True(path.TryGetProperty(method, out var operation), $"OpenAPI method missing for {descriptor.OperationId}: {method} {route}");
+            Assert.Equal(descriptor.OperationId, operation.GetProperty("operationId").GetString());
+            Assert.False(string.IsNullOrWhiteSpace(operation.GetProperty("summary").GetString()));
+            var description = operation.GetProperty("description").GetString() ?? string.Empty;
+            Assert.False(string.IsNullOrWhiteSpace(description));
+            Assert.DoesNotContain("TBD", description, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("TODO", description, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Gets data", description, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Creates resource", description, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Updates item", description, StringComparison.OrdinalIgnoreCase);
+            Assert.True(operation.GetProperty("responses").EnumerateObject().Any(), $"Responses missing for {descriptor.OperationId}");
+        }
+
+        Assert.True(paths.TryGetProperty("/api/v1/master-data/taxes/{taxId}", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/master-data/taxes/{taxId}/calculate", out _));
+        Assert.Contains("explicit taxable base", document.RootElement.GetProperty("info").GetProperty("description").GetString()!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Scalar_reference_is_available_only_in_the_non_production_test_host()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/scalar");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Scalar", await response.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Module_registration_reports_the_composed_master_data_module()
     {
         using var client = factory.CreateClient();

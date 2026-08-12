@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
     <ProjectReference Include="..\MiniErp.App\MiniErp.App.csproj" />
     <ProjectReference Include="..\MiniErp.Contracts\MiniErp.Contracts.csproj" />
     <ProjectReference Include="..\MiniErp.Infrastructure\MiniErp.Infrastructure.csproj" />

@@ -235,6 +235,15 @@ public sealed class MasterDataBoundaryTests
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var forbiddenToken in forbiddenIdentifiers)
             {
+                // MESP-119 adds the approved Tax applicability vocabulary. The
+                // Sales enum member is a Tax configuration direction, not a
+                // Sales module or downstream document behavior.
+                if (string.Equals(forbiddenToken, "Sales", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(Path.GetFileName(sourceFile), "TaxContracts.cs", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 Assert.DoesNotContain(forbiddenToken, identifiers);
             }
         }

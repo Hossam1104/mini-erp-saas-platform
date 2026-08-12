@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Scalar.AspNetCore;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.Modules.Audit;
 using MiniErp.App.Modules.BusinessParties;
@@ -90,7 +91,11 @@ builder.Services.AddSingleton<IFoundationAuditOperationalSignalSink>(services =>
     services.GetRequiredService<LocalFoundationAuditOperationalSignalSink>());
 builder.Services.AddSingleton<FoundationAuditCoordinator>();
 builder.Services.AddSingleton<FoundationRestApplication>();
-builder.Services.AddOpenApi("v1");
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.AddDocumentTransformer<MiniErpOpenApiDocumentTransformer>();
+    options.AddOperationTransformer<MiniErpOpenApiOperationTransformer>();
+});
 
 var app = builder.Build();
 
@@ -460,10 +465,23 @@ app.MapProductIdentityEndpoints();
 app.MapSupplierEndpoints();
 app.MapCustomerEndpoints();
 app.MapCurrencyPaymentTermEndpoints();
+app.MapTaxEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")
     .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("platform.openapi")));
+
+if ((app.Environment.IsDevelopment()
+        || string.Equals(app.Environment.EnvironmentName, "QA", StringComparison.OrdinalIgnoreCase))
+    && app.Configuration.GetValue("Scalar:Enabled", true))
+{
+    app.MapScalarApiReference(
+        "/scalar",
+        options => options
+            .AddDocument("v1")
+            .DisableAgent()
+            .WithTitle("Mini ERP SaaS Platform API"));
+}
 
 app.Run();
 

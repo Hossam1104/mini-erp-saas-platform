@@ -9,6 +9,8 @@ import {
   MasterDataResourceKey,
   MasterDataWritePayload,
   RESOURCE_DEFINITIONS,
+  TaxCalculationRequest,
+  TaxCalculationResponse,
   resourceDefinition,
 } from './master-data.models';
 
@@ -27,6 +29,10 @@ export class MasterDataService {
 
   audit(resource: MasterDataResourceKey, id: string): Observable<MasterDataAuditEntry[]> {
     return this.api.get<MasterDataAuditEntry[]>(`${resourceDefinition(resource).endpoint}/${id}/audit`);
+  }
+
+  calculateTax(id: string, request: TaxCalculationRequest): Observable<TaxCalculationResponse> {
+    return this.api.post<TaxCalculationResponse>(`${resourceDefinition('taxes').endpoint}/${id}/calculate`, request);
   }
 
   async create(resource: MasterDataResourceKey, payload: MasterDataWritePayload): Promise<MasterDataRecord> {

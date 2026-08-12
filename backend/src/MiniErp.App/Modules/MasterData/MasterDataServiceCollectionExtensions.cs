@@ -18,6 +18,7 @@ public static class MasterDataServiceCollectionExtensions
         services.AddSingleton<IMasterDataCapabilityResolver, DenyAllMasterDataCapabilityResolver>();
         services.AddSingleton<IMasterDataCatalogPersistence, UnavailableMasterDataCatalogPersistence>();
         services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence, UnavailableMasterDataCurrencyPaymentTermPersistence>();
+        services.AddSingleton<IMasterDataTaxPersistence, UnavailableMasterDataTaxPersistence>();
         services.AddSingleton<IMasterDataScopePolicy, CategoryUomScopePolicy>();
         services.AddSingleton<IMasterDataResourcePolicy, CategoryUomResourcePolicy>();
         services.AddSingleton<IMasterDataApprovalPolicy, CategoryUomApprovalPolicy>();
@@ -35,6 +36,17 @@ public static class MasterDataServiceCollectionExtensions
                     servicesProvider.GetRequiredService<CurrencyPaymentTermApprovalPolicy>(),
                     servicesProvider.GetRequiredService<CurrencyPaymentTermScopePolicy>()),
                 servicesProvider.GetRequiredService<IMasterDataCurrencyPaymentTermPersistence>()));
+        services.AddSingleton<TaxScopePolicy>();
+        services.AddSingleton<TaxResourcePolicy>();
+        services.AddSingleton<TaxApprovalPolicy>();
+        services.AddSingleton<MasterDataTaxService>(servicesProvider =>
+            new MasterDataTaxService(
+                new MasterDataResourceAuthorizationService(
+                    servicesProvider.GetRequiredService<IMasterDataCapabilityResolver>(),
+                    servicesProvider.GetRequiredService<TaxResourcePolicy>(),
+                    servicesProvider.GetRequiredService<TaxApprovalPolicy>(),
+                    servicesProvider.GetRequiredService<TaxScopePolicy>()),
+                servicesProvider.GetRequiredService<IMasterDataTaxPersistence>()));
         return services;
     }
 

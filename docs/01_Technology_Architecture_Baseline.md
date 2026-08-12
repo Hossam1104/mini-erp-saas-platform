@@ -181,6 +181,14 @@ The PRD already approves a Modular Monolith. It avoids the operational and consi
 
 REST keeps the client/server interaction conventional and testable. OpenAPI is the contract authority for the Angular client, Playwright API tests, and approved future integrations. GraphQL and multiple competing API styles are not needed for Release 1.
 
+The running API is the single documentation source: each public operation is
+registered in the Foundation operation catalogue, mapped with its exact route
+and security metadata, and transformed into an explicit generated OpenAPI
+operation identifier, summary, boundary description, and response outcomes.
+Scalar is the developer-facing view over that generated document in
+Development and QA only, with its agent capability disabled. Scalar is not a
+second contract, an integration gateway, or a production authorization path.
+
 ## ASP.NET Core Identity, secure cookies, and policies
 
 Identity supplies a maintained credential and session foundation. A secure HTTP-only cookie prevents the Angular application from reading or persisting bearer tokens in browser storage. Policy authorization lets the server evaluate the full business context instead of relying on UI visibility or broad role names.
@@ -497,6 +505,13 @@ External partner and machine-to-machine API authentication is not covered by the
 - Base path: /api/v1.
 - JSON over HTTPS for Release 1.
 - OpenAPI generated from the running API and validated in CI.
+- Every public REST operation has Foundation catalogue metadata, a generated
+  OpenAPI operationId/summary/description/response set, and a corresponding
+  architecture test; placeholder documentation is a Definition-of-Done
+  failure.
+- Scalar renders the generated `v1` document only in Development/QA and is
+  disabled in production; the generated document remains the contract source
+  for Angular and API tests.
 - Resource names use stable business vocabulary from the glossary.
 - Transport models are separate from domain entities and EF entities.
 - Errors use Problem Details with a stable business error code, safe message, trace identifier, and field errors where relevant.
