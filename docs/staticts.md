@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-12 16:07 +03:00
+**Last Updated:** 2026-08-12 16:13 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~29%**
@@ -17,7 +17,7 @@ Unfinished capability remains required after the preview.
 
 | Current control | Verified position |
 |---|---|
-| MESP-115 | In Progress, bounded documentation/Jira/governance rebaseline. |
+| MESP-115 | Done at the bounded documentation/Jira/governance rebaseline; PR #58 reviewed at 0681c0182b0b6894f5f2b83db1728253ac54e279 and merged at a5ee9426d252901e74888bdc3ca94970c969aa20. |
 | MESP-116 | To Do/not activated; exact next Owner Decision Approval and Implementation-Unblock Reconciliation. |
 | MESP-38 | Done at approved bounded BRD scope. |
 | MESP-39 | To Do, unactivated, not executed; future-release Integrations and External Services BRD. |
@@ -28,9 +28,9 @@ Unfinished capability remains required after the preview.
 | Tax/VAT | Internal reusable configuration-led Tax/VAT restored as Release 1 required/Not Started; statutory/ZATCA/FATOORA/external scope remains excluded. |
 | Source/production capability | No implementation or production capability added; percentages remain unchanged. |
 
-Live Jira after the governance backlog creation is **60 Done / 7 In Progress /
-75 To Do across 142 issues** and **60 Done / 2 In Progress / 65 To Do across
-127 non-Epic issues**. These are administrative counts and must not be used as
+Live Jira after MESP-115 closure is **61 Done / 6 In Progress / 75 To Do across
+142 issues** and **61 Done / 1 In Progress / 65 To Do across 127 non-Epic
+issues**. These are administrative counts and must not be used as
 the production-capability percentage.
 
 The canonical management artifacts are the full-feature plan,
@@ -1139,6 +1139,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-12 16:13 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-115 closed through focused PR #58, reviewed at 0681c0182b0b6894f5f2b83db1728253ac54e279 and merged at a5ee9426d252901e74888bdc3ca94970c969aa20; canonical full-feature plan/decision pack/Tax-VAT clarification, PD-024, Jira capability backlog MESP-117–MESP-142, governance overlays, and exact MESP-116 TASK handoff are synchronized; MESP-39 remains future-release and unexecuted; MESP-40 remains an unactivated Release 1 migration requirement; live Jira all-issue 61 Done / 6 In Progress / 75 To Do and non-Epic 61 Done / 1 In Progress / 65 To Do; no production-capability percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct–mid Nov 2026 |
 | 2026-08-12 16:07 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-115 full-feature fast-track rebaseline recorded in canonical docs/30, docs/31, and docs/32; PD-024 appended for explicit Owner directions only; internal configuration-led Tax/VAT restored as Release 1 required/Not Started without statutory scope; MESP-39 remains future-release and unexecuted; MESP-40 remains an unactivated Release 1 migration requirement; MESP-117–MESP-142 created under existing Epics; MESP-23 remains In Progress; live Jira all-issue 60 Done / 7 In Progress / 75 To Do and non-Epic 60 Done / 2 In Progress / 65 To Do; no production-capability percentage change; next exact task is MESP-116 | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct–mid Nov 2026 |
 | 2026-08-12 13:36 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-38 Security, Audit, and Data Governance completed as the approved bounded documentation-only BRD at docs/29_Security_Audit_and_Data_Governance_BRD.md; PR #57 reviewed at 42f2a1cb7b15580a6a92c4603253b6ea5104c203 and merged at 67b7fb79475fb194489bc03ed153c999d20a6eaf; Jira evidence 10934/10935/10936/10937/10938/10939; MESP-23, MESP-48, MESP-50, MESP-53, MESP-54, MESP-110, and MESP-113 remain open/unapproved as applicable; live Jira all-issue 60 Done / 6 In Progress / 48 To Do and non-Epic 60 Done / 1 In Progress / 38 To Do; no production-capability percentage change; next exact task is MESP-39 Integrations and External Services BRD only | Production-ready target unchanged: Late Oct-Mid Nov 2026 |
 | 2026-08-12 01:31 +03:00 | **29%** | **42%** | **33%** | **15%** | MESP-114 Pre-MESP-38 independent-review reconciliation completed through canonical artifact docs/100_Pre_MESP_38_Independent_Review_Reconciliation.md; PR #56 reviewed at `47195bcce103903775773e77788a1b53525d910c` and merged at `7ce1588ad20ea8ad1d82f6cafd39b370bedf0490`; MESP-114 is Done; MESP-113 remains To Do/unapproved; live Jira all-issue 59 Done / 6 In Progress / 49 To Do and non-Epic 59 Done / 1 In Progress / 39 To Do; no production-capability percentage change; MESP-38 remains To Do and not activated | Production-ready target unchanged: Late Oct-Mid Nov 2026 |

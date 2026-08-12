@@ -17,7 +17,9 @@ integration deferral, and restoration of internal reusable configuration-led
 Tax/VAT without statutory/ZATCA/FATOORA/legal/external-provider scope. Decision
 Pack recommendations remain **NOT APPROVED UNTIL OWNER SIGNS**.
 
-MESP-38 is Done. MESP-39 is To Do, unactivated, and not executed as future
+MESP-38 is Done. MESP-115 is Done through focused PR #58 (reviewed head
+0681c0182b0b6894f5f2b83db1728253ac54e279; merge a5ee9426d252901e74888bdc3ca94970c969aa20).
+MESP-39 is To Do, unactivated, and not executed as future
 release work. MESP-40 is To Do/unactivated but required for Release 1 in Wave H.
 MESP-23 is In Progress. MESP-117–MESP-142 are To Do/not activated capability
 tasks under existing Epics. One active capability, one executor, one focused

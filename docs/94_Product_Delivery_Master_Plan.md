@@ -15,7 +15,9 @@
 > ZATCA/FATOORA, legal, certification, submission, clearance, provider,
 > credential, or external-integration scope.
 >
-> MESP-38 is Done. MESP-39 remains To Do, unactivated, and not executed as a
+> MESP-38 is Done. MESP-115 is Done through focused PR #58, reviewed at
+> `0681c0182b0b6894f5f2b83db1728253ac54e279` and merged at
+> `a5ee9426d252901e74888bdc3ca94970c969aa20`. MESP-39 remains To Do, unactivated, and not executed as a
 > future-release Integrations and External Services BRD. MESP-40 remains an
 > unactivated Release 1 migration/onboarding requirement in Wave H. MESP-23
 > remains In Progress. MESP-117–MESP-142 are To Do/not activated under the

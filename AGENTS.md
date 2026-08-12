@@ -25,8 +25,10 @@ milestone is an integrated preview of the real codebase, not an MVP,
 throwaway/demo UI, Wafra fork, or scope reduction. Unfinished functionality
 remains required Release 1 work after the preview.
 
-MESP-115 is the single bounded governance/rebaseline task for this session.
-Its canonical artifacts are:
+MESP-115 is **Done** at the single bounded governance/rebaseline scope for
+this session. Focused PR #58 was reviewed at
+`0681c0182b0b6894f5f2b83db1728253ac54e279` and merged to `main` at
+`a5ee9426d252901e74888bdc3ca94970c969aa20`. Its canonical artifacts are:
 
 - `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`;
 - `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`; and

@@ -11,7 +11,7 @@ required after the preview.
 
 | Current fact | Verified value |
 |---|---|
-| MESP-115 | **In Progress** for the bounded documentation/Jira/governance rebaseline; activation evidence is Jira comment 10941. |
+| MESP-115 | **Done** at the bounded documentation/Jira/governance rebaseline; activation evidence is Jira comment 10941; closure is Jira comment 10955; PR #58 reviewed at 0681c0182b0b6894f5f2b83db1728253ac54e279 and merged to main at a5ee9426d252901e74888bdc3ca94970c969aa20. |
 | Canonical artifacts | docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md; docs/31_Release_1_Consolidated_Owner_Decision_Pack.md; docs/32_Release_1_Tax_VAT_Scope_Clarification.md. |
 | PD-024 | Appended to MESP-22 in comment 10945 for explicit full-feature/preview, sequential-governance, external-integration-deferral, and internal-configurable-Tax/VAT directions only. |
 | Consolidated Decision Pack | 31 entries: 16 Owner-decidable, 6 specialist/input-dependent but contractable, 9 production-only/external/legal gates; all recommendations pending explicit Owner approval in MESP-116. |
@@ -20,9 +20,11 @@ required after the preview.
 | MESP-40 | **To Do, unactivated, required for Release 1**; migration/onboarding Wave H, not executed by this handoff. |
 | MESP-23 | **In Progress** as the living Open Questions Register; reconciliation comment 10944 closed no row. |
 | Capability backlog | MESP-117–MESP-142 created under existing module Epics; all To Do/not activated. |
+| Live Jira counts | 61 Done / 6 In Progress / 75 To Do across 142 issues; 61 Done / 1 In Progress / 65 To Do across 127 non-Epic issues. |
 | Tax/VAT | M95-SL-08 reclassified to **Release 1 required — Not Started** for internal reusable configuration-led Tax/VAT only; statutory/ZATCA/FATOORA/external scope remains excluded. |
 | Governance | One active capability, one sequential executor, one focused PR; Opus checkpoints A/B/C reserved as defined in the fast-track plan. |
 | Source/production capability | None added by this documentation/Jira session; production percentages remain unchanged. |
+| Current branch | `main`; PR #58 is merged and the working tree is synchronized with `origin/main`. |
 | Next exact session | TASK.md contains MESP-116 — Release 1 Consolidated Owner Decision Approval and Implementation-Unblock Reconciliation. |
 
 This session does not execute MESP-39, activate MESP-40, implement source,
