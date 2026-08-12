@@ -17,12 +17,24 @@ public static class MasterDataServiceCollectionExtensions
 
         services.AddSingleton<IMasterDataCapabilityResolver, DenyAllMasterDataCapabilityResolver>();
         services.AddSingleton<IMasterDataCatalogPersistence, UnavailableMasterDataCatalogPersistence>();
+        services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence, UnavailableMasterDataCurrencyPaymentTermPersistence>();
         services.AddSingleton<IMasterDataScopePolicy, CategoryUomScopePolicy>();
         services.AddSingleton<IMasterDataResourcePolicy, CategoryUomResourcePolicy>();
         services.AddSingleton<IMasterDataApprovalPolicy, CategoryUomApprovalPolicy>();
         services.AddSingleton<MasterDataResourceAuthorizationService>();
         services.AddSingleton<MasterDataCategoryHierarchyPolicy>();
         services.AddSingleton<MasterDataCategoryUomService>();
+        services.AddSingleton<CurrencyPaymentTermScopePolicy>();
+        services.AddSingleton<CurrencyPaymentTermResourcePolicy>();
+        services.AddSingleton<CurrencyPaymentTermApprovalPolicy>();
+        services.AddSingleton<MasterDataCurrencyPaymentTermService>(servicesProvider =>
+            new MasterDataCurrencyPaymentTermService(
+                new MasterDataResourceAuthorizationService(
+                    servicesProvider.GetRequiredService<IMasterDataCapabilityResolver>(),
+                    servicesProvider.GetRequiredService<CurrencyPaymentTermResourcePolicy>(),
+                    servicesProvider.GetRequiredService<CurrencyPaymentTermApprovalPolicy>(),
+                    servicesProvider.GetRequiredService<CurrencyPaymentTermScopePolicy>()),
+                servicesProvider.GetRequiredService<IMasterDataCurrencyPaymentTermPersistence>()));
         return services;
     }
 

@@ -74,6 +74,7 @@ builder.Services.AddAntiforgery(options =>
 });
 builder.Services.AddSingleton<ITrustedRequestContextResolver, DefaultTrustedRequestContextResolver>();
 builder.Services.AddSingleton<LocalFoundationIdempotencyStore>();
+builder.Services.AddSingleton<LocalMasterDataIdempotencyStore>();
 builder.Services.AddSingleton<LocalFoundationProbeStore>();
 builder.Services.AddSingleton<IFoundationTargetDirectory, EmptyFoundationTargetDirectory>();
 builder.Services.AddSingleton<LocalImmutableAuditEvidenceStore>();
@@ -458,6 +459,7 @@ app.MapCategoryUomEndpoints();
 app.MapProductIdentityEndpoints();
 app.MapSupplierEndpoints();
 app.MapCustomerEndpoints();
+app.MapCurrencyPaymentTermEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

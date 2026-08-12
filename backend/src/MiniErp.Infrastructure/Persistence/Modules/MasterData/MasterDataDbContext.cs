@@ -28,6 +28,14 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
 
     internal DbSet<MasterDataProductBarcodeEntity> ProductBarcodes => Set<MasterDataProductBarcodeEntity>();
 
+    internal DbSet<MasterDataCurrencyEntity> Currencies => Set<MasterDataCurrencyEntity>();
+
+    internal DbSet<MasterDataPaymentTermEntity> PaymentTerms => Set<MasterDataPaymentTermEntity>();
+
+    internal DbSet<MasterDataPaymentTermVersionEntity> PaymentTermVersions => Set<MasterDataPaymentTermVersionEntity>();
+
+    internal DbSet<MasterDataPaymentTermInstallmentEntity> PaymentTermInstallments => Set<MasterDataPaymentTermInstallmentEntity>();
+
     internal DbSet<MasterDataAuditEventEntity> AuditEvents => Set<MasterDataAuditEventEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -149,6 +157,92 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         barcode.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var currency = modelBuilder.Entity<MasterDataCurrencyEntity>();
+        currency.ToTable("Currencies", "masterdata");
+        currency.HasKey(item => item.Id);
+        currency.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(currency.Property(item => item.TenantId));
+        currency.Property(item => item.Code).HasMaxLength(16).IsRequired();
+        currency.Property(item => item.CodeKey).HasMaxLength(16).IsRequired();
+        currency.Property(item => item.EnglishName).HasMaxLength(256).IsRequired(false);
+        currency.Property(item => item.ArabicName).HasMaxLength(256).IsRequired(false);
+        currency.Property(item => item.NameKey).HasMaxLength(256).IsRequired();
+        currency.Property(item => item.LifecycleState).IsRequired();
+        currency.Property(item => item.Revision).IsRequired();
+        ConfigureVersion(currency.Property(item => item.Version));
+        currency.HasIndex(item => new { item.TenantId, item.CodeKey }).IsUnique();
+        currency.HasIndex(item => new { item.TenantId, item.NameKey }).IsUnique();
+        currency.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        currency.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var paymentTerm = modelBuilder.Entity<MasterDataPaymentTermEntity>();
+        paymentTerm.ToTable("PaymentTerms", "masterdata");
+        paymentTerm.HasKey(item => item.Id);
+        paymentTerm.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(paymentTerm.Property(item => item.TenantId));
+        paymentTerm.Property(item => item.Code).HasMaxLength(128).IsRequired();
+        paymentTerm.Property(item => item.CodeKey).HasMaxLength(128).IsRequired();
+        paymentTerm.Property(item => item.EnglishName).HasMaxLength(256).IsRequired(false);
+        paymentTerm.Property(item => item.ArabicName).HasMaxLength(256).IsRequired(false);
+        paymentTerm.Property(item => item.NameKey).HasMaxLength(256).IsRequired();
+        paymentTerm.Property(item => item.LifecycleState).IsRequired();
+        paymentTerm.Property(item => item.CurrentVersionNumber).IsRequired();
+        ConfigureVersion(paymentTerm.Property(item => item.Version));
+        paymentTerm.HasIndex(item => new { item.TenantId, item.CodeKey }).IsUnique();
+        paymentTerm.HasIndex(item => new { item.TenantId, item.NameKey }).IsUnique();
+        paymentTerm.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        paymentTerm.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var paymentTermVersion = modelBuilder.Entity<MasterDataPaymentTermVersionEntity>();
+        paymentTermVersion.ToTable("PaymentTermVersions", "masterdata");
+        paymentTermVersion.HasKey(item => item.Id);
+        paymentTermVersion.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(paymentTermVersion.Property(item => item.TenantId));
+        paymentTermVersion.Property(item => item.PaymentTermId).IsRequired();
+        paymentTermVersion.Property(item => item.VersionNumber).IsRequired();
+        paymentTermVersion.Property(item => item.Code).HasMaxLength(128).IsRequired();
+        paymentTermVersion.Property(item => item.EnglishName).HasMaxLength(256).IsRequired(false);
+        paymentTermVersion.Property(item => item.ArabicName).HasMaxLength(256).IsRequired(false);
+        paymentTermVersion.Property(item => item.EffectiveFrom).IsRequired();
+        paymentTermVersion.Property(item => item.EffectiveTo).IsRequired(false);
+        paymentTermVersion.Property(item => item.BaseDateRule).IsRequired();
+        paymentTermVersion.Property(item => item.ScheduleMode).IsRequired();
+        paymentTermVersion.Property(item => item.DueOffsetDays).IsRequired();
+        paymentTermVersion.Property(item => item.DueOffsetMonths).IsRequired();
+        paymentTermVersion.Property(item => item.EarlySettlementDiscountEnabled).IsRequired();
+        paymentTermVersion.Property(item => item.EarlySettlementDiscountPercentage).HasPrecision(9, 6).IsRequired(false);
+        paymentTermVersion.Property(item => item.EarlySettlementDiscountDays).IsRequired();
+        paymentTermVersion.Property(item => item.EarlySettlementDiscountMonths).IsRequired();
+        ConfigureVersion(paymentTermVersion.Property(item => item.Version));
+        paymentTermVersion.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        paymentTermVersion.HasIndex(item => new { item.TenantId, item.PaymentTermId, item.VersionNumber }).IsUnique();
+        paymentTermVersion.HasIndex(item => new { item.TenantId, item.PaymentTermId, item.EffectiveFrom }).IsUnique();
+        paymentTermVersion.HasOne<MasterDataPaymentTermEntity>()
+            .WithMany(item => item.Versions)
+            .HasForeignKey(item => new { item.TenantId, item.PaymentTermId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        paymentTermVersion.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var paymentTermInstallment = modelBuilder.Entity<MasterDataPaymentTermInstallmentEntity>();
+        paymentTermInstallment.ToTable("PaymentTermInstallments", "masterdata");
+        paymentTermInstallment.HasKey(item => item.Id);
+        paymentTermInstallment.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(paymentTermInstallment.Property(item => item.TenantId));
+        paymentTermInstallment.Property(item => item.PaymentTermVersionId).IsRequired();
+        paymentTermInstallment.Property(item => item.Sequence).IsRequired();
+        paymentTermInstallment.Property(item => item.Percentage).HasPrecision(9, 6).IsRequired();
+        paymentTermInstallment.Property(item => item.OffsetDays).IsRequired();
+        paymentTermInstallment.Property(item => item.OffsetMonths).IsRequired();
+        paymentTermInstallment.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        paymentTermInstallment.HasIndex(item => new { item.TenantId, item.PaymentTermVersionId, item.Sequence }).IsUnique();
+        paymentTermInstallment.HasOne<MasterDataPaymentTermVersionEntity>()
+            .WithMany(item => item.Installments)
+            .HasForeignKey(item => new { item.TenantId, item.PaymentTermVersionId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        paymentTermInstallment.HasQueryFilter(item => item.TenantId == TrustedTenantId);
 
         var audit = modelBuilder.Entity<MasterDataAuditEventEntity>();
         audit.ToTable("AuditEvents", "masterdata");

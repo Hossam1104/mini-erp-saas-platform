@@ -1,6 +1,6 @@
 import { TranslationKey } from '../../core/i18n/language.service';
 
-export type MasterDataResourceKey = 'categories' | 'units' | 'products' | 'suppliers' | 'customers';
+export type MasterDataResourceKey = 'categories' | 'units' | 'products' | 'suppliers' | 'customers' | 'currencies' | 'payment-terms';
 
 export type MasterDataLifecycleState = 'Active' | 'Inactive' | string;
 
@@ -77,12 +77,55 @@ export interface CustomerRecord extends MasterDataRecordBase {
   contacts: PartyContactRecord[];
 }
 
+export interface CurrencyRecord extends MasterDataRecordBase {
+  code: string;
+  englishName: string | null;
+  arabicName: string | null;
+  revision: number;
+}
+
+export interface PaymentTermInstallmentRecord {
+  sequence: number;
+  percentage: number;
+  days: number;
+  months: number;
+}
+
+export interface PaymentTermVersionRecord {
+  id: string;
+  versionNumber: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  baseDateRule: string;
+  scheduleMode: string;
+  dueOffsetDays: number;
+  dueOffsetMonths: number;
+  installments: PaymentTermInstallmentRecord[];
+  earlySettlementDiscountEnabled: boolean;
+  earlySettlementDiscountPercentage: number | null;
+  earlySettlementDiscountDays: number;
+  earlySettlementDiscountMonths: number;
+  code: string;
+  englishName: string | null;
+  arabicName: string | null;
+}
+
+export interface PaymentTermRecord extends MasterDataRecordBase {
+  code: string;
+  englishName: string | null;
+  arabicName: string | null;
+  currentVersionNumber: number;
+  versions: PaymentTermVersionRecord[];
+}
+
 export type MasterDataRecord =
   | CategoryRecord
   | UnitOfMeasureRecord
   | ProductRecord
   | SupplierRecord
-  | CustomerRecord;
+  | CustomerRecord
+  | CurrencyRecord
+  | PaymentTermRecord;
 
 export interface ContactDraft {
   name: string;
@@ -128,7 +171,37 @@ export interface PartyDraft {
   contacts: ContactDraft[];
 }
 
-export type MasterDataDraft = CategoryDraft | UnitDraft | ProductDraft | PartyDraft;
+export interface CurrencyDraft {
+  code: string;
+  englishName: string;
+  arabicName: string;
+}
+
+export interface PaymentTermInstallmentDraft {
+  sequence: number;
+  percentage: number;
+  days: number;
+  months: number;
+}
+
+export interface PaymentTermDraft {
+  code: string;
+  englishName: string;
+  arabicName: string;
+  effectiveFrom: string;
+  effectiveTo: string;
+  baseDateRule: 'DocumentDate' | 'InvoiceDate' | 'DeliveryDate' | 'ReceiptDate';
+  scheduleMode: 'SingleDueDate' | 'Installments';
+  dueOffsetDays: number;
+  dueOffsetMonths: number;
+  installments: PaymentTermInstallmentDraft[];
+  earlySettlementDiscountEnabled: boolean;
+  earlySettlementDiscountPercentage: number;
+  earlySettlementDiscountDays: number;
+  earlySettlementDiscountMonths: number;
+}
+
+export type MasterDataDraft = CategoryDraft | UnitDraft | ProductDraft | PartyDraft | CurrencyDraft | PaymentTermDraft;
 
 export type MasterDataWritePayload =
   | {
@@ -164,6 +237,23 @@ export type MasterDataWritePayload =
       arabicTradingName: string | null;
       registrationReference?: string | null;
       contacts: Array<{ name: string; email: string | null; phone: string | null }>;
+    }
+  | {
+      code: string;
+      englishName: string | null;
+      arabicName: string | null;
+    }
+  | {
+      code: string;
+      englishName: string | null;
+      arabicName: string | null;
+      effectiveFrom: string;
+      effectiveTo: string | null;
+      baseDateRule: string;
+      scheduleMode: string;
+      dueOffset: { days: number; months: number };
+      installments: Array<{ sequence: number; percentage: number; days: number; months: number }>;
+      earlySettlementDiscount: { enabled: boolean; percentage: number | null; days: number; months: number };
     };
 
 export interface MasterDataAuditEntry {
@@ -227,6 +317,20 @@ export const RESOURCE_DEFINITIONS: readonly MasterDataResourceDefinition[] = [
     leadKey: 'customerLead',
     endpoint: '/master-data/customers',
     accent: 'violet',
+  },
+  {
+    key: 'currencies',
+    labelKey: 'currencies',
+    leadKey: 'currencyLead',
+    endpoint: '/master-data/currencies',
+    accent: 'gold',
+  },
+  {
+    key: 'payment-terms',
+    labelKey: 'paymentTerms',
+    leadKey: 'paymentTermLead',
+    endpoint: '/master-data/payment-terms',
+    accent: 'orange',
   },
 ] as const;
 
