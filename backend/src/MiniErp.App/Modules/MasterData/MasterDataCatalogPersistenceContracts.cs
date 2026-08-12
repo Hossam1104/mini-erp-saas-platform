@@ -206,4 +206,119 @@ public interface IMasterDataCatalogPersistence
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Fail-closed composition default used until the host supplies the approved
+/// module-owned persistence provider. It keeps the REST surface startable
+/// without making an unavailable store look like an empty catalogue.
+/// </summary>
+public sealed class UnavailableMasterDataCatalogPersistence : IMasterDataCatalogPersistence
+{
+    private static Task<T> Unavailable<T>() =>
+        Task.FromException<T>(new InvalidOperationException("Master Data persistence is unavailable."));
+
+    public Task<IReadOnlyList<MasterDataCategoryRecord>> ListCategoriesAsync(
+        TenantContext tenantContext,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<IReadOnlyList<MasterDataCategoryRecord>>();
+
+    public Task<MasterDataCategoryRecord?> FindCategoryAsync(
+        TenantContext tenantContext,
+        Guid categoryId,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataCategoryRecord?>();
+
+    public Task<MasterDataPersistenceResult<MasterDataCategoryRecord>> CreateCategoryAsync(
+        TenantContext tenantContext,
+        Guid categoryId,
+        CreateMasterDataCategoryCommand command,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataPersistenceResult<MasterDataCategoryRecord>>();
+
+    public Task<MasterDataPersistenceResult<MasterDataCategoryRecord>> EditCategoryAsync(
+        TenantContext tenantContext,
+        EditMasterDataCategoryCommand command,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataPersistenceResult<MasterDataCategoryRecord>>();
+
+    public Task<MasterDataPersistenceResult<MasterDataCategoryRecord>> SetCategoryLifecycleAsync(
+        TenantContext tenantContext,
+        Guid categoryId,
+        MasterDataLifecycleState lifecycleState,
+        byte[] expectedVersion,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataPersistenceResult<MasterDataCategoryRecord>>();
+
+    public Task<IReadOnlyList<MasterDataUnitOfMeasureRecord>> ListUnitsOfMeasureAsync(
+        TenantContext tenantContext,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<IReadOnlyList<MasterDataUnitOfMeasureRecord>>();
+
+    public Task<MasterDataUnitOfMeasureRecord?> FindUnitOfMeasureAsync(
+        TenantContext tenantContext,
+        Guid unitOfMeasureId,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataUnitOfMeasureRecord?>();
+
+    public Task<MasterDataPersistenceResult<MasterDataUnitOfMeasureRecord>> CreateUnitOfMeasureAsync(
+        TenantContext tenantContext,
+        Guid unitOfMeasureId,
+        CreateMasterDataUnitOfMeasureCommand command,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataPersistenceResult<MasterDataUnitOfMeasureRecord>>();
+
+    public Task<MasterDataPersistenceResult<MasterDataUnitOfMeasureRecord>> EditUnitOfMeasureAsync(
+        TenantContext tenantContext,
+        EditMasterDataUnitOfMeasureCommand command,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataPersistenceResult<MasterDataUnitOfMeasureRecord>>();
+
+    public Task<MasterDataPersistenceResult<MasterDataUnitOfMeasureRecord>> SetUnitOfMeasureLifecycleAsync(
+        TenantContext tenantContext,
+        Guid unitOfMeasureId,
+        MasterDataLifecycleState lifecycleState,
+        byte[] expectedVersion,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataPersistenceResult<MasterDataUnitOfMeasureRecord>>();
+
+    public Task<MasterDataPersistenceResult<MasterDataConversionRecord>> CreateConversionAsync(
+        TenantContext tenantContext,
+        Guid conversionId,
+        CreateMasterDataConversionCommand command,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataPersistenceResult<MasterDataConversionRecord>>();
+
+    public Task<MasterDataQuantityConversionResult> ConvertQuantityAsync(
+        TenantContext tenantContext,
+        Guid conversionId,
+        decimal quantity,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataQuantityConversionResult>();
+
+    public Task<bool> HasActiveConversionReferenceAsync(
+        TenantContext tenantContext,
+        Guid unitOfMeasureId,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<bool>();
+
+    public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(
+        TenantContext tenantContext,
+        MasterDataAuditEvidence evidence,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<MasterDataPersistenceResult<MasterDataAuditRecord>>();
+
+    public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(
+        TenantContext tenantContext,
+        MasterDataResourceKind resourceKind,
+        Guid? resourceId = null,
+        CancellationToken cancellationToken = default) =>
+        Unavailable<IReadOnlyList<MasterDataAuditRecord>>();
+}
+
 #pragma warning restore CS1591

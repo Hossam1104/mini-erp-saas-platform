@@ -27,6 +27,9 @@ import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.compo
           <a routerLink="/tenant/select" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">◈</span>{{ language.text('switchContext') }}
           </a>
+          <a routerLink="/app/master-data/categories" routerLinkActive="is-active">
+            <span class="nav-icon" aria-hidden="true">▦</span>{{ language.text('masterData') }}
+          </a>
         </nav>
         <div class="sidebar__footer">
           <p>{{ language.text('helpText') }}</p>

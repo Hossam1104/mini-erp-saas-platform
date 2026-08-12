@@ -16,11 +16,13 @@ public static class MasterDataServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IMasterDataCapabilityResolver, DenyAllMasterDataCapabilityResolver>();
+        services.AddSingleton<IMasterDataCatalogPersistence, UnavailableMasterDataCatalogPersistence>();
         services.AddSingleton<IMasterDataScopePolicy, CategoryUomScopePolicy>();
         services.AddSingleton<IMasterDataResourcePolicy, CategoryUomResourcePolicy>();
         services.AddSingleton<IMasterDataApprovalPolicy, CategoryUomApprovalPolicy>();
         services.AddSingleton<MasterDataResourceAuthorizationService>();
         services.AddSingleton<MasterDataCategoryHierarchyPolicy>();
+        services.AddSingleton<MasterDataCategoryUomService>();
         return services;
     }
 
