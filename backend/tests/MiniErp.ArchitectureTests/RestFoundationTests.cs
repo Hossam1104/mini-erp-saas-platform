@@ -96,6 +96,16 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
         Assert.True(paths.TryGetProperty("/api/v1/master-data/taxes/{taxId}", out _));
         Assert.True(paths.TryGetProperty("/api/v1/master-data/taxes/{taxId}/calculate", out _));
         Assert.Contains("explicit taxable base", document.RootElement.GetProperty("info").GetProperty("description").GetString()!, StringComparison.OrdinalIgnoreCase);
+
+        var exchangeReference = paths
+            .GetProperty("/api/v1/master-data/exchange-rates/{exchangeRateId}/reference")
+            .GetProperty("get");
+        var effectiveOn = Assert.Single(exchangeReference.GetProperty("parameters").EnumerateArray(),
+            parameter => parameter.GetProperty("name").GetString() == "effectiveOn");
+        Assert.Equal("effectiveOn", effectiveOn.GetProperty("name").GetString());
+        Assert.Equal("query", effectiveOn.GetProperty("in").GetString());
+        Assert.True(effectiveOn.GetProperty("required").GetBoolean());
+        Assert.Equal("date", effectiveOn.GetProperty("schema").GetProperty("format").GetString());
     }
 
     [Fact]

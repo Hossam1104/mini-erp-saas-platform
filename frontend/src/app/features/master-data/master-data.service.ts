@@ -12,6 +12,7 @@ import {
   TaxCalculationRequest,
   TaxCalculationResponse,
   resourceDefinition,
+  ExchangeRateReferenceResponse,
 } from './master-data.models';
 
 @Injectable({ providedIn: 'root' })
@@ -33,6 +34,10 @@ export class MasterDataService {
 
   calculateTax(id: string, request: TaxCalculationRequest): Observable<TaxCalculationResponse> {
     return this.api.post<TaxCalculationResponse>(`${resourceDefinition('taxes').endpoint}/${id}/calculate`, request);
+  }
+
+  referenceExchangeRate(id: string, effectiveOn: string): Observable<ExchangeRateReferenceResponse> {
+    return this.api.get<ExchangeRateReferenceResponse>(`${resourceDefinition('exchange-rates').endpoint}/${id}/reference?effectiveOn=${encodeURIComponent(effectiveOn)}`);
   }
 
   async create(resource: MasterDataResourceKey, payload: MasterDataWritePayload): Promise<MasterDataRecord> {

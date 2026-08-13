@@ -18,6 +18,7 @@ public static class MasterDataServiceCollectionExtensions
         services.AddSingleton<IMasterDataCapabilityResolver, DenyAllMasterDataCapabilityResolver>();
         services.AddSingleton<IMasterDataCatalogPersistence, UnavailableMasterDataCatalogPersistence>();
         services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence, UnavailableMasterDataCurrencyPaymentTermPersistence>();
+        services.AddSingleton<IMasterDataExchangeRatePersistence, UnavailableMasterDataExchangeRatePersistence>();
         services.AddSingleton<IMasterDataTaxPersistence, UnavailableMasterDataTaxPersistence>();
         services.AddSingleton<IMasterDataScopePolicy, CategoryUomScopePolicy>();
         services.AddSingleton<IMasterDataResourcePolicy, CategoryUomResourcePolicy>();
@@ -47,6 +48,17 @@ public static class MasterDataServiceCollectionExtensions
                     servicesProvider.GetRequiredService<TaxApprovalPolicy>(),
                     servicesProvider.GetRequiredService<TaxScopePolicy>()),
                 servicesProvider.GetRequiredService<IMasterDataTaxPersistence>()));
+        services.AddSingleton<ExchangeRateScopePolicy>();
+        services.AddSingleton<ExchangeRateResourcePolicy>();
+        services.AddSingleton<ExchangeRateApprovalPolicy>();
+        services.AddSingleton<MasterDataExchangeRateService>(servicesProvider =>
+            new MasterDataExchangeRateService(
+                new MasterDataResourceAuthorizationService(
+                    servicesProvider.GetRequiredService<IMasterDataCapabilityResolver>(),
+                    servicesProvider.GetRequiredService<ExchangeRateResourcePolicy>(),
+                    servicesProvider.GetRequiredService<ExchangeRateApprovalPolicy>(),
+                    servicesProvider.GetRequiredService<ExchangeRateScopePolicy>()),
+                servicesProvider.GetRequiredService<IMasterDataExchangeRatePersistence>()));
         return services;
     }
 
