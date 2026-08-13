@@ -32,6 +32,10 @@ export class AuthService {
   readonly signOutFailed = signal(false);
   readonly signOutError = signal<SafeUiError | null>(null);
 
+  clearError(): void {
+    this.lastError.set(null);
+  }
+
   async ensureSession(): Promise<boolean> {
     if (this.status() === 'authenticated' && this.session()?.authenticated) {
       return true;
