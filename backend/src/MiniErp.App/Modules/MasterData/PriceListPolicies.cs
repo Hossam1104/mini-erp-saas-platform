@@ -196,6 +196,11 @@ public static class MasterDataPriceListValuePolicy
             throw new ArgumentException("The Price List price provenance is invalid.", nameof(provenance));
         }
 
+        if (provenance == PriceListProvenance.Manual && string.IsNullOrWhiteSpace(sourceReference))
+        {
+            throw new ArgumentException("A manually maintained Price List price requires source context or a reason.", nameof(sourceReference));
+        }
+
         if (sourceReference is not null
             && (sourceReference.Trim().Length > 1024 || sourceReference.Any(char.IsControl)))
         {

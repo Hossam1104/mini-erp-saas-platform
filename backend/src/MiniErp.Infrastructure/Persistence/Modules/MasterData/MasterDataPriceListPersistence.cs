@@ -436,10 +436,13 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
                     .ToArray();
                 if (query.PriceListId is { } requestedPriceListId && lists.Length == 0)
                 {
-                    var exists = await db.PriceLists.AnyAsync(item => item.Id == requestedPriceListId, cancellationToken);
+                    var requested = await db.PriceLists
+                        .AsNoTracking()
+                        .SingleOrDefaultAsync(item => item.Id == requestedPriceListId, cancellationToken);
+                    var visible = requested is not null && IsOrganizationVisible(tenantContext, requested);
                     return MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>.Denied(
-                        exists ? MasterDataPersistenceOutcome.Failure : MasterDataPersistenceOutcome.NotFound,
-                        exists ? "price_list_inactive" : "price_list_not_found");
+                        visible ? MasterDataPersistenceOutcome.Failure : MasterDataPersistenceOutcome.NotFound,
+                        visible ? "price_list_inactive" : "price_list_not_found");
                 }
 
                 var candidates = lists
@@ -511,7 +514,31 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
             .Where(item => item.ResourceKind == MasterDataResourceKind.PriceList);
         if (priceListId is { } id)
         {
+            var priceList = await db.PriceLists
+                .AsNoTracking()
+                .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+            if (priceList is null || !IsOrganizationVisible(tenantContext, priceList))
+            {
+                return [];
+            }
+
             query = query.Where(item => item.ResourceId == id);
+        }
+        else
+        {
+            var visiblePriceListIds = (await db.PriceLists
+                    .AsNoTracking()
+                    .Select(item => new { item.Id, item.OrganizationScopeKind, item.OrganizationScopeId })
+                    .ToListAsync(cancellationToken))
+                .Where(item => IsOrganizationRequestAllowed(tenantContext, item.OrganizationScopeKind, item.OrganizationScopeId))
+                .Select(item => item.Id)
+                .ToArray();
+            if (visiblePriceListIds.Length == 0)
+            {
+                return [];
+            }
+
+            query = query.Where(item => item.ResourceId.HasValue && visiblePriceListIds.Contains(item.ResourceId.Value));
         }
 
         var events = await query.ToListAsync(cancellationToken);

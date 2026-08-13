@@ -198,7 +198,9 @@ public sealed class MasterDataPriceListService
             }
 
             MasterDataPriceListValuePolicy.ValidateVersion(command.ExpectedVersion);
-            MasterDataPriceListValuePolicy.ValidatePrice(command.ProductId, command.UnitOfMeasureId, command.EffectiveFrom, command.EffectiveTo, command.Price, command.PriceScale, command.Provenance, command.SourceReference);
+            var sourceReference = MasterDataPriceListValuePolicy.NormalizeSourceReference(command.SourceReference);
+            MasterDataPriceListValuePolicy.ValidatePrice(command.ProductId, command.UnitOfMeasureId, command.EffectiveFrom, command.EffectiveTo, command.Price, command.PriceScale, command.Provenance, sourceReference);
+            command = command with { SourceReference = sourceReference };
         }
         catch (ArgumentException)
         {

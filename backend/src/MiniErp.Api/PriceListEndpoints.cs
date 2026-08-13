@@ -289,7 +289,7 @@ public static class PriceListEndpoints
             "permission_denied" or "resource_scope_denied" or "organization_scope_denied" or "cross_tenant_target_denied" or "tenant_context_failed" or "authorization_denied" or "approval_required" or "approval_policy_not_configured" or "resource_policy_not_configured" => 403,
             "permission_unavailable" or "scope_policy_unavailable" or "approval_policy_unavailable" or "resource_policy_unavailable" or "authorization_operation_unmapped" or "persistence_unavailable" or "audit_unavailable" or "audit_context_mismatch" or "customer_reference_unavailable" => 503,
             "price_list_not_found" or "price_list_price_not_found" or "price_list_product_not_found" or "price_list_uom_not_found" or "price_list_currency_not_found" or "price_list_customer_not_found" => 404,
-            "concurrency_conflict" or "price_list_effective_overlap" or "price_list_precedence_conflict" or "price_list_duplicate" or "price_list_lifecycle_no_change" or "idempotency_conflict" => 409,
+            "concurrency_conflict" or "price_list_effective_overlap" or "price_list_precedence_conflict" or "price_list_duplicate" or "price_list_lifecycle_no_change" or "price_list_inactive" or "price_list_customer_inactive" or "idempotency_conflict" => 409,
             _ => 400
         };
 

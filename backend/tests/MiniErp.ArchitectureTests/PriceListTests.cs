@@ -76,6 +76,23 @@ public sealed class PriceListTests
         Assert.Equal(1, standardPrice.Value!.CurrentVersionNumber);
         Assert.Equal(1, standardPrice.Value.Prices.Single().VersionNumber);
 
+        var manualSourceRequired = await fixture.Service.CreatePriceListAsync(
+            fixture.ContextA,
+            new CreateMasterDataPriceListCommand(
+                "MANUAL-SOURCE-REQUIRED",
+                new LocalizedName("Manual source required"),
+                fixture.CurrencyId,
+                null,
+                null,
+                null,
+                30));
+        Assert.True(manualSourceRequired.Succeeded, manualSourceRequired.Code);
+        var missingManualSource = await fixture.Service.AppendPriceAsync(
+            fixture.ContextA,
+            Price(manualSourceRequired.Value!.Id, fixture.ProductId, fixture.UnitId, 50m, manualSourceRequired.Value.Version, sourceReference: null));
+        Assert.False(missingManualSource.Succeeded);
+        Assert.Equal("validation_failed", missingManualSource.Code);
+
         var resolutionQuery = new ResolveMasterDataPriceQuery(
                 null,
                 fixture.ProductId,
@@ -218,6 +235,24 @@ public sealed class PriceListTests
                 new DateOnly(2026, 6, 15)));
         Assert.False(invalidRequestedScope.Succeeded);
         Assert.Equal("validation_failed", invalidRequestedScope.Code);
+
+        var hiddenReference = await fixture.Service.ResolvePriceAsync(
+            fixture.ContextOtherScope,
+            new ResolveMasterDataPriceQuery(
+                scoped.Value.Id,
+                fixture.ProductId,
+                fixture.UnitId,
+                fixture.CurrencyId,
+                null,
+                null,
+                null,
+                new DateOnly(2026, 6, 15)));
+        Assert.False(hiddenReference.Succeeded);
+        Assert.Equal("price_list_not_found", hiddenReference.Code);
+
+        var hiddenAudit = await fixture.Service.ReadAuditHistoryAsync(fixture.ContextOtherScope, scoped.Value.Id);
+        Assert.True(hiddenAudit.Succeeded, hiddenAudit.Code);
+        Assert.Empty(hiddenAudit.Value!);
     }
 
     private static AppendMasterDataPriceCommand Price(
@@ -225,7 +260,8 @@ public sealed class PriceListTests
         Guid productId,
         Guid unitOfMeasureId,
         decimal value,
-        byte[] expectedVersion) =>
+        byte[] expectedVersion,
+        string? sourceReference = "MESP-121 test fixture") =>
         new(
             priceListId,
             productId,
@@ -235,7 +271,7 @@ public sealed class PriceListTests
             value,
             2,
             PriceListProvenance.Manual,
-            "MESP-121 test fixture",
+            sourceReference,
             expectedVersion);
 
     private sealed class GrantingCapabilityResolver : IMasterDataCapabilityResolver
