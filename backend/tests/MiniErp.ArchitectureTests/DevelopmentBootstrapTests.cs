@@ -15,6 +15,7 @@ using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Identity;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.Contracts.Modules.Foundation;
+using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using Xunit;
 
@@ -76,6 +77,49 @@ public sealed class DevelopmentBootstrapTests
         var result = identity.Authenticate("admin@minierp.local", "WrongPassword!");
         Assert.False(result.Succeeded);
         Assert.Equal("authentication_failed", result.PublicCode);
+    }
+
+    [Fact]
+    public void DevelopmentSqliteInitialization_IsModuleScopedAndIdempotent()
+    {
+        var directory = Path.Combine(
+            Path.GetTempPath(),
+            "MiniErp-ArchitectureTests",
+            Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+
+        var masterDataConnectionString = $"Data Source={Path.Combine(directory, "masterdata.db")}";
+        var businessPartiesConnectionString = $"Data Source={Path.Combine(directory, "business-parties.db")}";
+
+        try
+        {
+            MasterDataPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+                masterDataConnectionString);
+            BusinessPartiesPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+                businessPartiesConnectionString);
+
+            // Startup can be repeated without a catch-and-ignore path hiding a
+            // malformed or partially initialized schema.
+            MasterDataPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+                masterDataConnectionString);
+            BusinessPartiesPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+                businessPartiesConnectionString);
+
+            var masterDataTables = ReadTableNames(masterDataConnectionString);
+            var businessPartiesTables = ReadTableNames(businessPartiesConnectionString);
+            Assert.Contains("PriceLists", masterDataTables);
+            Assert.DoesNotContain("Customers", masterDataTables);
+            Assert.Contains("Customers", businessPartiesTables);
+            Assert.DoesNotContain("PriceLists", businessPartiesTables);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
     }
 
     [Fact]
@@ -177,5 +221,21 @@ public sealed class DevelopmentBootstrapTests
                 connection?.Dispose();
             }
         }
+    }
+
+    private static HashSet<string> ReadTableNames(string connectionString)
+    {
+        using var connection = new SqliteConnection(connectionString);
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT name FROM sqlite_master WHERE type = 'table';";
+        using var reader = command.ExecuteReader();
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        while (reader.Read())
+        {
+            names.Add(reader.GetString(0));
+        }
+
+        return names;
     }
 }

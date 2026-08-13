@@ -20,6 +20,10 @@ $env:MESP_DEV_BOOTSTRAP_ENABLED="true"
 $env:MESP_DEV_ADMIN_LOGIN="admin@minierp.local"
 $env:MESP_DEV_ADMIN_PASSWORD="<YOUR-LOCAL-PASSWORD>"
 
+# When SQL Server is not configured, Development uses separate module-owned
+# SQLite files under LOCALAPPDATA\MiniErp\Development. To override the
+# directory, set MESP_DEV_SQLITE_DIRECTORY before starting the API.
+
 dotnet run --project .\src\MiniErp.Api\MiniErp.Api.csproj `
   --configuration Release `
   --no-build `
@@ -53,7 +57,7 @@ The Angular dev server automatically proxies `/api` requests to `http://localhos
 
 1. **Sign In**: `POST http://localhost:5000/api/v1/auth/sign-in`
    - Body: `{ "login": "admin@minierp.local", "password": "<YOUR-LOCAL-PASSWORD>" }` (supplied in `MESP_DEV_ADMIN_PASSWORD`)
-   - Sets secure session cookie `__Host-MiniErp.Auth`.
+   - Development HTTP uses the explicit compatibility cookie `MiniErp.Auth`; production keeps the secure `__Host-MiniErp.Auth` cookie.
 2. **Context Selection**: `GET /api/v1/auth/contexts` -> select Tenant context -> `POST /api/v1/auth/context-switch`.
 3. **Antiforgery Bootstrap**: `GET /api/v1/auth/antiforgery` -> returns `X-CSRF-TOKEN` header.
 4. **Master Data & Price List API Operations**:

@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MiniErp.App.Modules.BusinessParties;
+using MiniErp.Infrastructure.Persistence;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 
@@ -62,25 +63,20 @@ public static class BusinessPartiesPersistenceServiceCollectionExtensions
             throw new ArgumentException("A SQLite connection string is required.", nameof(connectionString));
         }
 
-        // EnsureCreated needs a TenantContext to construct the DbContext.
-        // We use a throwaway context solely to create the schema.
-        var schemaOptions = new DbContextOptionsBuilder().UseSqlite(connectionString).Options;
-        var bootstrapTenant = MiniErp.App.BuildingBlocks.Tenancy.TenantContext.ForOrdinaryMembership(
-            MiniErp.App.Modules.Identity.DevelopmentBootstrap.DevTenantId,
-            new MiniErp.App.BuildingBlocks.Tenancy.MembershipReference(Guid.NewGuid()),
-            null,
-            null,
-            Guid.NewGuid());
-        using (var db = new BusinessPartiesDbContext(schemaOptions, bootstrapTenant))
-        {
-            // Multiple DbContexts may share base tables (e.g. AuditEvents).
-            // When they target the same file-based SQLite database, the second
-            // EnsureCreated call would fail with "table already exists".
-            try { db.Database.EnsureCreated(); }
-            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 1) { /* table already exists */ }
-        }
-
         return services.AddBusinessPartiesPersistence(options => options.UseSqlite(connectionString));
+    }
+
+    /// <summary>
+    /// Initializes the explicitly selected Development-only Business Parties
+    /// SQLite database. Initialization is separate from service registration so
+    /// a failed schema operation cannot be hidden during composition.
+    /// </summary>
+    public static void EnsureDevelopmentSqliteDatabase(string connectionString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        DevelopmentSqliteDatabaseInitializer.EnsureCreated(
+            connectionString,
+            (options, tenantContext) => new BusinessPartiesDbContext(options, tenantContext));
     }
 }
 
