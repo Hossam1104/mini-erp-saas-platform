@@ -1,6 +1,43 @@
 # Current State
 
-## Current authoritative position - 13 August 2026 (MESP-119 complete; PR #62 merged)
+## Current authoritative position - 13 August 2026 (MESP-120 complete; PR #63 merged)
+
+MESP-120 is complete at its approved bounded Exchange Rate and multi-currency
+Master Data scope. The source implementation commit is `f4d6485`; focused PR
+#63 was reviewed at final head
+`f4d6485fd8b70a88ba34b68f1acae15a8c255ff6` and merged to `main` at
+`14f6f4923d2897d891f33f5eb4405d2fe2089e69`. Jira activation, validation/review,
+and closure evidence are comments `10990`, `11023`, and `11024`; MESP-120 is
+**Done**. The required post-merge state, tracker, and root-task synchronization
+is this handoff commit on synchronized `main`/`origin/main`.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-120 scope | Reuses the existing MESP-118 Currency master and adds Tenant-owned directional Exchange Rate configuration, effective-dated non-overlapping version history, deterministic applicable-rate selection, provenance/source notes, precision inputs, Active/Inactive lifecycle, audit, optimistic concurrency, idempotency seams, and immutable historical applied-rate reference evidence. |
+| Ownership boundary | Master Data owns reusable configured currency/rate identity, effective history, safe reference selection, provenance, and reproducible applied-rate evidence. Finance owns realized/unrealized FX, revaluation, posting, period, rounding/accounting effects, reconciliation, and irreversible downstream consequences. |
+| Approved decisions consumed | PD-033, PD-035, PD-036, PD-037, PD-043, PD-044, and PD-046, each only at its exact approved Master Data/Finance-reference boundary. The stale MESP-54 wording was reconciled by MESP-116/PD-043; no unapproved Finance behavior was promoted. |
+| API/persistence/UI | Nine Foundation REST catalogue operations with generated OpenAPI/Scalar documentation and the required `effectiveOn` query contract; module-owned Exchange Rate persistence and integrity mappings reusing existing Currency references; bilingual Angular EN/AR RTL/LTR list/detail/history/create/edit/lifecycle/reference journeys; lazy-loaded Master Data workspace. |
+| Validation | API build passed with 0 warnings/errors; focused Exchange Rate/REST/OpenAPI tests passed 35/35; full non-SQL backend/module suite passed 681/681; Angular tests passed 36/36 across 7 files; Angular production build passed with a 418.47 kB initial bundle and 119.65 kB lazy Master Data workspace, below the unchanged 500 kB warning budget. The 21 SQL Server safety cases remain environment-gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. |
+| Jira counts | 79 Done / 6 In Progress / 57 To Do across 142 issues; 79 Done / 1 In Progress / 47 To Do across 127 non-Epic issues after MESP-120 closure. |
+| MESP-23 | Remains In Progress as the living Open Questions Register. No new decision or blocker was discovered or added by MESP-120. |
+| Exclusions preserved | No automated/external FX, providers, credentials, integrations, inverse/reciprocal/triangulated rates, bid/ask or market conventions, Finance posting/revaluation/rounding, automatic correction, Retail POS/promotions, MESP-39 execution, MESP-40 activation, migration/cutover, or Wafra-specific core behavior was executed. SQL/provider/production and Finance/Reporting specialist gates remain open. |
+| Current branch | `main` is synchronized with `origin/main` after PR #63 merge; this post-merge commit synchronizes the tracker, current state, and root task. |
+| Next exact session | `TASK.md` contains **MESP-121 - Implement Price List and deterministic B2B pricing capability**. It is To Do/not activated and must start only in a fresh session. |
+
+MESP-121 remains the only next implementation capability. It covers Price List
+identity, customer/product/currency applicability, effective-dated versions,
+deterministic precedence, controlled manual pricing where approved, snapshots,
+and downstream Sales consumption. It must not invent retail promotions or POS
+behavior, activate MESP-39/MESP-40, or widen into Finance credit/accounting or
+other capabilities.
+
+The local MESP-120 implementation does not make a production-readiness claim
+beyond its validated bounded capability. Finance/Reporting specialist
+validation, SQL/provider/production, migration, privacy/legal, and named
+external gates remain open before production or irreversible accounting,
+valuation, close, revaluation, migration, or cutover decisions.
+
+## Historical authoritative position - 13 August 2026 (MESP-119 complete; superseded by MESP-120)
 
 MESP-119 is complete at its single bounded internal configuration-led Tax/VAT
 Master Data and deterministic engine-contract scope. Source implementation
