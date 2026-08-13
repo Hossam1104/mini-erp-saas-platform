@@ -10,7 +10,12 @@ cd "D:\AI Tools\Hossam\mini-erp-saas-platform\backend"
 dotnet restore .\MiniErp.sln
 dotnet build .\MiniErp.sln --configuration Release
 
-# Environment & Development Bootstrap Configuration
+dotnet run --project .\src\MiniErp.Api\MiniErp.Api.csproj `
+  --configuration Release `
+  --no-build `
+  --urls "http://localhost:5000"
+
+  # Environment & Development Bootstrap Configuration
 $env:ASPNETCORE_ENVIRONMENT="Development"
 $env:Scalar__Enabled="true"
 
@@ -19,13 +24,7 @@ $env:Scalar__Enabled="true"
 $env:MESP_DEV_BOOTSTRAP_ENABLED="true"
 $env:MESP_DEV_ADMIN_LOGIN="admin@minierp.local"
 $env:MESP_DEV_ADMIN_PASSWORD="LocalDevSecret123!"
-
-dotnet run --project .\src\MiniErp.Api\MiniErp.Api.csproj `
-  --configuration Release `
-  --no-build `
-  --urls "http://localhost:5000"
 ```
-
 ---
 
 ## Terminal 2: Frontend (`Angular`)
