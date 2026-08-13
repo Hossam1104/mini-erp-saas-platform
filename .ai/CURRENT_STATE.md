@@ -1,6 +1,35 @@
 # Current State
 
-## Current authoritative position - 13 August 2026 (MESP-120 complete; PR #63 merged)
+## Current authoritative position - 13 August 2026 (MESP-121 Phase A backend complete; draft PR #64)
+
+MESP-121 remains **In Progress** in live Jira. Its activation evidence is
+comment `11025`. This bounded session completed **Phase A only** on the
+required branch `feat/MESP-121-price-list-b2b-pricing`; source commit
+`dffa142e6b9c2fef4987d6229689087a9ecf238f` is pushed and draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+is open. The branch and PR remain shared for Kimi's Phase B Angular work and
+Sonnet's final review/fix pass; neither merge nor Jira closure is authorized
+by this handoff.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-121 Phase A scope | Reusable Tenant-owned Price List identity and module-owned persistence; existing Product, Business Customer, Currency, and UOM references; Company/Branch applicability only where the server-derived trusted scope permits it; effective-dated price versions; Active/Inactive lifecycle; provenance/source reference; duplicate and overlap prevention; optimistic concurrency; idempotency seams; audit; and immutable applied pricing-reference evidence. |
+| Approved decisions consumed | PD-033, PD-034, PD-035, PD-036, and PD-037 only at their exact approved Price List/reference boundary. No promotion, POS, Sales Order, Finance, credit, FX, or accounting behavior was invented. |
+| Deterministic resolution | Candidates must match Tenant, active lifecycle, Product, UOM, Currency, effective date, customer applicability, and organization applicability. Lower numeric priority wins; an equal best priority is an explicit `price_list_precedence_conflict`; no last-edited, highest-ID, arbitrary, UI-order, or silent fallback behavior exists. |
+| REST/OpenAPI | Ten Foundation-catalogued operations cover list/search, detail, history, create, edit, price-version append, deactivate, reactivate, reference resolution, and audit history. Stable operation IDs, route/permission/Tenant scope, antiforgery, audit, unsafe-effect, concurrency, idempotency, effective-date metadata, generated OpenAPI documentation, and Development/QA Scalar rendering are wired. |
+| Server authority and history | Tenant, actor, permission, organization scope, applicability validation, lifecycle, concurrency, idempotency, and audit authority remain server-derived/fail-closed. Resolution evidence records the selected Price List/version, applicability, effective window, price/scale, priority, provenance, source, and reference snapshot; no Sales Order implementation was added. |
+| Validation | Release solution build passed with 0 warnings/errors; focused `PriceListTests` passed 3/3; full solution validation passed 684 non-SQL tests, while 21 SQL Server safety cases remain environment-gated because `MESP_SQLSERVER_CONNECTION_STRING` is unavailable; `git diff --check` passed. No SQL connection string was fabricated. |
+| Jira counts | 79 Done / 7 In Progress / 56 To Do across 142 issues; 79 Done / 2 In Progress / 46 To Do across 127 non-Epic issues. |
+| MESP-23 | Remains In Progress as the living Open Questions Register. No new decision or blocker was discovered or added by Phase A. |
+| Angular/final review | Kimi's Phase B Angular list/detail/history/create/edit/lifecycle/applicability journeys, including EN/AR and RTL/LTR loading/empty/denied/validation/conflict/unavailable/pending states, remain pending. Sonnet's final review/fixes, merge, and Jira closure remain pending. |
+| Production percentages | Final project completion percentages remain unchanged at the Owner-requested Phase A handoff; this backend implementation and draft PR do not by themselves close production, SQL/provider, migration, legal/privacy, or specialist validation gates. |
+| Exclusions preserved | No MESP-39 execution, MESP-40 activation, external provider/integration/credential/infrastructure, migration/cutover, Retail POS/promotions, Wafra-specific core behavior, Sales Orders, Procurement pricing, Finance/AP/AR, credit, tax/accounting/rounding, or automatic FX behavior was executed. |
+| Next exact continuation | Continue MESP-121 Phase B on the same branch and draft PR. Do not merge, transition MESP-121 Done, replace `TASK.md` with MESP-122, or start another capability. |
+
+The final review/merge/closure session must revalidate the complete shared
+branch and preserve this bounded Phase A evidence. The tracked project
+statistics were synchronized without changing final completion percentages.
+
+## Historical authoritative position - 13 August 2026 (MESP-120 complete; PR #63 merged; superseded by MESP-121)
 
 MESP-120 is complete at its approved bounded Exchange Rate and multi-currency
 Master Data scope. The source implementation commit is `f4d6485`; focused PR

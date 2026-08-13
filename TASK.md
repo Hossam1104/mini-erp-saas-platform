@@ -1,5 +1,40 @@
 # Next session - MESP-121 - Implement Price List and deterministic B2B pricing capability
 
+## MESP-121 Phase A handoff - 13 August 2026
+
+MESP-121 is the live active capability and remains **In Progress**. Activation
+evidence is Jira comment `11025`. Luna completed **Phase A only** on the exact
+shared branch `feat/MESP-121-price-list-b2b-pricing`; source commit
+`dffa142e6b9c2fef4987d6229689087a9ecf238f` is pushed and draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+is open. The same branch and draft PR are reserved for Kimi's Phase B Angular
+work, followed by Sonnet's final review/fix pass. Do not merge this PR,
+transition MESP-121 to Done, or start MESP-122.
+
+Phase A delivered the Tenant-owned Price List identity, existing Product /
+Business Customer / Currency / UOM references, effective-dated version
+history, lifecycle, deterministic applicability and priority resolution,
+duplicate/overlap/conflict prevention, provenance, immutable reference
+evidence, server-derived authorization and organization scope, audit,
+optimistic concurrency, idempotency seams, module-owned persistence, and the
+Foundation-catalogued REST/OpenAPI contract. The public operation IDs are:
+
+`master-data.price-list.list`, `master-data.price-list.read`,
+`master-data.price-list.history.read`, `master-data.price-list.create`,
+`master-data.price-list.edit`, `master-data.price-list.price.append`,
+`master-data.price-list.deactivate`, `master-data.price-list.reactivate`,
+`master-data.price-list.reference.read`, and
+`master-data.price-list.audit.read`.
+
+Phase B must add the connected Angular list/detail/history/create/edit/lifecycle
+and applicability journeys on this same branch, with EN/AR and RTL/LTR
+behavior plus loading, empty, denied, validation, conflict, unavailable, and
+pending states. It must not add Sales Orders, promotions/POS, Finance,
+Procurement pricing, external providers, migration/cutover, MESP-39,
+MESP-40 activation, or any other capability. The final project completion
+percentages remain unchanged for this Phase A handoff. This file must remain
+the MESP-121 task/handoff; it must not be replaced with MESP-122 in this
+session.
+
 ## Session boundary
 
 MESP-120 is complete at its approved bounded Exchange Rate and multi-currency
@@ -10,12 +45,10 @@ activation comment `10990`, validation/review comment `11023`, and closure
 comment `11024`. The implementation and its post-merge state/tracker/root-task
 synchronization are the completed preceding session.
 
-The exact next capability is **MESP-121 - Implement Price List and
-deterministic B2B pricing capability**. It is the only fresh-session scope.
-Verify its live Jira status, Definition of Ready, applicable decision evidence,
-and affected repository state before activation. Execute only MESP-121 and
-stop after its bounded completion or a real blocker. Do not start MESP-122 or
-any other capability automatically.
+The active capability is **MESP-121 - Implement Price List and deterministic
+B2B pricing capability**. Its live Jira status and activation evidence were
+verified for this session. Continue only the bounded Phase B handoff above;
+do not start MESP-122 or any other capability automatically.
 
 Release 1 remains the full-feature reusable B2B ERP. **31 August 2026 -
 Release 1 Integrated Preview** is a running preview of the real codebase, not
@@ -145,24 +178,27 @@ Before handoff:
 - inspect the complete diff for Tenant isolation, pricing precedence,
   snapshot immutability, audit, concurrency, localization, effective-date
   integrity, no silent commercial assumptions, and source-scope boundaries;
-- update MESP-121 with activation, validation, review, and closure evidence;
+- update MESP-121 with Phase A activation/validation and the shared-branch
+  handoff evidence; final review and closure remain pending for the later
+  review phase;
 - update MESP-23 only for a genuinely discovered open decision or blocker;
 - update `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and relevant plan/state
   documents conservatively; percentages reflect verified usable capability,
   never Jira or documentation activity alone;
-- use one focused branch and PR, review the complete diff, merge only when
-  clean, synchronize `main` and `origin/main`, and record the reviewed head and
-  final merge SHA; and
-- replace this file with the exact next bounded task and stop. Do not execute
-  that next task in the same chat.
+- use one focused branch and draft PR, review the complete Phase A diff, and
+  leave the PR unmerged for Kimi Phase B and Sonnet final review; and
+- preserve this MESP-121 Phase A handoff in this file. Do not replace it with
+  MESP-122 or execute Phase B in the same Luna session.
 
 ## Completion report required
 
-Report MESP-121's activated scope, decision rows used, validation results,
+Report MESP-121's activated Phase A scope, decision rows used, validation results,
 Tenant/authorization/audit/localization/concurrency/effective-date/precedence/
 snapshot evidence, Jira status/comments, any MESP-23 additions,
-production-capability percentage changes or unchanged status, PR/reviewed
-head/merge SHA, synchronized branch state, and the exact next TASK handoff.
+production-capability percentage changes or unchanged status, draft PR/head
+and merge-pending state, synchronized branch state, and the exact Phase B
+handoff. Explicitly state that Kimi Phase B and Sonnet final review remain
+pending.
 Explicitly state that MESP-39, MESP-40 activation, external providers,
 Finance/accounting/credit behavior, production gates, migration/cutover,
 retail POS/promotions, and all other capabilities were not executed unless
