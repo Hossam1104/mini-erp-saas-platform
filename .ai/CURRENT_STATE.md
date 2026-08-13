@@ -1,34 +1,38 @@
 # Current State
 
-## Current authoritative position - 13 August 2026 (MESP-121 Phase A backend complete; draft PR #64)
+## Current authoritative position - 13 August 2026 (MESP-121 Phase D runtime stabilization complete; draft PR #64)
 
 MESP-121 remains **In Progress** in live Jira. Its activation evidence is
-comment `11025`. This bounded session completed **Phase A only** on the
-required branch `feat/MESP-121-price-list-b2b-pricing`; implementation commit
-`dffa142e6b9c2fef4987d6229689087a9ecf238f` and follow-up hardening commit
-`a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb` are pushed and draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
-is open at final head `a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb`. The branch
-and PR remain shared for Kimi's Phase B Angular work and Sonnet's final
-review/fix pass; neither merge nor Jira closure is authorized by this handoff.
+comment `11025`. This bounded Phase D continuation started at
+`ed80975f2d9eb9631fe9a4550a51737fae3e40bb` and completed its source changes in
+`a05863b10537876f47065bd0c5b09a5307f784c9` on the required branch
+`feat/MESP-121-price-list-b2b-pricing`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+must remain open and unmerged; MESP-121 must not be transitioned to Done and
+MESP-122 must not be started.
+
+The earlier Phase A Price List backend and Phase C Angular implementation
+remain in the shared branch. Phase D corrected the integrated Development
+runtime and execution gate without widening the approved Price List scope.
 
 | Current fact | Verified value |
 |---|---|
-| MESP-121 Phase A scope | Reusable Tenant-owned Price List identity and module-owned persistence; existing Product, Business Customer, Currency, and UOM references; Company/Branch applicability only where the server-derived trusted scope permits it; effective-dated price versions; Active/Inactive lifecycle; provenance/source reference; duplicate and overlap prevention; optimistic concurrency; idempotency seams; audit; and immutable applied pricing-reference evidence. |
-| Approved decisions consumed | PD-033, PD-034, PD-035, PD-036, and PD-037 only at their exact approved Price List/reference boundary. No promotion, POS, Sales Order, Finance, credit, FX, or accounting behavior was invented. |
-| Deterministic resolution | Candidates must match Tenant, active lifecycle, Product, UOM, Currency, effective date, customer applicability, and organization applicability. Lower numeric priority wins; an equal best priority is an explicit `price_list_precedence_conflict`; no last-edited, highest-ID, arbitrary, UI-order, or silent fallback behavior exists. |
-| REST/OpenAPI | Ten Foundation-catalogued operations cover list/search, detail, history, create, edit, price-version append, deactivate, reactivate, reference resolution, and audit history. Stable operation IDs, route/permission/Tenant scope, antiforgery, audit, unsafe-effect, concurrency, idempotency, effective-date metadata, generated OpenAPI documentation, and Development/QA Scalar rendering are wired. |
-| Server authority and history | Tenant, actor, permission, organization scope, applicability validation, lifecycle, concurrency, idempotency, and audit authority remain server-derived/fail-closed. Scope-filtered audit reads and outside-scope price-reference requests fail closed without lifecycle disclosure. Manual provenance requires source context/reason. Resolution evidence records the selected Price List/version, applicability, effective window, price/scale, priority, provenance, source, and reference snapshot; no Sales Order implementation was added. |
-| Validation | Release solution build passed with 0 warnings/errors; focused `PriceListTests` passed 3/3; full solution validation passed 684 non-SQL tests, while 21 SQL Server safety cases remain environment-gated because `MESP_SQLSERVER_CONNECTION_STRING` is unavailable; `git diff --check` passed. No SQL connection string was fabricated. |
+| Phase D cleanup | Tracked cookie/request-body files and SQLite WAL/SHM files were removed. `.gitignore` now protects the dedicated local runtime/smoke boundary and legacy Development SQLite names. No hard-coded smoke credential remains tracked. |
+| Development persistence | The no-SQL-Server Development fallback now uses separate module-owned `masterdata.db` and `business-parties.db` files outside the repository, supports explicit directory/per-module overrides, initializes each schema fail-loud and idempotently, and has architecture coverage proving module isolation. |
+| Production boundary | The configured `MESP_SQLSERVER_CONNECTION_STRING` path is unchanged. Production keeps the approved `__Host-MiniErp.Auth`/Secure cookie contract; Development HTTP explicitly uses `MiniErp.Auth` with same-request security compatibility. |
+| Frontend proxy | Tracked `frontend/proxy.conf.json` points back to `http://localhost:5000`. The official 5000 listener is occupied by an unrelated RMS service and was not stopped; the real smoke used safe alternate backend port 5300 with the Angular dev server on 4300. |
+| Runtime smoke | Direct health/sign-in, proxy sign-in/session, one real Development context, antiforgery header/cookie, idempotent context switch, selected session, Price List GET returning an empty list, Angular `/price-lists` route/assets, generated OpenAPI, and Scalar (302 to `/scalar/`, then 200) passed. No fake Product/UOM/Currency/Customer records were added. |
+| Validation | Release backend build passed with 0 warnings/errors; non-SQL backend regression passed 689/689; focused host-security/bootstrap coverage passed 22/22; Angular tests passed 55/55 across 9 files; Angular production build passed with a 408.29 kB initial raw bundle and 78.37 kB Price List lazy chunk; `git diff --check` passed. |
+| SQL/provider gate | The 21 SQL Server safety cases remain environment-gated because `MESP_SQLSERVER_CONNECTION_STRING` is unavailable. No SQL connection string was fabricated and no provider/production claim was made. |
 | Jira counts | 79 Done / 7 In Progress / 56 To Do across 142 issues; 79 Done / 2 In Progress / 46 To Do across 127 non-Epic issues. |
-| MESP-23 | Remains In Progress as the living Open Questions Register. No new decision or blocker was discovered or added by Phase A. |
-| Angular/final review | Kimi's Phase B Angular list/detail/history/create/edit/lifecycle/applicability journeys, including EN/AR and RTL/LTR loading/empty/denied/validation/conflict/unavailable/pending states, remain pending. Sonnet's final review/fixes, merge, and Jira closure remain pending. |
-| Production percentages | Final project completion percentages remain unchanged at the Owner-requested Phase A handoff; this backend implementation and draft PR do not by themselves close production, SQL/provider, migration, legal/privacy, or specialist validation gates. |
+| MESP-23 | Remains In Progress as the living Open Questions Register. No new business decision or product blocker was discovered; the unrelated local port conflict was not treated as a product gate. |
+| Planner/review state | Planner acceptance, reserved Opus review, final review/fixes, merge, and Jira closure remain pending. The in-app browser was unavailable, so the UI execution evidence is the real HTTP route/asset smoke rather than a visual browser claim. |
+| Production percentages | Final project completion percentages remain unchanged. Runtime cleanup and local execution stabilization do not close SQL/provider/production, migration, legal/privacy, or specialist validation gates. |
 | Exclusions preserved | No MESP-39 execution, MESP-40 activation, external provider/integration/credential/infrastructure, migration/cutover, Retail POS/promotions, Wafra-specific core behavior, Sales Orders, Procurement pricing, Finance/AP/AR, credit, tax/accounting/rounding, or automatic FX behavior was executed. |
-| Next exact continuation | Continue MESP-121 Phase B on the same branch and draft PR. Do not merge, transition MESP-121 Done, replace `TASK.md` with MESP-122, or start another capability. |
+| Next exact continuation | Planner acceptance and the reserved Opus/final review of MESP-121 on the same branch and draft PR. Do not merge, transition MESP-121 Done, replace `TASK.md` with MESP-122, or start another capability. |
 
-The final review/merge/closure session must revalidate the complete shared
-branch and preserve this bounded Phase A evidence. The tracked project
-statistics were synchronized without changing final completion percentages.
+The next review session must revalidate the complete shared branch and preserve
+this bounded Phase D evidence. The tracked project statistics are synchronized
+without changing final completion percentages.
 
 ## Historical authoritative position - 13 August 2026 (MESP-120 complete; PR #63 merged; superseded by MESP-121)
 

@@ -1,41 +1,46 @@
-# Next session - MESP-121 - Implement Price List and deterministic B2B pricing capability
+# MESP-121 - Price List and deterministic B2B pricing capability
 
-## MESP-121 Phase A handoff - 13 August 2026
+## MESP-121 Phase D handoff - 13 August 2026
 
-MESP-121 is the live active capability and remains **In Progress**. Activation
-evidence is Jira comment `11025`. Luna completed **Phase A only** on the exact
-shared branch `feat/MESP-121-price-list-b2b-pricing`; implementation commit
-`dffa142e6b9c2fef4987d6229689087a9ecf238f` and follow-up hardening commit
-`a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb` are pushed and draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
-is open at final head `a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb`. The same
-branch and draft PR are reserved for Kimi's Phase B Angular work, followed by
-Sonnet's final review/fix pass. Do not merge this PR, transition MESP-121 to
-Done, or start MESP-122.
+MESP-121 remains the live active capability and **In Progress** in Jira.
+Activation evidence is comment `11025`. This bounded Phase D continuation
+started from `ed80975f2d9eb9631fe9a4550a51737fae3e40bb` on the exact shared
+branch `feat/MESP-121-price-list-b2b-pricing`; the runtime-stabilization source
+commit is `a05863b10537876f47065bd0c5b09a5307f784c9`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+must remain open and unmerged. Do not transition MESP-121 to Done, start
+MESP-122, or widen this capability.
 
-Phase A delivered the Tenant-owned Price List identity, existing Product /
-Business Customer / Currency / UOM references, effective-dated version
-history, lifecycle, deterministic applicability and priority resolution,
-duplicate/overlap/conflict prevention, provenance, immutable reference
-evidence, server-derived authorization and organization scope, audit,
-optimistic concurrency, idempotency seams, module-owned persistence, and the
-Foundation-catalogued REST/OpenAPI contract. The public operation IDs are:
+The earlier Phase A Price List backend and Phase C Angular implementation
+remain in this shared branch. Phase D reviewed and corrected the integrated
+Development execution path without changing the approved Price List business
+scope:
 
-`master-data.price-list.list`, `master-data.price-list.read`,
-`master-data.price-list.history.read`, `master-data.price-list.create`,
-`master-data.price-list.edit`, `master-data.price-list.price.append`,
-`master-data.price-list.deactivate`, `master-data.price-list.reactivate`,
-`master-data.price-list.reference.read`, and
-`master-data.price-list.audit.read`.
+- removed the tracked cookies, request-body, and SQLite WAL/SHM runtime
+  artifacts and hardened the repository ignore boundary;
+- restored the Angular development proxy contract to `http://localhost:5000`;
+- replaced the shared-file Development SQLite fallback with separate
+  module-owned `masterdata.db` and `business-parties.db` files outside the
+  repository, with explicit overrides and fail-loud, idempotent schema
+  initialization;
+- preserved the production SQL Server path and production `__Host-`/Secure
+  authentication cookie contract while making Development HTTP use the
+  explicit `MiniErp.Auth`/same-request compatibility cookie;
+- retained the Development-only bootstrap boundary, added safe server-side
+  request-failure logging without request-body or credential logging, and
+  added architecture coverage for module-scoped SQLite initialization; and
+- completed the real alternate-port restart/proxy smoke with no fake business
+  reference records. The official 5000 listener is occupied by an unrelated
+  RMS service and was not stopped.
 
-Phase B must add the connected Angular list/detail/history/create/edit/lifecycle
-and applicability journeys on this same branch, with EN/AR and RTL/LTR
-behavior plus loading, empty, denied, validation, conflict, unavailable, and
-pending states. It must not add Sales Orders, promotions/POS, Finance,
-Procurement pricing, external providers, migration/cutover, MESP-39,
-MESP-40 activation, or any other capability. The final project completion
-percentages remain unchanged for this Phase A handoff. This file must remain
-the MESP-121 task/handoff; it must not be replaced with MESP-122 in this
-session.
+Validation for this handoff is recorded below and includes a Release build,
+689/689 non-SQL backend tests, 55/55 Angular tests, the Angular production
+build, and direct/proxy HTTP checks for health, sign-in, session/context
+selection, antiforgery, idempotent context switching, Price List GET,
+OpenAPI, Scalar, and the Angular route/assets. The 21 SQL Server safety cases
+remain environment-gated because `MESP_SQLSERVER_CONNECTION_STRING` is not
+available. The final project completion percentages remain unchanged; this
+stabilization work does not close SQL/provider/production, migration, legal,
+privacy, or specialist validation gates.
 
 ## Session boundary
 
@@ -49,8 +54,9 @@ synchronization are the completed preceding session.
 
 The active capability is **MESP-121 - Implement Price List and deterministic
 B2B pricing capability**. Its live Jira status and activation evidence were
-verified for this session. Continue only the bounded Phase B handoff above;
-do not start MESP-122 or any other capability automatically.
+verified for this session. Continue only with the bounded MESP-121 planner
+acceptance, Opus review, or explicitly authorized follow-up after this Phase D
+handoff; do not start MESP-122 or any other capability automatically.
 
 Release 1 remains the full-feature reusable B2B ERP. **31 August 2026 -
 Release 1 Integrated Preview** is a running preview of the real codebase, not
@@ -180,27 +186,29 @@ Before handoff:
 - inspect the complete diff for Tenant isolation, pricing precedence,
   snapshot immutability, audit, concurrency, localization, effective-date
   integrity, no silent commercial assumptions, and source-scope boundaries;
-- update MESP-121 with Phase A activation/validation and the shared-branch
-  handoff evidence; final review and closure remain pending for the later
-  review phase;
+- update MESP-121 with the Phase D runtime/security validation and shared-branch
+  handoff evidence; planner acceptance, Opus review, final review, and closure
+  remain pending;
 - update MESP-23 only for a genuinely discovered open decision or blocker;
 - update `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and relevant plan/state
   documents conservatively; percentages reflect verified usable capability,
   never Jira or documentation activity alone;
-- use one focused branch and draft PR, review the complete Phase A diff, and
-  leave the PR unmerged for Kimi Phase B and Sonnet final review; and
-- preserve this MESP-121 Phase A handoff in this file. Do not replace it with
-  MESP-122 or execute Phase B in the same Luna session.
+- use one focused branch and draft PR, review the complete Phase A/Phase C/
+  Phase D diff, and leave the PR unmerged for planner acceptance and the
+  reserved Opus/final review gates; and
+- preserve this MESP-121 Phase D handoff in this file. Do not replace it with
+  MESP-122 or execute another capability in the same Luna session.
 
 ## Completion report required
 
-Report MESP-121's activated Phase A scope, decision rows used, validation results,
+Report MESP-121's activated Price List scope, Phase D runtime/security changes,
+decision rows used, validation results,
 Tenant/authorization/audit/localization/concurrency/effective-date/precedence/
 snapshot evidence, Jira status/comments, any MESP-23 additions,
 production-capability percentage changes or unchanged status, draft PR/head
-and merge-pending state, synchronized branch state, and the exact Phase B
-handoff. Explicitly state that Kimi Phase B and Sonnet final review remain
-pending.
+and merge-pending state, synchronized branch state, and the exact planner/Opus
+review handoff. Explicitly state that planner acceptance, Opus review, final
+review, and Jira closure remain pending.
 Explicitly state that MESP-39, MESP-40 activation, external providers,
 Finance/accounting/credit behavior, production gates, migration/cutover,
 retail POS/promotions, and all other capabilities were not executed unless
