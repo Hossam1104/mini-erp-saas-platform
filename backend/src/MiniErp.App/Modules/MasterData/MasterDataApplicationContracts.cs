@@ -222,6 +222,25 @@ public sealed class GrantingMasterDataCapabilityResolver : IMasterDataCapability
     }
 }
 
+/// <summary>
+/// Production adapter from the trusted Foundation operation permission to the
+/// single Master Data capability required by that operation. It deliberately
+/// does not inspect client headers, roles, query values, or request bodies.
+/// </summary>
+public sealed class FoundationPermissionMasterDataCapabilityResolver : IMasterDataCapabilityResolver
+{
+    public IReadOnlySet<MasterDataCapability> Resolve(MasterDataRequestContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        return MasterDataOperationCatalog.TryGetCapabilityForPermission(
+            context.FoundationContext.Permission,
+            out var capability)
+            ? new HashSet<MasterDataCapability> { capability }
+            : new HashSet<MasterDataCapability>();
+    }
+}
+
 public interface IMasterDataApprovalPolicy
 {
     MasterDataApprovalPolicyResult Evaluate(

@@ -540,7 +540,7 @@ public sealed class MasterDataPriceListService
     private static string ResolutionResultSummary(
         ResolveMasterDataPriceQuery query,
         MasterDataPriceListReferenceRecord result) =>
-        $"{ResolutionSummary(query)};result=resolved;selected-price-list={result.PriceListId:N};selected-code={result.PriceListCode};price-version={result.Price.Id:N}/v{result.Price.VersionNumber};effective-window={result.Price.EffectiveFrom:yyyy-MM-dd}/{result.Price.EffectiveTo?.ToString("yyyy-MM-dd") ?? "open"};price={result.Price.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)};scale={result.Price.PriceScale};priority={result.Price.Priority};provenance={result.Price.Provenance};source={result.Price.SourceReference ?? string.Empty};reference={result.Snapshot.AppliedValue}";
+        $"{ResolutionSummary(query)};result=resolved;selected-price-list={result.PriceListId:N};selected-code={result.PriceListCode};price-version={result.Price.Id:N}/v{result.Price.VersionNumber};effective-window={result.Price.EffectiveFrom:yyyy-MM-dd}/{result.Price.EffectiveTo?.ToString("yyyy-MM-dd") ?? "open"};price={result.Price.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)};scale={result.Price.PriceScale};priority={result.CurrentConfiguration.Priority};provenance={result.Price.Provenance};source={result.Price.SourceReference ?? string.Empty};reference={result.Snapshot.AppliedValue}";
 
     private static string OrganizationSummary(OrganizationScopeKind? kind, Guid? id) =>
         kind is { } value && id is { } organizationId ? $"{value}:{organizationId:N}" : "tenant-wide";

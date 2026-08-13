@@ -194,6 +194,18 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
                         customerCode);
                 }
 
+                if (entity.LifecycleState == MasterDataLifecycleState.Active
+                    && await HasProposedEditPrecedenceConflictAsync(
+                        db,
+                        entity,
+                        command,
+                        cancellationToken))
+                {
+                    return MasterDataPersistenceResult<MasterDataPriceListRecord>.Denied(
+                        MasterDataPersistenceOutcome.Conflict,
+                        "price_list_precedence_conflict");
+                }
+
                 entity.Edit(
                     command.Code,
                     command.Name,
@@ -447,13 +459,14 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
 
                 var candidates = lists
                     .SelectMany(list => list.Prices
-                        .Where(price => price.ProductId == query.ProductId
+                        .Where(price => list.CurrencyId == query.CurrencyId
+                            && price.CurrencyId == list.CurrencyId
+                            && price.ProductId == query.ProductId
                             && price.UnitOfMeasureId == query.UnitOfMeasureId
-                            && price.CurrencyId == query.CurrencyId
                             && price.EffectiveFrom <= query.EffectiveOn
                             && (price.EffectiveTo is null || query.EffectiveOn <= price.EffectiveTo.Value)
-                            && CustomerMatches(price.CustomerId, query.CustomerId)
-                            && OrganizationMatches(price.OrganizationScopeKind, price.OrganizationScopeId, query.OrganizationScopeKind, query.OrganizationScopeId))
+                            && CustomerMatches(list.CustomerId, query.CustomerId)
+                            && OrganizationMatches(list.OrganizationScopeKind, list.OrganizationScopeId, query.OrganizationScopeKind, query.OrganizationScopeId))
                         .Select(price => (List: list, Price: price)))
                     .ToArray();
                 if (candidates.Length == 0)
@@ -461,8 +474,8 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
                     return MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>.Denied(MasterDataPersistenceOutcome.NotFound, "price_list_price_not_found");
                 }
 
-                var bestPriority = candidates.Min(item => item.Price.Priority);
-                var best = candidates.Where(item => item.Price.Priority == bestPriority).ToArray();
+                var bestPriority = candidates.Min(item => item.List.Priority);
+                var best = candidates.Where(item => item.List.Priority == bestPriority).ToArray();
                 if (best.Length != 1)
                 {
                     return MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>.Denied(MasterDataPersistenceOutcome.Conflict, "price_list_precedence_conflict");
@@ -470,6 +483,7 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
 
                 var selected = best[0];
                 var record = ToPriceRecord(selected.Price);
+                var currentConfiguration = ToCurrentConfiguration(selected.List);
                 var snapshotValue = $"pl={selected.List.Id:N};v={selected.Price.VersionNumber}";
                 var snapshot = new ReferenceSnapshot(
                     MasterDataResourceKind.PriceList,
@@ -484,6 +498,7 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
                         selected.List.TenantId,
                         selected.List.Code,
                         record,
+                        currentConfiguration,
                         query.EffectiveOn,
                         snapshot,
                         selected.List.Version.ToArray()));
@@ -557,15 +572,51 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
             .Where(item => item.Id != entity.Id
                 && item.LifecycleState == MasterDataLifecycleState.Active)
             .ToListAsync(cancellationToken);
-        return otherLists.Any(list => list.Prices.Any(price =>
-            price.CurrencyId == entity.CurrencyId
-            && price.CustomerId == entity.CustomerId
-            && price.OrganizationScopeKind == entity.OrganizationScopeKind
-            && price.OrganizationScopeId == entity.OrganizationScopeId
-            && price.Priority == entity.Priority
-            && price.ProductId == command.ProductId
-            && price.UnitOfMeasureId == command.UnitOfMeasureId
-            && Overlaps(price.EffectiveFrom, price.EffectiveTo, command.EffectiveFrom, command.EffectiveTo)));
+        return otherLists.Any(list =>
+            list.CurrencyId == entity.CurrencyId
+            && CustomerApplicabilityOverlaps(list.CustomerId, entity.CustomerId)
+            && OrganizationApplicabilityOverlaps(
+                list.OrganizationScopeKind,
+                list.OrganizationScopeId,
+                entity.OrganizationScopeKind,
+                entity.OrganizationScopeId)
+            && list.Priority == entity.Priority
+            && list.Prices.Any(price =>
+                price.CurrencyId == list.CurrencyId
+                && price.ProductId == command.ProductId
+                && price.UnitOfMeasureId == command.UnitOfMeasureId
+                && Overlaps(price.EffectiveFrom, price.EffectiveTo, command.EffectiveFrom, command.EffectiveTo)));
+    }
+
+    private static async Task<bool> HasProposedEditPrecedenceConflictAsync(
+        MasterDataDbContext db,
+        MasterDataPriceListEntity entity,
+        EditMasterDataPriceListCommand command,
+        CancellationToken cancellationToken)
+    {
+        var otherLists = await db.PriceLists
+            .AsNoTracking()
+            .Include(item => item.Prices)
+            .Where(item => item.Id != entity.Id
+                && item.LifecycleState == MasterDataLifecycleState.Active)
+            .ToListAsync(cancellationToken);
+
+        return otherLists.Any(list =>
+            list.CurrencyId == command.CurrencyId
+            && CustomerApplicabilityOverlaps(list.CustomerId, command.CustomerId)
+            && OrganizationApplicabilityOverlaps(
+                list.OrganizationScopeKind,
+                list.OrganizationScopeId,
+                command.OrganizationScopeKind,
+                command.OrganizationScopeId)
+            && list.Priority == command.Priority
+            && entity.Prices.Any(price =>
+                price.CurrencyId == command.CurrencyId
+                && list.Prices.Any(otherPrice =>
+                    otherPrice.CurrencyId == list.CurrencyId
+                    && otherPrice.ProductId == price.ProductId
+                    && otherPrice.UnitOfMeasureId == price.UnitOfMeasureId
+                    && Overlaps(price.EffectiveFrom, price.EffectiveTo, otherPrice.EffectiveFrom, otherPrice.EffectiveTo))));
     }
 
     private async Task<string?> ValidateCustomerReferenceAsync(
@@ -696,6 +747,20 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
     private static bool CustomerMatches(Guid? configuredCustomerId, Guid? requestedCustomerId) =>
         configuredCustomerId is null || requestedCustomerId == configuredCustomerId;
 
+    private static bool CustomerApplicabilityOverlaps(Guid? leftCustomerId, Guid? rightCustomerId) =>
+        leftCustomerId is null
+        || rightCustomerId is null
+        || leftCustomerId == rightCustomerId;
+
+    private static bool OrganizationApplicabilityOverlaps(
+        OrganizationScopeKind? leftKind,
+        Guid? leftId,
+        OrganizationScopeKind? rightKind,
+        Guid? rightId) =>
+        leftKind is null
+        || rightKind is null
+        || leftKind == rightKind && leftId == rightId;
+
     private static bool OrganizationMatches(
         OrganizationScopeKind? configuredKind,
         Guid? configuredId,
@@ -748,6 +813,16 @@ public sealed class MasterDataPriceListPersistence : IMasterDataPriceListPersist
             entity.Provenance,
             entity.SourceReference,
             entity.Version.ToArray());
+
+    private static MasterDataPriceListCurrentConfiguration ToCurrentConfiguration(MasterDataPriceListEntity entity) =>
+        new(
+            entity.CurrencyId,
+            entity.CurrencyCode,
+            entity.CustomerId,
+            entity.OrganizationScopeKind,
+            entity.OrganizationScopeId,
+            entity.Priority,
+            entity.LifecycleState);
 
     private static MasterDataAuditRecord ToAuditRecord(MasterDataAuditEventEntity entity)
     {

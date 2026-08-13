@@ -7,16 +7,16 @@ namespace MiniErp.App.Modules.MasterData;
 public static class MasterDataServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the bounded Category/UOM authorization policy composition.
-    /// Capability resolution remains deny-by-default until the Identity
-    /// permission provider is connected by the host.
+    /// Registers the bounded Master Data authorization policy composition.
+    /// Capability resolution is derived from the trusted Foundation operation
+    /// permission and fails closed for unknown permissions.
     /// </summary>
     public static IServiceCollection AddMasterDataAuthorization(
         this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<IMasterDataCapabilityResolver, GrantingMasterDataCapabilityResolver>();
+        services.AddSingleton<IMasterDataCapabilityResolver, FoundationPermissionMasterDataCapabilityResolver>();
         services.AddSingleton<IMasterDataCatalogPersistence, UnavailableMasterDataCatalogPersistence>();
         services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence, UnavailableMasterDataCurrencyPaymentTermPersistence>();
         services.AddSingleton<IMasterDataExchangeRatePersistence, UnavailableMasterDataExchangeRatePersistence>();

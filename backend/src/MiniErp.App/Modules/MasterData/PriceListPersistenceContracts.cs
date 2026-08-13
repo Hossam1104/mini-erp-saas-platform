@@ -85,11 +85,26 @@ public sealed record MasterDataPriceListRecord(
     IReadOnlyList<MasterDataPriceListPriceRecord> Prices,
     byte[] Version);
 
+/// <summary>
+/// The current parent configuration used to decide whether a historical Price
+/// List row is applicable. The row snapshot remains immutable evidence and is
+/// intentionally exposed separately from this configuration.
+/// </summary>
+public sealed record MasterDataPriceListCurrentConfiguration(
+    Guid CurrencyId,
+    string CurrencyCode,
+    Guid? CustomerId,
+    OrganizationScopeKind? OrganizationScopeKind,
+    Guid? OrganizationScopeId,
+    int Priority,
+    MasterDataLifecycleState LifecycleState);
+
 public sealed record MasterDataPriceListReferenceRecord(
     Guid PriceListId,
     TenantId TenantId,
     string PriceListCode,
     MasterDataPriceListPriceRecord Price,
+    MasterDataPriceListCurrentConfiguration CurrentConfiguration,
     DateOnly EffectiveOn,
     ReferenceSnapshot Snapshot,
     byte[] MasterVersion);

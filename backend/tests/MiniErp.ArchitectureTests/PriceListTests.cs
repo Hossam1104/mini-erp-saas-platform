@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.MasterData;
@@ -18,6 +19,8 @@ public sealed class PriceListTests
     private static readonly Guid Session = Guid.Parse("44444444-4444-4444-4444-444444444444");
     private static readonly Guid CompanyA = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid OtherCompany = Guid.Parse("99999999-9999-9999-9999-999999999999");
+    private static readonly Guid CustomerOne = Guid.Parse("55555555-5555-5555-5555-555555555555");
+    private static readonly Guid CustomerTwo = Guid.Parse("66666666-6666-6666-6666-666666666666");
 
     [Fact]
     public async Task Price_list_schema_can_be_created()
@@ -255,6 +258,246 @@ public sealed class PriceListTests
         Assert.Empty(hiddenAudit.Value!);
     }
 
+    [Fact]
+    public async Task Price_list_edit_rejects_equal_current_precedence_and_resolution_fails_safe_for_legacy_state()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var edited = await fixture.Service.CreatePriceListAsync(
+            fixture.ContextA,
+            new CreateMasterDataPriceListCommand("EDITED", new LocalizedName("Edited"), fixture.CurrencyId, null, null, null, 100));
+        var sibling = await fixture.Service.CreatePriceListAsync(
+            fixture.ContextA,
+            new CreateMasterDataPriceListCommand("SIBLING", new LocalizedName("Sibling"), fixture.CurrencyId, null, null, null, 10));
+        Assert.True(edited.Succeeded, edited.Code);
+        Assert.True(sibling.Succeeded, sibling.Code);
+
+        var editedPrice = await fixture.Service.AppendPriceAsync(
+            fixture.ContextA,
+            Price(edited.Value!.Id, fixture.ProductId, fixture.UnitId, 100m, edited.Value.Version));
+        var siblingPrice = await fixture.Service.AppendPriceAsync(
+            fixture.ContextA,
+            Price(sibling.Value!.Id, fixture.ProductId, fixture.UnitId, 90m, sibling.Value.Version));
+        Assert.True(editedPrice.Succeeded, editedPrice.Code);
+        Assert.True(siblingPrice.Succeeded, siblingPrice.Code);
+
+        var rejected = await fixture.Service.EditPriceListAsync(
+            fixture.ContextA,
+            new EditMasterDataPriceListCommand(
+                edited.Value.Id,
+                "EDITED",
+                new LocalizedName("Edited"),
+                fixture.CurrencyId,
+                null,
+                null,
+                null,
+                10,
+                editedPrice.Value!.Version));
+        Assert.False(rejected.Succeeded);
+        Assert.Equal("price_list_precedence_conflict", rejected.Code);
+
+        var unchanged = await fixture.Service.GetPriceListAsync(fixture.ContextA, edited.Value.Id);
+        Assert.True(unchanged.Succeeded, unchanged.Code);
+        Assert.Equal(100, unchanged.Value!.Priority);
+        Assert.Equal(100, unchanged.Value.Prices.Single().Priority);
+
+        await using (var db = new MasterDataDbContext(fixture.Options, fixture.TenantContextA))
+        {
+            var legacyConflictingParent = await db.PriceLists
+                .Include(item => item.Prices)
+                .SingleAsync(item => item.Id == edited.Value.Id);
+            legacyConflictingParent.Edit(
+                legacyConflictingParent.Code,
+                legacyConflictingParent.Name,
+                legacyConflictingParent.CurrencyId,
+                legacyConflictingParent.CurrencyCode,
+                legacyConflictingParent.CustomerId,
+                legacyConflictingParent.OrganizationScopeKind,
+                legacyConflictingParent.OrganizationScopeId,
+                10);
+            await db.SaveChangesAsync();
+        }
+
+        var resolved = await fixture.Service.ResolvePriceAsync(
+            fixture.ContextA,
+            new ResolveMasterDataPriceQuery(null, fixture.ProductId, fixture.UnitId, fixture.CurrencyId, null, null, null, new DateOnly(2026, 6, 15)));
+        Assert.False(resolved.Succeeded);
+        Assert.Equal("price_list_precedence_conflict", resolved.Code);
+    }
+
+    [Fact]
+    public async Task Price_list_append_checks_current_parent_configuration_after_a_successful_edit()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var first = await fixture.Service.CreatePriceListAsync(
+            fixture.ContextA,
+            new CreateMasterDataPriceListCommand("FIRST", new LocalizedName("First"), fixture.CurrencyId, null, null, null, 100));
+        var second = await fixture.Service.CreatePriceListAsync(
+            fixture.ContextA,
+            new CreateMasterDataPriceListCommand("SECOND", new LocalizedName("Second"), fixture.CurrencyId, null, null, null, 10));
+        Assert.True(first.Succeeded, first.Code);
+        Assert.True(second.Succeeded, second.Code);
+
+        var firstPrice = await fixture.Service.AppendPriceAsync(
+            fixture.ContextA,
+            Price(first.Value!.Id, fixture.ProductId, fixture.UnitId, 100m, first.Value.Version));
+        Assert.True(firstPrice.Succeeded, firstPrice.Code);
+
+        var edited = await fixture.Service.EditPriceListAsync(
+            fixture.ContextA,
+            new EditMasterDataPriceListCommand(
+                first.Value.Id,
+                "FIRST",
+                new LocalizedName("First"),
+                fixture.CurrencyId,
+                null,
+                null,
+                null,
+                10,
+                firstPrice.Value!.Version));
+        Assert.True(edited.Succeeded, edited.Code);
+        Assert.Equal(10, edited.Value!.Priority);
+        Assert.Equal(100, edited.Value.Prices.Single().Priority);
+
+        var conflictingAppend = await fixture.Service.AppendPriceAsync(
+            fixture.ContextA,
+            Price(second.Value!.Id, fixture.ProductId, fixture.UnitId, 90m, second.Value.Version));
+        Assert.False(conflictingAppend.Succeeded);
+        Assert.Equal("price_list_precedence_conflict", conflictingAppend.Code);
+    }
+
+    [Fact]
+    public async Task Price_list_customer_edit_uses_current_parent_applicability_and_preserves_snapshot()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var list = await fixture.Service.CreatePriceListAsync(
+            fixture.ContextA,
+            new CreateMasterDataPriceListCommand("CUSTOMER", new LocalizedName("Customer"), fixture.CurrencyId, CustomerOne, null, null, 10));
+        Assert.True(list.Succeeded, list.Code);
+
+        var price = await fixture.Service.AppendPriceAsync(
+            fixture.ContextA,
+            Price(list.Value!.Id, fixture.ProductId, fixture.UnitId, 42m, list.Value.Version));
+        Assert.True(price.Succeeded, price.Code);
+
+        var edited = await fixture.Service.EditPriceListAsync(
+            fixture.ContextA,
+            new EditMasterDataPriceListCommand(
+                list.Value.Id,
+                "CUSTOMER",
+                new LocalizedName("Customer"),
+                fixture.CurrencyId,
+                CustomerTwo,
+                null,
+                null,
+                10,
+                price.Value!.Version));
+        Assert.True(edited.Succeeded, edited.Code);
+        Assert.Equal(CustomerTwo, edited.Value!.CustomerId);
+        Assert.Equal(CustomerOne, edited.Value.Prices.Single().CustomerId);
+
+        var currentCustomer = await fixture.Service.ResolvePriceAsync(
+            fixture.ContextA,
+            new ResolveMasterDataPriceQuery(null, fixture.ProductId, fixture.UnitId, fixture.CurrencyId, CustomerTwo, null, null, new DateOnly(2026, 6, 15)));
+        Assert.True(currentCustomer.Succeeded, currentCustomer.Code);
+        Assert.Equal(CustomerTwo, currentCustomer.Value!.CurrentConfiguration.CustomerId);
+        Assert.Equal(CustomerOne, currentCustomer.Value.Price.CustomerId);
+
+        var historicalCustomer = await fixture.Service.ResolvePriceAsync(
+            fixture.ContextA,
+            new ResolveMasterDataPriceQuery(null, fixture.ProductId, fixture.UnitId, fixture.CurrencyId, CustomerOne, null, null, new DateOnly(2026, 6, 15)));
+        Assert.False(historicalCustomer.Succeeded);
+        Assert.Equal("price_list_price_not_found", historicalCustomer.Code);
+    }
+
+    [Fact]
+    public async Task Price_list_organization_edit_uses_current_parent_applicability_and_preserves_snapshot()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var list = await fixture.Service.CreatePriceListAsync(
+            fixture.ContextA,
+            new CreateMasterDataPriceListCommand("ORG-EDIT", new LocalizedName("Organization edit"), fixture.CurrencyId, null, null, null, 10));
+        Assert.True(list.Succeeded, list.Code);
+
+        var price = await fixture.Service.AppendPriceAsync(
+            fixture.ContextA,
+            Price(list.Value!.Id, fixture.ProductId, fixture.UnitId, 55m, list.Value.Version));
+        Assert.True(price.Succeeded, price.Code);
+
+        var edited = await fixture.Service.EditPriceListAsync(
+            fixture.ContextA,
+            new EditMasterDataPriceListCommand(
+                list.Value.Id,
+                "ORG-EDIT",
+                new LocalizedName("Organization edit"),
+                fixture.CurrencyId,
+                null,
+                OrganizationScopeKind.Company,
+                CompanyA,
+                10,
+                price.Value!.Version));
+        Assert.True(edited.Succeeded, edited.Code);
+        Assert.Equal(OrganizationScopeKind.Company, edited.Value!.OrganizationScopeKind);
+        Assert.Equal(CompanyA, edited.Value.OrganizationScopeId);
+        Assert.Null(edited.Value.Prices.Single().OrganizationScopeKind);
+        Assert.Null(edited.Value.Prices.Single().OrganizationScopeId);
+
+        var currentScope = await fixture.Service.ResolvePriceAsync(
+            fixture.ContextA,
+            new ResolveMasterDataPriceQuery(null, fixture.ProductId, fixture.UnitId, fixture.CurrencyId, null, OrganizationScopeKind.Company, CompanyA, new DateOnly(2026, 6, 15)));
+        Assert.True(currentScope.Succeeded, currentScope.Code);
+        Assert.Equal(OrganizationScopeKind.Company, currentScope.Value!.CurrentConfiguration.OrganizationScopeKind);
+        Assert.Equal(CompanyA, currentScope.Value.CurrentConfiguration.OrganizationScopeId);
+
+        var tenantWide = await fixture.Service.ResolvePriceAsync(
+            fixture.ContextA,
+            new ResolveMasterDataPriceQuery(null, fixture.ProductId, fixture.UnitId, fixture.CurrencyId, null, null, null, new DateOnly(2026, 6, 15)));
+        Assert.False(tenantWide.Succeeded);
+        Assert.Equal("price_list_price_not_found", tenantWide.Code);
+    }
+
+    [Fact]
+    public async Task Price_list_currency_edit_does_not_reinterpret_historical_amount_or_snapshot()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var list = await fixture.Service.CreatePriceListAsync(
+            fixture.ContextA,
+            new CreateMasterDataPriceListCommand("CURRENCY-EDIT", new LocalizedName("Currency edit"), fixture.CurrencyId, null, null, null, 10));
+        Assert.True(list.Succeeded, list.Code);
+
+        var price = await fixture.Service.AppendPriceAsync(
+            fixture.ContextA,
+            Price(list.Value!.Id, fixture.ProductId, fixture.UnitId, 77m, list.Value.Version));
+        Assert.True(price.Succeeded, price.Code);
+
+        var edited = await fixture.Service.EditPriceListAsync(
+            fixture.ContextA,
+            new EditMasterDataPriceListCommand(
+                list.Value.Id,
+                "CURRENCY-EDIT",
+                new LocalizedName("Currency edit"),
+                fixture.AlternativeCurrencyId,
+                null,
+                null,
+                null,
+                10,
+                price.Value!.Version));
+        Assert.True(edited.Succeeded, edited.Code);
+        Assert.Equal(fixture.AlternativeCurrencyId, edited.Value!.CurrencyId);
+        Assert.Equal(fixture.CurrencyId, edited.Value.Prices.Single().CurrencyId);
+        Assert.Equal(77m, edited.Value.Prices.Single().Price);
+
+        var oldCurrency = await fixture.Service.ResolvePriceAsync(
+            fixture.ContextA,
+            new ResolveMasterDataPriceQuery(null, fixture.ProductId, fixture.UnitId, fixture.CurrencyId, null, null, null, new DateOnly(2026, 6, 15)));
+        var newCurrency = await fixture.Service.ResolvePriceAsync(
+            fixture.ContextA,
+            new ResolveMasterDataPriceQuery(null, fixture.ProductId, fixture.UnitId, fixture.AlternativeCurrencyId, null, null, null, new DateOnly(2026, 6, 15)));
+        Assert.False(oldCurrency.Succeeded);
+        Assert.Equal("price_list_price_not_found", oldCurrency.Code);
+        Assert.False(newCurrency.Succeeded);
+        Assert.Equal("price_list_price_not_found", newCurrency.Code);
+    }
+
     private static AppendMasterDataPriceCommand Price(
         Guid priceListId,
         Guid productId,
@@ -288,6 +531,7 @@ public sealed class PriceListTests
 
         private Fixture(
             SqliteConnection connection,
+            DbContextOptions options,
             TenantContext tenantContextA,
             TenantContext tenantContextB,
             TenantContext tenantContextOtherScope,
@@ -296,10 +540,12 @@ public sealed class PriceListTests
             MasterDataRequestContext contextOtherScope,
             MasterDataPriceListService service,
             Guid currencyId,
+            Guid alternativeCurrencyId,
             Guid productId,
             Guid unitId)
         {
             this.connection = connection;
+            Options = options;
             TenantContextA = tenantContextA;
             TenantContextB = tenantContextB;
             TenantContextOtherScope = tenantContextOtherScope;
@@ -308,11 +554,13 @@ public sealed class PriceListTests
             ContextOtherScope = contextOtherScope;
             Service = service;
             CurrencyId = currencyId;
+            AlternativeCurrencyId = alternativeCurrencyId;
             ProductId = productId;
             UnitId = unitId;
         }
 
         public TenantContext TenantContextA { get; }
+        public DbContextOptions Options { get; }
         public TenantContext TenantContextB { get; }
         public TenantContext TenantContextOtherScope { get; }
         public MasterDataRequestContext ContextA { get; }
@@ -320,6 +568,7 @@ public sealed class PriceListTests
         public MasterDataRequestContext ContextOtherScope { get; }
         public MasterDataPriceListService Service { get; }
         public Guid CurrencyId { get; }
+        public Guid AlternativeCurrencyId { get; }
         public Guid ProductId { get; }
         public Guid UnitId { get; }
 
@@ -351,6 +600,7 @@ public sealed class PriceListTests
             {
                 await db.Database.EnsureCreatedAsync();
                 var currencyId = Guid.Parse("aaaaaaaa-1111-1111-1111-111111111111");
+                var alternativeCurrencyId = Guid.Parse("aaaaaaaa-5555-5555-5555-555555555555");
                 var categoryId = Guid.Parse("aaaaaaaa-2222-2222-2222-222222222222");
                 var unitId = Guid.Parse("aaaaaaaa-3333-3333-3333-333333333333");
                 var productId = Guid.Parse("aaaaaaaa-4444-4444-4444-444444444444");
@@ -359,6 +609,11 @@ public sealed class PriceListTests
                     tenantContextA.TenantId,
                     "USD",
                     new LocalizedName("US Dollar")));
+                db.Currencies.Add(new MasterDataCurrencyEntity(
+                    alternativeCurrencyId,
+                    tenantContextA.TenantId,
+                    "EUR",
+                    new LocalizedName("Euro")));
                 db.Categories.Add(new MasterDataCategoryEntity(
                     categoryId,
                     tenantContextA.TenantId,
@@ -391,12 +646,15 @@ public sealed class PriceListTests
                 new PriceListResourcePolicy(),
                 new PriceListApprovalPolicy(),
                 new PriceListScopePolicy());
+            var customerReferenceReader = new StaticCustomerReferenceReader();
             var service = new MasterDataPriceListService(
                 authorization,
-                new MasterDataPriceListPersistence(options));
+                new MasterDataPriceListPersistence(options, customerReferenceReader),
+                customerReferenceReader);
 
             return new Fixture(
                 connection,
+                options,
                 tenantContextA,
                 tenantContextB,
                 tenantContextOtherScope,
@@ -405,6 +663,7 @@ public sealed class PriceListTests
                 ResolveContext(tenantContextOtherScope, "master-data.price-list"),
                 service,
                 Guid.Parse("aaaaaaaa-1111-1111-1111-111111111111"),
+                Guid.Parse("aaaaaaaa-5555-5555-5555-555555555555"),
                 Guid.Parse("aaaaaaaa-4444-4444-4444-444444444444"),
                 Guid.Parse("aaaaaaaa-3333-3333-3333-333333333333"));
         }
@@ -419,5 +678,21 @@ public sealed class PriceListTests
                         permission)).Context);
 
         public ValueTask DisposeAsync() => connection.DisposeAsync();
+    }
+
+    private sealed class StaticCustomerReferenceReader : IBusinessCustomerReferenceReader
+    {
+        public Task<BusinessCustomerReference?> FindCustomerReferenceAsync(
+            TenantContext tenantContext,
+            Guid customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<BusinessCustomerReference?>(
+                customerId == CustomerOne || customerId == CustomerTwo
+                    ? new BusinessCustomerReference(
+                        customerId,
+                        tenantContext.TenantId,
+                        $"C-{customerId:N}",
+                        MasterDataLifecycleState.Active)
+                    : null);
     }
 }
