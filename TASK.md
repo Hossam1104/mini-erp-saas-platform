@@ -1,5 +1,45 @@
 # MESP-121 - Price List and deterministic B2B pricing capability
 
+## MESP-121 Phase E handoff - 13 August 2026
+
+MESP-121 remains the live active capability and **In Progress** in Jira. This
+bounded Phase E continuation started from the Phase D head
+`a6d92469cdaa3ef895106bac6e62561584e861c9` and added the local runtime/login
+correction in commit `f9eff32` on the same branch
+`feat/MESP-121-price-list-b2b-pricing`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+must remain open, Draft, and unmerged. Do not transition MESP-121 to Done,
+start MESP-122, replace this task with another capability, or widen scope.
+
+Phase E confirmed the original sign-in defect: the tracked Angular proxy still
+targeted `http://localhost:5000`, while that port and `5001` are owned by
+unrelated RMS processes. The implementation keeps the tracked proxy as the
+generic `5000` fallback and adds `scripts/Start-MiniErpDevelopment.ps1`, which
+selects a safe local API target, configures the Development bootstrap, writes
+an ignored BOM-free `.runtime/proxy.conf.json` targeting that exact URL, and
+starts Angular with the generated proxy. `scripts/Test-MiniErpDevelopmentRuntime.ps1`
+checks the default tracked target and custom generated target without starting
+or stopping processes. Angular services continue to use relative `/api/v1`
+URLs; no machine-specific backend URL was added to product source.
+
+The final committed runtime is running with MiniERP on `http://localhost:5300`
+and Angular on `http://localhost:4300`; RMS listeners on `5000` and `5001` were
+left untouched. The final direct and Angular-origin smoke proved MiniERP
+module identity, 401 unauthenticated session/problem semantics, wrong-password
+`authentication_failed`, direct/proxy sign-in, Development `MiniErp.Auth`,
+authenticated session, antiforgery, one Development Tenant context, idempotent
+context switch, selected session, Price List GET, Angular `/app/price-lists`
+route/assets, OpenAPI, and Scalar. The in-app browser was unavailable, so no
+visual browser evidence is claimed. Release build, focused bootstrap/Price
+List tests (8/8), non-SQL backend regression (689/689), Angular tests (55/55),
+production build, runtime self-test, and `git diff --check` passed. The 21
+SQL safety cases remain gated by the unavailable
+`MESP_SQLSERVER_CONNECTION_STRING`; production/provider, migration, legal,
+privacy, and specialist gates remain open.
+
+The final project completion percentages remain unchanged. The next exact
+continuation is planner acceptance plus the reserved Opus/final review of
+MESP-121 on this same branch/PR. Do not execute MESP-122 automatically.
+
 ## MESP-121 Phase D handoff - 13 August 2026
 
 MESP-121 remains the live active capability and **In Progress** in Jira.
