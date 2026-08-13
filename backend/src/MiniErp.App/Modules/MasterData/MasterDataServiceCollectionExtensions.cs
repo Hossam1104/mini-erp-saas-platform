@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MiniErp.App.Modules.BusinessParties;
 
 namespace MiniErp.App.Modules.MasterData;
 
@@ -19,6 +20,7 @@ public static class MasterDataServiceCollectionExtensions
         services.AddSingleton<IMasterDataCatalogPersistence, UnavailableMasterDataCatalogPersistence>();
         services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence, UnavailableMasterDataCurrencyPaymentTermPersistence>();
         services.AddSingleton<IMasterDataExchangeRatePersistence, UnavailableMasterDataExchangeRatePersistence>();
+        services.AddSingleton<IMasterDataPriceListPersistence, UnavailableMasterDataPriceListPersistence>();
         services.AddSingleton<IMasterDataTaxPersistence, UnavailableMasterDataTaxPersistence>();
         services.AddSingleton<IMasterDataScopePolicy, CategoryUomScopePolicy>();
         services.AddSingleton<IMasterDataResourcePolicy, CategoryUomResourcePolicy>();
@@ -59,6 +61,18 @@ public static class MasterDataServiceCollectionExtensions
                     servicesProvider.GetRequiredService<ExchangeRateApprovalPolicy>(),
                     servicesProvider.GetRequiredService<ExchangeRateScopePolicy>()),
                 servicesProvider.GetRequiredService<IMasterDataExchangeRatePersistence>()));
+        services.AddSingleton<PriceListScopePolicy>();
+        services.AddSingleton<PriceListResourcePolicy>();
+        services.AddSingleton<PriceListApprovalPolicy>();
+        services.AddSingleton<MasterDataPriceListService>(servicesProvider =>
+            new MasterDataPriceListService(
+                new MasterDataResourceAuthorizationService(
+                    servicesProvider.GetRequiredService<IMasterDataCapabilityResolver>(),
+                    servicesProvider.GetRequiredService<PriceListResourcePolicy>(),
+                    servicesProvider.GetRequiredService<PriceListApprovalPolicy>(),
+                    servicesProvider.GetRequiredService<PriceListScopePolicy>()),
+                servicesProvider.GetRequiredService<IMasterDataPriceListPersistence>(),
+                servicesProvider.GetService<IBusinessCustomerReferenceReader>()));
         return services;
     }
 

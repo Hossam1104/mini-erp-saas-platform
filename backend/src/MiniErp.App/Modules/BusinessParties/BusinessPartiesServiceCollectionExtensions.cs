@@ -42,6 +42,7 @@ public static class BusinessPartiesServiceCollectionExtensions
         services.AddSingleton<CustomerApprovalPolicy>();
         services.AddSingleton<CustomerResourceAuthorizationService>();
         services.AddSingleton<ICustomerPersistence, UnavailableCustomerPersistence>();
+        services.AddSingleton<IBusinessCustomerReferenceReader, UnavailableCustomerPersistence>();
         services.AddSingleton<CustomerService>();
         return services;
     }

@@ -467,6 +467,7 @@ app.MapCustomerEndpoints();
 app.MapCurrencyPaymentTermEndpoints();
 app.MapTaxEndpoints();
 app.MapExchangeRateEndpoints();
+app.MapPriceListEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

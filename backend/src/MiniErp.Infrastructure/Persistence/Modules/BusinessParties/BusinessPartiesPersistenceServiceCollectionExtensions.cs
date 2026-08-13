@@ -25,8 +25,9 @@ public static class BusinessPartiesPersistenceServiceCollectionExtensions
         configureOptions(optionsBuilder);
         services.AddSingleton<ISupplierPersistence>(
             new BusinessPartiesSupplierPersistence(optionsBuilder.Options));
-        services.AddSingleton<ICustomerPersistence>(
-            new BusinessPartiesCustomerPersistence(optionsBuilder.Options));
+        var customerPersistence = new BusinessPartiesCustomerPersistence(optionsBuilder.Options);
+        services.AddSingleton<ICustomerPersistence>(customerPersistence);
+        services.AddSingleton<IBusinessCustomerReferenceReader>(customerPersistence);
         return services;
     }
 

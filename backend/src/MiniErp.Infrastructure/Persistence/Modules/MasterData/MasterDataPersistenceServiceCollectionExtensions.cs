@@ -2,6 +2,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.MasterData;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.MasterData;
@@ -31,6 +32,10 @@ public static class MasterDataPersistenceServiceCollectionExtensions
         services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence>(currencyPaymentTermPersistence);
         services.AddSingleton<IMasterDataExchangeRatePersistence>(exchangeRatePersistence);
         services.AddSingleton<IMasterDataTaxPersistence>(taxPersistence);
+        services.AddSingleton<IMasterDataPriceListPersistence>(servicesProvider =>
+            new MasterDataPriceListPersistence(
+                optionsBuilder.Options,
+                servicesProvider.GetService<IBusinessCustomerReferenceReader>()));
         services.AddSingleton<IProductIdentityPersistence>(persistence);
         services.AddSingleton<MasterDataCategoryUomService>();
         return services;
