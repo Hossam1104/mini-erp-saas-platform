@@ -18,7 +18,7 @@ $env:Scalar__Enabled="true"
 # NEVER set MESP_DEV_BOOTSTRAP_ENABLED in non-Development environments.
 $env:MESP_DEV_BOOTSTRAP_ENABLED="true"
 $env:MESP_DEV_ADMIN_LOGIN="admin@minierp.local"
-$env:MESP_DEV_ADMIN_PASSWORD="<supply-your-local-dev-password-here>"
+$env:MESP_DEV_ADMIN_PASSWORD="LocalDevSecret123!"
 
 dotnet run --project .\src\MiniErp.Api\MiniErp.Api.csproj `
   --configuration Release `
@@ -32,7 +32,6 @@ dotnet run --project .\src\MiniErp.Api\MiniErp.Api.csproj `
 
 ```powershell
 cd "D:\AI Tools\Hossam\mini-erp-saas-platform\frontend"
-
 npm install
 npm start -- --port 4300
 ```
@@ -54,7 +53,7 @@ The Angular dev server automatically proxies `/api` requests to `http://localhos
 ## Local Development Authentication Flow
 
 1. **Sign In**: `POST http://localhost:5000/api/v1/auth/sign-in`
-   - Body: `{ "login": "admin@minierp.local", "password": "<the-value-supplied-in-MESP_DEV_ADMIN_PASSWORD>" }`
+   - Body: `{ "login": "admin@minierp.local", "password": "LocalDevSecret123!" }`
    - Sets secure session cookie `__Host-MiniErp.Auth`.
 2. **Context Selection**: `GET /api/v1/auth/contexts` -> select Tenant context -> `POST /api/v1/auth/context-switch`.
 3. **Antiforgery Bootstrap**: `GET /api/v1/auth/antiforgery` -> returns `X-CSRF-TOKEN` header.
