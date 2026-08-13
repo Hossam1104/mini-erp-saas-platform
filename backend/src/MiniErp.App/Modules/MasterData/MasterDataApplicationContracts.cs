@@ -209,6 +209,19 @@ public sealed class DenyAllMasterDataCapabilityResolver : IMasterDataCapabilityR
     }
 }
 
+public sealed class GrantingMasterDataCapabilityResolver : IMasterDataCapabilityResolver
+{
+    private static readonly HashSet<MasterDataCapability> AllCapabilities = System.Enum.GetValues<MasterDataCapability>().ToHashSet();
+
+    public IReadOnlySet<MasterDataCapability> Resolve(MasterDataRequestContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return context.AuthorizationPath == TenantAuthorizationPath.OrdinaryMembership
+            ? AllCapabilities
+            : new HashSet<MasterDataCapability>();
+    }
+}
+
 public interface IMasterDataApprovalPolicy
 {
     MasterDataApprovalPolicyResult Evaluate(

@@ -1,5 +1,7 @@
 import { TranslationKey } from '../../core/i18n/language.service';
 
+export * from './price-list.model';
+
 export type MasterDataResourceKey = 'categories' | 'units' | 'products' | 'suppliers' | 'customers' | 'currencies' | 'payment-terms' | 'taxes' | 'exchange-rates';
 
 export type MasterDataLifecycleState = 'Active' | 'Inactive' | string;

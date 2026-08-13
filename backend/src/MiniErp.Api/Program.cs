@@ -99,6 +99,8 @@ builder.Services.AddOpenApi("v1", options =>
 
 var app = builder.Build();
 
+app.SeedDevelopmentBootstrap();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.Use(async (httpContext, next) =>

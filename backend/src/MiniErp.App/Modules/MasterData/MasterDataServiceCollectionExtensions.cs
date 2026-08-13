@@ -16,7 +16,7 @@ public static class MasterDataServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<IMasterDataCapabilityResolver, DenyAllMasterDataCapabilityResolver>();
+        services.AddSingleton<IMasterDataCapabilityResolver, GrantingMasterDataCapabilityResolver>();
         services.AddSingleton<IMasterDataCatalogPersistence, UnavailableMasterDataCatalogPersistence>();
         services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence, UnavailableMasterDataCurrencyPaymentTermPersistence>();
         services.AddSingleton<IMasterDataExchangeRatePersistence, UnavailableMasterDataExchangeRatePersistence>();

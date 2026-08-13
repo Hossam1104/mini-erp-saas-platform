@@ -1,4 +1,5 @@
 using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.Contracts.Modules.Foundation;
 
 namespace MiniErp.App.Modules.Identity;
 
@@ -40,26 +41,43 @@ internal sealed class IdentityStore
 
     internal HashSet<string> ConsumedAssuranceEvidence { get; } = new(StringComparer.Ordinal);
 
-    internal HashSet<PermissionCode> ApprovedPermissions { get; } =
-    [
-        IdentityPermissions.Read,
-        IdentityPermissions.Export,
-        IdentityPermissions.ContextRead,
-        IdentityPermissions.TargetRead,
-        IdentityPermissions.ProbeWrite,
-        IdentityPermissions.ContextSwitch,
-        IdentityPermissions.PlatformMetadataRead,
-        IdentityPermissions.SuspendGlobalUser,
-        IdentityPermissions.ReactivateGlobalUser,
-        IdentityPermissions.OffboardGlobalUser,
-        IdentityPermissions.SuspendMembership,
-        IdentityPermissions.ReactivateMembership,
-        IdentityPermissions.RevokeMembership,
-        IdentityPermissions.SupportRead,
-        IdentityPermissions.AssignPlatformPermission,
-        IdentityPermissions.AssignRole,
-        IdentityPermissions.AssignScopeGrant,
-        IdentityPermissions.ApproveSupportGrant,
-        IdentityPermissions.DurableWorkReconciliationRead
-    ];
+    internal HashSet<PermissionCode> ApprovedPermissions { get; } = InitialApprovedPermissions();
+
+    private static HashSet<PermissionCode> InitialApprovedPermissions()
+    {
+        var set = new HashSet<PermissionCode>
+        {
+            IdentityPermissions.Read,
+            IdentityPermissions.Export,
+            IdentityPermissions.ContextRead,
+            IdentityPermissions.TargetRead,
+            IdentityPermissions.ProbeWrite,
+            IdentityPermissions.ContextSwitch,
+            IdentityPermissions.PlatformMetadataRead,
+            IdentityPermissions.SuspendGlobalUser,
+            IdentityPermissions.ReactivateGlobalUser,
+            IdentityPermissions.OffboardGlobalUser,
+            IdentityPermissions.SuspendMembership,
+            IdentityPermissions.ReactivateMembership,
+            IdentityPermissions.RevokeMembership,
+            IdentityPermissions.SupportRead,
+            IdentityPermissions.AssignPlatformPermission,
+            IdentityPermissions.AssignRole,
+            IdentityPermissions.AssignScopeGrant,
+            IdentityPermissions.ApproveSupportGrant,
+            IdentityPermissions.DurableWorkReconciliationRead
+        };
+
+        foreach (var op in FoundationOperationCatalog.PublicOperations)
+        {
+            if (!string.IsNullOrWhiteSpace(op.ExactPermissionCode)
+                && IdentityPermissions.TryResolve(op.ExactPermissionCode, out var perm))
+            {
+                set.Add(perm);
+            }
+        }
+
+        return set;
+    }
 }
+
