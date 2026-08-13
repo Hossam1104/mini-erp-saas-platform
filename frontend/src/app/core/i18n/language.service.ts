@@ -304,6 +304,12 @@ const translations = {
     customerReferenceUnavailableError: 'The selected customer reference is unavailable.',
     idempotencyConflictError: 'This request was already processed. Reload to see the latest state.',
     persistenceUnavailableError: 'The data store is unavailable right now. Try again shortly.',
+    organizationScopeIdHint: 'Enter the exact Company or Branch identifier. Organization structure selection is outside Master Data scope.',
+    limitToThisPriceList: 'Limit to this Price List',
+    priceListResolutionNotFound: 'No applicable price was found for these inputs.',
+    clearSearch: 'Clear search',
+    priceListDetail: 'Price List detail',
+    priceListCode: 'Price List code',
   },
   ar: {
     appName: 'منصة ميني ERP',
@@ -604,6 +610,12 @@ const translations = {
     customerReferenceUnavailableError: '\u0645\u0631\u062c\u0639 \u0627\u0644\u0639\u0645\u064a\u0644 \u0627\u0644\u0645\u062d\u062f\u062f \u063a\u064a\u0631 \u0645\u062a\u0627\u062d.',
     idempotencyConflictError: '\u062a\u0645\u062a \u0645\u0639\u0627\u0644\u062c\u0629 \u0647\u0630\u0627 \u0627\u0644\u0637\u0644\u0628 \u0628\u0627\u0644\u0641\u0639\u0644. \u0623\u0639\u062f \u0627\u0644\u062a\u062d\u0645\u064a\u0644 \u0644\u0631\u0624\u064a\u0629 \u0623\u062d\u062f\u062b \u062d\u0627\u0644\u0629.',
     persistenceUnavailableError: '\u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u062d\u0627\u0644\u064a\u064b\u0627. \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649 \u0628\u0639\u062f \u0642\u0644\u064a\u0644.',
+    organizationScopeIdHint: '\u0623\u062f\u062e\u0644 \u0645\u0639\u0631\u0651\u0641 \u0627\u0644\u0634\u0631\u0643\u0629 \u0623\u0648 \u0627\u0644\u0641\u0631\u0639 \u0627\u0644\u062f\u0642\u064a\u0642. \u0627\u062e\u062a\u064a\u0627\u0631 \u0647\u064a\u0643\u0644 \u0627\u0644\u0645\u0646\u0638\u0645\u0629 \u062e\u0627\u0631\u062c \u0646\u0637\u0627\u0642 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629.',
+    limitToThisPriceList: '\u0627\u0642\u062a\u0635\u0631 \u0639\u0644\u0649 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0633\u0639\u0627\u0631 \u0647\u0630\u0647',
+    priceListResolutionNotFound: '\u0644\u0645 \u064a\u064f\u0639\u062b\u0631 \u0639\u0644\u0649 \u0633\u0639\u0631 \u0645\u0637\u0628\u0642 \u0644\u0647\u0630\u0647 \u0627\u0644\u0645\u062f\u062e\u0644\u0627\u062a.',
+    clearSearch: '\u0645\u0633\u062d \u0627\u0644\u0628\u062d\u062b',
+    priceListDetail: '\u062a\u0641\u0627\u0635\u064a\u0644 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0633\u0639\u0627\u0631',
+    priceListCode: '\u0631\u0645\u0632 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0633\u0639\u0627\u0631',
   },
 } as const;
 
