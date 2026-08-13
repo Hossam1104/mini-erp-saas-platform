@@ -6,7 +6,8 @@ MESP-121 remains **In Progress** in live Jira. Its activation evidence is
 comment `11025`. This bounded Phase D continuation started at
 `ed80975f2d9eb9631fe9a4550a51737fae3e40bb` and completed its source changes in
 `a05863b10537876f47065bd0c5b09a5307f784c9` on the required branch
-`feat/MESP-121-price-list-b2b-pricing`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+`feat/MESP-121-price-list-b2b-pricing`; Jira Phase D evidence is comment
+`11093`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
 must remain open and unmerged; MESP-121 must not be transitioned to Done and
 MESP-122 must not be started.
 
