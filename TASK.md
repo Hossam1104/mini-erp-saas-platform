@@ -36,7 +36,10 @@ Angular 68/68; Angular production initial bundle 414.67 kB under the unchanged
 4300; backend-origin OpenAPI/Scalar 200; and `git diff --check`. The 21 SQL
 Server safety cases remain gated by unavailable
 `MESP_SQLSERVER_CONNECTION_STRING`; no SQL substitute or fake reference data
-was used.
+was used. The pre-existing tracked `.vs` IDE/cache files, including
+`.vs/slnx.sqlite`, were removed; repository hygiene is now clean for cookies,
+session tokens, runtime passwords, SQLite DB/WAL/SHM, `.runtime` state,
+request scratch files, build outputs, and temporary logs.
 
 The fresh Development database may need legitimate Currency, Product, Unit of
 Measure, and optionally Business Customer reference records before an
