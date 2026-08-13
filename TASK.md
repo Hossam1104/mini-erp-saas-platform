@@ -1,5 +1,50 @@
 # MESP-121 - Price List and deterministic B2B pricing capability
 
+## MESP-121 Phase G handoff - 14 August 2026
+
+MESP-121 remains the single active capability and **In Progress** in Jira.
+Phase G applied the two confirmed Opus P1 corrections on the exact shared
+branch `feat/MESP-121-price-list-b2b-pricing` in source commit `0242656`.
+Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+remains open, Draft, and unmerged. Do not transition MESP-121 to Done, start
+MESP-122, or broaden this capability.
+
+The bounded corrections are complete:
+
+- Price List resolution, cross-list append checks, and proposed parent edits
+  use the current parent Currency/Customer/Organization/Priority configuration
+  for current applicability and precedence. Child price rows are not
+  rewritten; their Product/UOM/effective/amount/scale/provenance/source and
+  recorded currency/applicability/priority values remain immutable evidence.
+  Current configuration and child evidence are both retained in the reference
+  contract. A currency edit does not reinterpret or convert an existing amount;
+  a row whose historical currency no longer matches the parent is not silently
+  resolved.
+- Production Master Data authorization now derives one capability from the
+  exact trusted Foundation permission. Unknown/unrelated permissions fail
+  closed, the unconditional granting resolver is not registered in production,
+  and existing direct test fixtures retain explicit granting doubles only.
+
+Focused regression coverage includes edit conflict prevention and legacy-state
+conflict resolution, edit-then-append conflict, current Customer and
+Organization applicability, immutable child snapshots, currency evidence,
+exact capability mapping, fail-closed unknown permissions, and production DI.
+Validation passed: `dotnet restore`; Release build with 0 warnings/errors;
+focused Price List/authorization tests 17/17; non-SQL backend 703/703;
+Angular 68/68; Angular production initial bundle 414.67 kB under the unchanged
+500 kB warning budget; frontend-origin runtime smoke on MiniERP 5300/Angular
+4300; backend-origin OpenAPI/Scalar 200; and `git diff --check`. The 21 SQL
+Server safety cases remain gated by unavailable
+`MESP_SQLSERVER_CONNECTION_STRING`; no SQL substitute or fake reference data
+was used.
+
+The fresh Development database may need legitimate Currency, Product, Unit of
+Measure, and optionally Business Customer reference records before an
+interactive Price List create/append/resolve flow can be exercised. No fake
+records are seeded by this handoff. Planner acceptance and targeted Opus
+re-review remain pending on the same Draft PR; update the state/tracker and
+stop here. Do not execute MESP-122 automatically.
+
 ## MESP-121 Phase E handoff - 13 August 2026
 
 MESP-121 remains the live active capability and **In Progress** in Jira. This

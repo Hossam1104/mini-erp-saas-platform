@@ -65,6 +65,13 @@ Remove-Item Env:MESP_DEV_API_URL
 The generated proxy target and the backend `--urls` value are always the same.
 Do not place `http://localhost:<port>` in Angular services or components.
 
+The first interactive Price List create/append/resolve flow on a fresh
+Development database may require legitimate reference records for Currency,
+Product, Unit of Measure, and (when customer applicability is selected) a
+Business Customer. The runtime does not seed fake business records; create or
+load approved local reference data through the bounded Master Data/Business
+Parties flows before testing those operations.
+
 ## Manual two-process fallback
 
 If the applications need to be started separately, generate the proxy first

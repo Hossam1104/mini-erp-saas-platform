@@ -1,39 +1,41 @@
 # Current State
 
-## Current authoritative position - 13 August 2026 (MESP-121 Phase E local runtime/sign-in correction complete; draft PR #64)
+## Current authoritative position - 14 August 2026 (MESP-121 Phase G targeted Opus P1 corrections complete; draft PR #64)
 
 MESP-121 remains **In Progress** in live Jira. Its activation evidence is
-comment `11025`. This bounded Phase E continuation started from the Phase D
-head `a6d92469cdaa3ef895106bac6e62561584e861c9` and added the runtime/login
-correction in `f9eff32` on the required branch
-`feat/MESP-121-price-list-b2b-pricing`; the prior Jira Phase D evidence is
+comment `11025`. This bounded Phase G continuation applied the two confirmed
+Opus P1 corrections in source commit `0242656` on the required branch
+`feat/MESP-121-price-list-b2b-pricing`; the prior Phase D evidence remains
 comment `11093`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
-must remain open and unmerged; MESP-121 must not be transitioned to Done and
-MESP-122 must not be started.
+must remain open, Draft, and unmerged; MESP-121 must not be transitioned to
+Done and MESP-122 must not be started.
 
-The earlier Phase A Price List backend and Phase C Angular implementation
-remain in the shared branch. Phase D corrected the integrated Development
-runtime and execution gate without widening the approved Price List scope.
+The earlier Phase A Price List backend, Phase C Angular implementation, and
+Phase E/F runtime and sign-in corrections remain in the shared branch. Phase G
+corrected only the confirmed Price List precedence/applicability snapshot
+defect and the production Master Data capability resolver regression.
 
 | Current fact | Verified value |
 |---|---|
+| Phase G P1 corrections | Current parent Price List currency/customer/organization/priority/lifecycle configuration now governs current applicability and precedence; immutable child rows remain historical Product/UOM/effective/amount/scale/provenance/source/currency evidence. Active-list edit and append conflict checks use current parent configuration inside the existing Serializable transaction. |
+| Authorization correction | Production `AddMasterDataAuthorization()` now registers a fail-closed resolver that maps the exact trusted Foundation permission to one Master Data capability; unknown/unrelated permissions are empty, and the prior unconditional granting resolver is not in production composition. |
 | Phase D cleanup | Tracked cookie/request-body files and SQLite WAL/SHM files were removed. `.gitignore` now protects the dedicated local runtime/smoke boundary and legacy Development SQLite names. No hard-coded smoke credential remains tracked. |
 | Development persistence | The no-SQL-Server Development fallback now uses separate module-owned `masterdata.db` and `business-parties.db` files outside the repository, supports explicit directory/per-module overrides, initializes each schema fail-loud and idempotently, and has architecture coverage proving module isolation. |
 | Production boundary | The configured `MESP_SQLSERVER_CONNECTION_STRING` path is unchanged. Production keeps the approved `__Host-MiniErp.Auth`/Secure cookie contract; Development HTTP explicitly uses `MiniErp.Auth` with same-request security compatibility. |
 | Frontend proxy | Tracked `frontend/proxy.conf.json` remains the generic `http://localhost:5000` fallback. The new Development launcher resolves an explicit `-ApiPort`/`-ApiUrl` or `MESP_DEV_API_URL`/`MESP_DEV_API_PORT`, writes ignored BOM-free `.runtime/proxy.conf.json` for that exact URL, and starts Angular with it. The official 5000 listener is an unrelated RMS service and was not stopped; the final runtime uses MiniERP 5300 with Angular 4300. |
-| Runtime smoke | Direct and Angular-origin module identity both identified `platform-administration`, `master-data-catalog`, and `business-parties`; direct/proxy unauthenticated session returned 401 problem semantics; wrong password returned `authentication_failed`; direct/proxy sign-in and authenticated sessions passed with Development `MiniErp.Auth`; antiforgery header/cookie, one Development context, idempotent context switch, selected session, Price List GET, Angular `/app/price-lists` route/assets, generated OpenAPI, and Scalar passed. No fake Product/UOM/Currency/Customer records were added. |
-| Validation | Release backend build passed with 0 warnings/errors; focused DevelopmentBootstrap/PriceList coverage passed 8/8; non-SQL backend regression passed 689/689; Angular tests passed 55/55 across 9 files; Angular production build passed with a 408.01 kB initial raw bundle; the runtime configuration self-test and `git diff --check` passed. |
+| Runtime smoke | Frontend-origin module registration, sign-in, session, contexts, antiforgery, context switch, selected session, and Price List GET returned 200; `/login`, `/app/price-lists`, logo/favicon assets returned 200; backend-origin generated OpenAPI and Scalar returned 200 with the Price List operation present. MiniERP ran on 5300 and Angular on 4300 without disturbing RMS 5000. No fake Product/UOM/Currency/Customer records were added. |
+| Validation | `dotnet restore` passed; Release backend build passed with 0 warnings/errors; focused Price List and Master Data authorization coverage passed 17/17; non-SQL backend regression passed 703/703; Angular tests passed 68/68; Angular production build passed with a 414.67 kB initial raw bundle under the unchanged 500 kB warning budget; runtime smoke and `git diff --check` passed. |
 | SQL/provider gate | The 21 SQL Server safety cases remain environment-gated because `MESP_SQLSERVER_CONNECTION_STRING` is unavailable. No SQL connection string was fabricated and no provider/production claim was made. |
 | Jira counts | 79 Done / 7 In Progress / 56 To Do across 142 issues; 79 Done / 2 In Progress / 46 To Do across 127 non-Epic issues. |
 | MESP-23 | Remains In Progress as the living Open Questions Register. No new business decision or product blocker was discovered; the unrelated local port conflict was not treated as a product gate. |
-| Planner/review state | Planner acceptance, reserved Opus review, final review/fixes, merge, and Jira closure remain pending. No browser instance was available in this session, so no visual/browser sign-in claim is made; the authoritative UI-path evidence is the real Angular-origin HTTP sign-in/session/route/asset smoke. |
+| Planner/review state | The two Opus P1 findings are corrected and targeted regressions are green; planner acceptance, targeted Opus re-review, final review, merge, and Jira closure remain pending. No visual/browser sign-in claim is made; the authoritative UI-path evidence is the real Angular-origin HTTP sign-in/session/route/asset smoke. |
 | Production percentages | Final project completion percentages remain unchanged. Runtime cleanup and local execution stabilization do not close SQL/provider/production, migration, legal/privacy, or specialist validation gates. |
 | Exclusions preserved | No MESP-39 execution, MESP-40 activation, external provider/integration/credential/infrastructure, migration/cutover, Retail POS/promotions, Wafra-specific core behavior, Sales Orders, Procurement pricing, Finance/AP/AR, credit, tax/accounting/rounding, or automatic FX behavior was executed. |
-| Current branch/head | `feat/MESP-121-price-list-b2b-pricing` at runtime implementation commit `f9eff32`; final state/tracker synchronization remains on this same branch and draft PR #64. |
-| Next exact continuation | Planner acceptance and the reserved Opus/final review of MESP-121 on the same branch and draft PR. Do not merge, transition MESP-121 Done, replace `TASK.md` with MESP-122, or start another capability. |
+| Current branch/head | `feat/MESP-121-price-list-b2b-pricing` at source correction commit `0242656`; final state/tracker synchronization remains on this same branch and draft PR #64. |
+| Next exact continuation | Planner acceptance and targeted Opus re-review of MESP-121 on the same branch and draft PR. Do not merge, transition MESP-121 Done, replace `TASK.md` with MESP-122, or start another capability. |
 
 The next review session must revalidate the complete shared branch and preserve
-this bounded Phase D evidence. The tracked project statistics are synchronized
+this bounded Phase G evidence. The tracked project statistics are synchronized
 without changing final completion percentages.
 
 ## Historical authoritative position - 13 August 2026 (MESP-120 complete; PR #63 merged; superseded by MESP-121)
