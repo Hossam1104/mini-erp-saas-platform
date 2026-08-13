@@ -4,11 +4,13 @@
 
 MESP-121 is the live active capability and remains **In Progress**. Activation
 evidence is Jira comment `11025`. Luna completed **Phase A only** on the exact
-shared branch `feat/MESP-121-price-list-b2b-pricing`; source commit
-`dffa142e6b9c2fef4987d6229689087a9ecf238f` is pushed and draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
-is open. The same branch and draft PR are reserved for Kimi's Phase B Angular
-work, followed by Sonnet's final review/fix pass. Do not merge this PR,
-transition MESP-121 to Done, or start MESP-122.
+shared branch `feat/MESP-121-price-list-b2b-pricing`; implementation commit
+`dffa142e6b9c2fef4987d6229689087a9ecf238f` and follow-up hardening commit
+`a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb` are pushed and draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+is open at final head `a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb`. The same
+branch and draft PR are reserved for Kimi's Phase B Angular work, followed by
+Sonnet's final review/fix pass. Do not merge this PR, transition MESP-121 to
+Done, or start MESP-122.
 
 Phase A delivered the Tenant-owned Price List identity, existing Product /
 Business Customer / Currency / UOM references, effective-dated version

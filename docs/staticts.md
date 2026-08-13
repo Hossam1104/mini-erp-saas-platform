@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-13 13:22 +03:00
+**Last Updated:** 2026-08-13 13:30 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~33%**
@@ -23,7 +23,7 @@ Unfinished capability remains required after the preview.
 | MESP-118 | Done at its bounded implementation scope; PR #61 was reviewed at 265b9211a2586cdd4e1014454da8c86cca90ba08 and merged at e085032eac3555dfaf2a700830063b67f3c23858; Jira validation/review is comment 10985 and closure is comment 10986. MESP-110/MESP-54 are consumed as Done through PD-044/PD-043. |
 | MESP-119 | Done at its bounded implementation scope; PR #62 was reviewed at ec280a552f328416a52adbda212170a9c1c059fa and merged at fd34dadb7fb96a680f61765ad3c67d3ec1a26572; Jira activation/validation/closure evidence is comments 10987/10988/10989; internal Tax/VAT identity, effective history, deterministic explicit-input engine contract, generated REST/OpenAPI/Scalar reference, and connected bilingual Angular journey are implemented; no statutory or external scope was added. |
 | MESP-120 | Done at its bounded implementation scope; PR #63 was reviewed at f4d6485fd8b70a88ba34b68f1acae15a8c255ff6 and merged at 14f6f4923d2897d891f33f5eb4405d2fe2089e69; Jira activation/validation/closure evidence is comments 10990/11023/11024; reusable Tenant-owned directional Exchange Rate identity/history, deterministic reference evidence, nine REST/OpenAPI operations, persistence integrity, audit/concurrency/idempotency seams, and bilingual lazy Angular journeys are implemented; external FX and Finance posting/revaluation/rounding remain excluded. |
-| MESP-121 | In Progress at its bounded Phase A backend handoff; source commit dffa142e6b9c2fef4987d6229689087a9ecf238f is pushed on feat/MESP-121-price-list-b2b-pricing and draft PR #64 is open. Tenant-owned Price List identity, existing Product/Customer/Currency/UOM references, effective history, deterministic priority/conflict handling, immutable reference evidence, module persistence, audit/concurrency/idempotency seams, and ten REST/OpenAPI operations are implemented; Angular Phase B and Sonnet final review/merge/closure remain pending. |
+| MESP-121 | In Progress at its bounded Phase A backend handoff; implementation commit dffa142e6b9c2fef4987d6229689087a9ecf238f and follow-up hardening commit a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb are pushed on feat/MESP-121-price-list-b2b-pricing and draft PR #64 is open at final head a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb. Tenant-owned Price List identity, existing Product/Customer/Currency/UOM references, effective history, deterministic priority/conflict handling, immutable reference evidence, scope-filtered audit, manual source-context enforcement, module persistence, audit/concurrency/idempotency seams, and ten REST/OpenAPI operations are implemented; Angular Phase B and Sonnet final review/merge/closure remain pending. |
 | MESP-38 | Done at approved bounded BRD scope. |
 | MESP-39 | To Do, unactivated, not executed; future-release Integrations and External Services BRD. |
 | MESP-40 | To Do, unactivated, but required for Release 1 in the migration wave. |
@@ -32,7 +32,7 @@ Unfinished capability remains required after the preview.
 | Decision Pack | 31 canonical entries: A1-A16 and B1-B6 approved only at their exact bounded positions; Class B is contract-bound with mandatory specialist validation before production or irreversible decisions; C1-C9 remain open gates. |
 | Tax/VAT | Internal reusable configuration-led Tax/VAT is implemented at the bounded MESP-119 scope with Tenant-safe identity, effective history, explicit-input deterministic calculation, evidence, audit, API/OpenAPI/Scalar, and Angular UX; statutory/ZATCA/FATOORA/external scope remains excluded. |
 | MESP-39 / MESP-40 | MESP-39 remains future-release and unactivated; MESP-40 remains an unactivated Release 1 migration requirement and was not activated by MESP-116. |
-| Source/production capability | MESP-121 Phase A added verified local Price List backend/persistence/deterministic reference capability over existing Master Data identities, with Tenant-safe authorization, effective history, immutable applied-price evidence, audit/concurrency/idempotency seams, generated REST/OpenAPI/Scalar reference, and focused tests. PR #64 is draft and unmerged; Angular Phase B, Sonnet review, SQL/provider/production, migration, and specialist validation gates remain open. Final project completion percentages remain unchanged. |
+| Source/production capability | MESP-121 Phase A added verified local Price List backend/persistence/deterministic reference capability over existing Master Data identities, with Tenant-safe authorization, effective history, immutable applied-price evidence, scope-filtered audit, manual source-context enforcement, audit/concurrency/idempotency seams, generated REST/OpenAPI/Scalar reference, and focused tests. PR #64 is draft and unmerged at final head a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb; Angular Phase B, Sonnet review, SQL/provider/production, migration, and specialist validation gates remain open. Final project completion percentages remain unchanged. |
 
 Live Jira during the MESP-121 Phase A handoff is **79 Done / 7 In Progress / 56
 To Do across 142 issues** and **79 Done / 2 In Progress / 46 To Do across 127
@@ -1062,14 +1062,17 @@ These gates should not prevent unrelated bounded implementation work, but they m
 Current active development area:
 
 > **Current active implementation:** MESP-121 remains In Progress at its
-> bounded Phase A backend handoff; source commit
-> `dffa142e6b9c2fef4987d6229689087a9ecf238f` is on the shared branch
-> `feat/MESP-121-price-list-b2b-pricing` and draft PR #64 is open. PD-033,
+> bounded Phase A backend handoff; implementation commit
+> `dffa142e6b9c2fef4987d6229689087a9ecf238f` and follow-up hardening commit
+> `a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb` are on the shared branch
+> `feat/MESP-121-price-list-b2b-pricing` and draft PR #64 is open at final
+> head `a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb`. PD-033,
 > PD-034, PD-035, PD-036, and PD-037 were consumed only at their exact
 > approved Price List/reference boundaries. Tenant-safe Price List
 > persistence, deterministic effective-dated reference selection, immutable
-> applied-price evidence, audit/concurrency/idempotency seams, and ten public
-> REST/OpenAPI operations are implemented. Angular Phase B and Sonnet final
+> applied-price evidence, scope-filtered audit, manual source-context
+> enforcement, audit/concurrency/idempotency seams, and ten public REST/OpenAPI
+> operations are implemented. Angular Phase B and Sonnet final
 > review/merge/closure remain pending; SQL/provider/production, migration,
 > legal/privacy, and specialist validation gates remain open. Final project
 > completion percentages remain unchanged; the next continuation is Kimi Phase
@@ -1170,6 +1173,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-13 13:30 +03:00 | **33%** | **52%** | **44%** | **24%** | MESP-121 Phase A bounded hardening appended in follow-up commit `a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb`: scope-filtered Price List audit history, safe not-found behavior for outside-scope reference targets, explicit manual-price source/reason enforcement, corresponding REST state-conflict mapping, and focused regression coverage; focused PriceListTests 3/3, Release build 0 warnings/errors, full non-SQL 684/684, and 21 SQL safety cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; draft PR #64 remains open/unmerged for Angular Phase B and Sonnet final review; no final project percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-13 13:22 +03:00 | **33%** | **52%** | **44%** | **24%** | MESP-121 Phase A backend completed on branch `feat/MESP-121-price-list-b2b-pricing`; source commit `dffa142e6b9c2fef4987d6229689087a9ecf238f` and draft PR #64; Tenant-owned Price List identity, existing Product/Customer/Currency/UOM references, effective-dated history, deterministic priority/conflict resolution, immutable applied-price evidence, audit/concurrency/idempotency seams, module persistence, and ten REST/OpenAPI operations; Release build 0 warnings/errors, focused PriceListTests 3/3, full non-SQL suite 684/684; 21 SQL safety cases remain connection-gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; Angular Phase B and Sonnet final review/merge/closure pending; live Jira 79 Done / 7 In Progress / 56 To Do and non-Epic 79 Done / 2 In Progress / 46 To Do; no MESP-23 addition and no final project percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-13 11:56 +03:00 | **33%** | **52%** | **44%** | **24%** | MESP-120 completed at its bounded Exchange Rate and multi-currency Master Data scope through PR #63, reviewed at f4d6485fd8b70a88ba34b68f1acae15a8c255ff6 and merged at 14f6f4923d2897d891f33f5eb4405d2fe2089e69; Jira Done with activation/validation/closure comments 10990/11023/11024; reused Currency, added Tenant-safe effective-dated directional rate history, deterministic reference selection, historical applied-rate evidence, audit/concurrency/idempotency seams, nine REST/OpenAPI operations, module persistence, and bilingual Angular maintenance/reference journeys; API build 0 warnings/errors, focused 35/35, non-SQL backend 681/681, Angular 36/36 across 7 files, and Angular build passed with 418.47 kB initial bundle and 119.65 kB lazy workspace below the unchanged 500 kB warning budget; 21 SQL safety cases remain connection-gated; live Jira all-issue 79 Done / 6 In Progress / 57 To Do and non-Epic 79 Done / 1 In Progress / 47 To Do; no MESP-23 addition; exact next handoff is MESP-121 | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-13 01:13 +03:00 | **32%** | **49%** | **40%** | **22%** | MESP-119 completed at its bounded internal configuration-led Tax/VAT scope through PR #62, reviewed at ec280a552f328416a52adbda212170a9c1c059fa and merged at fd34dadb7fb96a680f61765ad3c67d3ec1a26572; Jira Done with activation/validation/closure comments 10987/10988/10989; Tenant-safe Tax identity, effective rate history, explicit-input deterministic calculation, applied evidence, audit/concurrency/idempotency seams, ten public REST operations, generated OpenAPI/Scalar reference, and connected bilingual Angular journey; API build 0 warnings/errors, non-SQL backend 679/679, REST/OpenAPI/Scalar 33/33, Angular 35/35 across 7 files, and Angular build passed with 516.48 kB initial bundle / 16.48 kB over the existing warning budget; 21 SQL safety cases remain connection-gated; live Jira all-issue 78 Done / 6 In Progress / 58 To Do and non-Epic 78 Done / 1 In Progress / 48 To Do; no MESP-23 addition; exact next handoff is MESP-120 | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |

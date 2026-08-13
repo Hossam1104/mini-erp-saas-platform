@@ -4,11 +4,12 @@
 
 MESP-121 remains **In Progress** in live Jira. Its activation evidence is
 comment `11025`. This bounded session completed **Phase A only** on the
-required branch `feat/MESP-121-price-list-b2b-pricing`; source commit
-`dffa142e6b9c2fef4987d6229689087a9ecf238f` is pushed and draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
-is open. The branch and PR remain shared for Kimi's Phase B Angular work and
-Sonnet's final review/fix pass; neither merge nor Jira closure is authorized
-by this handoff.
+required branch `feat/MESP-121-price-list-b2b-pricing`; implementation commit
+`dffa142e6b9c2fef4987d6229689087a9ecf238f` and follow-up hardening commit
+`a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb` are pushed and draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+is open at final head `a5e0fcc7091ff7a3fe4115aca701c874b2dc93cb`. The branch
+and PR remain shared for Kimi's Phase B Angular work and Sonnet's final
+review/fix pass; neither merge nor Jira closure is authorized by this handoff.
 
 | Current fact | Verified value |
 |---|---|
@@ -16,7 +17,7 @@ by this handoff.
 | Approved decisions consumed | PD-033, PD-034, PD-035, PD-036, and PD-037 only at their exact approved Price List/reference boundary. No promotion, POS, Sales Order, Finance, credit, FX, or accounting behavior was invented. |
 | Deterministic resolution | Candidates must match Tenant, active lifecycle, Product, UOM, Currency, effective date, customer applicability, and organization applicability. Lower numeric priority wins; an equal best priority is an explicit `price_list_precedence_conflict`; no last-edited, highest-ID, arbitrary, UI-order, or silent fallback behavior exists. |
 | REST/OpenAPI | Ten Foundation-catalogued operations cover list/search, detail, history, create, edit, price-version append, deactivate, reactivate, reference resolution, and audit history. Stable operation IDs, route/permission/Tenant scope, antiforgery, audit, unsafe-effect, concurrency, idempotency, effective-date metadata, generated OpenAPI documentation, and Development/QA Scalar rendering are wired. |
-| Server authority and history | Tenant, actor, permission, organization scope, applicability validation, lifecycle, concurrency, idempotency, and audit authority remain server-derived/fail-closed. Resolution evidence records the selected Price List/version, applicability, effective window, price/scale, priority, provenance, source, and reference snapshot; no Sales Order implementation was added. |
+| Server authority and history | Tenant, actor, permission, organization scope, applicability validation, lifecycle, concurrency, idempotency, and audit authority remain server-derived/fail-closed. Scope-filtered audit reads and outside-scope price-reference requests fail closed without lifecycle disclosure. Manual provenance requires source context/reason. Resolution evidence records the selected Price List/version, applicability, effective window, price/scale, priority, provenance, source, and reference snapshot; no Sales Order implementation was added. |
 | Validation | Release solution build passed with 0 warnings/errors; focused `PriceListTests` passed 3/3; full solution validation passed 684 non-SQL tests, while 21 SQL Server safety cases remain environment-gated because `MESP_SQLSERVER_CONNECTION_STRING` is unavailable; `git diff --check` passed. No SQL connection string was fabricated. |
 | Jira counts | 79 Done / 7 In Progress / 56 To Do across 142 issues; 79 Done / 2 In Progress / 46 To Do across 127 non-Epic issues. |
 | MESP-23 | Remains In Progress as the living Open Questions Register. No new decision or blocker was discovered or added by Phase A. |
