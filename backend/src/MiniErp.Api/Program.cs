@@ -34,6 +34,12 @@ if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
     builder.Services.AddMasterDataSqlServerPersistence(sqlServerConnectionString);
     builder.Services.AddBusinessPartiesSqlServerPersistence(sqlServerConnectionString);
 }
+else if (builder.Environment.IsDevelopment())
+{
+    var devConnectionString = builder.Configuration["MESP_DEV_SQLITE_CONNECTION_STRING"] ?? "Data Source=minierp_dev.db";
+    builder.Services.AddMasterDataSqlitePersistence(devConnectionString);
+    builder.Services.AddBusinessPartiesSqlitePersistence(devConnectionString);
+}
 builder.Services.AddIdentityAuthorization();
 builder.Services.AddAuthentication(options =>
 {
@@ -67,9 +73,9 @@ builder.Services.AddAuthorization();
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
-    options.Cookie.Name = "__Host-MiniErp.AntiForgery";
+    options.Cookie.Name = builder.Environment.IsDevelopment() ? "MiniErp.AntiForgery" : "__Host-MiniErp.AntiForgery";
     options.Cookie.HttpOnly = false;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.Path = "/";
 });
