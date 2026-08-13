@@ -25,9 +25,11 @@ public static class MasterDataPersistenceServiceCollectionExtensions
         configureOptions(optionsBuilder);
         var persistence = new MasterDataCatalogPersistence(optionsBuilder.Options);
         var currencyPaymentTermPersistence = new MasterDataCurrencyPaymentTermPersistence(optionsBuilder.Options);
+        var exchangeRatePersistence = new MasterDataExchangeRatePersistence(optionsBuilder.Options);
         var taxPersistence = new MasterDataTaxPersistence(optionsBuilder.Options);
         services.AddSingleton<IMasterDataCatalogPersistence>(persistence);
         services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence>(currencyPaymentTermPersistence);
+        services.AddSingleton<IMasterDataExchangeRatePersistence>(exchangeRatePersistence);
         services.AddSingleton<IMasterDataTaxPersistence>(taxPersistence);
         services.AddSingleton<IProductIdentityPersistence>(persistence);
         services.AddSingleton<MasterDataCategoryUomService>();

@@ -61,6 +61,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         operation.OperationId = descriptor.OperationId;
         operation.Summary = SummaryFor(descriptor.OperationId);
         operation.Description = DescriptionFor(descriptor);
+        AddExchangeRateReferenceParameter(operation, descriptor);
         operation.Responses ??= new OpenApiResponses();
         AddResponse(operation, "200", SuccessResponseFor(descriptor.OperationId));
         AddResponse(operation, "400", "The request shape, effective date, explicit calculation input, or validation rule is invalid.");
@@ -71,6 +72,38 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         AddResponse(operation, "503", "The required persistence, authorization, or audit boundary is unavailable; no success is claimed.");
 
         return Task.CompletedTask;
+    }
+
+    private static void AddExchangeRateReferenceParameter(OpenApiOperation operation, FoundationOperationDescriptor descriptor)
+    {
+        if (descriptor.OperationId != "master-data.exchange-rate.reference.read")
+        {
+            return;
+        }
+
+        operation.Parameters ??= [];
+        var parameter = operation.Parameters
+            .OfType<OpenApiParameter>()
+            .SingleOrDefault(item => item.Name == "effectiveOn" && item.In == ParameterLocation.Query);
+
+        if (parameter is null)
+        {
+            parameter = new OpenApiParameter
+            {
+                Name = "effectiveOn",
+                In = ParameterLocation.Query,
+                Required = true
+            };
+            operation.Parameters.Add(parameter);
+        }
+
+        parameter.Description = "Required ISO 8601 calendar date used to select exactly one effective-dated version.";
+        parameter.Required = true;
+        parameter.Schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Format = "date"
+        };
     }
 
     private static void AddResponse(OpenApiOperation operation, string statusCode, string description)
@@ -96,6 +129,15 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.tax.deactivate" => "Deactivate a Tax rule",
         "master-data.tax.reactivate" => "Reactivate a Tax rule",
         "master-data.tax.audit.read" => "Read Tax audit evidence",
+        "master-data.exchange-rate.list" => "List Tenant-owned Exchange Rates",
+        "master-data.exchange-rate.read" => "Read one Tenant-owned Exchange Rate",
+        "master-data.exchange-rate.history.read" => "Read Exchange Rate version history",
+        "master-data.exchange-rate.reference.read" => "Resolve an Exchange Rate for an effective date",
+        "master-data.exchange-rate.create" => "Create a Tenant-owned Exchange Rate",
+        "master-data.exchange-rate.edit" => "Edit an Exchange Rate and append evidence",
+        "master-data.exchange-rate.deactivate" => "Deactivate an Exchange Rate",
+        "master-data.exchange-rate.reactivate" => "Reactivate an Exchange Rate",
+        "master-data.exchange-rate.audit.read" => "Read Exchange Rate audit evidence",
         _ => GenericSummary(operationId)
     };
 
@@ -143,6 +185,19 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                     : string.Empty);
         }
 
+        if (descriptor.OperationId.StartsWith("master-data.exchange-rate", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Exchange Rate is reusable Tenant-wide internal reference data over two existing active Currency identities. "
+                + "The pair is directional (source units to target units), the rate is positive with an explicit precision scale, "
+                + "and edits append effective-dated versions while preserving manual/configured provenance, source notes, and "
+                + "historical Currency-code snapshots. Reference resolution selects one version only when the requested date is "
+                + "inside its effective window; unknown or inactive references fail safely. This API does not invent inverse, "
+                + "reciprocal, triangulated, provider-fed, bid/ask, average, daily-close, Finance posting, rounding, realized or "
+                + "unrealized FX, revaluation, settlement, reconciliation, or external integration behavior. Writes require "
+                + "Idempotency-Key; version edits and lifecycle changes also require the current If-Match value.";
+        }
+
         return contextRules
             + "The operation is part of the reusable internal ERP contract. Response failures use Problem Details "
             + "with a stable code, correlation identifier, and operation identifier; provider details and internal "
@@ -158,6 +213,9 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.tax.reference.read" => "The active Tax rate version selected for the requested effective date, including applied reference evidence.",
         "master-data.tax.history.read" => "The Tenant-owned Tax rate-version windows in stable version order.",
         "master-data.tax.audit.read" => "Tenant-filtered audit evidence for the Tax resource.",
+        "master-data.exchange-rate.reference.read" => "The active Exchange Rate version selected for the requested effective date, including applied pair and version evidence.",
+        "master-data.exchange-rate.history.read" => "The Tenant-owned Exchange Rate version windows with preserved Currency-code snapshots.",
+        "master-data.exchange-rate.audit.read" => "Tenant-filtered audit evidence for the Exchange Rate resource.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 

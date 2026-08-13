@@ -1,6 +1,6 @@
 import { TranslationKey } from '../../core/i18n/language.service';
 
-export type MasterDataResourceKey = 'categories' | 'units' | 'products' | 'suppliers' | 'customers' | 'currencies' | 'payment-terms' | 'taxes';
+export type MasterDataResourceKey = 'categories' | 'units' | 'products' | 'suppliers' | 'customers' | 'currencies' | 'payment-terms' | 'taxes' | 'exchange-rates';
 
 export type MasterDataLifecycleState = 'Active' | 'Inactive' | string;
 
@@ -141,6 +141,51 @@ export interface TaxRecord extends MasterDataRecordBase {
   rateVersions: TaxRateVersionRecord[];
 }
 
+export type ExchangeRateProvenance = 'Manual' | 'Configured';
+
+export interface ExchangeRateVersionRecord {
+  id: string;
+  versionNumber: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  rate: number;
+  rateScale: number;
+  provenance: ExchangeRateProvenance | string;
+  sourceNotes: string | null;
+  sourceCurrencyCode: string;
+  targetCurrencyCode: string;
+}
+
+export interface ExchangeRateRecord extends MasterDataRecordBase {
+  sourceCurrencyId: string;
+  targetCurrencyId: string;
+  sourceCurrencyCode: string;
+  targetCurrencyCode: string;
+  currentVersionNumber: number;
+  versions: ExchangeRateVersionRecord[];
+}
+
+export interface ExchangeRateReferenceResponse {
+  id: string;
+  tenantId: string;
+  sourceCurrencyId: string;
+  targetCurrencyId: string;
+  sourceCurrencyCode: string;
+  targetCurrencyCode: string;
+  lifecycleState: string;
+  versionNumber: number;
+  versionId: string;
+  effectiveOn: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  rate: number;
+  rateScale: number;
+  provenance: ExchangeRateProvenance | string;
+  sourceNotes: string | null;
+  referenceValue: string;
+  version: string;
+}
+
 export interface TaxCalculationRequest {
   effectiveOn: string;
   transactionDirection: Exclude<TaxDirection, 'Both'>;
@@ -174,7 +219,8 @@ export type MasterDataRecord =
   | CustomerRecord
   | CurrencyRecord
   | PaymentTermRecord
-  | TaxRecord;
+  | TaxRecord
+  | ExchangeRateRecord;
 
 export interface ContactDraft {
   name: string;
@@ -263,7 +309,18 @@ export interface TaxDraft {
   ratePercentage: number;
 }
 
-export type MasterDataDraft = CategoryDraft | UnitDraft | ProductDraft | PartyDraft | CurrencyDraft | PaymentTermDraft | TaxDraft;
+export interface ExchangeRateDraft {
+  sourceCurrencyId: string;
+  targetCurrencyId: string;
+  effectiveFrom: string;
+  effectiveTo: string;
+  rate: number;
+  rateScale: number;
+  provenance: ExchangeRateProvenance;
+  sourceNotes: string;
+}
+
+export type MasterDataDraft = CategoryDraft | UnitDraft | ProductDraft | PartyDraft | CurrencyDraft | PaymentTermDraft | TaxDraft | ExchangeRateDraft;
 
 export type MasterDataWritePayload =
   | {
@@ -326,6 +383,16 @@ export type MasterDataWritePayload =
       arabicName: string | null;
       applicability: TaxDirection;
       rateVersion: { effectiveFrom: string; effectiveTo: string | null; ratePercentage: number };
+    }
+  | {
+      sourceCurrencyId: string;
+      targetCurrencyId: string;
+      effectiveFrom: string;
+      effectiveTo: string | null;
+      rate: number;
+      rateScale: number;
+      provenance: ExchangeRateProvenance;
+      sourceNotes: string | null;
     };
 
 export interface MasterDataAuditEntry {
@@ -410,6 +477,13 @@ export const RESOURCE_DEFINITIONS: readonly MasterDataResourceDefinition[] = [
     leadKey: 'taxLead',
     endpoint: '/master-data/taxes',
     accent: 'violet',
+  },
+  {
+    key: 'exchange-rates',
+    labelKey: 'exchangeRates',
+    leadKey: 'exchangeRateLead',
+    endpoint: '/master-data/exchange-rates',
+    accent: 'blue',
   },
 ] as const;
 

@@ -14,6 +14,9 @@ import {
   CustomerRecord,
   CurrencyDraft,
   CurrencyRecord,
+  ExchangeRateDraft,
+  ExchangeRateRecord,
+  ExchangeRateReferenceResponse,
   MasterDataAuditEntry,
   MasterDataDraft,
   MasterDataRecord,
@@ -205,6 +208,28 @@ type LifecycleAction = 'deactivate' | 'reactivate';
     </ng-template>
 
     <ng-template #readOnlyFields>
+      @if (exchangeRateRecord(); as record) {
+        @let current = exchangeRateCurrentVersion(record);
+        <div class="field-read-grid">
+          <div><span>{{ language.text('sourceCurrency') }}</span><b>{{ record.sourceCurrencyCode }} / {{ referenceName('currencies', record.sourceCurrencyId) }}</b></div>
+          <div><span>{{ language.text('targetCurrency') }}</span><b>{{ record.targetCurrencyCode }} / {{ referenceName('currencies', record.targetCurrencyId) }}</b></div>
+          <div><span>{{ language.text('exchangeRateVersion') }}</span><b>v{{ record.currentVersionNumber }}</b></div>
+          <div><span>{{ language.text('rate') }}</span><b>{{ current?.rate ?? language.text('emptyValue') }}</b></div>
+          <div><span>{{ language.text('rateScale') }}</span><b>{{ current?.rateScale ?? language.text('emptyValue') }}</b></div>
+          <div><span>{{ language.text('provenance') }}</span><b>{{ current?.provenance ?? language.text('emptyValue') }}</b></div>
+          <div><span>{{ language.text('effectiveFrom') }}</span><b>{{ current?.effectiveFrom ?? language.text('emptyValue') }}</b></div>
+          <div><span>{{ language.text('effectiveTo') }}</span><b>{{ current?.effectiveTo ?? language.text('emptyValue') }}</b></div>
+          <div class="field-read-grid__wide"><span>{{ language.text('effectiveHistory') }}</span><b>{{ record.versions.length }} {{ language.text('versionCount') }} / {{ exchangeRateHistoryLabel(record) }}</b></div>
+          <div class="field-read-grid__wide"><span>{{ language.text('sourceNotes') }}</span><b>{{ valueOrEmpty(current?.sourceNotes) }}</b></div>
+        </div>
+        <p class="boundary-note">{{ language.text('exchangeRateBoundary') }}</p>
+        <section class="exchange-reference-panel" aria-labelledby="exchange-reference-title">
+          <div class="form-section__heading"><div><p class="eyebrow eyebrow--soft">{{ language.text('referenceEvidence') }}</p><h3 id="exchange-reference-title">{{ language.text('referenceEvidence') }}</h3></div><span>{{ language.text('serverAuthority') }}</span></div>
+          <p class="term-hint">{{ language.text('exchangeReferenceLead') }}</p>
+          <div class="form-grid form-grid--secondary"><label class="form-field"><span>{{ language.text('effectiveOn') }}</span><input type="date" [ngModel]="exchangeReferenceDate()" (ngModelChange)="setExchangeReferenceDate($event)" name="exchangeReferenceDate" /></label><div class="form-field form-field--action"><span>&nbsp;</span><button class="button button--primary" type="button" (click)="resolveExchangeReference()" [disabled]="exchangeReferenceLoading() || !exchangeReferenceDate()">{{ exchangeReferenceLoading() ? language.text('resolvingReference') : language.text('resolveReference') }}</button></div></div>
+          @if (exchangeReferenceLoading()) { <p class="muted-line" role="status">{{ language.text('resolvingReference') }}</p> } @else if (exchangeReferenceError()) { <p class="inline-alert" role="alert">{{ language.text('exchangeReferenceUnavailable') }}</p> } @else if (exchangeReference(); as reference) { <div class="exchange-reference-result" role="status"><div><span>{{ language.text('referenceValue') }}</span><b>{{ reference.referenceValue }}</b></div><div><span>{{ language.text('rate') }}</span><b>{{ reference.rate }}</b></div><div><span>{{ language.text('provenance') }}</span><b>{{ reference.provenance }}</b></div><div><span>{{ language.text('version') }}</span><b>v{{ reference.versionNumber }} / {{ reference.effectiveFrom }}{{ reference.effectiveTo ? ' - ' + reference.effectiveTo : '' }}</b></div><div class="field-read-grid__wide"><span>{{ language.text('sourceNotes') }}</span><b>{{ valueOrEmpty(reference.sourceNotes) }}</b></div></div> } @else { <p class="muted-line">{{ language.text('exchangeReferenceLead') }}</p> }
+        </section>
+      }
       @if (taxRecord(); as record) { @let current = taxCurrentVersion(record); <div class="field-read-grid"><div><span>{{ language.text('code') }}</span><b>{{ record.code }}</b></div><div><span>{{ language.text('taxCategoryCode') }}</span><b>{{ record.categoryCode }}</b></div><div><span>{{ language.text('taxCategoryEnglishName') }}</span><b>{{ valueOrEmpty(record.categoryEnglishName) }}</b></div><div dir="rtl"><span>{{ language.text('taxCategoryArabicName') }}</span><b>{{ valueOrEmpty(record.categoryArabicName) }}</b></div><div><span>{{ language.text('englishName') }}</span><b>{{ valueOrEmpty(record.englishName) }}</b></div><div dir="rtl"><span>{{ language.text('arabicName') }}</span><b>{{ valueOrEmpty(record.arabicName) }}</b></div><div><span>{{ language.text('applicability') }}</span><b>{{ taxDirectionLabel(record.applicability) }}</b></div><div><span>{{ language.text('taxVersion') }}</span><b>v{{ record.currentVersionNumber }}</b></div><div><span>{{ language.text('taxRate') }}</span><b>{{ current?.ratePercentage ?? language.text('emptyValue') }}%</b></div><div class="field-read-grid__wide"><span>{{ language.text('effectiveHistory') }}</span><b>{{ record.rateVersions.length }} {{ language.text('versionCount') }} Â· {{ taxHistoryLabel(record) }}</b></div></div><p class="boundary-note">{{ language.text('taxBoundary') }}</p><section class="tax-engine-panel" aria-labelledby="tax-engine-title"><div class="form-section__heading"><div><p class="eyebrow eyebrow--soft">{{ language.text('taxCalculationPreview') }}</p><h3 id="tax-engine-title">{{ language.text('taxCalculationPreview') }}</h3></div><span>{{ language.text('serverAuthority') }}</span></div><p class="term-hint">{{ language.text('taxCalculationLead') }}</p><div class="form-grid form-grid--secondary"><label class="form-field"><span>{{ language.text('effectiveOn') }}</span><input type="date" [ngModel]="taxCalculationDraft.effectiveOn" (ngModelChange)="setTaxCalculationField('effectiveOn', $event)" name="taxCalculationEffectiveOn" /></label><label class="form-field"><span>{{ language.text('transactionDirection') }}</span><select [ngModel]="taxCalculationDraft.transactionDirection" (ngModelChange)="setTaxCalculationField('transactionDirection', $event)" name="taxCalculationDirection"><option value="Sales">{{ language.text('sales') }}</option><option value="Purchase">{{ language.text('purchase') }}</option></select></label><label class="form-field"><span>{{ language.text('taxableBase') }}</span><input type="number" min="0" step="0.01" [ngModel]="taxCalculationDraft.taxableBase" (ngModelChange)="setTaxCalculationField('taxableBase', $event)" name="taxCalculationTaxableBase" /></label><label class="form-field"><span>{{ language.text('currencyCode') }}</span><input [ngModel]="taxCalculationDraft.currencyCode" (ngModelChange)="setTaxCalculationField('currencyCode', $event)" name="taxCalculationCurrency" /></label><label class="form-field"><span>{{ language.text('roundingScale') }}</span><input type="number" min="0" max="6" [ngModel]="taxCalculationDraft.roundingScale" (ngModelChange)="setTaxCalculationField('roundingScale', $event)" name="taxCalculationRoundingScale" /></label><label class="form-field"><span>{{ language.text('roundingMode') }}</span><select [ngModel]="taxCalculationDraft.roundingMode" (ngModelChange)="setTaxCalculationField('roundingMode', $event)" name="taxCalculationRoundingMode"><option value="AwayFromZero">{{ language.text('awayFromZero') }}</option><option value="ToEven">{{ language.text('toEven') }}</option></select></label></div><label class="form-field form-field--full"><span>{{ language.text('sourceLineage') }}</span><input [ngModel]="taxCalculationDraft.sourceLineage" (ngModelChange)="setTaxCalculationField('sourceLineage', $event)" name="taxCalculationSourceLineage" /></label><button class="button button--primary" type="button" (click)="calculateTax()" [disabled]="taxCalculationLoading()">{{ taxCalculationLoading() ? language.text('calculatingTax') : language.text('calculateTax') }}</button>@if (taxCalculationError()) { <p class="inline-alert" role="alert">{{ language.text('taxCalculationUnavailable') }}</p> } @if (taxCalculation(); as result) { <div class="tax-result" role="status"><div><span>{{ language.text('taxRate') }}</span><b>{{ result.ratePercentage }}%</b></div><div><span>{{ language.text('taxableBase') }}</span><b>{{ result.taxableBase }} {{ result.currencyCode }}</b></div><div><span>{{ language.text('taxAmount') }}</span><b>{{ result.taxAmount }} {{ result.currencyCode }}</b></div><div><span>{{ language.text('referenceValue') }}</span><b>{{ result.referenceValue }}</b></div></div> }<p class="boundary-note">{{ language.text('taxCalculationBoundary') }}</p></section> }
       @if (categoryRecord(); as record) { <div class="field-read-grid"><div><span>{{ language.text('code') }}</span><b>{{ record.code }}</b></div><div><span>{{ language.text('englishName') }}</span><b>{{ valueOrEmpty(record.englishName) }}</b></div><div><span>{{ language.text('arabicName') }}</span><b dir="rtl">{{ valueOrEmpty(record.arabicName) }}</b></div><div><span>{{ language.text('parentCategory') }}</span><b>{{ record.parentCategoryId ? referenceName('categories', record.parentCategoryId) : language.text('noParent') }}</b></div><div><span>{{ language.text('trackingDefault') }}</span><b>{{ record.trackingDefaultEnabled ? language.text('trackingEnabled') : language.text('trackingDisabled') }}</b></div></div> }
       @if (unitRecord(); as record) { <div class="field-read-grid"><div><span>{{ language.text('code') }}</span><b>{{ record.code }}</b></div><div><span>{{ language.text('englishName') }}</span><b>{{ valueOrEmpty(record.englishName) }}</b></div><div><span>{{ language.text('arabicName') }}</span><b dir="rtl">{{ valueOrEmpty(record.arabicName) }}</b></div></div> }
@@ -217,7 +242,28 @@ type LifecycleAction = 'deactivate' | 'reactivate';
 
     <ng-template #contactReadOnly let-contacts="contacts"><div class="contacts-read"><span>{{ language.text('contacts') }}</span>@if (contacts.length === 0) { <b>{{ language.text('emptyValue') }}</b> } @else { @for (contact of contacts; track contact.id) { <div class="contact-line"><b>{{ contact.name }}</b><small>{{ contact.email || language.text('emptyValue') }} · {{ contact.phone || language.text('emptyValue') }}</small></div> } }</div></ng-template>
 
+    <ng-template #exchangeEditableFields>
+      @if (resource() === 'exchange-rates') {
+        @let draft = exchangeRateDraft();
+        <div class="exchange-edit-panel">
+          <div class="form-section__heading"><div><p class="eyebrow eyebrow--soft">02 / {{ language.text('exchangeRates') }}</p><h3>{{ language.text('exchangeRates') }}</h3></div><span>{{ language.text('exchangeRateBoundary') }}</span></div>
+          <div class="form-grid">
+            <label class="form-field" [class.has-error]="invalid('sourceCurrencyId')"><span>{{ language.text('sourceCurrency') }} <em>*</em></span><select [ngModel]="draft.sourceCurrencyId" (ngModelChange)="setDraftField('sourceCurrencyId', $event)" name="sourceCurrencyId" [disabled]="detailMode() === 'edit'" [attr.aria-invalid]="invalid('sourceCurrencyId')"><option value="">{{ language.text('selectCurrency') }}</option>@for (currency of currencyChoices(); track currency.id) { <option [value]="currency.id">{{ currencyOptionLabel(currency) }}</option> }</select><small>{{ invalid('sourceCurrencyId') ? language.text('required') : language.text('exchangeCurrencyHint') }}</small></label>
+            <label class="form-field" [class.has-error]="invalid('targetCurrencyId')"><span>{{ language.text('targetCurrency') }} <em>*</em></span><select [ngModel]="draft.targetCurrencyId" (ngModelChange)="setDraftField('targetCurrencyId', $event)" name="targetCurrencyId" [disabled]="detailMode() === 'edit'" [attr.aria-invalid]="invalid('targetCurrencyId')"><option value="">{{ language.text('selectCurrency') }}</option>@for (currency of currencyChoices(); track currency.id) { <option [value]="currency.id">{{ currencyOptionLabel(currency) }}</option> }</select><small>{{ invalid('targetCurrencyId') ? language.text('required') : language.text('exchangeCurrencyHint') }}</small></label>
+            <label class="form-field" [class.has-error]="invalid('effectiveFrom')"><span>{{ language.text('effectiveFrom') }} <em>*</em></span><input type="date" [ngModel]="draft.effectiveFrom" (ngModelChange)="setDraftField('effectiveFrom', $event)" name="exchangeEffectiveFrom" [attr.aria-invalid]="invalid('effectiveFrom')" /><small>{{ invalid('effectiveFrom') ? language.text('required') : language.text('effectiveHistoryHint') }}</small></label>
+            <label class="form-field"><span>{{ language.text('effectiveTo') }}</span><input type="date" [ngModel]="draft.effectiveTo" (ngModelChange)="setDraftField('effectiveTo', $event)" name="exchangeEffectiveTo" /><small>{{ language.text('effectiveHistoryHint') }}</small></label>
+            <label class="form-field" [class.has-error]="invalid('rate')"><span>{{ language.text('rate') }} <em>*</em></span><input type="number" min="0.000000000001" step="0.000000000001" [ngModel]="draft.rate" (ngModelChange)="setDraftField('rate', $event)" name="exchangeRate" [attr.aria-invalid]="invalid('rate')" /><small>{{ invalid('rate') ? language.text('validationSummary') : language.text('positiveRateHint') }}</small></label>
+            <label class="form-field" [class.has-error]="invalid('rateScale')"><span>{{ language.text('rateScale') }} <em>*</em></span><input type="number" min="0" max="12" step="1" [ngModel]="draft.rateScale" (ngModelChange)="setDraftField('rateScale', $event)" name="exchangeRateScale" [attr.aria-invalid]="invalid('rateScale')" /><small>{{ invalid('rateScale') ? language.text('validationSummary') : language.text('rateScaleHint') }}</small></label>
+            <label class="form-field"><span>{{ language.text('provenance') }}</span><select [ngModel]="draft.provenance" (ngModelChange)="setDraftField('provenance', $event)" name="exchangeProvenance"><option value="Manual">{{ language.text('manualProvenance') }}</option><option value="Configured">{{ language.text('configuredProvenance') }}</option></select><small>{{ language.text('provenanceHint') }}</small></label>
+          </div>
+          <label class="form-field form-field--full"><span>{{ language.text('sourceNotes') }}</span><textarea [ngModel]="draft.sourceNotes" (ngModelChange)="setDraftField('sourceNotes', $event)" name="exchangeSourceNotes" rows="3" maxlength="1024"></textarea><small>{{ language.text('sourceNotesHint') }}</small></label>
+          <p class="boundary-note">{{ language.text('exchangeRateBoundary') }}</p>
+        </div>
+      }
+    </ng-template>
+
     <ng-template #editableFields>
+      <ng-container *ngTemplateOutlet="exchangeEditableFields" />
       <div class="form-section"><div class="form-section__heading"><div><p class="eyebrow eyebrow--soft">01 / {{ language.text('masterData') }}</p><h3>{{ language.text('masterData') }}</h3></div><span>{{ language.text('serverAuthority') }}</span></div>
         @if (resource() === 'categories' || resource() === 'units') { <div class="form-grid"><label class="form-field" [class.has-error]="invalid('code')"><span>{{ language.text('code') }} <em>*</em></span><input [ngModel]="draftText('code')" (ngModelChange)="setDraftField('code', $event)" name="code" autocomplete="off" [attr.aria-invalid]="invalid('code')" /><small>{{ invalid('code') ? language.text('required') : '' }}</small></label><label class="form-field"><span>{{ language.text('englishName') }}</span><input [ngModel]="draftText('englishName')" (ngModelChange)="setDraftField('englishName', $event)" name="englishName" /><small></small></label><label class="form-field" dir="rtl"><span>{{ language.text('arabicName') }}</span><input [ngModel]="draftText('arabicName')" (ngModelChange)="setDraftField('arabicName', $event)" name="arabicName" /><small></small></label></div> }
         @if (resource() === 'currencies') { <div class="form-grid"><label class="form-field" [class.has-error]="invalid('code')"><span>{{ language.text('code') }} <em>*</em></span><input [ngModel]="draftText('code')" (ngModelChange)="setDraftField('code', $event)" name="currencyCode" autocomplete="off" [attr.aria-invalid]="invalid('code')" /><small>{{ invalid('code') ? language.text('required') : language.text('currencyCodeHint') }}</small></label><label class="form-field"><span>{{ language.text('englishName') }}</span><input [ngModel]="draftText('englishName')" (ngModelChange)="setDraftField('englishName', $event)" name="currencyEnglishName" /><small></small></label><label class="form-field" dir="rtl"><span>{{ language.text('arabicName') }}</span><input [ngModel]="draftText('arabicName')" (ngModelChange)="setDraftField('arabicName', $event)" name="currencyArabicName" /><small></small></label></div><p class="boundary-note">{{ language.text('currencyBoundary') }}</p> }
@@ -273,7 +319,11 @@ type LifecycleAction = 'deactivate' | 'reactivate';
     .workspace-panel { min-width: 0; border: 1px solid var(--line); border-radius: 1.15rem; background: var(--surface-raised); box-shadow: var(--shadow-soft); }
     .list-view, .detail-view { padding: clamp(1rem, 2.5vw, 1.65rem); }.section-heading, .detail-heading, .detail-topline, .toolbar, .pagination, .audit-heading, .form-section__heading, .contacts-edit__heading, .form-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }.section-heading { align-items: flex-end; margin-block-end: 1.35rem; }.section-heading h2, .detail-heading h2 { margin: 0; color: var(--ink); font: 800 clamp(1.45rem, 3vw, 2.1rem)/1 var(--font-display); letter-spacing: -.045em; }.section-heading p:not(.eyebrow), .detail-heading p:not(.eyebrow) { max-width: 37rem; margin: .5rem 0 0; color: var(--ink-muted); font-size: .82rem; line-height: 1.5; }.section-heading__actions, .detail-heading__actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }.button { min-height: 2.35rem; border: 1px solid transparent; border-radius: .55rem; padding: .58rem .82rem; font-size: .76rem; font-weight: 800; cursor: pointer; }.button:disabled { cursor: not-allowed; opacity: .45; }.button--primary { color: #173b35; background: var(--accent); }.button--primary:hover:not(:disabled) { background: #c4ead1; }.button--quiet { border-color: var(--line); color: var(--ink-muted); background: transparent; }.button--quiet:hover:not(:disabled) { border-color: var(--line-strong); color: var(--ink); background: var(--canvas); }.button--danger { color: #fff; background: var(--danger); }.toolbar { align-items: stretch; margin-block-end: 1rem; border-block: 1px solid var(--line); padding-block: .75rem; }.search-field { display: flex; align-items: center; flex: 1 1 16rem; gap: .5rem; border: 1px solid var(--line); border-radius: .55rem; padding-inline: .7rem; background: var(--canvas); }.search-field:focus-within { border-color: var(--focus); box-shadow: 0 0 0 3px rgb(13 138 131 / 12%); }.search-field__icon { color: var(--accent-strong); font-size: 1.3rem; }.search-field input, .filter-field select { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: .8rem; }.filter-field { display: flex; align-items: center; min-width: 9rem; border: 1px solid var(--line); border-radius: .55rem; padding-inline: .6rem; background: var(--canvas); }.filter-field select { cursor: pointer; }.toolbar__count { align-self: center; color: var(--ink-muted); font: 700 .68rem/1 ui-monospace, monospace; white-space: nowrap; }.record-table-wrap, .audit-table-wrap { overflow-x: auto; }.record-table, .audit-table { width: 100%; border-collapse: collapse; font-size: .78rem; }.record-table th, .record-table td, .audit-table th, .audit-table td { border-block-end: 1px solid var(--line); padding: .85rem .7rem; text-align: start; vertical-align: middle; }.record-table th, .audit-table th { color: var(--ink-muted); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; }.record-table tbody tr:hover { background: #f7faf7; }.record-table td:first-child { width: 31%; }.record-table td:nth-child(2) { width: 43%; }.record-code { display: block; border: 0; padding: 0; color: var(--accent-strong); background: none; font: 800 .82rem/1.2 ui-monospace, monospace; cursor: pointer; }.record-code:hover { text-decoration: underline; }.record-table small, .audit-table small { display: block; max-width: 26rem; margin-block-start: .25rem; overflow: hidden; color: var(--ink-muted); font-size: .66rem; text-overflow: ellipsis; white-space: nowrap; }.record-name { display: block; color: var(--ink); font-weight: 700; }.status-pill { display: inline-flex; align-items: center; gap: .35rem; border-radius: 99px; padding: .3rem .5rem; color: var(--success); background: var(--accent-soft); font-size: .66rem; font-weight: 800; white-space: nowrap; }.status-pill i { width: .38rem; height: .38rem; border-radius: 50%; background: currentColor; }.status-pill--inactive { color: var(--support); background: var(--support-soft); }.table-action { text-align: end !important; }.icon-button { display: inline-grid; place-items: center; width: 2rem; height: 2rem; border: 1px solid var(--line); border-radius: .5rem; color: var(--accent-strong); background: transparent; cursor: pointer; }.icon-button:hover { border-color: var(--accent-strong); background: var(--accent-soft); }.pagination { margin-block-start: .8rem; color: var(--ink-muted); font: 700 .68rem/1 ui-monospace, monospace; }.pagination > div { display: flex; gap: .4rem; }.pager-button { border: 0; color: var(--accent-strong); background: transparent; font-size: .7rem; font-weight: 800; cursor: pointer; }.pager-button:disabled { color: var(--line-strong); cursor: not-allowed; }.state-card { display: flex; align-items: flex-start; gap: .8rem; border: 1px dashed var(--line-strong); border-radius: .8rem; padding: 1.35rem; background: var(--canvas); }.state-card b { color: var(--ink); font-size: .85rem; }.state-card p { margin: .3rem 0 0; color: var(--ink-muted); font-size: .75rem; line-height: 1.5; }.state-card--error { border-style: solid; border-color: color-mix(in srgb, var(--danger) 35%, var(--line)); background: color-mix(in srgb, var(--danger) 5%, var(--surface-raised)); }.state-card--empty { min-height: 10rem; align-items: center; }.state-icon { display: grid; flex: 0 0 1.8rem; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: .5rem; color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface-raised)); font-weight: 900; }.state-card--empty .state-icon { color: var(--accent-strong); background: var(--accent-soft); }.loader { width: 1.2rem; height: 1.2rem; border: 2px solid var(--line); border-top-color: var(--accent-strong); border-radius: 50%; animation: spin .8s linear infinite; }.text-button, .back-link { border: 0; padding: 0; color: var(--accent-strong); background: transparent; font-size: .74rem; font-weight: 800; cursor: pointer; }.text-button { display: block; margin-block-start: .7rem; }.detail-topline { margin-block-end: 1.25rem; }.back-link { color: var(--ink-muted); }.back-link:hover { color: var(--accent-strong); }.detail-scope { color: var(--ink-muted); font: 700 .65rem/1 ui-monospace, monospace; }.detail-heading { align-items: flex-end; margin-block-end: 1.25rem; }.detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem); gap: 1rem; }.detail-card, .audit-panel, .edit-card { border: 1px solid var(--line); border-radius: .8rem; padding: 1rem; background: #fcfdfb; }.detail-card--main { min-width: 0; }.detail-card--rail { background: var(--canvas); }.card-kicker { color: var(--ink-muted); font: 800 .65rem/1 ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }.field-read-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem 1.2rem; margin-block-start: 1.3rem; }.field-read-grid > div { min-width: 0; border-block-start: 2px solid var(--line); padding-block-start: .5rem; }.field-read-grid span, .fact-stack span, .contacts-read > span { display: block; color: var(--ink-muted); font-size: .67rem; font-weight: 700; }.field-read-grid b { display: block; margin-block-start: .3rem; overflow-wrap: anywhere; color: var(--ink); font-size: .8rem; line-height: 1.4; }.field-read-grid__wide { grid-column: 1 / -1; }.fact-stack { display: grid; gap: 1rem; margin-block-start: 1.3rem; }.fact-stack b { display: block; margin-block-start: .28rem; color: var(--ink); font-size: .75rem; line-height: 1.4; }.boundary-note { margin: 1rem 0 0; border-inline-start: 3px solid var(--accent); padding-inline-start: .7rem; color: var(--ink-muted); font-size: .72rem; line-height: 1.5; }.contacts-read { display: grid; gap: .55rem; margin-block-start: 1.35rem; border-block-start: 1px solid var(--line); padding-block-start: .85rem; }.contact-line { display: flex; justify-content: space-between; gap: 1rem; border-radius: .5rem; padding: .55rem; background: var(--canvas); }.contact-line b { font-size: .75rem; }.contact-line small { margin: 0; color: var(--ink-muted); font-size: .68rem; }.audit-panel { margin-block-start: 1rem; }.audit-heading { align-items: flex-end; margin-block-end: .7rem; }.audit-heading h3 { margin: 0; font: 800 1.1rem/1 var(--font-display); }.audit-count { display: grid; place-items: center; min-width: 1.75rem; height: 1.75rem; border-radius: 50%; color: var(--accent-strong); background: var(--accent-soft); font: 800 .7rem/1 ui-monospace, monospace; }.audit-table th, .audit-table td { padding: .65rem .45rem; font-size: .7rem; }.audit-table th { font-size: .6rem; }.muted-line { margin: 0; color: var(--ink-muted); font-size: .75rem; }.edit-card { padding: 0; overflow: hidden; }.form-section { padding: 1rem; }.form-section__heading, .contacts-edit__heading { align-items: flex-start; margin-block-end: 1rem; }.form-section__heading h3, .contacts-edit__heading h3 { margin: 0; font: 800 1.05rem/1 var(--font-display); }.form-section__heading > span { color: var(--ink-muted); font-size: .68rem; }.form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .9rem; }.form-grid--secondary { margin-block-start: .9rem; }.form-field { display: grid; gap: .35rem; min-width: 0; }.form-field > span, .check-field span { color: var(--ink-muted); font-size: .7rem; font-weight: 800; }.form-field em { color: var(--danger); font-style: normal; }.form-field input, .form-field select, .form-field textarea { width: 100%; border: 1px solid var(--line); border-radius: .45rem; padding: .6rem .65rem; color: var(--ink); background: var(--surface-raised); font-size: .78rem; }.form-field textarea { resize: vertical; }.form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--focus); outline: 0; box-shadow: 0 0 0 3px rgb(13 138 131 / 10%); }.form-field.has-error input { border-color: var(--danger); }.form-field small { min-height: 1rem; color: var(--danger); font-size: .62rem; line-height: 1.35; }.form-field:not(.has-error) small { color: var(--ink-muted); }.check-field { display: flex; align-items: center; gap: .5rem; align-self: center; min-height: 2.4rem; border: 1px solid var(--line); border-radius: .45rem; padding: .55rem .65rem; background: var(--canvas); cursor: pointer; }.check-field input { accent-color: var(--accent-strong); }.form-field--full { margin-block-start: .9rem; }.check-row { display: flex; flex-wrap: wrap; gap: .55rem; margin-block-start: .25rem; }.contacts-edit { margin-block-start: 1.25rem; border-block-start: 1px solid var(--line); padding-block-start: 1rem; }.contact-edit-row { display: grid; grid-template-columns: 1.1fr 1.1fr 1fr auto; align-items: end; gap: .6rem; margin-block-end: .6rem; }.icon-button--remove { margin-block-end: 1rem; color: var(--danger); }.form-summary, .inline-alert { margin: 1rem 1rem 0; border-radius: .55rem; padding: .65rem .8rem; color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface-raised)); font-size: .74rem; }.inline-alert { display: flex; gap: .5rem; justify-content: space-between; margin-block-end: 1rem; }.inline-alert span { color: var(--ink-muted); }.inline-alert--success { color: var(--success); background: var(--accent-soft); }.form-actions { justify-content: flex-end; border-block-start: 1px solid var(--line); padding: .85rem 1rem; background: var(--canvas); }.dialog-backdrop { display: grid; position: fixed; z-index: 5; inset: 0; place-items: center; padding: 1rem; background: rgb(16 39 37 / 48%); }.lifecycle-dialog { width: min(100%, 27rem); border: 1px solid var(--line); border-radius: 1rem; padding: 1.35rem; background: var(--surface-raised); box-shadow: var(--shadow-card); }.lifecycle-dialog h2 { margin: 0 0 1rem; font: 800 1.35rem/1.05 var(--font-display); }.lifecycle-dialog .form-actions { margin: 1.25rem -1.35rem -1.35rem; }.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     .term-config-block { margin-block-start: 1rem; border-block-start: 1px solid var(--line); padding-block-start: 1rem; }
-    .tax-engine-panel, .tax-edit-panel { margin-block-start: 1rem; border-block-start: 1px solid var(--line); padding-block-start: 1rem; }
+    .tax-engine-panel, .tax-edit-panel, .exchange-reference-panel, .exchange-edit-panel { margin-block-start: 1rem; border-block-start: 1px solid var(--line); padding-block-start: 1rem; }
+    .exchange-reference-result { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; margin-block-start: 1rem; border: 1px solid var(--line); border-radius: .6rem; padding: .75rem; background: var(--canvas); }
+    .exchange-reference-result span, .exchange-reference-result b { display: block; }
+    .exchange-reference-result span { color: var(--ink-muted); font-size: .64rem; font-weight: 700; }
+    .exchange-reference-result b { margin-block-start: .25rem; color: var(--ink); font-size: .78rem; overflow-wrap: anywhere; }
     .tax-result { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; margin-block-start: 1rem; border: 1px solid var(--line); border-radius: .6rem; padding: .75rem; background: var(--canvas); }
     .tax-result span, .tax-result b { display: block; }
     .tax-result span { color: var(--ink-muted); font-size: .64rem; font-weight: 700; }
@@ -285,8 +335,8 @@ type LifecycleAction = 'deactivate' | 'reactivate';
     @media (max-width: 680px) { .term-installment-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .term-installment-row .icon-button--remove { margin-block-end: 0; justify-self: start; } }
     @media (max-width: 460px) { .term-installment-row { grid-template-columns: 1fr; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
-    @media (max-width: 980px) { .master-data__hero { flex-direction: column; }.hero-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; }.workspace-grid { grid-template-columns: 1fr; }.resource-rail { position: static; grid-template-columns: repeat(8, minmax(8.5rem, 1fr)); overflow-x: auto; padding-block-end: .25rem; }.resource-rail__heading, .resource-rail__note { display: none; }.resource-link { min-height: 5.2rem; }.detail-grid { grid-template-columns: 1fr; }.detail-card--rail { display: none; } }
-    @media (max-width: 680px) { .section-heading, .detail-heading, .toolbar { align-items: stretch; flex-direction: column; }.section-heading__actions, .detail-heading__actions { justify-content: flex-start; }.toolbar__count { align-self: flex-start; }.form-grid { grid-template-columns: 1fr; }.contact-edit-row { grid-template-columns: 1fr 1fr; }.contact-edit-row .icon-button { margin-block-end: 0; }.field-read-grid { grid-template-columns: 1fr; }.field-read-grid__wide { grid-column: auto; }.hero-facts { grid-template-columns: 1fr; }.resource-rail { grid-template-columns: repeat(8, 10rem); }.tax-result { grid-template-columns: repeat(2, minmax(0, 1fr)); }.record-table th, .record-table td { padding-inline: .45rem; } }
+    @media (max-width: 980px) { .master-data__hero { flex-direction: column; }.hero-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; }.workspace-grid { grid-template-columns: 1fr; }.resource-rail { position: static; grid-template-columns: repeat(9, minmax(8.5rem, 1fr)); overflow-x: auto; padding-block-end: .25rem; }.resource-rail__heading, .resource-rail__note { display: none; }.resource-link { min-height: 5.2rem; }.detail-grid { grid-template-columns: 1fr; }.detail-card--rail { display: none; } }
+    @media (max-width: 680px) { .section-heading, .detail-heading, .toolbar { align-items: stretch; flex-direction: column; }.section-heading__actions, .detail-heading__actions { justify-content: flex-start; }.toolbar__count { align-self: flex-start; }.form-grid { grid-template-columns: 1fr; }.contact-edit-row { grid-template-columns: 1fr 1fr; }.contact-edit-row .icon-button { margin-block-end: 0; }.field-read-grid { grid-template-columns: 1fr; }.field-read-grid__wide { grid-column: auto; }.hero-facts { grid-template-columns: 1fr; }.resource-rail { grid-template-columns: repeat(9, 10rem); }.tax-result, .exchange-reference-result { grid-template-columns: repeat(2, minmax(0, 1fr)); }.record-table th, .record-table td { padding-inline: .45rem; } }
     @media (max-width: 460px) { .master-data__hero { border-radius: .9rem; }.master-data__hero h1 { font-size: 2.2rem; }.list-view, .detail-view { padding: .8rem; }.button span { display: none; }.contact-edit-row { grid-template-columns: 1fr; }.contact-edit-row .icon-button { justify-self: start; }.contact-line { align-items: flex-start; flex-direction: column; gap: .25rem; }.form-actions { flex-wrap: wrap; }.form-actions .button { flex: 1; } }
   `,
 })
@@ -324,10 +374,15 @@ export class MasterDataWorkspaceComponent implements OnInit {
   readonly lifecycleSaving = signal(false);
   readonly categoryChoices = signal<CategoryRecord[]>([]);
   readonly unitChoices = signal<UnitOfMeasureRecord[]>([]);
+  readonly currencyChoices = signal<CurrencyRecord[]>([]);
   readonly referenceLoadFailed = signal(false);
   readonly taxCalculation = signal<TaxCalculationResponse | null>(null);
   readonly taxCalculationLoading = signal(false);
   readonly taxCalculationError = signal<SafeUiError | null>(null);
+  readonly exchangeReference = signal<ExchangeRateReferenceResponse | null>(null);
+  readonly exchangeReferenceDate = signal(new Date().toISOString().slice(0, 10));
+  readonly exchangeReferenceLoading = signal(false);
+  readonly exchangeReferenceError = signal<SafeUiError | null>(null);
   readonly filteredRecords = computed(() => {
     const query = this.filterQuery().trim().toLocaleLowerCase();
     const status = this.statusFilter();
@@ -385,7 +440,7 @@ export class MasterDataWorkspaceComponent implements OnInit {
         if (sequence !== this.loadSequence) return;
         this.records.set(records ?? []);
         this.page.set(1);
-        if (resource === 'products') void this.loadReferences(sequence);
+        if (resource === 'products' || resource === 'exchange-rates') void this.loadReferences(sequence, resource);
       })
       .catch((error: unknown) => {
         if (sequence === this.loadSequence) this.listError.set(toSafeUiError(error));
@@ -395,16 +450,18 @@ export class MasterDataWorkspaceComponent implements OnInit {
       });
   }
 
-  private async loadReferences(sequence: number): Promise<void> {
+  private async loadReferences(sequence: number, resource: MasterDataResourceKey): Promise<void> {
     this.referenceLoadFailed.set(false);
     try {
-      const [categories, units] = await Promise.all([
-        firstValueFrom(this.data.list('categories')),
-        firstValueFrom(this.data.list('units')),
+      const [categories, units, currencies] = await Promise.all([
+        resource === 'products' ? firstValueFrom(this.data.list('categories')) : Promise.resolve([] as MasterDataRecord[]),
+        resource === 'products' ? firstValueFrom(this.data.list('units')) : Promise.resolve([] as MasterDataRecord[]),
+        resource === 'exchange-rates' ? firstValueFrom(this.data.list('currencies')) : Promise.resolve([] as MasterDataRecord[]),
       ]);
       if (sequence !== this.loadSequence) return;
       this.categoryChoices.set((categories ?? []).filter((record): record is CategoryRecord => this.isCategory(record)));
       this.unitChoices.set((units ?? []).filter((record): record is UnitOfMeasureRecord => this.isUnit(record)));
+      this.currencyChoices.set((currencies ?? []).filter((record): record is CurrencyRecord => this.isCurrency(record)));
     } catch {
       if (sequence === this.loadSequence) this.referenceLoadFailed.set(true);
     }
@@ -431,6 +488,7 @@ export class MasterDataWorkspaceComponent implements OnInit {
     this.fieldErrors.set(new Set());
     this.formNotice.set(null);
     this.auditEntries.set([]);
+    this.resetExchangeReference();
   }
 
   private async loadDetail(resource: MasterDataResourceKey, id: string): Promise<void> {
@@ -440,6 +498,7 @@ export class MasterDataWorkspaceComponent implements OnInit {
     this.detailError.set(null);
     this.mutationError.set(null);
     this.formNotice.set(null);
+    this.resetExchangeReference();
     try {
       const record = await firstValueFrom(this.data.get(resource, id));
       if (resource !== this.resource()) return;
@@ -600,6 +659,7 @@ export class MasterDataWorkspaceComponent implements OnInit {
   recordCode(record: MasterDataRecord | null): string {
     if (!record) return this.language.text('createRecord');
     if ('sku' in record) return record.sku;
+    if (this.isExchangeRate(record)) return `${record.sourceCurrencyCode} → ${record.targetCurrencyCode}`;
     return record.code;
   }
 
@@ -620,12 +680,52 @@ export class MasterDataWorkspaceComponent implements OnInit {
 
   paymentTermRecord(): PaymentTermRecord | null {
     const record = this.selectedRecord();
-    return record && this.resource() === 'payment-terms' && 'versions' in record ? record : null;
+    return record && this.resource() === 'payment-terms' && 'versions' in record && 'code' in record ? record : null;
   }
 
   taxRecord(): TaxRecord | null {
     const record = this.selectedRecord();
     return record && this.resource() === 'taxes' && 'rateVersions' in record ? record : null;
+  }
+
+  exchangeRateRecord(): ExchangeRateRecord | null {
+    const record = this.selectedRecord();
+    return record && this.resource() === 'exchange-rates' && this.isExchangeRate(record) ? record : null;
+  }
+
+  exchangeRateCurrentVersion(record: ExchangeRateRecord): ExchangeRateRecord['versions'][number] | null {
+    return record.versions.find((version) => version.versionNumber === record.currentVersionNumber)
+      ?? record.versions[record.versions.length - 1]
+      ?? null;
+  }
+
+  exchangeRateHistoryLabel(record: ExchangeRateRecord): string {
+    return record.versions
+      .map((version) => `${version.effectiveFrom} - ${version.effectiveTo ?? 'current'}`)
+      .join(' · ');
+  }
+
+  exchangeRateDraft(): ExchangeRateDraft { return this.draft as ExchangeRateDraft; }
+
+  setExchangeReferenceDate(value: string): void {
+    this.exchangeReferenceDate.set(value);
+    this.exchangeReference.set(null);
+    this.exchangeReferenceError.set(null);
+  }
+
+  async resolveExchangeReference(): Promise<void> {
+    const record = this.exchangeRateRecord();
+    if (!record || !this.exchangeReferenceDate()) return;
+    this.exchangeReferenceLoading.set(true);
+    this.exchangeReferenceError.set(null);
+    try {
+      this.exchangeReference.set(await firstValueFrom(this.data.referenceExchangeRate(record.id, this.exchangeReferenceDate())));
+    } catch (error: unknown) {
+      this.exchangeReference.set(null);
+      this.exchangeReferenceError.set(toSafeUiError(error));
+    } finally {
+      this.exchangeReferenceLoading.set(false);
+    }
   }
 
   taxCurrentVersion(record: TaxRecord): TaxRateVersionRecord | null {
@@ -730,6 +830,7 @@ export class MasterDataWorkspaceComponent implements OnInit {
 
   recordName(record: MasterDataRecord | null): string {
     if (!record) return this.language.text('createRecord');
+    if (this.isExchangeRate(record)) return `${record.sourceCurrencyCode} → ${record.targetCurrencyCode}`;
     if ('sku' in record) return this.localizedName(record.englishName, record.arabicName);
     if ('englishLegalName' in record) return this.localizedPartyName(record.englishLegalName, record.arabicLegalName);
     return this.localizedName(record.englishName, record.arabicName);
@@ -741,6 +842,10 @@ export class MasterDataWorkspaceComponent implements OnInit {
     if ('registrationReference' in record) return record.registrationReference || `${record.contacts.length} ${this.language.text('contacts')}`;
     if ('contacts' in record) return `${record.contacts.length} ${this.language.text('contacts')}`;
     if ('revision' in record) return `Revision ${record.revision}`;
+    if (this.isExchangeRate(record)) {
+      const current = this.exchangeRateCurrentVersion(record);
+      return current ? `${current.rate} · v${current.versionNumber}` : this.language.text('emptyValue');
+    }
     if ('rateVersions' in record) {
       const current = this.taxCurrentVersion(record);
       return `${record.categoryCode} · ${current ? `${current.ratePercentage}% · v${current.versionNumber}` : this.language.text('emptyValue')}`;
@@ -762,9 +867,17 @@ export class MasterDataWorkspaceComponent implements OnInit {
   valueOrEmpty(value: string | null | undefined): string { return value?.trim() || this.language.text('emptyValue'); }
   versionLabel(version: string): string { return version.length > 12 ? `${version.slice(0, 10)}…` : version; }
 
-  referenceName(resource: 'categories' | 'units', id: string): string {
-    const found = resource === 'categories' ? this.categoryChoices().find((item) => item.id === id) : this.unitChoices().find((item) => item.id === id);
+  referenceName(resource: 'categories' | 'units' | 'currencies', id: string): string {
+    const found = resource === 'categories'
+      ? this.categoryChoices().find((item) => item.id === id)
+      : resource === 'units'
+        ? this.unitChoices().find((item) => item.id === id)
+        : this.currencyChoices().find((item) => item.id === id);
     return found ? `${this.recordCode(found)} · ${this.recordName(found)}` : id;
+  }
+
+  currencyOptionLabel(currency: CurrencyRecord): string {
+    return `${currency.code} · ${this.recordName(currency)}`;
   }
 
   draftText(field: string): string {
@@ -805,7 +918,16 @@ export class MasterDataWorkspaceComponent implements OnInit {
   private validateDraft(): boolean {
     const errors = new Set<string>();
     const text = (field: string) => this.draftText(field).trim();
-    if (this.resource() === 'taxes') {
+    if (this.resource() === 'exchange-rates') {
+      const exchangeRate = this.exchangeRateDraft();
+      if (!exchangeRate.sourceCurrencyId) errors.add('sourceCurrencyId');
+      if (!exchangeRate.targetCurrencyId) errors.add('targetCurrencyId');
+      if (exchangeRate.sourceCurrencyId && exchangeRate.sourceCurrencyId === exchangeRate.targetCurrencyId) { errors.add('sourceCurrencyId'); errors.add('targetCurrencyId'); }
+      if (!exchangeRate.effectiveFrom) errors.add('effectiveFrom');
+      if (exchangeRate.effectiveTo && exchangeRate.effectiveFrom && exchangeRate.effectiveTo < exchangeRate.effectiveFrom) errors.add('effectiveTo');
+      if (!Number.isFinite(Number(exchangeRate.rate)) || Number(exchangeRate.rate) <= 0) errors.add('rate');
+      if (!Number.isInteger(Number(exchangeRate.rateScale)) || Number(exchangeRate.rateScale) < 0 || Number(exchangeRate.rateScale) > 12) errors.add('rateScale');
+    } else if (this.resource() === 'taxes') {
       const tax = this.taxDraft();
       if (!text('code')) errors.add('code');
       if (!text('categoryCode')) errors.add('categoryCode');
@@ -866,6 +988,7 @@ export class MasterDataWorkspaceComponent implements OnInit {
     if (resource === 'currencies') return { code: '', englishName: '', arabicName: '' } satisfies CurrencyDraft;
     if (resource === 'payment-terms') return { code: '', englishName: '', arabicName: '', effectiveFrom: new Date().toISOString().slice(0, 10), effectiveTo: '', baseDateRule: 'InvoiceDate', scheduleMode: 'SingleDueDate', dueOffsetDays: 30, dueOffsetMonths: 0, installments: [{ sequence: 1, percentage: 100, days: 30, months: 0 }], earlySettlementDiscountEnabled: false, earlySettlementDiscountPercentage: 0, earlySettlementDiscountDays: 0, earlySettlementDiscountMonths: 0 } satisfies PaymentTermDraft;
     if (resource === 'taxes') return { code: '', categoryCode: '', categoryEnglishName: '', categoryArabicName: '', englishName: '', arabicName: '', applicability: 'Sales', effectiveFrom: new Date().toISOString().slice(0, 10), effectiveTo: '', ratePercentage: 15 } satisfies TaxDraft;
+    if (resource === 'exchange-rates') return { sourceCurrencyId: '', targetCurrencyId: '', effectiveFrom: new Date().toISOString().slice(0, 10), effectiveTo: '', rate: 1, rateScale: 6, provenance: 'Manual', sourceNotes: '' } satisfies ExchangeRateDraft;
     return { code: '', englishLegalName: '', arabicLegalName: '', englishTradingName: '', arabicTradingName: '', registrationReference: '', contacts: [] } satisfies PartyDraft;
   }
 
@@ -876,6 +999,7 @@ export class MasterDataWorkspaceComponent implements OnInit {
     if (resource === 'currencies') { const value = record as CurrencyRecord; return { code: value.code, englishName: value.englishName ?? '', arabicName: value.arabicName ?? '' }; }
     if (resource === 'payment-terms') { const value = record as PaymentTermRecord; const current = this.paymentTermCurrentVersion(value); return { code: value.code, englishName: current?.englishName ?? value.englishName ?? '', arabicName: current?.arabicName ?? value.arabicName ?? '', effectiveFrom: current?.effectiveFrom ?? new Date().toISOString().slice(0, 10), effectiveTo: current?.effectiveTo ?? '', baseDateRule: (current?.baseDateRule ?? 'InvoiceDate') as PaymentTermDraft['baseDateRule'], scheduleMode: (current?.scheduleMode ?? 'SingleDueDate') as PaymentTermDraft['scheduleMode'], dueOffsetDays: current?.dueOffsetDays ?? 30, dueOffsetMonths: current?.dueOffsetMonths ?? 0, installments: current?.installments.map((installment) => ({ sequence: installment.sequence, percentage: installment.percentage, days: installment.days, months: installment.months })) ?? [{ sequence: 1, percentage: 100, days: 30, months: 0 }], earlySettlementDiscountEnabled: current?.earlySettlementDiscountEnabled ?? false, earlySettlementDiscountPercentage: current?.earlySettlementDiscountPercentage ?? 0, earlySettlementDiscountDays: current?.earlySettlementDiscountDays ?? 0, earlySettlementDiscountMonths: current?.earlySettlementDiscountMonths ?? 0 }; }
     if (resource === 'taxes') { const value = record as TaxRecord; const current = this.taxCurrentVersion(value); return { code: value.code, categoryCode: value.categoryCode, categoryEnglishName: value.categoryEnglishName ?? '', categoryArabicName: value.categoryArabicName ?? '', englishName: value.englishName ?? '', arabicName: value.arabicName ?? '', applicability: value.applicability as TaxDraft['applicability'], effectiveFrom: current?.effectiveFrom ?? new Date().toISOString().slice(0, 10), effectiveTo: current?.effectiveTo ?? '', ratePercentage: current?.ratePercentage ?? 0 } satisfies TaxDraft; }
+    if (resource === 'exchange-rates') { const value = record as ExchangeRateRecord; const current = this.exchangeRateCurrentVersion(value); return { sourceCurrencyId: value.sourceCurrencyId, targetCurrencyId: value.targetCurrencyId, effectiveFrom: current?.effectiveFrom ?? new Date().toISOString().slice(0, 10), effectiveTo: current?.effectiveTo ?? '', rate: current?.rate ?? 1, rateScale: current?.rateScale ?? 6, provenance: (current?.provenance === 'Configured' ? 'Configured' : 'Manual'), sourceNotes: current?.sourceNotes ?? '' } satisfies ExchangeRateDraft; }
     const value = record as SupplierRecord | CustomerRecord;
     return { code: value.code, englishLegalName: value.englishLegalName ?? '', arabicLegalName: value.arabicLegalName ?? '', englishTradingName: value.englishTradingName ?? '', arabicTradingName: value.arabicTradingName ?? '', registrationReference: 'registrationReference' in value ? value.registrationReference ?? '' : '', contacts: value.contacts.map((contact) => ({ name: contact.name, email: contact.email ?? '', phone: contact.phone ?? '' })) };
   }
@@ -887,6 +1011,7 @@ export class MasterDataWorkspaceComponent implements OnInit {
     if (resource === 'currencies') { const value = draft as CurrencyDraft; return { code: value.code.trim(), englishName: value.englishName.trim() || null, arabicName: value.arabicName.trim() || null }; }
     if (resource === 'payment-terms') { const value = draft as PaymentTermDraft; return { code: value.code.trim(), englishName: value.englishName.trim() || null, arabicName: value.arabicName.trim() || null, effectiveFrom: value.effectiveFrom, effectiveTo: value.effectiveTo || null, baseDateRule: value.baseDateRule, scheduleMode: value.scheduleMode, dueOffset: { days: Number(value.dueOffsetDays) || 0, months: Number(value.dueOffsetMonths) || 0 }, installments: value.scheduleMode === 'Installments' ? value.installments.map((installment) => ({ sequence: Number(installment.sequence), percentage: Number(installment.percentage), days: Number(installment.days) || 0, months: Number(installment.months) || 0 })) : [], earlySettlementDiscount: { enabled: value.earlySettlementDiscountEnabled, percentage: value.earlySettlementDiscountEnabled ? Number(value.earlySettlementDiscountPercentage) || 0 : null, days: value.earlySettlementDiscountEnabled ? Number(value.earlySettlementDiscountDays) || 0 : 0, months: value.earlySettlementDiscountEnabled ? Number(value.earlySettlementDiscountMonths) || 0 : 0 } }; }
     if (resource === 'taxes') { const value = draft as TaxDraft; return { code: value.code.trim(), categoryCode: value.categoryCode.trim(), categoryEnglishName: value.categoryEnglishName.trim() || null, categoryArabicName: value.categoryArabicName.trim() || null, englishName: value.englishName.trim() || null, arabicName: value.arabicName.trim() || null, applicability: value.applicability, rateVersion: { effectiveFrom: value.effectiveFrom, effectiveTo: value.effectiveTo || null, ratePercentage: Number(value.ratePercentage) } }; }
+    if (resource === 'exchange-rates') { const value = draft as ExchangeRateDraft; return { sourceCurrencyId: value.sourceCurrencyId, targetCurrencyId: value.targetCurrencyId, effectiveFrom: value.effectiveFrom, effectiveTo: value.effectiveTo || null, rate: Number(value.rate), rateScale: Number(value.rateScale), provenance: value.provenance, sourceNotes: value.sourceNotes.trim() || null }; }
     const value = draft as PartyDraft;
     const payload = { code: value.code.trim(), englishLegalName: value.englishLegalName.trim() || null, arabicLegalName: value.arabicLegalName.trim() || null, englishTradingName: value.englishTradingName.trim() || null, arabicTradingName: value.arabicTradingName.trim() || null, contacts: value.contacts.map((contact) => ({ name: contact.name.trim(), email: contact.email.trim() || null, phone: contact.phone.trim() || null })) };
     return resource === 'suppliers' ? { ...payload, registrationReference: value.registrationReference.trim() || null } : payload;
@@ -904,6 +1029,15 @@ export class MasterDataWorkspaceComponent implements OnInit {
   }
 
   localizedPartyName(english: string | null, arabic: string | null): string { return this.localizedName(english, arabic); }
+  private isCurrency(record: MasterDataRecord): record is CurrencyRecord { return 'revision' in record; }
+  private isExchangeRate(record: MasterDataRecord): record is ExchangeRateRecord { return 'sourceCurrencyId' in record && 'targetCurrencyId' in record && 'versions' in record && !('code' in record); }
   private isCategory(record: MasterDataRecord): record is CategoryRecord { return 'parentCategoryId' in record; }
   private isUnit(record: MasterDataRecord): record is UnitOfMeasureRecord { return !('parentCategoryId' in record) && !('sku' in record) && !('contacts' in record) && !('revision' in record) && !('versions' in record); }
+
+  private resetExchangeReference(): void {
+    this.exchangeReference.set(null);
+    this.exchangeReferenceDate.set(new Date().toISOString().slice(0, 10));
+    this.exchangeReferenceLoading.set(false);
+    this.exchangeReferenceError.set(null);
+  }
 }

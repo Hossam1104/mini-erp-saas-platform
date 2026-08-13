@@ -93,6 +93,8 @@ internal sealed class TenantOwnershipVerifierRegistry
             MasterDataTenantOwnershipVerifier.For<MasterDataPaymentTermEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataPaymentTermVersionEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataPaymentTermInstallmentEntity>(),
+            MasterDataTenantOwnershipVerifier.For<MasterDataExchangeRateEntity>(),
+            MasterDataTenantOwnershipVerifier.For<MasterDataExchangeRateVersionEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataTaxEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataTaxRateVersionEntity>(),
             MasterDataTenantOwnershipVerifier.For<MasterDataAuditEventEntity>()

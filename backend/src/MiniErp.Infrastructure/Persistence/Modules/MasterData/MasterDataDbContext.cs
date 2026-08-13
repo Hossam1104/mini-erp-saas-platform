@@ -36,6 +36,10 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
 
     internal DbSet<MasterDataPaymentTermInstallmentEntity> PaymentTermInstallments => Set<MasterDataPaymentTermInstallmentEntity>();
 
+    internal DbSet<MasterDataExchangeRateEntity> ExchangeRates => Set<MasterDataExchangeRateEntity>();
+
+    internal DbSet<MasterDataExchangeRateVersionEntity> ExchangeRateVersions => Set<MasterDataExchangeRateVersionEntity>();
+
     internal DbSet<MasterDataTaxEntity> Taxes => Set<MasterDataTaxEntity>();
 
     internal DbSet<MasterDataTaxRateVersionEntity> TaxRateVersions => Set<MasterDataTaxRateVersionEntity>();
@@ -247,6 +251,56 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         paymentTermInstallment.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var exchangeRate = modelBuilder.Entity<MasterDataExchangeRateEntity>();
+        exchangeRate.ToTable("ExchangeRates", "masterdata");
+        exchangeRate.HasKey(item => item.Id);
+        exchangeRate.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(exchangeRate.Property(item => item.TenantId));
+        exchangeRate.Property(item => item.SourceCurrencyId).IsRequired();
+        exchangeRate.Property(item => item.TargetCurrencyId).IsRequired();
+        exchangeRate.Property(item => item.LifecycleState).IsRequired();
+        exchangeRate.Property(item => item.CurrentVersionNumber).IsRequired();
+        ConfigureVersion(exchangeRate.Property(item => item.Version));
+        exchangeRate.HasIndex(item => new { item.TenantId, item.SourceCurrencyId, item.TargetCurrencyId }).IsUnique();
+        exchangeRate.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        exchangeRate.HasOne<MasterDataCurrencyEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.SourceCurrencyId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        exchangeRate.HasOne<MasterDataCurrencyEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.TargetCurrencyId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        exchangeRate.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var exchangeRateVersion = modelBuilder.Entity<MasterDataExchangeRateVersionEntity>();
+        exchangeRateVersion.ToTable("ExchangeRateVersions", "masterdata");
+        exchangeRateVersion.HasKey(item => item.Id);
+        exchangeRateVersion.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(exchangeRateVersion.Property(item => item.TenantId));
+        exchangeRateVersion.Property(item => item.ExchangeRateId).IsRequired();
+        exchangeRateVersion.Property(item => item.VersionNumber).IsRequired();
+        exchangeRateVersion.Property(item => item.EffectiveFrom).IsRequired();
+        exchangeRateVersion.Property(item => item.EffectiveTo).IsRequired(false);
+        exchangeRateVersion.Property(item => item.Rate).HasPrecision(28, 12).IsRequired();
+        exchangeRateVersion.Property(item => item.RateScale).IsRequired();
+        exchangeRateVersion.Property(item => item.Provenance).IsRequired();
+        exchangeRateVersion.Property(item => item.SourceNotes).HasMaxLength(1024).IsRequired(false);
+        exchangeRateVersion.Property(item => item.SourceCurrencyCode).HasMaxLength(16).IsRequired();
+        exchangeRateVersion.Property(item => item.TargetCurrencyCode).HasMaxLength(16).IsRequired();
+        ConfigureVersion(exchangeRateVersion.Property(item => item.Version));
+        exchangeRateVersion.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        exchangeRateVersion.HasIndex(item => new { item.TenantId, item.ExchangeRateId, item.VersionNumber }).IsUnique();
+        exchangeRateVersion.HasIndex(item => new { item.TenantId, item.ExchangeRateId, item.EffectiveFrom }).IsUnique();
+        exchangeRateVersion.HasOne<MasterDataExchangeRateEntity>()
+            .WithMany(item => item.Versions)
+            .HasForeignKey(item => new { item.TenantId, item.ExchangeRateId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        exchangeRateVersion.HasQueryFilter(item => item.TenantId == TrustedTenantId);
 
         var tax = modelBuilder.Entity<MasterDataTaxEntity>();
         tax.ToTable("Taxes", "masterdata");
