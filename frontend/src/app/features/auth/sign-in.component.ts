@@ -17,13 +17,16 @@ const DEVELOPMENT_USERNAME = 'admin@minierp.local';
     <main class="auth-shell">
       <section class="auth-surface" aria-labelledby="sign-in-title">
         <div class="auth-brand">
-          <img
-            class="brand-logo"
-            src="assets/Logo_4_3_BG_Removed.png"
-            [attr.alt]="language.text('appName')"
-            width="1448"
-            height="1086"
-          />
+          <picture class="brand-logo-picture">
+            <source srcset="assets/Logo_4_3_BG_Removed_Dark.png" media="(prefers-color-scheme: dark)" />
+            <img
+              class="brand-logo"
+              src="assets/Logo_4_3_BG_Removed.png"
+              [attr.alt]="language.text('appName')"
+              width="1448"
+              height="1086"
+            />
+          </picture>
           <p class="auth-brand__eyebrow">{{ language.text('productBrandTagline') }}</p>
           <p class="auth-brand__copy">{{ language.text('shellWelcome') }}</p>
         </div>
@@ -151,7 +154,8 @@ const DEVELOPMENT_USERNAME = 'admin@minierp.local';
         padding: 2.25rem 1.75rem;
       }
     }
-    .brand-logo { display: block; width: min(100%, 13rem); height: auto; object-fit: contain; }
+    .brand-logo-picture { display: block; width: min(100%, 13rem); height: auto; }
+    .brand-logo { display: block; width: 100%; height: auto; object-fit: contain; }
     .auth-brand__eyebrow { margin: 0; color: var(--ink-muted); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
     .auth-brand__copy { margin: 0; color: var(--ink-muted); font-size: 0.85rem; line-height: 1.55; }
     .auth-form { display: grid; gap: 1.15rem; padding: 2rem 1.75rem; align-content: start; }

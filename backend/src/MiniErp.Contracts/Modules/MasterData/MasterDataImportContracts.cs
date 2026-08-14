@@ -83,7 +83,7 @@ public sealed record MasterDataImportRowInput(
 
 /// <summary>Structured batch creation contract for the backend import seam.</summary>
 public sealed record MasterDataImportBatchRequest(
-    MasterDataResourceKind ResourceKind,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] MasterDataResourceKind ResourceKind,
     MasterDataImportSourceRequest? Source,
     string? SourceFileReference,
     MasterDataImportDuplicatePolicy DuplicatePolicy,
@@ -103,7 +103,7 @@ public sealed record MasterDataImportDiagnosticResponse(
 public sealed record MasterDataImportBatchResponse(
     Guid Id,
     Guid TenantId,
-    MasterDataResourceKind ResourceKind,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] MasterDataResourceKind ResourceKind,
     MasterDataImportSourceRequest Source,
     MasterDataImportDuplicatePolicy DuplicatePolicy,
     MasterDataImportMode Mode,
@@ -130,7 +130,7 @@ public sealed record MasterDataImportRowResponse(
     int OriginalRowNumber,
     int ReplaySequence,
     bool IsCurrent,
-    MasterDataResourceKind ResourceKind,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] MasterDataResourceKind ResourceKind,
     IReadOnlyDictionary<string, string?> SourceFields,
     IReadOnlyDictionary<string, string?> NormalizedFields,
     MasterDataImportRowOutcome Outcome,
@@ -165,7 +165,7 @@ public sealed record MasterDataImportAuditResponse(
     Guid BatchId,
     Guid? RowId,
     int? OriginalRowNumber,
-    MasterDataResourceKind ResourceKind,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] MasterDataResourceKind ResourceKind,
     string Outcome,
     string SourceReference,
     string? Detail);

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Rest;
@@ -15,6 +16,90 @@ public sealed class MasterDataImportTests
     private static readonly Guid TenantId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid ActorId = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid SessionId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+
+    [Fact]
+    public void Import_dto_serialization_uses_string_representation_for_resource_kind_and_import_enums()
+    {
+        var requestJson = """
+            {
+              "resourceKind": "ProductCategory",
+              "duplicatePolicy": "Reject",
+              "mode": "DryRun",
+              "source": {
+                "sourceSystemCategory": "test-client"
+              },
+              "rows": [
+                {
+                  "rowNumber": 1,
+                  "fields": {
+                    "code": "CAT-01"
+                  }
+                }
+              ]
+            }
+            """;
+
+        var request = JsonSerializer.Deserialize<MasterDataImportBatchRequest>(requestJson, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        Assert.NotNull(request);
+        Assert.Equal(MasterDataResourceKind.ProductCategory, request.ResourceKind);
+        Assert.Equal(MasterDataImportDuplicatePolicy.Reject, request.DuplicatePolicy);
+        Assert.Equal(MasterDataImportMode.DryRun, request.Mode);
+
+        var batchResponse = new MasterDataImportBatchResponse(
+            Guid.NewGuid(),
+            TenantId,
+            MasterDataResourceKind.UnitOfMeasure,
+            new MasterDataImportSourceRequest("test", null, null),
+            MasterDataImportDuplicatePolicy.SkipExisting,
+            MasterDataImportMode.Commit,
+            MasterDataImportStatus.Validated,
+            ActorId,
+            DateTimeOffset.UtcNow,
+            null,
+            null,
+            "corr-1",
+            1, 1, 0, 0, 0, 0, 0,
+            null,
+            [1, 2, 3],
+            new MasterDataImportReconciliationResponse(1, 1, 0, 0, 0, 0, 0, true, "TotalRows = Accepted"));
+
+        var responseJson = JsonSerializer.Serialize(batchResponse, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        Assert.Contains("\"resourceKind\":\"UnitOfMeasure\"", responseJson, StringComparison.Ordinal);
+        Assert.Contains("\"duplicatePolicy\":\"SkipExisting\"", responseJson, StringComparison.Ordinal);
+        Assert.Contains("\"mode\":\"Commit\"", responseJson, StringComparison.Ordinal);
+        Assert.Contains("\"status\":\"Validated\"", responseJson, StringComparison.Ordinal);
+
+        var rowResponse = new MasterDataImportRowResponse(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            1, 0, true,
+            MasterDataResourceKind.Product,
+            new Dictionary<string, string?>(),
+            new Dictionary<string, string?>(),
+            MasterDataImportRowOutcome.Accepted,
+            [],
+            MasterDataImportDiagnosticSeverity.Info,
+            MasterDataImportMutationDisposition.Eligible,
+            null, null, null, null,
+            DateTimeOffset.UtcNow,
+            [1, 2]);
+
+        var rowJson = JsonSerializer.Serialize(rowResponse, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        Assert.Contains("\"resourceKind\":\"Product\"", rowJson, StringComparison.Ordinal);
+        Assert.Contains("\"outcome\":\"Accepted\"", rowJson, StringComparison.Ordinal);
+        Assert.Contains("\"highestSeverity\":\"Info\"", rowJson, StringComparison.Ordinal);
+        Assert.Contains("\"mutationDisposition\":\"Eligible\"", rowJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Shared_MasterDataResourceKind_enum_retains_default_numeric_serialization_outside_import_boundary()
+    {
+        var kind = MasterDataResourceKind.ProductCategory;
+        var serialized = JsonSerializer.Serialize(kind, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        // Default System.Text.Json serialization for an unannotated enum is integer
+        Assert.Equal("2", serialized);
+    }
 
     [Fact]
     public void Import_normalization_rejects_authority_fields_and_normalized_duplicates()

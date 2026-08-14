@@ -1,11 +1,9 @@
 #pragma warning disable CS1591
 
-using System.Text.Json.Serialization;
 using MiniErp.Contracts.Modules.Audit;
 
 namespace MiniErp.Contracts.Modules.MasterData;
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MasterDataResourceKind
 {
     Product = 1,
