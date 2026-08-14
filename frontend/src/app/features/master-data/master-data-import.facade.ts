@@ -137,6 +137,13 @@ export class MasterDataImportFacade {
     }
   }
 
+  removeFile(): void {
+    this.fileMetadata.set(null);
+    this.parseResult.set(null);
+    this.columnMappings.set([]);
+    this.clearError();
+  }
+
   updateMapping(sourceColumn: string, targetField: string | null): void {
     this.columnMappings.update((current) =>
       current.map((m) => (m.sourceColumn === sourceColumn ? { ...m, targetField } : m)),

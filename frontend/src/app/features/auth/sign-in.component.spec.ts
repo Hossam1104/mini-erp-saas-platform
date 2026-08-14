@@ -212,8 +212,8 @@ describe('SignInComponent', () => {
     const lightImg = picture.querySelector('img.brand-logo') as HTMLImageElement;
     expect(lightImg).toBeTruthy();
     expect(lightImg.getAttribute('src')).toBe('assets/Logo_4_3_BG_Removed.png');
-    expect(lightImg.getAttribute('width')).toBe('1448');
-    expect(lightImg.getAttribute('height')).toBe('1086');
+    expect(lightImg.getAttribute('width')).toBe('1254');
+    expect(lightImg.getAttribute('height')).toBe('1254');
 
     // Verify obsolete/deleted assets are not referenced
     const allHtml = fixture.nativeElement.innerHTML;

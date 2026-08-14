@@ -23,8 +23,8 @@ const DEVELOPMENT_USERNAME = 'admin@minierp.local';
               class="brand-logo"
               src="assets/Logo_4_3_BG_Removed.png"
               [attr.alt]="language.text('appName')"
-              width="1448"
-              height="1086"
+              width="1254"
+              height="1254"
             />
           </picture>
           <p class="auth-brand__eyebrow">{{ language.text('productBrandTagline') }}</p>
