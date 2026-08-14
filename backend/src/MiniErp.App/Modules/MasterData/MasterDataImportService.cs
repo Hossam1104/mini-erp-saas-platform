@@ -429,6 +429,10 @@ public sealed class MasterDataImportService
             return Failure<MasterDataImportBatchRecord>(batch.Error!);
         }
 
+        var alreadyExecuted = batch.Value.Status is
+            MasterDataImportStatus.Completed
+            or MasterDataImportStatus.CompletedWithErrors;
+
         var key = NormalizeIdempotencyKey(replayIdempotencyKey);
         if (key is null)
         {
@@ -526,7 +530,8 @@ public sealed class MasterDataImportService
 
         if (replay.Outcome == MasterDataImportRowOutcome.Accepted
             && replay.MutationDisposition == MasterDataImportMutationDisposition.Eligible
-            && batch.Value.Mode == MasterDataImportMode.Commit)
+            && batch.Value.Mode == MasterDataImportMode.Commit
+            && alreadyExecuted)
         {
             var mutation = await processors.GetRequired(replay.ResourceKind).CommitAsync(processing, replay, cancellationToken);
             replay = replay.WithMutation(mutation, DateTimeOffset.UtcNow);
@@ -534,7 +539,7 @@ public sealed class MasterDataImportService
         }
 
         var reconciliation = MasterDataImportReconciliation.FromRows(nextRows);
-        var status = batch.Value.Mode == MasterDataImportMode.DryRun
+        var status = batch.Value.Mode == MasterDataImportMode.DryRun || !alreadyExecuted
             ? MasterDataImportStatus.Validated
             : reconciliation.Rejected == 0 && reconciliation.Quarantined == 0
                 ? MasterDataImportStatus.Completed
