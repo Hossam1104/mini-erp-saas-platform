@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-14 01:04 +03:00
+**Last Updated:** 2026-08-14 13:50 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~33%**
@@ -23,21 +23,23 @@ Unfinished capability remains required after the preview.
 | MESP-118 | Done at its bounded implementation scope; PR #61 was reviewed at 265b9211a2586cdd4e1014454da8c86cca90ba08 and merged at e085032eac3555dfaf2a700830063b67f3c23858; Jira validation/review is comment 10985 and closure is comment 10986. MESP-110/MESP-54 are consumed as Done through PD-044/PD-043. |
 | MESP-119 | Done at its bounded implementation scope; PR #62 was reviewed at ec280a552f328416a52adbda212170a9c1c059fa and merged at fd34dadb7fb96a680f61765ad3c67d3ec1a26572; Jira activation/validation/closure evidence is comments 10987/10988/10989; internal Tax/VAT identity, effective history, deterministic explicit-input engine contract, generated REST/OpenAPI/Scalar reference, and connected bilingual Angular journey are implemented; no statutory or external scope was added. |
 | MESP-120 | Done at its bounded implementation scope; PR #63 was reviewed at f4d6485fd8b70a88ba34b68f1acae15a8c255ff6 and merged at 14f6f4923d2897d891f33f5eb4405d2fe2089e69; Jira activation/validation/closure evidence is comments 10990/11023/11024; reusable Tenant-owned directional Exchange Rate identity/history, deterministic reference evidence, nine REST/OpenAPI operations, persistence integrity, audit/concurrency/idempotency seams, and bilingual lazy Angular journeys are implemented; external FX and Finance posting/revaluation/rounding remain excluded. |
-| MESP-121 | In Progress at its bounded Phase G targeted Opus P1 correction handoff; source correction commit 0242656 is on feat/MESP-121-price-list-b2b-pricing and draft PR #64 remains open/unmerged. Current parent Price List configuration now governs precedence/applicability while immutable child evidence is preserved; production Master Data authorization maps exact trusted Foundation permissions to one capability and fails closed otherwise. Frontend-origin runtime smoke on MiniERP 5300/Angular 4300, backend-origin OpenAPI/Scalar, 703/703 non-SQL backend tests, 68/68 Angular tests, and 414.67 kB initial build passed; planner acceptance, targeted Opus re-review, merge, and closure remain pending. |
+| MESP-121 | Done at its bounded implementation scope; PR #64 was reviewed at 2f1d7fa20bc5adb591fd42e04519ee66931018db and squash-merged at 87be98f58d2d6de3f151ed3de0ef31276e682e5a; Jira activation/Phase D/validation/closure evidence comments 11025/11093/11094/11095; Opus 5 targeted review approved squash merge (P1-1 and P1-2 closed, no P0/P1); Tenant-owned Price Lists, current-parent precedence/applicability, immutable evidence, audit/concurrency/idempotency seams, 10 REST/OpenAPI operations, and bilingual Angular Price List UI; SQL Server safety gate remains open. |
+| MESP-122 | In Progress under Epic MESP-6 (activated with Jira comment 11096); Master Data import, audit/report integration, and downstream references; MESP-51 (PD-041) and MESP-53 (PD-042) are consumed; MESP-50 remains an open production-policy boundary. |
 | MESP-38 | Done at approved bounded BRD scope. |
 | MESP-39 | To Do, unactivated, not executed; future-release Integrations and External Services BRD. |
 | MESP-40 | To Do, unactivated, but required for Release 1 in the migration wave. |
 | MESP-23 | In Progress as the living Open Questions Register; MESP-116 reconciliation evidence is comment 10976 and the register remains open. |
-| Capability backlog | MESP-121 is In Progress at the Phase G targeted P1 correction handoff on draft PR #64; MESP-122-MESP-142 remain under existing Epics and are To Do/not activated. Planner acceptance, targeted Opus re-review, merge, and Jira closure remain pending on the same branch/PR; MESP-121 is not closed by this handoff. |
+| Capability backlog | MESP-122 is In Progress under Epic MESP-6; MESP-123-MESP-142 remain under existing Epics and are To Do/not activated. |
 | Decision Pack | 31 canonical entries: A1-A16 and B1-B6 approved only at their exact bounded positions; Class B is contract-bound with mandatory specialist validation before production or irreversible decisions; C1-C9 remain open gates. |
 | Tax/VAT | Internal reusable configuration-led Tax/VAT is implemented at the bounded MESP-119 scope with Tenant-safe identity, effective history, explicit-input deterministic calculation, evidence, audit, API/OpenAPI/Scalar, and Angular UX; statutory/ZATCA/FATOORA/external scope remains excluded. |
 | MESP-39 / MESP-40 | MESP-39 remains future-release and unactivated; MESP-40 remains an unactivated Release 1 migration requirement and was not activated by MESP-116. |
-| Source/production capability | MESP-121 Phase G corrected current-parent Price List precedence/applicability and production Master Data capability resolution over the existing bounded capability; 703/703 non-SQL backend tests, 68/68 Angular tests, runtime smoke, generated OpenAPI/Scalar, and 414.67 kB initial build passed. PR #64 remains Draft/unmerged; SQL/provider/production, migration, legal/privacy, specialist, planner, and final review gates remain open. Final project completion percentages remain unchanged. |
+| Source/production capability | MESP-121 Price List capability merged through PR #64; Release backend build 0/0, 17/17 focused, 703/703 non-SQL backend tests, 68/68 Angular tests, and 414.67 kB initial build passed. SQL/provider/production, migration, legal/privacy, and specialist gates remain open. Final project completion percentages remain unchanged. |
 
-Live Jira during the MESP-121 Phase G handoff is **79 Done / 7 In Progress / 56
-To Do across 142 issues** and **79 Done / 2 In Progress / 46 To Do across 127
-non-Epic issues**. These are administrative counts and must not be used as
-the production-capability percentage.
+Live Jira during MESP-122 activation is **80 Done / 7 In Progress / 55 To Do
+across 142 issues** and **80 Done / 2 In Progress / 45 To Do across 127
+non-Epic issues** (In Progress: MESP-23 and MESP-122). These are
+administrative counts and must not be used as the production-capability
+percentage.
 
 The canonical management artifacts are the full-feature plan,
 `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`, the Owner Decision
@@ -123,9 +125,9 @@ Current approximate non-Epic Jira state:
 
 | Jira Status | Approx. Issues | Approx. % |
 |---|---:|---:|
-| Done | **79** | **62.2%** |
+| Done | **80** | **63.0%** |
 | In Progress | **2** | **1.6%** |
-| To Do | **46** | **36.2%** |
+| To Do | **45** | **35.4%** |
 | **Total Non-Epic** | **127** | **100%** |
 
 Major Release-1 Epics:
@@ -133,14 +135,14 @@ Major Release-1 Epics:
 **15 Epics**
 
 Across all 142 MESP issues, including the 15 Epics, the current workflow state
-is 79 Done, 7 In Progress, and 56 To Do. These counts were re-checked in live
-Jira on 13 August 2026; the two non-Epic In Progress items are MESP-23 and
-MESP-121.
+is 80 Done, 7 In Progress, and 55 To Do. These counts were re-checked in live
+Jira on 14 August 2026; the two non-Epic In Progress items are MESP-23 and
+MESP-122.
 
 ## Interpretation
 
 Raw Jira completion currently makes the non-Epic board appear approximately
-**62% complete** (79 of 127 non-Epic issues Done).
+**63% complete** (80 of 127 non-Epic issues Done).
 
 That number must NOT be used as the production-completion percentage.
 
@@ -310,9 +312,9 @@ SL-03 status is recorded in the current assessment immediately below it.
 | SL-07 | Payment Term | Implemented at bounded MESP-118 scope and merged through PR #61 |
 | SL-08 | Tax | ✅ Implemented at bounded MESP-119 scope and merged through PR #62 |
 | SL-09 | Exchange Rate | Implemented at bounded MESP-120 scope and merged through PR #63 |
-| SL-10 | Price List | ⬜ Not Started |
-| SL-11 | Import / Migration | ⬜ Not Started |
-| SL-12 | Audit / Reporting / Downstream Integration | ⬜ Not Started |
+| SL-10 | Price List | ✅ Implemented at bounded MESP-121 scope and merged through PR #64 |
+| SL-11 | Import / Migration | ⬜ In Progress (MESP-122 activated) |
+| SL-12 | Audit / Reporting / Downstream Integration | ⬜ In Progress (MESP-122 activated) |
 
 ### Current bounded-slice status
 
@@ -321,7 +323,8 @@ delivery status is authoritative here: **SL-03 Product Identity is bounded,
 validated, and merged through PR #37; SL-04 Supplier is implemented through PR
 #39; SL-05 Business Customer is implemented through PR #41; SL-06 Currency and
 SL-07 Payment Term are implemented through PR #61; SL-08 Tax is implemented
-through PR #62; and SL-09 Exchange Rate is implemented through PR #63.**
+through PR #62; SL-09 Exchange Rate is implemented through PR #63; and SL-10
+Price List is implemented and merged through PR #64.**
 MESP-105 readiness and Customer-only MD-OD-001/005/008 disposition remain
 recorded in Jira comments `10691` and `10693`; the later activation,
 validation, and closure evidence is preserved in the current snapshot and
@@ -329,14 +332,15 @@ historical progress rows.
 
 ## Master Data current assessment
 
-Current post-MESP-121 Phase D bounded implementation-slice position:
+Current post-MESP-121 closure position:
 
-**~56-59%**, with shared Angular maintenance journeys covering Category, UOM,
-Product, Supplier, Business Customer, Currency, Payment Terms, Tax, and
-Exchange Rate, plus the Category/UOM public REST seam and the Currency/Payment
-Terms/Tax/Exchange Rate/Price List API, persistence, effective-history,
-reference, applied-evidence, and deterministic selection contracts. Price List
-Angular Phase B and final review remain pending. The SQL/provider gate remains
+**~65-68%**, with shared Angular maintenance journeys covering Category, UOM,
+Product, Supplier, Business Customer, Currency, Payment Terms, Tax, Exchange
+Rate, and Price List, plus the Category/UOM public REST seam and the
+Currency/Payment Terms/Tax/Exchange Rate/Price List API, persistence,
+effective-history, reference, applied-evidence, and deterministic selection
+contracts. MESP-122 is activated for import mechanics, audit/reporting
+integration, and downstream reference integrity. The SQL/provider gate remains
 open, so this is not a production-ready claim and no final project percentage
 was changed.
 
@@ -347,22 +351,22 @@ Historical pre-SL-03 pure implementation-slice completion:
 Total lifecycle completion including BRD, lean specification, architecture,
 authorization contracts, persistence-readiness work, the completed bounded
 source slices, the shared MESP-117 UX/API seam, the MESP-118 Currency/Payment
-Terms capability, the MESP-119 Tax/VAT capability, and the MESP-120 Exchange
-Rate capability:
+Terms capability, the MESP-119 Tax/VAT capability, the MESP-120 Exchange Rate
+capability, and the MESP-121 Price List capability:
 
-**~62%**
+**~65%**
 
-Current post-MESP-121 Phase D position:
+Current post-MESP-121 position:
 
-**~62%**, with the shared nine-slice Angular workspace, Currency/Payment
-Terms/Tax/Exchange Rate REST and persistence contracts, and the Price List
-backend/Angular capability plus Phase D module-scoped Development runtime,
+**~65%**, with the shared ten-slice Angular workspace, Currency/Payment
+Terms/Tax/Exchange Rate/Price List REST and persistence contracts, and the
+Price List backend/Angular capability plus module-scoped Development runtime,
 effective-dated history, deterministic references, applied evidence, and
-historical-preservation tests validated locally. Planner acceptance and final
-review remain pending. The 21 SQL safety tests remain gated by the unavailable
-connection string; no production/provider claim is made. Approved PD-024,
-PD-033, PD-035, PD-036, PD-037, PD-040, PD-043, PD-044, and PD-046 were
-consumed only at their exact bounded Master Data and Finance-reference
+historical-preservation tests validated. MESP-122 is In Progress. The 21 SQL
+safety tests remain gated by the unavailable connection string; no
+production/provider claim is made. Approved PD-024, PD-033, PD-035, PD-036,
+PD-037, PD-040, PD-041, PD-042, PD-043, PD-044, and PD-046 were consumed only
+at their exact bounded Master Data, Migration, Reporting, and Finance-reference
 positions. Procurement Supplier Confirmation remains MESP-124.
 
 ---
@@ -1172,6 +1176,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-14 13:50 +03:00 | **33%** | **52%** | **44%** | **24%** | MESP-121 Price List and deterministic B2B pricing completed through PR #64, reviewed at 2f1d7fa20bc5adb591fd42e04519ee66931018db and squash-merged at 87be98f58d2d6de3f151ed3de0ef31276e682e5a; Opus 5 targeted review approved squash merge (P1-1 and P1-2 closed, no P0/P1); Jira activation/Phase D/validation/closure evidence comments 11025/11093/11094/11095; Tenant-owned Price Lists, current-parent precedence/applicability, immutable evidence, audit/concurrency/idempotency seams, 10 REST/OpenAPI operations, and bilingual Angular Price List UI; deferred non-blocking P2 observations recorded; Release build 0 warnings/errors, focused 17/17, non-SQL backend 703/703, Angular 68/68, production bundle 414.67 kB; 21 SQL safety cases remain connection-gated; MESP-122 activated in Jira comment 11096; live Jira 80 Done / 7 In Progress / 55 To Do across all issues and 80 Done / 2 In Progress / 45 To Do for non-Epic work; no production percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-14 01:04 +03:00 | **33%** | **52%** | **44%** | **24%** | MESP-121 Phase G targeted Opus P1 corrections implemented in source commit `0242656` on draft PR #64: Price List current parent configuration now governs precedence/applicability and immutable child evidence is preserved; proposed edits and cross-list appends fail closed on equal current precedence; production Master Data authorization maps exact trusted Foundation permissions to one capability and denies unknown/unrelated permissions. Added focused Price List and authorization regressions; removed the pre-existing tracked `.vs` IDE/cache files including `.vs/slnx.sqlite`; repository hygiene is clean. Release build 0 warnings/errors; focused 17/17; non-SQL backend 703/703; Angular 68/68; production initial bundle 414.67 kB within the unchanged 500 kB warning budget; frontend-origin 5300/4300 runtime smoke plus backend-origin OpenAPI/Scalar passed; 21 SQL safety cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; no percentage change and MESP-121 remains In Progress pending planner/targeted Opus re-review | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-13 19:50 +03:00 | **33%** | **52%** | **44%** | **24%** | MESP-121 Phase F authentication UX/branding polish implemented on `feat/MESP-121-price-list-b2b-pricing` / draft PR #64: Development-only MiniERP API identity preflight against public `/module-registration` gating Dev credential submission; redesigned compact two-panel enterprise sign-in layout with a properly cropped brand logo, accessible password show/hide and Caps Lock warning, stale-error auto-clear, safe non-sensitive Dev password hint, explicit auditable post-sign-in navigation, and removal of the misleading anonymous "Select a workspace" link; full EN/AR/RTL translations and accessibility labeling; rebuilt branded favicon/touch-icon set replacing the previously shipped generic Angular default `favicon.ico`, and updated page title/meta/theme-color to the actual `--ink` design token; 10 new sign-in and 3 new preflight-service focused tests, full Angular suite 68/68 passing, production build 414.67 kB initial raw (within the unchanged 500 kB budget); no backend source touched; runtime restarted via the existing safe launcher on MiniERP `5300` / Angular `4300` without disturbing RMS `5000`/`5001`; live HTTP verification confirmed module-registration identity, sign-in 200, session/contexts/antiforgery/context-switch 200, Price List GET 200, and all favicon/logo asset URLs 200; browser-automation visual confirmation was unavailable in this environment and is reported as such rather than fabricated; no production-capability percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-13 17:42 +03:00 | **33%** | **52%** | **44%** | **24%** | MESP-121 Phase E local Development runtime/sign-in correction implemented in `f9eff32`: added the safe config-led launcher and no-process runtime self-test, generated an ignored BOM-free proxy targeting the selected API, preserved relative Angular API calls and the generic tracked `localhost:5000` fallback, and completed the final runtime on MiniERP `5300` + Angular `4300` while leaving RMS `5000`/`5001` untouched; direct/proxy identity, sign-in/session/context/antiforgery/Price List, Angular route/assets, OpenAPI, and Scalar smoke passed; Release build 0 warnings/errors, focused bootstrap/Price List 8/8, non-SQL backend 689/689, Angular 55/55, production build 408.01 kB initial raw; 21 SQL safety cases remain environment-gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; no final project percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |

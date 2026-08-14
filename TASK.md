@@ -1,304 +1,197 @@
-# MESP-121 - Price List and deterministic B2B pricing capability
-
-## MESP-121 Phase G handoff - 14 August 2026
-
-MESP-121 remains the single active capability and **In Progress** in Jira.
-Phase G applied the two confirmed Opus P1 corrections on the exact shared
-branch `feat/MESP-121-price-list-b2b-pricing` in source commit `0242656`.
-Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
-remains open, Draft, and unmerged. Do not transition MESP-121 to Done, start
-MESP-122, or broaden this capability.
-
-The bounded corrections are complete:
-
-- Price List resolution, cross-list append checks, and proposed parent edits
-  use the current parent Currency/Customer/Organization/Priority configuration
-  for current applicability and precedence. Child price rows are not
-  rewritten; their Product/UOM/effective/amount/scale/provenance/source and
-  recorded currency/applicability/priority values remain immutable evidence.
-  Current configuration and child evidence are both retained in the reference
-  contract. A currency edit does not reinterpret or convert an existing amount;
-  a row whose historical currency no longer matches the parent is not silently
-  resolved.
-- Production Master Data authorization now derives one capability from the
-  exact trusted Foundation permission. Unknown/unrelated permissions fail
-  closed, the unconditional granting resolver is not registered in production,
-  and existing direct test fixtures retain explicit granting doubles only.
-
-Focused regression coverage includes edit conflict prevention and legacy-state
-conflict resolution, edit-then-append conflict, current Customer and
-Organization applicability, immutable child snapshots, currency evidence,
-exact capability mapping, fail-closed unknown permissions, and production DI.
-Validation passed: `dotnet restore`; Release build with 0 warnings/errors;
-focused Price List/authorization tests 17/17; non-SQL backend 703/703;
-Angular 68/68; Angular production initial bundle 414.67 kB under the unchanged
-500 kB warning budget; frontend-origin runtime smoke on MiniERP 5300/Angular
-4300; backend-origin OpenAPI/Scalar 200; and `git diff --check`. The 21 SQL
-Server safety cases remain gated by unavailable
-`MESP_SQLSERVER_CONNECTION_STRING`; no SQL substitute or fake reference data
-was used. The pre-existing tracked `.vs` IDE/cache files, including
-`.vs/slnx.sqlite`, were removed; repository hygiene is now clean for cookies,
-session tokens, runtime passwords, SQLite DB/WAL/SHM, `.runtime` state,
-request scratch files, build outputs, and temporary logs.
-
-The fresh Development database may need legitimate Currency, Product, Unit of
-Measure, and optionally Business Customer reference records before an
-interactive Price List create/append/resolve flow can be exercised. No fake
-records are seeded by this handoff. Planner acceptance and targeted Opus
-re-review remain pending on the same Draft PR; update the state/tracker and
-stop here. Do not execute MESP-122 automatically.
-
-## MESP-121 Phase E handoff - 13 August 2026
-
-MESP-121 remains the live active capability and **In Progress** in Jira. This
-bounded Phase E continuation started from the Phase D head
-`a6d92469cdaa3ef895106bac6e62561584e861c9` and added the local runtime/login
-correction in commit `f9eff32` on the same branch
-`feat/MESP-121-price-list-b2b-pricing`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
-must remain open, Draft, and unmerged. Do not transition MESP-121 to Done,
-start MESP-122, replace this task with another capability, or widen scope.
-
-Phase E confirmed the original sign-in defect: the tracked Angular proxy still
-targeted `http://localhost:5000`, while that port and `5001` are owned by
-unrelated RMS processes. The implementation keeps the tracked proxy as the
-generic `5000` fallback and adds `scripts/Start-MiniErpDevelopment.ps1`, which
-selects a safe local API target, configures the Development bootstrap, writes
-an ignored BOM-free `.runtime/proxy.conf.json` targeting that exact URL, and
-starts Angular with the generated proxy. `scripts/Test-MiniErpDevelopmentRuntime.ps1`
-checks the default tracked target and custom generated target without starting
-or stopping processes. Angular services continue to use relative `/api/v1`
-URLs; no machine-specific backend URL was added to product source.
-
-The final committed runtime is running with MiniERP on `http://localhost:5300`
-and Angular on `http://localhost:4300`; RMS listeners on `5000` and `5001` were
-left untouched. The final direct and Angular-origin smoke proved MiniERP
-module identity, 401 unauthenticated session/problem semantics, wrong-password
-`authentication_failed`, direct/proxy sign-in, Development `MiniErp.Auth`,
-authenticated session, antiforgery, one Development Tenant context, idempotent
-context switch, selected session, Price List GET, Angular `/app/price-lists`
-route/assets, OpenAPI, and Scalar. The in-app browser was unavailable, so no
-visual browser evidence is claimed. Release build, focused bootstrap/Price
-List tests (8/8), non-SQL backend regression (689/689), Angular tests (55/55),
-production build, runtime self-test, and `git diff --check` passed. The 21
-SQL safety cases remain gated by the unavailable
-`MESP_SQLSERVER_CONNECTION_STRING`; production/provider, migration, legal,
-privacy, and specialist gates remain open.
-
-The final project completion percentages remain unchanged. The next exact
-continuation is planner acceptance plus the reserved Opus/final review of
-MESP-121 on this same branch/PR. Do not execute MESP-122 automatically.
-
-## MESP-121 Phase D handoff - 13 August 2026
-
-MESP-121 remains the live active capability and **In Progress** in Jira.
-Activation evidence is comment `11025`. This bounded Phase D continuation
-started from `ed80975f2d9eb9631fe9a4550a51737fae3e40bb` on the exact shared
-branch `feat/MESP-121-price-list-b2b-pricing`; the runtime-stabilization source
-commit is `a05863b10537876f47065bd0c5b09a5307f784c9`, and Jira evidence is
-comment `11093`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
-must remain open and unmerged. Do not transition MESP-121 to Done, start
-MESP-122, or widen this capability.
-
-The earlier Phase A Price List backend and Phase C Angular implementation
-remain in this shared branch. Phase D reviewed and corrected the integrated
-Development execution path without changing the approved Price List business
-scope:
-
-- removed the tracked cookies, request-body, and SQLite WAL/SHM runtime
-  artifacts and hardened the repository ignore boundary;
-- restored the Angular development proxy contract to `http://localhost:5000`;
-- replaced the shared-file Development SQLite fallback with separate
-  module-owned `masterdata.db` and `business-parties.db` files outside the
-  repository, with explicit overrides and fail-loud, idempotent schema
-  initialization;
-- preserved the production SQL Server path and production `__Host-`/Secure
-  authentication cookie contract while making Development HTTP use the
-  explicit `MiniErp.Auth`/same-request compatibility cookie;
-- retained the Development-only bootstrap boundary, added safe server-side
-  request-failure logging without request-body or credential logging, and
-  added architecture coverage for module-scoped SQLite initialization; and
-- completed the real alternate-port restart/proxy smoke with no fake business
-  reference records. The official 5000 listener is occupied by an unrelated
-  RMS service and was not stopped.
-
-Validation for this handoff is recorded below and includes a Release build,
-689/689 non-SQL backend tests, 55/55 Angular tests, the Angular production
-build, and direct/proxy HTTP checks for health, sign-in, session/context
-selection, antiforgery, idempotent context switching, Price List GET,
-OpenAPI, Scalar, and the Angular route/assets. The 21 SQL Server safety cases
-remain environment-gated because `MESP_SQLSERVER_CONNECTION_STRING` is not
-available. The final project completion percentages remain unchanged; this
-stabilization work does not close SQL/provider/production, migration, legal,
-privacy, or specialist validation gates.
+# Next session — MESP-122 — Implement Master Data import, audit/report integration, and downstream references
 
 ## Session boundary
 
-MESP-120 is complete at its approved bounded Exchange Rate and multi-currency
-Master Data scope. Focused PR #63 was reviewed at
-`f4d6485fd8b70a88ba34b68f1acae15a8c255ff6` and merged to `main` at
-`14f6f4923d2897d891f33f5eb4405d2fe2089e69`. Jira MESP-120 is **Done** with
-activation comment `10990`, validation/review comment `11023`, and closure
-comment `11024`. The implementation and its post-merge state/tracker/root-task
-synchronization are the completed preceding session.
+MESP-121 is complete at its approved bounded Price List and deterministic B2B
+pricing scope. Focused PR #64 was reviewed at final head
+`2f1d7fa20bc5adb591fd42e04519ee66931018db` and squash-merged to `main` at
+`87be98f58d2d6de3f151ed3de0ef31276e682e5a`. Jira MESP-121 is **Done** with
+activation evidence `11025`, Phase D evidence `11093`, validation/review
+evidence `11094`, and closure evidence `11095`. Opus 5 targeted review approved
+the squash merge with findings P1-1 and P1-2 closed and no P0/P1 findings.
 
-The active capability is **MESP-121 - Implement Price List and deterministic
-B2B pricing capability**. Its live Jira status and activation evidence were
-verified for this session. Continue only with the bounded MESP-121 planner
-acceptance, Opus review, or explicitly authorized follow-up after this Phase D
-handoff; do not start MESP-122 or any other capability automatically.
+The exact next capability is **MESP-122 — Implement Master Data import,
+audit/report integration, and downstream references**. It is activated under
+Parent Epic `MESP-6 — EPIC 06 - Master Data and Product Catalog` with Jira
+activation comment `11096`. This is the single active implementation capability.
+Execute only MESP-122 sequentially and stop after its bounded completion or a
+real blocker. Do not start MESP-123 or any other capability in the same session.
 
-Release 1 remains the full-feature reusable B2B ERP. **31 August 2026 -
-Release 1 Integrated Preview** is a running preview of the real codebase, not
-an MVP, throwaway/demo UI, Wafra fork, or scope cut. Unfinished functionality
-remains required after the preview.
+Release 1 remains the full-feature reusable B2B ERP baseline. **31 August 2026 —
+Release 1 Integrated Preview** is an integrated running preview of the real
+codebase, not an MVP, throwaway/demo UI, Wafra fork, or scope reduction.
+Unfinished capability remains required Release 1 work after the preview.
 
-## Capability
+---
 
-Implement Price Lists, customer/product/currency applicability, effective
-dating, deterministic precedence, controlled manual pricing where approved,
-snapshots, and downstream Sales consumption. Do not invent retail promotions
-or POS behavior.
+## Capability Overview & Work Scope
 
-## Ownership and traceability
+MESP-122 completes the Master Data lifecycle by providing reusable, Tenant-owned
+batch import mechanics, row validation and quarantine, idempotent replay,
+audit/report integration, and downstream reference integrity for all ten
+Release-1 Master Data entities:
 
-- Owning Epic: MESP-6 with Sales consumption under MESP-9.
-- Owning baselines: the approved Master Data and Sales BRDs/specifications.
-- Decision gates: MD-OD-004 / SAL-OD-01 precedence and applicability;
-  MD-OD-005 approval catalogue; MESP-46 credit remains separate. No
-  promotion/retail rules may be invented.
-- Source of truth: Price List master configuration. Sales snapshots the
-  commercial facts used on documents; do not make downstream documents depend
-  on mutable current configuration.
+1. **Category**
+2. **Unit of Measure (UOM)**
+3. **Product**
+4. **Supplier**
+5. **Business Customer**
+6. **Currency**
+7. **Payment Term**
+8. **Tax / VAT**
+9. **Exchange Rate**
+10. **Price List**
 
-## Required entry reading and live verification
+### Backend Scope
 
-Read and verify, in this order:
+- **Batch Import Domain & Engine**: Tenant-owned import batch identity,
+  source/provenance metadata, status lifecycle (`Draft`, `Simulating`, `Validated`,
+  `Completed`, `CompletedWithErrors`, `Failed`), and batch summary metrics.
+- **Dry-Run / Simulation Mode**: Full execution simulation performing syntax,
+  structural, and business validation without database state mutation.
+- **Row-Level Outcomes**: Granular per-row classification into `Accepted`,
+  `Rejected`, and `Quarantined`, with stable 1-indexed row referencing, exact field
+  pointers, and diagnostic error/warning codes.
+- **Duplicate & Conflict Policy**: Configurable duplicate handling (reject duplicate,
+  skip existing, or update mutable fields where explicitly approved by entity policy)
+  without silent data corruption or cross-row ambiguity.
+- **Idempotent Replay & Deterministic Retry**: Re-running an identical import batch
+  produces idempotent outcomes; quarantined rows can be corrected and replayed.
+- **Audit & Evidence Preservation**: Every batch run and row mutation records
+  Tenant-scoped audit entries with actor, timestamp, correlation ID, and summary.
+- **Report / Read Contracts**: Integration of approved read/reporting query models
+  under PD-042 (catalogue export, status breakdown, audit trail, reconciliation).
+- **Downstream Reference Integrity & Historical Snapshots**: Enforce foreign-key and
+  logical reference integrity across Master Data entities, preventing deletion of
+  in-use entities and ensuring downstream modules (Sales, Procurement, Inventory,
+  Finance) consume immutable historical snapshots rather than mutable live state.
+- **REST & OpenAPI**: Complete Foundation REST catalogue endpoints with generated
+  OpenAPI operation metadata and Scalar documentation.
 
-1. `AGENTS.md`, `CLAUDE.md`, `.ai/CURRENT_STATE.md`, and this `TASK.md`;
+### Frontend (Angular) Scope
+
+- **Multi-Step Import Wizard**: Intuitive, step-by-step UX for resource selection,
+  file upload / payload input, column mapping, validation preview, dry-run review,
+  and execution.
+- **Preview & Error Reconciliation UI**: Interactive row-level grid showing valid
+  rows, quarantined items, error details, and summary reconciliation counters.
+- **Audit & Reporting Views**: Deep-linked audit histories, batch run summaries,
+  and export triggers integrated into the existing Master Data workspace.
+- **Bilingual & Responsive Design**: Complete English/Arabic (EN/AR) translations,
+  flawless RTL/LTR layout transitions, accessibility labels, and loading/empty/error states.
+
+---
+
+## Decision Gates & Policy Boundaries
+
+1. **MESP-51 / PD-041 (Migration Contract) is Consumed**: Generic import mechanics,
+   validation schemas, and reconciliation totals are built according to the approved
+   Release-1 migration architecture.
+2. **MESP-53 / PD-042 (Reporting Contract) is Consumed**: Approved read contracts,
+   export structures, and audit views conform to the reporting catalogue contract.
+3. **MESP-50 Remains OPEN as a Production-Policy Boundary**:
+   - MESP-50 (Data retention, residency, purge, PDPL compliance, legal hold) remains
+     an open production-policy gate and does **not** block bounded MESP-122 engineering.
+   - **MESP-122 MUST NOT** implement, invent, or claim: contractual retention periods,
+     legal-hold rules, tenant deletion commitments, PDPL rights workflows, residency
+     guarantees, backup-location promises, production privacy certification, or provider/region decisions.
+4. **No Customer-Specific Hardcoding**: No Wafra-specific schemas, columns, extraction
+   scripts, or legacy workarounds may be hardcoded. All import processors must be
+   strictly generic and reusable across any B2B SaaS tenant.
+5. **DO NOT Turn MESP-122 into MESP-40**:
+   - MESP-122 builds **reusable import and reference capabilities**.
+   - MESP-122 does **not** execute actual customer migration, opening GL journal
+     entries, AP/AR opening balances, stock valuation cutovers, or transaction cutover.
+   - Actual customer cutover remains governed by MESP-40 in the migration wave.
+
+---
+
+## Sequential Execution Model
+
+Delivery is strictly sequential across specialist phases. Do not run parallel agents.
+
+```mermaid
+flowchart LR
+    A[Phase A: Luna Max<br/>Backend Import Domain & REST] --> B[Phase B: Gemini Flash<br/>Integration & Angular Nonvisual]
+    B --> C[Phase C: Sonnet 5<br/>Angular Wizard & UX/RTL]
+    C --> D[Review: Opus 5<br/>Targeted Verification]
+    D --> E[Acceptance: Sol<br/>Final Closure]
+```
+
+- **Phase A — GPT-5.6 Luna Max**:
+  Backend import domain, import batch persistence, entity-specific validators/processors,
+  dry-run simulation, row-level quarantine engine, idempotency/replay, audit linkages,
+  report/read contracts under PD-042, authorization policies, and REST/OpenAPI endpoints.
+- **Phase B — Gemini 3.7 Flash**:
+  Backend/frontend integration contract, import file-handling seam (JSON/CSV parser models),
+  Angular nonvisual services/models/state management, and test harness integration.
+- **Phase C — Claude Sonnet 5**:
+  Complete Angular Import Wizard UI, preview & reconciliation table, row error inspector,
+  audit/report links in Master Data workspace, full EN/AR translations, RTL/LTR styling,
+  responsive layouts, and component specs.
+- **Kimi K3 256K**: RESERVED ONLY for an explicitly bounded deep investigation or complex
+  fix if requested by the planner. Do not consume Kimi quota automatically.
+- **Opus 5**: Reserved for independent targeted review at the completion checkpoint.
+- **GPT-5.6 Sol**: Planner, architect, and final acceptance.
+
+---
+
+## Import Safety & Integrity Rules
+
+Every import processor must strictly implement the following safety guarantees:
+
+1. **Explicit Tenant Isolation**: Every import batch and imported record must be
+   explicitly scoped to the ambient authenticated Tenant context. Cross-tenant
+   references must fail closed immediately.
+2. **Two-Phase Dry-Run Guarantee**: The system must support running full validation
+   and simulation without committing any database transactions.
+3. **Atomic Batch or Isolated Quarantine**: Batches must support either atomic
+   rollback on error or clean row-level quarantine where valid rows commit and invalid
+   rows are isolated with actionable error logs.
+4. **Stable Row Referencing**: Errors must reference original 1-indexed file/payload
+   row numbers and specific field names to allow easy user correction.
+5. **No Silent Overwrite / No Partial Mutation**: Partial field updates must only
+   occur if explicitly permitted by the entity policy; otherwise, duplicate records
+   are rejected or skipped without mutating existing data.
+6. **Immutable Historical Snapshot Protection**: Master Data entities referenced by
+   commercial documents cannot be hard-deleted; downstream consumers must snapshot
+   relevant commercial properties at transaction time.
+7. **Concurrency & Audit**: Optimistic concurrency tokens (`rowversion`) and comprehensive
+   audit logging must accompany all import mutations.
+
+---
+
+## Required Entry Reading & Hierarchy
+
+Read in order before modifying files:
+1. `AGENTS.md`, `CLAUDE.md`, `.ai/CURRENT_STATE.md`, `TASK.md`;
 2. `docs/30_Release_1_Full_Feature_Fast_Track_Delivery_Plan.md`,
    `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`, and
    `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`;
-3. live Jira MESP-121, MESP-23, MESP-46, and the decision/contract evidence
-   for MD-OD-004, SAL-OD-01, and MD-OD-005, reconciling any stale Jira wording
-   with the immutable Product Decision Register;
-4. the approved Master Data and Sales BRDs/specifications that define price
-   lists, commercial applicability, precedence, snapshots, and downstream
-   ownership;
-5. the existing Product, Business Customer, Currency, and Payment Terms
-   implementations and their affected contracts/tests;
-6. ADR-002, ADR-005, ADR-006, ADR-011, the Foundation REST operation
-   catalogue, shared authorization/audit/localization contracts, and directly
-   affected module boundaries; and
-7. the current branch/worktree, `main`, `origin/main`, current diff, and the
-   actual backend/Angular topology before changing files.
+3. `docs/16_Master_Data_and_Product_Catalog_BRD.md`, `docs/29_Security_Audit_and_Data_Governance_BRD.md`;
+4. Approved decisions PD-041 (Migration) and PD-042 (Reporting);
+5. Existing Master Data implementations (`Category`, `UOM`, `Product`, `Supplier`,
+   `Customer`, `Currency`, `PaymentTerm`, `Tax`, `ExchangeRate`, `PriceList`);
+6. Foundation contracts: `FoundationRestContracts.cs`, `MasterDataDbContext.cs`,
+   `MasterDataOperationCatalog.cs`, and Angular `MasterDataService`.
 
-Do not reread every BRD or the entire PRD routinely. Use the live MESP-121
-contract, exact decision evidence, existing Master Data capabilities, and
-affected Sales contracts as the source of truth. If precedence, applicability,
-approval, snapshot, or another decision required for safe deterministic pricing
-is genuinely unresolved, record the concrete blocker in MESP-23 and stop
-rather than inventing a rule.
+---
 
-## Approved boundaries and scope
+## Verification & Quality Gates
 
-The implementation may cover:
+Every implementation phase must satisfy:
+- **Backend Build**: `dotnet build backend/MiniErp.sln --configuration Release` with 0 warnings and 0 errors.
+- **Backend Tests**: Focused import/reference tests passing, and full non-SQL backend suite (703+ passing).
+- **SQL Safety Gate**: 21 SQL Server safety tests remain connection-gated when `MESP_SQLSERVER_CONNECTION_STRING` is not configured; report honestly without fabrication.
+- **Frontend Tests**: `npm test -- --watch=false` in `frontend/` passing 100% of tests.
+- **Frontend Build**: `npm run build` in `frontend/` generating initial raw bundle within the 500 kB budget.
+- **Runtime Self-Test**: `scripts/Start-MiniErpDevelopment.ps1` and `scripts/Test-MiniErpDevelopmentRuntime.ps1` verifying clean runtime on safe ports (MiniERP 5300 / Angular 4300).
+- **Repository Hygiene**: No tracked cookies, auth tokens, passwords, SQLite files, `.runtime` files, `.vs` artifacts, or temporary logs.
 
-- Tenant-owned reusable Price List identities and controlled lifecycle, using
-  the existing Product, Business Customer, and Currency identities;
-- customer/product/currency applicability and effective-dated price versions
-  within the exact approved contract;
-- deterministic precedence and conflict/duplicate handling only where
-  MD-OD-004 and SAL-OD-01 authorize the rule;
-- controlled manual pricing where explicitly approved, with exact server-
-  derived authority, audit evidence, optimistic concurrency, idempotency
-  seams, and safe unknown/no-applicable-price outcomes;
-- immutable commercial snapshots/evidence for downstream Sales consumption,
-  without allowing later master-data edits to rewrite historical documents;
-- module-owned persistence/schema mappings, API/contracts, generated
-  OpenAPI/Scalar documentation, and complete authorization/Tenant context;
-- connected Angular English/Arabic, RTL/LTR Price List list/detail/history/
-  create/edit/lifecycle/applicability journeys with loading, empty, denied,
-  conflict, validation, unavailable, and pending states; and
-- focused domain, persistence/provider, API, architecture, authorization,
-  Tenant-isolation, audit, localization, and Angular tests, with SQL/provider/
-  production validation reported honestly.
+---
 
-## Explicit exclusions and gates
+## Next Action
 
-This session must not:
-
-- implement retail promotions, POS, discount campaigns, coupons, loyalty,
-  retail pricing, or Wafra-specific core behavior;
-- invent precedence, customer segmentation, approval, override, price formula,
-  rounding, tax, currency-conversion, or conflict rules outside the exact
-  approved MD-OD-004/SAL-OD-01/MD-OD-005 contract;
-- implement MESP-46 credit-limit/credit-control behavior or Finance posting,
-  accounting, valuation, settlement, period, tax, FX, or irreversible
-  downstream consequences;
-- add automated/external providers, integrations, credentials, bank feeds,
-  webhooks, production infrastructure, or external pricing sources;
-- activate or execute MESP-39, activate MESP-40, perform migration/cutover, or
-  close SQL/provider/production, legal, privacy, or specialist gates;
-- create a parallel Product, Customer, Currency, or Price List model that
-  bypasses existing Tenant ownership and module boundaries; or
-- implement Procurement, Inventory, Returns, Reporting catalogue, future
-  Promotions, or any other capability beyond the MESP-121 contract.
-
-Preserve G-SEC, G-AUD, G-LOC, G-DATA, G-PROD, MESP-48, MESP-49, MESP-50,
-Finance/Sales specialist validation, SQL/provider, privacy/legal, migration,
-and production gates. No external production integration is authorized.
-
-## Definition of Done and validation
-
-MESP-121 is complete only when the real repository demonstrates the approved
-Price List capability end to end for authorized Tenant users, including the
-applicable domain behavior, application/service behavior, persistence/schema,
-database integrity, API contracts, server-derived authorization, audit,
-effective dating/history, deterministic precedence, concurrency/idempotency,
-safe unknown outcomes, immutable Sales snapshot evidence, bilingual/RTL
-Angular journeys, affected integration contracts, and focused tests. Do not
-claim completion for placeholder data or a disconnected demo.
-
-Every public REST operation must be present in the Foundation operation
-catalogue with its exact route, permission, Tenant scope, antiforgery, audit,
-unsafe-effect, concurrency, idempotency, and effective-date metadata; appear
-in generated OpenAPI/Scalar with a stable operation ID, useful summary and
-boundary description, explicit request/parameter/response/error outcomes; and
-be covered by architecture/contract tests that reject missing or placeholder
-documentation.
-
-Before handoff:
-
-- run the narrowest relevant domain, backend, contract, persistence/provider,
-  authorization/Tenant-isolation, and Angular tests/builds, including affected
-  regressions;
-- inspect the complete diff for Tenant isolation, pricing precedence,
-  snapshot immutability, audit, concurrency, localization, effective-date
-  integrity, no silent commercial assumptions, and source-scope boundaries;
-- update MESP-121 with the Phase D runtime/security validation and shared-branch
-  handoff evidence; planner acceptance, Opus review, final review, and closure
-  remain pending;
-- update MESP-23 only for a genuinely discovered open decision or blocker;
-- update `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and relevant plan/state
-  documents conservatively; percentages reflect verified usable capability,
-  never Jira or documentation activity alone;
-- use one focused branch and draft PR, review the complete Phase A/Phase C/
-  Phase D diff, and leave the PR unmerged for planner acceptance and the
-  reserved Opus/final review gates; and
-- preserve this MESP-121 Phase D handoff in this file. Do not replace it with
-  MESP-122 or execute another capability in the same Luna session.
-
-## Completion report required
-
-Report MESP-121's activated Price List scope, Phase D runtime/security changes,
-decision rows used, validation results,
-Tenant/authorization/audit/localization/concurrency/effective-date/precedence/
-snapshot evidence, Jira status/comments, any MESP-23 additions,
-production-capability percentage changes or unchanged status, draft PR/head
-and merge-pending state, synchronized branch state, and the exact planner/Opus
-review handoff. Explicitly state that planner acceptance, Opus review, final
-review, and Jira closure remain pending.
-Explicitly state that MESP-39, MESP-40 activation, external providers,
-Finance/accounting/credit behavior, production gates, migration/cutover,
-retail POS/promotions, and all other capabilities were not executed unless
-separately authorized.
+Begin **Phase A (GPT-5.6 Luna Max)**: Design and implement the backend import domain,
+batch lifecycle, row-level quarantine engine, entity import processors, audit linkages,
+and Foundation REST/OpenAPI contracts for Master Data import.
