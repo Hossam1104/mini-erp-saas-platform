@@ -190,8 +190,32 @@ Every implementation phase must satisfy:
 
 ---
 
+## Phase A completion handoff
+
+Phase A (GPT-5.6 Luna Max) is complete at the bounded backend scope on branch
+`feat/MESP-122-master-data-import`. It delivers the Tenant-owned import batch
+domain and persistence, source/provenance evidence, all ten Master Data
+processors, duplicate policy, validation and quarantine, true dry-run
+simulation, commit and quarantined-row replay, deterministic reconciliation,
+audit/evidence/read contracts, authorization, and the Foundation REST/OpenAPI
+catalogue seam. Phase A validation is green for the Release backend build,
+focused import/REST tests, full non-SQL backend regression, Angular regression,
+and the safe fresh-runtime smoke. The SQL Server safety cases remain gated by
+the unavailable `MESP_SQLSERVER_CONNECTION_STRING`.
+
+The existing Development database was not migrated or cut over. Runtime smoke
+used a fresh isolated Development SQLite directory created through environment
+configuration only. No MESP-39 execution, MESP-40 activation, external
+provider/credential/infrastructure work, Wafra-specific behavior, Jira closure,
+or final project-percentage increase was claimed. The unrelated working-tree
+frontend asset changes remain outside this MESP-122 branch scope and must not
+be staged by the next handoff.
+
 ## Next Action
 
-Begin **Phase A (GPT-5.6 Luna Max)**: Design and implement the backend import domain,
-batch lifecycle, row-level quarantine engine, entity import processors, audit linkages,
-and Foundation REST/OpenAPI contracts for Master Data import.
+The next exact session is **Phase B (Gemini 3.7 Flash)** for the already-active
+MESP-122 item: backend/frontend integration contracts, JSON/CSV file-handling
+seams, Angular nonvisual services/models/state management, and test-harness
+integration. Do not start Phase B automatically in this session. Phase C,
+Opus review, Sol acceptance, MESP-123, MESP-39, and MESP-40 remain out of scope
+until their explicit sequential handoffs.

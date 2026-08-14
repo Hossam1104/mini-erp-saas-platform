@@ -22,6 +22,7 @@ public static class MasterDataServiceCollectionExtensions
         services.AddSingleton<IMasterDataExchangeRatePersistence, UnavailableMasterDataExchangeRatePersistence>();
         services.AddSingleton<IMasterDataPriceListPersistence, UnavailableMasterDataPriceListPersistence>();
         services.AddSingleton<IMasterDataTaxPersistence, UnavailableMasterDataTaxPersistence>();
+        services.AddSingleton<IMasterDataImportPersistence, UnavailableMasterDataImportPersistence>();
         services.AddSingleton<IMasterDataScopePolicy, CategoryUomScopePolicy>();
         services.AddSingleton<IMasterDataResourcePolicy, CategoryUomResourcePolicy>();
         services.AddSingleton<IMasterDataApprovalPolicy, CategoryUomApprovalPolicy>();
@@ -73,6 +74,33 @@ public static class MasterDataServiceCollectionExtensions
                     servicesProvider.GetRequiredService<PriceListScopePolicy>()),
                 servicesProvider.GetRequiredService<IMasterDataPriceListPersistence>(),
                 servicesProvider.GetService<IBusinessCustomerReferenceReader>()));
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the Phase-A structured import orchestration and its ten
+    /// resource adapters. The host may replace only the module-owned
+    /// persistence ports; the processing and authorization rules remain
+    /// application-owned.
+    /// </summary>
+    public static IServiceCollection AddMasterDataImport(
+        this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddSingleton<MasterDataImportAuthorizationComposition>();
+        services.AddSingleton<MasterDataImportProcessorRegistry>(serviceProvider =>
+            new MasterDataImportProcessorRegistry(
+                MasterDataImportProcessorFactory.Create(
+                    serviceProvider.GetRequiredService<IMasterDataCatalogPersistence>(),
+                    serviceProvider.GetRequiredService<IProductIdentityPersistence>(),
+                    serviceProvider.GetRequiredService<IMasterDataCurrencyPaymentTermPersistence>(),
+                    serviceProvider.GetRequiredService<IMasterDataTaxPersistence>(),
+                    serviceProvider.GetRequiredService<IMasterDataExchangeRatePersistence>(),
+                    serviceProvider.GetRequiredService<IMasterDataPriceListPersistence>(),
+                    serviceProvider.GetRequiredService<ISupplierPersistence>(),
+                    serviceProvider.GetRequiredService<ICustomerPersistence>())));
+        services.AddSingleton<MasterDataImportService>();
         return services;
     }
 

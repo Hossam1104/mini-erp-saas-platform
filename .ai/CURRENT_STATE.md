@@ -1,6 +1,6 @@
 # Current State
 
-## Current authoritative position - 14 August 2026 (MESP-121 complete; PR #64 merged; MESP-122 activated)
+## Current authoritative position - 14 August 2026 (MESP-122 Phase A complete; draft PR pending)
 
 MESP-121 is complete at its approved bounded Price List and deterministic B2B
 pricing scope. The source implementation and corrections are merged to `main`;
@@ -13,22 +13,26 @@ comment `11093`, validation/review evidence is comment `11094`, closure
 evidence is comment `11095`, and MESP-121 is **Done**.
 
 MESP-122 is **In Progress** in live Jira, activated under Parent Epic `MESP-6`
-with activation comment `11096`. The required post-merge state, tracker, and
-root-task synchronization is this commit on synchronized `main`/`origin/main`.
+with activation comment `11096`. Phase A is complete at its bounded backend
+scope on branch `feat/MESP-122-master-data-import`; the branch is intentionally
+unmerged and the Jira item remains open for the sequential Gemini Phase B,
+Sonnet Phase C, targeted review, and final acceptance handoffs.
 
 | Current fact | Verified value |
 |---|---|
 | MESP-121 scope | Reusable Tenant-owned Price Lists, customer/product/currency applicability, effective-dated non-overlapping price versions, deterministic precedence and conflict resolution, controlled manual pricing where approved, immutable applied-price evidence, Active/Inactive lifecycle, audit, optimistic concurrency, idempotency seams, 10 Foundation REST operations with generated OpenAPI/Scalar reference, complete bilingual Angular Price List UI with EN/AR and RTL/LTR support, and Development runtime stabilization. |
+| MESP-122 Phase A scope | Reusable Tenant-owned import batches, rows, source/provenance and replay lineage, durable batch/row/audit persistence, all ten generic Master Data processors, field/business/reference validation, duplicate policy, true dry-run simulation, row quarantine and replay, deterministic reconciliation/evidence, authorization, and Foundation REST/OpenAPI/read contracts. Gemini Phase B file/integration work and Sonnet Phase C Angular import UX are not started. |
 | Pricing precedence & applicability | Current parent Price List currency/customer/organization/priority/lifecycle configuration governs current applicability and precedence; immutable child rows remain historical Product/UOM/effective/amount/scale/provenance/source/currency evidence. Proposed parent edits and cross-list appends fail closed on equal current precedence (`price_list_precedence_conflict`). |
 | Master Data authorization | Production `AddMasterDataAuthorization()` registers a fail-closed resolver mapping exact trusted Foundation permissions to one Master Data capability; unknown/unrelated permissions deny closed, and the unconditional granting double is used only in isolated unit-test fixtures. |
 | Repository hygiene | Pre-existing tracked `.vs` IDE/cache files (including `slnx.sqlite`) and transient Development artifacts were cleaned up. No cookies, auth tokens, passwords, SQLite DB/WAL/SHM, `.runtime` files, build output, or temporary logs are tracked. |
 | Deferred non-blocking P2 notes | 1. Reactivation can create an equal-priority configuration if modified while inactive; runtime resolution fails closed safely with `price_list_precedence_conflict`. 2. Resolution audit resource labeling uses historical child scope metadata. Neither is a correctness/security blocker. |
-| Validation | Release backend build passed with 0 warnings/errors; focused Price List and Master Data authorization tests passed 17/17; full non-SQL backend suite passed 703/703; Angular tests passed 68/68 across 11 test files; Angular production build passed with a 414.67 kB initial raw bundle under the unchanged 500 kB warning budget. The 21 SQL Server safety cases remain environment-gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. |
-| PR / merge | PR #64 was marked ready and squash-merged at `87be98f58d2d6de3f151ed3de0ef31276e682e5a` from reviewed head `2f1d7fa20bc5adb591fd42e04519ee66931018db`. `main` and `origin/main` are synchronized. |
+| Validation | Release backend build passed with 0 warnings/errors; focused import tests passed 6/6; REST foundation tests passed 33/33; full non-SQL backend regression passed 709/709; Angular tests passed 68/68 across 11 test files; Angular production build passed with a 414.67 kB initial raw bundle under the unchanged 500 kB warning budget. Fresh runtime smoke passed on MiniERP 5300 / Angular 4301, including authenticated context selection, Price List GET, OpenAPI/Scalar, and an accepted import dry-run using an isolated fresh Development SQLite directory. The 21 SQL Server safety cases remain environment-gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. |
+| PR / merge | PR #64 remains the completed MESP-121 baseline on `main`; MESP-122 Phase A is on the focused branch `feat/MESP-122-master-data-import`, with draft PR publication pending. No MESP-122 merge or Jira closure has occurred. |
 | Live Jira counts | 80 Done / 7 In Progress / 55 To Do across 142 issues; 80 Done / 2 In Progress / 45 To Do across 127 non-Epic issues (In Progress: MESP-23 and MESP-122). |
-| MESP-23 | Remains In Progress as the living Open Questions Register. No new business decision or blocker was added by MESP-121. |
+| MESP-23 | Remains In Progress as the living Open Questions Register. No new business decision or blocker was added by MESP-122 Phase A. |
 | Exclusions preserved | No retail promotions, POS, discount campaigns, loyalty, retail pricing, Sales Orders, Procurement pricing, Finance/AP/AR, credit limit (MESP-46), tax/accounting/rounding, automatic FX, MESP-39 execution, MESP-40 activation, migration/cutover, or Wafra-specific core behavior was executed. |
-| Current branch | `main` is synchronized with `origin/main` after PR #64 squash merge; post-merge synchronization is on `main`. |
+| Current branch | `feat/MESP-122-master-data-import`, based on merged-main baseline `a06cb3728dbfac6d05b2ce75458b06c265dde6031`; the branch is intentionally unmerged while the focused draft PR is published and reviewed. |
+| Phase handoff | Phase A is complete; the next exact continuation is MESP-122 Phase B (Gemini 3.7 Flash) for JSON/CSV file/integration seams, Angular nonvisual state/services, and test-harness integration. Phase B/C, Opus review, Sol acceptance, MESP-123, MESP-39, and MESP-40 are not started by this session. |
 | Next exact capability | `TASK.md` contains **MESP-122 — Implement Master Data import, audit/report integration, and downstream references**. Activated under MESP-6; MESP-51 (PD-041) and MESP-53 (PD-042) are consumed; MESP-50 remains an open production-policy boundary. |
 
 ## Historical authoritative position - 14 August 2026 (MESP-121 Phase G targeted Opus P1 corrections complete; draft PR #64; superseded by MESP-121 merge)

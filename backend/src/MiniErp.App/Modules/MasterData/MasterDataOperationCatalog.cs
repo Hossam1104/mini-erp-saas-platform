@@ -84,6 +84,17 @@ public static class MasterDataOperationCatalog
             return MasterDataCapability.ViewAuditHistory;
         }
 
+        if (operationId.StartsWith("master-data.import.", StringComparison.Ordinal)
+            && !operationId.EndsWith(".list", StringComparison.Ordinal)
+            && !operationId.EndsWith(".read", StringComparison.Ordinal)
+            && !operationId.EndsWith(".status.read", StringComparison.Ordinal)
+            && !operationId.EndsWith(".rows.read", StringComparison.Ordinal)
+            && !operationId.EndsWith(".reconciliation.read", StringComparison.Ordinal)
+            && !operationId.EndsWith(".evidence.read", StringComparison.Ordinal))
+        {
+            return MasterDataCapability.ImportMigrate;
+        }
+
         if (operationId.EndsWith(".create", StringComparison.Ordinal))
         {
             return MasterDataCapability.Create;

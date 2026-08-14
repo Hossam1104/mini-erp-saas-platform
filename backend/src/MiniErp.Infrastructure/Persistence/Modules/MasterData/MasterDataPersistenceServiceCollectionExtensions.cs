@@ -29,10 +29,12 @@ public static class MasterDataPersistenceServiceCollectionExtensions
         var currencyPaymentTermPersistence = new MasterDataCurrencyPaymentTermPersistence(optionsBuilder.Options);
         var exchangeRatePersistence = new MasterDataExchangeRatePersistence(optionsBuilder.Options);
         var taxPersistence = new MasterDataTaxPersistence(optionsBuilder.Options);
+        var importPersistence = new MasterDataImportPersistence(optionsBuilder.Options);
         services.AddSingleton<IMasterDataCatalogPersistence>(persistence);
         services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence>(currencyPaymentTermPersistence);
         services.AddSingleton<IMasterDataExchangeRatePersistence>(exchangeRatePersistence);
         services.AddSingleton<IMasterDataTaxPersistence>(taxPersistence);
+        services.AddSingleton<IMasterDataImportPersistence>(importPersistence);
         services.AddSingleton<IMasterDataPriceListPersistence>(servicesProvider =>
             new MasterDataPriceListPersistence(
                 optionsBuilder.Options,
