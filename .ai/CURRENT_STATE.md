@@ -24,7 +24,7 @@ correction session.
 | PR / merge | Draft PR #65 remains open, Draft, and unmerged; its body retains the existing Phase C1 evidence and adds the bounded Opus P1-1 correction, lifecycle test, and runtime evidence. No Jira transition, comment, or other tracker write was performed by this session (owned by GPT-5.6 Sol). |
 | MESP-23 | Remains In Progress as the living Open Questions Register; no new decision or blocker was added by this bounded P1-1 correction session. |
 | Exclusions preserved | No MESP-123 activation, no MESP-39 execution, no MESP-40 activation, no workspace redesign, no broad backend rewrite, no external provider/integration/credential/infrastructure work, no Retail POS or Wafra-specific core behavior, no Jira/external-tracker operation, and no production-capability-percentage increase was claimed. |
-| Current branch | `feat/MESP-122-master-data-import` at correction commit `41cdb6c` pending the final state/tracker commit; draft PR #65 remains open and unmerged against `main`. |
+| Current branch | `feat/MESP-122-master-data-import` contains P1-1 source correction commit `41cdb6c` and the synchronized state/tracker handoff; draft PR #65 remains open and unmerged against `main`. |
 | Next exact continuation | GPT-5.6 Sol planner verification, then targeted Claude Opus re-review of the P1-1 correction together with the existing C1 findings, on the same branch/PR. MESP-123 is not activated and `TASK.md`'s existing next-capability prompt is intentionally left untouched by this session. |
 
 ## Historical authoritative position - 14 August 2026 (MESP-122 Phase B and Phase C complete; draft PR #65 open, unmerged)
