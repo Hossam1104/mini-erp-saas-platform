@@ -193,7 +193,9 @@ Every implementation phase must satisfy:
 ## Phase A completion handoff
 
 Phase A (GPT-5.6 Luna Max) is complete at the bounded backend scope on branch
-`feat/MESP-122-master-data-import`. It delivers the Tenant-owned import batch
+`feat/MESP-122-master-data-import` at source commit
+`69173044445b5c40def397ff535b7e349083f0ac`; draft PR #65 is open against
+`main`. It delivers the Tenant-owned import batch
 domain and persistence, source/provenance evidence, all ten Master Data
 processors, duplicate policy, validation and quarantine, true dry-run
 simulation, commit and quarantined-row replay, deterministic reconciliation,
