@@ -1,6 +1,32 @@
 # Current State
 
-## Current authoritative position - 14 August 2026 (MESP-122 Phase A complete; draft PR #65 open)
+## Current authoritative position - 14 August 2026 (MESP-122 Phase B and Phase C complete; draft PR #65 open, unmerged)
+
+MESP-122 remains **In Progress** in live Jira under Parent Epic `MESP-6`,
+activation comment `11096`. Phase A (backend), Phase B (Angular nonvisual
+integration seam — models, service, facade, RFC 4180 CSV/JSON parser, safe
+error codes), and Phase C (the real Angular Master Data Import
+Workspace/Wizard UI) are all now complete on the same branch
+`feat/MESP-122-master-data-import`, still published as draft PR #65 against
+`main`. The branch remains intentionally unmerged; MESP-122 remains open for
+GPT-5.6 Sol planner verification and an independent Claude Opus 5 review
+before any acceptance or closure.
+
+| Current fact | Verified value |
+|---|---|
+| MESP-122 Phase B scope | Complete TypeScript import contracts/models and `IMPORT_RESOURCE_DEFINITIONS` for all 10 resources, an RFC 4180 CSV/JSON parser (`import-parser.ts`) with auto-mapping/validation/normalization, `MasterDataImportService` covering all 11 REST endpoints with antiforgery/idempotency/`If-Match` handling, a reactive `MasterDataImportFacade` signal store, and the full `SafeErrorCode` set for `import_*` backend error codes. No visual UI was added in Phase B. |
+| MESP-122 Phase C scope | `MasterDataImportWorkspaceComponent` — a single reusable standalone component (list/wizard/detail modes from the route) implementing the sequential 6-step wizard (Resource & Policy → File → Column Mapping → Preview → Validation → Reconciliation/Execute) for all 10 resource kinds, accessible drag-and-drop upload, mapping badges, capped/paginated preview, facade-only create+simulate+execute, server-sourced reconciliation gating the Execute confirmation, an icon+text+badge row outcome table with filter/search, quarantine-only correction/replay, batch history (no Delete) and batch detail (Summary/Rows/Reconciliation/Audit/Evidence tabs), "Completed with errors" UX, complete EN/AR translation and RTL/LTR support, and ERP-appropriate responsive styling. No shell brand assets were changed. |
+| Source commit | `2dbb3da`, pushed to `feat/MESP-122-master-data-import` (`4272df6..2dbb3da`); 8 files changed (2458 insertions, 4 deletions); no file under `frontend/assets` was touched. |
+| Validation | Backend Release build passed 0 warnings/0 errors after clearing stale process locks; full non-SQL backend regression passed 711/711 (unchanged baseline); the 21 SQL Server safety tests remain honestly environment-gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. Frontend unit/component tests passed 141/141 (110 pre-existing Phase A/B + 31 new Phase C workspace tests). Frontend production build passed with the import workspace as its own lazy chunk (88.97 kB) and a 437.19 kB initial bundle, under the unchanged 500 kB hard budget. `git diff --check` passed (one benign CRLF-autocrlf informational warning only). |
+| Runtime verification | Backend and frontend were restarted through the official `scripts/Start-MiniErpDevelopment.ps1` launcher only (MiniERP on fallback port 5300, Angular on 4300; the unrelated third-party `Rms.Pos.ServiceManager.exe` on port 5000 was left untouched). A full authenticated HTTP-level journey was verified through the Angular dev-server proxy at the identical facade/service contract the component calls: antiforgery bootstrap, sign-in, context list/switch, DryRun `ProductCategory` batch create, simulate, and row outcomes (2/2 rows Accepted, `reconciliation.isConsistent: true`); all 10 protected/derivative brand assets returned HTTP 200. Visual browser verification was not performed because no browser-automation tool was available this session; this limitation is disclosed honestly rather than claimed as covered. Commit-mode execution was deliberately not exercised at runtime to avoid mutating persisted business data; its code path is already covered by the 711/711 backend and 141/141 frontend suites using the identical contracts. |
+| Repository hygiene | Before/after `git ls-files frontend/assets` confirmed all 10 protected Owner assets present and unchanged; `git status --short -- frontend/assets` was empty. `.runtime/` (written by the launcher script) remains correctly gitignored (`.gitignore:17:/.runtime/`) and untracked. Deleted Owner assets: **NONE**. |
+| PR / merge | Draft PR #65 description was updated with a new "### Phase C — Angular Import Workspace (Completed)" section and a "### Remaining" section; confirmed via `gh pr view 65 --json isDraft,url` that the PR remains **Draft** and is **not merged**. No Jira transition, comment, or other tracker write was performed by this session. |
+| MESP-23 | Remains In Progress as the living Open Questions Register; no new decision or blocker was added by Phase B/C. |
+| Exclusions preserved | No MESP-123 activation, no MESP-39 execution, no MESP-40 activation, no external provider/integration/credential/infrastructure work, no Retail POS or Wafra-specific core behavior, no Jira/external-tracker operation, and no production-capability-percentage increase was claimed for this UI-layer/nonvisual-seam completion. |
+| Current branch | `feat/MESP-122-master-data-import` at `2dbb3da`; draft PR #65 remains open and unmerged against `main`. |
+| Next exact continuation | GPT-5.6 Sol planner verification, then an independent Claude Opus 5 MESP-122 review, on the same branch/PR. MESP-123 is not activated and `TASK.md`'s existing next-capability prompt is intentionally left untouched by this session. |
+
+## Historical authoritative position - 14 August 2026 (MESP-122 Phase A complete; draft PR #65 open)
 
 MESP-121 is complete at its approved bounded Price List and deterministic B2B
 pricing scope. The source implementation and corrections are merged to `main`;
