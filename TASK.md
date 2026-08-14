@@ -1,4 +1,4 @@
-# Next session — MESP-122 — Implement Master Data import, audit/report integration, and downstream references
+# MESP-122 — Repository / Merge Closure Handoff (intentionally retained pending Sol Jira closure)
 
 ## Session boundary
 
@@ -7,15 +7,26 @@ pricing scope. Focused PR #64 was reviewed at final head
 `2f1d7fa20bc5adb591fd42e04519ee66931018db` and squash-merged to `main` at
 `87be98f58d2d6de3f151ed3de0ef31276e682e5a`. Jira MESP-121 is **Done** with
 activation evidence `11025`, Phase D evidence `11093`, validation/review
-evidence `11094`, and closure evidence `11095`. Opus 5 targeted review approved
+evidence `11094`, and final closure evidence `11161`. Opus 5 targeted review approved
 the squash merge with findings P1-1 and P1-2 closed and no P0/P1 findings.
 
 The exact next capability is **MESP-122 — Implement Master Data import,
 audit/report integration, and downstream references**. It is activated under
 Parent Epic `MESP-6 — EPIC 06 - Master Data and Product Catalog` with Jira
-activation comment `11096`. This is the single active implementation capability.
+activation comment `11162`. This is the single active implementation capability.
 Execute only MESP-122 sequentially and stop after its bounded completion or a
 real blocker. Do not start MESP-123 or any other capability in the same session.
+
+The authoritative MESP-122 evidence sequence recorded for this repository
+handoff is: activation `11162`; Phase A `11163`; Phase B `11164`; Phase B
+serialization/asset correction `11165`; Phase C `11166`; Phase C1 `11167`;
+independent Opus full review / P1 identified `11168`; Opus P1-1 correction
+`11201`; and targeted Opus approval / P1 closed `11202`. The final reviewed
+feature head is `5edcd3359945d1234dd7d4c95a5ef5f69514af33`.
+
+This file remains intentionally MESP-122 during repository merge closure. It
+must not be replaced with an MESP-123 prompt in this session; GPT-5.6 Sol owns
+Jira closure and the later MESP-123 activation and prompt installation.
 
 Release 1 remains the full-feature reusable B2B ERP baseline. **31 August 2026 —
 Release 1 Integrated Preview** is an integrated running preview of the real
