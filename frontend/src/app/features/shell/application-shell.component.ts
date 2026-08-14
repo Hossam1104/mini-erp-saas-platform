@@ -33,6 +33,9 @@ import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.compo
           <a routerLink="/app/price-lists" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">＄</span>{{ language.text('priceLists') }}
           </a>
+          <a routerLink="/app/master-data/imports" routerLinkActive="is-active">
+            <span class="nav-icon" aria-hidden="true">⇪</span>{{ language.text('importNavLabel') }}
+          </a>
         </nav>
         <div class="sidebar__footer">
           <p>{{ language.text('helpText') }}</p>

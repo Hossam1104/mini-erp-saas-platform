@@ -50,6 +50,12 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
 
     internal DbSet<MasterDataAuditEventEntity> AuditEvents => Set<MasterDataAuditEventEntity>();
 
+    internal DbSet<MasterDataImportBatchEntity> ImportBatches => Set<MasterDataImportBatchEntity>();
+
+    internal DbSet<MasterDataImportRowEntity> ImportRows => Set<MasterDataImportRowEntity>();
+
+    internal DbSet<MasterDataImportAuditEntity> ImportAuditEvents => Set<MasterDataImportAuditEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -450,6 +456,104 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
         audit.HasIndex(item => new { item.TenantId, item.OccurredAt });
         audit.HasIndex(item => new { item.TenantId, item.ResourceKind, item.ResourceId });
         audit.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var importBatch = modelBuilder.Entity<MasterDataImportBatchEntity>();
+        importBatch.ToTable("ImportBatches", "masterdata");
+        importBatch.HasKey(item => item.Id);
+        importBatch.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(importBatch.Property(item => item.TenantId));
+        importBatch.Property(item => item.ResourceKind).IsRequired();
+        importBatch.Property(item => item.SourceSystemCategory).HasMaxLength(128).IsRequired();
+        importBatch.Property(item => item.SourceFileReference).HasMaxLength(1024).IsRequired(false);
+        importBatch.Property(item => item.BatchReference).HasMaxLength(256).IsRequired(false);
+        importBatch.Property(item => item.DuplicatePolicy).IsRequired();
+        importBatch.Property(item => item.Mode).IsRequired();
+        importBatch.Property(item => item.Status).IsRequired();
+        importBatch.Property(item => item.SubmittedActorId).IsRequired();
+        importBatch.Property(item => item.CreatedAt).IsRequired();
+        importBatch.Property(item => item.StartedAt).IsRequired(false);
+        importBatch.Property(item => item.CompletedAt).IsRequired(false);
+        importBatch.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        importBatch.Property(item => item.TotalRows).IsRequired();
+        importBatch.Property(item => item.AcceptedCount).IsRequired();
+        importBatch.Property(item => item.RejectedCount).IsRequired();
+        importBatch.Property(item => item.QuarantinedCount).IsRequired();
+        importBatch.Property(item => item.CommittedCount).IsRequired();
+        importBatch.Property(item => item.SkippedCount).IsRequired();
+        importBatch.Property(item => item.FailedCount).IsRequired();
+        importBatch.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false);
+        importBatch.Property(item => item.Fingerprint).HasMaxLength(128).IsRequired();
+        ConfigureVersion(importBatch.Property(item => item.Version));
+        importBatch.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        importBatch.HasIndex(item => new
+        {
+            item.TenantId,
+            item.SubmittedActorId,
+            item.ResourceKind,
+            item.IdempotencyKey
+        });
+        importBatch.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var importRow = modelBuilder.Entity<MasterDataImportRowEntity>();
+        importRow.ToTable("ImportRows", "masterdata");
+        importRow.HasKey(item => item.Id);
+        importRow.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(importRow.Property(item => item.TenantId));
+        importRow.Property(item => item.BatchId).IsRequired();
+        importRow.Property(item => item.OriginalRowNumber).IsRequired();
+        importRow.Property(item => item.ReplaySequence).IsRequired();
+        importRow.Property(item => item.IsCurrent).IsRequired();
+        importRow.Property(item => item.ResourceKind).IsRequired();
+        importRow.Property(item => item.SourceFieldsJson).HasMaxLength(32768).IsRequired();
+        importRow.Property(item => item.NormalizedFieldsJson).HasMaxLength(32768).IsRequired();
+        importRow.Property(item => item.Outcome).IsRequired();
+        importRow.Property(item => item.DiagnosticsJson).HasMaxLength(32768).IsRequired();
+        importRow.Property(item => item.HighestSeverity).IsRequired();
+        importRow.Property(item => item.MutationDisposition).IsRequired();
+        importRow.Property(item => item.ResultingResourceId).IsRequired(false);
+        importRow.Property(item => item.ResultingResourceCode).HasMaxLength(128).IsRequired(false);
+        importRow.Property(item => item.ExpectedResourceVersion).IsRequired(false);
+        importRow.Property(item => item.ReplayOfRowId).IsRequired(false);
+        importRow.Property(item => item.OriginalRowId).IsRequired(false);
+        importRow.Property(item => item.ReplayIdempotencyKey).HasMaxLength(256).IsRequired(false);
+        importRow.Property(item => item.ProcessedAt).IsRequired();
+        ConfigureVersion(importRow.Property(item => item.Version));
+        importRow.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        importRow.HasIndex(item => new
+        {
+            item.TenantId,
+            item.BatchId,
+            item.OriginalRowNumber,
+            item.ReplaySequence
+        }).IsUnique();
+        importRow.HasIndex(item => new { item.TenantId, item.BatchId, item.ReplayIdempotencyKey });
+        importRow.HasOne<MasterDataImportBatchEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.BatchId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        importRow.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var importAudit = modelBuilder.Entity<MasterDataImportAuditEntity>();
+        importAudit.ToTable("ImportAuditEvents", "masterdata");
+        importAudit.HasKey(item => item.EvidenceId);
+        importAudit.Property(item => item.EvidenceId).ValueGeneratedNever();
+        ConfigureTenant(importAudit.Property(item => item.TenantId));
+        importAudit.Property(item => item.BatchId).IsRequired();
+        importAudit.Property(item => item.RowId).IsRequired(false);
+        importAudit.Property(item => item.OriginalRowNumber).IsRequired(false);
+        importAudit.Property(item => item.OccurredAt).IsRequired();
+        importAudit.Property(item => item.OperationId).HasMaxLength(128).IsRequired();
+        importAudit.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        importAudit.Property(item => item.ActorId).IsRequired();
+        importAudit.Property(item => item.ResourceKind).IsRequired();
+        importAudit.Property(item => item.Outcome).HasMaxLength(128).IsRequired();
+        importAudit.Property(item => item.SourceReference).HasMaxLength(1024).IsRequired();
+        importAudit.Property(item => item.Detail).HasMaxLength(2048).IsRequired(false);
+        ConfigureVersion(importAudit.Property(item => item.Version));
+        importAudit.HasIndex(item => new { item.TenantId, item.BatchId, item.OccurredAt });
+        importAudit.HasIndex(item => new { item.TenantId, item.BatchId, item.RowId });
+        importAudit.HasQueryFilter(item => item.TenantId == TrustedTenantId);
     }
 
     private void ConfigureTenant(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<TenantId> property)

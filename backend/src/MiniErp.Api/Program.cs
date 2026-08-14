@@ -28,6 +28,7 @@ builder.Services.AddMasterDataAuthorization();
 builder.Services.AddProductIdentity();
 builder.Services.AddSupplierIdentity();
 builder.Services.AddCustomerIdentity();
+builder.Services.AddMasterDataImport();
 string? developmentMasterDataSqliteConnectionString = null;
 string? developmentBusinessPartiesSqliteConnectionString = null;
 var sqlServerConnectionString = builder.Configuration["MESP_SQLSERVER_CONNECTION_STRING"];
@@ -523,6 +524,7 @@ app.MapCurrencyPaymentTermEndpoints();
 app.MapTaxEndpoints();
 app.MapExchangeRateEndpoints();
 app.MapPriceListEndpoints();
+app.MapMasterDataImportEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

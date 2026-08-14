@@ -195,4 +195,48 @@ describe('SignInComponent', () => {
     expect(document.documentElement.dir).toBe('rtl');
     expect(component.language.text('signIn')).toBe('تسجيل الدخول');
   });
+
+  it('renders the approved transparent 4:3 brand logo on the sign-in surface with light and dark mode support', async () => {
+    fixture.detectChanges();
+    await flushPreflight();
+    fixture.detectChanges();
+
+    const picture = fixture.nativeElement.querySelector('.brand-logo-picture') as HTMLPictureElement;
+    expect(picture).toBeTruthy();
+
+    const darkSource = picture.querySelector('source') as HTMLSourceElement;
+    expect(darkSource).toBeTruthy();
+    expect(darkSource.getAttribute('srcset')).toBe('assets/Logo_4_3_BG_Removed_Dark.png');
+    expect(darkSource.getAttribute('media')).toBe('(prefers-color-scheme: dark)');
+
+    const lightImg = picture.querySelector('img.brand-logo') as HTMLImageElement;
+    expect(lightImg).toBeTruthy();
+    expect(lightImg.getAttribute('src')).toBe('assets/Logo_4_3_BG_Removed.png');
+    expect(lightImg.getAttribute('width')).toBe('1254');
+    expect(lightImg.getAttribute('height')).toBe('1254');
+
+    // Verify obsolete/deleted assets are not referenced
+    const allHtml = fixture.nativeElement.innerHTML;
+    expect(allHtml).not.toContain('logo-horizontal-trimmed.png');
+    expect(allHtml).not.toContain('logo-horizontal-480.png');
+    expect(allHtml).not.toContain('Logo_4_3.png');
+    expect(allHtml).not.toContain('Logo_16_9.png');
+    expect(allHtml).not.toContain('Ico.png');
+  });
+
+  it('preserves the unmirrored brand logo orientation in RTL mode', async () => {
+    fixture.detectChanges();
+    await flushPreflight();
+    fixture.detectChanges();
+
+    component.language.toggle(); // Switch to Arabic (RTL)
+    fixture.detectChanges();
+
+    expect(document.documentElement.dir).toBe('rtl');
+    const logoImg = fixture.nativeElement.querySelector('img.brand-logo') as HTMLImageElement;
+    expect(logoImg).toBeTruthy();
+    expect(logoImg.getAttribute('src')).toBe('assets/Logo_4_3_BG_Removed.png');
+    const computedStyle = window.getComputedStyle(logoImg);
+    expect(computedStyle.transform).not.toContain('matrix(-1'); // Not scaleX(-1) or mirrored
+  });
 });

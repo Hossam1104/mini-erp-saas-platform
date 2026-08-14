@@ -17,6 +17,15 @@ velocity, or forecast:
    that the repository tracker was updated; Hossam/ChatGPT inspects the
    tracked GitHub version directly when needed.
 
+## Owner-Managed Asset Protection
+
+- Files manually supplied under `frontend/assets` are product source assets.
+- Agents must never delete, rename, replace, regenerate, optimize, recolor, move, or restore them from Git without explicit Owner instruction.
+- Untracked image files in `frontend/assets` must not be assumed temporary.
+- Before asset cleanup, agents must distinguish Owner source assets from generated derivatives.
+- Full logos/icons use `frontend/assets` as source of truth.
+- `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
+
 ## Current execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation)
 
 The Owner has rebaselined Release 1 as a **full-feature reusable B2B ERP**

@@ -15,6 +15,8 @@ export const routes: Routes = [
     children: [
       { path: '', component: WorkspaceHomeComponent },
       { path: 'master-data', pathMatch: 'full', redirectTo: 'master-data/categories' },
+      { path: 'master-data/imports', loadComponent: () => import('./features/master-data/master-data-import-workspace.component').then((module) => module.MasterDataImportWorkspaceComponent) },
+      { path: 'master-data/imports/:id', loadComponent: () => import('./features/master-data/master-data-import-workspace.component').then((module) => module.MasterDataImportWorkspaceComponent) },
       { path: 'master-data/:resource', loadComponent: () => import('./features/master-data/master-data-workspace.component').then((module) => module.MasterDataWorkspaceComponent) },
       { path: 'master-data/:resource/:id', loadComponent: () => import('./features/master-data/master-data-workspace.component').then((module) => module.MasterDataWorkspaceComponent) },
       { path: 'price-lists', loadComponent: () => import('./features/master-data/price-list-workspace.component').then((module) => module.PriceListWorkspaceComponent) },

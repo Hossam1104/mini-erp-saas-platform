@@ -184,6 +184,17 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.price-list.reactivate" => "Reactivate a Price List",
         "master-data.price-list.reference.read" => "Resolve a deterministic B2B price reference",
         "master-data.price-list.audit.read" => "Read Price List audit evidence",
+        "master-data.import.create" => "Create a Tenant-owned Master Data import batch",
+        "master-data.import.simulate" => "Validate a Master Data import without mutations",
+        "master-data.import.execute" => "Execute a validated Master Data import batch",
+        "master-data.import.list" => "List Tenant-owned Master Data import batches",
+        "master-data.import.read" => "Read one Tenant-owned Master Data import batch",
+        "master-data.import.status.read" => "Read Master Data import status",
+        "master-data.import.rows.read" => "Read Master Data import row evidence",
+        "master-data.import.reconciliation.read" => "Read Master Data import reconciliation",
+        "master-data.import.audit.read" => "Read Master Data import audit evidence",
+        "master-data.import.evidence.read" => "Read complete Master Data import evidence",
+        "master-data.import.replay" => "Replay one quarantined Master Data import row",
         _ => GenericSummary(operationId)
     };
 
@@ -258,6 +269,21 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "Writes require Idempotency-Key, and Price List identity/price/lifecycle writes require the current If-Match value where the catalogue declares concurrency.";
         }
 
+        if (descriptor.OperationId.StartsWith("master-data.import", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "This Phase-A import boundary is a structured, Tenant-owned, evidence-first workflow for Category, UOM, Product, Supplier, "
+                + "Business Customer, Currency, Payment Term, Tax/VAT, Exchange Rate, and Price List resources. Each batch preserves source "
+                + "provenance, original payload/row identity, normalized fields, diagnostics, outcome, mutation disposition, deterministic result "
+                + "references, replay lineage, and audit evidence. Simulation validates and resolves references without calling target mutation "
+                + "adapters; execution is permitted only for a validated Commit-mode batch and applies the configured Reject, SkipExisting, or "
+                + "UpdateMutableFields duplicate policy. Server-derived Tenant and actor authority cannot be supplied by row data. Partial success "
+                + "is reconciled as TotalRows = Accepted + Rejected + Quarantined, with committed, skipped, and failed mutation counts shown "
+                + "separately. Replay creates a new current attempt while preserving the original quarantined evidence and lineage. This boundary "
+                + "does not perform MESP-40 migration/cutover, retention or legal-hold behavior, residency/PDPL certification, provider integration, "
+                + "or irreversible production migration decisions.";
+        }
+
         return contextRules
             + "The operation is part of the reusable internal ERP contract. Response failures use Problem Details "
             + "with a stable code, correlation identifier, and operation identifier; provider details and internal "
@@ -279,6 +305,17 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.price-list.reference.read" => "The single deterministic Tenant-owned Price List price reference, including Product/UOM/Currency applicability, effective window, configured priority, provenance, and immutable version evidence.",
         "master-data.price-list.history.read" => "The Tenant-owned Price List price-version history with preserved applicability and provenance snapshots.",
         "master-data.price-list.audit.read" => "Tenant-filtered audit evidence for the Price List resource and pricing-reference decisions.",
+        "master-data.import.create" => "The persisted import batch identity, source provenance, policy, mode, initial status, version, and reconciliation counters.",
+        "master-data.import.simulate" => "The validated import batch with row-level normalized evidence, diagnostics, duplicate/reference outcomes, and no target mutations.",
+        "master-data.import.execute" => "The completed or partially completed import batch with row outcomes, mutation dispositions, deterministic target references, and reconciliation counters.",
+        "master-data.import.list" => "Tenant-filtered import batch summaries with status, provenance, mode, policy, version, and reconciliation counters.",
+        "master-data.import.read" => "One Tenant-filtered import batch summary with its durable lifecycle and reconciliation state.",
+        "master-data.import.status.read" => "The current import status, correlation identifier, and optimistic-concurrency version.",
+        "master-data.import.rows.read" => "Tenant-filtered row evidence including source fields, normalized fields, diagnostics, outcome, mutation disposition, target reference, and replay lineage.",
+        "master-data.import.reconciliation.read" => "The persisted import reconciliation counters and the TotalRows = Accepted + Rejected + Quarantined consistency result.",
+        "master-data.import.audit.read" => "Tenant-filtered batch, row, and mutation audit evidence with source reference and correlation context.",
+        "master-data.import.evidence.read" => "The complete Tenant-filtered import batch, row, reconciliation, and audit evidence package.",
+        "master-data.import.replay" => "The updated import batch after replaying one quarantined row, preserving the original evidence and adding a new current attempt.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 

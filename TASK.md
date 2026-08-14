@@ -1,4 +1,4 @@
-# Next session — MESP-122 — Implement Master Data import, audit/report integration, and downstream references
+# MESP-122 — Repository / Merge Closure Handoff (intentionally retained pending Sol Jira closure)
 
 ## Session boundary
 
@@ -7,15 +7,26 @@ pricing scope. Focused PR #64 was reviewed at final head
 `2f1d7fa20bc5adb591fd42e04519ee66931018db` and squash-merged to `main` at
 `87be98f58d2d6de3f151ed3de0ef31276e682e5a`. Jira MESP-121 is **Done** with
 activation evidence `11025`, Phase D evidence `11093`, validation/review
-evidence `11094`, and closure evidence `11095`. Opus 5 targeted review approved
+evidence `11094`, and final closure evidence `11161`. Opus 5 targeted review approved
 the squash merge with findings P1-1 and P1-2 closed and no P0/P1 findings.
 
 The exact next capability is **MESP-122 — Implement Master Data import,
 audit/report integration, and downstream references**. It is activated under
 Parent Epic `MESP-6 — EPIC 06 - Master Data and Product Catalog` with Jira
-activation comment `11096`. This is the single active implementation capability.
+activation comment `11162`. This is the single active implementation capability.
 Execute only MESP-122 sequentially and stop after its bounded completion or a
 real blocker. Do not start MESP-123 or any other capability in the same session.
+
+The authoritative MESP-122 evidence sequence recorded for this repository
+handoff is: activation `11162`; Phase A `11163`; Phase B `11164`; Phase B
+serialization/asset correction `11165`; Phase C `11166`; Phase C1 `11167`;
+independent Opus full review / P1 identified `11168`; Opus P1-1 correction
+`11201`; and targeted Opus approval / P1 closed `11202`. The final reviewed
+feature head is `5edcd3359945d1234dd7d4c95a5ef5f69514af33`.
+
+This file remains intentionally MESP-122 during repository merge closure. It
+must not be replaced with an MESP-123 prompt in this session; GPT-5.6 Sol owns
+Jira closure and the later MESP-123 activation and prompt installation.
 
 Release 1 remains the full-feature reusable B2B ERP baseline. **31 August 2026 —
 Release 1 Integrated Preview** is an integrated running preview of the real
@@ -190,8 +201,34 @@ Every implementation phase must satisfy:
 
 ---
 
+## Phase A completion handoff
+
+Phase A (GPT-5.6 Luna Max) is complete at the bounded backend scope on branch
+`feat/MESP-122-master-data-import` at source commit
+`69173044445b5c40def397ff535b7e349083f0ac`; draft PR #65 is open against
+`main`. It delivers the Tenant-owned import batch
+domain and persistence, source/provenance evidence, all ten Master Data
+processors, duplicate policy, validation and quarantine, true dry-run
+simulation, commit and quarantined-row replay, deterministic reconciliation,
+audit/evidence/read contracts, authorization, and the Foundation REST/OpenAPI
+catalogue seam. Phase A validation is green for the Release backend build,
+focused import/REST tests, full non-SQL backend regression, Angular regression,
+and the safe fresh-runtime smoke. The SQL Server safety cases remain gated by
+the unavailable `MESP_SQLSERVER_CONNECTION_STRING`.
+
+The existing Development database was not migrated or cut over. Runtime smoke
+used a fresh isolated Development SQLite directory created through environment
+configuration only. No MESP-39 execution, MESP-40 activation, external
+provider/credential/infrastructure work, Wafra-specific behavior, Jira closure,
+or final project-percentage increase was claimed. The unrelated working-tree
+frontend asset changes remain outside this MESP-122 branch scope and must not
+be staged by the next handoff.
+
 ## Next Action
 
-Begin **Phase A (GPT-5.6 Luna Max)**: Design and implement the backend import domain,
-batch lifecycle, row-level quarantine engine, entity import processors, audit linkages,
-and Foundation REST/OpenAPI contracts for Master Data import.
+The next exact session is **Phase B (Gemini 3.7 Flash)** for the already-active
+MESP-122 item: backend/frontend integration contracts, JSON/CSV file-handling
+seams, Angular nonvisual services/models/state management, and test-harness
+integration. Do not start Phase B automatically in this session. Phase C,
+Opus review, Sol acceptance, MESP-123, MESP-39, and MESP-40 remain out of scope
+until their explicit sequential handoffs.

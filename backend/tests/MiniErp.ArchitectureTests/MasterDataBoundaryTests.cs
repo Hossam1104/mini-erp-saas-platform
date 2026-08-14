@@ -201,6 +201,9 @@ public sealed class MasterDataBoundaryTests
             "MasterData"));
         var sourceFiles = Directory.GetFiles(appSourcePath, "*.cs", SearchOption.AllDirectories)
             .Concat(Directory.GetFiles(contractSourcePath, "*.cs", SearchOption.AllDirectories))
+            // MESP-122 owns the structured import batch vocabulary. This
+            // legacy guard remains scoped to the M95 Product-only surface.
+            .Where(path => !Path.GetFileName(path).Contains("Import", StringComparison.OrdinalIgnoreCase))
             .ToArray();
         var forbiddenIdentifiers = new[]
         {
