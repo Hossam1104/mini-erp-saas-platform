@@ -195,4 +195,17 @@ describe('SignInComponent', () => {
     expect(document.documentElement.dir).toBe('rtl');
     expect(component.language.text('signIn')).toBe('تسجيل الدخول');
   });
+
+  it('renders the approved transparent 4:3 brand logo on the sign-in surface', async () => {
+    fixture.detectChanges();
+    await flushPreflight();
+    fixture.detectChanges();
+
+    const logo = fixture.nativeElement.querySelector('.brand-logo') as HTMLImageElement;
+    expect(logo).toBeTruthy();
+    expect(logo.getAttribute('src')).toBe('assets/Logo_4_3_BG_Removed.png');
+    expect(logo.getAttribute('src')).not.toContain('logo-horizontal-trimmed.png');
+    expect(logo.getAttribute('width')).toBe('1448');
+    expect(logo.getAttribute('height')).toBe('1086');
+  });
 });

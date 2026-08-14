@@ -19,10 +19,10 @@ const DEVELOPMENT_USERNAME = 'admin@minierp.local';
         <div class="auth-brand">
           <img
             class="brand-logo"
-            src="assets/brand/logo-horizontal-trimmed.png"
+            src="assets/Logo_4_3_BG_Removed.png"
             [attr.alt]="language.text('appName')"
-            width="468"
-            height="145"
+            width="1448"
+            height="1086"
           />
           <p class="auth-brand__eyebrow">{{ language.text('productBrandTagline') }}</p>
           <p class="auth-brand__copy">{{ language.text('shellWelcome') }}</p>

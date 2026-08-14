@@ -17,8 +17,39 @@ export type SafeErrorCode =
   | 'price_list_precedence_conflict'
   | 'price_list_duplicate'
   | 'idempotency_conflict'
+  | 'idempotency_key_invalid'
   | 'customer_reference_unavailable'
   | 'persistence_unavailable'
+  | 'import_resource_unsupported'
+  | 'import_request_invalid'
+  | 'import_row_limit_exceeded'
+  | 'import_row_invalid'
+  | 'import_row_number_invalid'
+  | 'import_row_payload_too_large'
+  | 'import_field_too_large'
+  | 'import_source_invalid'
+  | 'import_batch_invalid_state'
+  | 'import_batch_not_found'
+  | 'import_dry_run_no_commit'
+  | 'import_concurrency_conflict'
+  | 'import_replay_idempotency_required'
+  | 'import_replay_idempotency_conflict'
+  | 'import_row_not_found'
+  | 'import_replay_not_allowed'
+  | 'import_unavailable'
+  | 'import_duplicate'
+  | 'import_reference_invalid'
+  | 'import_reference_unavailable'
+  | 'import_update_not_permitted'
+  | 'import_commit_failed'
+  | 'import_commit_reparse_failed'
+  | 'import_field_invalid'
+  | 'import_field_required'
+  | 'import_field_duplicate'
+  | 'import_untrusted_field'
+  | 'import_persistence_failed'
+  | 'import_audit_persistence_failed'
+  | 'organization_scope_denied'
   | 'request_failed';
 
 export interface SafeUiError {
@@ -43,8 +74,39 @@ const knownCodes = new Set<SafeErrorCode>([
   'price_list_precedence_conflict',
   'price_list_duplicate',
   'idempotency_conflict',
+  'idempotency_key_invalid',
   'customer_reference_unavailable',
   'persistence_unavailable',
+  'import_resource_unsupported',
+  'import_request_invalid',
+  'import_row_limit_exceeded',
+  'import_row_invalid',
+  'import_row_number_invalid',
+  'import_row_payload_too_large',
+  'import_field_too_large',
+  'import_source_invalid',
+  'import_batch_invalid_state',
+  'import_batch_not_found',
+  'import_dry_run_no_commit',
+  'import_concurrency_conflict',
+  'import_replay_idempotency_required',
+  'import_replay_idempotency_conflict',
+  'import_row_not_found',
+  'import_replay_not_allowed',
+  'import_unavailable',
+  'import_duplicate',
+  'import_reference_invalid',
+  'import_reference_unavailable',
+  'import_update_not_permitted',
+  'import_commit_failed',
+  'import_commit_reparse_failed',
+  'import_field_invalid',
+  'import_field_required',
+  'import_field_duplicate',
+  'import_untrusted_field',
+  'import_persistence_failed',
+  'import_audit_persistence_failed',
+  'organization_scope_denied',
   'request_failed',
 ]);
 

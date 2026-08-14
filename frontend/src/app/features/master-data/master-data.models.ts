@@ -1,6 +1,7 @@
 import { TranslationKey } from '../../core/i18n/language.service';
 
 export * from './price-list.model';
+export * from './master-data-import.models';
 
 export type MasterDataResourceKey = 'categories' | 'units' | 'products' | 'suppliers' | 'customers' | 'currencies' | 'payment-terms' | 'taxes' | 'exchange-rates';
 

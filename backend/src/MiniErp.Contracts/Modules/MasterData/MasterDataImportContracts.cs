@@ -1,8 +1,11 @@
 #pragma warning disable CS1591
 
+using System.Text.Json.Serialization;
+
 namespace MiniErp.Contracts.Modules.MasterData;
 
 /// <summary>Execution mode requested for a structured import batch.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MasterDataImportMode
 {
     DryRun = 1,
@@ -10,6 +13,7 @@ public enum MasterDataImportMode
 }
 
 /// <summary>Durable lifecycle of an import batch.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MasterDataImportStatus
 {
     Draft = 1,
@@ -21,6 +25,7 @@ public enum MasterDataImportStatus
 }
 
 /// <summary>Requested handling for an existing business identity.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MasterDataImportDuplicatePolicy
 {
     Reject = 1,
@@ -29,6 +34,7 @@ public enum MasterDataImportDuplicatePolicy
 }
 
 /// <summary>Current outcome of one original source row or corrected replay.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MasterDataImportRowOutcome
 {
     NotProcessed = 1,
@@ -38,6 +44,7 @@ public enum MasterDataImportRowOutcome
 }
 
 /// <summary>Safe severity for a row diagnostic.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MasterDataImportDiagnosticSeverity
 {
     Info = 1,
@@ -46,6 +53,7 @@ public enum MasterDataImportDiagnosticSeverity
 }
 
 /// <summary>What the execution engine did with an accepted row.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MasterDataImportMutationDisposition
 {
     NotAttempted = 1,
