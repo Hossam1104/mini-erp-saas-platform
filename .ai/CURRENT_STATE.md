@@ -1,6 +1,32 @@
 # Current State
 
-## Current authoritative position - 14 August 2026 (MESP-122 Phase B and Phase C complete; draft PR #65 open, unmerged)
+## Current authoritative position - 14 August 2026 (MESP-122 Phase C1 planner corrections complete; draft PR #65 open, unmerged)
+
+MESP-122 remains **In Progress** in live Jira under Parent Epic `MESP-6`. This
+bounded Phase C1 session applied 3 GPT-5.6 Sol planner-detected corrections to
+the already-complete Phase C Angular Import Workspace, on the same branch
+`feat/MESP-122-master-data-import` and the same draft PR #65 (source commit
+`72ce5f3`). No new branch or PR was created; PR #65 remains **Draft** and
+**unmerged**. MESP-122 is **not** marked Done, MESP-123 was **not** activated,
+and no production-capability percentage was changed by this UI-correction
+session.
+
+| Current fact | Verified value |
+|---|---|
+| Finding 1 (execute confirmation integrity) | The execute confirmation dialog now sources Total Rows/Accepted/Rejected/Quarantined/Duplicate Policy/Batch Reference exclusively from `facade.batchReconciliation()` server evidence, never client-derived counts; Execute is blocked (dialog cannot open, button disabled) whenever reconciliation is absent or inconsistent, including if it becomes unavailable while the dialog is already open. Commit-mode batches with `Rejected > 0` or `Quarantined > 0` show an explicit EN/AR partial-eligibility warning. |
+| Finding 2 (complete evidence tab) | The Evidence tab reuses the existing `loadBatchEvidence`/`getEvidence` contract only (no second evidence API) and renders Batch Evidence, Source/Provenance, Reconciliation Evidence, Row Evidence (historical/superseded rows visually and textually distinct), and Audit Evidence, with explicit loading/error/retry states and a per-batch staleness guard that prevents ever presenting evidence from a different batch than the one currently selected. |
+| Finding 3A/3B (accessibility) | Row-detail and execute-confirmation dialogs implement a full focus-trap (Tab/Shift+Tab), safe initial focus (Cancel for the destructive execute dialog, heading for row detail, never a replay input), focus restoration to the opener on close, `aria-labelledby` bound to a real heading id, and Escape-to-close guarded against in-flight execute/replay requests. Batch-detail tabs implement a complete ARIA tabs pattern (roving tabindex, `role="tablist"/"tab"/"tabpanel"`, `aria-controls`/`aria-selected`/`aria-labelledby`) with ArrowLeft/ArrowRight/Home/End navigation and RTL-aware direction reversal. |
+| Source commit | `72ce5f3`, pushed to `feat/MESP-122-master-data-import` (`a16057a..72ce5f3`); 3 files changed (653 insertions, 51 deletions: `language.service.ts`, `master-data-import-workspace.component.ts`, `master-data-import-workspace.component.spec.ts`); no file under `frontend/assets` was touched. |
+| Validation | Frontend unit/component tests passed **158/158** (141 pre-existing Phase C baseline + 17 new focused Finding 1/2/3A/3B tests, 0 regressions, 0 broad/unrelated tests added). Frontend production build passed with the import workspace lazy chunk at 98.52 kB (was 88.97 kB pre-C1) and a 439.15 kB initial bundle (was 437.19 kB), still under the unchanged 500 kB hard budget. Backend Release build passed 0 warnings/0 errors; full non-SQL backend regression passed the unchanged **711/711** baseline; the 21 SQL Server safety cases remain honestly environment-gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. `git diff --check` passed (benign CRLF-autocrlf informational warnings only). |
+| Runtime verification | Backend and frontend were restarted through the official `scripts/Start-MiniErpDevelopment.ps1` launcher only (MiniERP on 5300, Angular on 4300; the unrelated third-party `Rms.Pos.ServiceManager.exe` on port 5000 was left untouched; a stale prior-session `MiniErp.Api.exe` PID holding a build-output file lock was stopped before rebuilding, consistent with the mandatory runtime restart). An 18-point authenticated HTTP-level smoke suite passed cleanly through the Angular dev-server proxy, including the Import workspace route, the import batches list endpoint, and confirming both the reconciliation and evidence operations are present in the generated OpenAPI document. Visual browser verification was not performed because no browser-automation tool was available this session; this limitation is disclosed honestly rather than claimed as covered. |
+| Repository hygiene | `git status --short -- frontend/assets` was empty both before and after; all 10 protected Owner assets are present and unchanged. Deleted Owner assets: **NONE**. Only the 3 intended source files were staged and committed. |
+| PR / merge | Draft PR #65 title and description were corrected: the stale "1448 x 1086" login-logo dimension claim was replaced with the actual Owner-supplied source dimensions (`width="1254" height="1254"`, verified directly against `sign-in.component.ts`), and a new "### Phase C1 — Planner-Detected UX/Evidence/Accessibility Corrections" section documents the 3 findings and updated test/bundle evidence. Confirmed via `gh pr view 65 --json isDraft,url,headRefOid` that the PR remains **Draft**, is **not merged**, and now points at head `72ce5f3`. No Jira transition, comment, or other tracker write was performed by this session (owned by GPT-5.6 Sol). |
+| MESP-23 | Remains In Progress as the living Open Questions Register; no new decision or blocker was added by this bounded UI-correction session. |
+| Exclusions preserved | No MESP-123 activation, no MESP-39 execution, no MESP-40 activation, no workspace redesign, no broad backend rewrite, no external provider/integration/credential/infrastructure work, no Retail POS or Wafra-specific core behavior, no Jira/external-tracker operation, and no production-capability-percentage increase was claimed. |
+| Current branch | `feat/MESP-122-master-data-import` at `72ce5f3`; draft PR #65 remains open and unmerged against `main`. |
+| Next exact continuation | GPT-5.6 Sol planner verification of the 3 Phase C1 corrections, then an independent Claude Opus 5 MESP-122 review, on the same branch/PR. MESP-123 is not activated and `TASK.md`'s existing next-capability prompt is intentionally left untouched by this session. |
+
+## Historical authoritative position - 14 August 2026 (MESP-122 Phase B and Phase C complete; draft PR #65 open, unmerged)
 
 MESP-122 remains **In Progress** in live Jira under Parent Epic `MESP-6`,
 activation comment `11096`. Phase A (backend), Phase B (Angular nonvisual
