@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SafeUiError } from '../../core/api/safe-error';
 import { AuthService } from '../../core/auth/auth.service';
-import { LanguageService } from '../../core/i18n/language.service';
+import { LanguageService, TranslationKey } from '../../core/i18n/language.service';
 import { MAX_FILE_SIZE_BYTES } from './import-parser';
 import { MasterDataImportFacade } from './master-data-import.facade';
 import {
@@ -427,37 +427,46 @@ const WIZARD_STEPS: ImportWizardStep[] = ['resource', 'file', 'mapping', 'previe
             </div>
           </div>
 
-          <nav class="tabs" role="tablist" [attr.aria-label]="language.text('importBatchDetailTitle')">
-            <button role="tab" type="button" [class.is-active]="detailTab() === 'summary'" [attr.aria-selected]="detailTab() === 'summary'" (click)="setDetailTab('summary')">{{ language.text('importBatchSummaryTab') }}</button>
-            <button role="tab" type="button" [class.is-active]="detailTab() === 'rows'" [attr.aria-selected]="detailTab() === 'rows'" (click)="setDetailTab('rows')">{{ language.text('importBatchRowsTab') }}</button>
-            <button role="tab" type="button" [class.is-active]="detailTab() === 'reconciliation'" [attr.aria-selected]="detailTab() === 'reconciliation'" (click)="setDetailTab('reconciliation')">{{ language.text('importBatchReconciliationTab') }}</button>
-            <button role="tab" type="button" [class.is-active]="detailTab() === 'audit'" [attr.aria-selected]="detailTab() === 'audit'" (click)="setDetailTab('audit')">{{ language.text('importBatchAuditTab') }}</button>
-            <button role="tab" type="button" [class.is-active]="detailTab() === 'evidence'" [attr.aria-selected]="detailTab() === 'evidence'" (click)="setDetailTab('evidence')">{{ language.text('importBatchEvidenceTab') }}</button>
+          <nav class="tabs" role="tablist" [attr.aria-label]="language.text('importBatchDetailTitle')" (keydown)="onTabsKeydown($event)">
+            @for (t of detailTabs; track t.tab) {
+              <button
+                [id]="'import-tab-' + t.tab"
+                role="tab"
+                type="button"
+                [class.is-active]="detailTab() === t.tab"
+                [attr.aria-selected]="detailTab() === t.tab"
+                [attr.aria-controls]="'import-tabpanel-' + t.tab"
+                [attr.tabindex]="detailTab() === t.tab ? 0 : -1"
+                (click)="setDetailTab(t.tab)"
+              >{{ language.text(t.labelKey) }}</button>
+            }
           </nav>
 
-          @switch (detailTab()) {
-            @case ('summary') {
-              <div class="summary-grid">
-                <div><span>{{ language.text('importResourceType') }}</span><b>{{ resourceLabel(batch.resourceKind) }}</b></div>
-                <div><span>{{ language.text('importMode') }}</span><b>{{ modeLabel(batch.mode) }}</b></div>
-                <div><span>{{ language.text('importDuplicatePolicy') }}</span><b>{{ policyLabel(batch.duplicatePolicy) }}</b></div>
-                <div><span>{{ language.text('importBatchStatusCol') }}</span><b>{{ statusLabel(batch.status) }}</b></div>
-                <div><span>{{ language.text('importBatchSubmittedCol') }}</span><b>{{ batch.createdAt | date:'medium' }}</b></div>
-                <div><span>{{ language.text('importCorrelationId') }}</span><b>{{ batch.correlationId }}</b></div>
-                <div><span>{{ language.text('importBatchReference') }}</span><b>{{ batch.id }}</b></div>
-              </div>
-              @if (facade.canExecute()) {
-                <div class="wizard-actions">
-                  <span></span>
-                  <button class="button button--primary" type="button" (click)="openExecuteConfirm()" [disabled]="facade.batchReconciliation()?.isConsistent === false">{{ language.text('importExecute') }}</button>
+          <div [id]="'import-tabpanel-' + detailTab()" role="tabpanel" [attr.aria-labelledby]="'import-tab-' + detailTab()" tabindex="0">
+            @switch (detailTab()) {
+              @case ('summary') {
+                <div class="summary-grid">
+                  <div><span>{{ language.text('importResourceType') }}</span><b>{{ resourceLabel(batch.resourceKind) }}</b></div>
+                  <div><span>{{ language.text('importMode') }}</span><b>{{ modeLabel(batch.mode) }}</b></div>
+                  <div><span>{{ language.text('importDuplicatePolicy') }}</span><b>{{ policyLabel(batch.duplicatePolicy) }}</b></div>
+                  <div><span>{{ language.text('importBatchStatusCol') }}</span><b>{{ statusLabel(batch.status) }}</b></div>
+                  <div><span>{{ language.text('importBatchSubmittedCol') }}</span><b>{{ batch.createdAt | date:'medium' }}</b></div>
+                  <div><span>{{ language.text('importCorrelationId') }}</span><b>{{ batch.correlationId }}</b></div>
+                  <div><span>{{ language.text('importBatchReference') }}</span><b>{{ batch.id }}</b></div>
                 </div>
+                @if (facade.canExecute()) {
+                  <div class="wizard-actions">
+                    <span></span>
+                    <button class="button button--primary" type="button" (click)="openExecuteConfirm()" [disabled]="!facade.batchReconciliation() || facade.batchReconciliation()?.isConsistent === false">{{ language.text('importExecute') }}</button>
+                  </div>
+                }
               }
+              @case ('rows') { <ng-container *ngTemplateOutlet="rowOutcomeTable" /> }
+              @case ('reconciliation') { <ng-container *ngTemplateOutlet="reconciliationPanel" /> }
+              @case ('audit') { <ng-container *ngTemplateOutlet="auditPanel" /> }
+              @case ('evidence') { <ng-container *ngTemplateOutlet="evidencePanel" /> }
             }
-            @case ('rows') { <ng-container *ngTemplateOutlet="rowOutcomeTable" /> }
-            @case ('reconciliation') { <ng-container *ngTemplateOutlet="reconciliationPanel" /> }
-            @case ('audit') { <ng-container *ngTemplateOutlet="auditPanel" /> }
-            @case ('evidence') { <ng-container *ngTemplateOutlet="evidencePanel" /> }
-          }
+          </div>
         }
       </section>
     </ng-template>
@@ -481,7 +490,7 @@ const WIZARD_STEPS: ImportWizardStep[] = ['resource', 'file', 'mapping', 'previe
         @if (facade.canExecute()) {
           <div class="wizard-actions">
             <span></span>
-            <button class="button button--primary" type="button" (click)="openExecuteConfirm()" [disabled]="facade.batchReconciliation()?.isConsistent === false">{{ language.text('importExecute') }}</button>
+            <button class="button button--primary" type="button" (click)="openExecuteConfirm()" [disabled]="!facade.batchReconciliation() || facade.batchReconciliation()?.isConsistent === false">{{ language.text('importExecute') }}</button>
           </div>
         }
 
@@ -597,33 +606,101 @@ const WIZARD_STEPS: ImportWizardStep[] = ['resource', 'file', 'mapping', 'previe
       }
     </ng-template>
 
-    <!-- Shared: evidence tab -->
+    <!-- Shared: evidence tab (Finding 2: consolidated evidence bundle) -->
     <ng-template #evidencePanel>
-      @if (facade.busy() && !facade.currentBatch()) {
-        <div class="state-card state-card--loading" role="status"><span class="loader" aria-hidden="true"></span><b>{{ language.text('loading') }}…</b></div>
-      } @else if (facade.currentBatch(); as batch) {
+      @if (evidenceStatus() === 'loading') {
+        <div class="state-card state-card--loading" role="status" aria-live="polite"><span class="loader" aria-hidden="true"></span><b>{{ language.text('loading') }}…</b></div>
+      } @else if (evidenceStatus() === 'error') {
+        <div class="state-card state-card--error" role="alert">
+          <span class="state-icon" aria-hidden="true">!</span>
+          <div>
+            <b>{{ errorMessage(evidenceError()) }}</b>
+            <button class="text-button" type="button" (click)="retryEvidenceLoad()">{{ language.text('retry') }} ↗</button>
+          </div>
+        </div>
+      } @else if (evidenceStatus() === 'loaded' && facade.currentBatch(); as batch) {
+        <h3>{{ language.text('importEvidenceBatchSection') }}</h3>
         <div class="summary-grid">
           <div><span>{{ language.text('importBatchReference') }}</span><b>{{ batch.id }}</b></div>
+          <div><span>{{ language.text('importResourceType') }}</span><b>{{ resourceLabel(batch.resourceKind) }}</b></div>
+          <div><span>{{ language.text('importMode') }}</span><b>{{ modeLabel(batch.mode) }}</b></div>
+          <div><span>{{ language.text('importDuplicatePolicy') }}</span><b>{{ policyLabel(batch.duplicatePolicy) }}</b></div>
+          <div><span>{{ language.text('importBatchStatusCol') }}</span><b>{{ statusLabel(batch.status) }}</b></div>
+          <div><span>{{ language.text('importBatchSubmittedCol') }}</span><b>{{ batch.createdAt | date:'medium' }}</b></div>
           <div><span>{{ language.text('importCorrelationId') }}</span><b>{{ batch.correlationId }}</b></div>
-          <div><span>{{ language.text('importFileName') }}</span><b>{{ batch.source.sourceFileReference || '—' }}</b></div>
+          <div><span>{{ language.text('importSubmittedActor') }}</span><b>{{ batch.submittedActorId || '—' }}</b></div>
         </div>
-        <p class="muted-line">{{ language.text('importViewEvidence') }}</p>
+
+        <h3>{{ language.text('importEvidenceSourceSection') }}</h3>
+        <div class="summary-grid">
+          <div><span>{{ language.text('importEvidenceSourceSystem') }}</span><b>{{ batch.source.sourceSystemCategory || '—' }}</b></div>
+          <div><span>{{ language.text('importEvidenceSourceFile') }}</span><b>{{ batch.source.sourceFileReference || '—' }}</b></div>
+          <div><span>{{ language.text('importBatchReference') }}</span><b>{{ batch.source.batchReference || '—' }}</b></div>
+        </div>
+
+        <h3>{{ language.text('importEvidenceReconciliationSection') }}</h3>
+        <ng-container *ngTemplateOutlet="reconciliationPanel" />
+
+        <h3>{{ language.text('importEvidenceRowSection') }}</h3>
+        <ng-container *ngTemplateOutlet="evidenceRowTable" />
+
+        <h3>{{ language.text('importEvidenceAuditSection') }}</h3>
         <ng-container *ngTemplateOutlet="auditPanel" />
       } @else {
         <div class="state-card state-card--error" role="alert">{{ language.text('importEvidenceUnavailable') }}</div>
       }
     </ng-template>
 
+    <!-- Shared: evidence row-level table (Finding 2 section D) -->
+    <ng-template #evidenceRowTable>
+      @if (facade.batchRows().length === 0) {
+        <div class="state-card state-card--empty"><span class="state-icon" aria-hidden="true">∅</span><b>{{ language.text('importNoRowsMatchFilter') }}</b></div>
+      } @else {
+        <div class="record-table-wrap">
+          <table class="record-table">
+            <thead><tr>
+              <th>{{ language.text('importPreviewRowNumber') }}</th>
+              <th>{{ language.text('importRowOutcomesTitle') }}</th>
+              <th>{{ language.text('importEvidenceMutationDisposition') }}</th>
+              <th>{{ language.text('importResultingRecord') }}</th>
+              <th>{{ language.text('importDiagnostics') }}</th>
+              <th>{{ language.text('importEvidenceLineage') }}</th>
+              <th></th>
+            </tr></thead>
+            <tbody>
+              @for (row of evidenceRowsSorted(); track row.id) {
+                <tr [class.evidence-row--historical]="!row.isCurrent">
+                  <td><small>{{ row.originalRowNumber }}</small>@if (row.replaySequence > 0) { <small> · {{ language.text('importReplaySequence') }}{{ row.replaySequence }}</small> }</td>
+                  <td><span class="badge" [class]="outcomeBadgeClass(row.outcome)">{{ outcomeIcon(row.outcome) }} {{ outcomeLabel(row.outcome) }}</span></td>
+                  <td><small>{{ dispositionLabel(row.mutationDisposition) }}</small></td>
+                  <td><small>{{ row.resultingResourceCode || '—' }}</small></td>
+                  <td><small>{{ row.diagnostics.length }} · {{ severityLabel(row.highestSeverity) }}</small></td>
+                  <td>
+                    <small>{{ row.originalRowId ? language.text('importReplayLineageReplay') : language.text('importReplayLineageOriginal') }}</small>
+                    @if (!row.isCurrent) { <span class="badge badge--neutral">{{ language.text('importEvidenceHistorical') }}</span> }
+                  </td>
+                  <td><button class="text-button" type="button" (click)="openRowDetail(row)">{{ language.text('importViewRowDetails') }} ↗</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </ng-template>
+
     <!-- Row detail / quarantine correction dialog -->
     @if (selectedRow(); as row) {
       <div class="dialog-backdrop" role="presentation" (click)="closeRowDetail()">
-        <div class="dialog-panel" role="dialog" aria-modal="true" [attr.aria-label]="language.text('importRowDetailTitle')" (click)="$event.stopPropagation()">
+        <div class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="row-detail-title" (click)="$event.stopPropagation()" (keydown)="onRowDetailDialogKeydown($event)">
           <div class="dialog-panel__header">
-            <h3>{{ language.text('importRowDetailTitle') }} — {{ language.text('importPreviewRowNumber') }} {{ row.originalRowNumber }}</h3>
+            <h3 id="row-detail-title" tabindex="-1">{{ language.text('importRowDetailTitle') }} — {{ language.text('importPreviewRowNumber') }} {{ row.originalRowNumber }}</h3>
             <span class="badge" [class]="outcomeBadgeClass(row.outcome)">{{ outcomeIcon(row.outcome) }} {{ outcomeLabel(row.outcome) }}</span>
           </div>
 
           <div class="dialog-panel__body">
+            @if (!row.isCurrent) {
+              <p class="boundary-note">{{ language.text('importHistoricalRowNote') }}</p>
+            }
             <h4>{{ language.text('importOriginalEvidence') }}</h4>
             <div class="field-read-grid">
               @for (key of objectKeys(originalEvidenceRow(row).sourceFields); track key) {
@@ -645,7 +722,7 @@ const WIZARD_STEPS: ImportWizardStep[] = ['resource', 'file', 'mapping', 'previe
               </ul>
             }
 
-            @if (row.outcome === 'Quarantined') {
+            @if (row.outcome === 'Quarantined' && row.isCurrent) {
               <h4>{{ language.text('importCorrectedValues') }}</h4>
               <div class="form-grid">
                 @for (key of replayFieldKeys(); track key) {
@@ -654,7 +731,7 @@ const WIZARD_STEPS: ImportWizardStep[] = ['resource', 'file', 'mapping', 'previe
               </div>
               @if (facade.error()) { <div class="inline-alert" role="alert">{{ errorMessage(facade.error()) }}</div> }
               <div class="wizard-actions">
-                <button class="button button--quiet" type="button" (click)="closeRowDetail()">{{ language.text('importBack') }}</button>
+                <button class="button button--quiet" type="button" (click)="closeRowDetail()" [disabled]="replaySaving()">{{ language.text('importBack') }}</button>
                 <button class="button button--primary" type="button" (click)="submitReplay()" [disabled]="replaySaving()">{{ replaySaving() ? language.text('importReplaying') : language.text('importCorrectAndReplay') }}</button>
               </div>
             } @else if (row.outcome === 'Rejected') {
@@ -671,21 +748,35 @@ const WIZARD_STEPS: ImportWizardStep[] = ['resource', 'file', 'mapping', 'previe
     <!-- Execute confirmation dialog -->
     @if (executeConfirmOpen()) {
       <div class="dialog-backdrop" role="presentation" (click)="closeExecuteConfirm()">
-        <div class="dialog-panel" role="dialog" aria-modal="true" [attr.aria-label]="language.text('importExecuteConfirmTitle')" (click)="$event.stopPropagation()">
-          <div class="dialog-panel__header"><h3>{{ language.text('importExecuteConfirmTitle') }}</h3></div>
+        <div class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="execute-confirm-title" (click)="$event.stopPropagation()" (keydown)="onExecuteDialogKeydown($event)">
+          <div class="dialog-panel__header"><h3 id="execute-confirm-title">{{ language.text('importExecuteConfirmTitle') }}</h3></div>
           <div class="dialog-panel__body">
             <p class="boundary-note">{{ language.text('importExecuteConfirmLead') }}</p>
-            @if (facade.currentBatch(); as batch) {
-              <div class="summary-grid">
-                <div><span>{{ language.text('importResourceType') }}</span><b>{{ resourceLabel(batch.resourceKind) }}</b></div>
-                <div><span>{{ language.text('importTotalRows') }}</span><b>{{ batch.totalRows }}</b></div>
-                <div><span>{{ language.text('importDuplicatePolicy') }}</span><b>{{ policyLabel(batch.duplicatePolicy) }}</b></div>
-                <div><span>{{ language.text('importBatchReference') }}</span><b>{{ batch.id }}</b></div>
-              </div>
+
+            @if (facade.batchReconciliation(); as recon) {
+              @if (facade.currentBatch(); as batch) {
+                <div class="summary-grid">
+                  <div><span>{{ language.text('importResourceType') }}</span><b>{{ resourceLabel(batch.resourceKind) }}</b></div>
+                  <div><span>{{ language.text('importTotalRows') }}</span><b>{{ recon.totalRows }}</b></div>
+                  <div><span>{{ language.text('importAccepted') }}</span><b>{{ recon.accepted }}</b></div>
+                  <div><span>{{ language.text('importRejected') }}</span><b>{{ recon.rejected }}</b></div>
+                  <div><span>{{ language.text('importQuarantined') }}</span><b>{{ recon.quarantined }}</b></div>
+                  <div><span>{{ language.text('importDuplicatePolicy') }}</span><b>{{ policyLabel(batch.duplicatePolicy) }}</b></div>
+                  <div><span>{{ language.text('importBatchReference') }}</span><b>{{ batch.id }}</b></div>
+                </div>
+              }
+              @if (recon.rejected > 0 || recon.quarantined > 0) {
+                <div class="inline-alert inline-alert--warning" role="alert"><b>{{ language.text('importExecutePartialEligibilityWarning') }}</b></div>
+              }
+            } @else {
+              <div class="inline-alert" role="alert"><b>{{ language.text('importExecuteReconciliationMissing') }}</b></div>
             }
+
+            @if (facade.error()) { <div class="inline-alert" role="alert">{{ errorMessage(facade.error()) }}</div> }
+
             <div class="wizard-actions">
-              <button class="button button--quiet" type="button" (click)="closeExecuteConfirm()" [disabled]="facade.busy()">{{ language.text('importBack') }}</button>
-              <button class="button button--danger" type="button" (click)="confirmExecute()" [disabled]="facade.busy()">{{ facade.busy() ? language.text('importExecuting') : language.text('importExecute') }}</button>
+              <button id="execute-confirm-cancel" class="button button--quiet" type="button" (click)="closeExecuteConfirm()" [disabled]="facade.busy()">{{ language.text('importBack') }}</button>
+              <button class="button button--danger" type="button" (click)="confirmExecute()" [disabled]="facade.busy() || !facade.batchReconciliation()">{{ facade.busy() ? language.text('importExecuting') : language.text('importExecute') }}</button>
             </div>
           </div>
         </div>
@@ -831,7 +922,12 @@ const WIZARD_STEPS: ImportWizardStep[] = ['resource', 'file', 'mapping', 'previe
     .dialog-panel { width: min(38rem, 100%); max-height: 88vh; overflow-y: auto; border-radius: 1rem; background: var(--surface-raised); box-shadow: var(--shadow-card); }
     .dialog-panel__header { display: flex; justify-content: space-between; align-items: center; gap: .8rem; padding: 1rem 1.2rem; border-block-end: 1px solid var(--line); }
     .dialog-panel__header h3 { margin: 0; }
+    .dialog-panel__header h3:focus { outline: 0; }
     .dialog-panel__body { padding: 1rem 1.2rem 1.2rem; }
+    .dialog-panel :focus-visible, .tabs button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+    .evidence-row--historical { opacity: .68; }
+    .evidence-row--historical td { font-style: italic; }
 
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
@@ -879,6 +975,26 @@ export class MasterDataImportWorkspaceComponent {
   readonly executeConfirmOpen = signal(false);
   readonly auditLoadedForBatch = signal<string | null>(null);
   readonly evidenceLoadedForBatch = signal<string | null>(null);
+  readonly evidenceStatus = signal<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  readonly evidenceError = signal<SafeUiError | null>(null);
+
+  private lastFocusedElement: HTMLElement | null = null;
+
+  readonly detailTabs: { tab: ImportDetailTab; labelKey: TranslationKey }[] = [
+    { tab: 'summary', labelKey: 'importBatchSummaryTab' },
+    { tab: 'rows', labelKey: 'importBatchRowsTab' },
+    { tab: 'reconciliation', labelKey: 'importBatchReconciliationTab' },
+    { tab: 'audit', labelKey: 'importBatchAuditTab' },
+    { tab: 'evidence', labelKey: 'importBatchEvidenceTab' },
+  ];
+
+  readonly evidenceRowsSorted = computed<MasterDataImportRowResponse[]>(() =>
+    [...this.facade.batchRows()].sort((a, b) =>
+      a.originalRowNumber !== b.originalRowNumber
+        ? a.originalRowNumber - b.originalRowNumber
+        : a.replaySequence - b.replaySequence,
+    ),
+  );
 
   readonly currentResourceFields = computed<ImportFieldDefinition[]>(() => {
     const kind = this.facade.selectedResourceKind();
@@ -959,6 +1075,8 @@ export class MasterDataImportWorkspaceComponent {
       this.detailTab.set('summary');
       this.auditLoadedForBatch.set(null);
       this.evidenceLoadedForBatch.set(null);
+      this.evidenceStatus.set('idle');
+      this.evidenceError.set(null);
       void this.facade.loadBatch(id);
     });
   }
@@ -1195,17 +1313,35 @@ export class MasterDataImportWorkspaceComponent {
   // ---- Step 6: Execute ----
   openExecuteConfirm(): void {
     if (!this.facade.canExecute()) return;
+    if (!this.facade.batchReconciliation()) return;
     if (this.facade.batchReconciliation()?.isConsistent === false) return;
+    this.lastFocusedElement = document.activeElement as HTMLElement | null;
     this.executeConfirmOpen.set(true);
+    setTimeout(() => document.getElementById('execute-confirm-cancel')?.focus(), 0);
   }
 
   closeExecuteConfirm(): void {
+    if (this.facade.busy()) return;
     this.executeConfirmOpen.set(false);
+    this.restoreFocusToOpener();
   }
 
   async confirmExecute(): Promise<void> {
     await this.facade.executeBatch();
     this.executeConfirmOpen.set(false);
+    this.restoreFocusToOpener();
+  }
+
+  onExecuteDialogKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Tab') {
+      this.trapTabKey(event, event.currentTarget as HTMLElement);
+      return;
+    }
+    if (event.key === 'Escape') {
+      if (this.facade.busy()) return;
+      event.preventDefault();
+      this.closeExecuteConfirm();
+    }
   }
 
   // ---- Row outcomes / filters ----
@@ -1219,13 +1355,29 @@ export class MasterDataImportWorkspaceComponent {
 
   // ---- Row detail / quarantine replay ----
   openRowDetail(row: MasterDataImportRowResponse): void {
+    this.lastFocusedElement = document.activeElement as HTMLElement | null;
     this.selectedRow.set(row);
-    this.replayDraft.set(row.outcome === 'Quarantined' ? { ...row.normalizedFields } : {});
+    this.replayDraft.set(row.outcome === 'Quarantined' && row.isCurrent ? { ...row.normalizedFields } : {});
+    setTimeout(() => document.getElementById('row-detail-title')?.focus(), 0);
   }
 
   closeRowDetail(): void {
+    if (this.replaySaving()) return;
     this.selectedRow.set(null);
     this.replayDraft.set({});
+    this.restoreFocusToOpener();
+  }
+
+  onRowDetailDialogKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Tab') {
+      this.trapTabKey(event, event.currentTarget as HTMLElement);
+      return;
+    }
+    if (event.key === 'Escape') {
+      if (this.replaySaving()) return;
+      event.preventDefault();
+      this.closeRowDetail();
+    }
   }
 
   setReplayField(key: string, value: string): void {
@@ -1255,6 +1407,7 @@ export class MasterDataImportWorkspaceComponent {
     if (result) {
       this.selectedRow.set(null);
       this.replayDraft.set({});
+      this.restoreFocusToOpener();
     }
   }
 
@@ -1269,7 +1422,106 @@ export class MasterDataImportWorkspaceComponent {
     }
     if (tab === 'evidence' && this.evidenceLoadedForBatch() !== batch.id) {
       this.evidenceLoadedForBatch.set(batch.id);
-      void this.facade.loadBatchEvidence(batch.id);
+      void this.loadEvidenceForBatch(batch.id);
+    }
+  }
+
+  onTabsKeydown(event: KeyboardEvent): void {
+    const key = event.key;
+    if (key !== 'ArrowLeft' && key !== 'ArrowRight' && key !== 'Home' && key !== 'End') return;
+    event.preventDefault();
+    const tabs = this.detailTabs.map((t) => t.tab);
+    const currentIdx = tabs.indexOf(this.detailTab());
+    const isRtl = this.language.language() === 'ar';
+    let nextIdx: number;
+
+    if (key === 'Home') {
+      nextIdx = 0;
+    } else if (key === 'End') {
+      nextIdx = tabs.length - 1;
+    } else {
+      const forward = key === 'ArrowRight';
+      const movesNext = isRtl ? !forward : forward;
+      nextIdx = movesNext ? (currentIdx + 1) % tabs.length : (currentIdx - 1 + tabs.length) % tabs.length;
+    }
+
+    const nextTab = tabs[nextIdx];
+    this.setDetailTab(nextTab);
+    setTimeout(() => document.getElementById('import-tab-' + nextTab)?.focus(), 0);
+  }
+
+  private async loadEvidenceForBatch(batchId: string): Promise<void> {
+    this.evidenceStatus.set('loading');
+    this.evidenceError.set(null);
+    await this.facade.loadBatchEvidence(batchId);
+
+    if (this.facade.currentBatch()?.id !== batchId) {
+      // A newer navigation superseded this request; leave state for the current request to settle.
+      return;
+    }
+
+    const error = this.facade.error();
+    if (error) {
+      this.evidenceStatus.set('error');
+      this.evidenceError.set(error);
+    } else {
+      this.evidenceStatus.set('loaded');
+    }
+  }
+
+  retryEvidenceLoad(): void {
+    const batch = this.facade.currentBatch();
+    if (!batch) return;
+    void this.loadEvidenceForBatch(batch.id);
+  }
+
+  dispositionLabel(disposition: MasterDataImportRowResponse['mutationDisposition']): string {
+    switch (disposition) {
+      case 'NotAttempted':
+        return this.language.text('importDispositionNotAttempted');
+      case 'Eligible':
+        return this.language.text('importDispositionEligible');
+      case 'SkippedExisting':
+        return this.language.text('importDispositionSkippedExisting');
+      case 'Committed':
+        return this.language.text('importDispositionCommitted');
+      case 'Updated':
+        return this.language.text('importDispositionUpdated');
+      case 'Failed':
+        return this.language.text('importDispositionFailed');
+    }
+  }
+
+  // ---- Dialog accessibility helpers (Finding 3A) ----
+  private trapTabKey(event: KeyboardEvent, panel: HTMLElement): void {
+    const focusable = this.getFocusableElements(panel);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement as HTMLElement | null;
+
+    if (event.shiftKey) {
+      if (active === first || !active || !panel.contains(active)) {
+        event.preventDefault();
+        last.focus();
+      }
+    } else if (active === last || !active || !panel.contains(active)) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  private getFocusableElements(panel: HTMLElement): HTMLElement[] {
+    const selector =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    return Array.from(panel.querySelectorAll<HTMLElement>(selector));
+  }
+
+  private restoreFocusToOpener(): void {
+    const el = this.lastFocusedElement;
+    this.lastFocusedElement = null;
+    if (el && document.contains(el)) {
+      setTimeout(() => el.focus(), 0);
     }
   }
 

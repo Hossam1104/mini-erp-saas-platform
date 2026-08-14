@@ -603,4 +603,324 @@ describe('MasterDataImportWorkspaceComponent', () => {
     expect(fixture.nativeElement.textContent).toContain(language.text('importStepResource'));
     expect(fixture.nativeElement.textContent).not.toContain('Resource & Policy'.split(' ')[0]);
   });
+
+  // ==================== MESP-122 Phase C1: planner-detected corrections ====================
+
+  async function reachCommitExecuteStep() {
+    importService.simulate.mockResolvedValueOnce(makeBatch({ status: 'Validated', mode: 'Commit' }));
+    await navigateTo('new');
+    const component = fixture.componentInstance;
+    component.onSelectResource('ProductCategory');
+    component.onSelectMode('Commit');
+    component.goNext();
+    await uploadFile('code,englishName\nCAT-001,Electronics');
+    component.goNext();
+    component.goNext();
+    component.goNext();
+    await component.onCreateAndSimulate();
+    fixture.detectChanges();
+    return component;
+  }
+
+  describe('Finding 1: execute confirmation dialog', () => {
+    it('sources counts from server reconciliation and warns when not all rows are eligible', async () => {
+      const component = await reachCommitExecuteStep();
+
+      component.openExecuteConfirm();
+      fixture.detectChanges();
+
+      const dialogText = (fixture.nativeElement.querySelector('.dialog-panel') as HTMLElement).textContent ?? '';
+      expect(dialogText).toContain(String(reconciliation.accepted));
+      expect(dialogText).toContain(String(reconciliation.rejected));
+      expect(dialogText).toContain(String(reconciliation.quarantined));
+      expect(dialogText).toContain(language.text('importExecutePartialEligibilityWarning'));
+    });
+
+    it('blocks opening and disables Execute when server reconciliation evidence is unavailable', async () => {
+      const component = await reachCommitExecuteStep();
+
+      component.facade.batchReconciliation.set(null);
+      fixture.detectChanges();
+
+      component.openExecuteConfirm();
+      expect(component.executeConfirmOpen()).toBe(false);
+
+      const executeButton = fixture.nativeElement.querySelector('.button--primary') as HTMLButtonElement;
+      expect(executeButton.disabled).toBe(true);
+    });
+
+    it('shows the reconciliation-missing alert and disables Execute if reconciliation disappears while the dialog is open', async () => {
+      const component = await reachCommitExecuteStep();
+
+      component.openExecuteConfirm();
+      fixture.detectChanges();
+      expect(component.executeConfirmOpen()).toBe(true);
+
+      component.facade.batchReconciliation.set(null);
+      fixture.detectChanges();
+
+      const dialogText = (fixture.nativeElement.querySelector('.dialog-panel') as HTMLElement).textContent ?? '';
+      expect(dialogText).toContain(language.text('importExecuteReconciliationMissing'));
+      const executeButton = fixture.nativeElement.querySelector('.dialog-panel .button--danger') as HTMLButtonElement;
+      expect(executeButton.disabled).toBe(true);
+    });
+  });
+
+  describe('Finding 2: evidence tab', () => {
+    it('renders the full consolidated evidence bundle with batch, source, reconciliation, row, and audit sections', async () => {
+      await navigateTo('batch-1');
+      fixture.componentInstance.setDetailTab('evidence');
+      fixture.detectChanges();
+      await settleAsyncWork();
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain(language.text('importEvidenceBatchSection'));
+      expect(text).toContain(language.text('importEvidenceSourceSection'));
+      expect(text).toContain(language.text('importEvidenceReconciliationSection'));
+      expect(text).toContain(language.text('importEvidenceRowSection'));
+      expect(text).toContain(language.text('importEvidenceAuditSection'));
+      expect(text).toContain('categories.csv');
+      expect(text).toContain('Batch created.');
+      expect(fixture.componentInstance.evidenceStatus()).toBe('loaded');
+    });
+
+    it('marks historical (superseded) rows distinctly in the row evidence table', async () => {
+      const historicalOriginal: MasterDataImportRowResponse = {
+        ...quarantinedRow,
+        id: 'row-3-original',
+        isCurrent: false,
+        replaySequence: 0,
+      };
+      const replayRow: MasterDataImportRowResponse = {
+        ...quarantinedRow,
+        id: 'row-3-replay',
+        isCurrent: true,
+        replaySequence: 1,
+        originalRowId: 'row-3-original',
+        outcome: 'Accepted',
+        mutationDisposition: 'Committed',
+      };
+      importService.getEvidence.mockReturnValueOnce(
+        of({
+          batch: makeBatch(),
+          rows: [acceptedRow, rejectedRow, historicalOriginal, replayRow],
+          audit: [auditEntry],
+          reconciliation,
+        }),
+      );
+      await navigateTo('batch-1');
+      fixture.componentInstance.setDetailTab('evidence');
+      fixture.detectChanges();
+      await settleAsyncWork();
+      fixture.detectChanges();
+
+      const historicalRow = fixture.nativeElement.querySelector('.evidence-row--historical') as HTMLElement;
+      expect(historicalRow).not.toBeNull();
+      expect(historicalRow.textContent).toContain(language.text('importEvidenceHistorical'));
+    });
+
+    it('shows a loading state, then a safe error with Retry when the evidence request fails, and recovers on retry', async () => {
+      importService.getEvidence.mockReturnValueOnce(
+        throwError(() => new HttpErrorResponse({ status: 500, error: { code: 'import_persistence_failed' } })),
+      );
+      await navigateTo('batch-1');
+      const component = fixture.componentInstance;
+
+      component.setDetailTab('evidence');
+      expect(component.evidenceStatus()).toBe('loading');
+      fixture.detectChanges();
+
+      await settleAsyncWork();
+      fixture.detectChanges();
+
+      expect(component.evidenceStatus()).toBe('error');
+      expect(fixture.nativeElement.textContent).toContain(language.text('importUnavailableErrorMsg'));
+      expect(fixture.nativeElement.textContent).not.toContain('import_persistence_failed');
+
+      importService.getEvidence.mockReturnValueOnce(
+        of({ batch: makeBatch(), rows: [acceptedRow, rejectedRow, quarantinedRow], audit: [auditEntry], reconciliation }),
+      );
+      const retryButton = Array.from(fixture.nativeElement.querySelectorAll('.text-button') as NodeListOf<HTMLButtonElement>).find(
+        (btn) => btn.textContent?.includes(language.text('retry')),
+      );
+      retryButton?.click();
+      fixture.detectChanges();
+      await settleAsyncWork();
+      fixture.detectChanges();
+
+      expect(component.evidenceStatus()).toBe('loaded');
+      expect(importService.getEvidence).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('Finding 3A: dialog accessibility', () => {
+    it('moves initial focus to the Cancel/Back action (not the destructive Execute button) when the execute dialog opens', async () => {
+      const component = await reachCommitExecuteStep();
+
+      component.openExecuteConfirm();
+      fixture.detectChanges();
+      await settleAsyncWork();
+
+      expect(document.activeElement?.id).toBe('execute-confirm-cancel');
+    });
+
+    it('traps Tab focus within the execute confirmation dialog', async () => {
+      const component = await reachCommitExecuteStep();
+
+      component.openExecuteConfirm();
+      fixture.detectChanges();
+      await settleAsyncWork();
+
+      const panel = fixture.nativeElement.querySelector('.dialog-panel') as HTMLElement;
+      const focusable = Array.from(
+        panel.querySelectorAll('button:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+      ) as HTMLElement[];
+      expect(focusable.length).toBeGreaterThan(1);
+
+      const last = focusable[focusable.length - 1];
+      last.focus();
+      last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+
+      expect(document.activeElement).toBe(focusable[0]);
+    });
+
+    it('does not allow Escape to close the execute dialog while an execution request is in flight', async () => {
+      const component = await reachCommitExecuteStep();
+
+      component.openExecuteConfirm();
+      fixture.detectChanges();
+      component.facade.busy.set(true);
+
+      const panel = fixture.nativeElement.querySelector('.dialog-panel') as HTMLElement;
+      panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+
+      expect(component.executeConfirmOpen()).toBe(true);
+      component.facade.busy.set(false);
+    });
+
+    it('restores focus to the opener element when the execute confirmation dialog closes', async () => {
+      const component = await reachCommitExecuteStep();
+
+      const opener = fixture.nativeElement.querySelector('.button--primary') as HTMLButtonElement;
+      opener.focus();
+      component.openExecuteConfirm();
+      fixture.detectChanges();
+      await settleAsyncWork();
+
+      component.closeExecuteConfirm();
+      fixture.detectChanges();
+      await settleAsyncWork();
+
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('moves initial focus to the row detail heading (never the replay input) for a quarantined row', async () => {
+      const component = await reachCommitExecuteStep();
+
+      component.openRowDetail(quarantinedRow);
+      fixture.detectChanges();
+      await settleAsyncWork();
+
+      expect(document.activeElement?.id).toBe('row-detail-title');
+      expect(document.activeElement?.tagName.toLowerCase()).not.toBe('input');
+    });
+
+    it('closes the row detail dialog on Escape and restores focus to the previously focused element', async () => {
+      const component = await reachCommitExecuteStep();
+
+      const opener = document.createElement('button');
+      document.body.appendChild(opener);
+      opener.focus();
+
+      component.openRowDetail(rejectedRow);
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector('.dialog-panel') as HTMLElement;
+      panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      await settleAsyncWork();
+
+      expect(component.selectedRow()).toBeNull();
+      expect(document.activeElement).toBe(opener);
+      document.body.removeChild(opener);
+    });
+
+    it('does not offer a replay form for historical (superseded) quarantined rows in the dialog', async () => {
+      const component = await reachCommitExecuteStep();
+      const historicalQuarantined: MasterDataImportRowResponse = { ...quarantinedRow, isCurrent: false };
+
+      component.openRowDetail(historicalQuarantined);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('input[name^="replay-"]')).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain(language.text('importHistoricalRowNote'));
+    });
+  });
+
+  describe('Finding 3B: tabs accessibility', () => {
+    it('uses roving tabindex with only the active tab focusable', async () => {
+      await navigateTo('batch-1');
+      fixture.detectChanges();
+
+      const tabs = fixture.nativeElement.querySelectorAll('[role="tab"]') as NodeListOf<HTMLButtonElement>;
+      expect(tabs.length).toBe(5);
+      expect(tabs[0].getAttribute('tabindex')).toBe('0');
+      expect(tabs[1].getAttribute('tabindex')).toBe('-1');
+      expect(tabs[0].getAttribute('aria-controls')).toBe('import-tabpanel-summary');
+    });
+
+    it('moves focus and selection to the next tab with ArrowRight, and wraps from the last tab', async () => {
+      await navigateTo('batch-1');
+      const component = fixture.componentInstance;
+      const nav = fixture.nativeElement.querySelector('[role="tablist"]') as HTMLElement;
+
+      nav.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      await settleAsyncWork();
+      fixture.detectChanges();
+      expect(component.detailTab()).toBe('rows');
+      expect(document.activeElement?.id).toBe('import-tab-rows');
+
+      component.setDetailTab('evidence');
+      fixture.detectChanges();
+      nav.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      await settleAsyncWork();
+      expect(component.detailTab()).toBe('summary');
+    });
+
+    it('jumps to the first/last tab with Home/End', async () => {
+      await navigateTo('batch-1');
+      const component = fixture.componentInstance;
+      const nav = fixture.nativeElement.querySelector('[role="tablist"]') as HTMLElement;
+
+      nav.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      await settleAsyncWork();
+      expect(component.detailTab()).toBe('evidence');
+
+      nav.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      await settleAsyncWork();
+      expect(component.detailTab()).toBe('summary');
+    });
+
+    it('reverses ArrowRight/ArrowLeft direction for the RTL tab order', async () => {
+      await navigateTo('batch-1');
+      const component = fixture.componentInstance;
+      language.toggle();
+      fixture.detectChanges();
+      expect(component.detailTab()).toBe('summary');
+
+      const nav = fixture.nativeElement.querySelector('[role="tablist"]') as HTMLElement;
+      nav.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      await settleAsyncWork();
+
+      expect(component.detailTab()).toBe('evidence');
+    });
+  });
 });
