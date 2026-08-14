@@ -2,7 +2,9 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.MasterData;
+using MiniErp.Infrastructure.Persistence;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.MasterData;
 
@@ -31,6 +33,10 @@ public static class MasterDataPersistenceServiceCollectionExtensions
         services.AddSingleton<IMasterDataCurrencyPaymentTermPersistence>(currencyPaymentTermPersistence);
         services.AddSingleton<IMasterDataExchangeRatePersistence>(exchangeRatePersistence);
         services.AddSingleton<IMasterDataTaxPersistence>(taxPersistence);
+        services.AddSingleton<IMasterDataPriceListPersistence>(servicesProvider =>
+            new MasterDataPriceListPersistence(
+                optionsBuilder.Options,
+                servicesProvider.GetService<IBusinessCustomerReferenceReader>()));
         services.AddSingleton<IProductIdentityPersistence>(persistence);
         services.AddSingleton<MasterDataCategoryUomService>();
         return services;
@@ -52,6 +58,36 @@ public static class MasterDataPersistenceServiceCollectionExtensions
         }
 
         return services.AddMasterDataPersistence(options => options.UseSqlServer(connectionString));
+    }
+
+    /// <summary>
+    /// Development composition-root adapter for SQLite persistence.
+    /// Creates the database schema via EnsureCreated during registration.
+    /// </summary>
+    public static IServiceCollection AddMasterDataSqlitePersistence(
+        this IServiceCollection services,
+        string connectionString)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new ArgumentException("A SQLite connection string is required.", nameof(connectionString));
+        }
+
+        return services.AddMasterDataPersistence(options => options.UseSqlite(connectionString));
+    }
+
+    /// <summary>
+    /// Initializes the explicitly selected Development-only Master Data SQLite
+    /// database. Initialization is separate from service registration so a
+    /// failed schema operation cannot be hidden during composition.
+    /// </summary>
+    public static void EnsureDevelopmentSqliteDatabase(string connectionString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        DevelopmentSqliteDatabaseInitializer.EnsureCreated(
+            connectionString,
+            (options, tenantContext) => new MasterDataDbContext(options, tenantContext));
     }
 }
 

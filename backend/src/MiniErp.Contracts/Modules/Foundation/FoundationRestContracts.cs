@@ -46,6 +46,35 @@ public enum FoundationScopePolicy
     PlatformGovernance = 4
 }
 
+/// <summary>Concurrency evidence expected by a public operation.</summary>
+public enum FoundationConcurrencyPolicy
+{
+    /// <summary>No optimistic-concurrency header is required.</summary>
+    None = 1,
+    /// <summary>The current entity version must be supplied in If-Match.</summary>
+    IfMatch = 2
+}
+
+/// <summary>Idempotency evidence expected by a public operation.</summary>
+public enum FoundationIdempotencyPolicy
+{
+    /// <summary>No idempotency key is required.</summary>
+    None = 1,
+    /// <summary>The mutation requires a server-bound Idempotency-Key.</summary>
+    Required = 2
+}
+
+/// <summary>Effective-date contract expected by a public operation.</summary>
+public enum FoundationEffectiveDatePolicy
+{
+    /// <summary>The operation does not select an effective date.</summary>
+    None = 1,
+    /// <summary>The operation requires an effective date query parameter.</summary>
+    QueryRequired = 2,
+    /// <summary>The request body must carry an effective date.</summary>
+    RequestRequired = 3
+}
+
 /// <summary>
 /// Stable mapping between one versioned endpoint and one application operation.
 /// </summary>
@@ -61,7 +90,10 @@ public sealed record FoundationOperationDescriptor(
     bool RequiresFreshAuthentication = false,
     bool RequiresAntiforgery = false,
     bool RequiresMandatoryAudit = false,
-    bool IsUnsafe = false);
+    bool IsUnsafe = false,
+    FoundationConcurrencyPolicy Concurrency = FoundationConcurrencyPolicy.None,
+    FoundationIdempotencyPolicy Idempotency = FoundationIdempotencyPolicy.None,
+    FoundationEffectiveDatePolicy EffectiveDate = FoundationEffectiveDatePolicy.None);
 
 /// <summary>
 /// Metadata attached to every public endpoint.
@@ -126,6 +158,15 @@ public sealed class FoundationOperationMetadata
 
     /// <summary>Whether the operation is unsafe.</summary>
     public bool IsUnsafe => Descriptor.IsUnsafe;
+
+    /// <summary>The required optimistic-concurrency contract.</summary>
+    public FoundationConcurrencyPolicy Concurrency => Descriptor.Concurrency;
+
+    /// <summary>The required idempotency contract.</summary>
+    public FoundationIdempotencyPolicy Idempotency => Descriptor.Idempotency;
+
+    /// <summary>The effective-date contract.</summary>
+    public FoundationEffectiveDatePolicy EffectiveDate => Descriptor.EffectiveDate;
 }
 
 /// <summary>Safe first-party authentication request.</summary>
@@ -303,6 +344,16 @@ public static class FoundationOperationCatalog
         new("master-data.exchange-rate.deactivate", "/api/v1/master-data/exchange-rates/{exchangeRateId:guid}/deactivate", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.exchange-rate.deactivate", FoundationScopePolicy.Tenant, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true),
         new("master-data.exchange-rate.reactivate", "/api/v1/master-data/exchange-rates/{exchangeRateId:guid}/reactivate", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.exchange-rate.activate", FoundationScopePolicy.Tenant, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true),
         new("master-data.exchange-rate.audit.read", "/api/v1/master-data/exchange-rates/{exchangeRateId:guid}/audit", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.exchange-rate.audit", FoundationScopePolicy.Tenant),
+        new("master-data.price-list.list", "/api/v1/master-data/price-lists", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.view", FoundationScopePolicy.Tenant),
+        new("master-data.price-list.read", "/api/v1/master-data/price-lists/{priceListId:guid}", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.view", FoundationScopePolicy.Tenant),
+        new("master-data.price-list.history.read", "/api/v1/master-data/price-lists/{priceListId:guid}/history", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.view", FoundationScopePolicy.Tenant),
+        new("master-data.price-list.create", "/api/v1/master-data/price-lists", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.create", FoundationScopePolicy.Tenant, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true, Idempotency: FoundationIdempotencyPolicy.Required),
+        new("master-data.price-list.edit", "/api/v1/master-data/price-lists/{priceListId:guid}/edit", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.edit", FoundationScopePolicy.Tenant, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true, Concurrency: FoundationConcurrencyPolicy.IfMatch, Idempotency: FoundationIdempotencyPolicy.Required),
+        new("master-data.price-list.price.append", "/api/v1/master-data/price-lists/{priceListId:guid}/prices", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.edit", FoundationScopePolicy.Tenant, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true, Concurrency: FoundationConcurrencyPolicy.IfMatch, Idempotency: FoundationIdempotencyPolicy.Required, EffectiveDate: FoundationEffectiveDatePolicy.RequestRequired),
+        new("master-data.price-list.deactivate", "/api/v1/master-data/price-lists/{priceListId:guid}/deactivate", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.deactivate", FoundationScopePolicy.Tenant, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true, Concurrency: FoundationConcurrencyPolicy.IfMatch, Idempotency: FoundationIdempotencyPolicy.Required),
+        new("master-data.price-list.reactivate", "/api/v1/master-data/price-lists/{priceListId:guid}/reactivate", "POST", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.activate", FoundationScopePolicy.Tenant, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true, Concurrency: FoundationConcurrencyPolicy.IfMatch, Idempotency: FoundationIdempotencyPolicy.Required),
+        new("master-data.price-list.reference.read", "/api/v1/master-data/price-lists/reference", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.view", FoundationScopePolicy.Tenant, EffectiveDate: FoundationEffectiveDatePolicy.QueryRequired),
+        new("master-data.price-list.audit.read", "/api/v1/master-data/price-lists/{priceListId:guid}/audit", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.master-data.price-list.audit", FoundationScopePolicy.Tenant),
         new("auth.antiforgery.read", "/api/v1/auth/antiforgery", "GET", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public),
         new("auth.sign-in", "/api/v1/auth/sign-in", "POST", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public, RequiresAntiforgery: false, IsUnsafe: true),
         new("auth.sign-out", "/api/v1/auth/sign-out", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session", FoundationScopePolicy.None, RequiresAntiforgery: true, RequiresMandatoryAudit: false, IsUnsafe: true),

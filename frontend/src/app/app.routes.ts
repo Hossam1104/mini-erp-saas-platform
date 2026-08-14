@@ -17,6 +17,8 @@ export const routes: Routes = [
       { path: 'master-data', pathMatch: 'full', redirectTo: 'master-data/categories' },
       { path: 'master-data/:resource', loadComponent: () => import('./features/master-data/master-data-workspace.component').then((module) => module.MasterDataWorkspaceComponent) },
       { path: 'master-data/:resource/:id', loadComponent: () => import('./features/master-data/master-data-workspace.component').then((module) => module.MasterDataWorkspaceComponent) },
+      { path: 'price-lists', loadComponent: () => import('./features/master-data/price-list-workspace.component').then((module) => module.PriceListWorkspaceComponent) },
+      { path: 'price-lists/:id', loadComponent: () => import('./features/master-data/price-list-workspace.component').then((module) => module.PriceListWorkspaceComponent) },
     ],
   },
   { path: 'tenant/select', component: TenantSelectComponent, canActivate: [sessionGuard] },

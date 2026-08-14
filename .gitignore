@@ -11,3 +11,20 @@
 **/appsettings.*.json
 !**/appsettings.json
 *.local.env
+
+# MiniERP local Development runtime and HTTP smoke output. Keep smoke data
+# under this dedicated directory or the OS temporary directory.
+/.runtime/
+/cookies.txt
+/d_cookies.txt
+/p_cookies.txt
+/proxy_cookies.txt
+/d_body.json
+/d_body_signin.json
+/p_body.json
+
+# Legacy MiniERP Development SQLite files if a local process is started from
+# the repository. The normal fallback is outside the repository.
+/backend/src/MiniErp.Api/minierp_dev.db
+/backend/src/MiniErp.Api/minierp_dev.db-wal
+/backend/src/MiniErp.Api/minierp_dev.db-shm

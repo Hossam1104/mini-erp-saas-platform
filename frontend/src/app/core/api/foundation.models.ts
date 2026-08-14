@@ -40,3 +40,15 @@ export interface FoundationProblemDetails {
   correlationId?: string;
   operationId?: string;
 }
+
+export interface FoundationModuleDescriptor {
+  module: string;
+  name: string;
+  boundary: string;
+  registered: boolean;
+}
+
+export interface FoundationModuleRegistrationResponse extends FoundationModuleDescriptor {
+  masterData: FoundationModuleDescriptor;
+  businessParties: FoundationModuleDescriptor;
+}

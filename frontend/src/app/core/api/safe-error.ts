@@ -4,12 +4,21 @@ import { FoundationProblemDetails } from './foundation.models';
 export type SafeErrorCode =
   | 'authentication_failed'
   | 'access_denied'
+  | 'permission_denied'
   | 'context_version_conflict'
   | 'concurrency_conflict'
   | 'validation_failed'
   | 'network_error'
   | 'antiforgery_failed'
   | 'audit_unavailable'
+  | 'price_list_not_found'
+  | 'price_list_inactive'
+  | 'price_list_effective_overlap'
+  | 'price_list_precedence_conflict'
+  | 'price_list_duplicate'
+  | 'idempotency_conflict'
+  | 'customer_reference_unavailable'
+  | 'persistence_unavailable'
   | 'request_failed';
 
 export interface SafeUiError {
@@ -21,12 +30,21 @@ export interface SafeUiError {
 const knownCodes = new Set<SafeErrorCode>([
   'authentication_failed',
   'access_denied',
+  'permission_denied',
   'context_version_conflict',
   'concurrency_conflict',
   'validation_failed',
   'network_error',
   'antiforgery_failed',
   'audit_unavailable',
+  'price_list_not_found',
+  'price_list_inactive',
+  'price_list_effective_overlap',
+  'price_list_precedence_conflict',
+  'price_list_duplicate',
+  'idempotency_conflict',
+  'customer_reference_unavailable',
+  'persistence_unavailable',
   'request_failed',
 ]);
 

@@ -1,4 +1,135 @@
-# Next session - MESP-121 - Implement Price List and deterministic B2B pricing capability
+# MESP-121 - Price List and deterministic B2B pricing capability
+
+## MESP-121 Phase G handoff - 14 August 2026
+
+MESP-121 remains the single active capability and **In Progress** in Jira.
+Phase G applied the two confirmed Opus P1 corrections on the exact shared
+branch `feat/MESP-121-price-list-b2b-pricing` in source commit `0242656`.
+Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+remains open, Draft, and unmerged. Do not transition MESP-121 to Done, start
+MESP-122, or broaden this capability.
+
+The bounded corrections are complete:
+
+- Price List resolution, cross-list append checks, and proposed parent edits
+  use the current parent Currency/Customer/Organization/Priority configuration
+  for current applicability and precedence. Child price rows are not
+  rewritten; their Product/UOM/effective/amount/scale/provenance/source and
+  recorded currency/applicability/priority values remain immutable evidence.
+  Current configuration and child evidence are both retained in the reference
+  contract. A currency edit does not reinterpret or convert an existing amount;
+  a row whose historical currency no longer matches the parent is not silently
+  resolved.
+- Production Master Data authorization now derives one capability from the
+  exact trusted Foundation permission. Unknown/unrelated permissions fail
+  closed, the unconditional granting resolver is not registered in production,
+  and existing direct test fixtures retain explicit granting doubles only.
+
+Focused regression coverage includes edit conflict prevention and legacy-state
+conflict resolution, edit-then-append conflict, current Customer and
+Organization applicability, immutable child snapshots, currency evidence,
+exact capability mapping, fail-closed unknown permissions, and production DI.
+Validation passed: `dotnet restore`; Release build with 0 warnings/errors;
+focused Price List/authorization tests 17/17; non-SQL backend 703/703;
+Angular 68/68; Angular production initial bundle 414.67 kB under the unchanged
+500 kB warning budget; frontend-origin runtime smoke on MiniERP 5300/Angular
+4300; backend-origin OpenAPI/Scalar 200; and `git diff --check`. The 21 SQL
+Server safety cases remain gated by unavailable
+`MESP_SQLSERVER_CONNECTION_STRING`; no SQL substitute or fake reference data
+was used. The pre-existing tracked `.vs` IDE/cache files, including
+`.vs/slnx.sqlite`, were removed; repository hygiene is now clean for cookies,
+session tokens, runtime passwords, SQLite DB/WAL/SHM, `.runtime` state,
+request scratch files, build outputs, and temporary logs.
+
+The fresh Development database may need legitimate Currency, Product, Unit of
+Measure, and optionally Business Customer reference records before an
+interactive Price List create/append/resolve flow can be exercised. No fake
+records are seeded by this handoff. Planner acceptance and targeted Opus
+re-review remain pending on the same Draft PR; update the state/tracker and
+stop here. Do not execute MESP-122 automatically.
+
+## MESP-121 Phase E handoff - 13 August 2026
+
+MESP-121 remains the live active capability and **In Progress** in Jira. This
+bounded Phase E continuation started from the Phase D head
+`a6d92469cdaa3ef895106bac6e62561584e861c9` and added the local runtime/login
+correction in commit `f9eff32` on the same branch
+`feat/MESP-121-price-list-b2b-pricing`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+must remain open, Draft, and unmerged. Do not transition MESP-121 to Done,
+start MESP-122, replace this task with another capability, or widen scope.
+
+Phase E confirmed the original sign-in defect: the tracked Angular proxy still
+targeted `http://localhost:5000`, while that port and `5001` are owned by
+unrelated RMS processes. The implementation keeps the tracked proxy as the
+generic `5000` fallback and adds `scripts/Start-MiniErpDevelopment.ps1`, which
+selects a safe local API target, configures the Development bootstrap, writes
+an ignored BOM-free `.runtime/proxy.conf.json` targeting that exact URL, and
+starts Angular with the generated proxy. `scripts/Test-MiniErpDevelopmentRuntime.ps1`
+checks the default tracked target and custom generated target without starting
+or stopping processes. Angular services continue to use relative `/api/v1`
+URLs; no machine-specific backend URL was added to product source.
+
+The final committed runtime is running with MiniERP on `http://localhost:5300`
+and Angular on `http://localhost:4300`; RMS listeners on `5000` and `5001` were
+left untouched. The final direct and Angular-origin smoke proved MiniERP
+module identity, 401 unauthenticated session/problem semantics, wrong-password
+`authentication_failed`, direct/proxy sign-in, Development `MiniErp.Auth`,
+authenticated session, antiforgery, one Development Tenant context, idempotent
+context switch, selected session, Price List GET, Angular `/app/price-lists`
+route/assets, OpenAPI, and Scalar. The in-app browser was unavailable, so no
+visual browser evidence is claimed. Release build, focused bootstrap/Price
+List tests (8/8), non-SQL backend regression (689/689), Angular tests (55/55),
+production build, runtime self-test, and `git diff --check` passed. The 21
+SQL safety cases remain gated by the unavailable
+`MESP_SQLSERVER_CONNECTION_STRING`; production/provider, migration, legal,
+privacy, and specialist gates remain open.
+
+The final project completion percentages remain unchanged. The next exact
+continuation is planner acceptance plus the reserved Opus/final review of
+MESP-121 on this same branch/PR. Do not execute MESP-122 automatically.
+
+## MESP-121 Phase D handoff - 13 August 2026
+
+MESP-121 remains the live active capability and **In Progress** in Jira.
+Activation evidence is comment `11025`. This bounded Phase D continuation
+started from `ed80975f2d9eb9631fe9a4550a51737fae3e40bb` on the exact shared
+branch `feat/MESP-121-price-list-b2b-pricing`; the runtime-stabilization source
+commit is `a05863b10537876f47065bd0c5b09a5307f784c9`, and Jira evidence is
+comment `11093`. Draft PR [#64](https://github.com/Hossam1104/mini-erp-saas-platform/pull/64)
+must remain open and unmerged. Do not transition MESP-121 to Done, start
+MESP-122, or widen this capability.
+
+The earlier Phase A Price List backend and Phase C Angular implementation
+remain in this shared branch. Phase D reviewed and corrected the integrated
+Development execution path without changing the approved Price List business
+scope:
+
+- removed the tracked cookies, request-body, and SQLite WAL/SHM runtime
+  artifacts and hardened the repository ignore boundary;
+- restored the Angular development proxy contract to `http://localhost:5000`;
+- replaced the shared-file Development SQLite fallback with separate
+  module-owned `masterdata.db` and `business-parties.db` files outside the
+  repository, with explicit overrides and fail-loud, idempotent schema
+  initialization;
+- preserved the production SQL Server path and production `__Host-`/Secure
+  authentication cookie contract while making Development HTTP use the
+  explicit `MiniErp.Auth`/same-request compatibility cookie;
+- retained the Development-only bootstrap boundary, added safe server-side
+  request-failure logging without request-body or credential logging, and
+  added architecture coverage for module-scoped SQLite initialization; and
+- completed the real alternate-port restart/proxy smoke with no fake business
+  reference records. The official 5000 listener is occupied by an unrelated
+  RMS service and was not stopped.
+
+Validation for this handoff is recorded below and includes a Release build,
+689/689 non-SQL backend tests, 55/55 Angular tests, the Angular production
+build, and direct/proxy HTTP checks for health, sign-in, session/context
+selection, antiforgery, idempotent context switching, Price List GET,
+OpenAPI, Scalar, and the Angular route/assets. The 21 SQL Server safety cases
+remain environment-gated because `MESP_SQLSERVER_CONNECTION_STRING` is not
+available. The final project completion percentages remain unchanged; this
+stabilization work does not close SQL/provider/production, migration, legal,
+privacy, or specialist validation gates.
 
 ## Session boundary
 
@@ -10,12 +141,11 @@ activation comment `10990`, validation/review comment `11023`, and closure
 comment `11024`. The implementation and its post-merge state/tracker/root-task
 synchronization are the completed preceding session.
 
-The exact next capability is **MESP-121 - Implement Price List and
-deterministic B2B pricing capability**. It is the only fresh-session scope.
-Verify its live Jira status, Definition of Ready, applicable decision evidence,
-and affected repository state before activation. Execute only MESP-121 and
-stop after its bounded completion or a real blocker. Do not start MESP-122 or
-any other capability automatically.
+The active capability is **MESP-121 - Implement Price List and deterministic
+B2B pricing capability**. Its live Jira status and activation evidence were
+verified for this session. Continue only with the bounded MESP-121 planner
+acceptance, Opus review, or explicitly authorized follow-up after this Phase D
+handoff; do not start MESP-122 or any other capability automatically.
 
 Release 1 remains the full-feature reusable B2B ERP. **31 August 2026 -
 Release 1 Integrated Preview** is a running preview of the real codebase, not
@@ -145,24 +275,29 @@ Before handoff:
 - inspect the complete diff for Tenant isolation, pricing precedence,
   snapshot immutability, audit, concurrency, localization, effective-date
   integrity, no silent commercial assumptions, and source-scope boundaries;
-- update MESP-121 with activation, validation, review, and closure evidence;
+- update MESP-121 with the Phase D runtime/security validation and shared-branch
+  handoff evidence; planner acceptance, Opus review, final review, and closure
+  remain pending;
 - update MESP-23 only for a genuinely discovered open decision or blocker;
 - update `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and relevant plan/state
   documents conservatively; percentages reflect verified usable capability,
   never Jira or documentation activity alone;
-- use one focused branch and PR, review the complete diff, merge only when
-  clean, synchronize `main` and `origin/main`, and record the reviewed head and
-  final merge SHA; and
-- replace this file with the exact next bounded task and stop. Do not execute
-  that next task in the same chat.
+- use one focused branch and draft PR, review the complete Phase A/Phase C/
+  Phase D diff, and leave the PR unmerged for planner acceptance and the
+  reserved Opus/final review gates; and
+- preserve this MESP-121 Phase D handoff in this file. Do not replace it with
+  MESP-122 or execute another capability in the same Luna session.
 
 ## Completion report required
 
-Report MESP-121's activated scope, decision rows used, validation results,
+Report MESP-121's activated Price List scope, Phase D runtime/security changes,
+decision rows used, validation results,
 Tenant/authorization/audit/localization/concurrency/effective-date/precedence/
 snapshot evidence, Jira status/comments, any MESP-23 additions,
-production-capability percentage changes or unchanged status, PR/reviewed
-head/merge SHA, synchronized branch state, and the exact next TASK handoff.
+production-capability percentage changes or unchanged status, draft PR/head
+and merge-pending state, synchronized branch state, and the exact planner/Opus
+review handoff. Explicitly state that planner acceptance, Opus review, final
+review, and Jira closure remain pending.
 Explicitly state that MESP-39, MESP-40 activation, external providers,
 Finance/accounting/credit behavior, production gates, migration/cutover,
 retail POS/promotions, and all other capabilities were not executed unless

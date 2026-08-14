@@ -233,7 +233,14 @@ internal static class IdentityPermissions
             "tenant.scope.grant" => AssignScopeGrant,
             "support.grant.approve" => ApproveSupportGrant,
             "work.reconciliation.read" => DurableWorkReconciliationRead,
-            _ => default
+            _ => !string.IsNullOrWhiteSpace(normalized)
+                && (normalized.StartsWith("tenant.", StringComparison.Ordinal)
+                    || normalized.StartsWith("foundation.", StringComparison.Ordinal)
+                    || normalized.StartsWith("platform.", StringComparison.Ordinal)
+                    || normalized.StartsWith("support.", StringComparison.Ordinal)
+                    || normalized.StartsWith("work.", StringComparison.Ordinal))
+                ? new PermissionCode(normalized)
+                : default
         };
 
         return !permission.Equals(default(PermissionCode));

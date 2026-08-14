@@ -864,6 +864,10 @@ public sealed class HostSecurityTests
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            // These host security assertions exercise the production cookie
+            // contract. Development HTTP compatibility is covered by the
+            // Development bootstrap/runtime smoke path instead.
+            builder.UseEnvironment("Production");
             builder.ConfigureTestServices(services =>
             {
                 if (FailAuditEvidence)

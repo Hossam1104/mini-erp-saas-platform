@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MiniErp.App.Modules.BusinessParties;
+using MiniErp.Infrastructure.Persistence;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 
@@ -25,8 +26,9 @@ public static class BusinessPartiesPersistenceServiceCollectionExtensions
         configureOptions(optionsBuilder);
         services.AddSingleton<ISupplierPersistence>(
             new BusinessPartiesSupplierPersistence(optionsBuilder.Options));
-        services.AddSingleton<ICustomerPersistence>(
-            new BusinessPartiesCustomerPersistence(optionsBuilder.Options));
+        var customerPersistence = new BusinessPartiesCustomerPersistence(optionsBuilder.Options);
+        services.AddSingleton<ICustomerPersistence>(customerPersistence);
+        services.AddSingleton<IBusinessCustomerReferenceReader>(customerPersistence);
         return services;
     }
 
@@ -45,6 +47,36 @@ public static class BusinessPartiesPersistenceServiceCollectionExtensions
         }
 
         return services.AddBusinessPartiesPersistence(options => options.UseSqlServer(connectionString));
+    }
+
+    /// <summary>
+    /// Development composition-root adapter for SQLite persistence.
+    /// Creates the database schema via EnsureCreated during registration.
+    /// </summary>
+    public static IServiceCollection AddBusinessPartiesSqlitePersistence(
+        this IServiceCollection services,
+        string connectionString)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new ArgumentException("A SQLite connection string is required.", nameof(connectionString));
+        }
+
+        return services.AddBusinessPartiesPersistence(options => options.UseSqlite(connectionString));
+    }
+
+    /// <summary>
+    /// Initializes the explicitly selected Development-only Business Parties
+    /// SQLite database. Initialization is separate from service registration so
+    /// a failed schema operation cannot be hidden during composition.
+    /// </summary>
+    public static void EnsureDevelopmentSqliteDatabase(string connectionString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        DevelopmentSqliteDatabaseInitializer.EnsureCreated(
+            connectionString,
+            (options, tenantContext) => new BusinessPartiesDbContext(options, tenantContext));
     }
 }
 

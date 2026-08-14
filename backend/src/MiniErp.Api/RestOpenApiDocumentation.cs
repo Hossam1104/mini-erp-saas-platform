@@ -62,6 +62,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         operation.Summary = SummaryFor(descriptor.OperationId);
         operation.Description = DescriptionFor(descriptor);
         AddExchangeRateReferenceParameter(operation, descriptor);
+        AddPriceListReferenceParameters(operation, descriptor);
         operation.Responses ??= new OpenApiResponses();
         AddResponse(operation, "200", SuccessResponseFor(descriptor.OperationId));
         AddResponse(operation, "400", "The request shape, effective date, explicit calculation input, or validation rule is invalid.");
@@ -106,6 +107,41 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         };
     }
 
+    private static void AddPriceListReferenceParameters(OpenApiOperation operation, FoundationOperationDescriptor descriptor)
+    {
+        if (descriptor.OperationId != "master-data.price-list.reference.read")
+        {
+            return;
+        }
+
+        operation.Parameters ??= [];
+        AddQueryParameter(operation, "priceListId", "Optional Tenant-owned Price List identity used to constrain resolution.", JsonSchemaType.String, "uuid", false);
+        AddQueryParameter(operation, "productId", "Required existing active Product identity.", JsonSchemaType.String, "uuid", true);
+        AddQueryParameter(operation, "unitOfMeasureId", "Required existing active UOM identity; no implicit conversion is applied.", JsonSchemaType.String, "uuid", true);
+        AddQueryParameter(operation, "currencyId", "Required existing active Currency identity; the selected Price List must match exactly.", JsonSchemaType.String, "uuid", true);
+        AddQueryParameter(operation, "customerId", "Optional same-Tenant Business Customer applicability input.", JsonSchemaType.String, "uuid", false);
+        AddQueryParameter(operation, "organizationScopeKind", "Optional Company or Branch applicability kind.", JsonSchemaType.String, null, false);
+        AddQueryParameter(operation, "organizationScopeId", "Optional server-authorized Company or Branch applicability identity.", JsonSchemaType.String, "uuid", false);
+        AddQueryParameter(operation, "effectiveOn", "Required ISO 8601 calendar date used to select exactly one effective-dated price.", JsonSchemaType.String, "date", true);
+    }
+
+    private static void AddQueryParameter(OpenApiOperation operation, string name, string description, JsonSchemaType type, string? format, bool required)
+    {
+        operation.Parameters ??= [];
+        var parameter = operation.Parameters
+            .OfType<OpenApiParameter>()
+            .SingleOrDefault(item => item.Name == name && item.In == ParameterLocation.Query);
+        if (parameter is null)
+        {
+            parameter = new OpenApiParameter { Name = name, In = ParameterLocation.Query };
+            operation.Parameters.Add(parameter);
+        }
+
+        parameter.Description = description;
+        parameter.Required = required;
+        parameter.Schema = new OpenApiSchema { Type = type, Format = format };
+    }
+
     private static void AddResponse(OpenApiOperation operation, string statusCode, string description)
     {
         if (!operation.Responses!.ContainsKey(statusCode))
@@ -138,6 +174,16 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.exchange-rate.deactivate" => "Deactivate an Exchange Rate",
         "master-data.exchange-rate.reactivate" => "Reactivate an Exchange Rate",
         "master-data.exchange-rate.audit.read" => "Read Exchange Rate audit evidence",
+        "master-data.price-list.list" => "List Tenant-owned Price Lists",
+        "master-data.price-list.read" => "Read one Tenant-owned Price List",
+        "master-data.price-list.history.read" => "Read Price List price-version history",
+        "master-data.price-list.create" => "Create a Tenant-owned Price List",
+        "master-data.price-list.edit" => "Edit Price List identity and applicability",
+        "master-data.price-list.price.append" => "Append an effective-dated Price List price",
+        "master-data.price-list.deactivate" => "Deactivate a Price List",
+        "master-data.price-list.reactivate" => "Reactivate a Price List",
+        "master-data.price-list.reference.read" => "Resolve a deterministic B2B price reference",
+        "master-data.price-list.audit.read" => "Read Price List audit evidence",
         _ => GenericSummary(operationId)
     };
 
@@ -167,6 +213,9 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
             + $"Exact permission: {descriptor.ExactPermissionCode ?? "none"}. "
             + $"Antiforgery required: {descriptor.RequiresAntiforgery}. "
             + $"Mandatory audit evidence: {descriptor.RequiresMandatoryAudit}. "
+            + $"Concurrency contract: {descriptor.Concurrency}. "
+            + $"Idempotency contract: {descriptor.Idempotency}. "
+            + $"Effective-date contract: {descriptor.EffectiveDate}. "
             + "Tenant and actor authority are derived by the server; request fields cannot select a foreign Tenant or broaden scope. ";
 
         if (descriptor.OperationId.StartsWith("master-data.tax", StringComparison.Ordinal))
@@ -198,6 +247,17 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "Idempotency-Key; version edits and lifecycle changes also require the current If-Match value.";
         }
 
+        if (descriptor.OperationId.StartsWith("master-data.price-list", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Price Lists are reusable Tenant-owned B2B configuration over existing Product, UOM, Currency, and optional same-Tenant Business Customer identities. "
+                + "Each price carries an effective window, provenance, source reference, and immutable Product/UOM/Currency applicability evidence. "
+                + "Reference resolution requires exact Product, UOM, Currency, customer applicability, organization applicability, lifecycle, and effective-date matches. "
+                + "The configured priority uses lower numeric values as higher precedence; equal best priority is an explicit conflict and never falls back to edit order, identifier order, or UI order. "
+                + "The endpoint does not implement quantity breaks, promotions, coupons, campaigns, POS, Sales Orders, manual override bypasses, Finance, automatic FX, or accounting rounding. "
+                + "Writes require Idempotency-Key, and Price List identity/price/lifecycle writes require the current If-Match value where the catalogue declares concurrency.";
+        }
+
         return contextRules
             + "The operation is part of the reusable internal ERP contract. Response failures use Problem Details "
             + "with a stable code, correlation identifier, and operation identifier; provider details and internal "
@@ -216,6 +276,9 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.exchange-rate.reference.read" => "The active Exchange Rate version selected for the requested effective date, including applied pair and version evidence.",
         "master-data.exchange-rate.history.read" => "The Tenant-owned Exchange Rate version windows with preserved Currency-code snapshots.",
         "master-data.exchange-rate.audit.read" => "Tenant-filtered audit evidence for the Exchange Rate resource.",
+        "master-data.price-list.reference.read" => "The single deterministic Tenant-owned Price List price reference, including Product/UOM/Currency applicability, effective window, configured priority, provenance, and immutable version evidence.",
+        "master-data.price-list.history.read" => "The Tenant-owned Price List price-version history with preserved applicability and provenance snapshots.",
+        "master-data.price-list.audit.read" => "Tenant-filtered audit evidence for the Price List resource and pricing-reference decisions.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 

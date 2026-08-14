@@ -28,11 +28,42 @@ builder.Services.AddMasterDataAuthorization();
 builder.Services.AddProductIdentity();
 builder.Services.AddSupplierIdentity();
 builder.Services.AddCustomerIdentity();
+string? developmentMasterDataSqliteConnectionString = null;
+string? developmentBusinessPartiesSqliteConnectionString = null;
 var sqlServerConnectionString = builder.Configuration["MESP_SQLSERVER_CONNECTION_STRING"];
 if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
 {
     builder.Services.AddMasterDataSqlServerPersistence(sqlServerConnectionString);
     builder.Services.AddBusinessPartiesSqlServerPersistence(sqlServerConnectionString);
+}
+else if (builder.Environment.IsDevelopment())
+{
+    var configuredMasterDataConnectionString = builder.Configuration["MESP_DEV_MASTERDATA_SQLITE_CONNECTION_STRING"];
+    var configuredBusinessPartiesConnectionString = builder.Configuration["MESP_DEV_BUSINESS_PARTIES_SQLITE_CONNECTION_STRING"];
+    var configuredSqliteDirectory = builder.Configuration["MESP_DEV_SQLITE_DIRECTORY"];
+    var localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    var defaultSqliteDirectory = string.IsNullOrWhiteSpace(configuredSqliteDirectory)
+        ? Path.Combine(
+            string.IsNullOrWhiteSpace(localApplicationData) ? Path.GetTempPath() : localApplicationData,
+            "MiniErp",
+            "Development")
+        : configuredSqliteDirectory;
+
+    if (string.IsNullOrWhiteSpace(configuredMasterDataConnectionString)
+        || string.IsNullOrWhiteSpace(configuredBusinessPartiesConnectionString))
+    {
+        Directory.CreateDirectory(defaultSqliteDirectory);
+    }
+
+    developmentMasterDataSqliteConnectionString = string.IsNullOrWhiteSpace(configuredMasterDataConnectionString)
+        ? $"Data Source={Path.Combine(defaultSqliteDirectory, "masterdata.db")}"
+        : configuredMasterDataConnectionString;
+    developmentBusinessPartiesSqliteConnectionString = string.IsNullOrWhiteSpace(configuredBusinessPartiesConnectionString)
+        ? $"Data Source={Path.Combine(defaultSqliteDirectory, "business-parties.db")}"
+        : configuredBusinessPartiesConnectionString;
+
+    builder.Services.AddMasterDataSqlitePersistence(developmentMasterDataSqliteConnectionString);
+    builder.Services.AddBusinessPartiesSqlitePersistence(developmentBusinessPartiesSqliteConnectionString);
 }
 builder.Services.AddIdentityAuthorization();
 builder.Services.AddAuthentication(options =>
@@ -45,6 +76,14 @@ builder.Services.AddAuthentication(options =>
 {
     var approved = FirstPartyCookieConfiguration.CreateForHost();
     options.Cookie = approved.Cookie;
+    if (builder.Environment.IsDevelopment())
+    {
+        // HTTP localhost cannot store a __Host- or Secure cookie. This is an
+        // explicit Development-only compatibility boundary; production keeps
+        // the approved __Host-/Secure configuration from the Identity module.
+        options.Cookie.Name = "MiniErp.Auth";
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    }
     options.ExpireTimeSpan = approved.ExpireTimeSpan;
     options.SlidingExpiration = false;
     options.LoginPath = approved.LoginPath;
@@ -67,9 +106,9 @@ builder.Services.AddAuthorization();
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
-    options.Cookie.Name = "__Host-MiniErp.AntiForgery";
+    options.Cookie.Name = builder.Environment.IsDevelopment() ? "MiniErp.AntiForgery" : "__Host-MiniErp.AntiForgery";
     options.Cookie.HttpOnly = false;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.Path = "/";
 });
@@ -99,6 +138,17 @@ builder.Services.AddOpenApi("v1", options =>
 
 var app = builder.Build();
 
+if (developmentMasterDataSqliteConnectionString is not null
+    && developmentBusinessPartiesSqliteConnectionString is not null)
+{
+    MasterDataPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+        developmentMasterDataSqliteConnectionString);
+    BusinessPartiesPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+        developmentBusinessPartiesSqliteConnectionString);
+}
+
+app.SeedDevelopmentBootstrap();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.Use(async (httpContext, next) =>
@@ -115,8 +165,13 @@ app.Use(async (httpContext, next) =>
     {
         await next();
     }
-    catch (Exception)
+    catch (Exception exception)
     {
+        app.Logger.LogError(
+            exception,
+            "Unhandled request failure for {RequestMethod} {RequestPath}",
+            httpContext.Request.Method,
+            httpContext.Request.Path);
         if (!httpContext.Response.HasStarted)
         {
             var problem = await WriteProblemAsync(
@@ -467,6 +522,7 @@ app.MapCustomerEndpoints();
 app.MapCurrencyPaymentTermEndpoints();
 app.MapTaxEndpoints();
 app.MapExchangeRateEndpoints();
+app.MapPriceListEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

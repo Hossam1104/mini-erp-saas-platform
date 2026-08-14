@@ -15,13 +15,37 @@ namespace MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 /// the Business Parties module. No migration or database creation is executed
 /// here.
 /// </summary>
-public sealed class BusinessPartiesCustomerPersistence : ICustomerPersistence
+public sealed class BusinessPartiesCustomerPersistence : ICustomerPersistence, IBusinessCustomerReferenceReader
 {
     private readonly DbContextOptions options;
 
     internal BusinessPartiesCustomerPersistence(DbContextOptions options)
     {
         this.options = options ?? throw new ArgumentNullException(nameof(options));
+    }
+
+    public async Task<BusinessCustomerReference?> FindCustomerReferenceAsync(
+        TenantContext tenantContext,
+        Guid customerId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(tenantContext);
+        if (customerId == Guid.Empty)
+        {
+            return null;
+        }
+
+        await using var db = CreateContext(tenantContext);
+        var entity = await db.Customers
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == customerId, cancellationToken);
+        return entity is null
+            ? null
+            : new BusinessCustomerReference(
+                entity.Id,
+                entity.TenantId,
+                entity.Code,
+                entity.LifecycleState);
     }
 
     public async Task<IReadOnlyList<CustomerRecord>> ListCustomersAsync(

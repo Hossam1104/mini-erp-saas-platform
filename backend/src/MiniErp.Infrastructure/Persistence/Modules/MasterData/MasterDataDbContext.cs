@@ -40,6 +40,10 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
 
     internal DbSet<MasterDataExchangeRateVersionEntity> ExchangeRateVersions => Set<MasterDataExchangeRateVersionEntity>();
 
+    internal DbSet<MasterDataPriceListEntity> PriceLists => Set<MasterDataPriceListEntity>();
+
+    internal DbSet<MasterDataPriceListPriceEntity> PriceListPrices => Set<MasterDataPriceListPriceEntity>();
+
     internal DbSet<MasterDataTaxEntity> Taxes => Set<MasterDataTaxEntity>();
 
     internal DbSet<MasterDataTaxRateVersionEntity> TaxRateVersions => Set<MasterDataTaxRateVersionEntity>();
@@ -301,6 +305,77 @@ internal sealed class MasterDataDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         exchangeRateVersion.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var priceList = modelBuilder.Entity<MasterDataPriceListEntity>();
+        priceList.ToTable("PriceLists", "masterdata");
+        priceList.HasKey(item => item.Id);
+        priceList.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(priceList.Property(item => item.TenantId));
+        priceList.Property(item => item.Code).HasMaxLength(128).IsRequired();
+        priceList.Property(item => item.CodeKey).HasMaxLength(128).IsRequired();
+        priceList.Property(item => item.EnglishName).HasMaxLength(256).IsRequired();
+        priceList.Property(item => item.ArabicName).HasMaxLength(256).IsRequired(false);
+        priceList.Property(item => item.CurrencyId).IsRequired();
+        priceList.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired();
+        priceList.Property(item => item.CustomerId).IsRequired(false);
+        priceList.Property(item => item.OrganizationScopeKind).IsRequired(false);
+        priceList.Property(item => item.OrganizationScopeId).IsRequired(false);
+        priceList.Property(item => item.Priority).IsRequired();
+        priceList.Property(item => item.LifecycleState).IsRequired();
+        priceList.Property(item => item.CurrentVersionNumber).IsRequired();
+        ConfigureVersion(priceList.Property(item => item.Version));
+        priceList.HasIndex(item => new { item.TenantId, item.CodeKey }).IsUnique();
+        priceList.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        priceList.HasOne<MasterDataCurrencyEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.CurrencyId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        priceList.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var priceListPrice = modelBuilder.Entity<MasterDataPriceListPriceEntity>();
+        priceListPrice.ToTable("PriceListPrices", "masterdata");
+        priceListPrice.HasKey(item => item.Id);
+        priceListPrice.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(priceListPrice.Property(item => item.TenantId));
+        priceListPrice.Property(item => item.PriceListId).IsRequired();
+        priceListPrice.Property(item => item.VersionNumber).IsRequired();
+        priceListPrice.Property(item => item.ProductId).IsRequired();
+        priceListPrice.Property(item => item.ProductSku).HasMaxLength(128).IsRequired();
+        priceListPrice.Property(item => item.UnitOfMeasureId).IsRequired();
+        priceListPrice.Property(item => item.UnitOfMeasureCode).HasMaxLength(128).IsRequired();
+        priceListPrice.Property(item => item.CurrencyId).IsRequired();
+        priceListPrice.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired();
+        priceListPrice.Property(item => item.CustomerId).IsRequired(false);
+        priceListPrice.Property(item => item.OrganizationScopeKind).IsRequired(false);
+        priceListPrice.Property(item => item.OrganizationScopeId).IsRequired(false);
+        priceListPrice.Property(item => item.Priority).IsRequired();
+        priceListPrice.Property(item => item.EffectiveFrom).IsRequired();
+        priceListPrice.Property(item => item.EffectiveTo).IsRequired(false);
+        priceListPrice.Property(item => item.Price).HasPrecision(28, 12).IsRequired();
+        priceListPrice.Property(item => item.PriceScale).IsRequired();
+        priceListPrice.Property(item => item.Provenance).IsRequired();
+        priceListPrice.Property(item => item.SourceReference).HasMaxLength(1024).IsRequired(false);
+        ConfigureVersion(priceListPrice.Property(item => item.Version));
+        priceListPrice.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        priceListPrice.HasIndex(item => new { item.TenantId, item.PriceListId, item.VersionNumber }).IsUnique();
+        priceListPrice.HasIndex(item => new { item.TenantId, item.PriceListId, item.ProductId, item.UnitOfMeasureId, item.EffectiveFrom }).IsUnique();
+        priceListPrice.HasOne<MasterDataPriceListEntity>()
+            .WithMany(item => item.Prices)
+            .HasForeignKey(item => new { item.TenantId, item.PriceListId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        priceListPrice.HasOne<MasterDataProductEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.ProductId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        priceListPrice.HasOne<MasterDataUnitOfMeasureEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.UnitOfMeasureId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        priceListPrice.HasQueryFilter(item => item.TenantId == TrustedTenantId);
 
         var tax = modelBuilder.Entity<MasterDataTaxEntity>();
         tax.ToTable("Taxes", "masterdata");

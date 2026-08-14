@@ -45,6 +45,25 @@ public sealed record CustomerRecord(
     byte[] Version,
     IReadOnlyList<CustomerContactRecord> Contacts);
 
+/// <summary>
+/// The minimal Business Parties-owned reference used by another module when
+/// a Tenant-owned configuration record targets a Business Customer. This is a
+/// reference port, not a parallel Customer model or a cross-module EF join.
+/// </summary>
+public sealed record BusinessCustomerReference(
+    Guid Id,
+    TenantId TenantId,
+    string Code,
+    MasterDataLifecycleState LifecycleState);
+
+public interface IBusinessCustomerReferenceReader
+{
+    Task<BusinessCustomerReference?> FindCustomerReferenceAsync(
+        TenantContext tenantContext,
+        Guid customerId,
+        CancellationToken cancellationToken = default);
+}
+
 public interface ICustomerPersistence
 {
     Task<IReadOnlyList<CustomerRecord>> ListCustomersAsync(
@@ -91,8 +110,13 @@ public interface ICustomerPersistence
 /// <summary>
 /// Safe composition fallback. It does not create an in-memory Customer store.
 /// </summary>
-public sealed class UnavailableCustomerPersistence : ICustomerPersistence
+public sealed class UnavailableCustomerPersistence : ICustomerPersistence, IBusinessCustomerReferenceReader
 {
+    public Task<BusinessCustomerReference?> FindCustomerReferenceAsync(
+        TenantContext tenantContext,
+        Guid customerId,
+        CancellationToken cancellationToken = default) => Unavailable<BusinessCustomerReference?>();
+
     public Task<IReadOnlyList<CustomerRecord>> ListCustomersAsync(
         TenantContext tenantContext,
         CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<CustomerRecord>>();
