@@ -583,6 +583,7 @@ app.MapExchangeRateEndpoints();
 app.MapPriceListEndpoints();
 app.MapMasterDataImportEndpoints();
 app.MapPurchaseRequestEndpoints();
+app.MapSupplierQuotationEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

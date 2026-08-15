@@ -1,6 +1,30 @@
 # Current State
 
-## Current authoritative position - 15 August 2026 (MESP-123 Phase A backend/API handoff)
+## Current authoritative position - 15 August 2026 (MESP-123 Phase C backend/API handoff)
+
+MESP-123 Phase C is complete at its bounded Supplier Quotation capture,
+comparison, and source-decision backend/API scope on branch
+`feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against
+`main`. The existing Phase A Purchase Request backend and Phase B/B1
+functional Purchase Request UI/integration seams remain the foundation; this
+session did not change Angular source.
+
+| Current fact | Verified value |
+|---|---|
+| Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open and intentionally unmerged. No Jira or external-tracker operation was performed. |
+| Quotation lifecycle | Tenant/company/branch-scoped Supplier Quotation capture, read/list, Draft edit, submit, withdraw, disqualify, history, and audit operations. Submitted quotations are internal recording of external supplier offers; the Supplier is not a platform User. |
+| Purchase Request boundary | Capture and source decision require an Approved Purchase Request. Quotation lines preserve Purchase Request line identity, Product/UOM snapshots, requested and quoted quantities, prices, tax/discount facts, and requested need-by evidence. Edits do not rewrite the request. |
+| Reference integrity | Existing active Supplier, Currency, Tax, and optional Payment Term ports are resolved server-side and useful commercial identities are snapshotted. Inactive, unavailable, foreign-Tenant, invalid, or out-of-lineage references fail closed. |
+| Comparison | Deterministic server comparison exposes supplier/reference/status/validity, totals by currency, coverage, line facts, delivery/payment facts, evidence availability, and qualification issues. Mixed currencies remain explicitly incomparable without an approved FX basis; no hidden winner or ranking is produced. |
+| Source decision | One current selected quotation per Purchase Request, with rationale, actor/time, policy/version/stage evidence, comparison snapshot hash/content, current selection flags, superseded history, and audit evidence. Reselection uses the current source-decision ETag; the first decision uses the approved request version. No Purchase Order is created. |
+| Evidence boundary | Evidence is a bounded reference abstraction preserving identity/reference, filename/content type, description, source, actor, and time. No S3/Azure/provider, blob storage guarantee, supplier portal, or credential work was added. |
+| REST/OpenAPI | Exact Foundation-catalogued `/api/v1/procurement/...` operations are mapped for list/read/create/edit/submit/withdraw/disqualify/compare/source-decision/history/audit, with antiforgery, idempotency, If-Match, audit, Tenant scope, and generated OpenAPI/Scalar descriptions. |
+| Validation | Release solution build 0 warnings/0 errors; focused Supplier Quotation tests 5/5; full non-SQL backend 726/726; SQL safety 21 cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; Angular is unchanged at 158/158 and 439.15 kB initial bundle. |
+| Scope exclusions | No Purchase Order, Supplier Confirmation, Goods Receipt, invoice, AP/accounting, payment, stock mutation, supplier portal, external provider, credential, production infrastructure, statutory/ZATCA/FATOORA, MESP-39, MESP-40, MESP-124, or `frontend/assets` work. |
+| Runtime handoff | Final Development restart is through `scripts/Start-MiniErpDevelopment.ps1` on MiniERP API 5300 and Angular 4300; RMS 5000/5001 is unrelated and must remain untouched. |
+| Next exact continuation | Claude Sonnet 5 - functional Supplier Quotation and Comparison Angular UI against this Phase C API. Keep the scope bounded, do not merge Draft PR #66, do not start Purchase Order, and stop after the UI handoff for review. |
+
+## Historical authoritative position - 15 August 2026 (MESP-123 Phase A backend/API handoff)
 
 MESP-123 Phase A is complete at its bounded backend/API scope on branch
 `feat/MESP-123-purchase-request-approval`, based on starting main

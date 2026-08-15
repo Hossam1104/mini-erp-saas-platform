@@ -134,7 +134,14 @@ internal sealed class TenantOwnershipVerifierRegistry
             ProcurementTenantOwnershipVerifier.For<PurchaseRequestEntity>(),
             ProcurementTenantOwnershipVerifier.For<PurchaseRequestLineEntity>(),
             ProcurementTenantOwnershipVerifier.For<PurchaseRequestHistoryEntity>(),
-            ProcurementTenantOwnershipVerifier.For<PurchaseRequestAuditEntity>()
+            ProcurementTenantOwnershipVerifier.For<PurchaseRequestAuditEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierQuotationEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierQuotationLineEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierQuotationEvidenceEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierQuotationHistoryEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierQuotationAuditEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierSourceDecisionEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierSourceDecisionHistoryEntity>()
         ]);
     }
 

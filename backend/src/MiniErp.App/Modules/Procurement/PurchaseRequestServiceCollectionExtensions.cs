@@ -14,10 +14,12 @@ public static class PurchaseRequestServiceCollectionExtensions
         services.AddSingleton<ProcurementTenantContextResolver>();
         services.AddSingleton<PurchaseRequestAuthorizationService>();
         services.AddSingleton<IPurchaseRequestPersistence, UnavailablePurchaseRequestPersistence>();
+        services.AddSingleton<ISupplierQuotationPersistence, UnavailableSupplierQuotationPersistence>();
         services.AddSingleton<IPurchaseRequestApprovalPolicyProvider, DefaultPurchaseRequestApprovalPolicyProvider>();
         services.AddSingleton<IPurchaseRequestApprovalDelegationProvider, NoPurchaseRequestApprovalDelegationProvider>();
         services.AddSingleton<IProcurementOrganizationScopeProvider, NoProcurementOrganizationScopeProvider>();
         services.AddSingleton<PurchaseRequestService>();
+        services.AddSingleton<SupplierQuotationService>();
         return services;
     }
 }

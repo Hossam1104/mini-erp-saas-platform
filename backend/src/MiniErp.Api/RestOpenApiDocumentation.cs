@@ -207,6 +207,18 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.purchase-request.cancel" => "Cancel an eligible Purchase Request",
         "procurement.purchase-request.history.read" => "Read Purchase Request lifecycle history",
         "procurement.purchase-request.audit.read" => "Read Purchase Request audit evidence",
+        "procurement.quotation.list" => "List Supplier Quotations for an approved Purchase Request",
+        "procurement.quotation.read" => "Read one Supplier Quotation",
+        "procurement.quotation.create" => "Capture a Supplier Quotation against an approved Purchase Request",
+        "procurement.quotation.edit" => "Edit a Draft Supplier Quotation",
+        "procurement.quotation.submit" => "Submit a Supplier Quotation for comparison",
+        "procurement.quotation.withdraw" => "Withdraw a submitted Supplier Quotation",
+        "procurement.quotation.disqualify" => "Disqualify a submitted Supplier Quotation",
+        "procurement.quotation.compare" => "Compare captured Supplier Quotations deterministically",
+        "procurement.source-decision.read" => "Read the current Purchase Request source decision",
+        "procurement.source-decision.record" => "Record the Purchase Request source decision",
+        "procurement.quotation.history.read" => "Read Supplier Quotation lifecycle history",
+        "procurement.quotation.audit.read" => "Read Supplier Quotation audit evidence",
         _ => GenericSummary(operationId)
     };
 
@@ -317,6 +329,14 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "declared, antiforgery, and mandatory audit evidence.";
         }
 
+        if (descriptor.OperationId.StartsWith("procurement.quotation", StringComparison.Ordinal)
+            || descriptor.OperationId.StartsWith("procurement.source-decision", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Supplier Quotation is a buyer-recorded external offer captured only against an Approved Purchase Request. The persisted record snapshots Supplier, Currency, optional Payment Term, Product/UOM/requested-line identity, quantities, prices, discounts, tax facts, delivery facts, notes, and evidence references. "
+                + "Comparison is deterministic and preserves transaction currencies; mixed currencies are not ranked or converted because no FX source is invoked. Source decision records the selected quotation, rationale, actor/time, policy-stage evidence, and a hashed comparison snapshot. This boundary creates no Purchase Order, supplier portal account, receipt, invoice, AP, payment, stock, accounting, or external-provider effect. Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and the current If-Match value where declared.";
+        }
+
         return contextRules
             + "The operation is part of the reusable internal ERP contract. Response failures use Problem Details "
             + "with a stable code, correlation identifier, and operation identifier; provider details and internal "
@@ -361,6 +381,18 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.purchase-request.cancel" => "The eligible Purchase Request in Cancelled status with immutable cancellation evidence.",
         "procurement.purchase-request.history.read" => "Immutable Tenant-filtered lifecycle and approval history for the Purchase Request.",
         "procurement.purchase-request.audit.read" => "Immutable Tenant-filtered operation audit evidence for the Purchase Request.",
+        "procurement.quotation.list" => "Tenant- and scope-filtered Supplier Quotation summaries for the approved Purchase Request.",
+        "procurement.quotation.read" => "One Tenant-filtered Supplier Quotation with source-line snapshots, evidence references, lifecycle state, and concurrency version.",
+        "procurement.quotation.create" => "The persisted Draft Supplier Quotation with immutable Supplier, Currency, line, and evidence snapshots.",
+        "procurement.quotation.edit" => "The updated Draft Supplier Quotation with refreshed offer snapshots and a new optimistic-concurrency version.",
+        "procurement.quotation.submit" => "The Supplier Quotation in Submitted status, ready for deterministic comparison.",
+        "procurement.quotation.withdraw" => "The submitted Supplier Quotation in Withdrawn status with immutable reason and audit evidence.",
+        "procurement.quotation.disqualify" => "The submitted Supplier Quotation in Disqualified status with immutable reason and audit evidence.",
+        "procurement.quotation.compare" => "A deterministic comparison view grouped by transaction currency with coverage, commercial totals, qualification issues, and no hidden winner.",
+        "procurement.source-decision.read" => "The current source decision with selected quotation, rationale, policy-stage evidence, comparison snapshot reference, and version.",
+        "procurement.source-decision.record" => "The persisted source decision and immutable selection history; no Purchase Order or downstream accounting effect is created.",
+        "procurement.quotation.history.read" => "Immutable Tenant-filtered Supplier Quotation lifecycle history.",
+        "procurement.quotation.audit.read" => "Immutable Tenant-filtered Supplier Quotation operation audit evidence.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 

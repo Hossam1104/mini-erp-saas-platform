@@ -20,6 +20,8 @@ public static class ProcurementPersistenceServiceCollectionExtensions
         configureOptions(optionsBuilder);
         services.AddSingleton<IPurchaseRequestPersistence>(
             new PurchaseRequestPersistence(optionsBuilder.Options));
+        services.AddSingleton<ISupplierQuotationPersistence>(
+            new SupplierQuotationPersistence(optionsBuilder.Options));
         return services;
     }
 
