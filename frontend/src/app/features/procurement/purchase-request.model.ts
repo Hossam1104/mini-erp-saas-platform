@@ -34,6 +34,14 @@ export interface PurchaseRequestActionRequest {
   reason?: string | null;
 }
 
+export interface PurchaseRequestOrganizationScopeResponse {
+  companyId: string;
+  branchId: string | null;
+  companyDisplayName: string;
+  branchDisplayName: string | null;
+  displayName: string;
+}
+
 export interface PurchaseRequestLineResponse {
   id: string;
   productId: string;

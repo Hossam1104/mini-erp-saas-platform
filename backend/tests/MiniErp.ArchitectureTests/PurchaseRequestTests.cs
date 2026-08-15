@@ -217,6 +217,62 @@ public sealed class PurchaseRequestTests
         Assert.Contains(history.Value!, item => item.DelegatedFromActorId == Approver);
     }
 
+    [Fact]
+    public async Task Tenant_scoped_actor_receives_configured_organization_scopes_across_companies_in_the_same_tenant()
+    {
+        var provider = new ConfiguredProcurementOrganizationScopeProvider(
+        [
+            new ProcurementOrganizationScopeOption(TenantA, CompanyA, BranchA, "Company A", "Branch A"),
+            new ProcurementOrganizationScopeOption(TenantA, CompanyB, null, "Company B", null)
+        ]);
+        await using var fixture = await Fixture.CreateAsync(organizationScopeProvider: provider);
+
+        var result = await fixture.Service.ListOrganizationScopesAsync(
+            fixture.TenantScopeContext(Requester, "tenant.procurement.organization-scope.view", TenantA));
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Equal(2, result.Value!.Count);
+        Assert.Contains(result.Value, option => option.CompanyId == CompanyA);
+        Assert.Contains(result.Value, option => option.CompanyId == CompanyB);
+    }
+
+    [Fact]
+    public async Task Company_scoped_actor_cannot_see_another_companys_organization_scope_option()
+    {
+        var provider = new ConfiguredProcurementOrganizationScopeProvider(
+        [
+            new ProcurementOrganizationScopeOption(TenantA, CompanyA, BranchA, "Company A", "Branch A"),
+            new ProcurementOrganizationScopeOption(TenantA, CompanyB, null, "Company B", null)
+        ]);
+        await using var fixture = await Fixture.CreateAsync(organizationScopeProvider: provider);
+
+        var result = await fixture.Service.ListOrganizationScopesAsync(
+            fixture.Context(Requester, "tenant.procurement.organization-scope.view", TenantA, CompanyA));
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Single(result.Value!);
+        Assert.Equal(CompanyA, result.Value!.Single().CompanyId);
+    }
+
+    [Fact]
+    public async Task Cross_tenant_organization_scope_options_fail_closed()
+    {
+        var provider = new ConfiguredProcurementOrganizationScopeProvider(
+        [
+            new ProcurementOrganizationScopeOption(TenantA, CompanyA, BranchA, "Company A", "Branch A"),
+            new ProcurementOrganizationScopeOption(TenantB, CompanyB, null, "Company B", null)
+        ]);
+        await using var fixture = await Fixture.CreateAsync(organizationScopeProvider: provider);
+
+        var result = await fixture.Service.ListOrganizationScopesAsync(
+            fixture.TenantScopeContext(Requester, "tenant.procurement.organization-scope.view", TenantA));
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Single(result.Value!);
+        Assert.Equal(CompanyA, result.Value!.Single().CompanyId);
+        Assert.DoesNotContain(result.Value!, option => option.CompanyId == CompanyB);
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         private readonly SqliteConnection masterDataConnection;
@@ -240,7 +296,9 @@ public sealed class PurchaseRequestTests
 
         public PurchaseRequestService Service { get; }
 
-        public static async Task<Fixture> CreateAsync(bool configured = false)
+        public static async Task<Fixture> CreateAsync(
+            bool configured = false,
+            IProcurementOrganizationScopeProvider? organizationScopeProvider = null)
         {
             var masterDataConnection = new SqliteConnection("Data Source=:memory:");
             await masterDataConnection.OpenAsync();
@@ -252,7 +310,7 @@ public sealed class PurchaseRequestTests
             var procurementOptions = new DbContextOptionsBuilder()
                 .UseSqlite(procurementConnection)
                 .Options;
-            var tenantContext = TenantContext(TenantA, Requester, CompanyA);
+            var tenantContext = TenantContext(TenantA, Requester, new ScopeReference($"Company:{CompanyA:D}"));
 
             await using (var db = new MasterDataDbContext(masterDataOptions, tenantContext))
             {
@@ -320,7 +378,8 @@ public sealed class PurchaseRequestTests
                 masterData,
                 masterData,
                 policyProvider,
-                delegationProvider);
+                delegationProvider,
+                organizationScopeProvider ?? new NoProcurementOrganizationScopeProvider());
             return new Fixture(
                 masterDataConnection,
                 procurementConnection,
@@ -359,16 +418,26 @@ public sealed class PurchaseRequestTests
             ResolveContext(
                 tenantId ?? TenantA,
                 actor,
-                companyId ?? CompanyA,
+                new ScopeReference($"Company:{companyId ?? CompanyA:D}"),
+                permission);
+
+        public ProcurementRequestContext TenantScopeContext(
+            Guid actor,
+            string permission,
+            Guid tenantId) =>
+            ResolveContext(
+                tenantId,
+                actor,
+                new ScopeReference($"Tenant:{tenantId:D}"),
                 permission);
 
         private static ProcurementRequestContext ResolveContext(
             Guid tenantId,
             Guid actor,
-            Guid companyId,
+            ScopeReference scope,
             string permission)
         {
-            var tenantContext = TenantContext(tenantId, actor, companyId);
+            var tenantContext = TenantContext(tenantId, actor, scope);
             var foundation = FoundationRequestContext.ForTenant(
                 actor,
                 Guid.NewGuid(),
@@ -378,11 +447,11 @@ public sealed class PurchaseRequestTests
             return Assert.IsType<ProcurementRequestContext>(resolution.Context);
         }
 
-        private static TenantContext TenantContext(Guid tenantId, Guid actor, Guid companyId) =>
+        private static TenantContext TenantContext(Guid tenantId, Guid actor, ScopeReference scope) =>
             MiniErp.App.BuildingBlocks.Tenancy.TenantContext.ForOrdinaryMembership(
                 new TenantId(tenantId),
                 new MembershipReference(Guid.NewGuid()),
-                new ScopeReference($"Company:{companyId:D}"),
+                scope,
                 new CorrelationId($"corr-{Guid.NewGuid():N}"),
                 actor);
 

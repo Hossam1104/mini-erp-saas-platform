@@ -582,7 +582,7 @@ public sealed class PurchaseRequestAuthorizationService
         return PurchaseRequestAuthorizationResult.Success();
     }
 
-    private static bool ScopeAllows(ScopeReference? trustedScope, PurchaseRequestScope target)
+    internal static bool ScopeAllows(ScopeReference? trustedScope, PurchaseRequestScope target)
     {
         if (trustedScope is not { } scope)
         {
@@ -602,6 +602,63 @@ public sealed class PurchaseRequestAuthorizationService
 
         return target.BranchId is { }
             && string.Equals(value, $"Company:{target.CompanyId:D}", StringComparison.Ordinal);
+    }
+}
+
+public sealed record ProcurementOrganizationScopeOption(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid? BranchId,
+    string CompanyDisplayName,
+    string? BranchDisplayName)
+{
+    public string DisplayName => BranchDisplayName is { Length: > 0 } branch
+        ? $"{CompanyDisplayName} - {branch}"
+        : CompanyDisplayName;
+}
+
+public interface IProcurementOrganizationScopeProvider
+{
+    Task<IReadOnlyList<ProcurementOrganizationScopeOption>> ListAsync(
+        ProcurementRequestContext context,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class NoProcurementOrganizationScopeProvider : IProcurementOrganizationScopeProvider
+{
+    public Task<IReadOnlyList<ProcurementOrganizationScopeOption>> ListAsync(
+        ProcurementRequestContext context,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<ProcurementOrganizationScopeOption>>([]);
+}
+
+public sealed class ConfiguredProcurementOrganizationScopeProvider : IProcurementOrganizationScopeProvider
+{
+    private readonly IReadOnlyList<ProcurementOrganizationScopeOption> options;
+
+    public ConfiguredProcurementOrganizationScopeProvider(
+        IEnumerable<ProcurementOrganizationScopeOption> options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        this.options = options.ToArray();
+    }
+
+    public Task<IReadOnlyList<ProcurementOrganizationScopeOption>> ListAsync(
+        ProcurementRequestContext context,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var visible = options
+            .Where(option => option.TenantId == context.TenantId.Value)
+            .Where(option => PurchaseRequestAuthorizationService.ScopeAllows(
+                context.TrustedScope,
+                new PurchaseRequestScope(option.TenantId, option.CompanyId, option.BranchId)))
+            .OrderBy(option => option.CompanyDisplayName, StringComparer.Ordinal)
+            .ThenBy(option => option.BranchDisplayName, StringComparer.Ordinal)
+            .ToArray();
+
+        return Task.FromResult<IReadOnlyList<ProcurementOrganizationScopeOption>>(visible);
     }
 }
 

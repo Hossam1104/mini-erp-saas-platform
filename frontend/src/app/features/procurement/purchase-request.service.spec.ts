@@ -80,6 +80,20 @@ describe('PurchaseRequestService', () => {
     req.flush([]);
   });
 
+  it('fetches organization scope options for the create/edit selector', () => {
+    service.organizationScopes().subscribe((options) => {
+      expect(options).toEqual([
+        { companyId: 'company-1', branchId: null, companyDisplayName: 'Acme Trading Co.', branchDisplayName: null, displayName: 'Acme Trading Co.' },
+      ]);
+    });
+
+    const req = httpMock.expectOne('/api/v1/procurement/organization-scopes');
+    expect(req.request.method).toBe('GET');
+    req.flush([
+      { companyId: 'company-1', branchId: null, companyDisplayName: 'Acme Trading Co.', branchDisplayName: null, displayName: 'Acme Trading Co.' },
+    ]);
+  });
+
   it('gets detail, history, and audit for a purchase request', () => {
     service.get('pr-1').subscribe((record) => {
       expect(record.companyId).toBe('company-1');

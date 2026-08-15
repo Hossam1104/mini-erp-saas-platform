@@ -16,6 +16,7 @@ public sealed class PurchaseRequestService
     private readonly IMasterDataCatalogPersistence catalog;
     private readonly IPurchaseRequestApprovalPolicyProvider policyProvider;
     private readonly IPurchaseRequestApprovalDelegationProvider delegationProvider;
+    private readonly IProcurementOrganizationScopeProvider organizationScopeProvider;
 
     public PurchaseRequestService(
         PurchaseRequestAuthorizationService authorization,
@@ -23,7 +24,8 @@ public sealed class PurchaseRequestService
         IProductIdentityPersistence products,
         IMasterDataCatalogPersistence catalog,
         IPurchaseRequestApprovalPolicyProvider policyProvider,
-        IPurchaseRequestApprovalDelegationProvider delegationProvider)
+        IPurchaseRequestApprovalDelegationProvider delegationProvider,
+        IProcurementOrganizationScopeProvider organizationScopeProvider)
     {
         this.authorization = authorization ?? throw new ArgumentNullException(nameof(authorization));
         this.persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
@@ -31,6 +33,29 @@ public sealed class PurchaseRequestService
         this.catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         this.policyProvider = policyProvider ?? throw new ArgumentNullException(nameof(policyProvider));
         this.delegationProvider = delegationProvider ?? throw new ArgumentNullException(nameof(delegationProvider));
+        this.organizationScopeProvider = organizationScopeProvider ?? throw new ArgumentNullException(nameof(organizationScopeProvider));
+    }
+
+    public async Task<PurchaseRequestOperationResult<IReadOnlyList<ProcurementOrganizationScopeOption>>> ListOrganizationScopesAsync(
+        ProcurementRequestContext context,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        var authorized = authorization.Authorize(context, "procurement.organization-scope.list");
+        if (!authorized.Allowed)
+        {
+            return PurchaseRequestOperationResult<IReadOnlyList<ProcurementOrganizationScopeOption>>.Failure(authorized.Code);
+        }
+
+        try
+        {
+            return PurchaseRequestOperationResult<IReadOnlyList<ProcurementOrganizationScopeOption>>.Success(
+                await organizationScopeProvider.ListAsync(context, cancellationToken));
+        }
+        catch
+        {
+            return PurchaseRequestOperationResult<IReadOnlyList<ProcurementOrganizationScopeOption>>.Failure("persistence_unavailable");
+        }
     }
 
     public async Task<PurchaseRequestOperationResult<IReadOnlyList<PurchaseRequestListRecord>>> ListAsync(

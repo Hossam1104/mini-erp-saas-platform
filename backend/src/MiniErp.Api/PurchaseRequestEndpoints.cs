@@ -19,6 +19,20 @@ public static class PurchaseRequestEndpoints
         ArgumentNullException.ThrowIfNull(endpoints);
 
         endpoints.MapGet(
+                "/api/v1/procurement/organization-scopes",
+                async (HttpContext httpContext, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, PurchaseRequestService service) =>
+                    await ExecuteReadAsync(
+                        httpContext,
+                        resolver,
+                        tenantResolver,
+                        FoundationOperationCatalog.GetRequired("procurement.organization-scope.list"),
+                        context => service.ListOrganizationScopesAsync(context, httpContext.RequestAborted),
+                        (_, options) => options.Select(ToOrganizationScopeResponse).ToArray()))
+            .WithName("procurement.organization-scope.list")
+            .WithTags("Procurement / Purchase Requests")
+            .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.organization-scope.list")));
+
+        endpoints.MapGet(
                 "/api/v1/procurement/purchase-requests",
                 async (HttpContext httpContext, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, PurchaseRequestService service) =>
                 {
@@ -464,6 +478,13 @@ public static class PurchaseRequestEndpoints
             canReturn,
             canCancel);
     }
+
+    private static PurchaseRequestOrganizationScopeResponse ToOrganizationScopeResponse(ProcurementOrganizationScopeOption option) => new(
+        option.CompanyId,
+        option.BranchId,
+        option.CompanyDisplayName,
+        option.BranchDisplayName,
+        option.DisplayName);
 
     private static PurchaseRequestListItemResponse ToListResponse(PurchaseRequestListRecord record) => new(
         record.Id,

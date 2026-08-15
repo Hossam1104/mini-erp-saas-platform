@@ -77,6 +77,49 @@ else if (builder.Environment.IsDevelopment())
     builder.Services.AddBusinessPartiesSqlitePersistence(developmentBusinessPartiesSqliteConnectionString);
     builder.Services.AddProcurementSqlitePersistence(developmentProcurementSqliteConnectionString);
 }
+
+if (builder.Environment.IsDevelopment()
+    && string.Equals(builder.Configuration["MESP_DEV_BOOTSTRAP_ENABLED"], "true", StringComparison.OrdinalIgnoreCase))
+{
+    // Development-only default organization scope so the Purchase Request UI has at least one
+    // selectable Company/Branch option before a real Company/Branch module exists. This is a
+    // configuration-led fixture, not production policy: it is fully replaced by supplying
+    // MESP_DEV_ORG_SCOPE_* environment variables, and a future Company/Branch module can replace
+    // this provider registration entirely without touching Purchase Request code or the API contract.
+    var configuredOrgScopeTenantId = builder.Configuration["MESP_DEV_ORG_SCOPE_TENANT_ID"];
+    var configuredOrgScopeCompanyId = builder.Configuration["MESP_DEV_ORG_SCOPE_COMPANY_ID"];
+    var configuredOrgScopeBranchId = builder.Configuration["MESP_DEV_ORG_SCOPE_BRANCH_ID"];
+    var configuredOrgScopeCompanyName = builder.Configuration["MESP_DEV_ORG_SCOPE_COMPANY_NAME"];
+    var configuredOrgScopeBranchName = builder.Configuration["MESP_DEV_ORG_SCOPE_BRANCH_NAME"];
+
+    var developmentOrgScopeTenantId = Guid.TryParse(configuredOrgScopeTenantId, out var parsedOrgScopeTenantId)
+        ? parsedOrgScopeTenantId
+        : DevelopmentBootstrap.DevTenantId.Value;
+    var developmentOrgScopeCompanyId = Guid.TryParse(configuredOrgScopeCompanyId, out var parsedOrgScopeCompanyId)
+        ? parsedOrgScopeCompanyId
+        : Guid.Parse("99999999-9999-9999-9999-999999999999");
+    Guid? developmentOrgScopeBranchId = Guid.TryParse(configuredOrgScopeBranchId, out var parsedOrgScopeBranchId)
+        ? parsedOrgScopeBranchId
+        : null;
+    var developmentOrgScopeCompanyName = string.IsNullOrWhiteSpace(configuredOrgScopeCompanyName)
+        ? "Development Organization"
+        : configuredOrgScopeCompanyName;
+    var developmentOrgScopeBranchName = string.IsNullOrWhiteSpace(configuredOrgScopeBranchName)
+        ? null
+        : configuredOrgScopeBranchName;
+
+    builder.Services.AddSingleton<IProcurementOrganizationScopeProvider>(_ =>
+        new ConfiguredProcurementOrganizationScopeProvider(
+        [
+            new ProcurementOrganizationScopeOption(
+                developmentOrgScopeTenantId,
+                developmentOrgScopeCompanyId,
+                developmentOrgScopeBranchId,
+                developmentOrgScopeCompanyName,
+                developmentOrgScopeBranchName)
+        ]));
+}
+
 builder.Services.AddIdentityAuthorization();
 builder.Services.AddAuthentication(options =>
 {

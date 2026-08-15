@@ -195,6 +195,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.import.audit.read" => "Read Master Data import audit evidence",
         "master-data.import.evidence.read" => "Read complete Master Data import evidence",
         "master-data.import.replay" => "Replay one quarantined Master Data import row",
+        "procurement.organization-scope.list" => "List server-authorized Purchase Request organization scopes",
         "procurement.purchase-request.list" => "List Tenant-scoped Purchase Requests",
         "procurement.purchase-request.read" => "Read one Purchase Request",
         "procurement.purchase-request.create" => "Create a Purchase Request draft",
@@ -295,6 +296,16 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "or irreversible production migration decisions.";
         }
 
+        if (descriptor.OperationId == "procurement.organization-scope.list")
+        {
+            return contextRules
+                + "Organization scopes are the trusted, server-configured set of Company/Branch options a caller may select when creating "
+                + "or editing a Purchase Request. Options are filtered to the caller's Tenant and further narrowed by the caller's own "
+                + "trusted authorization scope; a request can never widen this to an arbitrary Company or Branch identity. This is not a "
+                + "Company/Branch CRUD boundary; it exposes read-only display names for an existing or Development-configured organization "
+                + "structure so the client never needs to type or display a raw internal identifier as the primary means of selection.";
+        }
+
         if (descriptor.OperationId.StartsWith("procurement.purchase-request", StringComparison.Ordinal))
         {
             return contextRules
@@ -338,6 +349,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.import.audit.read" => "Tenant-filtered batch, row, and mutation audit evidence with source reference and correlation context.",
         "master-data.import.evidence.read" => "The complete Tenant-filtered import batch, row, reconciliation, and audit evidence package.",
         "master-data.import.replay" => "The updated import batch after replaying one quarantined row, preserving the original evidence and adding a new current attempt.",
+        "procurement.organization-scope.list" => "The Tenant- and scope-filtered set of server-authorized Company/Branch options with human-readable display names.",
         "procurement.purchase-request.list" => "Tenant-filtered Purchase Request summaries with scope, status, line count, and concurrency version.",
         "procurement.purchase-request.read" => "One Tenant-filtered Purchase Request with its lines, approval snapshot, lifecycle state, and server-derived action affordances.",
         "procurement.purchase-request.create" => "The persisted Draft Purchase Request and its Product/UOM line snapshots.",

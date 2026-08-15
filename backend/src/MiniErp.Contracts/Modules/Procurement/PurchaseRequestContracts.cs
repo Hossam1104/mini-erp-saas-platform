@@ -130,6 +130,13 @@ public sealed record PurchaseRequestAuditResponse(
     string? AfterSummary,
     string? IdempotencyKey);
 
+public sealed record PurchaseRequestOrganizationScopeResponse(
+    Guid CompanyId,
+    Guid? BranchId,
+    string CompanyDisplayName,
+    string? BranchDisplayName,
+    string DisplayName);
+
 public sealed record PurchaseRequestApprovalStageDefinition(
     string StageKey,
     int Sequence,

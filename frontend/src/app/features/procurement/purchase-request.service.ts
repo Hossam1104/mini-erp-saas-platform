@@ -8,6 +8,7 @@ import {
   PurchaseRequestAuditResponse,
   PurchaseRequestHistoryResponse,
   PurchaseRequestListItemResponse,
+  PurchaseRequestOrganizationScopeResponse,
   PurchaseRequestResponse,
   PurchaseRequestStatus,
   PurchaseRequestWriteRequest,
@@ -18,12 +19,17 @@ export class PurchaseRequestService {
   private readonly api = inject(ApiClientService);
   private readonly auth = inject(AuthService);
   private readonly basePath = '/procurement/purchase-requests';
+  private readonly organizationScopesPath = '/procurement/organization-scopes';
 
   list(status?: PurchaseRequestStatus | ''): Observable<PurchaseRequestListItemResponse[]> {
     const path = status
       ? `${this.basePath}?${new HttpParams().set('status', status).toString()}`
       : this.basePath;
     return this.api.get<PurchaseRequestListItemResponse[]>(path);
+  }
+
+  organizationScopes(): Observable<PurchaseRequestOrganizationScopeResponse[]> {
+    return this.api.get<PurchaseRequestOrganizationScopeResponse[]>(this.organizationScopesPath);
   }
 
   get(id: string): Observable<PurchaseRequestResponse> {

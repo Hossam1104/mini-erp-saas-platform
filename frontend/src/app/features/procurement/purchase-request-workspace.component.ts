@@ -13,6 +13,7 @@ import {
   PurchaseRequestAuditResponse,
   PurchaseRequestHistoryResponse,
   PurchaseRequestListItemResponse,
+  PurchaseRequestOrganizationScopeResponse,
   PurchaseRequestResponse,
   PurchaseRequestStatus,
   PurchaseRequestWriteRequest,
@@ -33,7 +34,7 @@ interface LineDraft {
 
 interface RequestDraft {
   companyId: string;
-  branchId: string;
+  branchId: string | null;
   purpose: string;
   lines: LineDraft[];
 }
@@ -111,15 +112,16 @@ interface RequestDraft {
           <div class="record-table-wrap">
             <table class="record-table">
               <caption class="sr-only">{{ language.text('purchaseRequests') }}</caption>
-              <thead><tr><th scope="col">{{ language.text('companyId') }}</th><th scope="col">{{ language.text('branchId') }}</th><th scope="col">{{ language.text('purpose') }}</th><th scope="col">{{ language.text('requestLines') }}</th><th scope="col">{{ language.text('scope') }}</th><th scope="col"><span class="sr-only">{{ language.text('viewRecord') }}</span></th></tr></thead>
+              <thead><tr><th scope="col">{{ language.text('prStatusColumn') }}</th><th scope="col">{{ language.text('purpose') }}</th><th scope="col">{{ language.text('prOrganizationColumn') }}</th><th scope="col">{{ language.text('organizationScopeBranch') }}</th><th scope="col">{{ language.text('requestLines') }}</th><th scope="col">{{ language.text('prUpdatedColumn') }}</th><th scope="col"><span class="sr-only">{{ language.text('viewRecord') }}</span></th></tr></thead>
               <tbody>
                 @for (record of filteredRecords(); track record.id) {
                   <tr>
-                    <td><button class="record-code" type="button" (click)="openRecord(record.id)">{{ record.companyId }}</button><small>{{ record.id }}</small></td>
-                    <td><span class="record-name">{{ valueOrEmpty(record.branchId) }}</span></td>
-                    <td><span class="record-name">{{ valueOrEmpty(record.purpose) }}</span></td>
-                    <td><span class="record-name">{{ record.lineCount }}</span></td>
                     <td><span class="status-pill" [class]="'status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span></td>
+                    <td><button class="record-code" type="button" (click)="openRecord(record.id)">{{ valueOrEmpty(record.purpose) }}</button><small>{{ shortReference(record.id) }}</small></td>
+                    <td><span class="record-name">{{ companyLabel(record.companyId) }}</span></td>
+                    <td><span class="record-name">{{ branchLabel(record.branchId) }}</span></td>
+                    <td><span class="record-name">{{ record.lineCount }}</span></td>
+                    <td><span class="record-name">{{ record.updatedAt | date:'mediumDate' }}</span></td>
                     <td class="table-action"><button class="icon-button" type="button" (click)="openRecord(record.id)" [attr.aria-label]="language.text('viewRecord')">↗</button></td>
                   </tr>
                 }
@@ -129,10 +131,10 @@ interface RequestDraft {
           <div class="record-cards">
             @for (record of filteredRecords(); track record.id) {
               <button class="record-card" type="button" (click)="openRecord(record.id)">
-                <div class="record-card__top"><span class="record-code">{{ record.companyId }}</span><span class="status-pill" [class]="'status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span></div>
+                <div class="record-card__top"><span class="record-code">{{ companyLabel(record.companyId) }}</span><span class="status-pill" [class]="'status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span></div>
                 <span class="record-name">{{ valueOrEmpty(record.purpose) }}</span>
                 <div class="record-card__facts">
-                  <div><span>{{ language.text('branchId') }}</span><b>{{ valueOrEmpty(record.branchId) }}</b></div>
+                  <div><span>{{ language.text('organizationScopeBranch') }}</span><b>{{ branchLabel(record.branchId) }}</b></div>
                   <div><span>{{ language.text('requestLines') }}</span><b>{{ record.lineCount }}</b></div>
                 </div>
               </button>
@@ -151,7 +153,7 @@ interface RequestDraft {
           <div class="state-card state-card--error" role="alert"><span class="state-icon" aria-hidden="true">!</span><div><b>{{ errorMessage(detailError()) }}</b><p>{{ language.text('detailLoadFailed') }}</p><button class="text-button" type="button" (click)="reloadDetail()">{{ language.text('retryLoad') }} ↗</button></div></div>
         } @else {
           <div class="detail-heading">
-            <div><p class="eyebrow eyebrow--soft">{{ mode() === 'create' ? language.text('newPurchaseRequest') : language.text('purchaseRequestDetail') }}</p><h2 id="detail-title">{{ mode() === 'create' ? language.text('newPurchaseRequest') : (selectedRecord()!.companyId + ' · ' + selectedRecord()!.id) }}</h2><p>{{ language.text('purchaseRequestsLead') }}</p></div>
+            <div><p class="eyebrow eyebrow--soft">{{ mode() === 'create' ? language.text('newPurchaseRequest') : language.text('purchaseRequestDetail') }}</p><h2 id="detail-title">{{ mode() === 'create' ? language.text('newPurchaseRequest') : (language.text('purchaseRequestSingular') + ' · ' + shortReference(selectedRecord()!.id)) }}</h2><p>{{ language.text('purchaseRequestsLead') }}</p></div>
             @if (mode() === 'view' && selectedRecord(); as record) {
               <div class="detail-heading__actions">
                 <span class="status-pill" [class]="'status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span>
@@ -194,7 +196,7 @@ interface RequestDraft {
             <form class="edit-card" (ngSubmit)="save()" novalidate>
               @if (formError()) { <div class="form-summary" role="alert">{{ language.text('validationSummary') }}</div> }
               <ng-container *ngTemplateOutlet="editableFields" />
-              <div class="form-actions"><button class="button button--quiet" type="button" (click)="cancelEdit()">{{ language.text('cancel') }}</button><button class="button button--primary" type="submit" [disabled]="saving()">{{ saving() ? language.text('actionInProgress') : (mode() === 'create' ? language.text('saveDraft') : language.text('saveRecord')) }}</button></div>
+              <div class="form-actions"><button class="button button--quiet" type="button" (click)="cancelEdit()">{{ language.text('cancel') }}</button><button class="button button--primary" type="submit" [disabled]="saving() || isOrganizationScopeUnavailable()">{{ saving() ? language.text('actionInProgress') : (mode() === 'create' ? language.text('saveDraft') : language.text('saveRecord')) }}</button></div>
             </form>
           }
         }
@@ -204,8 +206,8 @@ interface RequestDraft {
     <ng-template #summaryTab>
       @if (selectedRecord(); as record) {
         <div class="field-read-grid">
-          <div><span>{{ language.text('companyId') }}</span><b>{{ record.companyId }}</b></div>
-          <div><span>{{ language.text('branchId') }}</span><b>{{ valueOrEmpty(record.branchId) }}</b></div>
+          <div><span>{{ language.text('organizationScopeCompany') }}</span><b>{{ companyLabel(record.companyId) }}</b></div>
+          <div><span>{{ language.text('organizationScopeBranch') }}</span><b>{{ branchLabel(record.branchId) }}</b></div>
           <div><span>{{ language.text('prRequester') }}</span><b>{{ record.requesterId }}</b></div>
           <div class="field-read-grid__wide"><span>{{ language.text('purpose') }}</span><b>{{ valueOrEmpty(record.purpose) }}</b></div>
           <div><span>{{ language.text('prRequestedOn') }}</span><b>{{ record.createdAt | date:'medium' }}</b></div>
@@ -225,6 +227,14 @@ interface RequestDraft {
           } @else {
             <p class="muted-line">{{ language.text('prNoApproval') }}</p>
           }
+        </div>
+        <div class="approval-panel">
+          <p class="eyebrow eyebrow--soft">{{ language.text('technicalDetailsSection') }}</p>
+          <div class="field-read-grid">
+            <div><span>{{ language.text('fullRequestId') }}</span><b>{{ record.id }}</b></div>
+            <div><span>{{ language.text('companyId') }}</span><b>{{ record.companyId }}</b></div>
+            @if (record.branchId) { <div><span>{{ language.text('branchId') }}</span><b>{{ record.branchId }}</b></div> }
+          </div>
         </div>
         <p class="boundary-note">{{ language.text('purchaseRequestBoundary') }}</p>
       }
@@ -300,33 +310,64 @@ interface RequestDraft {
     <ng-template #editableFields>
       <div class="form-section">
         <div class="form-section__heading"><div><p class="eyebrow eyebrow--soft">01 / {{ language.text('requestContextSection') }}</p><h3>{{ language.text('requestContextSection') }}</h3></div><span>{{ language.text('serverAuthority') }}</span></div>
+
+        @if (mode() === 'edit') {
+          <div class="form-grid">
+            <div class="form-field"><span>{{ language.text('organizationScopeCompany') }}</span><b>{{ companyLabel(draft.companyId) }}</b></div>
+            <div class="form-field"><span>{{ language.text('organizationScopeBranch') }}</span><b>{{ branchLabel(draft.branchId) }}</b></div>
+          </div>
+          <p class="term-hint">{{ language.text('organizationScopeLockedHint') }}</p>
+        } @else if (organizationScopesLoading()) {
+          <div class="state-card state-card--loading" role="status"><span class="loader" aria-hidden="true"></span><b>{{ language.text('loading') }}…</b></div>
+        } @else if (organizationScopes().length === 0) {
+          <div class="state-card state-card--empty"><span class="state-icon" aria-hidden="true">∅</span><div><b>{{ language.text('noOrganizationScopeAvailable') }}</b><p>{{ language.text('noOrganizationScopeAvailableLead') }}</p></div></div>
+        } @else if (organizationScopes().length === 1) {
+          <div class="form-grid">
+            <div class="form-field"><span>{{ language.text('organizationScopeCompany') }}</span><b>{{ companyLabel(draft.companyId) }}</b></div>
+            <div class="form-field"><span>{{ language.text('organizationScopeBranch') }}</span><b>{{ branchLabel(draft.branchId) }}</b></div>
+          </div>
+        } @else {
+          <div class="form-grid">
+            <label class="form-field" [class.has-error]="invalid('organizationScope')">
+              <span>{{ language.text('organizationScope') }} <em>*</em></span>
+              <select [ngModel]="selectedOrganizationScopeKey()" (ngModelChange)="onOrganizationScopeChange($event)" name="prOrganizationScope">
+                <option value="">{{ language.text('selectOrganizationScope') }}</option>
+                @for (option of organizationScopes(); track organizationScopeKey(option)) {
+                  <option [value]="organizationScopeKey(option)">{{ option.displayName }}</option>
+                }
+              </select>
+              <small>{{ invalid('organizationScope') ? language.text('required') : language.text('organizationScopeSelectHint') }}</small>
+            </label>
+          </div>
+        }
+
         <div class="form-grid">
-          <label class="form-field" [class.has-error]="invalid('companyId')"><span>{{ language.text('companyId') }} <em>*</em></span><input [ngModel]="draft.companyId" (ngModelChange)="setDraftField('companyId', $event)" name="prCompanyId" autocomplete="off" [attr.aria-invalid]="invalid('companyId')" /><small>{{ fieldErrors().has('companyId') ? language.text('required') : (fieldErrors().has('companyId-format') ? language.text('companyIdFormatError') : language.text('companyIdHint')) }}</small></label>
-          <label class="form-field" [class.has-error]="invalid('branchId')"><span>{{ language.text('branchId') }}</span><input [ngModel]="draft.branchId" (ngModelChange)="setDraftField('branchId', $event)" name="prBranchId" autocomplete="off" [attr.aria-invalid]="invalid('branchId')" /><small>{{ fieldErrors().has('branchId-format') ? language.text('branchIdFormatError') : language.text('branchIdHint') }}</small></label>
           <label class="form-field form-field--full"><span>{{ language.text('purpose') }}</span><textarea rows="3" [ngModel]="draft.purpose" (ngModelChange)="setDraftField('purpose', $event)" name="prPurpose"></textarea><small>{{ language.text('purposeHint') }}</small></label>
         </div>
         @if (referenceLoadFailed()) { <p class="muted-line">{{ language.text('accessUnavailable') }}</p> }
       </div>
 
-      <div class="form-section">
-        <div class="form-section__heading"><div><p class="eyebrow eyebrow--soft">02 / {{ language.text('requestLines') }}</p><h3>{{ language.text('requestLines') }}</h3></div><button class="button button--quiet" type="button" (click)="addLine()">＋ {{ language.text('addLine') }}</button></div>
-        <p class="term-hint">{{ language.text('requestLinesLead') }}</p>
-        @if (invalid('lines')) { <p class="muted-line" role="alert">{{ language.text('noLines') }}</p> }
-        <div class="line-editor">
-          @for (line of draft.lines; track $index; let i = $index) {
-            <div class="line-row">
-              <div class="line-row__grid">
-                <label class="form-field" [class.has-error]="lineInvalid(i, 'productId')"><span>{{ language.text('product') }} <em>*</em></span><select [ngModel]="line.productId" (ngModelChange)="setLineField(i, 'productId', $event)" [name]="'lineProduct' + i"><option value="">{{ language.text('selectProduct') }}</option>@for (p of productChoices(); track p.id) { <option [value]="p.id">{{ productOptionLabel(p) }}</option> }</select><small>{{ lineInvalid(i, 'productId') ? language.text('lineProductRequired') : '' }}</small></label>
-                <label class="form-field" [class.has-error]="lineInvalid(i, 'unitOfMeasureId')"><span>{{ language.text('unitOfMeasure') }} <em>*</em></span><select [ngModel]="line.unitOfMeasureId" (ngModelChange)="setLineField(i, 'unitOfMeasureId', $event)" [name]="'lineUnit' + i"><option value="">{{ language.text('selectUnit') }}</option>@for (u of unitChoices(); track u.id) { <option [value]="u.id">{{ unitOptionLabel(u) }}</option> }</select><small>{{ lineInvalid(i, 'unitOfMeasureId') ? language.text('lineUnitRequired') : '' }}</small></label>
-                <label class="form-field" [class.has-error]="lineInvalid(i, 'quantity')"><span>{{ language.text('quantity') }} <em>*</em></span><input type="number" min="0.000001" step="any" [ngModel]="line.quantity" (ngModelChange)="setLineField(i, 'quantity', $event)" [name]="'lineQuantity' + i" /><small>{{ lineInvalid(i, 'quantity') ? language.text('lineQuantityRequired') : '' }}</small></label>
-                <label class="form-field" [class.has-error]="lineInvalid(i, 'needByDate')"><span>{{ language.text('needByDate') }} <em>*</em></span><input type="date" [ngModel]="line.needByDate" (ngModelChange)="setLineField(i, 'needByDate', $event)" [name]="'lineNeedByDate' + i" /><small>{{ lineInvalid(i, 'needByDate') ? language.text('lineNeedByDateRequired') : '' }}</small></label>
-                <label class="form-field" [class.has-error]="lineInvalid(i, 'purpose')"><span>{{ language.text('purpose') }} <em>*</em></span><input [ngModel]="line.purpose" (ngModelChange)="setLineField(i, 'purpose', $event)" [name]="'linePurpose' + i" /><small>{{ lineInvalid(i, 'purpose') ? language.text('linePurposeRequired') : '' }}</small></label>
+      @if (!isOrganizationScopeUnavailable()) {
+        <div class="form-section">
+          <div class="form-section__heading"><div><p class="eyebrow eyebrow--soft">02 / {{ language.text('requestLines') }}</p><h3>{{ language.text('requestLines') }}</h3></div><button class="button button--quiet" type="button" (click)="addLine()">＋ {{ language.text('addLine') }}</button></div>
+          <p class="term-hint">{{ language.text('requestLinesLead') }}</p>
+          @if (invalid('lines')) { <p class="muted-line" role="alert">{{ language.text('noLines') }}</p> }
+          <div class="line-editor">
+            @for (line of draft.lines; track $index; let i = $index) {
+              <div class="line-row">
+                <div class="line-row__grid">
+                  <label class="form-field" [class.has-error]="lineInvalid(i, 'productId')"><span>{{ language.text('product') }} <em>*</em></span><select [ngModel]="line.productId" (ngModelChange)="setLineField(i, 'productId', $event)" [name]="'lineProduct' + i"><option value="">{{ language.text('selectProduct') }}</option>@for (p of productChoices(); track p.id) { <option [value]="p.id">{{ productOptionLabel(p) }}</option> }</select><small>{{ lineInvalid(i, 'productId') ? language.text('lineProductRequired') : '' }}</small></label>
+                  <label class="form-field" [class.has-error]="lineInvalid(i, 'unitOfMeasureId')"><span>{{ language.text('unitOfMeasure') }} <em>*</em></span><select [ngModel]="line.unitOfMeasureId" (ngModelChange)="setLineField(i, 'unitOfMeasureId', $event)" [name]="'lineUnit' + i"><option value="">{{ language.text('selectUnit') }}</option>@for (u of unitChoices(); track u.id) { <option [value]="u.id">{{ unitOptionLabel(u) }}</option> }</select><small>{{ lineInvalid(i, 'unitOfMeasureId') ? language.text('lineUnitRequired') : '' }}</small></label>
+                  <label class="form-field" [class.has-error]="lineInvalid(i, 'quantity')"><span>{{ language.text('quantity') }} <em>*</em></span><input type="number" min="0.000001" step="any" [ngModel]="line.quantity" (ngModelChange)="setLineField(i, 'quantity', $event)" [name]="'lineQuantity' + i" /><small>{{ lineInvalid(i, 'quantity') ? language.text('lineQuantityRequired') : '' }}</small></label>
+                  <label class="form-field" [class.has-error]="lineInvalid(i, 'needByDate')"><span>{{ language.text('needByDate') }} <em>*</em></span><input type="date" [ngModel]="line.needByDate" (ngModelChange)="setLineField(i, 'needByDate', $event)" [name]="'lineNeedByDate' + i" /><small>{{ lineInvalid(i, 'needByDate') ? language.text('lineNeedByDateRequired') : '' }}</small></label>
+                  <label class="form-field" [class.has-error]="lineInvalid(i, 'purpose')"><span>{{ language.text('purpose') }} <em>*</em></span><input [ngModel]="line.purpose" (ngModelChange)="setLineField(i, 'purpose', $event)" [name]="'linePurpose' + i" /><small>{{ lineInvalid(i, 'purpose') ? language.text('linePurposeRequired') : '' }}</small></label>
+                </div>
+                <div class="line-row__remove"><button class="text-button" type="button" (click)="removeLine(i)" [disabled]="draft.lines.length === 1">✕ {{ language.text('removeLine') }}</button></div>
               </div>
-              <div class="line-row__remove"><button class="text-button" type="button" (click)="removeLine(i)" [disabled]="draft.lines.length === 1">✕ {{ language.text('removeLine') }}</button></div>
-            </div>
-          }
+            }
+          </div>
         </div>
-      </div>
+      }
     </ng-template>
 
     @if (lifecycleAction(); as action) {
@@ -537,6 +578,10 @@ export class PurchaseRequestWorkspaceComponent {
   readonly unitChoices = signal<UnitOfMeasureRecord[]>([]);
   readonly referenceLoadFailed = signal(false);
 
+  readonly organizationScopes = signal<PurchaseRequestOrganizationScopeResponse[]>([]);
+  readonly organizationScopesLoading = signal(false);
+  readonly organizationScopesLoaded = signal(false);
+
   readonly historyEntries = signal<PurchaseRequestHistoryResponse[]>([]);
   readonly historyLoading = signal(false);
   readonly historyError = signal<SafeUiError | null>(null);
@@ -552,8 +597,8 @@ export class PurchaseRequestWorkspaceComponent {
     if (!query) return this.records();
     return this.records().filter((record) =>
       record.id.toLowerCase().includes(query)
-      || record.companyId.toLowerCase().includes(query)
-      || (record.branchId ?? '').toLowerCase().includes(query)
+      || this.companyLabel(record.companyId).toLowerCase().includes(query)
+      || this.branchLabel(record.branchId).toLowerCase().includes(query)
       || (record.purpose ?? '').toLowerCase().includes(query),
     );
   });
@@ -566,6 +611,7 @@ export class PurchaseRequestWorkspaceComponent {
 
   constructor() {
     void this.loadReferenceData();
+    void this.loadOrganizationScopes();
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const path = this.route.snapshot.routeConfig?.path ?? '';
       const id = params.get('id');
@@ -619,6 +665,28 @@ export class PurchaseRequestWorkspaceComponent {
     }
   }
 
+  private async loadOrganizationScopes(): Promise<void> {
+    this.organizationScopesLoading.set(true);
+    try {
+      const options = await firstValueFrom(this.purchaseRequests.organizationScopes());
+      this.organizationScopes.set(options ?? []);
+    } catch {
+      this.organizationScopes.set([]);
+    } finally {
+      this.organizationScopesLoading.set(false);
+      this.organizationScopesLoaded.set(true);
+      this.applyDefaultOrganizationScope();
+    }
+  }
+
+  private applyDefaultOrganizationScope(): void {
+    if (this.mode() !== 'create' || this.draft.companyId) return;
+    const options = this.organizationScopes();
+    if (options.length === 1) {
+      this.draft = { ...this.draft, companyId: options[0].companyId, branchId: options[0].branchId };
+    }
+  }
+
   onStatusFilterChange(value: PurchaseRequestStatus | ''): void {
     this.statusFilter.set(value);
     this.loadList();
@@ -661,6 +729,7 @@ export class PurchaseRequestWorkspaceComponent {
     this.mutationError.set(null);
     this.formError.set(false);
     this.fieldErrors.set(new Set());
+    this.applyDefaultOrganizationScope();
   }
 
   private async loadDetailById(id: string, targetMode: 'view' | 'edit'): Promise<void> {
@@ -987,6 +1056,43 @@ export class PurchaseRequestWorkspaceComponent {
     return value && value.trim().length > 0 ? value : this.language.text('emptyValue');
   }
 
+  shortReference(id: string): string {
+    const compact = id.replace(/-/g, '').slice(-8).toUpperCase();
+    return `#${compact}`;
+  }
+
+  companyLabel(companyId: string): string {
+    const option = this.organizationScopes().find((candidate) => candidate.companyId === companyId);
+    return option?.companyDisplayName ?? this.language.text('organizationScopeUnresolved');
+  }
+
+  branchLabel(branchId: string | null): string {
+    if (!branchId) return this.language.text('emptyValue');
+    const option = this.organizationScopes().find((candidate) => candidate.branchId === branchId);
+    return option?.branchDisplayName ?? this.language.text('organizationScopeUnresolved');
+  }
+
+  organizationScopeKey(option: PurchaseRequestOrganizationScopeResponse): string {
+    return `${option.companyId}|${option.branchId ?? ''}`;
+  }
+
+  selectedOrganizationScopeKey(): string {
+    return this.draft.companyId ? `${this.draft.companyId}|${this.draft.branchId ?? ''}` : '';
+  }
+
+  onOrganizationScopeChange(key: string): void {
+    if (!key) {
+      this.draft = { ...this.draft, companyId: '', branchId: null };
+      return;
+    }
+    const [companyId, branchId] = key.split('|');
+    this.draft = { ...this.draft, companyId, branchId: branchId || null };
+  }
+
+  isOrganizationScopeUnavailable(): boolean {
+    return this.mode() === 'create' && this.organizationScopesLoaded() && !this.organizationScopesLoading() && this.organizationScopes().length === 0;
+  }
+
   productOptionLabel(record: ProductRecord): string {
     return `${record.sku} · ${record.englishName ?? record.arabicName ?? record.sku}`;
   }
@@ -1051,23 +1157,10 @@ export class PurchaseRequestWorkspaceComponent {
     }
   }
 
-  private readonly guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-  private isGuid(value: string): boolean {
-    return this.guidPattern.test(value.trim());
-  }
-
   private validateDraft(): boolean {
     const errors = new Set<string>();
-    const companyId = this.draft.companyId.trim();
-    if (!companyId) {
-      errors.add('companyId');
-    } else if (!this.isGuid(companyId)) {
-      errors.add('companyId-format');
-    }
-    const branchId = this.draft.branchId.trim();
-    if (branchId && !this.isGuid(branchId)) {
-      errors.add('branchId-format');
+    if (!this.draft.companyId.trim()) {
+      errors.add('organizationScope');
     }
     if (this.draft.lines.length === 0) errors.add('lines');
     this.draft.lines.forEach((line, index) => {
@@ -1083,8 +1176,8 @@ export class PurchaseRequestWorkspaceComponent {
 
   private toPayload(): PurchaseRequestWriteRequest {
     return {
-      companyId: this.draft.companyId.trim(),
-      branchId: this.draft.branchId.trim() || null,
+      companyId: this.draft.companyId,
+      branchId: this.draft.branchId,
       purpose: this.draft.purpose.trim() || null,
       lines: this.draft.lines.map((line) => ({
         productId: line.productId,
@@ -1099,7 +1192,7 @@ export class PurchaseRequestWorkspaceComponent {
   private toDraft(record: PurchaseRequestResponse): RequestDraft {
     return {
       companyId: record.companyId,
-      branchId: record.branchId ?? '',
+      branchId: record.branchId ?? null,
       purpose: record.purpose ?? '',
       lines: record.lines.length > 0
         ? record.lines.map((line) => ({
@@ -1118,7 +1211,7 @@ export class PurchaseRequestWorkspaceComponent {
   }
 
   private emptyDraft(): RequestDraft {
-    return { companyId: '', branchId: '', purpose: '', lines: [this.emptyLine()] };
+    return { companyId: '', branchId: null, purpose: '', lines: [this.emptyLine()] };
   }
 
   private isProduct(record: MasterDataRecord): record is ProductRecord {

@@ -7,7 +7,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { MasterDataRecord, ProductRecord, UnitOfMeasureRecord } from '../master-data/master-data.models';
 import { MasterDataService } from '../master-data/master-data.service';
-import { PurchaseRequestListItemResponse, PurchaseRequestResponse } from './purchase-request.model';
+import { PurchaseRequestListItemResponse, PurchaseRequestOrganizationScopeResponse, PurchaseRequestResponse } from './purchase-request.model';
 import { PurchaseRequestService } from './purchase-request.service';
 import { PurchaseRequestWorkspaceComponent } from './purchase-request-workspace.component';
 
@@ -25,6 +25,15 @@ const product: ProductRecord = {
 const unit: UnitOfMeasureRecord = { id: 'unit-1', tenantId: 'tenant-a', code: 'PCS', englishName: 'Pieces', arabicName: null, lifecycleState: 'Active', version: 'AQ==' };
 
 const companyId = '22222222-2222-2222-2222-222222222222';
+const branchId = '33333333-3333-3333-3333-333333333333';
+
+const organizationScopeOption: PurchaseRequestOrganizationScopeResponse = {
+  companyId, branchId: null, companyDisplayName: 'Acme Trading Co.', branchDisplayName: null, displayName: 'Acme Trading Co.',
+};
+
+const organizationScopeOptionWithBranch: PurchaseRequestOrganizationScopeResponse = {
+  companyId, branchId, companyDisplayName: 'Acme Trading Co.', branchDisplayName: 'Jeddah Branch', displayName: 'Acme Trading Co. - Jeddah Branch',
+};
 
 const listItem: PurchaseRequestListItemResponse = {
   id: 'pr-1', companyId, branchId: null, requesterId: 'requester-1', status: 'Draft',
@@ -61,6 +70,7 @@ describe('PurchaseRequestWorkspaceComponent', () => {
     reject: ReturnType<typeof vi.fn>;
     returnForChange: ReturnType<typeof vi.fn>;
     cancel: ReturnType<typeof vi.fn>;
+    organizationScopes: ReturnType<typeof vi.fn>;
   };
   let data: { list: ReturnType<typeof vi.fn> };
   let language: LanguageService;
@@ -78,6 +88,15 @@ describe('PurchaseRequestWorkspaceComponent', () => {
     fixture.detectChanges();
   }
 
+  async function createFixture(): Promise<ComponentFixture<PurchaseRequestWorkspaceComponent>> {
+    const created = TestBed.createComponent(PurchaseRequestWorkspaceComponent);
+    created.detectChanges();
+    await created.whenStable();
+    await settleAsyncWork();
+    created.detectChanges();
+    return created;
+  }
+
   beforeEach(async () => {
     currentRouteConfig = { path: 'procurement/purchase-requests' };
     routeParams = new BehaviorSubject(routeMap());
@@ -93,6 +112,7 @@ describe('PurchaseRequestWorkspaceComponent', () => {
       reject: vi.fn(() => Promise.resolve({ ...purchaseRequest, status: 'Rejected' })),
       returnForChange: vi.fn(() => Promise.resolve({ ...purchaseRequest, status: 'ReturnedForChange' })),
       cancel: vi.fn(() => Promise.resolve({ ...purchaseRequest, status: 'Cancelled' })),
+      organizationScopes: vi.fn(() => of([organizationScopeOption])),
     };
     data = { list: vi.fn((resource: string) => of<MasterDataRecord[]>(resource === 'products' ? [product] : resource === 'units' ? [unit] : [])) };
 
@@ -130,9 +150,10 @@ describe('PurchaseRequestWorkspaceComponent', () => {
     fixture.detectChanges();
   });
 
-  it('loads the purchase request list on init using only the server status query', () => {
+  it('loads the purchase request list on init using only the server status query and never shows raw GUIDs', () => {
     expect(purchaseRequests.list).toHaveBeenCalledWith(undefined);
-    expect(fixture.nativeElement.textContent).toContain(companyId);
+    expect(fixture.nativeElement.textContent).toContain(organizationScopeOption.companyDisplayName);
+    expect(fixture.nativeElement.textContent).not.toContain(companyId);
   });
 
   it('re-queries the server when the status filter changes', () => {
@@ -164,11 +185,14 @@ describe('PurchaseRequestWorkspaceComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain(language.text('returnForChange'));
   });
 
-  it('creates a purchase request through the shared draft/save flow using real Master Data references', async () => {
+  it('creates a purchase request using the single server-provided organization scope shown read-only, with no typed Company/Branch identifier anywhere', async () => {
     await navigateTo('procurement/purchase-requests/new');
 
+    expect(fixture.nativeElement.querySelector('input[name="prCompanyId"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('input[name="prBranchId"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain(organizationScopeOption.companyDisplayName);
+
     const component = fixture.componentInstance;
-    component.setDraftField('companyId', 'company-1');
     component.setLineField(0, 'productId', product.id);
     component.setLineField(0, 'unitOfMeasureId', unit.id);
     component.setLineField(0, 'quantity', 5);
@@ -177,19 +201,61 @@ describe('PurchaseRequestWorkspaceComponent', () => {
     await component.save();
     fixture.detectChanges();
 
-    expect(purchaseRequests.create).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain(language.text('companyIdFormatError'));
+    expect(purchaseRequests.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId,
+        branchId: null,
+        lines: [expect.objectContaining({ productId: product.id, unitOfMeasureId: unit.id, quantity: 5, needByDate: '2026-09-01', purpose: 'Office restocking' })],
+      }),
+    );
+  });
 
-    component.setDraftField('companyId', '11111111-1111-1111-1111-111111111111');
+  it('creates a purchase request by selecting an organization scope option from a dropdown when more than one is available', async () => {
+    purchaseRequests.organizationScopes.mockReturnValueOnce(of([organizationScopeOption, organizationScopeOptionWithBranch]));
+    fixture = await createFixture();
+    await navigateTo('procurement/purchase-requests/new');
+
+    const component = fixture.componentInstance;
+    const select = fixture.nativeElement.querySelector('select[name="prOrganizationScope"]') as HTMLSelectElement;
+    expect(select).toBeTruthy();
+
+    await component.save();
+    fixture.detectChanges();
+    expect(purchaseRequests.create).not.toHaveBeenCalled();
+    expect(component.fieldErrors().has('organizationScope')).toBe(true);
+
+    component.onOrganizationScopeChange(component.organizationScopeKey(organizationScopeOptionWithBranch));
+    component.setLineField(0, 'productId', product.id);
+    component.setLineField(0, 'unitOfMeasureId', unit.id);
+    component.setLineField(0, 'quantity', 5);
+    component.setLineField(0, 'needByDate', '2026-09-01');
+    component.setLineField(0, 'purpose', 'Office restocking');
     await component.save();
     fixture.detectChanges();
 
     expect(purchaseRequests.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        companyId: '11111111-1111-1111-1111-111111111111',
-        lines: [expect.objectContaining({ productId: product.id, unitOfMeasureId: unit.id, quantity: 5, needByDate: '2026-09-01', purpose: 'Office restocking' })],
-      }),
+      expect.objectContaining({ companyId, branchId }),
     );
+  });
+
+  it('shows an honest empty state and blocks creation when no organization scope is available', async () => {
+    purchaseRequests.organizationScopes.mockReturnValueOnce(of([]));
+    fixture = await createFixture();
+    await navigateTo('procurement/purchase-requests/new');
+
+    expect(fixture.nativeElement.textContent).toContain(language.text('noOrganizationScopeAvailable'));
+    expect(fixture.componentInstance.isOrganizationScopeUnavailable()).toBe(true);
+
+    await fixture.componentInstance.save();
+    expect(purchaseRequests.create).not.toHaveBeenCalled();
+  });
+
+  it('shows the existing server-authoritative organization scope read-only on edit, without allowing scope changes', async () => {
+    await navigateTo('procurement/purchase-requests/:id/edit', purchaseRequest.id);
+
+    expect(fixture.nativeElement.querySelector('select[name="prOrganizationScope"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('input[name="prCompanyId"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain(organizationScopeOption.companyDisplayName);
   });
 
   it('surfaces a concurrency conflict on edit without silently overwriting', async () => {
