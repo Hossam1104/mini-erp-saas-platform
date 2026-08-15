@@ -9,10 +9,39 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation)
+## Current execution overlay - 16 August 2026 (MESP-123 B2 post-Phase-C foundation)
 
-The authoritative current overlay is the MESP-116 approved decision
-reconciliation in `AGENTS.md`. Release 1 remains the full-feature reusable B2B ERP
+The current bounded session is MESP-123 B2 on branch
+`feat/MESP-123-purchase-request-approval`, continuing Draft PR #66.
+Phase C Supplier Quotation/comparison/source-decision backend/API behavior is
+preserved. B2 delivers the canonical `/app/workspaces` shell route,
+compatibility `/tenant/select`, server/configured human Tenant labels,
+the explicit exact-Development loopback-only `MESP_DEV_AUTH_BYPASS=true`
+server-actor shortcut, a bounded sidebar, and shared ERP UI primitives adopted
+by Workspace/Tenant Selection and representative Purchase Request list/detail
+screens.
+
+Spec Kit 0.16.4 was initialized and audited only on an isolated clean
+`chore/adopt-spec-kit` branch at current `main`; generated
+state is preserved in the local stash `spec-kit init generated adoption
+review` and must not be committed, pushed, or merged. No Jira or
+external-tracker operation was performed. Owner-managed `frontend/assets`
+remain protected and unchanged.
+
+The B2 sidebar must expose only Overview, Workspaces/Tenant Selection, Master
+Data, Price Lists, Master Data Import, and Purchase Requests. Supplier
+Quotations are not linked until the next exact session. Do not add Purchase
+Order, Supplier Confirmation, Goods Receipt, invoice, AP/accounting, payment,
+stock, supplier portal, external provider, credential, MESP-39/MESP-40,
+MESP-124, or broad redesign work. Draft PR #66 remains open, Draft, and
+unmerged. The next exact session is GPT-5.6 Luna Max for functional Supplier
+Quotation/Comparison Angular UI and source selection/rationale UX, then stop.
+
+## Historical execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation)
+
+At the time of this historical entry, the authoritative overlay was the
+MESP-116 approved decision reconciliation in `AGENTS.md`. Release 1 remains the
+full-feature reusable B2B ERP
 and 31 August 2026 is the **Release 1 Integrated Preview** of the real
 codebase, not an MVP, throwaway/demo UI, Wafra fork, or scope cut. Unfinished
 capability remains Release 1 work after the preview.

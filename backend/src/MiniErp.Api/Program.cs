@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -22,6 +23,7 @@ using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using MiniErp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
+DevelopmentAuthBypassPolicy.ValidateStartup(builder.Environment, builder.Configuration);
 
 builder.Services.AddSingleton<IPlatformAdministrationModule>(_ => PlatformModuleRegistration.Create());
 builder.Services.AddSingleton<IMasterDataCatalogModule>(_ => MasterDataModuleRegistration.Create());
@@ -309,6 +311,45 @@ app.MapPost("/api/v1/auth/sign-in", async (
 })
     .WithName("auth.sign-in")
     .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.sign-in")));
+
+app.MapPost("/api/v1/auth/development-bypass", async (
+    HttpContext httpContext,
+    IHostEnvironment environment,
+    IConfiguration configuration,
+    IFoundationIdentityHost identityHost) =>
+{
+    if (!DevelopmentAuthBypassPolicy.IsAllowed(
+            environment,
+            configuration,
+            httpContext.Connection.RemoteIpAddress))
+    {
+        return await WriteProblemAsync(
+            httpContext,
+            StatusCodes.Status404NotFound,
+            "development_auth_unavailable",
+            "Development authentication unavailable",
+            "The requested Development authentication path is unavailable.",
+            "auth.development-bypass");
+    }
+
+    var login = configuration["MESP_DEV_ADMIN_LOGIN"] ?? "admin@minierp.local";
+    var result = identityHost.DevelopmentBypass(login);
+    if (!result.Succeeded || result.Principal is null || result.State is null)
+    {
+        return await WriteProblemAsync(
+            httpContext,
+            StatusCodes.Status503ServiceUnavailable,
+            "development_auth_unavailable",
+            "Development authentication unavailable",
+            "The configured Development actor is not available.",
+            "auth.development-bypass");
+    }
+
+    await httpContext.SignInAsync(FirstPartyCookieConfiguration.Scheme, result.Principal);
+    return Results.Json(ToSessionResponse(result.State), statusCode: StatusCodes.Status200OK);
+})
+    .WithName("auth.development-bypass")
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.development-bypass")));
 
 app.MapPost("/api/v1/auth/sign-out", async (
     HttpContext httpContext,

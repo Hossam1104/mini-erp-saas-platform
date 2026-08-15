@@ -29,10 +29,10 @@ import { StatusCardComponent } from './status-card.component';
           tone="neutral"
         />
       } @else {
-        <label class="field-label" for="workspace-select">{{ language.text('chooseWorkspace') }}</label>
+        <label class="field-label ui-field__label" for="workspace-select">{{ language.text('chooseWorkspace') }}</label>
         <select
           id="workspace-select"
-          class="context-select"
+          class="context-select ui-field__control"
           [value]="auth.session()?.selectedContextId ?? ''"
           [disabled]="context.switching()"
           (change)="switchFromEvent($event)"

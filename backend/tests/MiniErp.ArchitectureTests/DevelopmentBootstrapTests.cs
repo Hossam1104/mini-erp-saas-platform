@@ -24,6 +24,24 @@ namespace MiniErp.ArchitectureTests;
 public sealed class DevelopmentBootstrapTests
 {
     [Fact]
+    public void TenantDisplayNames_AreServerConfiguredAndKeepGenericFallbacks()
+    {
+        var configuredTenantId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [$"MESP_TENANT_DISPLAY_NAMES:{configuredTenantId:D}"] = "North Star"
+            })
+            .Build();
+        var provider = new ConfiguredTenantDisplayNameProvider(configuration);
+
+        Assert.Equal("North Star", provider.GetDisplayName(new TenantId(configuredTenantId)));
+        Assert.Equal(
+            $"Tenant {DevelopmentBootstrap.DevTenantId.Value:D}",
+            provider.GetDisplayName(DevelopmentBootstrap.DevTenantId));
+    }
+
+    [Fact]
     public void Bootstrap_DisabledByDefault_DoesNotSeedUser()
     {
         using var factory = new CustomTestWebApplicationFactory(new Dictionary<string, string?>());
@@ -33,6 +51,26 @@ public sealed class DevelopmentBootstrapTests
         var result = identity.Authenticate("admin@minierp.local", "SomePassword123!");
         Assert.False(result.Succeeded);
         Assert.Equal("authentication_failed", result.PublicCode);
+    }
+
+    [Fact]
+    public async Task DevelopmentBypass_DisabledByDefault_IsUnavailable()
+    {
+        using var factory = new CustomTestWebApplicationFactory(new Dictionary<string, string?>
+        {
+            ["MESP_DEV_AUTH_BYPASS"] = "false"
+        });
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            HandleCookies = true,
+            AllowAutoRedirect = false
+        });
+
+        var bypassResponse = await client.PostAsync("/api/v1/auth/development-bypass", content: null);
+
+        Assert.Equal(HttpStatusCode.NotFound, bypassResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/v1/auth/session")).StatusCode);
     }
 
     [Fact]
@@ -179,6 +217,44 @@ public sealed class DevelopmentBootstrapTests
         // 6. Access Price List list endpoint as authenticated Tenant user
         var priceListResponse = await client.GetAsync("/api/v1/master-data/price-lists");
         Assert.Equal(HttpStatusCode.OK, priceListResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DevelopmentBypass_EnabledInDevelopment_UsesConfiguredServerActorAndHumanTenantName()
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            ["MESP_DEV_BOOTSTRAP_ENABLED"] = "true",
+            ["MESP_DEV_AUTH_BYPASS"] = "true",
+            ["MESP_DEV_ADMIN_LOGIN"] = "admin@minierp.local",
+            ["MESP_DEV_ADMIN_PASSWORD"] = null,
+            ["MESP_DEV_TENANT_DISPLAY_NAME"] = "Wafra"
+        };
+
+        using var factory = new CustomTestWebApplicationFactory(settings);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            HandleCookies = true,
+            AllowAutoRedirect = false
+        });
+
+        using var bypassRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/development-bypass")
+        {
+            Content = null
+        };
+        var bypassResponse = await client.SendAsync(bypassRequest);
+
+        Assert.Equal(HttpStatusCode.OK, bypassResponse.StatusCode);
+        var session = await bypassResponse.Content.ReadFromJsonAsync<FoundationSessionResponse>();
+        Assert.NotNull(session);
+        Assert.True(session.Authenticated);
+
+        var contexts = await client.GetFromJsonAsync<FoundationContextsResponse>("/api/v1/auth/contexts");
+        Assert.NotNull(contexts);
+        Assert.Single(contexts.Contexts);
+        Assert.Equal("Wafra", contexts.Contexts[0].DisplayName);
+        Assert.DoesNotContain(DevelopmentBootstrap.DevTenantId.Value.ToString("D"), contexts.Contexts[0].DisplayName, StringComparison.Ordinal);
     }
 
     private sealed class CustomTestWebApplicationFactory : WebApplicationFactory<Program>

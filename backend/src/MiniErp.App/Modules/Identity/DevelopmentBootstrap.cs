@@ -43,9 +43,18 @@ public static class DevelopmentBootstrap
 
         if (string.IsNullOrWhiteSpace(password))
         {
-            throw new InvalidOperationException(
-                "Development bootstrap is enabled via MESP_DEV_BOOTSTRAP_ENABLED=true, but MESP_DEV_ADMIN_PASSWORD is not set. " +
-                "Please supply a local development password via environment variable MESP_DEV_ADMIN_PASSWORD.");
+            if (!DevelopmentAuthBypassPolicy.IsEnabled(config))
+            {
+                throw new InvalidOperationException(
+                    "Development bootstrap is enabled via MESP_DEV_BOOTSTRAP_ENABLED=true, but MESP_DEV_ADMIN_PASSWORD is not set. " +
+                    "Please supply a local development password via environment variable MESP_DEV_ADMIN_PASSWORD, " +
+                    "or explicitly enable the Development-only auth bypass.");
+            }
+
+            // The bypass authenticates the configured server actor without
+            // accepting a client credential. A random in-memory password keeps
+            // the normal bootstrap invariant without creating a local secret.
+            password = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
         }
 
         using var scope = host.Services.CreateScope();

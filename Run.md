@@ -17,10 +17,32 @@ dotnet build .\backend\MiniErp.sln --configuration Release
 The launcher starts the built Release executable so the process it records is
 the real MiniERP API listener. Rebuild after source changes before restarting.
 
-The launcher prompts for `MESP_DEV_ADMIN_PASSWORD` without displaying or
-persisting it. The Development login remains `admin@minierp.local`; the
-password is exactly the value supplied to `MESP_DEV_ADMIN_PASSWORD` for the
-currently running backend process.
+By default the launcher prompts for `MESP_DEV_ADMIN_PASSWORD` without
+displaying or persisting it. The Development login remains
+`admin@minierp.local`; the password is exactly the value supplied to
+`MESP_DEV_ADMIN_PASSWORD` for the currently running backend process.
+
+For a persistent local QA loop, explicitly enable the Development-only,
+loopback-only auth shortcut once in the user environment. It authenticates
+only the server-configured Development actor and never accepts a browser
+supplied identity, password, Tenant, role, or permission:
+
+```powershell
+[Environment]::SetEnvironmentVariable('MESP_DEV_AUTH_BYPASS', 'true', 'User')
+[Environment]::SetEnvironmentVariable('MESP_DEV_TENANT_DISPLAY_NAME', 'Wafra', 'User')
+```
+
+With that setting, the normal launcher does not prompt for a password and the
+Angular guard establishes the session through the server-side Development
+shortcut. Disable it when normal credential testing or any non-local
+environment is required:
+
+```powershell
+[Environment]::SetEnvironmentVariable('MESP_DEV_AUTH_BYPASS', $null, 'User')
+```
+
+The committed/default setting remains disabled. The API also fails closed
+outside the exact `Development` environment and for non-loopback callers.
 
 The generic default API target is `http://localhost:5000`. If that port is
 already occupied by another local service, the launcher leaves that process
@@ -88,6 +110,7 @@ cd '.\backend'
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
 $env:Scalar__Enabled = 'true'
 $env:MESP_DEV_BOOTSTRAP_ENABLED = 'true'
+$env:MESP_DEV_AUTH_BYPASS = 'false'
 $env:MESP_DEV_ADMIN_LOGIN = 'admin@minierp.local'
 $env:MESP_DEV_ADMIN_PASSWORD = '<YOUR-LOCAL-PASSWORD>'
 dotnet run --project '.\src\MiniErp.Api\MiniErp.Api.csproj' --configuration Release --no-build --urls 'http://localhost:5300'
@@ -110,7 +133,12 @@ The browser flow uses relative requests such as
 `/api/v1/auth/sign-in`; Angular reaches the selected backend through the local
 proxy. Use the frontend origin for the authoritative check:
 
-1. `POST http://localhost:4300/api/v1/auth/sign-in`;
+When the explicit bypass is enabled, the first request is
+`POST http://localhost:4300/api/v1/auth/development-bypass`; otherwise use
+the normal credential request:
+
+1. `POST http://localhost:4300/api/v1/auth/sign-in` (or the Development
+   bypass above);
 2. `GET http://localhost:4300/api/v1/auth/session`;
 3. `GET http://localhost:4300/api/v1/auth/contexts`;
 4. `GET http://localhost:4300/api/v1/auth/antiforgery`;

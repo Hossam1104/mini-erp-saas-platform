@@ -531,9 +531,22 @@ if (-not (Test-Path -LiteralPath (Join-Path $frontendRoot 'node_modules\@angular
 }
 
 Assert-FrontendPortAvailable
-$password = Get-DevelopmentPassword
-if ($null -eq $password) {
-    throw 'A Development password is required unless -ValidateOnly is used.'
+$devAuthBypassEnabled = [string]::Equals(
+    $env:MESP_DEV_AUTH_BYPASS,
+    'true',
+    [StringComparison]::OrdinalIgnoreCase)
+$password = $null
+if (-not $devAuthBypassEnabled) {
+    $password = Get-DevelopmentPassword
+    if ($null -eq $password) {
+        throw 'A Development password is required unless -ValidateOnly is used.'
+    }
+}
+
+$tenantDisplayName = if ([string]::IsNullOrWhiteSpace($env:MESP_DEV_TENANT_DISPLAY_NAME)) {
+    'Wafra'
+} else {
+    $env:MESP_DEV_TENANT_DISPLAY_NAME.Trim()
 }
 
 $nodePath = Get-ExecutablePath -Name 'node.exe'
@@ -548,8 +561,10 @@ $backendEnvironment = @{
     ASPNETCORE_ENVIRONMENT    = 'Development'
     Scalar__Enabled            = 'true'
     MESP_DEV_BOOTSTRAP_ENABLED = 'true'
+    MESP_DEV_AUTH_BYPASS       = if ($devAuthBypassEnabled) { 'true' } else { 'false' }
+    MESP_DEV_TENANT_DISPLAY_NAME = $tenantDisplayName
     MESP_DEV_ADMIN_LOGIN      = $AdminLogin.Trim()
-    MESP_DEV_ADMIN_PASSWORD   = $password.Value
+    MESP_DEV_ADMIN_PASSWORD   = if ($null -eq $password) { $null } else { $password.Value }
     MESP_DEV_API_URL           = $target.ApiUrl
 }
 
@@ -629,6 +644,11 @@ Write-Output 'MiniERP Development runtime is ready.'
 Write-Output "Backend:  $($target.ApiUrl)"
 Write-Output "Frontend: http://localhost:$FrontendPort"
 Write-Output "Login:   $($AdminLogin.Trim())"
-Write-Output 'Password: the exact value supplied through MESP_DEV_ADMIN_PASSWORD or the hidden prompt; it was not printed or persisted.'
+if ($devAuthBypassEnabled) {
+    Write-Output 'Auth:    automatic loopback Development bypass is enabled; no password prompt was used.'
+} else {
+    Write-Output 'Password: the exact value supplied through MESP_DEV_ADMIN_PASSWORD or the hidden prompt; it was not printed or persisted.'
+}
+Write-Output "Tenant:  $tenantDisplayName (server-configured display name)"
 Write-Output "Process state: $statePath"
 Write-Output 'Use -Restart only to stop and replace these repository-owned MiniERP listeners.'

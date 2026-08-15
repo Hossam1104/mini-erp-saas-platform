@@ -221,7 +221,7 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
             FoundationOperationCatalog.PublicOperations,
             operation => operation.IsUnsafe
                 && operation.SecurityProfile == FoundationSecurityProfile.Anonymous
-                && operation.OperationId != "auth.sign-in");
+                && operation.OperationId is not ("auth.sign-in" or "auth.development-bypass"));
     }
 
     [Fact]

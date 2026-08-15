@@ -391,6 +391,7 @@ public static class FoundationOperationCatalog
         new("procurement.quotation.audit.read", "/api/v1/procurement/quotations/{quotationId:guid}/audit", "GET", FoundationSecurityProfile.OrdinaryMembership, FoundationOperationVisibility.Public, "tenant.procurement.quotation.audit", FoundationScopePolicy.Tenant),
         new("auth.antiforgery.read", "/api/v1/auth/antiforgery", "GET", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public),
         new("auth.sign-in", "/api/v1/auth/sign-in", "POST", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public, RequiresAntiforgery: false, IsUnsafe: true),
+        new("auth.development-bypass", "/api/v1/auth/development-bypass", "POST", FoundationSecurityProfile.Anonymous, FoundationOperationVisibility.Public, RequiresAntiforgery: false, IsUnsafe: true),
         new("auth.sign-out", "/api/v1/auth/sign-out", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session", FoundationScopePolicy.None, RequiresAntiforgery: true, RequiresMandatoryAudit: false, IsUnsafe: true),
         new("auth.session.read", "/api/v1/auth/session", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session"),
         new("auth.contexts.read", "/api/v1/auth/contexts", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session"),

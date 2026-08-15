@@ -29,8 +29,11 @@ public static class IdentityModuleRegistration
             serviceProvider.GetRequiredService<IdentityAuthorizationService>());
         services.AddSingleton<IAuthenticationAssuranceEvidenceSource, UnavailableAuthenticationAssuranceEvidenceSource>();
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<ITenantDisplayNameProvider, ConfiguredTenantDisplayNameProvider>();
         services.AddSingleton<IFoundationIdentityHost>(serviceProvider =>
-            new FoundationIdentityHost(serviceProvider.GetRequiredService<IdentityAuthorizationService>()));
+            new FoundationIdentityHost(
+                serviceProvider.GetRequiredService<IdentityAuthorizationService>(),
+                serviceProvider.GetRequiredService<ITenantDisplayNameProvider>()));
         return services;
     }
 }

@@ -26,7 +26,49 @@ velocity, or forecast:
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation)
+## Current execution overlay - 16 August 2026 (MESP-123 B2 post-Phase-C foundation)
+
+MESP-123 B2 is the single bounded implementation session for this chat on
+branch `feat/MESP-123-purchase-request-approval`, continuing Draft PR #66.
+Phase A Purchase Request backend/API, Phase B/B1 Purchase Request Angular
+journey, and Phase C Supplier Quotation/comparison/source-decision backend/API
+remain present and must not regress. B2 adds only the shared workspace shell,
+server-configured human Tenant naming, the legacy Wafra-inspired read-only
+visual foundation, representative Purchase Request list/detail adoption, and
+the secure local Development authentication convenience described in the root
+`TASK.md`.
+
+Spec Kit initialization is a separate audit-only artifact. Its generated
+`.agents/skills/speckit-*` and `.specify/*` state remains in the local
+`spec-kit init generated adoption review` stash from local branch
+`chore/adopt-spec-kit`; it is not committed, pushed, or merged into the
+feature branch. This session performs no Jira or external-tracker operation.
+
+The canonical authenticated workspace route is `/app/workspaces`; legacy
+`/tenant/select` redirects into it. The normal shell sidebar exposes only
+Overview, Workspaces/Tenant Selection, Master Data, Price Lists, Master Data
+Import, and Purchase Requests. Supplier Quotations are intentionally not
+linked by B2. Tenant labels come from server/configuration (`Wafra` only as a
+local generic fixture value); no client-side Wafra business rule or GUID-first
+label is permitted. `MESP_DEV_AUTH_BYPASS=true` is explicit, disabled by
+default, exact-Development, loopback-only, server-actor based, and fails closed
+outside Development; it does not bypass ordinary authorization or permit
+client impersonation.
+
+Delivery remains strictly sequential: Luna executes; GPT-5.6 Sol plans,
+verifies, and owns Jira; Claude Opus 5 is reserved for the defined later
+checkpoints. Do not start Supplier Quotation Angular UI, Purchase Order,
+MESP-124, Goods Receipt, invoice/AP/accounting, payment, stock, external
+integrations, or migration work in this session. The exact next session is
+**GPT-5.6 Luna Max - functional Supplier Quotation / Comparison Angular UI
+with source-selection/rationale UX**, with no Purchase Order.
+
+After validation, update `docs/staticts.md` conservatively, preserve all
+owner-managed assets under `frontend/assets`, commit and push only the B2
+product/documentation changes to the focused feature branch, keep PR #66
+Draft/open/unmerged, and stop.
+
+## Historical execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation; superseded by MESP-123 B2)
 
 The Owner has rebaselined Release 1 as a **full-feature reusable B2B ERP**
 with a 31 August 2026 **Release 1 Integrated Preview** milestone. The

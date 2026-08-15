@@ -1,6 +1,28 @@
 # Current State
 
-## Current authoritative position - 15 August 2026 (MESP-123 Phase C backend/API handoff)
+## Current authoritative position - 16 August 2026 (MESP-123 B2 post-Phase-C foundation)
+
+MESP-123 B2 is complete at its bounded shared-shell, workspace-routing,
+server-configured Tenant display, local Development-auth, and representative
+Purchase Request UI foundation scope on branch
+`feat/MESP-123-purchase-request-approval`, continuing Draft PR #66
+against `main`. Phase C Supplier Quotation/comparison/source-decision
+backend/API behavior remains intact.
+
+| Current fact | Verified position |
+|---|---|
+| Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open, Draft, and intentionally unmerged. This session performed no Jira or external-tracker operation. |
+| Spec Kit | Spec Kit 0.16.4 was initialized and audited on an isolated clean `chore/adopt-spec-kit` branch at current `main`; generated `.agents/skills/speckit-*` and `.specify/*` state is preserved only in the local stash `spec-kit init generated adoption review`, with no commit, push, or merge. |
+| Workspace routing | `/app/workspaces` is the canonical authenticated shell route. `/tenant/select` redirects compatibly into it. The selector is rendered once in the normal shell; the duplicate right context rail was removed. |
+| Tenant naming | Context candidates render the server-provided `displayName`. Generic configuration supports arbitrary Tenant labels and the Development fixture can render `Wafra`; no client-side Wafra branch or GUID-first label exists. |
+| Development auth | `POST /api/v1/auth/development-bypass` is Foundation-catalogued and OpenAPI-documented. It is explicit `MESP_DEV_AUTH_BYPASS=true`, exact-Development, loopback-only, server-actor based, no-body/no-client-identity, disabled by default, and fails closed outside Development. |
+| Angular shell | Sidebar exposes Overview, Workspaces/Tenant Selection, Master Data, Price Lists, Master Data Import, and Purchase Requests only. Supplier Quotations are intentionally not linked in B2. |
+| Shared UX | Reusable global surface/page-header/grid/toolbar/status/state/technical-reference tokens are adopted by Workspace/Tenant Selection and representative Purchase Request list/detail screens with EN/AR, RTL/LTR, focus, reduced-motion, responsive, and accessible seams. |
+| Validation baseline | Angular full suite is 181/181 across 19 spec files after B2-focused route, shell, Tenant naming, and Development bypass coverage. Backend Release build is 0 warnings/0 errors; focused Development bootstrap/auth coverage is 8/8; full non-SQL backend regression is 729/729; 21 SQL safety cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; final Angular build is 457.90 kB initial with no warning/error. |
+| Scope exclusions | No Purchase Order, Supplier Confirmation, Goods Receipt, invoice, AP/accounting, payment, stock, supplier portal, external provider, credential, MESP-39, MESP-40, MESP-124, or broad redesign work was performed. Owner-managed `frontend/assets` remain unchanged. |
+| Next exact continuation | GPT-5.6 Luna Max - functional Angular Supplier Quotation and Comparison UI with source selection/rationale UX against the existing Phase-C API and B2 shell. No Purchase Order. |
+
+## Historical authoritative position - 15 August 2026 (MESP-123 Phase C backend/API handoff)
 
 MESP-123 Phase C is complete at its bounded Supplier Quotation capture,
 comparison, and source-decision backend/API scope on branch

@@ -1,73 +1,62 @@
-# MESP-123 - Phase C Supplier Quotation / Comparison Backend Handoff
+# MESP-123 B2 - Post-Phase-C Foundation Handoff
 
-## Current bounded session
+## Completed bounded session
 
-MESP-123 Phase C is complete at its bounded backend/API scope on branch
-`feat/MESP-123-purchase-request-approval`, continuing the existing Draft PR
-#66 against `main`. The earlier MESP-123 Purchase Request backend and the
-functional Purchase Request UI/integration seams remain the foundation; this
-session added Supplier Quotation capture, comparison, and source-decision
-evidence without widening the downstream commercial boundary.
+MESP-123 B2 is complete at its bounded shared-shell, workspace-routing,
+tenant-display, local Development-auth, and representative Purchase Request UI
+foundation scope on branch `feat/MESP-123-purchase-request-approval`,
+continuing Draft PR #66 against `main`.
 
-Implemented capability:
+Delivered:
 
-- capture, read, list, edit, submit, withdraw, disqualify, history, and audit
-  operations for Tenant/company/branch-scoped Supplier Quotations;
-- approved Purchase Request linkage only for capture, with immutable source
-  Purchase Request and Purchase Request line/Product/UOM/quantity/need-by
-  snapshots;
-- server-resolved active Supplier, Currency, Tax, and optional Payment Term
-  references with useful commercial identity snapshots;
-- bounded evidence/attachment reference records only - no blob provider,
-  storage guarantee, supplier portal, or credential integration;
-- deterministic server comparison read model with line coverage, commercial
-  totals by currency, pricing/discount/tax/delivery/payment facts, evidence
-  availability, and explicit qualification issues;
-- mixed-currency comparisons preserve currency groups and never invent FX or
-  rank incomparable offers;
-- one current source decision per Purchase Request with rationale, actor/time,
-  policy/version/stage evidence, comparison snapshot hash/content, current
-  selection flags, superseded history, and audit evidence;
-- optimistic concurrency, durable idempotency replay, fail-closed Tenant and
-  resource scope, exact Foundation authorization, antiforgery, REST catalogue,
-  generated OpenAPI/Scalar documentation, and focused SQLite-backed tests.
+- Spec Kit 0.16.4 was initialized and audited on an isolated clean
+  `chore/adopt-spec-kit` branch at current `main`; generated
+  state remains in the dedicated local stash `spec-kit init generated
+  adoption review` and was not committed, pushed, or merged.
+- `/app/workspaces` is the canonical authenticated workspace/Tenant-selection
+  route; `/tenant/select` remains a compatibility redirect into the normal
+  shell, so the selector is rendered once.
+- Server-configured Tenant display names render in the shell/context selector;
+  no browser or component hard-codes Wafra or uses a GUID as the primary label.
+- `MESP_DEV_AUTH_BYPASS=true` is an explicit exact-Development,
+  loopback-only, server-actor shortcut. It is disabled by default, fails closed
+  outside Development, accepts no client identity or password, and is exposed
+  through the Foundation catalogue/generated OpenAPI contract.
+- The sidebar exposes only the bounded finished surfaces: Overview,
+  Workspaces/Tenant Selection, Master Data, Price Lists, Master Data Import,
+  and Purchase Requests. Supplier Quotations are not linked yet.
+- Shared ERP UI primitives now cover the workspace selector, representative
+  Purchase Request list/detail, grid/table, toolbar, state, status, technical
+  reference, focus, responsive, EN/AR, and RTL/LTR presentation seams.
+- Phase-C Supplier Quotation/comparison/source-decision backend/API behavior
+  remains intact; no Purchase Order or downstream commercial effect was added.
 
-Supplier Quotation remains sourcing evidence only. This session creates no
-Purchase Order, supplier confirmation, goods receipt, invoice, AP/accounting,
-payment, stock mutation, supplier portal, external provider, credential,
-production infrastructure, or MESP-124 behavior. It does not resolve
-statutory/ZATCA/FATOORA or external FX/provider decisions. MESP-39 and MESP-40
-were not activated, no Jira/external-tracker operation was performed, and no
-Owner-managed source asset under `frontend/assets` was touched.
+Validation and safety evidence is recorded in the final session report and the
+tracked statistics/current-state files. No Jira or external-tracker operation
+was performed. Owner-managed assets under `frontend/assets` remain
+protected and unchanged.
 
-Validation for this handoff:
+Draft PR #66 must remain open, Draft, and unmerged. Stop after this bounded B2
+handoff; do not execute the next capability in this session.
 
-- backend Release solution build: 0 warnings / 0 errors;
-- focused Supplier Quotation tests: 5 / 5;
-- full backend non-SQL suite: 726 / 726;
-- SQL safety: 21 cases remain gated when
-  `MESP_SQLSERVER_CONNECTION_STRING` is unavailable;
-- Angular was unchanged at the repository baseline of 158 / 158 tests and
-  439.15 kB initial bundle;
-- final Development runtime is restarted through the official launcher on
-  MiniERP API 5300 and Angular 4300; RMS 5000/5001 remains untouched.
-
-The existing Draft PR #66 must remain Draft and unmerged. Stop after this
-backend/API handoff for review; do not start Purchase Order or another
-capability in this session.
-
-## Next exact session - Claude Sonnet 5
+## Next exact session - GPT-5.6 Luna Max
 
 Build the first functional Angular Supplier Quotation and Comparison UI
-against the Phase C API: quotation list/detail/create/edit Draft, line/source
-lineage, supplier/currency/tax/payment/delivery facts, evidence references,
-submit/withdraw/disqualify affordances, deterministic comparison by currency,
-explicit mixed-currency/no-FX treatment, source-decision rationale and
-history/audit evidence, optimistic concurrency, idempotency/error handling,
-EN/AR and RTL/LTR behavior, accessibility, and responsive states.
+against the existing Phase-C API and this B2 shell foundation:
 
-Keep the UI bounded to Supplier Quotation and comparison. Do not add Purchase
-Order, Supplier Confirmation, Goods Receipt, invoice, AP/accounting, payment,
-stock, supplier portal, external providers, credentials, MESP-39/MESP-40 work,
-Jira work, production infrastructure, or a broad shell redesign. Do not merge
-Draft PR #66. Stop after the bounded UI handoff for review.
+- quotation list/detail and Draft create/edit;
+- source Purchase Request/lineage, supplier, currency, tax, payment, delivery,
+  and evidence-reference facts;
+- submit, withdraw, and disqualify affordances;
+- deterministic comparison grouped by currency with explicit mixed-currency
+  and no-FX treatment;
+- source-decision selection, rationale, history, and audit evidence;
+- optimistic concurrency, idempotency, safe error/retry states;
+- EN/AR, RTL/LTR, accessibility, responsive layouts, and focused tests.
+
+Keep the next slice bounded to Supplier Quotation, Comparison, and
+source-decision UX. Do not add Purchase Order, Supplier Confirmation, Goods
+Receipt, invoice, AP/accounting, payment, stock, supplier portal, external
+providers, credentials, MESP-39/MESP-40 work, Jira work, production
+infrastructure, or a broad shell redesign. Do not merge Draft PR #66. Stop
+after the bounded UI handoff for review.

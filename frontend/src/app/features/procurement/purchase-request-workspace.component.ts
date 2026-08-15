@@ -45,7 +45,7 @@ interface RequestDraft {
   imports: [DatePipe, FormsModule, NgTemplateOutlet],
   template: `
     <section class="pr-workspace" aria-labelledby="pr-title">
-      <header class="pr-hero">
+      <header class="pr-hero ui-page-header">
         <div class="hero-copy">
           <p class="eyebrow">{{ language.text('procurementNavLabel') }} / {{ language.text('purchaseRequestsNavLabel') }}</p>
           <h1 id="pr-title">{{ language.text('purchaseRequests') }}</h1>
@@ -57,7 +57,7 @@ interface RequestDraft {
         </div>
       </header>
 
-      <div class="workspace-panel">
+      <div class="workspace-panel ui-surface--glass">
         @switch (mode()) {
           @case ('list') { <ng-container *ngTemplateOutlet="listView" /> }
           @default { <ng-container *ngTemplateOutlet="detailView" /> }
@@ -66,7 +66,7 @@ interface RequestDraft {
     </section>
 
     <ng-template #listView>
-      <section class="list-view" aria-labelledby="pr-title-list">
+      <section class="list-view ui-page" aria-labelledby="pr-title-list">
         <div class="section-heading">
           <div>
             <p class="eyebrow eyebrow--soft">{{ language.text('purchaseRequests') }}</p>
@@ -79,7 +79,7 @@ interface RequestDraft {
           </div>
         </div>
 
-        <form class="toolbar" role="search" (ngSubmit)="onSearchSubmit()">
+        <form class="toolbar ui-toolbar" role="search" (ngSubmit)="onSearchSubmit()">
           <label class="form-field toolbar__status">
             <span>{{ language.text('scope') }}</span>
             <select [ngModel]="statusFilter()" (ngModelChange)="onStatusFilterChange($event)" name="prStatusFilter">
@@ -109,14 +109,14 @@ interface RequestDraft {
         } @else if (filteredRecords().length === 0) {
           <div class="state-card state-card--empty"><span class="state-icon" aria-hidden="true">∅</span><div><b>{{ language.text('noPurchaseRequests') }}</b><p>{{ language.text('noPurchaseRequestsLead') }}</p></div></div>
         } @else {
-          <div class="record-table-wrap">
-            <table class="record-table">
+          <div class="record-table-wrap ui-grid-shell">
+            <table class="record-table ui-grid">
               <caption class="sr-only">{{ language.text('purchaseRequests') }}</caption>
               <thead><tr><th scope="col">{{ language.text('prStatusColumn') }}</th><th scope="col">{{ language.text('purpose') }}</th><th scope="col">{{ language.text('prOrganizationColumn') }}</th><th scope="col">{{ language.text('organizationScopeBranch') }}</th><th scope="col">{{ language.text('requestLines') }}</th><th scope="col">{{ language.text('prUpdatedColumn') }}</th><th scope="col"><span class="sr-only">{{ language.text('viewRecord') }}</span></th></tr></thead>
               <tbody>
                 @for (record of filteredRecords(); track record.id) {
                   <tr>
-                    <td><span class="status-pill" [class]="'status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span></td>
+                    <td><span class="status-pill ui-status-chip" [class]="'status-pill ui-status-chip status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span></td>
                     <td><button class="record-code" type="button" (click)="openRecord(record.id)">{{ valueOrEmpty(record.purpose) }}</button><small>{{ shortReference(record.id) }}</small></td>
                     <td><span class="record-name">{{ companyLabel(record.companyId) }}</span></td>
                     <td><span class="record-name">{{ branchLabel(record.branchId) }}</span></td>
@@ -131,7 +131,7 @@ interface RequestDraft {
           <div class="record-cards">
             @for (record of filteredRecords(); track record.id) {
               <button class="record-card" type="button" (click)="openRecord(record.id)">
-                <div class="record-card__top"><span class="record-code">{{ companyLabel(record.companyId) }}</span><span class="status-pill" [class]="'status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span></div>
+                <div class="record-card__top"><span class="record-code">{{ companyLabel(record.companyId) }}</span><span class="status-pill ui-status-chip" [class]="'status-pill ui-status-chip status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span></div>
                 <span class="record-name">{{ valueOrEmpty(record.purpose) }}</span>
                 <div class="record-card__facts">
                   <div><span>{{ language.text('organizationScopeBranch') }}</span><b>{{ branchLabel(record.branchId) }}</b></div>
@@ -145,7 +145,7 @@ interface RequestDraft {
     </ng-template>
 
     <ng-template #detailView>
-      <section class="detail-view" aria-labelledby="detail-title">
+      <section class="detail-view ui-page" aria-labelledby="detail-title">
         <div class="detail-topline"><button class="back-link" type="button" (click)="backToList()">← {{ language.text('purchaseRequests') }}</button></div>
         @if (detailLoading()) {
           <div class="state-card state-card--loading" role="status"><span class="loader" aria-hidden="true"></span><b>{{ language.text('loadingRecord') }}</b></div>
@@ -156,7 +156,7 @@ interface RequestDraft {
             <div><p class="eyebrow eyebrow--soft">{{ mode() === 'create' ? language.text('newPurchaseRequest') : language.text('purchaseRequestDetail') }}</p><h2 id="detail-title">{{ mode() === 'create' ? language.text('newPurchaseRequest') : (language.text('purchaseRequestSingular') + ' · ' + shortReference(selectedRecord()!.id)) }}</h2><p>{{ language.text('purchaseRequestsLead') }}</p></div>
             @if (mode() === 'view' && selectedRecord(); as record) {
               <div class="detail-heading__actions">
-                <span class="status-pill" [class]="'status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span>
+                <span class="status-pill ui-status-chip" [class]="'status-pill ui-status-chip status-pill--' + statusTone(record.status)"><i aria-hidden="true">{{ statusIcon(record.status) }}</i>{{ statusLabel(record.status) }}</span>
                 @if (record.canEdit) { <button class="button button--quiet" type="button" (click)="startEdit()">{{ language.text('editRecord') }}</button> }
                 @if (record.canSubmit) { <button class="button button--primary" type="button" (click)="openLifecycle('submit')">{{ language.text('submitForApproval') }}</button> }
                 @if (record.canApprove) { <button class="button button--primary" type="button" (click)="openLifecycle('approve')">{{ language.text('approveRequest') }}</button> }
@@ -245,8 +245,8 @@ interface RequestDraft {
         @if (record.lines.length === 0) {
           <div class="state-card state-card--empty"><span class="state-icon" aria-hidden="true">∅</span><div><b>{{ language.text('noLines') }}</b></div></div>
         } @else {
-          <div class="record-table-wrap">
-            <table class="record-table">
+          <div class="record-table-wrap ui-grid-shell">
+            <table class="record-table ui-grid">
               <thead><tr><th scope="col">{{ language.text('product') }}</th><th scope="col">{{ language.text('unitOfMeasure') }}</th><th scope="col">{{ language.text('quantity') }}</th><th scope="col">{{ language.text('needByDate') }}</th><th scope="col">{{ language.text('purpose') }}</th></tr></thead>
               <tbody>
                 @for (line of record.lines; track line.id) {

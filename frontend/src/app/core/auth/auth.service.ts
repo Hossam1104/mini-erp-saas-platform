@@ -20,12 +20,14 @@ export class AuthService {
   private readonly api = inject(ApiClientService);
   private readonly router = inject(Router);
   private sessionRequest: Promise<boolean> | null = null;
+  private developmentBypassRequest: Promise<boolean> | null = null;
   private antiforgeryRequest: Promise<boolean> | null = null;
   private signOutRequest: Promise<SignOutResult> | null = null;
   private signOutGeneration = 0;
   private antiforgeryToken: string | null = null;
 
   readonly session = signal<FoundationSessionResponse | null>(null);
+  readonly developmentBypassActive = signal(false);
   readonly status = signal<AuthenticationStatus>('unknown');
   readonly lastError = signal<SafeUiError | null>(null);
   readonly signingOut = signal(false);
@@ -45,18 +47,22 @@ export class AuthService {
     }
 
     this.status.set('loading');
-    this.sessionRequest = firstValueFrom(this.api.get<FoundationSessionResponse>('/auth/session'))
-      .then((response) => {
+    this.sessionRequest = (async () => {
+      if (await this.tryDevelopmentBypass()) {
+        return true;
+      }
+
+      try {
+        const response = await firstValueFrom(this.api.get<FoundationSessionResponse>('/auth/session'));
         this.acceptServerSession(response);
         return response.authenticated;
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         this.markSessionUnavailable(error);
         return false;
-      })
-      .finally(() => {
-        this.sessionRequest = null;
-      });
+      }
+    })().finally(() => {
+      this.sessionRequest = null;
+    });
 
     return this.sessionRequest;
   }
@@ -66,6 +72,7 @@ export class AuthService {
     this.status.set('loading');
     this.lastError.set(null);
     this.session.set(null);
+    this.developmentBypassActive.set(false);
     this.antiforgeryToken = null;
     this.clearSignOutFailure();
 
@@ -135,6 +142,7 @@ export class AuthService {
 
   markSessionExpired(): void {
     this.session.set(null);
+    this.developmentBypassActive.set(false);
     this.antiforgeryToken = null;
     this.lastError.set({ code: 'authentication_failed', status: 401, correlationId: null });
     this.status.set('expired');
@@ -238,6 +246,7 @@ export class AuthService {
 
   private clearConfirmedSession(): void {
     this.session.set(null);
+    this.developmentBypassActive.set(false);
     this.antiforgeryToken = null;
     this.status.set('anonymous');
     this.lastError.set(null);
@@ -257,7 +266,33 @@ export class AuthService {
     const safeError = toSafeUiError(error);
     this.lastError.set(safeError);
     this.session.set(null);
+    this.developmentBypassActive.set(false);
     this.antiforgeryToken = null;
     this.status.set(safeError.code === 'authentication_failed' ? 'anonymous' : 'error');
+  }
+
+  private async tryDevelopmentBypass(): Promise<boolean> {
+    if (this.developmentBypassRequest) {
+      return this.developmentBypassRequest;
+    }
+
+    this.developmentBypassRequest = firstValueFrom(
+      this.api.post<FoundationSessionResponse>('/auth/development-bypass', {}),
+    )
+      .then((response) => {
+        if (!response.authenticated) {
+          return false;
+        }
+
+        this.developmentBypassActive.set(true);
+        this.acceptServerSession(response);
+        return true;
+      })
+      .catch(() => false)
+      .finally(() => {
+        this.developmentBypassRequest = null;
+      });
+
+    return this.developmentBypassRequest;
   }
 }

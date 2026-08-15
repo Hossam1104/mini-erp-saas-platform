@@ -69,6 +69,15 @@ describe('ApplicationShellComponent sign-out behavior', () => {
 
   afterEach(() => http.verify());
 
+  it('renders one canonical workspace route and keeps the context selector out of the shell rail', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('a[href="/app/workspaces"]')).not.toBeNull();
+    expect(element.querySelector('.context-rail')).toBeNull();
+    expect(element.textContent).toContain('Master Data');
+    expect(element.textContent).toContain('Price Lists');
+    expect(element.textContent).toContain('Purchase Requests');
+  });
+
   async function failSignOut(code = 'audit_unavailable', status = 503): Promise<void> {
     const signOut = fixture.componentInstance.signOut();
     fixture.detectChanges();

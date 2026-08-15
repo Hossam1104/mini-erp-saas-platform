@@ -155,6 +155,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "platform.health" => "Check platform availability",
         "platform.openapi" => "Read the generated API contract",
         "platform.module-registration" => "Read registered module boundaries",
+        "auth.development-bypass" => "Establish the configured Development QA session",
         "master-data.tax.list" => "List Tenant-owned Tax rules",
         "master-data.tax.read" => "Read one Tenant-owned Tax rule",
         "master-data.tax.history.read" => "Read Tax rate-version history",
@@ -244,6 +245,14 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
 
     private static string DescriptionFor(FoundationOperationDescriptor descriptor)
     {
+        if (descriptor.OperationId == "auth.development-bypass")
+        {
+            return "Development-only, loopback-only session establishment for the configured server-side Development actor. "
+                + "The request accepts no login, password, Tenant, role, permission, or identity input. "
+                + "The path is unavailable unless the exact Development environment and explicit MESP_DEV_AUTH_BYPASS=true setting are both present; "
+                + "it must remain disabled outside local Development and never substitutes for production authentication.";
+        }
+
         var contextRules = $"Security profile: {descriptor.SecurityProfile}. Scope policy: {descriptor.ScopePolicy}. "
             + $"Exact permission: {descriptor.ExactPermissionCode ?? "none"}. "
             + $"Antiforgery required: {descriptor.RequiresAntiforgery}. "
@@ -348,6 +357,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
 
     private static string SuccessResponseFor(string operationId) => operationId switch
     {
+        "auth.development-bypass" => "An authenticated session for the server-configured Development actor with server-derived context candidates.",
         "master-data.tax.calculate" => "A deterministic Tax amount and immutable reference snapshot for the explicit inputs.",
         "master-data.tax.reference.read" => "The active Tax rate version selected for the requested effective date, including applied reference evidence.",
         "master-data.tax.history.read" => "The Tenant-owned Tax rate-version windows in stable version order.",
