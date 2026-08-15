@@ -586,6 +586,7 @@ public sealed class PurchaseRequestPersistence : IPurchaseRequestPersistence
         {
             "Company" => query.Where(item => item.CompanyId == id),
             "Branch" => query.Where(item => item.BranchId == id),
+            "Tenant" => query,
             _ => query.Where(_ => false)
         };
     }

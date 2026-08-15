@@ -595,6 +595,11 @@ public sealed class PurchaseRequestAuthorizationService
             return true;
         }
 
+        if (string.Equals(value, $"Tenant:{target.TenantId:D}", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
         return target.BranchId is { }
             && string.Equals(value, $"Company:{target.CompanyId:D}", StringComparison.Ordinal);
     }

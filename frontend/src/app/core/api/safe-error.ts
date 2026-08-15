@@ -50,6 +50,23 @@ export type SafeErrorCode =
   | 'import_persistence_failed'
   | 'import_audit_persistence_failed'
   | 'organization_scope_denied'
+  | 'resource_scope_denied'
+  | 'cross_tenant_target_denied'
+  | 'tenant_context_failed'
+  | 'authorization_profile_denied'
+  | 'requester_only'
+  | 'self_approval_denied'
+  | 'reference_persistence_unavailable'
+  | 'authorization_operation_unmapped'
+  | 'approval_policy_not_configured'
+  | 'purchase_request_not_found'
+  | 'purchase_request_duplicate'
+  | 'edit_not_allowed'
+  | 'submit_not_allowed'
+  | 'decision_not_allowed'
+  | 'approval_not_eligible'
+  | 'approval_duplicate'
+  | 'cancel_not_allowed'
   | 'request_failed';
 
 export interface SafeUiError {
@@ -107,6 +124,23 @@ const knownCodes = new Set<SafeErrorCode>([
   'import_persistence_failed',
   'import_audit_persistence_failed',
   'organization_scope_denied',
+  'resource_scope_denied',
+  'cross_tenant_target_denied',
+  'tenant_context_failed',
+  'authorization_profile_denied',
+  'requester_only',
+  'self_approval_denied',
+  'reference_persistence_unavailable',
+  'authorization_operation_unmapped',
+  'approval_policy_not_configured',
+  'purchase_request_not_found',
+  'purchase_request_duplicate',
+  'edit_not_allowed',
+  'submit_not_allowed',
+  'decision_not_allowed',
+  'approval_not_eligible',
+  'approval_duplicate',
+  'cancel_not_allowed',
   'request_failed',
 ]);
 
