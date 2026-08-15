@@ -17,7 +17,7 @@ downstream commercial effect.
 
 | Current fact | Verified value |
 |---|---|
-| Branch / base | `feat/MESP-123-purchase-request-approval` from `7eac2155982e7bedbe7a243a33b74998031dbfbe`; the source and test changes are intentionally unmerged pending the Draft PR handoff. |
+| Branch / base | `feat/MESP-123-purchase-request-approval` from `7eac2155982e7bedbe7a243a33b74998031dbfbe`; Draft PR #66 is open against `main` and intentionally unmerged. |
 | API surface | 11 Foundation-catalogued public Purchase Request operations with exact route, permission, Tenant scope, antiforgery, mandatory-audit, unsafe-effect, If-Match, and idempotency metadata; real endpoint mappings and generated OpenAPI/Scalar descriptions/responses are present. |
 | Lifecycle / integrity | Draft → PendingApproval → Approved, Rejected, ReturnedForChange, or Cancelled; returned drafts can be edited/resubmitted; self-approval is denied; configured stages/delegation are scope/time/authority checked; history and audit are append-only evidence; request and line versions support optimistic concurrency. |
 | Persistence boundary | Procurement owns its request, line, history, and audit tables/context. Product and UOM are read-only reference ports with server-resolved snapshots; no cross-module foreign keys or stock/AP/accounting behavior were added. |

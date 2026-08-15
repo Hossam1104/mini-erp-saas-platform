@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-15 03:45 +03:00
+**Last Updated:** 2026-08-15 03:50 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~34%**
@@ -30,6 +30,7 @@ Unfinished capability remains required after the preview.
 | MESP-40 | To Do, unactivated, but required for Release 1 in the migration wave. |
 | MESP-23 | In Progress as the living Open Questions Register; MESP-116 reconciliation evidence is comment 10976 and the register remains open. |
 | MESP-123 Phase A | The repository-only Purchase Request / Approval Foundation vertical slice is implemented on `feat/MESP-123-purchase-request-approval`: Tenant/company/branch-scoped Draft, line Product/UOM snapshots, lifecycle actions, configuration-led approval/delegation seams, immutable history/audit evidence, optimistic concurrency, idempotency, Foundation authorization, and 11 REST/OpenAPI/Scalar operations. Focused lifecycle/Tenant/auth tests pass 4/4; full non-SQL backend validation is 718/718; Release build is 0 warnings/0 errors; 21 SQL safety cases remain gated. Angular was intentionally unchanged and remains 158/158 with a 439.15 kB initial bundle. No stock, supplier commitment, PO, receipt, invoice, AP, payment, accounting, Supplier Quotation, Jira/external-tracker, or `frontend/assets` work was performed; the exact next handoff is the first visible Angular Purchase Request UI. |
+| MESP-123 Draft PR | Draft PR #66 is open against `main` for the repository-only Phase A handoff; it is intentionally unmerged. |
 | Capability backlog | MESP-122 repository source is complete and merged; Jira closure remains pending GPT-5.6 Sol. MESP-123 Phase A repository implementation is complete at its bounded backend/API scope on the current draft branch; no Jira/external-tracker state was changed. MESP-124-MESP-142 remain under existing Epics and are not started by this session. |
 | Decision Pack | 31 canonical entries: A1-A16 and B1-B6 approved only at their exact bounded positions; Class B is contract-bound with mandatory specialist validation before production or irreversible decisions; C1-C9 remain open gates. |
 | Tax/VAT | Internal reusable configuration-led Tax/VAT is implemented at the bounded MESP-119 scope with Tenant-safe identity, effective history, explicit-input deterministic calculation, evidence, audit, API/OpenAPI/Scalar, and Angular UX; statutory/ZATCA/FATOORA/external scope remains excluded. |
