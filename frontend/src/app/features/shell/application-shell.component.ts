@@ -3,17 +3,18 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ContextService } from '../../core/context/context.service';
 import { LanguageService } from '../../core/i18n/language.service';
+import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
 
 @Component({
   selector: 'app-application-shell',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, BrandMarkComponent],
   template: `
     <a class="skip-link" href="#main-content">{{ language.text('skipToContent') }}</a>
     <div class="shell">
       <aside class="sidebar" [attr.aria-label]="language.text('menu')">
         <div class="sidebar__brand">
-          <span class="brand-mark" aria-hidden="true"><img src="assets/brand/icon-96.png" alt="" width="96" height="96" /></span>
+          <app-brand-mark class="brand-mark" variant="icon" theme="dark" />
           <div>
             <strong>{{ language.text('appName') }}</strong>
             <small>{{ language.text('appKicker') }}</small>
@@ -88,8 +89,7 @@ import { LanguageService } from '../../core/i18n/language.service';
     .shell { display: grid; grid-template-columns: 16rem minmax(0, 1fr); min-height: 100dvh; background: var(--canvas); }
     .sidebar { display: flex; flex-direction: column; padding: 1.35rem 1rem; color: #eff5f2; background: var(--ink); }
     .sidebar__brand { display: flex; align-items: center; gap: 0.7rem; padding: 0.25rem 0.35rem 2.4rem; }
-    .brand-mark { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; padding: 0.3rem; border-radius: 0.7rem; background: var(--surface-raised); box-shadow: var(--shadow-soft); }
-    .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
+    .brand-mark { width: 2.25rem; flex: none; }
     .sidebar__brand strong, .sidebar__brand small { display: block; }
     .sidebar__brand strong { color: #fff; font: 700 0.9rem/1.2 var(--font-display); }
     .sidebar__brand small { margin-top: 0.2rem; color: #9eb2ab; font-size: 0.67rem; }

@@ -155,4 +155,25 @@ describe('ApplicationShellComponent sign-out behavior', () => {
     expect(alert?.getAttribute('aria-live')).toBe('assertive');
     expect(document.documentElement.dir).toBe('rtl');
   });
+
+  it('renders the transparent dark-surface owner icon in the sidebar without the obsolete white tile', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const brand = element.querySelector('.sidebar__brand app-brand-mark') as HTMLElement | null;
+    expect(brand).not.toBeNull();
+    const img = brand?.querySelector('img') as HTMLImageElement | null;
+    expect(img?.getAttribute('src')).toBe('assets/Ico_BG_Removed_Dark.png');
+    expect(img?.getAttribute('alt')).toBe('');
+    expect(element.querySelector('.sidebar__brand')?.textContent).toContain('MESP');
+    expect(element.innerHTML).not.toContain('assets/brand/icon-96.png');
+    expect(element.querySelectorAll('.sidebar__brand img').length).toBe(1);
+  });
+
+  it('keeps the sidebar artwork unmirrored in RTL', () => {
+    language.setLanguage('ar');
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const img = element.querySelector('.sidebar__brand img') as HTMLImageElement | null;
+    expect(img?.getAttribute('src')).toBe('assets/Ico_BG_Removed_Dark.png');
+    expect(img?.style.transform).toBe('');
+  });
 });
