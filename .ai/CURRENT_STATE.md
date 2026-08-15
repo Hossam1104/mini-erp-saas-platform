@@ -12,6 +12,7 @@ backend/API behavior remains intact.
 | Current fact | Verified position |
 |---|---|
 | Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open, Draft, and intentionally unmerged. This session performed no Jira or external-tracker operation. |
+| B2 implementation head | `a7f3c13607e14a00b144e9415ecf4a9d1b2aff78` is the committed/pushed B2 product and state implementation head before any later documentation-only synchronization. |
 | Spec Kit | Spec Kit 0.16.4 was initialized and audited on an isolated clean `chore/adopt-spec-kit` branch at current `main`; generated `.agents/skills/speckit-*` and `.specify/*` state is preserved only in the local stash `spec-kit init generated adoption review`, with no commit, push, or merge. |
 | Workspace routing | `/app/workspaces` is the canonical authenticated shell route. `/tenant/select` redirects compatibly into it. The selector is rendered once in the normal shell; the duplicate right context rail was removed. |
 | Tenant naming | Context candidates render the server-provided `displayName`. Generic configuration supports arbitrary Tenant labels and the Development fixture can render `Wafra`; no client-side Wafra branch or GUID-first label exists. |
