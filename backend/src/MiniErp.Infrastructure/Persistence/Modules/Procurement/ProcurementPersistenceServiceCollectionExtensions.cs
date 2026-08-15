@@ -1,0 +1,51 @@
+#pragma warning disable CS1591
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using MiniErp.App.Modules.Procurement;
+using MiniErp.Infrastructure.Persistence;
+
+namespace MiniErp.Infrastructure.Persistence.Modules.Procurement;
+
+public static class ProcurementPersistenceServiceCollectionExtensions
+{
+    public static IServiceCollection AddProcurementPersistence(
+        this IServiceCollection services,
+        Action<DbContextOptionsBuilder> configureOptions)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configureOptions);
+
+        var optionsBuilder = new DbContextOptionsBuilder();
+        configureOptions(optionsBuilder);
+        services.AddSingleton<IPurchaseRequestPersistence>(
+            new PurchaseRequestPersistence(optionsBuilder.Options));
+        return services;
+    }
+
+    public static IServiceCollection AddProcurementSqlServerPersistence(
+        this IServiceCollection services,
+        string connectionString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        return services.AddProcurementPersistence(options => options.UseSqlServer(connectionString));
+    }
+
+    public static IServiceCollection AddProcurementSqlitePersistence(
+        this IServiceCollection services,
+        string connectionString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        return services.AddProcurementPersistence(options => options.UseSqlite(connectionString));
+    }
+
+    public static void EnsureDevelopmentSqliteDatabase(string connectionString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        DevelopmentSqliteDatabaseInitializer.EnsureCreated(
+            connectionString,
+            (options, tenantContext) => new ProcurementDbContext(options, tenantContext));
+    }
+}
+
+#pragma warning restore CS1591

@@ -10,6 +10,7 @@ using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.Identity;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Platform;
+using MiniErp.App.Modules.Procurement;
 using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.BusinessParties;
 using MiniErp.Contracts.Modules.Foundation;
@@ -17,6 +18,7 @@ using MiniErp.Contracts.Modules.Platform;
 using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
+using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using MiniErp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,18 +31,22 @@ builder.Services.AddProductIdentity();
 builder.Services.AddSupplierIdentity();
 builder.Services.AddCustomerIdentity();
 builder.Services.AddMasterDataImport();
+builder.Services.AddPurchaseRequestApprovalFoundation();
 string? developmentMasterDataSqliteConnectionString = null;
 string? developmentBusinessPartiesSqliteConnectionString = null;
+string? developmentProcurementSqliteConnectionString = null;
 var sqlServerConnectionString = builder.Configuration["MESP_SQLSERVER_CONNECTION_STRING"];
 if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
 {
     builder.Services.AddMasterDataSqlServerPersistence(sqlServerConnectionString);
     builder.Services.AddBusinessPartiesSqlServerPersistence(sqlServerConnectionString);
+    builder.Services.AddProcurementSqlServerPersistence(sqlServerConnectionString);
 }
 else if (builder.Environment.IsDevelopment())
 {
     var configuredMasterDataConnectionString = builder.Configuration["MESP_DEV_MASTERDATA_SQLITE_CONNECTION_STRING"];
     var configuredBusinessPartiesConnectionString = builder.Configuration["MESP_DEV_BUSINESS_PARTIES_SQLITE_CONNECTION_STRING"];
+    var configuredProcurementConnectionString = builder.Configuration["MESP_DEV_PROCUREMENT_SQLITE_CONNECTION_STRING"];
     var configuredSqliteDirectory = builder.Configuration["MESP_DEV_SQLITE_DIRECTORY"];
     var localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     var defaultSqliteDirectory = string.IsNullOrWhiteSpace(configuredSqliteDirectory)
@@ -51,7 +57,8 @@ else if (builder.Environment.IsDevelopment())
         : configuredSqliteDirectory;
 
     if (string.IsNullOrWhiteSpace(configuredMasterDataConnectionString)
-        || string.IsNullOrWhiteSpace(configuredBusinessPartiesConnectionString))
+        || string.IsNullOrWhiteSpace(configuredBusinessPartiesConnectionString)
+        || string.IsNullOrWhiteSpace(configuredProcurementConnectionString))
     {
         Directory.CreateDirectory(defaultSqliteDirectory);
     }
@@ -62,9 +69,13 @@ else if (builder.Environment.IsDevelopment())
     developmentBusinessPartiesSqliteConnectionString = string.IsNullOrWhiteSpace(configuredBusinessPartiesConnectionString)
         ? $"Data Source={Path.Combine(defaultSqliteDirectory, "business-parties.db")}"
         : configuredBusinessPartiesConnectionString;
+    developmentProcurementSqliteConnectionString = string.IsNullOrWhiteSpace(configuredProcurementConnectionString)
+        ? $"Data Source={Path.Combine(defaultSqliteDirectory, "procurement.db")}"
+        : configuredProcurementConnectionString;
 
     builder.Services.AddMasterDataSqlitePersistence(developmentMasterDataSqliteConnectionString);
     builder.Services.AddBusinessPartiesSqlitePersistence(developmentBusinessPartiesSqliteConnectionString);
+    builder.Services.AddProcurementSqlitePersistence(developmentProcurementSqliteConnectionString);
 }
 builder.Services.AddIdentityAuthorization();
 builder.Services.AddAuthentication(options =>
@@ -140,12 +151,15 @@ builder.Services.AddOpenApi("v1", options =>
 var app = builder.Build();
 
 if (developmentMasterDataSqliteConnectionString is not null
-    && developmentBusinessPartiesSqliteConnectionString is not null)
+    && developmentBusinessPartiesSqliteConnectionString is not null
+    && developmentProcurementSqliteConnectionString is not null)
 {
     MasterDataPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
         developmentMasterDataSqliteConnectionString);
     BusinessPartiesPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
         developmentBusinessPartiesSqliteConnectionString);
+    ProcurementPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+        developmentProcurementSqliteConnectionString);
 }
 
 app.SeedDevelopmentBootstrap();
@@ -525,6 +539,7 @@ app.MapTaxEndpoints();
 app.MapExchangeRateEndpoints();
 app.MapPriceListEndpoints();
 app.MapMasterDataImportEndpoints();
+app.MapPurchaseRequestEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

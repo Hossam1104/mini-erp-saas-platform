@@ -1,6 +1,34 @@
 # Current State
 
-## Current authoritative position - 15 August 2026 (MESP-122 source merged; final-main runtime closure complete)
+## Current authoritative position - 15 August 2026 (MESP-123 Phase A backend/API handoff)
+
+MESP-123 Phase A is complete at its bounded backend/API scope on branch
+`feat/MESP-123-purchase-request-approval`, based on starting main
+`7eac2155982e7bedbe7a243a33b74998031dbfbe`. The implementation provides a
+Tenant/company/branch-scoped internal Purchase Request Draft vertical slice:
+Product/UOM/quantity/need-by/purpose lines; list/detail/create/edit;
+submit/approve/reject/return-for-change/eligible cancel; immutable lifecycle,
+approval, history, and audit evidence; configuration-led approval and bounded
+delegation seams; self-approval/SoD enforcement; optimistic concurrency;
+idempotency; Foundation authorization; and generated REST/OpenAPI/Scalar
+contracts. It does not create stock, supplier commitment, Supplier Quotation,
+Purchase Order, receipt, invoice, AP, payment, accounting, or any other
+downstream commercial effect.
+
+| Current fact | Verified value |
+|---|---|
+| Branch / base | `feat/MESP-123-purchase-request-approval` from `7eac2155982e7bedbe7a243a33b74998031dbfbe`; the source and test changes are intentionally unmerged pending the Draft PR handoff. |
+| API surface | 11 Foundation-catalogued public Purchase Request operations with exact route, permission, Tenant scope, antiforgery, mandatory-audit, unsafe-effect, If-Match, and idempotency metadata; real endpoint mappings and generated OpenAPI/Scalar descriptions/responses are present. |
+| Lifecycle / integrity | Draft → PendingApproval → Approved, Rejected, ReturnedForChange, or Cancelled; returned drafts can be edited/resubmitted; self-approval is denied; configured stages/delegation are scope/time/authority checked; history and audit are append-only evidence; request and line versions support optimistic concurrency. |
+| Persistence boundary | Procurement owns its request, line, history, and audit tables/context. Product and UOM are read-only reference ports with server-resolved snapshots; no cross-module foreign keys or stock/AP/accounting behavior were added. |
+| Validation | Release solution build 0 warnings/0 errors; focused Purchase Request tests 4/4; full non-SQL backend 718/718 (714 baseline plus four focused tests); SQL safety 21 cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; Angular remains 158/158 and 439.15 kB initial bundle. |
+| Scope exclusions | No Supplier Quotation, Purchase Order, receipt, invoice, payment, stock, AP, accounting, external provider, credential, Jira/external-tracker, migration/cutover, or production-volume/capacity/SLO work. `frontend/assets` was not touched. MESP-48 remains open. |
+| Runtime handoff | Mandatory final restart is MiniERP API 5300 and Angular 4300; RMS 5000/5001 are unrelated and must remain untouched. |
+| Next exact continuation | Claude Sonnet 5 — first visible Angular Purchase Request UI against this API contract. It must stay bounded to the Purchase Request journey, must not merge the Draft PR, and must stop after its UI handoff for review. |
+
+The following MESP-122 closure is retained as historical repository evidence.
+
+## Historical authoritative position - 15 August 2026 (MESP-122 source merged; final-main runtime closure complete)
 
 The MESP-122 source capability and the bounded final-main runtime closure are
 complete in the repository: PR #65 was

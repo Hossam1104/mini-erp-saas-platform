@@ -2,7 +2,7 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-15 02:51 +03:00
+**Last Updated:** 2026-08-15 03:45 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~34%**
@@ -29,11 +29,12 @@ Unfinished capability remains required after the preview.
 | MESP-39 | To Do, unactivated, not executed; future-release Integrations and External Services BRD. |
 | MESP-40 | To Do, unactivated, but required for Release 1 in the migration wave. |
 | MESP-23 | In Progress as the living Open Questions Register; MESP-116 reconciliation evidence is comment 10976 and the register remains open. |
-| Capability backlog | MESP-122 repository source is complete and merged; Jira closure remains pending GPT-5.6 Sol. MESP-123-MESP-142 remain under existing Epics and are To Do/not activated. |
+| MESP-123 Phase A | The repository-only Purchase Request / Approval Foundation vertical slice is implemented on `feat/MESP-123-purchase-request-approval`: Tenant/company/branch-scoped Draft, line Product/UOM snapshots, lifecycle actions, configuration-led approval/delegation seams, immutable history/audit evidence, optimistic concurrency, idempotency, Foundation authorization, and 11 REST/OpenAPI/Scalar operations. Focused lifecycle/Tenant/auth tests pass 4/4; full non-SQL backend validation is 718/718; Release build is 0 warnings/0 errors; 21 SQL safety cases remain gated. Angular was intentionally unchanged and remains 158/158 with a 439.15 kB initial bundle. No stock, supplier commitment, PO, receipt, invoice, AP, payment, accounting, Supplier Quotation, Jira/external-tracker, or `frontend/assets` work was performed; the exact next handoff is the first visible Angular Purchase Request UI. |
+| Capability backlog | MESP-122 repository source is complete and merged; Jira closure remains pending GPT-5.6 Sol. MESP-123 Phase A repository implementation is complete at its bounded backend/API scope on the current draft branch; no Jira/external-tracker state was changed. MESP-124-MESP-142 remain under existing Epics and are not started by this session. |
 | Decision Pack | 31 canonical entries: A1-A16 and B1-B6 approved only at their exact bounded positions; Class B is contract-bound with mandatory specialist validation before production or irreversible decisions; C1-C9 remain open gates. |
 | Tax/VAT | Internal reusable configuration-led Tax/VAT is implemented at the bounded MESP-119 scope with Tenant-safe identity, effective history, explicit-input deterministic calculation, evidence, audit, API/OpenAPI/Scalar, and Angular UX; statutory/ZATCA/FATOORA/external scope remains excluded. |
 | MESP-39 / MESP-40 | MESP-39 remains future-release and unactivated; MESP-40 remains an unactivated Release 1 migration requirement and was not activated by MESP-116. |
-| Source/production capability | MESP-122 Phase A/B/C/C1 and the bounded P1-1 backend correction are source-complete and merged in PR #65 squash commit `a5c6c9c41b5d4e80ede1f7045ecfbafdb8b59659`. Release build 0/0, focused import/replay 11/11, full non-SQL backend regression 714/714, Angular tests 158/158, and the 439.15 kB initial build (98.52 kB lazy import-workspace chunk) passed. Final-main authenticated runtime smoke passed on isolated Development data at 5300/4300, including DryRun safety and the practical Commit/Execute/replay lifecycle. SQL/provider/production, migration, legal/privacy, and specialist gates remain open; MESP-50 remains open; Jira closure is pending GPT-5.6 Sol and MESP-123 is not activated. |
+| Source/production capability | MESP-122 Phase A/B/C/C1 and the bounded P1-1 backend correction are source-complete and merged in PR #65 squash commit `a5c6c9c41b5d4e80ede1f7045ecfbafdb8b59659`. MESP-123 Phase A adds a bounded internal Purchase Request backend/API vertical slice on a focused draft branch; it is not a complete Procurement/P2P capability and has no Angular UI yet. Release build 0/0, focused Purchase Request 4/4, full non-SQL backend 718/718, Angular tests 158/158, and the 439.15 kB initial build passed. SQL/provider/production, migration, legal/privacy, and specialist gates remain open; MESP-48 and MESP-50 remain open; no external tracker state was changed. |
 
 Live Jira during MESP-122 activation is **80 Done / 7 In Progress / 55 To Do
 across 142 issues** and **80 Done / 2 In Progress / 45 To Do across 127
@@ -101,8 +102,8 @@ Every future execution prompt should include:
 |---|---:|
 | Product / Requirements Definition | **~45%** |
 | Architecture & Technical Foundation | **~86%** |
-| Backend Overall | **~54%** |
-| Database / Persistence Overall | **~46%** |
+| Backend Overall | **~55%** |
+| Database / Persistence Overall | **~47%** |
 | Frontend Overall | **~25%** |
 | Automated Technical Safety Foundation | **~52%** |
 | Full End-to-End Business System | **~27%** |
@@ -238,7 +239,7 @@ The following model represents progress toward a complete production Release 1.
 | 2. Architecture, security & technical foundation | 12% | **86%** | 10.3% |
 | 3. Platform Admin / IAM / Tenancy / Organization | 8% | **55%** | 4.4% |
 | 4. Master Data & Product Catalog | 10% | **68%** | 6.8% |
-| 5. Procurement / Purchase-to-Pay | 9% | **3%** | 0.3% |
+| 5. Procurement / Purchase-to-Pay | 9% | **8%** | 0.7% |
 | 6. Inventory / Warehouse | 9% | **3%** | 0.3% |
 | 7. Finance / Accounting / AR / AP / Cash | 12% | **3%** | 0.4% |
 | 8. B2B Sales / Order-to-Cash | 9% | **3%** | 0.3% |
@@ -277,7 +278,7 @@ These percentages measure **usable production capability**, not Jira workflow st
 | MESP-4 | Multi-Tenancy | **75%** |
 | MESP-5 | Organization & Company Structure | **50%** |
 | MESP-6 | Master Data & Product Catalog | **68%** |
-| MESP-7 | Procurement & Purchase-to-Pay | **3–5%** |
+| MESP-7 | Procurement & Purchase-to-Pay | **8–10%** |
 | MESP-8 | Inventory & Warehouse | **3–5%** |
 | MESP-9 | B2B Sales & Order-to-Cash | **3–5%** |
 | MESP-10 | Finance & Accounting | **3–5%** |
@@ -454,7 +455,7 @@ Major remaining areas include:
 
 ## Combined backend progress
 
-> **Backend Overall: ~54%**
+> **Backend Overall: ~55%**
 
 ---
 
@@ -462,7 +463,7 @@ Major remaining areas include:
 
 Current estimate:
 
-> **Database / Persistence Overall: ~46%**
+> **Database / Persistence Overall: ~47%**
 
 ## Strong foundation already established
 
@@ -604,7 +605,7 @@ These estimates assume continuation at approximately the current normalized exec
 | Remaining Area | Current Completion | Estimated Active Work |
 |---|---:|---:|
 | Complete Master Data | 62% | **4–7 days** |
-| Procurement / Purchase-to-Pay | 3–5% | **6–9 days** |
+| Procurement / Purchase-to-Pay | 8–10% | **5–8 days** |
 | Inventory / Warehouse | 3–5% | **7–10 days** |
 | Finance / Accounting | 3–5% | **9–13 days** |
 | B2B Sales / Order-to-Cash | 3–5% | **6–9 days** |
@@ -1081,21 +1082,25 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **Current active implementation:** MESP-122 Phase A is complete on branch
-> `feat/MESP-122-master-data-import` at source commit `69173044445b5c40def397ff535b7e349083f0ac`; draft PR #65 is open against `main`. The branch
-> contains reusable Tenant-owned import batches/rows/audit events, all ten
-> Master Data processors, duplicate policy and row quarantine, true dry-run
-> simulation, commit/replay with deterministic evidence, reconciliation/read
-> contracts, authorization, and the public REST/OpenAPI catalogue seam. Release
-> build, focused import/REST tests, full non-SQL regression, Angular regression,
-> and fresh-runtime smoke are green; the SQL Server safety gate remains blocked
-> only by the unavailable `MESP_SQLSERVER_CONNECTION_STRING`. The existing
-> development database was not mutated or migrated; the runtime smoke used a
-> fresh isolated Development SQLite directory to exercise the new import schema.
-> Gemini Phase B and Sonnet Phase C are not started, MESP-122 remains In Progress
-> in Jira, draft PR #65 is intentionally unmerged, and final project completion
-> percentages remain unchanged. MESP-39 is not executed, MESP-40 is not
-> activated, and MESP-123 is not started.
+> **Current active implementation:** MESP-123 Phase A is complete at its bounded
+> backend/API scope on branch `feat/MESP-123-purchase-request-approval`, based
+> on starting main `7eac2155982e7bedbe7a243a33b74998031dbfbe`. The branch
+> contains a Tenant/company/branch-scoped Purchase Request Draft and line
+> snapshot model, list/detail/create/edit, submit/approve/reject/return/cancel
+> lifecycle, configuration-led approval and bounded delegation seams,
+> self-approval/SoD enforcement, immutable history/audit evidence, optimistic
+> concurrency, idempotency, Foundation authorization, and generated
+> REST/OpenAPI/Scalar contracts. Release build and full non-SQL backend
+> validation are green; focused Purchase Request tests pass 4/4; the 21 SQL
+> safety cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`.
+> Angular was intentionally unchanged at 158/158 and 439.15 kB initial bundle.
+> The required Development runtime is being handed off on MiniERP 5300 and
+> Angular 4300; RMS 5000/5001 are outside scope. No existing Development
+> database was migrated or cut over, no `frontend/assets` file was touched, and
+> no Jira/external-tracker operation was performed. One Draft PR is required and
+> must remain unmerged; the next exact continuation is Claude Sonnet 5 for the
+> first visible Purchase Request Angular UI. MESP-39 and MESP-40 remain out of
+> scope.
 
 The following prior handoff paragraph is retained as historical evidence.
 
@@ -1192,6 +1197,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-15 03:45 +03:00 | **34%** | **55%** | **47%** | **25%** | MESP-123 Phase A backend/API Purchase Request vertical slice completed on `feat/MESP-123-purchase-request-approval`: internal Tenant/company/branch demand only, Product/UOM/quantity/need-by/purpose lines, Draft/edit/submit/approval/reject/return/cancel lifecycle, configuration-led approval/delegation seams, self-approval/SoD enforcement, immutable lifecycle/history/audit evidence, optimistic concurrency, idempotency, Foundation authorization, and 11 generated REST/OpenAPI/Scalar operations. Focused lifecycle/Tenant/auth tests passed 4/4; Release build passed 0/0; full non-SQL backend passed 718/718 (714 baseline plus four focused tests); 21 SQL safety cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. Angular was unchanged at 158/158 and 439.15 kB initial bundle. The required runtime handoff is MiniERP 5300 / Angular 4300 with RMS 5000/5001 untouched; no `frontend/assets`, Jira/external-tracker, Supplier Quotation, PO/receipt/invoice/payment, stock, AP, or accounting work was performed. One Draft PR remains intentionally unmerged; next exact continuation is Claude Sonnet 5 for the first visible Purchase Request Angular UI. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-15 02:51 +03:00 | **34%** | **54%** | **46%** | **25%** | MESP-122 repository and main-runtime closure completed: final reviewed feature head `5edcd3359945d1234dd7d4c95a5ef5f69514af33` plus documentation reconciliation head `328d6d78088460ce0d8c945588ba9b9cef347c26` were squash-merged through PR #65 as `a5c6c9c41b5d4e80ede1f7045ecfbafdb8b59659` with parent `a06cb3728dbfac6d05b2ce75458b06c265dde603`. Final-main Release build passed 0 warnings/0 errors; focused import/replay 11/11; full non-SQL backend 714/714; SQL safety 21/21 remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; Angular 158/158; initial bundle 439.15 kB and import lazy chunk 98.52 kB. Official launcher runtime is running on MiniERP 5300 / Angular 4300 with isolated `.runtime/p1-1-runtime-fixture`, RMS 5000/5001 untouched. HTTP smoke passed through auth/context, Price List, import routes, OpenAPI/Scalar, and 11 asset URLs. DryRun batch `65bcdcab-42f0-412b-afb7-e735b48cc407` stayed `Validated` with committed count 0 and categories unchanged; Commit batch `c67c5013-ba92-4f7f-b12d-946fa1378c38` passed `Validated` → `CompletedWithErrors` → replay `Completed`, with 2 committed rows, 2 `row.mutated` events, and 1 `batch.executed` event. Opus final decision remains APPROVE FOR SQUASH MERGE with P0/P1 closed; P2-1 through P2-4 and P2-6 through P2-9 remain non-blocking; Jira closure remains pending GPT-5.6 Sol, MESP-50 remains open, MESP-123 is not activated, and no visual browser claim is made. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-15 01:19 +03:00 | **33%** | **52%** | **44%** | **24%** | MESP-122 bounded Opus P1-1 backend correction completed on `feat/MESP-122-master-data-import` at correction commit `41cdb6c`, preserving `Validated`/`Commit` execution after pre-execution quarantine replay while retaining immediate post-execution commit semantics. Added real SQLite-backed Category lifecycle regressions: focused import/replay 11/11 and full non-SQL backend 714/714; Release build 0 warnings/errors; 21 SQL safety cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`. Frontend was unchanged and remains 158/158 with 98.52 kB import lazy chunk / 439.15 kB initial bundle. Final isolated Development runtime smoke and real P1 Commit/replay/Execute lifecycle passed on MiniERP 5300 / Angular 4300, with RMS 5000 untouched; browser-control found no connected browser, so no visual claim is made. Draft PR #65 remains open/unmerged; no Jira/external-tracker write or production-capability percentage change | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-14 20:05 +03:00 | **33%** | **52%** | **44%** | **24%** | MESP-122 Phase C1 planner-detected corrections completed on the same branch `feat/MESP-122-master-data-import`, source commit `72ce5f3`, on the same draft PR #65 (still Draft/unmerged, description and title corrected, including the stale Phase B logo dimension claim fixed to the actual Owner source `1254 x 1254`). This is a bounded surgical correction session, not a new implementation phase: (1) the execute confirmation dialog now sources Total Rows/Accepted/Rejected/Quarantined/Duplicate Policy/Batch Reference exclusively from the authoritative server reconciliation (`facade.batchReconciliation()`), blocks execution whenever reconciliation is absent/inconsistent, and shows an explicit EN/AR partial-eligibility warning for Commit-mode batches with Rejected/Quarantined rows; (2) the Evidence tab now renders the complete bundle (Batch, Source/Provenance, Reconciliation, Row Evidence including visibly distinct historical/superseded rows, Audit) via the existing `loadBatchEvidence`/`getEvidence` contract with proper loading/error/retry states and a per-batch staleness guard; (3) row-detail and execute-confirmation dialogs gained full keyboard modal behavior (focus trap, safe non-destructive initial focus, Escape-to-close guarded against in-flight execution, focus restored to opener, `aria-labelledby` bound to a real heading id); (4) batch-detail tabs gained a complete ARIA tabs pattern (roving tabindex, ArrowLeft/ArrowRight/Home/End, RTL-aware direction reversal, full `aria-controls`/`role`/`aria-labelledby` wiring). 17 new focused tests added (0 broad/unrelated); frontend suite passed 158/158 (up from the 141/141 Phase C baseline, 0 regressions); production build passed with the import workspace lazy chunk at 98.52 kB (was 88.97 kB) and a 439.15 kB initial bundle, still under the 500 kB budget; backend Release build 0 warnings/errors and non-SQL regression re-verified unchanged at 711/711 (21 SQL safety cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`); no Owner-managed asset under `frontend/assets` was touched (deleted: none); dev servers restarted only via the official launcher on MiniERP 5300 / Angular 4300 and an extended 18-check HTTP-level smoke test passed cleanly, including 3 new import-specific checks (Angular import route, import batches API, OpenAPI evidence/reconciliation operation presence); visual browser verification was not performed (no browser-automation tool available) and is disclosed rather than claimed; no Jira/external-tracker write was performed, MESP-123 was not activated, and no production-capability percentage change is claimed for this UI-layer correction session; remaining work is GPT-5.6 Sol planner verification then independent Claude Opus 5 review | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
@@ -1305,8 +1311,8 @@ Do not answer from percentages alone. Check the 100% Production Ready Definition
 >
 > **Overall Production-Ready Completion:** ~34%
 > **Architecture/Foundation:** ~86%
-> **Backend:** ~54%
-> **Database:** ~46%
+> **Backend:** ~55%
+> **Database:** ~47%
 > **Frontend:** ~25%
 > **End-to-End Business System:** ~27%
 >

@@ -195,6 +195,17 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.import.audit.read" => "Read Master Data import audit evidence",
         "master-data.import.evidence.read" => "Read complete Master Data import evidence",
         "master-data.import.replay" => "Replay one quarantined Master Data import row",
+        "procurement.purchase-request.list" => "List Tenant-scoped Purchase Requests",
+        "procurement.purchase-request.read" => "Read one Purchase Request",
+        "procurement.purchase-request.create" => "Create a Purchase Request draft",
+        "procurement.purchase-request.edit" => "Edit a Purchase Request draft",
+        "procurement.purchase-request.submit" => "Submit a Purchase Request for approval",
+        "procurement.purchase-request.approve" => "Approve a Purchase Request",
+        "procurement.purchase-request.reject" => "Reject a Purchase Request",
+        "procurement.purchase-request.return-for-change" => "Return a Purchase Request for change",
+        "procurement.purchase-request.cancel" => "Cancel an eligible Purchase Request",
+        "procurement.purchase-request.history.read" => "Read Purchase Request lifecycle history",
+        "procurement.purchase-request.audit.read" => "Read Purchase Request audit evidence",
         _ => GenericSummary(operationId)
     };
 
@@ -284,6 +295,17 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "or irreversible production migration decisions.";
         }
 
+        if (descriptor.OperationId.StartsWith("procurement.purchase-request", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Purchase Request is an internal Tenant/company/branch demand signal containing Product, UOM, quantity, need-by date, and purpose lines. "
+                + "The lifecycle is Draft, PendingApproval, Approved, Rejected, ReturnedForChange, or Cancelled. Submission freezes the reviewed request version; "
+                + "approval is configuration-led and records immutable history, including bounded delegation evidence where configured. Self-approval is denied, "
+                + "missing or expired authority blocks the decision, and cancellation is available only in eligible states. This boundary creates no stock, supplier "
+                + "commitment, Purchase Order, receipt, invoice, AP, payment, or accounting effect. Mutations require Idempotency-Key, the current If-Match value where "
+                + "declared, antiforgery, and mandatory audit evidence.";
+        }
+
         return contextRules
             + "The operation is part of the reusable internal ERP contract. Response failures use Problem Details "
             + "with a stable code, correlation identifier, and operation identifier; provider details and internal "
@@ -316,6 +338,17 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.import.audit.read" => "Tenant-filtered batch, row, and mutation audit evidence with source reference and correlation context.",
         "master-data.import.evidence.read" => "The complete Tenant-filtered import batch, row, reconciliation, and audit evidence package.",
         "master-data.import.replay" => "The updated import batch after replaying one quarantined row, preserving the original evidence and adding a new current attempt.",
+        "procurement.purchase-request.list" => "Tenant-filtered Purchase Request summaries with scope, status, line count, and concurrency version.",
+        "procurement.purchase-request.read" => "One Tenant-filtered Purchase Request with its lines, approval snapshot, lifecycle state, and server-derived action affordances.",
+        "procurement.purchase-request.create" => "The persisted Draft Purchase Request and its Product/UOM line snapshots.",
+        "procurement.purchase-request.edit" => "The updated Draft or ReturnedForChange Purchase Request with a new optimistic-concurrency version.",
+        "procurement.purchase-request.submit" => "The Purchase Request in PendingApproval with the effective approval-policy snapshot.",
+        "procurement.purchase-request.approve" => "The Purchase Request after the immutable approval decision and any resulting stage transition.",
+        "procurement.purchase-request.reject" => "The rejected Purchase Request with the recorded reason and approval evidence.",
+        "procurement.purchase-request.return-for-change" => "The Purchase Request returned for change with the recorded reason and approval evidence.",
+        "procurement.purchase-request.cancel" => "The eligible Purchase Request in Cancelled status with immutable cancellation evidence.",
+        "procurement.purchase-request.history.read" => "Immutable Tenant-filtered lifecycle and approval history for the Purchase Request.",
+        "procurement.purchase-request.audit.read" => "Immutable Tenant-filtered operation audit evidence for the Purchase Request.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 
