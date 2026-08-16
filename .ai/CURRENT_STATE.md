@@ -1,20 +1,22 @@
 # Current State
 
-## Current authoritative position - 17 August 2026 (MESP-123 Opus findings correction: F-1 currency fallback, F-2 source-decision concurrency, F-5/F-6 documentation & bundle reconciliation)
+## Current authoritative position - 17 August 2026 (MESP-123 Opus findings correction & ADR-019/MESP-143 governance reconciliation)
 
-The MESP-123 pre-merge corrective session is complete on branch
+The MESP-123 pre-merge corrective session and pre-Opus governance reconciliation are complete on branch
 `feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against
-`main`. This session resolved the findings from the independent Claude Opus 5 review:
+`main`. This session resolved the findings from the independent Claude Opus 5 review and aligned repository governance:
 
 - **F-1 (Currency Rendering Resilience)**: `formatMoney` in `SupplierQuotationWorkspaceComponent` now catches `RangeError` thrown by `Intl.NumberFormat` on valid non-ISO MESP currency codes (e.g. `S2K`, `CUSTOM`) and falls back safely to localized decimal formatting with raw currency code suffix (`1,234.56 S2K`). Quotation lists and detail headers render without crashing.
 - **F-2 (Source Decision Concurrency Token)**: Fixed `SupplierQuotationService.RecordSourceDecisionAsync` to pass caller's `expectedVersion` parameter directly into `SupplierSourceDecisionCommand` rather than substituting `existingDecision?.Version`. In Angular `SupplierQuotationWorkspaceComponent`, `recordDecision()` now supplies `currentDecision()?.version ?? request.version` as `expectedVersion`, ensuring re-selections use the decision version and first selections use the Purchase Request version. Concurrency conflict (HTTP 409) is cleanly surfaced with a reload affordance and no false success notice.
 - **F-5 & F-6 (Documentation & Bundle Reconciliation)**: Harmonized repository documentation, updated test counts (754 backend, 202 frontend unit, 8 Playwright E2E), measured production bundle size (478.57 kB initial total, 91.94 kB lazy quotation chunk), and recorded non-blocking P3 observations (F-3 SQLite fallback and F-4 quotation logging).
+- **Governance Reconciliation (ADR-019 & MESP-143 Inheritance)**: Permanent architecture rules added to `AGENTS.md` and `CLAUDE.md`. Established that **Tenant != Workspace** (Tenant is the server-authorized isolation boundary; operational context is inside Tenant and aligns with Company/Branch; Platform Tenant Workspace is a separate MESP-67 control-plane concept); host resolution is candidate routing, not authorization; Overview loads before context switching; Wafra logo is generic Tenant branding configuration data under `frontend/assets` (never hardcoded logic); and Saudi Riyal symbol is a Saudi country-pack/SAR presentation asset with zero FX/tax/accounting effect. MESP-143 remains Planned/To Do and is not implemented in this session.
 
 | Current fact | Verified position |
 |---|---|
 | Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open, Draft, and intentionally unmerged. No Jira or external-tracker operation was performed (GPT-5.6 Sol owns Jira). |
 | F-1 Currency resilience | `formatMoney` handles both standard ISO 4217 (e.g. `USD`, `SAR`) and non-ISO MESP configured codes without throwing `RangeError`. Unit and Playwright tests verify multi-row list rendering and commercial hero values. |
 | F-2 Concurrency passthrough | Backend enforces caller-provided `If-Match` token on first decision (PR version) and reselection (current decision version). Stale or mismatched tokens reject with HTTP 409 `concurrency_conflict`. |
+| Architecture & Governance | ADR-019 accepted and tracked; MESP-143 execution plan recorded; Tenant != Workspace rule active; Wafra branding is Tenant configuration data; SAR symbol is country-pack presentation; MESP-143 unimplemented (zero product code changes). |
 | P3 Observations | F-3 (SQLite fallback in Development) and F-4 (detailed quotation mutation logging) preserved in findings record without out-of-scope code changes. |
 | Validation baseline | Release build: **0 warnings / 0 errors**. Backend suite: **754/754 passed** with disposable SQL safety LocalDB. Angular unit tests: **202/202 passed across 22 spec files**. Playwright E2E: **8/8 passed across 2 spec files**. `npm audit --omit=dev`: **0 vulnerabilities**. Production bundle: **478.57 kB initial total** (116.51 kB transfer), **91.94 kB lazy quotation chunk** (15.73 kB transfer). |
 | Next exact continuation | Claude Opus 5 targeted re-verification of F-1, F-2, and F-5 findings per TASK.md. |

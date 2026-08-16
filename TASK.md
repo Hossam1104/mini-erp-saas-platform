@@ -29,9 +29,10 @@ Do not merge the pull request. Draft PR #66 must remain OPEN, DRAFT, and UNMERGE
 1. `AGENTS.md` and `CLAUDE.md`;
 2. `.ai/CURRENT_STATE.md`;
 3. this `TASK.md`;
-4. `docs/staticts.md`;
-5. `README.md`, `Run.md`, `backend/README.md`, and `frontend/README.md`;
-6. the specific diffs in `SupplierQuotationService.cs`, `SupplierQuotationTests.cs`, `supplier-quotation-workspace.component.ts`, `supplier-quotation-workspace.component.spec.ts`, `supplier-quotation.service.ts`, `supplier-quotation.service.spec.ts`, and `supplier-quotation.spec.ts`.
+4. `docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md` and `docs/MESP-143_Tenant_Aware_Entry_Execution_Plan.md` (Owner-approved forward architecture inputs: understand that Tenant != Workspace, Tenant is the server-authorized isolation boundary, Overview loads first, and Wafra logo/SAR symbol are configuration/country-pack assets. Do NOT mistake the legacy foundation workspace chooser as a reason to reopen MESP-123, and do NOT implement MESP-143 in this review);
+5. `docs/staticts.md`;
+6. `README.md`, `Run.md`, `backend/README.md`, and `frontend/README.md`;
+7. the specific diffs in `SupplierQuotationService.cs`, `SupplierQuotationTests.cs`, `supplier-quotation-workspace.component.ts`, `supplier-quotation-workspace.component.spec.ts`, `supplier-quotation.service.ts`, `supplier-quotation.service.spec.ts`, and `supplier-quotation.spec.ts`.
 
 ## Verification Procedure
 

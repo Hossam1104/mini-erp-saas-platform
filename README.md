@@ -237,6 +237,7 @@ passing Development suite does not by itself establish production readiness.
 - [Backend project/module boundaries](docs/ADR-002_Backend_Project_Structure_and_Module_Enforcement.md)
 - [SQL schemas, migrations and provider boundaries](docs/ADR-006_Module_Schemas_EF_Core_Migrations_Transactions.md)
 - [Testing environments and production gates](docs/ADR-018_Testing_Environments_SQL_Server_Containers_and_Gates.md)
+- [Tenant host resolution, workspace context & branding](docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md)
 - [Release 1 approved decision/dependency map](docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md)
 - [Next exact session prompt](TASK.md)
 

@@ -1,6 +1,6 @@
 # Mini ERP backend foundation
 
-> **Current MESP-123 B2 runtime overlay - 16 August 2026.** The backend now
+> **Current MESP-123 runtime overlay - 17 August 2026.** The backend now
 > carries the bounded Master Data, Business Parties, Purchase Request, and
 > Supplier Quotation/comparison source-decision slices in addition to the
 > Foundation seams below. With a nonblank

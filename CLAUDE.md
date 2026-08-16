@@ -9,35 +9,41 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 16 August 2026 (MESP-123 B2 post-Phase-C foundation)
+## Current execution overlay - 17 August 2026 (MESP-123 Opus findings corrected; pre-Opus governance reconciliation; forward ADR-019/MESP-143 alignment)
 
-The current bounded session is MESP-123 B2 on branch
+The current bounded state is MESP-123 on branch
+`feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against `main`.
+Merge-blocking findings from the independent Opus review are resolved:
+- F-1 non-ISO currency fallback in quotation workspace;
+- F-2 source-decision concurrency passthrough (`If-Match` on first decision & reselection);
+- F-5/F-6 documentation, test suite, and bundle reconciliation.
+
+Permanent architecture rules from `@AGENTS.md` and
+`docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md` govern:
+- **Tenant != Workspace**: Tenant is server-authorized isolation boundary; operational context is inside Tenant and aligns with Company/Branch;
+- **Entry Flow**: Candidate host resolution (`wafra.mesp.com` → candidate Tenant → auth & membership check → Tenant Overview);
+- **Workspace UX**: Overview loads first; single context auto-selects; multiple contexts use header switcher;
+- **Tenant Branding**: Wafra logo is configuration data under `frontend/assets` with MESP fallback; never hardcoded logic;
+- **Saudi Riyal**: SAR symbol is a country-pack presentation asset under `frontend/assets`; presentation only with zero FX/tax/accounting effect.
+
+**Execution Boundary:**
+- Zero product code changes in this governance reconciliation session.
+- MESP-143 is planned/unimplemented and must not be started in this session.
+- The next exact session is **Claude Opus 5 targeted read-only re-verification of F-1, F-2, and F-5** per `TASK.md`.
+- PR #66 remains OPEN, DRAFT, and UNMERGED. No Jira operations (GPT-5.6 Sol owns Jira).
+
+## Historical execution overlay - 16 August 2026 (MESP-123 B2 post-Phase-C foundation; superseded)
+
+The historical bounded session was MESP-123 B2 on branch
 `feat/MESP-123-purchase-request-approval`, continuing Draft PR #66.
-Phase C Supplier Quotation/comparison/source-decision backend/API behavior is
-preserved. B2 delivers the canonical `/app/workspaces` shell route,
+B2 delivered the canonical `/app/workspaces` shell route,
 compatibility `/tenant/select`, server/configured human Tenant labels,
 the explicit exact-Development loopback-only `MESP_DEV_AUTH_BYPASS=true`
 server-actor shortcut, a bounded sidebar, and shared ERP UI primitives adopted
 by Workspace/Tenant Selection and representative Purchase Request list/detail
 screens.
 
-Spec Kit 0.16.4 was initialized and audited only on an isolated clean
-`chore/adopt-spec-kit` branch at current `main`; generated
-state is preserved in the local stash `spec-kit init generated adoption
-review` and must not be committed, pushed, or merged. No Jira or
-external-tracker operation was performed. Owner-managed `frontend/assets`
-remain protected and unchanged.
-
-The B2 sidebar must expose only Overview, Workspaces/Tenant Selection, Master
-Data, Price Lists, Master Data Import, and Purchase Requests. Supplier
-Quotations are not linked until the next exact session. Do not add Purchase
-Order, Supplier Confirmation, Goods Receipt, invoice, AP/accounting, payment,
-stock, supplier portal, external provider, credential, MESP-39/MESP-40,
-MESP-124, or broad redesign work. Draft PR #66 remains open, Draft, and
-unmerged. The next exact session is GPT-5.6 Luna Max for functional Supplier
-Quotation/Comparison Angular UI and source selection/rationale UX, then stop.
-
-## Historical execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation)
+## Historical execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation; superseded)
 
 At the time of this historical entry, the authoritative overlay was the
 MESP-116 approved decision reconciliation in `AGENTS.md`. Release 1 remains the

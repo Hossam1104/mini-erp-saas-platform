@@ -26,49 +26,100 @@ velocity, or forecast:
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 16 August 2026 (MESP-123 B2 post-Phase-C foundation)
+## Permanent Architecture Rules (ADR-019 / Tenant & Workspace Isolation)
 
-MESP-123 B2 is the single bounded implementation session for this chat on
+### 1. Tenant != Workspace
+- **Tenant**: The primary SaaS security and data-isolation boundary. Resolved and authorized server-side before Tenant business data is accessible. A Tenant is NEVER an ordinary ERP workspace or user-selectable filter on every login. Normal single-Tenant users must never enumerate or be aware of unrelated Tenants.
+- **Operational Workspace / Context**: Exists inside an already authorized Tenant and aligns with approved Company/Branch organization scope rather than a parallel authorization hierarchy. Single permitted context auto-selects; multiple permitted contexts use a header/application-context switcher. Never require raw GUID entry.
+- **Platform Tenant Workspace**: A control-plane concept used by MESP Platform Administration (MESP-67), distinct from an ERP operational working context. Platform Administrator role alone grants zero authority over Tenant ERP business data.
+
+### 2. Entry Flow and Host Resolution
+- **Tenant-Specific Host** (e.g. `wafra.mesp.com`):
+  `Host → Candidate Tenant → Authentication → Exact-Tenant Membership Authorization → Server-Owned Tenant Context → Tenant Overview → Optional Context Selection`.
+  Hostname provides candidate routing information only, NOT authorization.
+- **Common Host** (e.g. `mesp.com`):
+  Routing entry: single authorized Tenant auto-redirects; multiple authorized Tenants presents a chooser limited strictly to active memberships; zero memberships renders a safe no-access state.
+- **Platform Administration Host** (e.g. `admin.mesp.com`):
+  Separate control plane for platform administration; access to Tenant ERP business data requires an explicit, audited exact-Tenant support grant or membership.
+- *Note*: Hostnames are architectural configuration targets; DNS/TLS automation is separate infrastructure scope.
+
+### 3. Workspace UX
+- **Overview First**: Tenant Overview is the initial authenticated business landing surface upon entering a Tenant.
+- **Context Handling**: One permitted operational context is automatically selected; multiple contexts use a header switcher.
+- **Navigation**: Mandatory "Workspaces/Tenant Selection" as a required pre-ERP gateway and `/app/workspaces` as a mandatory entry gate are superseded by ADR-019. "Switch workspace" is removed from primary ordinary-user navigation.
+
+### 4. Tenant Branding Configuration
+- **Wafra Logo Asset**: An Owner-managed product source asset under `frontend/assets` mapped via generic Tenant branding configuration data, NEVER hardcoded branch logic (`if tenant == Wafra`).
+- **Fallback**: Missing or unconfigured Tenant branding cleanly falls back to MESP platform branding.
+- **Invariants**: Tenant branding never alters authorization, workflows, navigation permissions, Tenant scope, tax rules, numbering, or accounting behavior. On Wafra ERP surfaces, Wafra branding may be primary; on common/admin surfaces, MESP branding remains primary.
+
+### 5. Saudi Riyal (SAR) Presentation
+- **Saudi Riyal Asset**: A Saudi country-pack / SAR presentation asset under `frontend/assets`, NOT Wafra branding and NOT global currency formatting.
+- **Presentational Only**: Presentation-layer only; causes zero FX conversion, zero tax effect, zero accounting effect, and zero persisted amount change.
+- **Fallback & Non-SAR**: Safe text fallback (e.g. `SAR`) is preserved for semantic clarity in multi-currency comparison, audit, and exports. Non-SAR currencies remain completely unaffected. Governed by MESP-12 / MESP-37.
+
+## Current execution overlay - 17 August 2026 (MESP-123 Opus findings corrected; pre-Opus governance reconciliation; forward ADR-019/MESP-143 alignment)
+
+MESP-123 is in progress on branch `feat/MESP-123-purchase-request-approval`,
+continuing Draft PR #66 against `main`. Bounded corrective implementation
+successfully resolved the merge-blocking findings from the independent Claude
+Opus 5 review at commit `50d0c56cdae30f4490e45f8ce66727191b4cd68f`:
+- **F-1 (Currency Rendering Resilience)**: `formatMoney` handles valid non-ISO
+  MESP currency codes (`S2K`, `CUSTOM`) safely via localized decimal fallback;
+- **F-2 (Source Decision Concurrency Token)**: `SupplierQuotationService`
+  passes caller `expectedVersion` directly into `SupplierSourceDecisionCommand`;
+  Angular `SupplierQuotationWorkspaceComponent.recordDecision()` provides
+  `currentDecision()?.version ?? request.version` to enforce optimistic
+  concurrency on first decisions and reselections;
+- **F-5 & F-6 (Documentation & Bundle Reconciliation)**: Exact test counts
+  (754 backend, 202 Angular unit, 8 Playwright E2E) and bundle sizes (478.57 kB
+  initial, 91.94 kB lazy quotation chunk) reconciled; non-blocking P3
+  observations (F-3, F-4) recorded.
+
+This session performs repository governance reconciliation to inherit the
+Owner-approved ADR-019 (`docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md`)
+and MESP-143 execution plan (`docs/MESP-143_Tenant_Aware_Entry_Execution_Plan.md`)
+into persistent executor context. Zero product code changes are made.
+
+**Current Delivery Rules:**
+1. **MESP-143 is Planned / To Do**: ADR-019 is accepted forward architecture;
+   do NOT implement MESP-143 (no host middleware, routing, chooser, branding
+   service, or database schema changes) in this session.
+2. **Next Exact Gate**: Claude Opus 5 targeted read-only re-verification of
+   F-1, F-2, and F-5 per `TASK.md`.
+3. **Downstream Sequence**: After targeted Opus review, GPT-5.6 Sol and Owner
+   decide on PR #66 merge and MESP-123 closure. MESP-143 will then be activated
+   as the prerequisite architecture/UX foundation before broad additional
+   Tenant-facing UI work.
+4. **Draft PR #66**: Remains OPEN, DRAFT, and UNMERGED.
+5. **No Purchase Order**: Do not start Purchase Order, Goods Receipt, invoice,
+   AP/accounting, payment, stock, or external integration work.
+6. **Owner-Managed Assets**: Source assets under `frontend/assets` remain
+   protected and untouched.
+
+## Historical execution overlay - 16 August 2026 (MESP-123 B2 post-Phase-C foundation; superseded)
+
+MESP-123 B2 is the bounded implementation session on
 branch `feat/MESP-123-purchase-request-approval`, continuing Draft PR #66.
 Phase A Purchase Request backend/API, Phase B/B1 Purchase Request Angular
 journey, and Phase C Supplier Quotation/comparison/source-decision backend/API
-remain present and must not regress. B2 adds only the shared workspace shell,
-server-configured human Tenant naming, the legacy Wafra-inspired read-only
-visual foundation, representative Purchase Request list/detail adoption, and
-the secure local Development authentication convenience described in the root
-`TASK.md`.
+remain present. B2 added the shared workspace shell, server-configured human
+Tenant naming, legacy Wafra-inspired visual foundation, representative Purchase
+Request list/detail adoption, and secure local Development authentication
+shortcut.
 
-Spec Kit initialization is a separate audit-only artifact. Its generated
-`.agents/skills/speckit-*` and `.specify/*` state remains in the local
-`spec-kit init generated adoption review` stash from local branch
-`chore/adopt-spec-kit`; it is not committed, pushed, or merged into the
-feature branch. This session performs no Jira or external-tracker operation.
-
-The canonical authenticated workspace route is `/app/workspaces`; legacy
-`/tenant/select` redirects into it. The normal shell sidebar exposes only
+Spec Kit initialization was an audit-only artifact on `chore/adopt-spec-kit`
+preserved in local stash `spec-kit init generated adoption review`.
+The canonical authenticated workspace route at B2 delivery was `/app/workspaces`;
+legacy `/tenant/select` redirected into it. The normal shell sidebar exposed
 Overview, Workspaces/Tenant Selection, Master Data, Price Lists, Master Data
-Import, and Purchase Requests. Supplier Quotations are intentionally not
-linked by B2. Tenant labels come from server/configuration (`Wafra` only as a
-local generic fixture value); no client-side Wafra business rule or GUID-first
-label is permitted. `MESP_DEV_AUTH_BYPASS=true` is explicit, disabled by
-default, exact-Development, loopback-only, server-actor based, and fails closed
-outside Development; it does not bypass ordinary authorization or permit
-client impersonation.
+Import, and Purchase Requests. Tenant labels came from server/configuration
+(`Wafra` as a local generic fixture value). `MESP_DEV_AUTH_BYPASS=true` is
+explicit, disabled by default, exact-Development, loopback-only, server-actor
+based, and fails closed outside Development. B2 was followed by the functional
+Supplier Quotation / Comparison Angular UI.
 
-Delivery remains strictly sequential: Luna executes; GPT-5.6 Sol plans,
-verifies, and owns Jira; Claude Opus 5 is reserved for the defined later
-checkpoints. Do not start Supplier Quotation Angular UI, Purchase Order,
-MESP-124, Goods Receipt, invoice/AP/accounting, payment, stock, external
-integrations, or migration work in this session. The exact next session is
-**GPT-5.6 Luna Max - functional Supplier Quotation / Comparison Angular UI
-with source-selection/rationale UX**, with no Purchase Order.
-
-After validation, update `docs/staticts.md` conservatively, preserve all
-owner-managed assets under `frontend/assets`, commit and push only the B2
-product/documentation changes to the focused feature branch, keep PR #66
-Draft/open/unmerged, and stop.
-
-## Historical execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation; superseded by MESP-123 B2)
+## Historical execution overlay - 12 August 2026 (MESP-116 approved decision reconciliation; superseded)
 
 The Owner has rebaselined Release 1 as a **full-feature reusable B2B ERP**
 with a 31 August 2026 **Release 1 Integrated Preview** milestone. The

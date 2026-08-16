@@ -2,6 +2,18 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
+## Current Architecture Acceptance (ADR-019) - 17 August 2026
+
+ADR-019 ([`ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md`](ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md))
+is **Accepted for planned implementation** under MESP-143. It establishes that
+**Tenant != Workspace**; candidate host resolution is routing information, not
+authority; Tenant Overview is the initial landing surface before optional
+operational context switching; Wafra logo is generic Tenant branding
+configuration data under `frontend/assets`; and the Saudi Riyal symbol is a
+Saudi country-pack/SAR presentation asset with zero FX/tax/accounting effect.
+Implementation is planned for MESP-143 following MESP-123 completion and
+creates zero changes in this governance reconciliation.
+
 ## Current Independent Opus 5 reconciliation - 10 August 2026
 
 MESP-108 is Done through PR #44, merged at
@@ -224,6 +236,7 @@ persistence exists.
 | ADR-016 | SQL Server Row-Level Security adoption or formal deferral | Required before production | Decide after application-layer isolation design and before production security approval | MESP-29; MESP-38; MESP-50 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
 | ADR-017 | External partner and API authentication | Deferred until approved integration | Only when an approved Release 1 integration requires external authentication | MESP-39 | [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md#21-architecture-decision-records-required) |
 | ADR-018 | Testing environments, SQL Server test containers, and production-like gates | Foundation harness authored and validated; production equivalence deferred | Authored before MESP-64 LocalDB/provider validation; Docker/Testcontainers CI and production-like gates remain separately approved before launch | MESP-64; MESP-38; MESP-48; MESP-50 | [ADR-018](ADR-018_Testing_Environments_SQL_Server_Containers_and_Gates.md) |
+| ADR-019 | Tenant Host Resolution, Operational Workspace Context, and Configured Branding | Accepted for planned implementation | Planned for MESP-143; prerequisite MESP-123 completion | MESP-143; MESP-4; MESP-67; MESP-77; MESP-12; MESP-37 | [ADR-019](ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md) |
 
 ADR-004 is the accepted Foundation Release 1 implementation baseline. ADR-006,
 ADR-007, ADR-008, ADR-009 and ADR-018 were authored for the completed MESP-61
