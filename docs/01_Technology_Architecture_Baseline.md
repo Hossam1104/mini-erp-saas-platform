@@ -1,5 +1,21 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
+> **Current MESP-123 B2 implementation overlay - 16 August 2026.** The
+> approved shared SQL Server direction now has a bounded local Development
+> execution path: an explicit `MESP_SQLSERVER_CONNECTION_STRING` selects the
+> formal module-owned migrations for server `.` / database `MESP`, with
+> distinct history tables and Tenancy-only ownership of the shared
+> `TenantOwnedRecords` table. A dedicated inventory-first utility copied the
+> existing local SQLite rows with IDs/Tenant IDs, foreign-key lineage, source
+> hashes, and recoverable backups verified; SQLite originals remain retained.
+> Production startup never auto-migrates, and this local cutover is not a
+> production deployment or readiness approval. The final B2 evidence is
+> Release build 0/0, backend 752/752, Angular 190/190 across 20 spec files,
+> Angular initial build 459.20 kB, Playwright 4/4, and a real browser pass of
+> light/dark branding, RTL/collapsed shell behavior, server-derived Tenant
+> naming, and migrated Purchase Request records. Owner source assets under
+> `frontend/assets` remain unchanged.
+
 > **MESP-108 validation-scope clarification - 10 August 2026.** The current
 > normal backend gate is 670/670. The separately gated 21 SQL safety cases are
 > Foundation-only and exercise the disposable LocalDB

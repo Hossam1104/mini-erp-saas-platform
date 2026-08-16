@@ -1,5 +1,19 @@
 # Mini ERP backend foundation
 
+> **Current MESP-123 B2 runtime overlay - 16 August 2026.** The backend now
+> carries the bounded Master Data, Business Parties, Purchase Request, and
+> Supplier Quotation/comparison source-decision slices in addition to the
+> Foundation seams below. With a nonblank
+> `MESP_SQLSERVER_CONNECTION_STRING`, exact local `Development` uses the
+> formal module-owned SQL Server migrations against server `.` / database
+> `MESP`; the SQLite provider remains an explicit fallback when that setting is
+> absent. Production startup never auto-migrates. The local cutover utility
+> preserved the source SQLite files and verified 24 migrated rows, IDs,
+> Tenant/foreign-key lineage, and source hashes. Release validation is
+> 752/752 with 0 build warnings/errors. This is still not a production
+> deployment: MESP-48/MESP-50, production topology, deployment migrations,
+> backup/restore, capacity, and specialist gates remain open.
+
 This directory contains the Foundation backend. It began as the MESP-57
 Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant
 context and persistence guardrails, the MESP-59/MESP-88/MESP-89 identity,
@@ -7,11 +21,11 @@ authorization and host-security seam, the MESP-60 REST/OpenAPI contracts, the
 MESP-62 immutable audit and observability evidence, and the
 MESP-61/MESP-91 durable-work, notification and private-file contracts.
 
-It is still **not** a production system and implements no ERP business
-workflow. Identity, sessions, audit, durable work, notifications and private
-files are bounded in-memory or local seams; there is no production database,
-migration, SQL work provider, broker, object-storage provider, notification
-provider or deployment. The durable-work runtime is not composed into
+It is still **not** a production system. Identity, sessions, audit, durable
+work, notifications and private files remain bounded in-memory or local seams;
+there is no production deployment, broker, object-storage provider,
+notification provider, or production migration process. The durable-work
+runtime is not composed into
 `MiniErp.Api` at all, and (as of the MESP-92 H92-06 correction, 7 August 2026)
 `MiniErp.Api` no longer has `InternalsVisibleTo` friend access to
 `MiniErp.App`'s internal durable-work ledger either — only
@@ -22,7 +36,7 @@ Business Parties boundary contracts, Tenant/scope authorization hooks, stable
 reference contracts, and audit/evidence integration; it did not add Master
 Data entities, migrations, endpoints, or database access.
 
-> **Current MESP-100/MESP-99 handoff - 9 August 2026.** MESP-100 is Done
+> **Historical MESP-100/MESP-99 handoff - 9 August 2026.** MESP-100 is Done
 > with closure evidence Jira comment `10663`; PR #32 merged at
 > `511f6be9f005e54930f993aead9758d7a66b75a8`. MESP-99 is In Progress as the
 > single active Category/UOM implementation item, and the root TASK.md now
@@ -68,12 +82,14 @@ URL printed by `dotnet run` when it differs from port 5000.
   reference EF Core or Infrastructure.
 - `MiniErp.Infrastructure` is the provider/persistence implementation project.
   It depends on App and Contracts, owns provider-specific EF Core code, and
-  keeps future business-module contexts, mappings, schemas, and migrations in
-  explicit module-owned areas. MESP-100 adds no Category/UOM persistence.
+  currently owns the module contexts, mappings, schemas, migrations, design-
+  time factories, and local SQL provider composition for Tenancy, Master Data,
+  Business Parties, and Procurement. MESP-123 B2 keeps each migration history
+  distinct and leaves shared `TenantOwnedRecords` physically owned by Tenancy.
 - `MiniErp.Api` is the host and composition root. It references App,
   Contracts, and Infrastructure; it registers host/application seams directly
-  and will call Infrastructure registration methods when provider-backed
-  composition is due.
+  and selects SQL Server or SQLite through Infrastructure based on the explicit
+  local environment configuration.
 
 The approved project-reference direction is `MiniErp.Api ->
 MiniErp.Infrastructure -> MiniErp.App -> MiniErp.Contracts`, with Api also

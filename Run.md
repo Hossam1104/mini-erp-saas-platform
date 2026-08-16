@@ -94,6 +94,64 @@ Business Customer. The runtime does not seed fake business records; create or
 load approved local reference data through the bounded Master Data/Business
 Parties flows before testing those operations.
 
+## Local SQL Server Development database
+
+When `MESP_SQLSERVER_CONNECTION_STRING` is nonblank, normal exact-
+`Development` startup uses SQL Server as the authoritative local provider. The
+configured connection is read from the environment only; it is never printed,
+committed, or written into generated runtime files. The expected local target
+for this repository is server `.` and database `MESP`. If the variable is
+absent, the existing module-owned SQLite fallback remains available for local
+development and tests.
+
+Development startup applies the formal EF migrations sequentially for the
+four persistence contexts. Production startup does not auto-migrate:
+
+| Context | Schema / owner | History table |
+|---|---|---|
+| `TenantPersistenceDbContext` | `tenancy` / Tenancy (`TenantOwnedRecords`) | `dbo.__EFMigrationsHistory_Tenancy` |
+| `MasterDataDbContext` | `masterdata` / Master Data | `dbo.__EFMigrationsHistory_MasterData` |
+| `BusinessPartiesDbContext` | `businessparties` / Business Parties | `dbo.__EFMigrationsHistory_BusinessParties` |
+| `ProcurementDbContext` | `procurement` / Procurement and Phase-C quotation data | `dbo.__EFMigrationsHistory_Procurement` |
+
+`tenancy.TenantOwnedRecords` is created and upgraded only by the Tenancy
+context. The later module alignment migrations are intentionally no-op
+database migrations whose snapshots record the shared runtime model without
+competing for that physical table.
+
+After a Release build, migration inspection or application uses the
+Infrastructure project as both EF project and startup project, for example:
+
+```powershell
+dotnet ef migrations list --project .\backend\src\MiniErp.Infrastructure --startup-project .\backend\src\MiniErp.Infrastructure --configuration Release --no-build --context TenantPersistenceDbContext
+dotnet ef database update --project .\backend\src\MiniErp.Infrastructure --startup-project .\backend\src\MiniErp.Infrastructure --configuration Release --no-build --context TenantPersistenceDbContext
+```
+
+The bounded local SQLite-to-SQL Server cutover utility is inventory-first and
+refuses an apply/verify target other than the exact `MESP` database. With the
+same environment variable, run it from the repository root:
+
+```powershell
+dotnet run --project .\backend\tools\MiniErp.DevelopmentDataCutover\MiniErp.DevelopmentDataCutover.csproj --configuration Release -- --inventory
+dotnet run --project .\backend\tools\MiniErp.DevelopmentDataCutover\MiniErp.DevelopmentDataCutover.csproj --configuration Release -- --apply
+dotnet run --project .\backend\tools\MiniErp.DevelopmentDataCutover\MiniErp.DevelopmentDataCutover.csproj --configuration Release -- --verify
+```
+
+The utility preserves source SQLite files, verifies source hashes and IDs,
+checks Tenant/foreign-key lineage, and writes recoverable backups below
+`%LOCALAPPDATA%\MiniErp\Development\backups\sqlserver-cutover-*`. This is a
+local development data cutover, not a production migration, deployment,
+backup/restore, HA/DR, residency, retention, or release-readiness approval.
+
+The canonical disposable provider gate remains:
+
+```powershell
+.\scripts\validate-foundation.ps1
+```
+
+It creates and cleans its own `MiniErpFoundation_*` LocalDB database and is
+independent of the owner-managed local `MESP` database.
+
 ## Manual two-process fallback
 
 If the applications need to be started separately, generate the proxy first

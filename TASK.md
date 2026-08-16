@@ -7,6 +7,17 @@ tenant-display, local Development-auth, and representative Purchase Request UI
 foundation scope on branch `feat/MESP-123-purchase-request-approval`,
 continuing Draft PR #66 against `main`.
 
+This bounded session also completed the local SQL Server cutover and branding
+reconciliation requested for B2. Normal Development uses the explicitly
+configured `MESP_SQLSERVER_CONNECTION_STRING` target (`.` / database `MESP`)
+with formal module-owned EF migrations and distinct migration-history tables;
+production startup never auto-migrates. The retained Development SQLite data
+was copied with the dedicated cutover tool (24 source rows, IDs/Tenant IDs,
+foreign-key lineage, and source hashes verified), with timestamped backups and
+the SQLite originals retained. Only Tenancy creates the shared
+`tenancy.TenantOwnedRecords` table; the other module snapshots align to that
+ownership without duplicate physical tables.
+
 Delivered:
 
 - Spec Kit 0.16.4 was initialized and audited on an isolated clean
@@ -30,11 +41,24 @@ Delivered:
   reference, focus, responsive, EN/AR, and RTL/LTR presentation seams.
 - Phase-C Supplier Quotation/comparison/source-decision backend/API behavior
   remains intact; no Purchase Order or downstream commercial effect was added.
+- The shared brand component now uses transparent light/dark generated browser
+  derivatives from the owner-supplied source artwork, with explicit intrinsic
+  dimensions and no source-asset replacement. The Development bypass also
+  preserves an already-selected context across session refreshes while keeping
+  exact-Development, loopback-only, server-actor and ordinary authorization
+  boundaries.
 
 Validation and safety evidence is recorded in the final session report and the
 tracked statistics/current-state files. No Jira or external-tracker operation
 was performed. Owner-managed assets under `frontend/assets` remain
 protected and unchanged.
+
+Final validation passed: Release build 0 warnings/0 errors, backend 752/752
+(including the SQL Server safety suite), Angular 190/190 across 20 spec files,
+Angular production build 459.20 kB initial, Playwright 4/4, and `npm audit`
+with 0 vulnerabilities. A real browser pass against the official local
+runtime verified light/dark branding, transparent/collapsed shell behavior,
+RTL layout, server-derived Tenant naming, and two migrated Purchase Requests.
 
 Draft PR #66 must remain open, Draft, and unmerged. Stop after this bounded B2
 handoff; do not execute the next capability in this session.
