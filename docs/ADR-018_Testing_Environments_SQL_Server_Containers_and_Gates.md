@@ -85,6 +85,27 @@ while leaving zero disposable databases. Neither result proves production
 equivalence, deployment identity, sizing, HA/DR, backup/restore, or the
 MESP-48/MESP-50 gates.
 
+## Connection variable separation (Post-B2 cutover clarification)
+
+Two environment variables serve distinct, non-interchangeable purposes:
+
+- **`MESP_SQLSERVER_CONNECTION_STRING`** — the persistent MiniERP application
+  runtime connection for local `Development`. It targets SQL Server `.` /
+  database `MESP`. This variable is owned by the application host and must
+  never be read or overwritten by the disposable safety harness.
+
+- **`MESP_SQLSERVER_SAFETY_CONNECTION_STRING`** — the disposable SQL safety-test
+  connection. It must target `(localdb)\MSSQLLocalDB` with a
+  `MiniErpFoundation_[A-Za-z0-9_]+` database name. This variable is set
+  in process memory only by `scripts/validate-foundation.ps1` and
+  `scripts/Test-MiniErpBackend.ps1` and is cleared in their `finally` blocks.
+
+The safety fixture (`SqlServerSafetyFixture.InitializeAsync`) reads only
+`MESP_SQLSERVER_SAFETY_CONNECTION_STRING` and fails closed on null/missing,
+non-LocalDB server, `MESP` database name, or any non-`MiniErpFoundation_*`
+name. A silent fallback to the runtime variable is prohibited; the safety
+harness rejects it if the runtime variable is present and points at `MESP`.
+
 ## Fixture lifecycle and limitations
 
 - The test fixture creates an isolated database per execution and uses unique

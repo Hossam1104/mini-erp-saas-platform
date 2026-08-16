@@ -161,12 +161,12 @@ the following without typing or interpreting database GUIDs:
 
 ### 5. Run the bounded validation suite
 
-Use the repository’s pinned tooling and record exact counts, warnings, and
+Use the repository's pinned tooling and record exact counts, warnings, and
 failures. Prefer Release configuration for backend validation:
 
 ```powershell
 dotnet build .\backend\MiniErp.sln --configuration Release --no-restore --verbosity minimal
-dotnet test .\backend\MiniErp.sln --configuration Release --no-restore --verbosity minimal
+.\scripts\Test-MiniErpBackend.ps1
 cd .\frontend
 npm test -- --watch=false
 npm run build
@@ -174,10 +174,44 @@ npm run test:e2e
 npm audit --omit=dev
 ```
 
-The SQL safety suite must be run with the explicitly configured local SQL
-Server `MESP_SQLSERVER_CONNECTION_STRING` when available. Never print the
-connection string or credentials. If SQL is unavailable, classify the result
-as environment-gated rather than as a product pass.
+**Connection variable distinction — critical:**
+
+| Variable | Purpose | Correct target |
+|---|---|---|
+| `MESP_SQLSERVER_CONNECTION_STRING` | Persistent MiniERP application runtime | SQL Server `.` / database `MESP` |
+| `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` | Disposable SQL safety-harness only | `(localdb)\MSSQLLocalDB` / `MiniErpFoundation_*` |
+
+**A. Runtime validation** — use `MESP_SQLSERVER_CONNECTION_STRING` to verify
+the application starts against `SQL Server . / MESP` through the normal
+Development launcher (`scripts/Start-MiniErpDevelopment.ps1`). This proves
+the persistent runtime is intact. Do not print the connection string.
+
+**B. Destructive SQL safety suite** — use `scripts/Test-MiniErpBackend.ps1`
+(or `scripts/validate-foundation.ps1` for the full suite). These scripts
+construct a disposable `MiniErpFoundation_*` connection in process memory,
+assign it only to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, and restore/clear
+it in a guaranteed `finally` block. They leave `MESP_SQLSERVER_CONNECTION_STRING`
+completely unchanged.
+
+**Never** run the SQL safety tests by setting `MESP_SQLSERVER_CONNECTION_STRING`
+to a LocalDB connection string. That would overload the runtime variable and
+reproduce the ambiguity this separation was introduced to fix.
+
+The expected baseline after the pre-Opus validation-harness reconciliation:
+
+- Release build: **0 warnings / 0 errors**
+- Complete backend suite: **all pass** (SQL safety cases actually executed,
+  not gated or skipped)
+- SQL safety tests genuinely executed on disposable LocalDB: **YES**
+- Angular: **all pass**
+- Playwright: **all pass**
+- npm audit: **0 vulnerabilities**
+- Persistent MESP runtime: **verified intact, untouched by safety tests**
+
+Do not accept `731/752` or any form of gated/skipped SQL safety tests as a
+passing result after this reconciliation. If the safety tests cannot execute,
+classify it as environment-gated and report it accurately rather than passing
+it as green.
 
 ### 6. Inspect runtime and persistence evidence
 

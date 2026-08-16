@@ -9,10 +9,18 @@
 > `MESP`; the SQLite provider remains an explicit fallback when that setting is
 > absent. Production startup never auto-migrates. The local cutover utility
 > preserved the source SQLite files and verified 59 mapped rows, IDs,
-> Tenant/foreign-key lineage, and source hashes. Release validation is
-> 752/752 with 0 build warnings/errors. This is still not a production
-> deployment: MESP-48/MESP-50, production topology, deployment migrations,
-> backup/restore, capacity, and specialist gates remain open.
+> Tenant/foreign-key lineage, and source hashes.
+>
+> The 21 SQL Server safety-harness tests are run via a dedicated disposable
+> LocalDB connection assigned only to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`.
+> That variable is the exclusive input for the destructive create/drop lifecycle;
+> `MESP_SQLSERVER_CONNECTION_STRING` (the persistent runtime variable) is never
+> read by the safety harness. Use `scripts/Test-MiniErpBackend.ps1` or
+> `scripts/validate-foundation.ps1` to run the full suite safely.
+>
+> This is still not a production deployment: MESP-48/MESP-50, production
+> topology, deployment migrations, backup/restore, capacity, and specialist
+> gates remain open.
 
 This directory contains the Foundation backend. It began as the MESP-57
 Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant

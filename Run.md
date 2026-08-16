@@ -152,6 +152,33 @@ The canonical disposable provider gate remains:
 It creates and cleans its own `MiniErpFoundation_*` LocalDB database and is
 independent of the owner-managed local `MESP` database.
 
+For backend-only regression (including the SQL Server safety harness) without
+the full Foundation suite, use the dedicated safe runner:
+
+```powershell
+.\scripts\Test-MiniErpBackend.ps1
+```
+
+## SQL Server connection variable separation
+
+Two environment variables serve distinct, non-interchangeable roles:
+
+| Variable | Role | Target |
+|---|---|---|
+| `MESP_SQLSERVER_CONNECTION_STRING` | Persistent MiniERP application runtime | SQL Server `.` / database `MESP` |
+| `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` | Disposable SQL safety-test harness | `(localdb)\MSSQLLocalDB` / `MiniErpFoundation_*` |
+
+**Do not conflate these variables.** The destructive SQL safety harness creates
+and drops its own database. It must never target the persistent `MESP`
+development database. The safety harness rejects any connection that does not
+point at `(localdb)\MSSQLLocalDB` with a `MiniErpFoundation_[A-Za-z0-9_]+`
+database name.
+
+`scripts/Test-MiniErpBackend.ps1` and `scripts/validate-foundation.ps1`
+construct the disposable connection in process memory, assign it only to
+`MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, and restore/clear it in a guaranteed
+`finally` block. Neither script modifies `MESP_SQLSERVER_CONNECTION_STRING`.
+
 ## Manual two-process fallback
 
 If the applications need to be started separately, generate the proxy first

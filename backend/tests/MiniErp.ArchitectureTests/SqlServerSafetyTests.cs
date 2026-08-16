@@ -30,14 +30,18 @@ internal static class SqlServerSafetyConfigurationValidator
         if (string.IsNullOrWhiteSpace(rawConnectionString))
         {
             throw new InvalidOperationException(
-                "MESP_SQLSERVER_CONNECTION_STRING is required for the SQL Server safety harness.");
+                "MESP_SQLSERVER_SAFETY_CONNECTION_STRING is required for the disposable SQL Server safety harness. "
+                + "Set it to a LocalDB integrated-security connection targeting a MiniErpFoundation_* database. "
+                + "Do not point it at the persistent MESP runtime database.");
         }
 
         var builder = new SqlConnectionStringBuilder(rawConnectionString);
         if (!string.Equals(builder.DataSource, RequiredDataSource, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
-                "The safety harness accepts only the machine-supported SQL Server LocalDB instance.");
+                "The disposable SQL Server safety harness accepts only the machine-supported LocalDB instance "
+                + $"'(localdb)\\MSSQLLocalDB'. The supplied MESP_SQLSERVER_SAFETY_CONNECTION_STRING targets a "
+                + "different server and is rejected to protect any persistent database.");
         }
 
         if (!System.Text.RegularExpressions.Regex.IsMatch(
@@ -46,7 +50,9 @@ internal static class SqlServerSafetyConfigurationValidator
                 System.Text.RegularExpressions.RegexOptions.CultureInvariant))
         {
             throw new InvalidOperationException(
-                "The SQL Server safety database must use the disposable MiniErpFoundation_ prefix.");
+                "The SQL Server safety harness requires a disposable database whose name matches "
+                + "the MiniErpFoundation_<AlphaNumeric> pattern. The supplied MESP_SQLSERVER_SAFETY_CONNECTION_STRING "
+                + "targets a database outside that pattern and is rejected to protect any persistent database.");
         }
 
         return builder;
@@ -70,8 +76,11 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        // Reads only the dedicated safety variable. The persistent runtime variable
+        // MESP_SQLSERVER_CONNECTION_STRING must never be used here: the harness
+        // creates and drops its database, which would be destructive against MESP.
         var rawConnectionString = Environment.GetEnvironmentVariable(
-            "MESP_SQLSERVER_CONNECTION_STRING");
+            "MESP_SQLSERVER_SAFETY_CONNECTION_STRING");
 
         var builder = SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString(rawConnectionString);
 
@@ -504,11 +513,41 @@ public sealed class SqlServerSafetyTests
     [Fact]
     public void Fixture_accepted_connection_string_is_the_one_the_real_validator_approved()
     {
-        var rawConnectionString = Environment.GetEnvironmentVariable("MESP_SQLSERVER_CONNECTION_STRING");
+        // Confirms the dedicated safety variable (not the runtime variable) is what the fixture uses,
+        // and that the injected value actually passes the validator's LocalDB + MiniErpFoundation_* checks.
+        var rawConnectionString = Environment.GetEnvironmentVariable("MESP_SQLSERVER_SAFETY_CONNECTION_STRING");
         var builder = SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString(rawConnectionString);
 
         Assert.Equal(@"(localdb)\MSSQLLocalDB", builder.DataSource);
         Assert.StartsWith("MiniErpFoundation_", builder.InitialCatalog, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Runtime_connection_string_is_not_accepted_as_safety_configuration()
+    {
+        // Proves that the persistent MESP runtime variable cannot authorize destructive
+        // safety-test execution even if its value happens to be set in the test process.
+        // The safety harness must never fall back to the runtime connection.
+        //
+        // This test verifies the architectural boundary: MESP_SQLSERVER_CONNECTION_STRING
+        // is for the persistent MESP application runtime; MESP_SQLSERVER_SAFETY_CONNECTION_STRING
+        // is exclusively for the disposable LocalDB safety harness.
+        var runtimeConnectionString = Environment.GetEnvironmentVariable("MESP_SQLSERVER_CONNECTION_STRING");
+
+        if (string.IsNullOrWhiteSpace(runtimeConnectionString))
+        {
+            // No runtime variable set — the validator would already reject null/empty;
+            // this is already covered by the Unsafe_sql_server_configuration_is_rejected theory.
+            return;
+        }
+
+        // If a runtime variable IS set, it must point at server '.' / database MESP.
+        // That connection must always be rejected by the safety validator because:
+        // (a) it does not target (localdb)\MSSQLLocalDB, or
+        // (b) its database name does not start with MiniErpFoundation_.
+        // Either condition alone is sufficient for rejection.
+        Assert.Throws<InvalidOperationException>(
+            () => SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString(runtimeConnectionString));
     }
 
     private static async Task ExecuteProbeInsertAsync(

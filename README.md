@@ -13,7 +13,7 @@
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6.0"></a>
   <a href="https://www.microsoft.com/sql-server"><img src="https://img.shields.io/badge/SQL%20Server-10.0%20EF%20Core-CC2927?logo=microsoftsqlserver&logoColor=white" alt="SQL Server"></a>
   <a href="https://playwright.dev/"><img src="https://img.shields.io/badge/Playwright-1.62-2EAD33?logo=playwright&logoColor=white" alt="Playwright 1.62"></a>
-  <a href="https://opensource.org/license/mit/"><img src="https://img.shields.io/badge/status-active%20development-0E7C66" alt="Active development"></a>
+  <img src="https://img.shields.io/badge/status-active%20development-0E7C66" alt="Active development">
 </p>
 
 MESP is a generic SaaS ERP product under active Release 1 development. Its
@@ -191,16 +191,37 @@ and production cutover remain open gates.
 
 ## Quality checks
 
-Run from the repository directories:
+Run from the repository root:
 
 ```powershell
-dotnet test .\backend\MiniErp.sln --configuration Release --no-restore --verbosity minimal
-cd .\frontend
+# Safe backend test runner — uses a dedicated disposable LocalDB connection.
+# This script assigns a MiniErpFoundation_* target only to
+# MESP_SQLSERVER_SAFETY_CONNECTION_STRING and leaves the persistent
+# MESP_SQLSERVER_CONNECTION_STRING runtime variable completely unchanged.
+.\scripts\Test-MiniErpBackend.ps1
+
+# Or run the full Foundation validation (backend + Angular + Playwright + audit):
+.\scripts\validate-foundation.ps1
+```
+
+Frontend checks from `frontend/`:
+
+```powershell
 npm test -- --watch=false
 npm run build
 npm run test:e2e
 npm audit --omit=dev
 ```
+
+Environment variable roles:
+
+| Variable | Purpose |
+|---|---|
+| `MESP_SQLSERVER_CONNECTION_STRING` | Persistent Owner Development database (SQL Server `.` / `MESP`). Used by the application runtime only. |
+| `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` | Disposable `MiniErpFoundation_*` LocalDB target for destructive SQL safety tests. Never points at `MESP`. |
+
+Do not conflate them. The safety harness rejects any connection that is not
+`(localdb)\MSSQLLocalDB` with a `MiniErpFoundation_*` database name.
 
 The current bounded session evidence is recorded in the tracked statistics
 and handoff documents, including SQL/provider gating where applicable. A

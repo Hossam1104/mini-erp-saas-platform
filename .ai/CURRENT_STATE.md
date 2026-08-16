@@ -1,6 +1,27 @@
 # Current State
 
-## Current authoritative position - 16 August 2026 (MESP-123 Supplier Quotation / Comparison UI)
+## Current authoritative position - 16 August 2026 (MESP-123 pre-Opus SQL safety connection separation and documentation reconciliation)
+
+The MESP-123 validation harness reconciliation is complete on branch
+`feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against
+`main`. This session introduced a permanent architectural separation between
+the persistent MESP application runtime variable and the disposable SQL
+safety-test variable; restored an all-green backend baseline; and fixed the
+root README badge link, Run.md, backend/README.md, TASK.md Opus instructions,
+and ADR-018.
+
+| Current fact | Verified position |
+|---|---|
+| Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open, Draft, and intentionally unmerged. No Jira or external-tracker operation was performed. |
+| SQL variable separation | `MESP_SQLSERVER_CONNECTION_STRING` is the persistent owner Development DB connection (SQL Server `.` / `MESP`). `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is the dedicated disposable LocalDB safety-harness connection (`(localdb)\MSSQLLocalDB` / `MiniErpFoundation_*`). The two variables are non-interchangeable and the safety fixture fails closed if the dedicated variable is absent or points at a non-LocalDB/non-MiniErpFoundation target. |
+| Safety harness change | `SqlServerSafetyFixture.InitializeAsync` now reads only `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`. One new architectural boundary test `Runtime_connection_string_is_not_accepted_as_safety_configuration` proves the runtime variable cannot authorize destructive safety execution even when set. |
+| Safe backend test runner | `scripts/Test-MiniErpBackend.ps1` is a new dedicated safe test runner. It constructs a disposable `MiniErpFoundation_*` connection in process memory, assigns it only to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, runs the full suite, and restores/clears the variable in a guaranteed `finally` block. `MESP_SQLSERVER_CONNECTION_STRING` is never modified. |
+| validate-foundation.ps1 | Updated to assign the disposable connection to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` (not the runtime variable) and restore/clear it in `finally`. `MESP_SQLSERVER_CONNECTION_STRING` is never read or modified by this script. |
+| Documentation | `README.md` badge link corrected (removed misleading MIT license link); Quality checks section updated with the two-variable table and reference to the safe runner. `Run.md` adds the SQL Server connection variable separation section. `backend/README.md` header note updated with the harness separation. `docs/ADR-018` adds the Connection variable separation section. `TASK.md` Opus step 5 corrected to use the dedicated variables and the safe runner, not the runtime variable. |
+| Validation baseline | Release build: **0 warnings / 0 errors**. Backend suite: **753/753 passed** (was 731/752; 22 SQL safety tests now genuinely execute, not gated). Angular: **197/197 across 22 spec files**. Playwright: **6/6**. npm audit: **0 vulnerabilities**. Disposable DB `MiniErpFoundation_20260816144340_f60651c6` created/dropped cleanly; no orphan DBs remain. `MESP_SQLSERVER_CONNECTION_STRING` in User environment: unchanged throughout. |
+| Next exact continuation | Claude Opus 5 independent MESP-123 capability review per the corrected TASK.md Opus instructions. |
+
+## Historical authoritative position - 16 August 2026 (MESP-123 Supplier Quotation / Comparison UI)
 
 MESP-123 B2 remains complete at its bounded shared-shell, workspace-routing,
 server-configured Tenant display, local Development-auth, representative
