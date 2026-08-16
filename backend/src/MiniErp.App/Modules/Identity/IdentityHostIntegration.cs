@@ -83,6 +83,8 @@ public interface IFoundationIdentityHost
 {
     FoundationHostSignInResult SignIn(string login, string password);
 
+    FoundationHostSignInResult DevelopmentBypass(string login);
+
     bool ValidatePrincipal(ClaimsPrincipal principal);
 
     FoundationRequestContext ResolveContext(
@@ -120,6 +122,7 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
 {
     private static readonly Guid PlatformContextId = Guid.Parse("00000000-0000-0000-0000-000000000001");
     private readonly IdentityAuthorizationService identity;
+    private readonly ITenantDisplayNameProvider tenantDisplayNames;
     private readonly object selectionLock = new();
     private readonly Dictionary<SessionId, SelectedContext> selectedContexts = [];
 
@@ -129,9 +132,12 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         long SelectionVersion,
         long EligibilityVersion);
 
-    internal FoundationIdentityHost(IdentityAuthorizationService identity)
+    internal FoundationIdentityHost(
+        IdentityAuthorizationService identity,
+        ITenantDisplayNameProvider? tenantDisplayNames = null)
     {
         this.identity = identity ?? throw new ArgumentNullException(nameof(identity));
+        this.tenantDisplayNames = tenantDisplayNames ?? new DefaultTenantDisplayNameProvider();
     }
 
     public FoundationHostSignInResult SignIn(string login, string password)
@@ -139,6 +145,37 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         try
         {
             var result = identity.Authenticate(login, password);
+            if (!result.Succeeded || result.SessionId is null || result.CookieValue is null)
+            {
+                return new FoundationHostSignInResult(false, "authentication_failed", null, null, null, null);
+            }
+
+            var validation = identity.ValidateSession(result.CookieValue);
+            if (!validation.Valid || validation.UserId is null)
+            {
+                return new FoundationHostSignInResult(false, "authentication_failed", null, null, null, null);
+            }
+
+            var principal = CreatePrincipal(result, validation.UserId.Value);
+            return new FoundationHostSignInResult(
+                true,
+                "authenticated",
+                validation.UserId.Value.Value,
+                result.SessionId.Value.Value,
+                principal,
+                GetSession(principal));
+        }
+        catch (ArgumentException)
+        {
+            return new FoundationHostSignInResult(false, "authentication_failed", null, null, null, null);
+        }
+    }
+
+    public FoundationHostSignInResult DevelopmentBypass(string login)
+    {
+        try
+        {
+            var result = identity.AuthenticateDevelopment(login);
             if (!result.Succeeded || result.SessionId is null || result.CookieValue is null)
             {
                 return new FoundationHostSignInResult(false, "authentication_failed", null, null, null, null);
@@ -572,7 +609,7 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                         membership.Id.Value,
                         FoundationHostContextKind.OrdinaryMembership,
                         membership.TenantId.Value,
-                        $"Tenant {membership.TenantId.Value:D}",
+                        tenantDisplayNames.GetDisplayName(membership.TenantId),
                         membership.Version));
                 }
             }
@@ -590,7 +627,7 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                         grant.Id.Value,
                         FoundationHostContextKind.SupportGrant,
                         grant.TenantId.Value,
-                        $"Support {grant.TenantId.Value:D}",
+                        $"Support · {tenantDisplayNames.GetDisplayName(grant.TenantId)}",
                         grant.Version));
                 }
             }

@@ -17,10 +17,32 @@ dotnet build .\backend\MiniErp.sln --configuration Release
 The launcher starts the built Release executable so the process it records is
 the real MiniERP API listener. Rebuild after source changes before restarting.
 
-The launcher prompts for `MESP_DEV_ADMIN_PASSWORD` without displaying or
-persisting it. The Development login remains `admin@minierp.local`; the
-password is exactly the value supplied to `MESP_DEV_ADMIN_PASSWORD` for the
-currently running backend process.
+By default the launcher prompts for `MESP_DEV_ADMIN_PASSWORD` without
+displaying or persisting it. The Development login remains
+`admin@minierp.local`; the password is exactly the value supplied to
+`MESP_DEV_ADMIN_PASSWORD` for the currently running backend process.
+
+For a persistent local QA loop, explicitly enable the Development-only,
+loopback-only auth shortcut once in the user environment. It authenticates
+only the server-configured Development actor and never accepts a browser
+supplied identity, password, Tenant, role, or permission:
+
+```powershell
+[Environment]::SetEnvironmentVariable('MESP_DEV_AUTH_BYPASS', 'true', 'User')
+[Environment]::SetEnvironmentVariable('MESP_DEV_TENANT_DISPLAY_NAME', 'Wafra', 'User')
+```
+
+With that setting, the normal launcher does not prompt for a password and the
+Angular guard establishes the session through the server-side Development
+shortcut. Disable it when normal credential testing or any non-local
+environment is required:
+
+```powershell
+[Environment]::SetEnvironmentVariable('MESP_DEV_AUTH_BYPASS', $null, 'User')
+```
+
+The committed/default setting remains disabled. The API also fails closed
+outside the exact `Development` environment and for non-loopback callers.
 
 The generic default API target is `http://localhost:5000`. If that port is
 already occupied by another local service, the launcher leaves that process
@@ -72,6 +94,91 @@ Business Customer. The runtime does not seed fake business records; create or
 load approved local reference data through the bounded Master Data/Business
 Parties flows before testing those operations.
 
+## Local SQL Server Development database
+
+When `MESP_SQLSERVER_CONNECTION_STRING` is nonblank, normal exact-
+`Development` startup uses SQL Server as the authoritative local provider. The
+configured connection is read from the environment only; it is never printed,
+committed, or written into generated runtime files. The expected local target
+for this repository is server `.` and database `MESP`. If the variable is
+absent, the existing module-owned SQLite fallback remains available for local
+development and tests.
+
+Development startup applies the formal EF migrations sequentially for the
+four persistence contexts. Production startup does not auto-migrate:
+
+| Context | Schema / owner | History table |
+|---|---|---|
+| `TenantPersistenceDbContext` | `tenancy` / Tenancy (`TenantOwnedRecords`) | `dbo.__EFMigrationsHistory_Tenancy` |
+| `MasterDataDbContext` | `masterdata` / Master Data | `dbo.__EFMigrationsHistory_MasterData` |
+| `BusinessPartiesDbContext` | `businessparties` / Business Parties | `dbo.__EFMigrationsHistory_BusinessParties` |
+| `ProcurementDbContext` | `procurement` / Procurement and Phase-C quotation data | `dbo.__EFMigrationsHistory_Procurement` |
+
+`tenancy.TenantOwnedRecords` is created and upgraded only by the Tenancy
+context. The later module alignment migrations are intentionally no-op
+database migrations whose snapshots record the shared runtime model without
+competing for that physical table.
+
+After a Release build, migration inspection or application uses the
+Infrastructure project as both EF project and startup project, for example:
+
+```powershell
+dotnet ef migrations list --project .\backend\src\MiniErp.Infrastructure --startup-project .\backend\src\MiniErp.Infrastructure --configuration Release --no-build --context TenantPersistenceDbContext
+dotnet ef database update --project .\backend\src\MiniErp.Infrastructure --startup-project .\backend\src\MiniErp.Infrastructure --configuration Release --no-build --context TenantPersistenceDbContext
+```
+
+The bounded local SQLite-to-SQL Server cutover utility is inventory-first and
+refuses an apply/verify target other than the exact `MESP` database. With the
+same environment variable, run it from the repository root:
+
+```powershell
+dotnet run --project .\backend\tools\MiniErp.DevelopmentDataCutover\MiniErp.DevelopmentDataCutover.csproj --configuration Release -- --inventory
+dotnet run --project .\backend\tools\MiniErp.DevelopmentDataCutover\MiniErp.DevelopmentDataCutover.csproj --configuration Release -- --apply
+dotnet run --project .\backend\tools\MiniErp.DevelopmentDataCutover\MiniErp.DevelopmentDataCutover.csproj --configuration Release -- --verify
+```
+
+The utility preserves source SQLite files, verifies source hashes and IDs,
+checks Tenant/foreign-key lineage, and writes recoverable backups below
+`%LOCALAPPDATA%\MiniErp\Development\backups\sqlserver-cutover-*`. This is a
+local development data cutover, not a production migration, deployment,
+backup/restore, HA/DR, residency, retention, or release-readiness approval.
+
+The canonical disposable provider gate remains:
+
+```powershell
+.\scripts\validate-foundation.ps1
+```
+
+It creates and cleans its own `MiniErpFoundation_*` LocalDB database and is
+independent of the owner-managed local `MESP` database.
+
+For backend-only regression (including the SQL Server safety harness) without
+the full Foundation suite, use the dedicated safe runner:
+
+```powershell
+.\scripts\Test-MiniErpBackend.ps1
+```
+
+## SQL Server connection variable separation
+
+Two environment variables serve distinct, non-interchangeable roles:
+
+| Variable | Role | Target |
+|---|---|---|
+| `MESP_SQLSERVER_CONNECTION_STRING` | Persistent MiniERP application runtime | SQL Server `.` / database `MESP` |
+| `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` | Disposable SQL safety-test harness | `(localdb)\MSSQLLocalDB` / `MiniErpFoundation_*` |
+
+**Do not conflate these variables.** The destructive SQL safety harness creates
+and drops its own database. It must never target the persistent `MESP`
+development database. The safety harness rejects any connection that does not
+point at `(localdb)\MSSQLLocalDB` with a `MiniErpFoundation_[A-Za-z0-9_]+`
+database name.
+
+`scripts/Test-MiniErpBackend.ps1` and `scripts/validate-foundation.ps1`
+construct the disposable connection in process memory, assign it only to
+`MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, and restore/clear it in a guaranteed
+`finally` block. Neither script modifies `MESP_SQLSERVER_CONNECTION_STRING`.
+
 ## Manual two-process fallback
 
 If the applications need to be started separately, generate the proxy first
@@ -88,6 +195,7 @@ cd '.\backend'
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
 $env:Scalar__Enabled = 'true'
 $env:MESP_DEV_BOOTSTRAP_ENABLED = 'true'
+$env:MESP_DEV_AUTH_BYPASS = 'false'
 $env:MESP_DEV_ADMIN_LOGIN = 'admin@minierp.local'
 $env:MESP_DEV_ADMIN_PASSWORD = '<YOUR-LOCAL-PASSWORD>'
 dotnet run --project '.\src\MiniErp.Api\MiniErp.Api.csproj' --configuration Release --no-build --urls 'http://localhost:5300'
@@ -110,7 +218,12 @@ The browser flow uses relative requests such as
 `/api/v1/auth/sign-in`; Angular reaches the selected backend through the local
 proxy. Use the frontend origin for the authoritative check:
 
-1. `POST http://localhost:4300/api/v1/auth/sign-in`;
+When the explicit bypass is enabled, the first request is
+`POST http://localhost:4300/api/v1/auth/development-bypass`; otherwise use
+the normal credential request:
+
+1. `POST http://localhost:4300/api/v1/auth/sign-in` (or the Development
+   bypass above);
 2. `GET http://localhost:4300/api/v1/auth/session`;
 3. `GET http://localhost:4300/api/v1/auth/contexts`;
 4. `GET http://localhost:4300/api/v1/auth/antiforgery`;

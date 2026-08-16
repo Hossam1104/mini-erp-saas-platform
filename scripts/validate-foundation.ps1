@@ -178,10 +178,13 @@ try {
 
     $databaseName = "MiniErpFoundation_{0}_{1}" -f (Get-Date -Format 'yyyyMMddHHmmss'), ([Guid]::NewGuid().ToString('N').Substring(0, 8))
     $connectionString = "Server=$localDbServer;Database=$databaseName;Integrated Security=True;TrustServerCertificate=True;"
-    $previousConnectionString = $env:MESP_SQLSERVER_CONNECTION_STRING
+    # Save the safety variable's existing value (if any) so we can restore it afterward.
+    # The persistent runtime variable MESP_SQLSERVER_CONNECTION_STRING is intentionally
+    # left completely unchanged throughout; the two variables serve distinct purposes.
+    $previousSafetyConnectionString = $env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING
 
     try {
-        $env:MESP_SQLSERVER_CONNECTION_STRING = $connectionString
+        $env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING = $connectionString
         Push-Location $repositoryRoot
 
         Write-Host '--- Backend restore ---'
@@ -245,12 +248,14 @@ try {
             Assert-NoOrphanFoundationDatabasesRemain -SqlCmdPath $sqlCmd
         }
         finally {
-            if ($null -eq $previousConnectionString) {
-                Remove-Item Env:MESP_SQLSERVER_CONNECTION_STRING -ErrorAction SilentlyContinue
+            if ($null -eq $previousSafetyConnectionString) {
+                Remove-Item Env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING -ErrorAction SilentlyContinue
             }
             else {
-                $env:MESP_SQLSERVER_CONNECTION_STRING = $previousConnectionString
+                $env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING = $previousSafetyConnectionString
             }
+            # MESP_SQLSERVER_CONNECTION_STRING is the persistent runtime variable and
+            # is never modified by this script; no restoration is needed.
         }
     }
 }

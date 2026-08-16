@@ -1,0 +1,82 @@
+using Microsoft.EntityFrameworkCore.Design;
+using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.App.Modules.Identity;
+using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
+using MiniErp.Infrastructure.Persistence.Modules.MasterData;
+using MiniErp.Infrastructure.Persistence.Modules.Procurement;
+
+namespace MiniErp.Infrastructure.Persistence;
+
+#pragma warning disable CS1591
+
+internal static class SqlServerDesignTimeDbContextConfiguration
+{
+    internal static string RequireConnectionString()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("MESP_SQLSERVER_CONNECTION_STRING");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "MESP_SQLSERVER_CONNECTION_STRING must be configured for EF Core SQL Server design-time operations.");
+        }
+
+        return connectionString;
+    }
+
+    internal static TenantContext CreateTenantContext() =>
+        TenantContext.ForOrdinaryMembership(
+            DevelopmentBootstrap.DevTenantId,
+            new MembershipReference(Guid.NewGuid()),
+            correlationId: new CorrelationId("ef-design-time"),
+            actorId: Guid.NewGuid());
+}
+
+/// <summary>EF Core design-time factory for the Foundation tenancy context.</summary>
+public sealed class TenantPersistenceDbContextFactory
+    : IDesignTimeDbContextFactory<TenantPersistenceDbContext>
+{
+    TenantPersistenceDbContext IDesignTimeDbContextFactory<TenantPersistenceDbContext>.CreateDbContext(string[] args) =>
+        new(
+            SqlServerMigrationConfiguration.Configure(
+                SqlServerDesignTimeDbContextConfiguration.RequireConnectionString(),
+                SqlServerMigrationConfiguration.TenancyHistoryTable),
+            SqlServerDesignTimeDbContextConfiguration.CreateTenantContext());
+}
+
+/// <summary>EF Core design-time factory for the Master Data context.</summary>
+public sealed class MasterDataDbContextFactory
+    : IDesignTimeDbContextFactory<MasterDataDbContext>
+{
+    MasterDataDbContext IDesignTimeDbContextFactory<MasterDataDbContext>.CreateDbContext(string[] args) =>
+        new(
+            SqlServerMigrationConfiguration.Configure(
+                SqlServerDesignTimeDbContextConfiguration.RequireConnectionString(),
+                SqlServerMigrationConfiguration.MasterDataHistoryTable),
+            SqlServerDesignTimeDbContextConfiguration.CreateTenantContext());
+}
+
+/// <summary>EF Core design-time factory for the Business Parties context.</summary>
+public sealed class BusinessPartiesDbContextFactory
+    : IDesignTimeDbContextFactory<BusinessPartiesDbContext>
+{
+    BusinessPartiesDbContext IDesignTimeDbContextFactory<BusinessPartiesDbContext>.CreateDbContext(string[] args) =>
+        new(
+            SqlServerMigrationConfiguration.Configure(
+                SqlServerDesignTimeDbContextConfiguration.RequireConnectionString(),
+                SqlServerMigrationConfiguration.BusinessPartiesHistoryTable),
+            SqlServerDesignTimeDbContextConfiguration.CreateTenantContext());
+}
+
+/// <summary>EF Core design-time factory for the Procurement context.</summary>
+public sealed class ProcurementDbContextFactory
+    : IDesignTimeDbContextFactory<ProcurementDbContext>
+{
+    ProcurementDbContext IDesignTimeDbContextFactory<ProcurementDbContext>.CreateDbContext(string[] args) =>
+        new(
+            SqlServerMigrationConfiguration.Configure(
+                SqlServerDesignTimeDbContextConfiguration.RequireConnectionString(),
+                SqlServerMigrationConfiguration.ProcurementHistoryTable),
+            SqlServerDesignTimeDbContextConfiguration.CreateTenantContext());
+}
+
+#pragma warning restore CS1591

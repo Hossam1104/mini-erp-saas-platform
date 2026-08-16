@@ -1,6 +1,129 @@
 # Current State
 
-## Current authoritative position - 15 August 2026 (MESP-122 source merged; final-main runtime closure complete)
+## Current authoritative position - 17 August 2026 (MESP-123 Opus findings correction & ADR-019/MESP-143 governance reconciliation)
+
+The MESP-123 pre-merge corrective session and pre-Opus governance reconciliation are complete on branch
+`feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against
+`main`. This session resolved the findings from the independent Claude Opus 5 review and aligned repository governance:
+
+- **F-1 (Currency Rendering Resilience)**: `formatMoney` in `SupplierQuotationWorkspaceComponent` now catches `RangeError` thrown by `Intl.NumberFormat` on valid non-ISO MESP currency codes (e.g. `S2K`, `CUSTOM`) and falls back safely to localized decimal formatting with raw currency code suffix (`1,234.56 S2K`). Quotation lists and detail headers render without crashing.
+- **F-2 (Source Decision Concurrency Token)**: Fixed `SupplierQuotationService.RecordSourceDecisionAsync` to pass caller's `expectedVersion` parameter directly into `SupplierSourceDecisionCommand` rather than substituting `existingDecision?.Version`. In Angular `SupplierQuotationWorkspaceComponent`, `recordDecision()` now supplies `currentDecision()?.version ?? request.version` as `expectedVersion`, ensuring re-selections use the decision version and first selections use the Purchase Request version. Concurrency conflict (HTTP 409) is cleanly surfaced with a reload affordance and no false success notice.
+- **F-5 & F-6 (Documentation & Bundle Reconciliation)**: Harmonized repository documentation, updated test counts (754 backend, 202 frontend unit, 8 Playwright E2E), measured production bundle size (478.57 kB initial total, 91.94 kB lazy quotation chunk), and recorded non-blocking P3 observations (F-3 SQLite fallback and F-4 quotation logging).
+- **Governance Reconciliation (ADR-019 & MESP-143 Inheritance)**: Permanent architecture rules added to `AGENTS.md` and `CLAUDE.md`. Established that **Tenant != Workspace** (Tenant is the server-authorized isolation boundary; operational context is inside Tenant and aligns with Company/Branch; Platform Tenant Workspace is a separate MESP-67 control-plane concept); host resolution is candidate routing, not authorization; Overview loads before context switching; Wafra logo is generic Tenant branding configuration data under `frontend/assets` (never hardcoded logic); and Saudi Riyal symbol is a Saudi country-pack/SAR presentation asset with zero FX/tax/accounting effect. MESP-143 remains Planned/To Do and is not implemented in this session.
+
+| Current fact | Verified position |
+|---|---|
+| Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open, Draft, and intentionally unmerged. No Jira or external-tracker operation was performed (GPT-5.6 Sol owns Jira). |
+| F-1 Currency resilience | `formatMoney` handles both standard ISO 4217 (e.g. `USD`, `SAR`) and non-ISO MESP configured codes without throwing `RangeError`. Unit and Playwright tests verify multi-row list rendering and commercial hero values. |
+| F-2 Concurrency passthrough | Backend enforces caller-provided `If-Match` token on first decision (PR version) and reselection (current decision version). Stale or mismatched tokens reject with HTTP 409 `concurrency_conflict`. |
+| Architecture & Governance | ADR-019 accepted and tracked; MESP-143 execution plan recorded; Tenant != Workspace rule active; Wafra branding is Tenant configuration data; SAR symbol is country-pack presentation; MESP-143 unimplemented (zero product code changes). |
+| P3 Observations | F-3 (SQLite fallback in Development) and F-4 (detailed quotation mutation logging) preserved in findings record without out-of-scope code changes. |
+| Validation baseline | Release build: **0 warnings / 0 errors**. Backend suite: **754/754 passed** with disposable SQL safety LocalDB. Angular unit tests: **202/202 passed across 22 spec files**. Playwright E2E: **8/8 passed across 2 spec files**. `npm audit --omit=dev`: **0 vulnerabilities**. Production bundle: **478.57 kB initial total** (116.51 kB transfer), **91.94 kB lazy quotation chunk** (15.73 kB transfer). |
+| Next exact continuation | Claude Opus 5 targeted re-verification of F-1, F-2, and F-5 findings per TASK.md. |
+
+## Historical authoritative position - 16 August 2026 (MESP-123 pre-Opus SQL safety connection separation and documentation reconciliation)
+
+The MESP-123 validation harness reconciliation is complete on branch
+`feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against
+`main`. This session introduced a permanent architectural separation between
+the persistent MESP application runtime variable and the disposable SQL
+safety-test variable; restored an all-green backend baseline; and fixed the
+root README badge link, Run.md, backend/README.md, TASK.md Opus instructions,
+and ADR-018.
+
+| Current fact | Verified position |
+|---|---|
+| Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open, Draft, and intentionally unmerged. No Jira or external-tracker operation was performed. |
+| SQL variable separation | `MESP_SQLSERVER_CONNECTION_STRING` is the persistent owner Development DB connection (SQL Server `.` / `MESP`). `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is the dedicated disposable LocalDB safety-harness connection (`(localdb)\MSSQLLocalDB` / `MiniErpFoundation_*`). The two variables are non-interchangeable and the safety fixture fails closed if the dedicated variable is absent or points at a non-LocalDB/non-MiniErpFoundation target. |
+| Safety harness change | `SqlServerSafetyFixture.InitializeAsync` now reads only `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`. One new architectural boundary test `Runtime_connection_string_is_not_accepted_as_safety_configuration` proves the runtime variable cannot authorize destructive safety execution even when set. |
+| Safe backend test runner | `scripts/Test-MiniErpBackend.ps1` is a new dedicated safe test runner. It constructs a disposable `MiniErpFoundation_*` connection in process memory, assigns it only to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, runs the full suite, and restores/clears the variable in a guaranteed `finally` block. `MESP_SQLSERVER_CONNECTION_STRING` is never modified. |
+| validate-foundation.ps1 | Updated to assign the disposable connection to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` (not the runtime variable) and restore/clear it in `finally`. `MESP_SQLSERVER_CONNECTION_STRING` is never read or modified by this script. |
+| Documentation | `README.md` badge link corrected (removed misleading MIT license link); Quality checks section updated with the two-variable table and reference to the safe runner. `Run.md` adds the SQL Server connection variable separation section. `backend/README.md` header note updated with the harness separation. `docs/ADR-018` adds the Connection variable separation section. `TASK.md` Opus step 5 corrected to use the dedicated variables and the safe runner, not the runtime variable. |
+| Validation baseline | Release build: **0 warnings / 0 errors**. Backend suite: **753/753 passed** (was 731/752; 22 SQL safety tests now genuinely execute, not gated). Angular: **197/197 across 22 spec files**. Playwright: **6/6**. npm audit: **0 vulnerabilities**. Disposable DB `MiniErpFoundation_20260816144340_f60651c6` created/dropped cleanly; no orphan DBs remain. `MESP_SQLSERVER_CONNECTION_STRING` in User environment: unchanged throughout. |
+| Next exact continuation | Claude Opus 5 independent MESP-123 capability review per the corrected TASK.md Opus instructions. |
+
+## Historical authoritative position - 16 August 2026 (MESP-123 Supplier Quotation / Comparison UI)
+
+MESP-123 B2 remains complete at its bounded shared-shell, workspace-routing,
+server-configured Tenant display, local Development-auth, representative
+Purchase Request UI, local SQL Server cutover, and branding reconciliation
+scope. The bounded Supplier Quotation / Comparison Angular UI is now present
+on branch
+`feat/MESP-123-purchase-request-approval`, continuing Draft PR #66
+against `main`. Phase C Supplier Quotation/comparison/source-decision
+backend/API behavior remains intact.
+
+| Current fact | Verified position |
+|---|---|
+| Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open, Draft, and intentionally unmerged. This session performed no Jira or external-tracker operation. |
+| B2 implementation head | `fd3dd4952cbb9c5eea38eefc5de3955c56faf7d2` (`chore(MESP-123): cut local Development runtime to SQL Server`) is the committed B2 implementation head; documentation synchronization is `d16198e`, final runtime state is `f2ac881`, and the mapped-row reconciliation is committed with this handoff. |
+| Supplier Quotation UI scope | Final pushed documentation head is `65b9fe94d262417520744c8cafc8fbf642928b5d`; implementation commit is `d5e2aad1b3e7f07a93940ce8cc0d0d70a577c5f7`. Lazy list/create/edit/detail routes are wired into the normal shell. The UI uses Approved Purchase Request lineage, server-provided organization names, Supplier/Currency/Tax/Payment Term references, evidence references, server capability flags, If-Match/idempotency mutation headers, comparison groups, explicit mixed-currency/no-FX treatment, required source rationale, current decision, persisted decision history, lifecycle history, audit, and technical references. The only backend addition is the Tenant-scoped source-decision history read operation over existing persisted records; no schema or migration changed. |
+| Spec Kit | Spec Kit 0.16.4 was initialized and audited on an isolated clean `chore/adopt-spec-kit` branch at current `main`; generated `.agents/skills/speckit-*` and `.specify/*` state is preserved only in the local stash `spec-kit init generated adoption review`, with no commit, push, or merge. |
+| Workspace routing | `/app/workspaces` is the canonical authenticated shell route. `/tenant/select` redirects compatibly into it. The selector is rendered once in the normal shell; the duplicate right context rail was removed. |
+| Tenant naming | Context candidates render the server-provided `displayName`. Generic configuration supports arbitrary Tenant labels and the Development fixture can render `Wafra`; no client-side Wafra branch or GUID-first label exists. |
+| Development auth | `POST /api/v1/auth/development-bypass` is Foundation-catalogued and OpenAPI-documented. It is explicit `MESP_DEV_AUTH_BYPASS=true`, exact-Development, loopback-only, server-actor based, no-body/no-client-identity, disabled by default, and fails closed outside Development. |
+| Local SQL Server | A nonblank `MESP_SQLSERVER_CONNECTION_STRING` selects SQL Server server `.` / database `MESP` for normal exact-Development. Formal migrations run Tenancy → Master Data → Business Parties → Procurement with distinct `dbo.__EFMigrationsHistory_*` tables; production startup never auto-migrates. Tenancy alone owns the physical `tenancy.TenantOwnedRecords` table; module alignment migrations are no-op database migrations. |
+| Development data cutover | The dedicated inventory-first utility imported 59 mapped SQLite rows with IDs, Tenant IDs, foreign-key lineage, and source hashes verified. Two recoverable timestamped backups exist under the Development backup directory; SQLite source files and their original hashes remain retained. The local runtime journey added only Development proof data to the existing quotation/source-decision tables; no migration or production data was changed. |
+| Angular shell | Sidebar exposes Overview, Workspaces/Tenant Selection, Master Data, Price Lists, Master Data Import, Purchase Requests, and Supplier Quotations. |
+| Shared UX | Reusable global surface/page-header/grid/toolbar/status/state/technical-reference tokens are adopted by Workspace/Tenant Selection and representative Purchase Request list/detail screens with EN/AR, RTL/LTR, focus, reduced-motion, responsive, and accessible seams. |
+| Validation baseline | Release build is 0 warnings/0 errors; the complete backend suite is 731/752 with 21 SQL safety cases blocked by the harness requirement for the machine-supported LocalDB provider; Angular is 197/197 across 22 spec files; production build is 478.57 kB initial with a 91.72 kB quotation lazy chunk; automated Playwright is 6/6; `npm audit --omit=dev` reports 0 vulnerabilities. The new local SQL-backed API journey passed quotation create/edit/submit, withdraw, disqualify, history/audit, mixed-currency/no-FX comparison, source decision, and source-decision history. No connected browser surface was available for a separate visual pass. |
+| Runtime handoff | The official launcher restarted the pushed head on MiniERP API 5300 and Angular 4300 with SQL-backed Development configuration; health, module registration, repository-owned process paths, and read-only SQL inventory passed. RMS 5000/5001 remained untouched. |
+| Scope exclusions | No Purchase Order, Supplier Confirmation, Goods Receipt, invoice, AP/accounting, payment, stock, supplier portal, external provider, credential, MESP-39, MESP-40, MESP-124, production migration/deployment, or broad redesign work was performed. Owner-managed source assets under `frontend/assets` remain unchanged; only generated browser derivatives changed. |
+| Next exact continuation | Claude Opus 5 independent MESP-123 capability review of the complete bounded UI/API handoff. No Purchase Order. |
+
+## Historical authoritative position - 15 August 2026 (MESP-123 Phase C backend/API handoff)
+
+MESP-123 Phase C is complete at its bounded Supplier Quotation capture,
+comparison, and source-decision backend/API scope on branch
+`feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against
+`main`. The existing Phase A Purchase Request backend and Phase B/B1
+functional Purchase Request UI/integration seams remain the foundation; this
+session did not change Angular source.
+
+| Current fact | Verified value |
+|---|---|
+| Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open and intentionally unmerged. No Jira or external-tracker operation was performed. |
+| Quotation lifecycle | Tenant/company/branch-scoped Supplier Quotation capture, read/list, Draft edit, submit, withdraw, disqualify, history, and audit operations. Submitted quotations are internal recording of external supplier offers; the Supplier is not a platform User. |
+| Purchase Request boundary | Capture and source decision require an Approved Purchase Request. Quotation lines preserve Purchase Request line identity, Product/UOM snapshots, requested and quoted quantities, prices, tax/discount facts, and requested need-by evidence. Edits do not rewrite the request. |
+| Reference integrity | Existing active Supplier, Currency, Tax, and optional Payment Term ports are resolved server-side and useful commercial identities are snapshotted. Inactive, unavailable, foreign-Tenant, invalid, or out-of-lineage references fail closed. |
+| Comparison | Deterministic server comparison exposes supplier/reference/status/validity, totals by currency, coverage, line facts, delivery/payment facts, evidence availability, and qualification issues. Mixed currencies remain explicitly incomparable without an approved FX basis; no hidden winner or ranking is produced. |
+| Source decision | One current selected quotation per Purchase Request, with rationale, actor/time, policy/version/stage evidence, comparison snapshot hash/content, current selection flags, superseded history, and audit evidence. Reselection uses the current source-decision ETag; the first decision uses the approved request version. No Purchase Order is created. |
+| Evidence boundary | Evidence is a bounded reference abstraction preserving identity/reference, filename/content type, description, source, actor, and time. No S3/Azure/provider, blob storage guarantee, supplier portal, or credential work was added. |
+| REST/OpenAPI | Exact Foundation-catalogued `/api/v1/procurement/...` operations are mapped for list/read/create/edit/submit/withdraw/disqualify/compare/source-decision/history/audit, with antiforgery, idempotency, If-Match, audit, Tenant scope, and generated OpenAPI/Scalar descriptions. |
+| Validation | Release solution build 0 warnings/0 errors; focused Supplier Quotation tests 5/5; full non-SQL backend 726/726; SQL safety 21 cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; Angular is unchanged at 158/158 and 439.15 kB initial bundle. |
+| Scope exclusions | No Purchase Order, Supplier Confirmation, Goods Receipt, invoice, AP/accounting, payment, stock mutation, supplier portal, external provider, credential, production infrastructure, statutory/ZATCA/FATOORA, MESP-39, MESP-40, MESP-124, or `frontend/assets` work. |
+| Runtime handoff | Final Development restart is through `scripts/Start-MiniErpDevelopment.ps1` on MiniERP API 5300 and Angular 4300; RMS 5000/5001 is unrelated and must remain untouched. |
+| Next exact continuation | Claude Sonnet 5 - functional Supplier Quotation and Comparison Angular UI against this Phase C API. Keep the scope bounded, do not merge Draft PR #66, do not start Purchase Order, and stop after the UI handoff for review. |
+
+## Historical authoritative position - 15 August 2026 (MESP-123 Phase A backend/API handoff)
+
+MESP-123 Phase A is complete at its bounded backend/API scope on branch
+`feat/MESP-123-purchase-request-approval`, based on starting main
+`7eac2155982e7bedbe7a243a33b74998031dbfbe`. The implementation provides a
+Tenant/company/branch-scoped internal Purchase Request Draft vertical slice:
+Product/UOM/quantity/need-by/purpose lines; list/detail/create/edit;
+submit/approve/reject/return-for-change/eligible cancel; immutable lifecycle,
+approval, history, and audit evidence; configuration-led approval and bounded
+delegation seams; self-approval/SoD enforcement; optimistic concurrency;
+idempotency; Foundation authorization; and generated REST/OpenAPI/Scalar
+contracts. It does not create stock, supplier commitment, Supplier Quotation,
+Purchase Order, receipt, invoice, AP, payment, accounting, or any other
+downstream commercial effect.
+
+| Current fact | Verified value |
+|---|---|
+| Branch / base | `feat/MESP-123-purchase-request-approval` from `7eac2155982e7bedbe7a243a33b74998031dbfbe`; Draft PR #66 is open against `main` and intentionally unmerged. |
+| API surface | 11 Foundation-catalogued public Purchase Request operations with exact route, permission, Tenant scope, antiforgery, mandatory-audit, unsafe-effect, If-Match, and idempotency metadata; real endpoint mappings and generated OpenAPI/Scalar descriptions/responses are present. |
+| Lifecycle / integrity | Draft → PendingApproval → Approved, Rejected, ReturnedForChange, or Cancelled; returned drafts can be edited/resubmitted; self-approval is denied; configured stages/delegation are scope/time/authority checked; history and audit are append-only evidence; request and line versions support optimistic concurrency. |
+| Persistence boundary | Procurement owns its request, line, history, and audit tables/context. Product and UOM are read-only reference ports with server-resolved snapshots; no cross-module foreign keys or stock/AP/accounting behavior were added. |
+| Validation | Release solution build 0 warnings/0 errors; focused Purchase Request tests 4/4; full non-SQL backend 718/718 (714 baseline plus four focused tests); SQL safety 21 cases remain gated by unavailable `MESP_SQLSERVER_CONNECTION_STRING`; Angular remains 158/158 and 439.15 kB initial bundle. |
+| Scope exclusions | No Supplier Quotation, Purchase Order, receipt, invoice, payment, stock, AP, accounting, external provider, credential, Jira/external-tracker, migration/cutover, or production-volume/capacity/SLO work. `frontend/assets` was not touched. MESP-48 remains open. |
+| Runtime handoff | Mandatory final restart is MiniERP API 5300 and Angular 4300; RMS 5000/5001 are unrelated and must remain untouched. |
+| Next exact continuation | Claude Sonnet 5 — first visible Angular Purchase Request UI against this API contract. It must stay bounded to the Purchase Request journey, must not merge the Draft PR, and must stop after its UI handoff for review. |
+
+The following MESP-122 closure is retained as historical repository evidence.
+
+## Historical authoritative position - 15 August 2026 (MESP-122 source merged; final-main runtime closure complete)
 
 The MESP-122 source capability and the bounded final-main runtime closure are
 complete in the repository: PR #65 was

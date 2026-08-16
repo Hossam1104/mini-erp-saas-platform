@@ -3,18 +3,18 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ContextService } from '../../core/context/context.service';
 import { LanguageService } from '../../core/i18n/language.service';
-import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.component';
+import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
 
 @Component({
   selector: 'app-application-shell',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, ContextSwitcherComponent],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, BrandMarkComponent],
   template: `
     <a class="skip-link" href="#main-content">{{ language.text('skipToContent') }}</a>
     <div class="shell">
       <aside class="sidebar" [attr.aria-label]="language.text('menu')">
         <div class="sidebar__brand">
-          <span class="brand-mark" aria-hidden="true"><img src="assets/brand/icon-96.png" alt="" width="96" height="96" /></span>
+          <app-brand-mark class="brand-mark" variant="icon" theme="dark" />
           <div>
             <strong>{{ language.text('appName') }}</strong>
             <small>{{ language.text('appKicker') }}</small>
@@ -24,7 +24,7 @@ import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.compo
           <a routerLink="/app" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
             <span class="nav-icon" aria-hidden="true">⌂</span>{{ language.text('overview') }}
           </a>
-          <a routerLink="/tenant/select" routerLinkActive="is-active">
+          <a routerLink="/app/workspaces" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">◈</span>{{ language.text('switchContext') }}
           </a>
           <a routerLink="/app/master-data/categories" routerLinkActive="is-active">
@@ -32,6 +32,12 @@ import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.compo
           </a>
           <a routerLink="/app/price-lists" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">＄</span>{{ language.text('priceLists') }}
+          </a>
+          <a routerLink="/app/procurement/purchase-requests" routerLinkActive="is-active">
+            <span class="nav-icon" aria-hidden="true">▤</span>{{ language.text('purchaseRequestsNavLabel') }}
+          </a>
+          <a routerLink="/app/procurement/supplier-quotations" routerLinkActive="is-active">
+            <span class="nav-icon" aria-hidden="true">◇</span>{{ language.text('supplierQuotationsNavLabel') }}
           </a>
           <a routerLink="/app/master-data/imports" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">⇪</span>{{ language.text('importNavLabel') }}
@@ -72,14 +78,9 @@ import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.compo
         }
 
         <main id="main-content" class="shell__content">
-          <div class="content-grid">
-            <section class="content-grid__main">
-              <router-outlet />
-            </section>
-            <aside class="context-rail" [attr.aria-label]="language.text('switchContext')">
-              <app-context-switcher />
-            </aside>
-          </div>
+          <section class="content-grid__main">
+            <router-outlet />
+          </section>
         </main>
       </div>
     </div>
@@ -91,8 +92,7 @@ import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.compo
     .shell { display: grid; grid-template-columns: 16rem minmax(0, 1fr); min-height: 100dvh; background: var(--canvas); }
     .sidebar { display: flex; flex-direction: column; padding: 1.35rem 1rem; color: #eff5f2; background: var(--ink); }
     .sidebar__brand { display: flex; align-items: center; gap: 0.7rem; padding: 0.25rem 0.35rem 2.4rem; }
-    .brand-mark { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; padding: 0.3rem; border-radius: 0.7rem; background: var(--surface-raised); box-shadow: var(--shadow-soft); }
-    .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
+    .brand-mark { width: 2.25rem; flex: none; }
     .sidebar__brand strong, .sidebar__brand small { display: block; }
     .sidebar__brand strong { color: #fff; font: 700 0.9rem/1.2 var(--font-display); }
     .sidebar__brand small { margin-top: 0.2rem; color: #9eb2ab; font-size: 0.67rem; }
@@ -115,9 +115,8 @@ import { ContextSwitcherComponent } from '../../shared/ui/context-switcher.compo
     .sign-out:disabled { color: var(--ink-muted); cursor: wait; opacity: 0.65; }
     .sign-out-feedback { margin: 1rem 2.5rem 0; border: 1px solid color-mix(in srgb, var(--danger) 38%, var(--line)); border-radius: 0.7rem; padding: 0.8rem 1rem; color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface-raised)); font-size: 0.85rem; line-height: 1.5; }
     .shell__content { padding: clamp(1.25rem, 3vw, 2.5rem); }
-    .content-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem); gap: clamp(1.25rem, 3vw, 2.5rem); max-width: 76rem; margin: 0 auto; }
-    .context-rail { align-self: start; border: 1px solid var(--line); border-radius: 1.2rem; padding: 1.1rem; background: var(--surface-raised); box-shadow: var(--shadow-soft); }
-    @media (max-width: 860px) { .shell { grid-template-columns: 4.6rem minmax(0, 1fr); } .sidebar__brand div, .sidebar__nav a:not(.is-active)::after, .sidebar__nav a { justify-content: center; } .sidebar__brand div { display: none; } .sidebar__nav a { padding-inline: 0; font-size: 0; } .nav-icon { font-size: 1.05rem; } .sidebar__footer { display: none; } .topbar { padding-inline: 1.25rem; } .content-grid { grid-template-columns: 1fr; } .context-rail { order: -1; } }
+    .content-grid__main { width: min(100%, 78rem); margin: 0 auto; }
+    @media (max-width: 860px) { .shell { grid-template-columns: 4.6rem minmax(0, 1fr); } .sidebar__brand div, .sidebar__nav a:not(.is-active)::after, .sidebar__nav a { justify-content: center; } .sidebar__brand div { display: none; } .sidebar__nav a { padding-inline: 0; font-size: 0; } .nav-icon { font-size: 1.05rem; } .sidebar__footer { display: none; } .topbar { padding-inline: 1.25rem; } }
     @media (max-width: 520px) { .topbar { align-items: flex-start; flex-direction: column; padding-block: 1rem; } .topbar__actions { width: 100%; justify-content: space-between; } .shell__content { padding: 1rem; } }
   `,
 })

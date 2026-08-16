@@ -53,6 +53,12 @@ describe('AuthService', () => {
 
   it('bootstraps a server-issued session with credentials enabled', async () => {
     const result = service.ensureSession();
+    const bypass = http.expectOne('/api/v1/auth/development-bypass');
+    expect(bypass.request.method).toBe('POST');
+    expect(bypass.request.body).toEqual({});
+    expect(bypass.request.withCredentials).toBe(true);
+    bypass.flush({ code: 'development_auth_unavailable' }, { status: 404, statusText: 'Not Found' });
+    await flushSignOutRequest();
     const request = http.expectOne('/api/v1/auth/session');
     expect(request.request.withCredentials).toBe(true);
     request.flush({
@@ -74,12 +80,39 @@ describe('AuthService', () => {
 
   it('returns to an anonymous safe boundary on a rejected session bootstrap', async () => {
     const result = service.ensureSession();
+    http.expectOne('/api/v1/auth/development-bypass').flush(
+      { code: 'development_auth_unavailable' },
+      { status: 404, statusText: 'Not Found' },
+    );
+    await flushSignOutRequest();
     const request = http.expectOne('/api/v1/auth/session');
     request.flush({ code: 'authentication_failed' }, { status: 401, statusText: 'Unauthorized' });
 
     await expect(result).resolves.toBe(false);
     expect(service.status()).toBe('anonymous');
     expect(service.session()).toBeNull();
+  });
+
+  it('accepts the server actor session when the explicit Development bypass is enabled', async () => {
+    const result = service.ensureSession();
+    const bypass = http.expectOne('/api/v1/auth/development-bypass');
+    bypass.flush({
+      authenticated: true,
+      actorId: 'development-actor',
+      sessionId: 'development-session',
+      lifecycleState: 'Active',
+      absoluteExpiresAt: null,
+      selectedPath: null,
+      selectedTenantId: null,
+      selectedContextId: null,
+      selectionVersion: 0,
+    });
+
+    await expect(result).resolves.toBe(true);
+    expect(service.developmentBypassActive()).toBe(true);
+    expect(service.status()).toBe('authenticated');
+    expect(service.session()?.actorId).toBe('development-actor');
+    http.expectNone('/api/v1/auth/session');
   });
 
   it('keeps antiforgery material in memory and exposes it only as a request header', async () => {

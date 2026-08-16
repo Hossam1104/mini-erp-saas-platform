@@ -1,5 +1,12 @@
 # Mini ERP SaaS Platform - Jira Simplification Update
 
+> **Historical governance artifact — superseded as an active execution prompt.**
+> This document records an earlier Jira-only operating plan and is retained for
+> traceability. It is not the current session instruction and must not be
+> executed from this B2 handoff. The current model policy is GPT-5.6 Sol for
+> planning/live verification/Jira, GPT-5.6 Luna Max for implementation, and
+> Claude Opus 5 for defined later independent review.
+
 ## Purpose and execution condition
 
 This is a copy-ready execution plan for Claude Sonnet. It simplifies the existing MESP BRD Foundation for solo-founder operation without creating new issues or implementation work.

@@ -17,6 +17,9 @@ developer machine. SQL Server LocalDB is installed and supports the machine,
 so the one-developer baseline needs a deterministic, disposable option without
 ever connecting to a production or shared database.
 
+MESP-123 B2 adds a separate owner-managed local Development database path. It
+is intentionally not the disposable test database described by this ADR.
+
 ## Decision
 
 1. MESP-64 uses SQL Server LocalDB instance `MSSQLLocalDB` for the current local
@@ -63,6 +66,45 @@ ever connecting to a production or shared database.
 5. Docker/Testcontainers remains a CI-compatible option to be introduced only
    through a separately approved change. This ADR does not claim that LocalDB
    is production-equivalent, nor does it select a production SQL topology.
+
+## B2 local `MESP` cutover boundary
+
+When explicitly configured, normal exact-Development startup uses the local
+SQL Server `MESP` database and formal module migrations. The bounded cutover
+utility imports the existing module-owned SQLite data after an inventory and
+empty-target check, creates a recoverable local backup, and verifies row counts,
+IDs, Tenant IDs, foreign-key lineage, and source hashes. The source SQLite
+files remain available for rollback/reference. The utility refuses a target
+database other than `MESP` and never runs in production.
+
+This path does not replace MESP-64: `scripts/validate-foundation.ps1` still
+creates a disposable `MiniErpFoundation_*` LocalDB database, exercises the
+provider safety assertions, and cleans it. The canonical run now passed the
+complete Release validation at 752/752, including the SQL Server safety suite,
+while leaving zero disposable databases. Neither result proves production
+equivalence, deployment identity, sizing, HA/DR, backup/restore, or the
+MESP-48/MESP-50 gates.
+
+## Connection variable separation (Post-B2 cutover clarification)
+
+Two environment variables serve distinct, non-interchangeable purposes:
+
+- **`MESP_SQLSERVER_CONNECTION_STRING`** — the persistent MiniERP application
+  runtime connection for local `Development`. It targets SQL Server `.` /
+  database `MESP`. This variable is owned by the application host and must
+  never be read or overwritten by the disposable safety harness.
+
+- **`MESP_SQLSERVER_SAFETY_CONNECTION_STRING`** — the disposable SQL safety-test
+  connection. It must target `(localdb)\MSSQLLocalDB` with a
+  `MiniErpFoundation_[A-Za-z0-9_]+` database name. This variable is set
+  in process memory only by `scripts/validate-foundation.ps1` and
+  `scripts/Test-MiniErpBackend.ps1` and is cleared in their `finally` blocks.
+
+The safety fixture (`SqlServerSafetyFixture.InitializeAsync`) reads only
+`MESP_SQLSERVER_SAFETY_CONNECTION_STRING` and fails closed on null/missing,
+non-LocalDB server, `MESP` database name, or any non-`MiniErpFoundation_*`
+name. A silent fallback to the runtime variable is prohibited; the safety
+harness rejects it if the runtime variable is present and points at `MESP`.
 
 ## Fixture lifecycle and limitations
 

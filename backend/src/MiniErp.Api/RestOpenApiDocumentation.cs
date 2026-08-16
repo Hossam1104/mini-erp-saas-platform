@@ -155,6 +155,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "platform.health" => "Check platform availability",
         "platform.openapi" => "Read the generated API contract",
         "platform.module-registration" => "Read registered module boundaries",
+        "auth.development-bypass" => "Establish the configured Development QA session",
         "master-data.tax.list" => "List Tenant-owned Tax rules",
         "master-data.tax.read" => "Read one Tenant-owned Tax rule",
         "master-data.tax.history.read" => "Read Tax rate-version history",
@@ -195,6 +196,31 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.import.audit.read" => "Read Master Data import audit evidence",
         "master-data.import.evidence.read" => "Read complete Master Data import evidence",
         "master-data.import.replay" => "Replay one quarantined Master Data import row",
+        "procurement.organization-scope.list" => "List server-authorized Purchase Request organization scopes",
+        "procurement.purchase-request.list" => "List Tenant-scoped Purchase Requests",
+        "procurement.purchase-request.read" => "Read one Purchase Request",
+        "procurement.purchase-request.create" => "Create a Purchase Request draft",
+        "procurement.purchase-request.edit" => "Edit a Purchase Request draft",
+        "procurement.purchase-request.submit" => "Submit a Purchase Request for approval",
+        "procurement.purchase-request.approve" => "Approve a Purchase Request",
+        "procurement.purchase-request.reject" => "Reject a Purchase Request",
+        "procurement.purchase-request.return-for-change" => "Return a Purchase Request for change",
+        "procurement.purchase-request.cancel" => "Cancel an eligible Purchase Request",
+        "procurement.purchase-request.history.read" => "Read Purchase Request lifecycle history",
+        "procurement.purchase-request.audit.read" => "Read Purchase Request audit evidence",
+        "procurement.quotation.list" => "List Supplier Quotations for an approved Purchase Request",
+        "procurement.quotation.read" => "Read one Supplier Quotation",
+        "procurement.quotation.create" => "Capture a Supplier Quotation against an approved Purchase Request",
+        "procurement.quotation.edit" => "Edit a Draft Supplier Quotation",
+        "procurement.quotation.submit" => "Submit a Supplier Quotation for comparison",
+        "procurement.quotation.withdraw" => "Withdraw a submitted Supplier Quotation",
+        "procurement.quotation.disqualify" => "Disqualify a submitted Supplier Quotation",
+        "procurement.quotation.compare" => "Compare captured Supplier Quotations deterministically",
+        "procurement.source-decision.read" => "Read the current Purchase Request source decision",
+        "procurement.source-decision.history.read" => "Read Purchase Request source-decision history",
+        "procurement.source-decision.record" => "Record the Purchase Request source decision",
+        "procurement.quotation.history.read" => "Read Supplier Quotation lifecycle history",
+        "procurement.quotation.audit.read" => "Read Supplier Quotation audit evidence",
         _ => GenericSummary(operationId)
     };
 
@@ -220,6 +246,14 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
 
     private static string DescriptionFor(FoundationOperationDescriptor descriptor)
     {
+        if (descriptor.OperationId == "auth.development-bypass")
+        {
+            return "Development-only, loopback-only session establishment for the configured server-side Development actor. "
+                + "The request accepts no login, password, Tenant, role, permission, or identity input. "
+                + "The path is unavailable unless the exact Development environment and explicit MESP_DEV_AUTH_BYPASS=true setting are both present; "
+                + "it must remain disabled outside local Development and never substitutes for production authentication.";
+        }
+
         var contextRules = $"Security profile: {descriptor.SecurityProfile}. Scope policy: {descriptor.ScopePolicy}. "
             + $"Exact permission: {descriptor.ExactPermissionCode ?? "none"}. "
             + $"Antiforgery required: {descriptor.RequiresAntiforgery}. "
@@ -284,6 +318,35 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "or irreversible production migration decisions.";
         }
 
+        if (descriptor.OperationId == "procurement.organization-scope.list")
+        {
+            return contextRules
+                + "Organization scopes are the trusted, server-configured set of Company/Branch options a caller may select when creating "
+                + "or editing a Purchase Request. Options are filtered to the caller's Tenant and further narrowed by the caller's own "
+                + "trusted authorization scope; a request can never widen this to an arbitrary Company or Branch identity. This is not a "
+                + "Company/Branch CRUD boundary; it exposes read-only display names for an existing or Development-configured organization "
+                + "structure so the client never needs to type or display a raw internal identifier as the primary means of selection.";
+        }
+
+        if (descriptor.OperationId.StartsWith("procurement.purchase-request", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Purchase Request is an internal Tenant/company/branch demand signal containing Product, UOM, quantity, need-by date, and purpose lines. "
+                + "The lifecycle is Draft, PendingApproval, Approved, Rejected, ReturnedForChange, or Cancelled. Submission freezes the reviewed request version; "
+                + "approval is configuration-led and records immutable history, including bounded delegation evidence where configured. Self-approval is denied, "
+                + "missing or expired authority blocks the decision, and cancellation is available only in eligible states. This boundary creates no stock, supplier "
+                + "commitment, Purchase Order, receipt, invoice, AP, payment, or accounting effect. Mutations require Idempotency-Key, the current If-Match value where "
+                + "declared, antiforgery, and mandatory audit evidence.";
+        }
+
+        if (descriptor.OperationId.StartsWith("procurement.quotation", StringComparison.Ordinal)
+            || descriptor.OperationId.StartsWith("procurement.source-decision", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Supplier Quotation is a buyer-recorded external offer captured only against an Approved Purchase Request. The persisted record snapshots Supplier, Currency, optional Payment Term, Product/UOM/requested-line identity, quantities, prices, discounts, tax facts, delivery facts, notes, and evidence references. "
+                + "Comparison is deterministic and preserves transaction currencies; mixed currencies are not ranked or converted because no FX source is invoked. Source decision records the selected quotation, rationale, actor/time, policy-stage evidence, and a hashed comparison snapshot. This boundary creates no Purchase Order, supplier portal account, receipt, invoice, AP, payment, stock, accounting, or external-provider effect. Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and the current If-Match value where declared.";
+        }
+
         return contextRules
             + "The operation is part of the reusable internal ERP contract. Response failures use Problem Details "
             + "with a stable code, correlation identifier, and operation identifier; provider details and internal "
@@ -295,6 +358,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
 
     private static string SuccessResponseFor(string operationId) => operationId switch
     {
+        "auth.development-bypass" => "An authenticated session for the server-configured Development actor with server-derived context candidates.",
         "master-data.tax.calculate" => "A deterministic Tax amount and immutable reference snapshot for the explicit inputs.",
         "master-data.tax.reference.read" => "The active Tax rate version selected for the requested effective date, including applied reference evidence.",
         "master-data.tax.history.read" => "The Tenant-owned Tax rate-version windows in stable version order.",
@@ -316,6 +380,31 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "master-data.import.audit.read" => "Tenant-filtered batch, row, and mutation audit evidence with source reference and correlation context.",
         "master-data.import.evidence.read" => "The complete Tenant-filtered import batch, row, reconciliation, and audit evidence package.",
         "master-data.import.replay" => "The updated import batch after replaying one quarantined row, preserving the original evidence and adding a new current attempt.",
+        "procurement.organization-scope.list" => "The Tenant- and scope-filtered set of server-authorized Company/Branch options with human-readable display names.",
+        "procurement.purchase-request.list" => "Tenant-filtered Purchase Request summaries with scope, status, line count, and concurrency version.",
+        "procurement.purchase-request.read" => "One Tenant-filtered Purchase Request with its lines, approval snapshot, lifecycle state, and server-derived action affordances.",
+        "procurement.purchase-request.create" => "The persisted Draft Purchase Request and its Product/UOM line snapshots.",
+        "procurement.purchase-request.edit" => "The updated Draft or ReturnedForChange Purchase Request with a new optimistic-concurrency version.",
+        "procurement.purchase-request.submit" => "The Purchase Request in PendingApproval with the effective approval-policy snapshot.",
+        "procurement.purchase-request.approve" => "The Purchase Request after the immutable approval decision and any resulting stage transition.",
+        "procurement.purchase-request.reject" => "The rejected Purchase Request with the recorded reason and approval evidence.",
+        "procurement.purchase-request.return-for-change" => "The Purchase Request returned for change with the recorded reason and approval evidence.",
+        "procurement.purchase-request.cancel" => "The eligible Purchase Request in Cancelled status with immutable cancellation evidence.",
+        "procurement.purchase-request.history.read" => "Immutable Tenant-filtered lifecycle and approval history for the Purchase Request.",
+        "procurement.purchase-request.audit.read" => "Immutable Tenant-filtered operation audit evidence for the Purchase Request.",
+        "procurement.quotation.list" => "Tenant- and scope-filtered Supplier Quotation summaries for the approved Purchase Request.",
+        "procurement.quotation.read" => "One Tenant-filtered Supplier Quotation with source-line snapshots, evidence references, lifecycle state, and concurrency version.",
+        "procurement.quotation.create" => "The persisted Draft Supplier Quotation with immutable Supplier, Currency, line, and evidence snapshots.",
+        "procurement.quotation.edit" => "The updated Draft Supplier Quotation with refreshed offer snapshots and a new optimistic-concurrency version.",
+        "procurement.quotation.submit" => "The Supplier Quotation in Submitted status, ready for deterministic comparison.",
+        "procurement.quotation.withdraw" => "The submitted Supplier Quotation in Withdrawn status with immutable reason and audit evidence.",
+        "procurement.quotation.disqualify" => "The submitted Supplier Quotation in Disqualified status with immutable reason and audit evidence.",
+        "procurement.quotation.compare" => "A deterministic comparison view grouped by transaction currency with coverage, commercial totals, qualification issues, and no hidden winner.",
+        "procurement.source-decision.read" => "The current source decision with selected quotation, rationale, policy-stage evidence, comparison snapshot reference, and version.",
+        "procurement.source-decision.history.read" => "Immutable Tenant-filtered source-decision selections with rationale, supersession lineage, and comparison snapshot references.",
+        "procurement.source-decision.record" => "The persisted source decision and immutable selection history; no Purchase Order or downstream accounting effect is created.",
+        "procurement.quotation.history.read" => "Immutable Tenant-filtered Supplier Quotation lifecycle history.",
+        "procurement.quotation.audit.read" => "Immutable Tenant-filtered Supplier Quotation operation audit evidence.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 

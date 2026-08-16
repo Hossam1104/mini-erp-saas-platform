@@ -8,6 +8,26 @@
 | Related Jira | MESP-61, MESP-64, MESP-48, MESP-50 |
 | Supersedes | None |
 
+## MESP-123 B2 local-provider reconciliation — 16 August 2026
+
+The bounded B2 implementation makes the shared SQL Server shape executable for
+local Development without changing the production gate. When the explicit
+`MESP_SQLSERVER_CONNECTION_STRING` is configured, the four module contexts
+use server `.` / database `MESP` and apply formal migrations in this order:
+Tenancy, Master Data, Business Parties, then Procurement. Each context has a
+distinct `dbo.__EFMigrationsHistory_*` table. `tenancy.TenantOwnedRecords` is a
+shared runtime table but has one physical owner: the Tenancy context. The
+other module alignment migrations are no-op database migrations whose model
+snapshots reflect that shared ownership; they do not create duplicate tables.
+
+The Development startup migrator is exact-environment-only and production
+startup never calls it. A bounded inventory-first cutover utility moved the
+existing local SQLite rows into the empty `MESP` database with a recoverable
+backup, preserved IDs/Tenant IDs and foreign-key lineage, verified source
+hashes, and retained the SQLite originals. This is local Development evidence,
+not a production migration, deployment, backup/restore, capacity, HA/DR,
+residency, retention, or MESP-48/MESP-50 approval.
+
 ## Context
 
 Release 1 uses a shared SQL Server database with strict application-layer
@@ -30,11 +50,13 @@ microservices or granting a worker a global business-data query path.
    A transaction is not an excuse to bypass Tenant checks, query filters or
    authorization evidence.
 4. MESP-61 may provide provider-neutral contracts and a deterministic local
-   adapter. It does not add a production migration, choose a SQL deployment
-   topology, or claim provider validation.
+   adapter. It does not choose a SQL deployment topology or claim production
+   migration readiness.
 5. MESP-64 owns disposable SQL Server provider validation, schema/index/
-   concurrency probes and the evidence report. Production migrations remain a
-   separately reviewed delivery step.
+   concurrency probes and the evidence report. B2's local `MESP` migrations
+   and data cutover are a separate Development convenience and do not replace
+   the disposable safety gate or the separately reviewed production delivery
+   step.
 
 ## Alternatives considered
 

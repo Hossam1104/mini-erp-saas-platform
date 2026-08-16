@@ -69,6 +69,15 @@ describe('ApplicationShellComponent sign-out behavior', () => {
 
   afterEach(() => http.verify());
 
+  it('renders one canonical workspace route and keeps the context selector out of the shell rail', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('a[href="/app/workspaces"]')).not.toBeNull();
+    expect(element.querySelector('.context-rail')).toBeNull();
+    expect(element.textContent).toContain('Master Data');
+    expect(element.textContent).toContain('Price Lists');
+    expect(element.textContent).toContain('Purchase Requests');
+  });
+
   async function failSignOut(code = 'audit_unavailable', status = 503): Promise<void> {
     const signOut = fixture.componentInstance.signOut();
     fixture.detectChanges();
@@ -145,5 +154,26 @@ describe('ApplicationShellComponent sign-out behavior', () => {
     expect(alert?.textContent).toContain('تعذّر تأكيد تسجيل الخروج. قد تظل جلستك نشطة. يُرجى المحاولة مرة أخرى.');
     expect(alert?.getAttribute('aria-live')).toBe('assertive');
     expect(document.documentElement.dir).toBe('rtl');
+  });
+
+  it('renders the transparent dark-surface owner icon in the sidebar without the obsolete white tile', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const brand = element.querySelector('.sidebar__brand app-brand-mark') as HTMLElement | null;
+    expect(brand).not.toBeNull();
+    const img = brand?.querySelector('img') as HTMLImageElement | null;
+    expect(img?.getAttribute('src')).toBe('assets/brand/favicon-dark-64.png');
+    expect(img?.getAttribute('alt')).toBe('');
+    expect(element.querySelector('.sidebar__brand')?.textContent).toContain('MESP');
+    expect(element.innerHTML).not.toContain('assets/brand/icon-96.png');
+    expect(element.querySelectorAll('.sidebar__brand img').length).toBe(1);
+  });
+
+  it('keeps the sidebar artwork unmirrored in RTL', () => {
+    language.setLanguage('ar');
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const img = element.querySelector('.sidebar__brand img') as HTMLImageElement | null;
+    expect(img?.getAttribute('src')).toBe('assets/brand/favicon-dark-64.png');
+    expect(img?.style.transform).toBe('');
   });
 });

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -10,16 +11,20 @@ using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.Identity;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Platform;
+using MiniErp.App.Modules.Procurement;
 using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.BusinessParties;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Platform;
 using MiniErp.Contracts.Modules.MasterData;
+using MiniErp.Infrastructure.Persistence;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
+using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using MiniErp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
+DevelopmentAuthBypassPolicy.ValidateStartup(builder.Environment, builder.Configuration);
 
 builder.Services.AddSingleton<IPlatformAdministrationModule>(_ => PlatformModuleRegistration.Create());
 builder.Services.AddSingleton<IMasterDataCatalogModule>(_ => MasterDataModuleRegistration.Create());
@@ -29,18 +34,22 @@ builder.Services.AddProductIdentity();
 builder.Services.AddSupplierIdentity();
 builder.Services.AddCustomerIdentity();
 builder.Services.AddMasterDataImport();
+builder.Services.AddPurchaseRequestApprovalFoundation();
 string? developmentMasterDataSqliteConnectionString = null;
 string? developmentBusinessPartiesSqliteConnectionString = null;
+string? developmentProcurementSqliteConnectionString = null;
 var sqlServerConnectionString = builder.Configuration["MESP_SQLSERVER_CONNECTION_STRING"];
 if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
 {
     builder.Services.AddMasterDataSqlServerPersistence(sqlServerConnectionString);
     builder.Services.AddBusinessPartiesSqlServerPersistence(sqlServerConnectionString);
+    builder.Services.AddProcurementSqlServerPersistence(sqlServerConnectionString);
 }
 else if (builder.Environment.IsDevelopment())
 {
     var configuredMasterDataConnectionString = builder.Configuration["MESP_DEV_MASTERDATA_SQLITE_CONNECTION_STRING"];
     var configuredBusinessPartiesConnectionString = builder.Configuration["MESP_DEV_BUSINESS_PARTIES_SQLITE_CONNECTION_STRING"];
+    var configuredProcurementConnectionString = builder.Configuration["MESP_DEV_PROCUREMENT_SQLITE_CONNECTION_STRING"];
     var configuredSqliteDirectory = builder.Configuration["MESP_DEV_SQLITE_DIRECTORY"];
     var localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     var defaultSqliteDirectory = string.IsNullOrWhiteSpace(configuredSqliteDirectory)
@@ -51,7 +60,8 @@ else if (builder.Environment.IsDevelopment())
         : configuredSqliteDirectory;
 
     if (string.IsNullOrWhiteSpace(configuredMasterDataConnectionString)
-        || string.IsNullOrWhiteSpace(configuredBusinessPartiesConnectionString))
+        || string.IsNullOrWhiteSpace(configuredBusinessPartiesConnectionString)
+        || string.IsNullOrWhiteSpace(configuredProcurementConnectionString))
     {
         Directory.CreateDirectory(defaultSqliteDirectory);
     }
@@ -62,10 +72,57 @@ else if (builder.Environment.IsDevelopment())
     developmentBusinessPartiesSqliteConnectionString = string.IsNullOrWhiteSpace(configuredBusinessPartiesConnectionString)
         ? $"Data Source={Path.Combine(defaultSqliteDirectory, "business-parties.db")}"
         : configuredBusinessPartiesConnectionString;
+    developmentProcurementSqliteConnectionString = string.IsNullOrWhiteSpace(configuredProcurementConnectionString)
+        ? $"Data Source={Path.Combine(defaultSqliteDirectory, "procurement.db")}"
+        : configuredProcurementConnectionString;
 
     builder.Services.AddMasterDataSqlitePersistence(developmentMasterDataSqliteConnectionString);
     builder.Services.AddBusinessPartiesSqlitePersistence(developmentBusinessPartiesSqliteConnectionString);
+    builder.Services.AddProcurementSqlitePersistence(developmentProcurementSqliteConnectionString);
 }
+
+if (builder.Environment.IsDevelopment()
+    && string.Equals(builder.Configuration["MESP_DEV_BOOTSTRAP_ENABLED"], "true", StringComparison.OrdinalIgnoreCase))
+{
+    // Development-only default organization scope so the Purchase Request UI has at least one
+    // selectable Company/Branch option before a real Company/Branch module exists. This is a
+    // configuration-led fixture, not production policy: it is fully replaced by supplying
+    // MESP_DEV_ORG_SCOPE_* environment variables, and a future Company/Branch module can replace
+    // this provider registration entirely without touching Purchase Request code or the API contract.
+    var configuredOrgScopeTenantId = builder.Configuration["MESP_DEV_ORG_SCOPE_TENANT_ID"];
+    var configuredOrgScopeCompanyId = builder.Configuration["MESP_DEV_ORG_SCOPE_COMPANY_ID"];
+    var configuredOrgScopeBranchId = builder.Configuration["MESP_DEV_ORG_SCOPE_BRANCH_ID"];
+    var configuredOrgScopeCompanyName = builder.Configuration["MESP_DEV_ORG_SCOPE_COMPANY_NAME"];
+    var configuredOrgScopeBranchName = builder.Configuration["MESP_DEV_ORG_SCOPE_BRANCH_NAME"];
+
+    var developmentOrgScopeTenantId = Guid.TryParse(configuredOrgScopeTenantId, out var parsedOrgScopeTenantId)
+        ? parsedOrgScopeTenantId
+        : DevelopmentBootstrap.DevTenantId.Value;
+    var developmentOrgScopeCompanyId = Guid.TryParse(configuredOrgScopeCompanyId, out var parsedOrgScopeCompanyId)
+        ? parsedOrgScopeCompanyId
+        : Guid.Parse("99999999-9999-9999-9999-999999999999");
+    Guid? developmentOrgScopeBranchId = Guid.TryParse(configuredOrgScopeBranchId, out var parsedOrgScopeBranchId)
+        ? parsedOrgScopeBranchId
+        : null;
+    var developmentOrgScopeCompanyName = string.IsNullOrWhiteSpace(configuredOrgScopeCompanyName)
+        ? "Development Organization"
+        : configuredOrgScopeCompanyName;
+    var developmentOrgScopeBranchName = string.IsNullOrWhiteSpace(configuredOrgScopeBranchName)
+        ? null
+        : configuredOrgScopeBranchName;
+
+    builder.Services.AddSingleton<IProcurementOrganizationScopeProvider>(_ =>
+        new ConfiguredProcurementOrganizationScopeProvider(
+        [
+            new ProcurementOrganizationScopeOption(
+                developmentOrgScopeTenantId,
+                developmentOrgScopeCompanyId,
+                developmentOrgScopeBranchId,
+                developmentOrgScopeCompanyName,
+                developmentOrgScopeBranchName)
+        ]));
+}
+
 builder.Services.AddIdentityAuthorization();
 builder.Services.AddAuthentication(options =>
 {
@@ -139,13 +196,26 @@ builder.Services.AddOpenApi("v1", options =>
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment()
+    && !string.IsNullOrWhiteSpace(sqlServerConnectionString))
+{
+    // Local Development only: the explicit SQL Server configuration selects
+    // the owner's MESP store and applies committed migrations before any
+    // request or Development seed can use the module contexts. Production
+    // migration execution remains a deployment concern.
+    DevelopmentSqlServerDatabaseMigrator.Migrate(sqlServerConnectionString);
+}
+
 if (developmentMasterDataSqliteConnectionString is not null
-    && developmentBusinessPartiesSqliteConnectionString is not null)
+    && developmentBusinessPartiesSqliteConnectionString is not null
+    && developmentProcurementSqliteConnectionString is not null)
 {
     MasterDataPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
         developmentMasterDataSqliteConnectionString);
     BusinessPartiesPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
         developmentBusinessPartiesSqliteConnectionString);
+    ProcurementPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+        developmentProcurementSqliteConnectionString);
 }
 
 app.SeedDevelopmentBootstrap();
@@ -252,6 +322,55 @@ app.MapPost("/api/v1/auth/sign-in", async (
 })
     .WithName("auth.sign-in")
     .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.sign-in")));
+
+app.MapPost("/api/v1/auth/development-bypass", async (
+    HttpContext httpContext,
+    IHostEnvironment environment,
+    IConfiguration configuration,
+    IFoundationIdentityHost identityHost) =>
+{
+    if (!DevelopmentAuthBypassPolicy.IsAllowed(
+            environment,
+            configuration,
+            httpContext.Connection.RemoteIpAddress))
+    {
+        return await WriteProblemAsync(
+            httpContext,
+            StatusCodes.Status404NotFound,
+            "development_auth_unavailable",
+            "Development authentication unavailable",
+            "The requested Development authentication path is unavailable.",
+            "auth.development-bypass");
+    }
+
+    // A browser reload may call the convenience endpoint again before the
+    // normal session endpoint. Preserve an already authenticated server
+    // session (including its selected Tenant context) instead of replacing it
+    // with a fresh, unselected Development session.
+    var existingSession = identityHost.GetSession(httpContext.User);
+    if (existingSession.Authenticated)
+    {
+        return Results.Json(ToSessionResponse(existingSession), statusCode: StatusCodes.Status200OK);
+    }
+
+    var login = configuration["MESP_DEV_ADMIN_LOGIN"] ?? "admin@minierp.local";
+    var result = identityHost.DevelopmentBypass(login);
+    if (!result.Succeeded || result.Principal is null || result.State is null)
+    {
+        return await WriteProblemAsync(
+            httpContext,
+            StatusCodes.Status503ServiceUnavailable,
+            "development_auth_unavailable",
+            "Development authentication unavailable",
+            "The configured Development actor is not available.",
+            "auth.development-bypass");
+    }
+
+    await httpContext.SignInAsync(FirstPartyCookieConfiguration.Scheme, result.Principal);
+    return Results.Json(ToSessionResponse(result.State), statusCode: StatusCodes.Status200OK);
+})
+    .WithName("auth.development-bypass")
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.development-bypass")));
 
 app.MapPost("/api/v1/auth/sign-out", async (
     HttpContext httpContext,
@@ -525,6 +644,8 @@ app.MapTaxEndpoints();
 app.MapExchangeRateEndpoints();
 app.MapPriceListEndpoints();
 app.MapMasterDataImportEndpoints();
+app.MapPurchaseRequestEndpoints();
+app.MapSupplierQuotationEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

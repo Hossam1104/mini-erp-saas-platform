@@ -799,16 +799,23 @@ internal sealed class IdentityAuthorizationService :
 
             user.AccessFailedCount = 0;
             user.LockoutEnd = null;
-            var sessionId = new SessionId(Guid.NewGuid());
-            var cookieValue = CreateOpaqueToken();
-            var session = new UserSession(
-                sessionId,
-                user.Id,
-                HashToken(cookieValue),
-                now,
-                now.Add(options.AbsoluteSessionLifetime));
-            store.Sessions.Add(sessionId, session);
-            return new AuthenticationResult(true, sessionId, cookieValue, "authenticated");
+            return CreateSessionUnsafe(user, now);
+        }
+    }
+
+    internal AuthenticationResult AuthenticateDevelopment(string email)
+    {
+        var normalizedEmail = NormalizeEmail(email);
+        lock (store.SyncRoot)
+        {
+            if (!store.UsersByEmail.TryGetValue(normalizedEmail, out var user)
+                || user.Status != GlobalUserStatus.Active
+                || user.LockoutEnd is { } lockoutEnd && lockoutEnd > Now)
+            {
+                return FailedAuthentication();
+            }
+
+            return CreateSessionUnsafe(user, Now);
         }
     }
 
@@ -2257,6 +2264,20 @@ internal sealed class IdentityAuthorizationService :
 
     private static AuthenticationResult FailedAuthentication() =>
         new(false, null, null, GenericAuthenticationCode);
+
+    private AuthenticationResult CreateSessionUnsafe(GlobalUser user, DateTimeOffset now)
+    {
+        var sessionId = new SessionId(Guid.NewGuid());
+        var cookieValue = CreateOpaqueToken();
+        var session = new UserSession(
+            sessionId,
+            user.Id,
+            HashToken(cookieValue),
+            now,
+            now.Add(options.AbsoluteSessionLifetime));
+        store.Sessions.Add(sessionId, session);
+        return new AuthenticationResult(true, sessionId, cookieValue, "authenticated");
+    }
 
     private static string NormalizeEmail(string email)
     {

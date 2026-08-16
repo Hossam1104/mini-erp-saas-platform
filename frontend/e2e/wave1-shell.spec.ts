@@ -22,6 +22,9 @@ const sessionWithContext = {
 
 test.describe('Wave 1 shell', () => {
   test.beforeEach(async ({ page }) => {
+    await page.route('**/api/v1/auth/development-bypass', (route) => route.fulfill({
+      json: { authenticated: false },
+    }));
     await page.route('**/api/v1/auth/session', (route) => route.fulfill({ json: sessionWithoutContext }));
     await page.route('**/api/v1/auth/contexts', (route) => route.fulfill({
       json: {
@@ -50,17 +53,17 @@ test.describe('Wave 1 shell', () => {
   });
 
   test('bootstraps navigation, switches language direction, and adopts server-confirmed context', async ({ page }) => {
-    await page.goto('/app');
-    await expect(page).toHaveURL(/\/app$/);
+    await page.goto('/app/workspaces');
+    await expect(page).toHaveURL(/\/app\/workspaces$/);
     await expect(page.getByRole('heading', { name: 'Choose a workspace' })).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
 
     await page.getByRole('button', { name: 'Language' }).click();
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.locator('#workspace-title')).toHaveText('اختر مساحة عمل');
+    await expect(page.locator('#context-switcher-title')).toHaveText('اختر مساحة عمل');
 
     await page.locator('#workspace-select').selectOption('context-a');
-    await expect(page.locator('#workspace-title')).toHaveText('Alpha workspace');
+    await expect(page.locator('#context-switcher-title')).toHaveText('Alpha workspace');
     await expect(page.locator('.context-switcher__pill')).toHaveText('عضوية العميل');
   });
 
