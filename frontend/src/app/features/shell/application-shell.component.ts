@@ -36,6 +36,9 @@ import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
           <a routerLink="/app/procurement/purchase-requests" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">▤</span>{{ language.text('purchaseRequestsNavLabel') }}
           </a>
+          <a routerLink="/app/procurement/supplier-quotations" routerLinkActive="is-active">
+            <span class="nav-icon" aria-hidden="true">◇</span>{{ language.text('supplierQuotationsNavLabel') }}
+          </a>
           <a routerLink="/app/master-data/imports" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">⇪</span>{{ language.text('importNavLabel') }}
           </a>

@@ -180,6 +180,20 @@ public static class SupplierQuotationEndpoints
             .WithTags("Procurement / Supplier Quotations")
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.source-decision.read")));
 
+        endpoints.MapGet(
+                "/api/v1/procurement/purchase-requests/{purchaseRequestId:guid}/source-decision/history",
+                async (Guid purchaseRequestId, HttpContext httpContext, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SupplierQuotationService service) =>
+                    await ExecuteReadAsync(
+                        httpContext,
+                        resolver,
+                        tenantResolver,
+                        FoundationOperationCatalog.GetRequired("procurement.source-decision.history.read"),
+                        context => service.ReadSourceDecisionHistoryAsync(context, purchaseRequestId, httpContext.RequestAborted),
+                        (_, records) => records.Select(ToSourceDecisionHistoryResponse).ToArray()))
+            .WithName("procurement.source-decision.history.read")
+            .WithTags("Procurement / Supplier Quotations")
+            .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.source-decision.history.read")));
+
         endpoints.MapPost(
                 "/api/v1/procurement/purchase-requests/{purchaseRequestId:guid}/source-decision",
                 async (Guid purchaseRequestId, SupplierSourceDecisionWriteRequest? request, HttpContext httpContext, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, FoundationAuditCoordinator auditCoordinator, LocalMasterDataIdempotencyStore idempotencyStore, SupplierQuotationService service) =>
@@ -526,6 +540,21 @@ public static class SupplierQuotationEndpoints
         record.PolicyVersion,
         record.StageKey,
         record.DelegatedFromActorId);
+
+    private static SupplierSourceDecisionHistoryResponse ToSourceDecisionHistoryResponse(SupplierSourceDecisionHistoryRecord record) => new(
+        record.Id,
+        record.TenantId,
+        record.SourceDecisionId,
+        record.PurchaseRequestId,
+        record.PreviousSelectedQuotationId,
+        record.SelectedQuotationId,
+        record.ActorId,
+        record.SelectedAt,
+        record.Rationale,
+        record.PolicyId,
+        record.PolicyVersion,
+        record.StageKey,
+        record.ComparisonSnapshotReference);
 
     private static SupplierQuotationAuditResponse ToAuditResponse(SupplierQuotationAuditRecord record) => new(
         record.EvidenceId,

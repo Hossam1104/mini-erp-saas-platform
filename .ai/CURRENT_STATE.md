@@ -1,11 +1,12 @@
 # Current State
 
-## Current authoritative position - 16 August 2026 (MESP-123 B2 post-Phase-C foundation)
+## Current authoritative position - 16 August 2026 (MESP-123 Supplier Quotation / Comparison UI)
 
-MESP-123 B2 is complete at its bounded shared-shell, workspace-routing,
+MESP-123 B2 remains complete at its bounded shared-shell, workspace-routing,
 server-configured Tenant display, local Development-auth, representative
 Purchase Request UI, local SQL Server cutover, and branding reconciliation
-scope on branch
+scope. The bounded Supplier Quotation / Comparison Angular UI is now present
+on branch
 `feat/MESP-123-purchase-request-approval`, continuing Draft PR #66
 against `main`. Phase C Supplier Quotation/comparison/source-decision
 backend/API behavior remains intact.
@@ -14,18 +15,19 @@ backend/API behavior remains intact.
 |---|---|
 | Branch / PR | `feat/MESP-123-purchase-request-approval`; Draft PR #66 remains open, Draft, and intentionally unmerged. This session performed no Jira or external-tracker operation. |
 | B2 implementation head | `fd3dd4952cbb9c5eea38eefc5de3955c56faf7d2` (`chore(MESP-123): cut local Development runtime to SQL Server`) is the committed B2 implementation head; documentation synchronization is `d16198e`, final runtime state is `f2ac881`, and the mapped-row reconciliation is committed with this handoff. |
+| Supplier Quotation UI scope | Lazy list/create/edit/detail routes are wired into the normal shell. The UI uses Approved Purchase Request lineage, server-provided organization names, Supplier/Currency/Tax/Payment Term references, evidence references, server capability flags, If-Match/idempotency mutation headers, comparison groups, explicit mixed-currency/no-FX treatment, required source rationale, current decision, persisted decision history, lifecycle history, audit, and technical references. The only backend addition is the Tenant-scoped source-decision history read operation over existing persisted records; no schema or migration changed. |
 | Spec Kit | Spec Kit 0.16.4 was initialized and audited on an isolated clean `chore/adopt-spec-kit` branch at current `main`; generated `.agents/skills/speckit-*` and `.specify/*` state is preserved only in the local stash `spec-kit init generated adoption review`, with no commit, push, or merge. |
 | Workspace routing | `/app/workspaces` is the canonical authenticated shell route. `/tenant/select` redirects compatibly into it. The selector is rendered once in the normal shell; the duplicate right context rail was removed. |
 | Tenant naming | Context candidates render the server-provided `displayName`. Generic configuration supports arbitrary Tenant labels and the Development fixture can render `Wafra`; no client-side Wafra branch or GUID-first label exists. |
 | Development auth | `POST /api/v1/auth/development-bypass` is Foundation-catalogued and OpenAPI-documented. It is explicit `MESP_DEV_AUTH_BYPASS=true`, exact-Development, loopback-only, server-actor based, no-body/no-client-identity, disabled by default, and fails closed outside Development. |
 | Local SQL Server | A nonblank `MESP_SQLSERVER_CONNECTION_STRING` selects SQL Server server `.` / database `MESP` for normal exact-Development. Formal migrations run Tenancy → Master Data → Business Parties → Procurement with distinct `dbo.__EFMigrationsHistory_*` tables; production startup never auto-migrates. Tenancy alone owns the physical `tenancy.TenantOwnedRecords` table; module alignment migrations are no-op database migrations. |
-| Development data cutover | The dedicated inventory-first utility imported 59 mapped SQLite rows with IDs, Tenant IDs, foreign-key lineage, and source hashes verified. Two recoverable timestamped backups exist under the Development backup directory; SQLite source files and their original hashes remain retained. Target-only Phase-C quotation/source-decision tables remain empty. |
-| Angular shell | Sidebar exposes Overview, Workspaces/Tenant Selection, Master Data, Price Lists, Master Data Import, and Purchase Requests only. Supplier Quotations are intentionally not linked in B2. |
+| Development data cutover | The dedicated inventory-first utility imported 59 mapped SQLite rows with IDs, Tenant IDs, foreign-key lineage, and source hashes verified. Two recoverable timestamped backups exist under the Development backup directory; SQLite source files and their original hashes remain retained. The local runtime journey added only Development proof data to the existing quotation/source-decision tables; no migration or production data was changed. |
+| Angular shell | Sidebar exposes Overview, Workspaces/Tenant Selection, Master Data, Price Lists, Master Data Import, Purchase Requests, and Supplier Quotations. |
 | Shared UX | Reusable global surface/page-header/grid/toolbar/status/state/technical-reference tokens are adopted by Workspace/Tenant Selection and representative Purchase Request list/detail screens with EN/AR, RTL/LTR, focus, reduced-motion, responsive, and accessible seams. |
-| Validation baseline | Release build is 0 warnings/0 errors; complete backend validation is 752/752 including the SQL Server safety suite; Angular is 190/190 across 20 spec files; production build is 459.20 kB initial; Playwright is 4/4; `npm audit` reports 0 vulnerabilities. A real browser pass verified light/dark branding, transparent/collapsed shell behavior, RTL layout, server-derived Tenant naming, and two migrated Purchase Requests. |
+| Validation baseline | Release build is 0 warnings/0 errors; the complete backend suite is 731/752 with 21 SQL safety cases blocked by the harness requirement for the machine-supported LocalDB provider; Angular is 197/197 across 22 spec files; production build is 478.57 kB initial with a 91.72 kB quotation lazy chunk; automated Playwright is 6/6; `npm audit --omit=dev` reports 0 vulnerabilities. The new local SQL-backed API journey passed quotation create/edit/submit, withdraw, disqualify, history/audit, mixed-currency/no-FX comparison, source decision, and source-decision history. No connected browser surface was available for a separate visual pass. |
 | Runtime handoff | The official launcher restarted the pushed head on MiniERP API 5300 and Angular 4300 with SQL-backed Development configuration; health, module registration, repository-owned process paths, and read-only SQL inventory passed. RMS 5000/5001 remained untouched. |
 | Scope exclusions | No Purchase Order, Supplier Confirmation, Goods Receipt, invoice, AP/accounting, payment, stock, supplier portal, external provider, credential, MESP-39, MESP-40, MESP-124, production migration/deployment, or broad redesign work was performed. Owner-managed source assets under `frontend/assets` remain unchanged; only generated browser derivatives changed. |
-| Next exact continuation | GPT-5.6 Luna Max - functional Angular Supplier Quotation and Comparison UI with source selection/rationale UX against the existing Phase-C API and B2 shell. No Purchase Order. |
+| Next exact continuation | Claude Opus 5 independent MESP-123 capability review of the complete bounded UI/API handoff. No Purchase Order. |
 
 ## Historical authoritative position - 15 August 2026 (MESP-123 Phase C backend/API handoff)
 

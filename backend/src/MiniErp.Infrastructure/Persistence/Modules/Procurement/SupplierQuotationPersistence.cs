@@ -329,6 +329,36 @@ public sealed class SupplierQuotationPersistence : ISupplierQuotationPersistence
         return decision is null ? null : ToRecord(decision);
     }
 
+    public async Task<IReadOnlyList<SupplierSourceDecisionHistoryRecord>> ReadSourceDecisionHistoryAsync(
+        TenantContext tenantContext,
+        Guid purchaseRequestId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(tenantContext);
+        var records = await db.SupplierSourceDecisionHistory
+            .AsNoTracking()
+            .Where(item => item.PurchaseRequestId == purchaseRequestId)
+            .Select(item => new SupplierSourceDecisionHistoryRecord(
+                item.Id,
+                item.TenantId.Value,
+                item.SourceDecisionId,
+                item.PurchaseRequestId,
+                item.PreviousSelectedQuotationId,
+                item.SelectedQuotationId,
+                item.ActorId,
+                item.SelectedAt,
+                item.Rationale,
+                item.PolicyId,
+                item.PolicyVersion,
+                item.StageKey,
+                item.ComparisonSnapshotReference))
+            .ToListAsync(cancellationToken);
+        return records
+            .OrderBy(item => item.SelectedAt)
+            .ThenBy(item => item.Id)
+            .ToArray();
+    }
+
     public async Task<SupplierQuotationPersistenceResult<SupplierSourceDecisionRecord>> RecordSourceDecisionAsync(
         TenantContext tenantContext,
         SupplierSourceDecisionCommand command,

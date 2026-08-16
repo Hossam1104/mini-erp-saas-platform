@@ -514,6 +514,35 @@ public sealed class SupplierQuotationService
         }
     }
 
+    public async Task<SupplierQuotationOperationResult<IReadOnlyList<SupplierSourceDecisionHistoryRecord>>> ReadSourceDecisionHistoryAsync(
+        ProcurementRequestContext context,
+        Guid purchaseRequestId,
+        CancellationToken cancellationToken = default)
+    {
+        var source = await GetPurchaseRequestAsync(
+            context,
+            purchaseRequestId,
+            "procurement.source-decision.history.read",
+            cancellationToken);
+        if (!source.Succeeded || source.Value is null)
+        {
+            return SupplierQuotationOperationResult<IReadOnlyList<SupplierSourceDecisionHistoryRecord>>.Failure(source.Code);
+        }
+
+        try
+        {
+            return SupplierQuotationOperationResult<IReadOnlyList<SupplierSourceDecisionHistoryRecord>>.Success(
+                await persistence.ReadSourceDecisionHistoryAsync(
+                    context.TenantContext,
+                    purchaseRequestId,
+                    cancellationToken));
+        }
+        catch
+        {
+            return SupplierQuotationOperationResult<IReadOnlyList<SupplierSourceDecisionHistoryRecord>>.Failure("persistence_unavailable");
+        }
+    }
+
     public async Task<SupplierQuotationOperationResult<SupplierSourceDecisionRecord>> RecordSourceDecisionAsync(
         ProcurementRequestContext context,
         Guid purchaseRequestId,

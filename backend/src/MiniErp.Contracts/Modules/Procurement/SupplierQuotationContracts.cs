@@ -254,6 +254,21 @@ public sealed record SupplierSourceDecisionResponse(
     string ComparisonSnapshotReference,
     byte[] Version);
 
+public sealed record SupplierSourceDecisionHistoryResponse(
+    Guid Id,
+    Guid TenantId,
+    Guid SourceDecisionId,
+    Guid PurchaseRequestId,
+    Guid? PreviousSelectedQuotationId,
+    Guid SelectedQuotationId,
+    Guid ActorId,
+    DateTimeOffset SelectedAt,
+    string Rationale,
+    string? PolicyId,
+    int? PolicyVersion,
+    string? StageKey,
+    string ComparisonSnapshotReference);
+
 public sealed record SupplierQuotationComparisonResponse(
     Guid PurchaseRequestId,
     bool HasMixedCurrencies,

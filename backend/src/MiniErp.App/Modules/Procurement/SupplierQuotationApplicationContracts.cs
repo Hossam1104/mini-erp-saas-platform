@@ -198,6 +198,21 @@ public sealed record SupplierSourceDecisionRecord(
     string ComparisonSnapshotJson,
     byte[] Version);
 
+public sealed record SupplierSourceDecisionHistoryRecord(
+    Guid Id,
+    Guid TenantId,
+    Guid SourceDecisionId,
+    Guid PurchaseRequestId,
+    Guid? PreviousSelectedQuotationId,
+    Guid SelectedQuotationId,
+    Guid ActorId,
+    DateTimeOffset SelectedAt,
+    string Rationale,
+    string? PolicyId,
+    int? PolicyVersion,
+    string? StageKey,
+    string ComparisonSnapshotReference);
+
 public sealed record SupplierQuotationCreateCommand(
     Guid Id,
     Guid PurchaseRequestId,
@@ -319,6 +334,11 @@ public interface ISupplierQuotationPersistence
         Guid purchaseRequestId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<SupplierSourceDecisionHistoryRecord>> ReadSourceDecisionHistoryAsync(
+        TenantContext tenantContext,
+        Guid purchaseRequestId,
+        CancellationToken cancellationToken = default);
+
     Task<SupplierQuotationPersistenceResult<SupplierSourceDecisionRecord>> RecordSourceDecisionAsync(
         TenantContext tenantContext,
         SupplierSourceDecisionCommand command,
@@ -353,6 +373,9 @@ public sealed class UnavailableSupplierQuotationPersistence : ISupplierQuotation
 
     public Task<SupplierSourceDecisionRecord?> FindSourceDecisionAsync(TenantContext tenantContext, Guid purchaseRequestId, CancellationToken cancellationToken = default) =>
         Task.FromResult<SupplierSourceDecisionRecord?>(null);
+
+    public Task<IReadOnlyList<SupplierSourceDecisionHistoryRecord>> ReadSourceDecisionHistoryAsync(TenantContext tenantContext, Guid purchaseRequestId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SupplierSourceDecisionHistoryRecord>>([]);
 
     public Task<SupplierQuotationPersistenceResult<SupplierSourceDecisionRecord>> RecordSourceDecisionAsync(TenantContext tenantContext, SupplierSourceDecisionCommand command, SupplierQuotationAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<SupplierSourceDecisionRecord>();
 }
