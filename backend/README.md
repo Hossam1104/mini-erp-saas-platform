@@ -8,7 +8,7 @@
 > formal module-owned SQL Server migrations against server `.` / database
 > `MESP`; the SQLite provider remains an explicit fallback when that setting is
 > absent. Production startup never auto-migrates. The local cutover utility
-> preserved the source SQLite files and verified 24 migrated rows, IDs,
+> preserved the source SQLite files and verified 59 mapped rows, IDs,
 > Tenant/foreign-key lineage, and source hashes. Release validation is
 > 752/752 with 0 build warnings/errors. This is still not a production
 > deployment: MESP-48/MESP-50, production topology, deployment migrations,

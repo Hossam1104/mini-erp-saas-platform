@@ -12,7 +12,7 @@ reconciliation requested for B2. Normal Development uses the explicitly
 configured `MESP_SQLSERVER_CONNECTION_STRING` target (`.` / database `MESP`)
 with formal module-owned EF migrations and distinct migration-history tables;
 production startup never auto-migrates. The retained Development SQLite data
-was copied with the dedicated cutover tool (24 source rows, IDs/Tenant IDs,
+was copied with the dedicated cutover tool (59 mapped source rows, IDs/Tenant IDs,
 foreign-key lineage, and source hashes verified), with timestamped backups and
 the SQLite originals retained. Only Tenancy creates the shared
 `tenancy.TenantOwnedRecords` table; the other module snapshots align to that
