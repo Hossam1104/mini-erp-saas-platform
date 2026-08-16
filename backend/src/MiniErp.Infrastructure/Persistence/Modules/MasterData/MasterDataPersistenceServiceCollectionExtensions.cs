@@ -59,7 +59,12 @@ public static class MasterDataPersistenceServiceCollectionExtensions
             throw new ArgumentException("A SQL Server connection string is required.", nameof(connectionString));
         }
 
-        return services.AddMasterDataPersistence(options => options.UseSqlServer(connectionString));
+        return services.AddMasterDataPersistence(options =>
+            options.UseSqlServer(
+                connectionString,
+                sql => sql.MigrationsHistoryTable(
+                    SqlServerMigrationConfiguration.MasterDataHistoryTable,
+                    SqlServerMigrationConfiguration.HistorySchema)));
     }
 
     /// <summary>

@@ -17,6 +17,7 @@ using MiniErp.Contracts.Modules.BusinessParties;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Platform;
 using MiniErp.Contracts.Modules.MasterData;
+using MiniErp.Infrastructure.Persistence;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
@@ -195,6 +196,16 @@ builder.Services.AddOpenApi("v1", options =>
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment()
+    && !string.IsNullOrWhiteSpace(sqlServerConnectionString))
+{
+    // Local Development only: the explicit SQL Server configuration selects
+    // the owner's MESP store and applies committed migrations before any
+    // request or Development seed can use the module contexts. Production
+    // migration execution remains a deployment concern.
+    DevelopmentSqlServerDatabaseMigrator.Migrate(sqlServerConnectionString);
+}
+
 if (developmentMasterDataSqliteConnectionString is not null
     && developmentBusinessPartiesSqliteConnectionString is not null
     && developmentProcurementSqliteConnectionString is not null)
@@ -330,6 +341,16 @@ app.MapPost("/api/v1/auth/development-bypass", async (
             "Development authentication unavailable",
             "The requested Development authentication path is unavailable.",
             "auth.development-bypass");
+    }
+
+    // A browser reload may call the convenience endpoint again before the
+    // normal session endpoint. Preserve an already authenticated server
+    // session (including its selected Tenant context) instead of replacing it
+    // with a fresh, unselected Development session.
+    var existingSession = identityHost.GetSession(httpContext.User);
+    if (existingSession.Authenticated)
+    {
+        return Results.Json(ToSessionResponse(existingSession), statusCode: StatusCodes.Status200OK);
     }
 
     var login = configuration["MESP_DEV_ADMIN_LOGIN"] ?? "admin@minierp.local";

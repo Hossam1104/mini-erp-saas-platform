@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Hosting;
@@ -10,6 +11,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using MiniErp.Api;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Identity;
@@ -39,6 +42,53 @@ public sealed class DevelopmentBootstrapTests
         Assert.Equal(
             $"Tenant {DevelopmentBootstrap.DevTenantId.Value:D}",
             provider.GetDisplayName(DevelopmentBootstrap.DevTenantId));
+    }
+
+    [Fact]
+    public void DevelopmentBypassPolicy_RequiresExactDevelopmentEnabledSettingAndLoopbackAddress()
+    {
+        var development = CreateHostEnvironment(Environments.Development);
+        var enabled = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [DevelopmentAuthBypassPolicy.SettingName] = "true"
+            })
+            .Build();
+
+        Assert.True(DevelopmentAuthBypassPolicy.IsAllowed(development, enabled, IPAddress.Loopback));
+        Assert.True(DevelopmentAuthBypassPolicy.IsAllowed(development, enabled, IPAddress.IPv6Loopback));
+        Assert.False(DevelopmentAuthBypassPolicy.IsAllowed(development, enabled, IPAddress.Parse("192.0.2.10")));
+        Assert.False(DevelopmentAuthBypassPolicy.IsAllowed(development, enabled, remoteIpAddress: null));
+    }
+
+    [Fact]
+    public void DevelopmentBypassPolicy_DeniesWhenEnvironmentIsNotExactDevelopmentOrSettingIsDisabled()
+    {
+        var enabled = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [DevelopmentAuthBypassPolicy.SettingName] = "true"
+            })
+            .Build();
+        var disabled = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [DevelopmentAuthBypassPolicy.SettingName] = "false"
+            })
+            .Build();
+
+        Assert.False(DevelopmentAuthBypassPolicy.IsAllowed(
+            CreateHostEnvironment(Environments.Production),
+            enabled,
+            IPAddress.Loopback));
+        Assert.False(DevelopmentAuthBypassPolicy.IsAllowed(
+            CreateHostEnvironment("development"),
+            enabled,
+            IPAddress.Loopback));
+        Assert.False(DevelopmentAuthBypassPolicy.IsAllowed(
+            CreateHostEnvironment(Environments.Development),
+            disabled,
+            IPAddress.Loopback));
     }
 
     [Fact]
@@ -255,6 +305,31 @@ public sealed class DevelopmentBootstrapTests
         Assert.Single(contexts.Contexts);
         Assert.Equal("Wafra", contexts.Contexts[0].DisplayName);
         Assert.DoesNotContain(DevelopmentBootstrap.DevTenantId.Value.ToString("D"), contexts.Contexts[0].DisplayName, StringComparison.Ordinal);
+
+        var csrfResponse = await client.GetAsync("/api/v1/auth/antiforgery");
+        Assert.Equal(HttpStatusCode.OK, csrfResponse.StatusCode);
+        var csrfToken = csrfResponse.Headers.GetValues("X-CSRF-TOKEN").Single();
+        var initialSession = await client.GetFromJsonAsync<FoundationSessionResponse>("/api/v1/auth/session");
+        Assert.NotNull(initialSession);
+
+        using var switchRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/context-switch")
+        {
+            Content = JsonContent.Create(new FoundationContextSwitchRequest(
+                contexts.Contexts[0].ContextId,
+                initialSession.SelectionVersion,
+                contexts.Contexts[0].EligibilityVersion))
+        };
+        switchRequest.Headers.TryAddWithoutValidation("X-CSRF-TOKEN", csrfToken);
+        switchRequest.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        var switchResponse = await client.SendAsync(switchRequest);
+        Assert.Equal(HttpStatusCode.OK, switchResponse.StatusCode);
+
+        var repeatedBypassResponse = await client.PostAsync("/api/v1/auth/development-bypass", content: null);
+        Assert.Equal(HttpStatusCode.OK, repeatedBypassResponse.StatusCode);
+        var repeatedSession = await repeatedBypassResponse.Content.ReadFromJsonAsync<FoundationSessionResponse>();
+        Assert.NotNull(repeatedSession);
+        Assert.Equal(contexts.Contexts[0].ContextId, repeatedSession.SelectedContextId);
+        Assert.Equal("OrdinaryMembership", repeatedSession.SelectedPath);
     }
 
     private sealed class CustomTestWebApplicationFactory : WebApplicationFactory<Program>
@@ -273,9 +348,18 @@ public sealed class DevelopmentBootstrapTests
             builder.ConfigureAppConfiguration((_, config) =>
             {
                 config.AddInMemoryCollection(customSettings);
+                // The canonical validation command supplies a disposable SQL
+                // connection for the SQL safety fixture. These bootstrap
+                // tests own an isolated SQLite test store and must not make
+                // the application startup migrator race that disposable DB.
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["MESP_SQLSERVER_CONNECTION_STRING"] = " "
+                });
             });
             builder.ConfigureTestServices(services =>
             {
+                services.AddSingleton<IStartupFilter, LoopbackRemoteAddressStartupFilter>();
                 connection = new SqliteConnection("Data Source=:memory:");
                 connection.Open();
                 var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
@@ -297,6 +381,36 @@ public sealed class DevelopmentBootstrapTests
                 connection?.Dispose();
             }
         }
+    }
+
+    private static IHostEnvironment CreateHostEnvironment(string environmentName) =>
+        new TestHostEnvironment(environmentName);
+
+    private sealed class TestHostEnvironment : IHostEnvironment
+    {
+        public TestHostEnvironment(string environmentName)
+        {
+            EnvironmentName = environmentName;
+        }
+
+        public string EnvironmentName { get; set; }
+        public string ApplicationName { get; set; } = typeof(DevelopmentBootstrapTests).Assembly.GetName().Name!;
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+    }
+
+    private sealed class LoopbackRemoteAddressStartupFilter : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) =>
+            application =>
+            {
+                application.Use(async (context, nextRequest) =>
+                {
+                    context.Connection.RemoteIpAddress ??= IPAddress.Loopback;
+                    await nextRequest();
+                });
+                next(application);
+            };
     }
 
     private static HashSet<string> ReadTableNames(string connectionString)

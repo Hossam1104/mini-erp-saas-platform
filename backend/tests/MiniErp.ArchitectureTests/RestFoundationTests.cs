@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MiniErp.App.BuildingBlocks.Rest;
@@ -689,6 +690,15 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                // REST foundation tests use in-memory collaborators and must
+                // remain independent of the disposable SQL safety database.
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["MESP_SQLSERVER_CONNECTION_STRING"] = " "
+                });
+            });
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<ITrustedRequestContextResolver>();

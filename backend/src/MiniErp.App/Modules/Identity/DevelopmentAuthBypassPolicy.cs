@@ -25,7 +25,8 @@ public static class DevelopmentAuthBypassPolicy
         IPAddress? remoteIpAddress) =>
         IsExactDevelopment(environment)
         && IsEnabled(configuration)
-        && (remoteIpAddress is null || IPAddress.IsLoopback(remoteIpAddress));
+        && remoteIpAddress is not null
+        && IPAddress.IsLoopback(remoteIpAddress);
 
     public static void ValidateStartup(IHostEnvironment environment, IConfiguration configuration)
     {

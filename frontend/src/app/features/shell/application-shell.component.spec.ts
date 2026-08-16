@@ -161,7 +161,7 @@ describe('ApplicationShellComponent sign-out behavior', () => {
     const brand = element.querySelector('.sidebar__brand app-brand-mark') as HTMLElement | null;
     expect(brand).not.toBeNull();
     const img = brand?.querySelector('img') as HTMLImageElement | null;
-    expect(img?.getAttribute('src')).toBe('assets/Ico_BG_Removed_Dark.png');
+    expect(img?.getAttribute('src')).toBe('assets/brand/favicon-dark-64.png');
     expect(img?.getAttribute('alt')).toBe('');
     expect(element.querySelector('.sidebar__brand')?.textContent).toContain('MESP');
     expect(element.innerHTML).not.toContain('assets/brand/icon-96.png');
@@ -173,7 +173,7 @@ describe('ApplicationShellComponent sign-out behavior', () => {
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
     const img = element.querySelector('.sidebar__brand img') as HTMLImageElement | null;
-    expect(img?.getAttribute('src')).toBe('assets/Ico_BG_Removed_Dark.png');
+    expect(img?.getAttribute('src')).toBe('assets/brand/favicon-dark-64.png');
     expect(img?.style.transform).toBe('');
   });
 });

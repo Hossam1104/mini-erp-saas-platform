@@ -19,7 +19,9 @@ describe('BrandMarkComponent', () => {
   it('renders the transparent owner icon for the icon variant', () => {
     const element = create('icon', 'light');
     const img = element.querySelector('img.brand-mark__image') as HTMLImageElement;
-    expect(img.getAttribute('src')).toBe('assets/Ico_BG_Removed.png');
+    expect(img.getAttribute('src')).toBe('assets/brand/favicon-64.png');
+    expect(img.getAttribute('width')).toBe('64');
+    expect(img.getAttribute('height')).toBe('64');
     expect(img.getAttribute('alt')).toBe('');
   });
 
@@ -27,6 +29,8 @@ describe('BrandMarkComponent', () => {
     const element = create('logo', 'light');
     const img = element.querySelector('img.brand-mark__image') as HTMLImageElement;
     expect(img.getAttribute('src')).toBe('assets/Logo_16_9_BG_Removed.png');
+    expect(img.getAttribute('width')).toBe('1536');
+    expect(img.getAttribute('height')).toBe('1024');
   });
 
   it('renders the 4:3 compact variant', () => {
@@ -38,7 +42,7 @@ describe('BrandMarkComponent', () => {
   it('uses the owner dark asset against dark surfaces', () => {
     const element = create('icon', 'dark');
     const img = element.querySelector('img.brand-mark__image') as HTMLImageElement;
-    expect(img.getAttribute('src')).toBe('assets/Ico_BG_Removed_Dark.png');
+    expect(img.getAttribute('src')).toBe('assets/brand/favicon-dark-64.png');
   });
 
   it('switches between light and dark assets in auto theme via prefers-color-scheme', () => {
@@ -48,6 +52,8 @@ describe('BrandMarkComponent', () => {
     expect(source?.getAttribute('srcset')).toBe('assets/Logo_4_3_BG_Removed_Dark.png');
     expect(source?.getAttribute('media')).toBe('(prefers-color-scheme: dark)');
     expect(img.getAttribute('src')).toBe('assets/Logo_4_3_BG_Removed.png');
+    expect(img.getAttribute('width')).toBe('1254');
+    expect(img.getAttribute('height')).toBe('1254');
   });
 
   it('never references the obsolete white-tile sidebar asset', () => {

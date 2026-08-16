@@ -46,7 +46,12 @@ public static class BusinessPartiesPersistenceServiceCollectionExtensions
             throw new ArgumentException("A SQL Server connection string is required.", nameof(connectionString));
         }
 
-        return services.AddBusinessPartiesPersistence(options => options.UseSqlServer(connectionString));
+        return services.AddBusinessPartiesPersistence(options =>
+            options.UseSqlServer(
+                connectionString,
+                sql => sql.MigrationsHistoryTable(
+                    SqlServerMigrationConfiguration.BusinessPartiesHistoryTable,
+                    SqlServerMigrationConfiguration.HistorySchema)));
     }
 
     /// <summary>

@@ -30,7 +30,12 @@ public static class ProcurementPersistenceServiceCollectionExtensions
         string connectionString)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
-        return services.AddProcurementPersistence(options => options.UseSqlServer(connectionString));
+        return services.AddProcurementPersistence(options =>
+            options.UseSqlServer(
+                connectionString,
+                sql => sql.MigrationsHistoryTable(
+                    SqlServerMigrationConfiguration.ProcurementHistoryTable,
+                    SqlServerMigrationConfiguration.HistorySchema)));
     }
 
     public static IServiceCollection AddProcurementSqlitePersistence(
