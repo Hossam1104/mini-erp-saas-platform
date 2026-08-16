@@ -190,6 +190,88 @@ public sealed class SupplierQuotationTests
     }
 
     [Fact]
+    public async Task Source_decision_concurrency_enforces_caller_version_on_first_decision_and_reselection()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var request = await fixture.CreateApprovedRequestAsync();
+        var first = await fixture.CreateSubmittedAsync(request.Id, SupplierA, Usd, "Q-USD-C1", "quotation-usd-c1");
+        var second = await fixture.CreateSubmittedAsync(request.Id, SupplierB, Usd, "Q-USD-C2", "quotation-usd-c2");
+
+        // 1. First decision with stale/wrong PR version fails with concurrency_conflict
+        var wrongFirstDecision = await fixture.Service.RecordSourceDecisionAsync(
+            fixture.Context(Requester, "tenant.procurement.source-decision.record"),
+            request.Id,
+            new SupplierSourceDecisionWriteRequest(first.Id, "Stale token first decision."),
+            new byte[] { 9, 9, 9, 9 },
+            "source-decision-wrong-1");
+        Assert.False(wrongFirstDecision.Succeeded);
+        Assert.Equal("concurrency_conflict", wrongFirstDecision.Code);
+
+        // 2. First decision with valid PR version succeeds
+        var firstDecision = await fixture.Service.RecordSourceDecisionAsync(
+            fixture.Context(Requester, "tenant.procurement.source-decision.record"),
+            request.Id,
+            new SupplierSourceDecisionWriteRequest(first.Id, "First selection rationale."),
+            request.Version,
+            "source-decision-valid-1");
+        Assert.True(firstDecision.Succeeded, firstDecision.Code);
+        Assert.Equal(first.Id, firstDecision.Value!.SelectedQuotationId);
+
+        // 3. Reselection with stale PR version fails with concurrency_conflict
+        var stalePrReselection = await fixture.Service.RecordSourceDecisionAsync(
+            fixture.Context(Requester, "tenant.procurement.source-decision.record"),
+            request.Id,
+            new SupplierSourceDecisionWriteRequest(second.Id, "Reselection with PR token."),
+            request.Version,
+            "source-decision-stale-pr");
+        Assert.False(stalePrReselection.Succeeded);
+        Assert.Equal("concurrency_conflict", stalePrReselection.Code);
+
+        // 4. Reselection with garbage/wrong version fails with concurrency_conflict
+        var garbageReselection = await fixture.Service.RecordSourceDecisionAsync(
+            fixture.Context(Requester, "tenant.procurement.source-decision.record"),
+            request.Id,
+            new SupplierSourceDecisionWriteRequest(second.Id, "Reselection with garbage token."),
+            new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 },
+            "source-decision-garbage");
+        Assert.False(garbageReselection.Succeeded);
+        Assert.Equal("concurrency_conflict", garbageReselection.Code);
+
+        // 5. Failed reselections did not alter current decision or mutate history
+        var currentDecisionAfterFailures = await fixture.Service.ReadSourceDecisionAsync(
+            fixture.Context(Requester, "tenant.procurement.source-decision.view"),
+            request.Id);
+        Assert.True(currentDecisionAfterFailures.Succeeded, currentDecisionAfterFailures.Code);
+        Assert.Equal(first.Id, currentDecisionAfterFailures.Value!.SelectedQuotationId);
+
+        var historyAfterFailures = await fixture.Service.ReadSourceDecisionHistoryAsync(
+            fixture.Context(Requester, "tenant.procurement.source-decision.view"),
+            request.Id);
+        Assert.True(historyAfterFailures.Succeeded, historyAfterFailures.Code);
+        Assert.Single(historyAfterFailures.Value!);
+
+        // 6. Reselection with valid current source-decision version succeeds
+        var validReselection = await fixture.Service.RecordSourceDecisionAsync(
+            fixture.Context(Requester, "tenant.procurement.source-decision.record"),
+            request.Id,
+            new SupplierSourceDecisionWriteRequest(second.Id, "Reselection with current decision version."),
+            firstDecision.Value.Version,
+            "source-decision-valid-reselection");
+        Assert.True(validReselection.Succeeded, validReselection.Code);
+        Assert.Equal(second.Id, validReselection.Value!.SelectedQuotationId);
+
+        // 7. Source decision history now records both selections
+        var historyAfterSuccess = await fixture.Service.ReadSourceDecisionHistoryAsync(
+            fixture.Context(Requester, "tenant.procurement.source-decision.view"),
+            request.Id);
+        Assert.True(historyAfterSuccess.Succeeded, historyAfterSuccess.Code);
+        Assert.Equal(2, historyAfterSuccess.Value!.Count);
+        Assert.Equal(first.Id, historyAfterSuccess.Value![0].SelectedQuotationId);
+        Assert.Equal(second.Id, historyAfterSuccess.Value![1].SelectedQuotationId);
+        Assert.Equal(first.Id, historyAfterSuccess.Value![1].PreviousSelectedQuotationId);
+    }
+
+    [Fact]
     public async Task Cross_tenant_reads_fail_closed_and_unapproved_requests_cannot_capture_quotes()
     {
         await using var fixture = await Fixture.CreateAsync();

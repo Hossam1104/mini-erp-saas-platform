@@ -14,6 +14,7 @@ export default defineConfig({
     command: 'npm run start -- --host 127.0.0.1 --port 4300',
     url: 'http://127.0.0.1:4300',
     reuseExistingServer: !process.env['CI'],
+    timeout: 120000,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });

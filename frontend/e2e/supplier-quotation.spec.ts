@@ -197,4 +197,81 @@ test.describe('Supplier Quotation workspace', () => {
     await expect(page.getByLabel(/Selection rationale/)).toBeVisible();
     await expect(page.locator('.winner, [data-winner]')).toHaveCount(0);
   });
+
+  test('renders non-ISO configured currency safely in list and detail without console errors', async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (err) => pageErrors.push(err.message));
+
+    const s2kQuotationListItem = {
+      ...quotationListItem,
+      currency: { id: 'currency-s2k', code: 'S2K', name: 'Custom S2K' },
+      commercialTotal: 1250,
+      supplierQuotationReference: 'SUP-Q-S2K-001',
+    };
+    const s2kQuotationDetail = {
+      ...quotationDetail,
+      currency: s2kQuotationListItem.currency,
+      supplierQuotationReference: 'SUP-Q-S2K-001',
+    };
+    const s2kComparison = {
+      ...comparison,
+      currencyGroups: [{ currencyId: 'currency-s2k', currencyCode: 'S2K', supplierQuotationIds: [quotationId], directlyComparableWithinGroup: true }],
+      quotations: [{
+        ...comparison.quotations[0],
+        currency: s2kQuotationListItem.currency,
+        commercialTotal: 1250,
+      }],
+    };
+
+    await page.route('**/api/v1/procurement/**', async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname.endsWith('/organization-scopes')) return route.fulfill({ json: [{ companyId, branchId: null, companyDisplayName: 'Acme Trading Co.', branchDisplayName: null, displayName: 'Acme Trading Co.' }] });
+      if (url.pathname.endsWith('/quotations')) return route.fulfill({ json: [s2kQuotationListItem] });
+      if (url.pathname.endsWith('/quotation-comparison')) return route.fulfill({ json: s2kComparison });
+      if (url.pathname.endsWith('/source-decision/history')) return route.fulfill({ json: [] });
+      if (url.pathname.endsWith('/source-decision')) return route.fulfill({ json: null });
+      if (url.pathname.endsWith('/purchase-requests/' + purchaseRequestId)) return route.fulfill({ json: requestDetail });
+      if (url.pathname.endsWith('/quotations/' + quotationId + '/history')) return route.fulfill({ json: [] });
+      if (url.pathname.endsWith('/quotations/' + quotationId + '/audit')) return route.fulfill({ json: [] });
+      if (url.pathname.endsWith('/quotations/' + quotationId)) return route.fulfill({ json: s2kQuotationDetail });
+      return route.fulfill({ json: [approvedRequest] });
+    });
+    await page.route('**/api/v1/master-data/*', (route) => route.fulfill({ json: [] }));
+
+    await page.goto('/app/procurement/supplier-quotations');
+    await expect(page.getByTestId('supplier-quotation-list')).toBeVisible();
+    await expect(page.getByText('SUP-Q-S2K-001')).toBeVisible();
+    await expect(page.getByText('1,250.00 S2K')).toBeVisible();
+
+    await page.goto('/app/procurement/supplier-quotations/' + quotationId);
+    await expect(page.getByTestId('supplier-quotation-detail')).toBeVisible();
+    await expect(page.getByText('1,250.00 S2K')).toBeVisible();
+
+    expect(pageErrors.filter((e) => e.includes('RangeError'))).toHaveLength(0);
+  });
+
+  test('shows concurrency conflict error and reload action on source decision conflict without false success', async ({ page }) => {
+    await mockProcurementAndReferences(page);
+    await page.route('**/api/v1/procurement/purchase-requests/*/source-decision', (route) => {
+      if (route.request().method() === 'POST') {
+        return route.fulfill({
+          status: 409,
+          contentType: 'application/problem+json',
+          json: { code: 'concurrency_conflict', message: 'Concurrency conflict.' },
+        });
+      }
+      return route.fulfill({ json: null });
+    });
+
+    await page.goto('/app/procurement/supplier-quotations/' + quotationId);
+    await page.getByRole('tab', { name: 'Comparison' }).click();
+    await page.getByRole('radio', { name: /Supplier One/ }).click();
+    await page.getByLabel(/Selection rationale/).fill('Conflicting decision attempt.');
+    await page.getByRole('button', { name: /Record source decision/ }).click();
+
+    await expect(page.locator('.inline-alert--error')).toBeVisible();
+    await expect(page.getByText(/This purchase request changed since you opened it/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /Reload latest version/ })).toBeVisible();
+    await expect(page.locator('.inline-alert--success')).toHaveCount(0);
+  });
 });

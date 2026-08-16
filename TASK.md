@@ -1,83 +1,41 @@
-# CLAUDE OPUS 5 — INDEPENDENT MESP-123 CAPABILITY REVIEW
+# CLAUDE OPUS 5 — TARGETED RE-VERIFICATION OF MESP-123 FINDINGS (F-1, F-2, F-5)
 
 ## Mission
 
-You are the independent reviewer for the completed bounded MESP-123
-Purchase Request, approval, Supplier Quotation, comparison, and source-decision
-capability. Review the complete branch before anyone merges or closes the
-capability. Produce an evidence-backed verdict and a prioritized finding list.
+You are the independent reviewer performing the targeted re-verification of the
+completed bounded corrections for MESP-123 on branch
+`feat/MESP-123-purchase-request-approval` (Draft PR #66 against `main`).
 
-Do not automatically merge the pull request. Do not transition Jira issues,
-post Jira comments, or broaden the implementation. If a serious defect is
-found, report it with exact evidence, impact, and the smallest safe correction
-recommendation.
+The merge-blocking findings from the previous Opus review have been corrected:
+1. **F-1 (Currency Rendering Resilience)**: `formatMoney` in `SupplierQuotationWorkspaceComponent` now catches `RangeError` from `Intl.NumberFormat` on valid non-ISO MESP currency codes (e.g. `S2K`, `CUSTOM`) and falls back safely to localized decimal formatting with raw currency code suffix (`1,234.56 S2K`).
+2. **F-2 (Source Decision Concurrency Token)**: `SupplierQuotationService.RecordSourceDecisionAsync` passes caller `expectedVersion` directly to `SupplierSourceDecisionCommand`. Angular `SupplierQuotationWorkspaceComponent.recordDecision()` sends `currentDecision()?.version ?? request.version`, cleanly enforcing optimistic concurrency on both first decisions and re-selections.
+3. **F-5 & F-6 (Documentation & Bundle Reconciliation)**: `docs/staticts.md`, `.ai/CURRENT_STATE.md`, and PR #66 description reconciled with exact test counts (754 backend, 202 Angular unit, 8 Playwright E2E) and measured bundle sizes (478.57 kB initial, 91.94 kB lazy quotation chunk). Non-blocking P3 observations (F-3, F-4) preserved.
+
+Review the specific corrections, run the test suites, and produce a final independent verdict for GPT-5.6 Sol / Owner decision.
+
+Do not merge the pull request. Draft PR #66 must remain OPEN, DRAFT, and UNMERGED. Do not perform Jira operations (GPT-5.6 Sol owns Jira).
 
 ## Repository and delivery state
 
 - Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 - Branch: `feat/MESP-123-purchase-request-approval`
-- Pull Request: Draft PR #66 against `main`; it must remain open, Draft, and
-  unmerged during this review.
-- Capability: MESP-123 — Purchase Request, approval, Supplier Quotation,
-  comparison, and source decision.
-- Product: generic reusable multi-tenant B2B ERP; the legacy Wafra repository
-  is visual reference only.
-- Next review output: independent verdict for GPT-5.6 Sol / Owner decision.
+- Pull Request: Draft PR #66 against `main` (remains open, Draft, unmerged)
+- Capability: MESP-123 — Purchase Request, approval, Supplier Quotation, comparison, and source decision
+- Product: generic reusable multi-tenant B2B ERP; legacy Wafra is visual reference only
+- Next review output: final independent verdict for GPT-5.6 Sol / Owner decision
 
 ## Mandatory reading order
-
-Read the current versions, not historical assumptions, of:
 
 1. `AGENTS.md` and `CLAUDE.md`;
 2. `.ai/CURRENT_STATE.md`;
 3. this `TASK.md`;
 4. `docs/staticts.md`;
 5. `README.md`, `Run.md`, `backend/README.md`, and `frontend/README.md`;
-6. the approved Procurement BRD and relevant ADRs/contracts/entities;
-7. the complete PR #66 diff and current branch status.
+6. the specific diffs in `SupplierQuotationService.cs`, `SupplierQuotationTests.cs`, `supplier-quotation-workspace.component.ts`, `supplier-quotation-workspace.component.spec.ts`, `supplier-quotation.service.ts`, `supplier-quotation.service.spec.ts`, and `supplier-quotation.spec.ts`.
 
-Inspect the legacy Wafra repository only as a read-only visual reference. Do
-not modify it, copy its branding, copy its IDs/data, or introduce any
-customer-specific branch into MESP.
-
-## Review boundaries
-
-The review covers the connected capability already present on the branch:
-
-- Purchase Request creation, edit, submission, approval, rejection/return,
-  cancellation, organization scope, lineage, and server-derived authority;
-- Supplier Quotation list, approved-request create, Draft edit, detail,
-  evidence references, server-resolved Supplier/Currency/Tax/Payment Term
-  references, and lifecycle actions;
-- Submit, Withdraw, Disqualify, optimistic concurrency, idempotency, safe
-  errors, history, audit, and server capability flags;
-- comparison totals/coverage/qualification issues, same-currency groups,
-  mixed-currency grouping, explicit no-FX treatment, and the absence of a
-  client-invented winner;
-- current source selection, required rationale, comparison snapshot,
-  supersession/history, and audit evidence;
-- Tenant isolation, Company/Branch organization scoping, exact-Development
-  authentication convenience, authorization, antiforgery, and public REST
-  operation documentation;
-- Angular EN/AR, RTL/LTR, accessibility, keyboard-safe dialogs/tabs,
-  responsive layouts, loading/empty/error/retry states, light/dark styling,
-  and generic Wafra-inspired ERP density;
-- SQL Server Development runtime/provider behavior, migrations, persistence,
-  and relevant row/audit evidence;
-- regression tests, Playwright, generated OpenAPI, README, current-state,
-  statistics, PR readiness, and scope discipline.
-
-The following are explicitly outside this review’s implementation scope and
-must not be started: Purchase Order, supplier confirmation, Goods Receipt,
-Purchase Invoice, AP, accounting, payment, stock mutation, supplier portal,
-external integrations/providers/credentials, migration cutover changes,
-MESP-124, Retail POS, and Wafra-specific behavior.
-
-## Review procedure
+## Verification Procedure
 
 ### 1. Establish clean evidence
-
-Run read-only checks first:
 
 ```powershell
 git status --short
@@ -89,170 +47,51 @@ git diff --check
 git status --short -- frontend/assets
 ```
 
-Confirm that no Owner-managed file under `frontend/assets` changed and no
-generated build output, database backup, credential, log, SQLite/MDF/LDF file,
-or Spec Kit artifact entered the PR.
+Confirm Owner-managed source assets under `frontend/assets` remain unchanged.
 
-### 2. Validate the contract boundary
+### 2. Verify F-1 Currency Resilience
 
-Trace each public Supplier Quotation and source-decision route from:
+Inspect `formatMoney` in `supplier-quotation-workspace.component.ts`:
+- Confirm try/catch wraps `Intl.NumberFormat(language, { style: 'currency', currency: safeCurrency })`.
+- Confirm non-ISO fallback uses `new Intl.NumberFormat(language, { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(value)` + raw code.
+- Verify unit tests in `supplier-quotation-workspace.component.spec.ts` test standard ISO and non-ISO codes (`S2K`, `CUSTOM`).
+- Verify Playwright test in `supplier-quotation.spec.ts` renders non-ISO currency code without console errors.
 
-1. Foundation operation catalogue metadata;
-2. actual API endpoint mapping;
-3. generated OpenAPI document and stable `operationId`;
-4. architecture/contract test;
-5. Angular service call and UI state.
+### 3. Verify F-2 Source Decision Concurrency Passthrough
 
-Pay special attention to the persisted source-decision history read route,
-Tenant scope, permission, antiforgery/unsafe-effect metadata, response
-documentation, and whether Angular has duplicated any backend business rule.
-Reject placeholder or handwritten second contracts.
+Inspect backend and frontend concurrency token flow:
+- In `backend/src/MiniErp.App/Modules/Procurement/SupplierQuotationService.cs`: confirm parameter `expectedVersion` is passed directly into `SupplierSourceDecisionCommand(..., expectedVersion, ...)` without substituting `existingDecision?.Version`.
+- In `frontend/src/app/features/procurement/supplier-quotation-workspace.component.ts`: confirm `recordDecision()` computes `expectedVersion = this.currentDecision()?.version ?? request.version` and passes it to `recordSourceDecision`.
+- In `backend/tests/MiniErp.ArchitectureTests/SupplierQuotationTests.cs`: confirm `Source_decision_concurrency_enforces_caller_version_on_first_decision_and_reselection` verifies wrong first decision version fails (409), valid first decision succeeds, stale PR version on reselection fails (409), garbage version on reselection fails (409), failed reselections do not alter decision or history, and valid decision version on reselection succeeds.
 
-### 3. Review business and security invariants
-
-Verify from code and tests that:
-
-- only eligible Approved Purchase Requests can be sourced;
-- request/line/Product/UOM/quantity/need-by facts are server snapshots;
-- Supplier, Currency, Tax, and Payment Term values are server-resolved;
-- no client-provided Tenant, Company, Branch, actor, role, permission, or
-  identity can expand authority;
-- all reads/writes are Tenant and organization scoped as designed;
-- lifecycle actions are gated by server-derived capability flags and backend
-  policy, not by Angular-only assumptions;
-- edits and source decisions use the correct If-Match version;
-- unsafe mutations send idempotency keys and antiforgery headers;
-- concurrency conflicts remain safe and recoverable;
-- source selection requires a nonblank rationale and records comparison
-  snapshot/policy/history evidence;
-- mixed currencies never receive client FX conversion or cross-currency
-  ranking/winner implication;
-- audit/history is append-before-effect and does not expose unsafe technical
-  authority to the browser.
-
-### 4. Review the Angular journey as a user
-
-Use the real Development runtime and a real browser where available. Verify
-the following without typing or interpreting database GUIDs:
-
-- sidebar navigation reaches `/app/procurement/supplier-quotations`;
-- list search/status/currency filters operate only on bounded loaded data;
-- empty, filtered-empty, loading, unauthorized/unavailable, and retry states
-  are honest and usable;
-- create begins from an Approved Purchase Request selector and renders
-  human-readable organization, Supplier, Currency, Tax, and Payment Term
-  labels;
-- line facts remain read-only server lineage while commercial values are
-  entered explicitly;
-- Draft save/edit, evidence add/remove, submit, withdraw, and disqualify
-  affordances match server capability flags;
-- detail tabs expose summary, lines, commercial terms, evidence, comparison,
-  lifecycle history, audit, and technical reference without making technical
-  IDs primary business labels;
-- comparison groups by currency, displays server totals/coverage/issues, and
-  communicates no-FX/mixed-currency boundaries;
-- source-decision radio selection, rationale, current selection, and history
-  are clear; reselection/supersession is not claimed unless exercised;
-- dialogs are labelled, keyboard usable, non-destructive by default, and safe
-  under in-flight requests;
-- EN/AR and RTL/LTR preserve meaning, focus, table readability, and action
-  placement; narrow widths and reduced-motion preference remain usable;
-- light and dark presentation is coherent and no Wafra branding is present.
-
-### 5. Run the bounded validation suite
-
-Use the repository's pinned tooling and record exact counts, warnings, and
-failures. Prefer Release configuration for backend validation:
+### 4. Run the bounded validation suite
 
 ```powershell
 dotnet build .\backend\MiniErp.sln --configuration Release --no-restore --verbosity minimal
-.\scripts\Test-MiniErpBackend.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-MiniErpBackend.ps1
 cd .\frontend
 npm test -- --watch=false
 npm run build
-npm run test:e2e
+npx playwright test
 npm audit --omit=dev
 ```
 
-**Connection variable distinction — critical:**
-
-| Variable | Purpose | Correct target |
-|---|---|---|
-| `MESP_SQLSERVER_CONNECTION_STRING` | Persistent MiniERP application runtime | SQL Server `.` / database `MESP` |
-| `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` | Disposable SQL safety-harness only | `(localdb)\MSSQLLocalDB` / `MiniErpFoundation_*` |
-
-**A. Runtime validation** — use `MESP_SQLSERVER_CONNECTION_STRING` to verify
-the application starts against `SQL Server . / MESP` through the normal
-Development launcher (`scripts/Start-MiniErpDevelopment.ps1`). This proves
-the persistent runtime is intact. Do not print the connection string.
-
-**B. Destructive SQL safety suite** — use `scripts/Test-MiniErpBackend.ps1`
-(or `scripts/validate-foundation.ps1` for the full suite). These scripts
-construct a disposable `MiniErpFoundation_*` connection in process memory,
-assign it only to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, and restore/clear
-it in a guaranteed `finally` block. They leave `MESP_SQLSERVER_CONNECTION_STRING`
-completely unchanged.
-
-**Never** run the SQL safety tests by setting `MESP_SQLSERVER_CONNECTION_STRING`
-to a LocalDB connection string. That would overload the runtime variable and
-reproduce the ambiguity this separation was introduced to fix.
-
-The expected baseline after the pre-Opus validation-harness reconciliation:
-
+Expected baseline:
 - Release build: **0 warnings / 0 errors**
-- Complete backend suite: **all pass** (SQL safety cases actually executed,
-  not gated or skipped)
-- SQL safety tests genuinely executed on disposable LocalDB: **YES**
-- Angular: **all pass**
-- Playwright: **all pass**
+- Backend test suite: **754/754 passing** (includes LocalDB SQL safety harness)
+- Angular unit tests: **202/202 passing** across 22 spec files
+- Production build: **478.57 kB initial total**, **91.94 kB lazy quotation chunk**
+- Playwright E2E tests: **8/8 passing** across 2 spec files
 - npm audit: **0 vulnerabilities**
-- Persistent MESP runtime: **verified intact, untouched by safety tests**
-
-Do not accept `731/752` or any form of gated/skipped SQL safety tests as a
-passing result after this reconciliation. If the safety tests cannot execute,
-classify it as environment-gated and report it accurately rather than passing
-it as green.
-
-### 6. Inspect runtime and persistence evidence
-
-Restart only through `scripts/Start-MiniErpDevelopment.ps1` after the final
-reviewed source is built. Expected local endpoints are MiniERP API 5300 and
-Angular 4300; leave unrelated RMS 5000/5001 untouched. Verify health,
-authenticated session/context, quotation routes, comparison/source-decision
-routes, OpenAPI operation presence, and the real SQL Server provider. If a
-supported Development journey creates or changes records, verify the
-corresponding quotation, decision, snapshot, history, and audit rows in the
-`MESP` database without exposing secrets.
-
-### 7. Review documentation and PR readiness
-
-Confirm that:
-
-- `README.md` describes the actual product and bounded status without
-  claiming production readiness;
-- `docs/staticts.md` is conservative and records the current evidence;
-- `.ai/CURRENT_STATE.md` points to the exact current branch/PR and next step;
-- `TASK.md` remains this review prompt and no future capability started;
-- PR #66 retains historical Phase A/B/B1/C/B2 evidence and the new UI section;
-- no Jira operation or status transition was silently performed;
-- scope exclusions remain explicit.
+- Persistent MESP runtime: **intact and unchanged**
 
 ## Verdict format
 
 Return a review report with:
-
 1. Verdict: `APPROVE FOR MERGE`, `CHANGES REQUIRED`, or `BLOCKED`;
 2. exact reviewed SHA and PR state;
-3. evidence summary by backend/API, security/Tenant, persistence/SQL,
-   Angular/UX, tests/browser, documentation, and scope;
-4. findings ordered P0/P1/P2/P3 with file/line or command evidence;
-5. explicit statement whether any finding risks Tenant leakage, accounting or
-   stock integrity, data loss, unsafe migration, credential exposure, or legal
-   misrepresentation;
-6. merge recommendation and the smallest required follow-up;
-7. confirmation that the next implementation must not begin automatically.
+3. evidence for F-1, F-2, and F-5;
+4. findings ordered P0/P1/P2/P3;
+5. explicit statement on Tenant isolation, accounting/stock integrity, and security;
+6. merge recommendation for PR #66.
 
-Do not merge, force-push, rewrite history, change Owner assets, modify Wafra,
-activate Jira work, or start Purchase Order/downstream work as part of this
-review. The review is the next exact session; stop after publishing the
-evidence-backed verdict for GPT-5.6 Sol and the Owner.

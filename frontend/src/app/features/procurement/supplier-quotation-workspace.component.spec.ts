@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
@@ -167,6 +168,7 @@ describe('SupplierQuotationWorkspaceComponent', () => {
     comparison: ReturnType<typeof vi.fn>;
     sourceDecision: ReturnType<typeof vi.fn>;
     sourceDecisionHistory: ReturnType<typeof vi.fn>;
+    recordSourceDecision: ReturnType<typeof vi.fn>;
     history: ReturnType<typeof vi.fn>;
     audit: ReturnType<typeof vi.fn>;
   };
@@ -197,6 +199,7 @@ describe('SupplierQuotationWorkspaceComponent', () => {
       comparison: vi.fn(() => of(comparison)),
       sourceDecision: vi.fn(() => of(null)),
       sourceDecisionHistory: vi.fn(() => of([])),
+      recordSourceDecision: vi.fn(() => Promise.resolve({} as never)),
       history: vi.fn(() => of([])),
       audit: vi.fn(() => of([])),
     };
@@ -261,5 +264,181 @@ describe('SupplierQuotationWorkspaceComponent', () => {
     expect(fixture.nativeElement.querySelector('textarea')).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain(language.text('supplierQuotationRecordDecision'));
     expect(fixture.nativeElement.querySelector('.winner, [data-winner]')).toBeNull();
+  });
+
+  it('formats currency safely for both standard ISO and non-ISO MESP codes without throwing RangeError', () => {
+    const comp = fixture.componentInstance;
+    const lang = TestBed.inject(LanguageService);
+
+    // Standard ISO currencies
+    expect(comp.formatMoney(1234.56, 'SAR')).toContain('1,234.56');
+    expect(comp.formatMoney(1234.56, 'SAR')).toContain('SAR');
+    expect(comp.formatMoney(1234.56, 'USD')).toContain('1,234.56');
+
+    // Non-ISO MESP configured currencies must not throw RangeError and must retain code
+    expect(() => comp.formatMoney(1234.56, 'S2K')).not.toThrow();
+    const s2kFormatted = comp.formatMoney(1234.56, 'S2K');
+    expect(s2kFormatted).toContain('1,234.56');
+    expect(s2kFormatted).toContain('S2K');
+
+    expect(() => comp.formatMoney(500, 'CUSTOM')).not.toThrow();
+    expect(comp.formatMoney(500, 'CUSTOM')).toContain('500.00');
+    expect(comp.formatMoney(500, 'CUSTOM')).toContain('CUSTOM');
+
+    // Arabic locale safe fallback
+    lang.setLanguage('ar');
+    expect(() => comp.formatMoney(1234.56, 'S2K')).not.toThrow();
+    const arFormatted = comp.formatMoney(1234.56, 'S2K');
+    expect(arFormatted).toContain('S2K');
+    lang.setLanguage('en');
+  });
+
+  it('renders quotation list with non-ISO currency code without breaking list rendering or subsequent rows', async () => {
+    const s2kItem: SupplierQuotationListItemResponse = {
+      ...quotationListItem,
+      id: 's2k-quotation-id',
+      currency: { id: 'currency-s2k', code: 'S2K', name: 'Custom S2K' },
+      commercialTotal: 1250,
+      supplierQuotationReference: 'SUP-Q-S2K',
+    };
+    const usdItem: SupplierQuotationListItemResponse = {
+      ...quotationListItem,
+      id: 'usd-quotation-id',
+      currency: { id: 'currency-usd', code: 'USD', name: 'US Dollar' },
+      commercialTotal: 2500,
+      supplierQuotationReference: 'SUP-Q-USD',
+    };
+
+    quotations.list.mockReturnValue(of([s2kItem, usdItem]));
+    await fixture.componentInstance.loadList();
+    await settle();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('SUP-Q-S2K');
+    expect(text).toContain('S2K');
+    expect(text).toContain('1,250.00');
+    // Subsequent row renders successfully
+    expect(text).toContain('SUP-Q-USD');
+    expect(text).toContain('2,500.00');
+  });
+
+  it('submits first source decision using the approved purchase request version as concurrency token', async () => {
+    await navigate([{ path: 'supplier-quotations' }, quotationId ? { path: quotationId } : { path: '' }], quotationId);
+
+    fixture.componentInstance.setTab('comparison');
+    fixture.detectChanges();
+
+    quotations.recordSourceDecision = vi.fn().mockResolvedValue({
+      id: 'decision-1',
+      tenantId: 'tenant-a',
+      purchaseRequestId,
+      selectedQuotationId: quotationId,
+      supplier: quotationListItem.supplier,
+      supplierQuotationReference: quotationListItem.supplierQuotationReference,
+      actorId: 'actor-1',
+      selectedAt: '2026-08-16T12:00:00Z',
+      rationale: 'First decision rationale.',
+      policyId: null,
+      policyVersion: null,
+      stageKey: null,
+      comparisonSnapshotReference: 'sha256:test',
+      version: 'DECISION-V1',
+    });
+
+    fixture.componentInstance.selectDecisionCandidate(quotationId);
+    fixture.componentInstance.decisionRationale = 'First decision rationale.';
+    await fixture.componentInstance.recordDecision();
+    await settle();
+
+    // First decision: passed request.version ('PRVERSION')
+    expect(quotations.recordSourceDecision).toHaveBeenCalledWith(
+      purchaseRequestId,
+      quotationId,
+      'First decision rationale.',
+      'PRVERSION',
+    );
+    expect(fixture.componentInstance.successNotice()).toBe(TestBed.inject(LanguageService).text('supplierQuotationDecisionSaved'));
+  });
+
+  it('submits reselection source decision using the current source decision version as concurrency token', async () => {
+    await navigate([{ path: 'supplier-quotations' }, quotationId ? { path: quotationId } : { path: '' }], quotationId);
+
+    // Set existing current decision on the component
+    fixture.componentInstance.currentDecision.set({
+      id: 'decision-1',
+      tenantId: 'tenant-a',
+      purchaseRequestId,
+      selectedQuotationId: quotationId,
+      supplier: quotationListItem.supplier,
+      supplierQuotationReference: quotationListItem.supplierQuotationReference,
+      actorId: 'actor-1',
+      selectedAt: '2026-08-16T12:00:00Z',
+      rationale: 'Initial rationale.',
+      policyId: null,
+      policyVersion: null,
+      stageKey: null,
+      comparisonSnapshotReference: 'sha256:test',
+      version: 'CURRENT-DECISION-V1',
+    });
+
+    fixture.componentInstance.setTab('comparison');
+    fixture.detectChanges();
+
+    quotations.recordSourceDecision = vi.fn().mockResolvedValue({
+      id: 'decision-2',
+      tenantId: 'tenant-a',
+      purchaseRequestId,
+      selectedQuotationId: quotationId,
+      supplier: quotationListItem.supplier,
+      supplierQuotationReference: quotationListItem.supplierQuotationReference,
+      actorId: 'actor-1',
+      selectedAt: '2026-08-16T13:00:00Z',
+      rationale: 'Reselection rationale.',
+      policyId: null,
+      policyVersion: null,
+      stageKey: null,
+      comparisonSnapshotReference: 'sha256:test-2',
+      version: 'CURRENT-DECISION-V2',
+    });
+
+    fixture.componentInstance.selectDecisionCandidate(quotationId);
+    fixture.componentInstance.decisionRationale = 'Reselection rationale.';
+    await fixture.componentInstance.recordDecision();
+    await settle();
+
+    // Reselection: passed currentDecision().version ('CURRENT-DECISION-V1')
+    expect(quotations.recordSourceDecision).toHaveBeenCalledWith(
+      purchaseRequestId,
+      quotationId,
+      'Reselection rationale.',
+      'CURRENT-DECISION-V1',
+    );
+    expect(fixture.componentInstance.successNotice()).toBe(TestBed.inject(LanguageService).text('supplierQuotationDecisionSaved'));
+  });
+
+  it('handles 409 concurrency conflict on source decision cleanly without false success notice', async () => {
+    await navigate([{ path: 'supplier-quotations' }, quotationId ? { path: quotationId } : { path: '' }], quotationId);
+
+    fixture.componentInstance.setTab('comparison');
+    fixture.detectChanges();
+
+    quotations.recordSourceDecision = vi.fn().mockRejectedValue(
+      new HttpErrorResponse({
+        status: 409,
+        error: { code: 'concurrency_conflict' },
+      }),
+    );
+
+    fixture.componentInstance.selectDecisionCandidate(quotationId);
+    fixture.componentInstance.decisionRationale = 'Conflicting rationale.';
+    await fixture.componentInstance.recordDecision();
+    await settle();
+
+    expect(fixture.componentInstance.mutationError()?.code).toBe('concurrency_conflict');
+    expect(fixture.componentInstance.successNotice()).toBeNull();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain(TestBed.inject(LanguageService).text('prConcurrencyConflictError'));
+    expect(text).toContain(TestBed.inject(LanguageService).text('reloadLatestVersion'));
   });
 });

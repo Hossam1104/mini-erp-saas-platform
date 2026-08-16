@@ -547,13 +547,13 @@ public sealed class SupplierQuotationService
         ProcurementRequestContext context,
         Guid purchaseRequestId,
         SupplierSourceDecisionWriteRequest request,
-        byte[] expectedPurchaseRequestVersion,
+        byte[] expectedVersion,
         string? idempotencyKey,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(request);
-        if (expectedPurchaseRequestVersion is null || expectedPurchaseRequestVersion.Length == 0)
+        if (expectedVersion is null || expectedVersion.Length == 0)
         {
             return SupplierQuotationOperationResult<SupplierSourceDecisionRecord>.Failure("validation_failed");
         }
@@ -631,7 +631,7 @@ public sealed class SupplierQuotationService
             lastPolicyStage?.StageKey,
             snapshotReference,
             snapshotJson,
-            existingDecision?.Version ?? expectedPurchaseRequestVersion,
+            expectedVersion,
             idempotencyKey);
         var audit = CreateAuditEvidence(
             context,

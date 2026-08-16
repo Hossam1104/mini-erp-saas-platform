@@ -67,18 +67,27 @@ describe('SupplierQuotationService', () => {
     await disqualifyPromise;
   });
 
-  it('records source decisions against the Purchase Request version', async () => {
-    const decisionPromise = service.recordSourceDecision('pr-1', 'sq-1', 'Best same-currency coverage', 'PRVERSION');
+  it('records source decisions with the supplied expectedVersion concurrency token', async () => {
+    const firstDecisionPromise = service.recordSourceDecision('pr-1', 'sq-1', 'Best same-currency coverage', 'PRVERSION');
     await Promise.resolve();
 
-    const request = httpMock.expectOne('/api/v1/procurement/purchase-requests/pr-1/source-decision');
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ selectedQuotationId: 'sq-1', rationale: 'Best same-currency coverage' });
-    expect(request.request.headers.get('If-Match')).toBe('"PRVERSION"');
-    expect(request.request.headers.has('Idempotency-Key')).toBe(true);
-    request.flush({ id: 'decision-1', selectedQuotationId: 'sq-1' });
+    const firstRequest = httpMock.expectOne('/api/v1/procurement/purchase-requests/pr-1/source-decision');
+    expect(firstRequest.request.method).toBe('POST');
+    expect(firstRequest.request.body).toEqual({ selectedQuotationId: 'sq-1', rationale: 'Best same-currency coverage' });
+    expect(firstRequest.request.headers.get('If-Match')).toBe('"PRVERSION"');
+    expect(firstRequest.request.headers.has('Idempotency-Key')).toBe(true);
+    firstRequest.flush({ id: 'decision-1', selectedQuotationId: 'sq-1', version: 'DECISION-V1' });
+    await firstDecisionPromise;
 
-    await decisionPromise;
+    const reselectionPromise = service.recordSourceDecision('pr-1', 'sq-2', 'Superceding decision', 'DECISION-V1');
+    await Promise.resolve();
+
+    const reselectionRequest = httpMock.expectOne('/api/v1/procurement/purchase-requests/pr-1/source-decision');
+    expect(reselectionRequest.request.method).toBe('POST');
+    expect(reselectionRequest.request.body).toEqual({ selectedQuotationId: 'sq-2', rationale: 'Superceding decision' });
+    expect(reselectionRequest.request.headers.get('If-Match')).toBe('"DECISION-V1"');
+    reselectionRequest.flush({ id: 'decision-2', selectedQuotationId: 'sq-2', version: 'DECISION-V2' });
+    await reselectionPromise;
   });
 
   it('fails closed when antiforgery bootstrap cannot be established', async () => {

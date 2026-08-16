@@ -75,12 +75,12 @@ export class SupplierQuotationService {
     purchaseRequestId: string,
     selectedQuotationId: string,
     rationale: string,
-    purchaseRequestVersion: string,
+    expectedVersion: string,
   ): Promise<SupplierSourceDecisionResponse> {
     return this.mutate<SupplierSourceDecisionResponse>(
       `${this.basePath}/purchase-requests/${purchaseRequestId}/source-decision`,
       { selectedQuotationId, rationale },
-      purchaseRequestVersion,
+      expectedVersion,
     );
   }
 

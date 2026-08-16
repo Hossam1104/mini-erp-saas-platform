@@ -556,7 +556,13 @@ export class SupplierQuotationWorkspaceComponent implements OnInit {
   async recordDecision(): Promise<void> {
     const quotation = this.detail(); const request = this.selectedRequest(); if (!quotation || !request || !this.selectedDecisionId() || !this.decisionRationale.trim()) { this.decisionValidationError.set(true); return; }
     this.decisionValidationError.set(false); this.savingDecision.set(true); this.mutationError.set(null);
-    try { const decision = await this.quotations.recordSourceDecision(request.id, this.selectedDecisionId(), this.decisionRationale.trim(), request.version); this.currentDecision.set(decision); this.successNotice.set(this.language.text('supplierQuotationDecisionSaved')); await this.loadSupportingData(request.id, quotation); }
+    try {
+      const expectedVersion = this.currentDecision()?.version ?? request.version;
+      const decision = await this.quotations.recordSourceDecision(request.id, this.selectedDecisionId(), this.decisionRationale.trim(), expectedVersion);
+      this.currentDecision.set(decision);
+      this.successNotice.set(this.language.text('supplierQuotationDecisionSaved'));
+      await this.loadSupportingData(request.id, quotation);
+    }
     catch (error: unknown) { this.mutationError.set(toSafeUiError(error)); }
     finally { this.savingDecision.set(false); }
   }
@@ -574,7 +580,27 @@ export class SupplierQuotationWorkspaceComponent implements OnInit {
   formatReference(id: string, prefix: string): string { return `${prefix}-${id.replaceAll('-', '').slice(0, 8).toUpperCase()}`; }
   formatDate(value: string | null): string { return value ? new Intl.DateTimeFormat(this.language.language(), { dateStyle: 'medium' }).format(new Date(`${value.slice(0, 10)}T00:00:00`)) : '—'; }
   formatDateTime(value: string): string { return new Intl.DateTimeFormat(this.language.language(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
-  formatMoney(value: number, currency: string): string { return new Intl.NumberFormat(this.language.language(), { style: 'currency', currency, maximumFractionDigits: 2 }).format(value); }
+  formatMoney(value: number, currency: string): string {
+    const language = this.language.language();
+    const safeCurrency = (currency || '').trim();
+    if (safeCurrency) {
+      try {
+        return new Intl.NumberFormat(language, {
+          style: 'currency',
+          currency: safeCurrency,
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 2,
+        }).format(value);
+      } catch {
+        // Fall back safely if Intl rejects non-ISO or unrecognized currency code
+      }
+    }
+    const formatted = new Intl.NumberFormat(language, {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+    }).format(value);
+    return safeCurrency ? `${formatted} ${safeCurrency}` : formatted;
+  }
   formatQuantity(value: number): string { return new Intl.NumberFormat(this.language.language(), { maximumFractionDigits: 3 }).format(value); }
   numberValue(event: Event): number { const value = Number((event.target as HTMLInputElement).value); return Number.isFinite(value) ? value : 0; }
   nullableNumber(event: Event): number | null { const raw = (event.target as HTMLInputElement).value; if (!raw.trim()) return null; const value = Number(raw); return Number.isFinite(value) ? value : null; }
