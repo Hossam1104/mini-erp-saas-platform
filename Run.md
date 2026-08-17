@@ -60,6 +60,19 @@ target is therefore normally:
 - Backend: `http://localhost:5300`
 - Frontend: `http://localhost:4300`
 
+MESP-143 entry routing is host-aware in Development. Use the same Angular
+port with loopback hostnames to exercise the three boundaries:
+
+- `http://localhost:4300` — common MESP entry host;
+- `http://tenant.localhost:4300` — generic configured Tenant host;
+- `http://admin.localhost:4300` — separate platform-administration host.
+
+The launcher adds the generic Development Tenant binding only when explicit
+Tenant host bindings are absent. The generated proxy preserves the browser
+`Host` header (`changeOrigin: false`), so the API—not Angular—resolves the
+entry mode. Production hostnames, DNS, and TLS are infrastructure concerns and
+are not configured by this launcher.
+
 The launcher writes `.runtime\proxy.conf.json` (ignored by Git) with the
 selected backend URL and starts Angular with that generated file. The tracked
 `frontend\proxy.conf.json` remains the generic `http://localhost:5000`
@@ -225,11 +238,14 @@ the normal credential request:
 1. `POST http://localhost:4300/api/v1/auth/sign-in` (or the Development
    bypass above);
 2. `GET http://localhost:4300/api/v1/auth/session`;
-3. `GET http://localhost:4300/api/v1/auth/contexts`;
-4. `GET http://localhost:4300/api/v1/auth/antiforgery`;
-5. `POST http://localhost:4300/api/v1/auth/context-switch` with the returned
-   antiforgery and idempotency headers.
-
+3. `GET http://localhost:4300/api/v1/auth/entry` for the server-resolved entry
+   mode, Tenant identity, authorized choices, branding, SAR presentation, and
+   operational-context state;
+4. `GET http://localhost:4300/api/v1/auth/antiforgery` when a write is needed;
+5. `POST http://localhost:4300/api/v1/auth/operational-context-switch` only
+   when the Overview header presents multiple authorized Company/Branch
+   contexts. The legacy `/auth/contexts` and `/auth/context-switch` routes
+   remain compatibility surfaces for the bounded foundation journey.
 Development HTTP intentionally uses `MiniErp.Auth` and
 `MiniErp.AntiForgery`. If a prior local MiniERP run left incompatible
 localhost state, remove only those MiniERP cookies (and any older

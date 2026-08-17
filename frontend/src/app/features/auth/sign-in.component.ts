@@ -271,11 +271,21 @@ export class SignInComponent implements OnInit {
       await this.router.navigate(['/app']);
       return;
     }
-    const contexts = await this.context.load();
-    if (contexts.length === 0) {
+
+    const entry = await this.context.loadEntry();
+    if (!entry) {
       await this.router.navigate(['/app']);
       return;
     }
-    await this.router.navigate(['/tenant/select']);
+
+    if (entry.entryMode === 'CommonHost' && entry.authorizedTenants.length > 1) {
+      await this.router.navigate(['/tenant/select']);
+      return;
+    }
+
+    // Tenant-host and single-Tenant common-host entry both land on Overview.
+    // Platform/no-access responses also stay inside the safe shell boundary;
+    // the server remains the authority for every later business operation.
+    await this.router.navigate(['/app']);
   }
 }

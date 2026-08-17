@@ -150,7 +150,7 @@ describe('SignInComponent', () => {
     expect(component.errorMessage()).toBe('');
   });
 
-  it('navigates to workspace selection when multiple eligible contexts are returned', async () => {
+  it('navigates to the bounded Tenant chooser when common-host entry has multiple authorized Tenants', async () => {
     fixture.detectChanges();
     await flushPreflight();
     component.form.controls.password.setValue('correct-password');
@@ -158,19 +158,28 @@ describe('SignInComponent', () => {
     const submitPromise = component.submit();
     http.expectOne('/api/v1/auth/sign-in').flush(authenticatedSession);
     await tick();
-    const contextsRequest = http.expectOne('/api/v1/auth/contexts');
-    contextsRequest.flush({
-      contexts: [
-        { contextId: 'context-a', kind: 'OrdinaryMembership', tenantId: 'tenant-a', displayName: 'A', eligibilityVersion: 1 },
-        { contextId: 'context-b', kind: 'OrdinaryMembership', tenantId: 'tenant-b', displayName: 'B', eligibilityVersion: 1 },
+    http.expectOne('/api/v1/auth/entry').flush({
+      entryMode: 'CommonHost',
+      canonicalHost: 'localhost',
+      candidateTenantId: null,
+      candidateTenantDisplayName: null,
+      authorizedTenants: [
+        { tenantId: 'tenant-a', displayName: 'A', canonicalHost: 'a.localhost' },
+        { tenantId: 'tenant-b', displayName: 'B', canonicalHost: 'b.localhost' },
       ],
+      operationalContexts: [],
+      selectedOperationalContextId: null,
+      operationalSelectionVersion: 0,
+      branding: { displayName: 'MESP', logoLightUrl: null, logoDarkUrl: null, logoAltText: 'MESP', tenantConfigured: false },
+      currencyPresentation: { currencyCode: 'SAR', symbolAssetUrl: null, symbolTextFallback: 'SAR' },
+      code: null,
     });
     await submitPromise;
 
     expect(router.navigate).toHaveBeenCalledWith(['/tenant/select']);
   });
 
-  it('navigates to the safe no-context route when zero contexts are returned', async () => {
+  it('keeps the safe Overview shell when common-host entry has zero authorized Tenants', async () => {
     fixture.detectChanges();
     await flushPreflight();
     component.form.controls.password.setValue('correct-password');
@@ -178,7 +187,19 @@ describe('SignInComponent', () => {
     const submitPromise = component.submit();
     http.expectOne('/api/v1/auth/sign-in').flush(authenticatedSession);
     await tick();
-    http.expectOne('/api/v1/auth/contexts').flush({ contexts: [] });
+    http.expectOne('/api/v1/auth/entry').flush({
+      entryMode: 'NoAccess',
+      canonicalHost: null,
+      candidateTenantId: null,
+      candidateTenantDisplayName: null,
+      authorizedTenants: [],
+      operationalContexts: [],
+      selectedOperationalContextId: null,
+      operationalSelectionVersion: 0,
+      branding: { displayName: 'MESP', logoLightUrl: null, logoDarkUrl: null, logoAltText: 'MESP', tenantConfigured: false },
+      currencyPresentation: { currencyCode: 'SAR', symbolAssetUrl: null, symbolTextFallback: 'SAR' },
+      code: 'access_denied',
+    });
     await submitPromise;
 
     expect(router.navigate).toHaveBeenCalledWith(['/app']);

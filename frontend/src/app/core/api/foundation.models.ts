@@ -29,10 +29,75 @@ export interface FoundationContextsResponse {
   contexts: FoundationContextCandidate[];
 }
 
+export type FoundationEntryMode =
+  | 'TenantHost'
+  | 'CommonHost'
+  | 'PlatformAdminHost'
+  | 'NoAccess'
+  | string;
+
+export interface FoundationTenantCandidate {
+  tenantId: string;
+  displayName: string;
+  canonicalHost: string | null;
+}
+
+export interface FoundationOperationalContext {
+  contextId: string;
+  kind: 'Company' | 'Branch' | string;
+  displayName: string;
+  eligibilityVersion: number;
+}
+
+export interface FoundationBranding {
+  displayName: string;
+  logoLightUrl: string | null;
+  logoDarkUrl: string | null;
+  logoAltText: string;
+  tenantConfigured: boolean;
+}
+
+export interface FoundationCurrencyPresentation {
+  currencyCode: string;
+  symbolAssetUrl: string | null;
+  symbolTextFallback: string;
+}
+
+export interface FoundationEntryResponse {
+  entryMode: FoundationEntryMode;
+  canonicalHost: string | null;
+  candidateTenantId: string | null;
+  candidateTenantDisplayName: string | null;
+  authorizedTenants: FoundationTenantCandidate[];
+  operationalContexts: FoundationOperationalContext[];
+  selectedOperationalContextId: string | null;
+  operationalSelectionVersion: number;
+  branding: FoundationBranding;
+  currencyPresentation: FoundationCurrencyPresentation;
+  code: string | null;
+}
+
+export interface FoundationOperationalContextsResponse {
+  contexts: FoundationOperationalContext[];
+  selectedContextId: string | null;
+  selectionVersion: number;
+}
+
 export interface FoundationContextSwitchRequest {
   contextId: string;
   expectedSelectionVersion: number;
   expectedEligibilityVersion: number;
+}
+
+export interface FoundationOperationalContextSwitchRequest {
+  contextId: string;
+  expectedSelectionVersion: number;
+  expectedEligibilityVersion: number;
+}
+
+export interface FoundationOperationalContextSwitchResponse {
+  selectedContext: FoundationOperationalContext;
+  selectionVersion: number;
 }
 
 export interface FoundationProblemDetails {

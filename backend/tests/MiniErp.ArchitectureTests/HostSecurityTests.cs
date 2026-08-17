@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MiniErp.App.BuildingBlocks.Rest;
@@ -27,6 +28,54 @@ namespace MiniErp.ArchitectureTests;
 /// </summary>
 public sealed class HostSecurityTests
 {
+    [Fact]
+    public async Task Tenant_host_selects_only_exact_membership_and_denies_Tenant_B_only_user()
+    {
+        using var factory = new HostFactory { RequestHost = "tenant-a.example.com" };
+        using var ownerClient = factory.CreateClient();
+        factory.SeedCore();
+
+        Assert.Equal(HttpStatusCode.OK, (await SignInAsync(ownerClient, "owner@example.com", factory.Password)).StatusCode);
+        var ownerEntry = await ownerClient.GetAsync("/api/v1/auth/entry");
+        Assert.Equal(HttpStatusCode.OK, ownerEntry.StatusCode);
+        var ownerBody = await ReadJsonAsync(ownerEntry);
+        Assert.Equal("TenantHost", ownerBody.GetProperty("entryMode").GetString());
+        Assert.Equal(factory.TenantA.Value.ToString("D"), ownerBody.GetProperty("candidateTenantId").GetString());
+        Assert.Equal("MESP", ownerBody.GetProperty("branding").GetProperty("displayName").GetString());
+        Assert.False(ownerBody.GetProperty("branding").GetProperty("tenantConfigured").GetBoolean());
+        var authorizedOwnerTenant = Assert.Single(ownerBody.GetProperty("authorizedTenants").EnumerateArray());
+        Assert.Equal(factory.TenantA.Value.ToString("D"), authorizedOwnerTenant.GetProperty("tenantId").GetString());
+
+        using var foreignClient = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.OK, (await SignInAsync(foreignClient, "foreign@example.com", factory.Password)).StatusCode);
+        var foreignEntry = await foreignClient.GetAsync("/api/v1/auth/entry");
+        Assert.Equal(HttpStatusCode.OK, foreignEntry.StatusCode);
+        var foreignBody = await ReadJsonAsync(foreignEntry);
+        Assert.Equal("NoAccess", foreignBody.GetProperty("entryMode").GetString());
+        Assert.Empty(foreignBody.GetProperty("authorizedTenants").EnumerateArray());
+
+        var deniedBusinessRead = await foreignClient.GetAsync("/api/v1/foundation/tenant-context");
+        Assert.Equal(HttpStatusCode.Forbidden, deniedBusinessRead.StatusCode);
+    }
+
+    [Fact]
+    public async Task Untrusted_forwarded_host_cannot_change_common_entry_resolution()
+    {
+        using var factory = new HostFactory();
+        using var client = factory.CreateClient();
+        factory.SeedCore();
+        Assert.Equal(HttpStatusCode.OK, (await SignInAsync(client, "owner@example.com", factory.Password)).StatusCode);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/entry");
+        request.Headers.TryAddWithoutValidation("X-Forwarded-Host", "wafra.example.com");
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await ReadJsonAsync(response);
+        Assert.Equal("CommonHost", body.GetProperty("entryMode").GetString());
+        Assert.NotEqual(0, body.GetProperty("authorizedTenants").GetArrayLength());
+    }
+
     [Fact]
     public async Task Mandatory_evidence_failure_blocks_probe_and_releases_idempotency_reservation()
     {
@@ -784,6 +833,7 @@ public sealed class HostSecurityTests
         internal MembershipId ProbeMembershipB { get; private set; }
         internal MembershipId OtherWriteMembershipA { get; private set; }
         internal SupportGrantId SupportGrant { get; private set; }
+        internal string RequestHost { get; set; } = "localhost";
 
         private bool seeded;
 
@@ -868,6 +918,18 @@ public sealed class HostSecurityTests
             // contract. Development HTTP compatibility is covered by the
             // Development bootstrap/runtime smoke path instead.
             builder.UseEnvironment("Production");
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                if (!string.Equals(RequestHost, "localhost", StringComparison.OrdinalIgnoreCase))
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["MESP_TENANT_HOST_BINDINGS:0:Host"] = RequestHost,
+                        ["MESP_TENANT_HOST_BINDINGS:0:TenantId"] = TenantA.Value.ToString("D"),
+                        ["MESP_TENANT_HOST_BINDINGS:0:CanonicalHost"] = RequestHost,
+                    });
+                }
+            });
             builder.ConfigureTestServices(services =>
             {
                 if (FailAuditEvidence)
@@ -898,7 +960,7 @@ public sealed class HostSecurityTests
 
         internal new HttpClient CreateClient() => base.CreateClient(new WebApplicationFactoryClientOptions
         {
-            BaseAddress = new Uri("https://localhost"),
+            BaseAddress = new Uri($"https://{RequestHost}"),
             HandleCookies = true,
             AllowAutoRedirect = false
         });

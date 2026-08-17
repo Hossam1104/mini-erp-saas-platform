@@ -6,7 +6,7 @@ import { ApplicationShellComponent } from './features/shell/application-shell.co
 import { WorkspaceHomeComponent } from './features/workspace/workspace-home.component';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'app/workspaces' },
+  { path: '', pathMatch: 'full', redirectTo: 'app' },
   { path: 'login', component: SignInComponent },
   {
     path: 'app',
@@ -33,5 +33,5 @@ export const routes: Routes = [
     ],
   },
   { path: 'tenant/select', pathMatch: 'full', redirectTo: 'app/workspaces' },
-  { path: '**', redirectTo: 'app/workspaces' },
+  { path: '**', redirectTo: 'app' },
 ];

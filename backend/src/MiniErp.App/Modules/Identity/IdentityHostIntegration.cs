@@ -23,6 +23,14 @@ public sealed record FoundationHostContextCandidate(
     string DisplayName,
     long EligibilityVersion);
 
+/// <summary>Safe Company/Branch context candidate exposed to the shell.</summary>
+public sealed record FoundationHostOperationalContextCandidate(
+    Guid ContextId,
+    Guid TenantId,
+    string Kind,
+    string DisplayName,
+    long EligibilityVersion);
+
 /// <summary>Safe session facts returned by the Foundation host.</summary>
 public sealed record FoundationHostSessionState(
     bool Authenticated,
@@ -75,6 +83,13 @@ public sealed record FoundationHostContextSwitchResult(
     string Code,
     FoundationHostSessionState? State);
 
+/// <summary>Safe operational context switch outcome.</summary>
+public sealed record FoundationHostOperationalContextSwitchResult(
+    bool Succeeded,
+    string Code,
+    FoundationHostOperationalContextCandidate? SelectedContext,
+    long SelectionVersion);
+
 /// <summary>
 /// Public host adapter over the internal MESP identity authority. Operations are
 /// resolved from an approved descriptor; callers cannot supply permission text.
@@ -102,7 +117,33 @@ public interface IFoundationIdentityHost
         long expectedSelectionVersion,
         long expectedEligibilityVersion);
 
+    bool SelectAuthorizedContext(ClaimsPrincipal principal, Guid contextId);
+
+    void ClearSelectedContext(ClaimsPrincipal principal);
+
+    IReadOnlyList<FoundationHostOperationalContextCandidate> ListOperationalContexts(ClaimsPrincipal principal);
+
+    FoundationHostOperationalContextCandidate? GetSelectedOperationalContext(ClaimsPrincipal principal);
+
+    long GetOperationalSelectionVersion(ClaimsPrincipal principal);
+
+    bool SelectAuthorizedOperationalContext(ClaimsPrincipal principal, Guid contextId);
+
+    void ClearSelectedOperationalContext(ClaimsPrincipal principal);
+
+    FoundationHostOperationalContextSwitchResult SwitchOperationalContext(
+        ClaimsPrincipal principal,
+        Guid contextId,
+        long expectedSelectionVersion,
+        long expectedEligibilityVersion);
+
     FoundationRequestContext? ResolveCandidateContext(
+        ClaimsPrincipal principal,
+        Guid contextId,
+        FoundationOperationDescriptor descriptor,
+        string correlationId);
+
+    FoundationRequestContext? ResolveCandidateOperationalContext(
         ClaimsPrincipal principal,
         Guid contextId,
         FoundationOperationDescriptor descriptor,
@@ -123,8 +164,10 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
     private static readonly Guid PlatformContextId = Guid.Parse("00000000-0000-0000-0000-000000000001");
     private readonly IdentityAuthorizationService identity;
     private readonly ITenantDisplayNameProvider tenantDisplayNames;
+    private readonly IFoundationOperationalContextProvider operationalContextProvider;
     private readonly object selectionLock = new();
     private readonly Dictionary<SessionId, SelectedContext> selectedContexts = [];
+    private readonly Dictionary<SessionId, SelectedOperationalContext> selectedOperationalContexts = [];
 
     private sealed record SelectedContext(
         FoundationHostContextKind Kind,
@@ -132,12 +175,19 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         long SelectionVersion,
         long EligibilityVersion);
 
+    private sealed record SelectedOperationalContext(
+        Guid ContextId,
+        long SelectionVersion,
+        long EligibilityVersion);
+
     internal FoundationIdentityHost(
         IdentityAuthorizationService identity,
-        ITenantDisplayNameProvider? tenantDisplayNames = null)
+        ITenantDisplayNameProvider? tenantDisplayNames = null,
+        IFoundationOperationalContextProvider? operationalContextProvider = null)
     {
         this.identity = identity ?? throw new ArgumentNullException(nameof(identity));
         this.tenantDisplayNames = tenantDisplayNames ?? new DefaultTenantDisplayNameProvider();
+        this.operationalContextProvider = operationalContextProvider ?? new NoFoundationOperationalContextProvider();
     }
 
     public FoundationHostSignInResult SignIn(string login, string password)
@@ -279,12 +329,22 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
                     return FoundationRequestContext.Unauthenticated();
                 }
 
+                var requestedScope = OrganizationScope.ForTenant(membership.TenantId);
+                var selectedOperational = GetSelectedOperationalUnsafe(
+                    validation.SessionId.Value,
+                    membership);
+                if (selectedOperational is not null)
+                {
+                    requestedScope = ToOrganizationScope(selectedOperational);
+                }
+
                 var decision = identity.AuthorizeOrdinary(
                     token,
                     membership.TenantId,
                     permission,
-                    OrganizationScope.ForTenant(membership.TenantId),
-                    correlation);
+                    requestedScope,
+                    correlation,
+                    allowTenantScopeExpansion: selectedOperational is not null);
                 if (decision.Allowed && decision.TenantContext is not null)
                 {
                     return FoundationRequestContext.ForTenant(
@@ -376,6 +436,251 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         return !validation.Valid || validation.UserId is null
             ? []
             : ListContexts(validation.UserId.Value, token);
+    }
+
+    public bool SelectAuthorizedContext(ClaimsPrincipal principal, Guid contextId)
+    {
+        if (!TryReadSession(principal, out var token, out _, out _)
+            || contextId == Guid.Empty)
+        {
+            return false;
+        }
+
+        var validation = identity.ValidateSession(token);
+        if (!validation.Valid || validation.SessionId is null || validation.UserId is null)
+        {
+            return false;
+        }
+
+        var candidate = ListContexts(validation.UserId.Value, token)
+            .SingleOrDefault(item => item.ContextId == contextId);
+        if (candidate is null)
+        {
+            return false;
+        }
+
+        lock (selectionLock)
+        {
+            selectedContexts.TryGetValue(validation.SessionId.Value, out var current);
+            if (current is not null
+                && current.Kind == candidate.Kind
+                && current.ContextId == candidate.ContextId
+                && current.EligibilityVersion == candidate.EligibilityVersion)
+            {
+                return true;
+            }
+
+            selectedContexts[validation.SessionId.Value] = new SelectedContext(
+                candidate.Kind,
+                candidate.ContextId,
+                (current?.SelectionVersion ?? 0) + 1,
+                candidate.EligibilityVersion);
+            selectedOperationalContexts.Remove(validation.SessionId.Value);
+        }
+
+        return true;
+    }
+
+    public void ClearSelectedContext(ClaimsPrincipal principal)
+    {
+        if (!TryReadSession(principal, out var token, out _, out _))
+        {
+            return;
+        }
+
+        var validation = identity.ValidateSession(token);
+        if (validation.Valid && validation.SessionId is not null)
+        {
+            RemoveSelection(validation.SessionId.Value);
+        }
+    }
+
+    public IReadOnlyList<FoundationHostOperationalContextCandidate> ListOperationalContexts(ClaimsPrincipal principal)
+    {
+        if (!TryReadSession(principal, out var token, out _, out _))
+        {
+            return [];
+        }
+
+        var validation = identity.ValidateSession(token);
+        if (!validation.Valid || validation.UserId is null || validation.SessionId is null)
+        {
+            return [];
+        }
+
+        SelectedContext? selected;
+        lock (selectionLock)
+        {
+            selectedContexts.TryGetValue(validation.SessionId.Value, out selected);
+        }
+
+        if (selected is not { Kind: FoundationHostContextKind.OrdinaryMembership })
+        {
+            return [];
+        }
+
+        lock (identity.Store.SyncRoot)
+        {
+            if (!identity.Store.Memberships.TryGetValue(new MembershipId(selected.ContextId), out var membership)
+                || membership.UserId != validation.UserId.Value
+                || membership.Status != MembershipStatus.Active
+                || !HasOrdinaryContextReadUnsafe(membership))
+            {
+                return [];
+            }
+
+            return operationalContextProvider.List(membership.TenantId)
+                .Where(candidate => CanUseOperationalContextUnsafe(membership, candidate))
+                .Select(candidate => new FoundationHostOperationalContextCandidate(
+                    candidate.ContextId,
+                    candidate.TenantId,
+                    candidate.Kind,
+                    candidate.DisplayName,
+                    candidate.EligibilityVersion))
+                .ToArray();
+        }
+    }
+
+    public FoundationHostOperationalContextCandidate? GetSelectedOperationalContext(ClaimsPrincipal principal)
+    {
+        if (!TryReadSession(principal, out var token, out _, out _))
+        {
+            return null;
+        }
+
+        var validation = identity.ValidateSession(token);
+        if (!validation.Valid || validation.SessionId is null)
+        {
+            return null;
+        }
+
+        SelectedOperationalContext? selected;
+        lock (selectionLock)
+        {
+            selectedOperationalContexts.TryGetValue(validation.SessionId.Value, out selected);
+        }
+
+        return selected is null
+            ? null
+            : ListOperationalContexts(principal).SingleOrDefault(item => item.ContextId == selected.ContextId);
+    }
+
+    public long GetOperationalSelectionVersion(ClaimsPrincipal principal)
+    {
+        if (!TryReadSession(principal, out var token, out _, out _))
+        {
+            return 0;
+        }
+
+        var validation = identity.ValidateSession(token);
+        if (!validation.Valid || validation.SessionId is null)
+        {
+            return 0;
+        }
+
+        lock (selectionLock)
+        {
+            return selectedOperationalContexts.TryGetValue(validation.SessionId.Value, out var selected)
+                ? selected.SelectionVersion
+                : 0;
+        }
+    }
+
+    public bool SelectAuthorizedOperationalContext(ClaimsPrincipal principal, Guid contextId)
+    {
+        if (!TryReadSession(principal, out var token, out _, out _)
+            || contextId == Guid.Empty)
+        {
+            return false;
+        }
+
+        var validation = identity.ValidateSession(token);
+        if (!validation.Valid || validation.SessionId is null)
+        {
+            return false;
+        }
+
+        var candidate = ListOperationalContexts(principal).SingleOrDefault(item => item.ContextId == contextId);
+        if (candidate is null)
+        {
+            return false;
+        }
+
+        lock (selectionLock)
+        {
+            selectedOperationalContexts.TryGetValue(validation.SessionId.Value, out var current);
+            if (current is not null
+                && current.ContextId == candidate.ContextId
+                && current.EligibilityVersion == candidate.EligibilityVersion)
+            {
+                return true;
+            }
+
+            selectedOperationalContexts[validation.SessionId.Value] = new SelectedOperationalContext(
+                candidate.ContextId,
+                (current?.SelectionVersion ?? 0) + 1,
+                candidate.EligibilityVersion);
+        }
+
+        return true;
+    }
+
+    public void ClearSelectedOperationalContext(ClaimsPrincipal principal)
+    {
+        if (!TryReadSession(principal, out var token, out _, out _))
+        {
+            return;
+        }
+
+        var validation = identity.ValidateSession(token);
+        if (validation.Valid && validation.SessionId is not null)
+        {
+            lock (selectionLock)
+            {
+                selectedOperationalContexts.Remove(validation.SessionId.Value);
+            }
+        }
+    }
+
+    public FoundationHostOperationalContextSwitchResult SwitchOperationalContext(
+        ClaimsPrincipal principal,
+        Guid contextId,
+        long expectedSelectionVersion,
+        long expectedEligibilityVersion)
+    {
+        if (!TryReadSession(principal, out var token, out _, out _))
+        {
+            return new FoundationHostOperationalContextSwitchResult(false, "authentication_failed", null, 0);
+        }
+
+        var validation = identity.ValidateSession(token);
+        if (!validation.Valid || validation.UserId is null || validation.SessionId is null || contextId == Guid.Empty)
+        {
+            return new FoundationHostOperationalContextSwitchResult(false, "access_denied", null, 0);
+        }
+
+        var candidate = ListOperationalContexts(principal).SingleOrDefault(item => item.ContextId == contextId);
+        if (candidate is null || candidate.EligibilityVersion != expectedEligibilityVersion || expectedSelectionVersion < 0)
+        {
+            return new FoundationHostOperationalContextSwitchResult(false, "context_version_conflict", null, GetOperationalSelectionVersion(principal));
+        }
+
+        lock (selectionLock)
+        {
+            selectedOperationalContexts.TryGetValue(validation.SessionId.Value, out var current);
+            var currentVersion = current?.SelectionVersion ?? 0;
+            if (currentVersion != expectedSelectionVersion)
+            {
+                return new FoundationHostOperationalContextSwitchResult(false, "context_version_conflict", null, currentVersion);
+            }
+
+            var nextVersion = currentVersion + 1;
+            selectedOperationalContexts[validation.SessionId.Value] = new SelectedOperationalContext(
+                candidate.ContextId,
+                nextVersion,
+                candidate.EligibilityVersion);
+            return new FoundationHostOperationalContextSwitchResult(true, "operational_context_selected", candidate, nextVersion);
+        }
     }
 
     public FoundationHostContextSwitchResult SwitchContext(
@@ -531,6 +836,71 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         return null;
     }
 
+    public FoundationRequestContext? ResolveCandidateOperationalContext(
+        ClaimsPrincipal principal,
+        Guid contextId,
+        FoundationOperationDescriptor descriptor,
+        string correlationId)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        if (!FoundationOperationCatalog.TryGet(descriptor.OperationId, out var catalogDescriptor)
+            || catalogDescriptor.Visibility != FoundationOperationVisibility.Public
+            || catalogDescriptor != descriptor
+            || !TryReadSession(principal, out var token, out _, out _))
+        {
+            return null;
+        }
+
+        var validation = identity.ValidateSession(token);
+        if (!validation.Valid || validation.UserId is null || validation.SessionId is null)
+        {
+            return null;
+        }
+
+        var candidate = ListOperationalContexts(principal).SingleOrDefault(item => item.ContextId == contextId);
+        if (candidate is null || !IdentityPermissions.TryResolve(descriptor.ExactPermissionCode, out var permission))
+        {
+            return null;
+        }
+
+        SelectedContext? selected;
+        lock (selectionLock)
+        {
+            selectedContexts.TryGetValue(validation.SessionId.Value, out selected);
+        }
+
+        if (selected is not { Kind: FoundationHostContextKind.OrdinaryMembership })
+        {
+            return null;
+        }
+
+        if (!operationalContextProvider.TryGet(candidate.ContextId, out var providerCandidate))
+        {
+            return null;
+        }
+
+        var requestedScope = ToOrganizationScope(providerCandidate);
+        var correlationValue = new CorrelationId(string.IsNullOrWhiteSpace(correlationId) ? Guid.NewGuid().ToString("N") : correlationId);
+        lock (identity.Store.SyncRoot)
+        {
+            if (!identity.Store.Memberships.TryGetValue(new MembershipId(selected.ContextId), out var membership))
+            {
+                return null;
+            }
+
+            var decision = identity.AuthorizeOrdinary(
+                token,
+                membership.TenantId,
+                permission,
+                requestedScope,
+                correlationValue,
+                allowTenantScopeExpansion: true);
+            return decision.Allowed && decision.TenantContext is not null
+                ? FoundationRequestContext.ForTenant(validation.UserId.Value.Value, validation.SessionId.Value.Value, decision.TenantContext, permission.Value)
+                : null;
+        }
+    }
+
     public bool Revoke(ClaimsPrincipal principal, string reason)
     {
         if (!TryReadSession(principal, out var token, out _, out _))
@@ -662,11 +1032,58 @@ internal sealed class FoundationIdentityHost : IFoundationIdentityHost
         && identity.Store.ScopeGrantsByMembership.TryGetValue(membership.Id, out var grants)
         && grants.Any(id => identity.Store.ScopeGrants.TryGetValue(id, out var grant) && grant.IsActive);
 
+    private bool CanUseOperationalContextUnsafe(
+        TenantMembership membership,
+        FoundationOperationalContextCandidate candidate) =>
+        candidate.TenantId == membership.TenantId.Value
+        && identity.HasOrdinaryScope(membership, ToOrganizationScope(candidate), allowTenantScopeExpansion: true);
+
+    private FoundationOperationalContextCandidate? GetSelectedOperationalUnsafe(
+        SessionId sessionId,
+        TenantMembership membership)
+    {
+        SelectedOperationalContext? selected;
+        lock (selectionLock)
+        {
+            selectedOperationalContexts.TryGetValue(sessionId, out selected);
+        }
+
+        if (selected is null
+            || !operationalContextProvider.TryGet(selected.ContextId, out var candidate)
+            || candidate.EligibilityVersion != selected.EligibilityVersion
+            || !CanUseOperationalContextUnsafe(membership, candidate))
+        {
+            if (selected is not null)
+            {
+                lock (selectionLock)
+                {
+                    selectedOperationalContexts.Remove(sessionId);
+                }
+            }
+
+            return null;
+        }
+
+        return candidate;
+    }
+
+    private static OrganizationScope ToOrganizationScope(FoundationOperationalContextCandidate candidate)
+    {
+        var tenantId = new TenantId(candidate.TenantId);
+        return candidate.Kind switch
+        {
+            "Company" => OrganizationScope.ForCompany(tenantId, candidate.TargetId),
+            "Branch" => OrganizationScope.ForBranch(tenantId, candidate.TargetId),
+            _ => throw new InvalidOperationException("Unknown operational context kind.")
+        };
+    }
+
     private void RemoveSelection(SessionId sessionId)
     {
         lock (selectionLock)
         {
             selectedContexts.Remove(sessionId);
+            selectedOperationalContexts.Remove(sessionId);
         }
     }
 

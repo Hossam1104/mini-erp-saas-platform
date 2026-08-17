@@ -10,9 +10,9 @@ import { LanguageService } from '../../core/i18n/language.service';
     <section class="tenant-select ui-page" aria-labelledby="tenant-select-title">
       <header class="ui-page-header ui-page-header--compact">
         <div>
-          <p class="eyebrow">{{ language.text('switchContext') }}</p>
-          <h1 id="tenant-select-title">{{ language.text('contextTitle') }}</h1>
-          <p class="lede">{{ language.text('contextLead') }}</p>
+          <p class="eyebrow">{{ language.text('tenantChooserKicker') }}</p>
+          <h1 id="tenant-select-title">{{ language.text('tenantChooserTitle') }}</h1>
+          <p class="lede">{{ language.text('tenantChooserLead') }}</p>
         </div>
         <span class="ui-status-chip ui-status-chip--accent">{{ language.text('serverAuthority') }}</span>
       </header>

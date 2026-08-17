@@ -1,98 +1,82 @@
-# CLAUDE OPUS 5 — TARGETED RE-VERIFICATION OF MESP-123 FINDINGS (F-1, F-2, F-5)
+# CLAUDE OPUS 5 — TARGETED SECURITY AND INTEGRATION REVIEW OF MESP-143
 
 ## Mission
 
-You are the independent reviewer performing the targeted re-verification of the
-completed bounded corrections for MESP-123 on branch
-`feat/MESP-123-purchase-request-approval` (Draft PR #66 against `main`).
+Perform an independent, read-only review of the completed bounded MESP-143
+implementation on branch `feat/MESP-143-tenant-aware-entry`, Draft PR against
+`main`. Do not merge, force-push, perform Jira operations, or start the next
+product capability.
 
-The merge-blocking findings from the previous Opus review have been corrected:
-1. **F-1 (Currency Rendering Resilience)**: `formatMoney` in `SupplierQuotationWorkspaceComponent` now catches `RangeError` from `Intl.NumberFormat` on valid non-ISO MESP currency codes (e.g. `S2K`, `CUSTOM`) and falls back safely to localized decimal formatting with raw currency code suffix (`1,234.56 S2K`).
-2. **F-2 (Source Decision Concurrency Token)**: `SupplierQuotationService.RecordSourceDecisionAsync` passes caller `expectedVersion` directly to `SupplierSourceDecisionCommand`. Angular `SupplierQuotationWorkspaceComponent.recordDecision()` sends `currentDecision()?.version ?? request.version`, cleanly enforcing optimistic concurrency on both first decisions and re-selections.
-3. **F-5 & F-6 (Documentation & Bundle Reconciliation)**: `docs/staticts.md`, `.ai/CURRENT_STATE.md`, and PR #66 description reconciled with exact test counts (754 backend, 202 Angular unit, 8 Playwright E2E) and measured bundle sizes (478.57 kB initial, 91.94 kB lazy quotation chunk). Non-blocking P3 observations (F-3, F-4) preserved.
+Review the complete MESP-143 diff and the approved architecture inputs:
 
-Review the specific corrections, run the test suites, and produce a final independent verdict for GPT-5.6 Sol / Owner decision.
+- `AGENTS.md`, `CLAUDE.md`, `.ai/CURRENT_STATE.md`;
+- `docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md`;
+- `docs/MESP-143_Tenant_Aware_Entry_Execution_Plan.md`;
+- current REST/Identity/Tenancy/organization-scope contracts and Angular shell.
 
-Do not merge the pull request. Draft PR #66 must remain OPEN, DRAFT, and UNMERGED. Do not perform Jira operations (GPT-5.6 Sol owns Jira).
+## Required review gates
 
-## Repository and delivery state
+1. Host safety: normalized configuration-led bindings, active/disabled and
+   collision behavior, unknown/malformed hosts, trusted-proxy-only forwarded
+   headers, preserved browser Host through the Development proxy, and no
+   client Tenant header or route/query identifier authority.
+2. Tenant authority: exact Tenant-host membership, common-host single/multiple/
+   zero membership routing, no unrelated Tenant disclosure, platform-admin
+   separation, support-path compatibility, and no cross-Tenant context leakage.
+3. Overview/context UX: Tenant Overview is the first business surface;
+   `/app/workspaces` is compatibility/management only; singular Company/Branch
+   context auto-selects; multiple contexts use the header; stale/unauthorized
+   operational switches fail closed with optimistic concurrency.
+4. Branding/SAR: generic Tenant configuration and MESP fallback, light/dark
+   fallback, accessible identity, semantic `SAR` fallback, non-SAR resilience,
+   and zero FX/tax/accounting/persisted-amount mutation. Confirm
+   `frontend/assets` was not changed.
+5. Regression: MESP-123 procurement and Supplier Quotation routes, auth bypass
+   invariants, REST/OpenAPI catalogue coverage, SQL/provider boundaries, and
+   no downstream Purchase Order/receipt/invoice/AP/accounting/stock scope.
 
-- Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
-- Branch: `feat/MESP-123-purchase-request-approval`
-- Pull Request: Draft PR #66 against `main` (remains open, Draft, unmerged)
-- Capability: MESP-123 — Purchase Request, approval, Supplier Quotation, comparison, and source decision
-- Product: generic reusable multi-tenant B2B ERP; legacy Wafra is visual reference only
-- Next review output: final independent verdict for GPT-5.6 Sol / Owner decision
+## Validation
 
-## Mandatory reading order
-
-1. `AGENTS.md` and `CLAUDE.md`;
-2. `.ai/CURRENT_STATE.md`;
-3. this `TASK.md`;
-4. `docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md` and `docs/MESP-143_Tenant_Aware_Entry_Execution_Plan.md` (Owner-approved forward architecture inputs: understand that Tenant != Workspace, Tenant is the server-authorized isolation boundary, Overview loads first, and Wafra logo/SAR symbol are configuration/country-pack assets. Do NOT mistake the legacy foundation workspace chooser as a reason to reopen MESP-123, and do NOT implement MESP-143 in this review);
-5. `docs/staticts.md`;
-6. `README.md`, `Run.md`, `backend/README.md`, and `frontend/README.md`;
-7. the specific diffs in `SupplierQuotationService.cs`, `SupplierQuotationTests.cs`, `supplier-quotation-workspace.component.ts`, `supplier-quotation-workspace.component.spec.ts`, `supplier-quotation.service.ts`, `supplier-quotation.service.spec.ts`, and `supplier-quotation.spec.ts`.
-
-## Verification Procedure
-
-### 1. Establish clean evidence
-
-```powershell
-git status --short
-git branch --show-current
-git rev-parse HEAD
-git log -5 --oneline
-git diff main...HEAD --stat
-git diff --check
-git status --short -- frontend/assets
-```
-
-Confirm Owner-managed source assets under `frontend/assets` remain unchanged.
-
-### 2. Verify F-1 Currency Resilience
-
-Inspect `formatMoney` in `supplier-quotation-workspace.component.ts`:
-- Confirm try/catch wraps `Intl.NumberFormat(language, { style: 'currency', currency: safeCurrency })`.
-- Confirm non-ISO fallback uses `new Intl.NumberFormat(language, { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(value)` + raw code.
-- Verify unit tests in `supplier-quotation-workspace.component.spec.ts` test standard ISO and non-ISO codes (`S2K`, `CUSTOM`).
-- Verify Playwright test in `supplier-quotation.spec.ts` renders non-ISO currency code without console errors.
-
-### 3. Verify F-2 Source Decision Concurrency Passthrough
-
-Inspect backend and frontend concurrency token flow:
-- In `backend/src/MiniErp.App/Modules/Procurement/SupplierQuotationService.cs`: confirm parameter `expectedVersion` is passed directly into `SupplierSourceDecisionCommand(..., expectedVersion, ...)` without substituting `existingDecision?.Version`.
-- In `frontend/src/app/features/procurement/supplier-quotation-workspace.component.ts`: confirm `recordDecision()` computes `expectedVersion = this.currentDecision()?.version ?? request.version` and passes it to `recordSourceDecision`.
-- In `backend/tests/MiniErp.ArchitectureTests/SupplierQuotationTests.cs`: confirm `Source_decision_concurrency_enforces_caller_version_on_first_decision_and_reselection` verifies wrong first decision version fails (409), valid first decision succeeds, stale PR version on reselection fails (409), garbage version on reselection fails (409), failed reselections do not alter decision or history, and valid decision version on reselection succeeds.
-
-### 4. Run the bounded validation suite
+Run the bounded available suite and record exact results:
 
 ```powershell
 dotnet build .\backend\MiniErp.sln --configuration Release --no-restore --verbosity minimal
-powershell -ExecutionPolicy Bypass -File .\scripts\Test-MiniErpBackend.ps1
+.\scripts\Test-MiniErpBackend.ps1
 cd .\frontend
-npm test -- --watch=false
+npm test -- --watch=false --no-progress
 npm run build
-npx playwright test
+npm run test:e2e
 npm audit --omit=dev
 ```
 
-Expected baseline:
-- Release build: **0 warnings / 0 errors**
-- Backend test suite: **754/754 passing** (includes LocalDB SQL safety harness)
-- Angular unit tests: **202/202 passing** across 22 spec files
-- Production build: **478.57 kB initial total**, **91.94 kB lazy quotation chunk**
-- Playwright E2E tests: **8/8 passing** across 2 spec files
-- npm audit: **0 vulnerabilities**
-- Persistent MESP runtime: **intact and unchanged**
+Use `scripts\Test-MiniErpBackend.ps1` as the sole accepted backend entry point,
+not a direct `dotnet test` invocation. The script constructs a disposable
+LocalDB `MiniErpFoundation_*` target in process memory, assigns it only to
+`MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, leaves the persistent
+`MESP_SQLSERVER_CONNECTION_STRING` runtime variable completely untouched, runs
+the full backend suite including every SQL Server safety-harness test, and
+restores/clears the safety variable in a guaranteed `finally` block. Confirm
+no orphan `MiniErpFoundation_*` database remains afterward.
 
-## Verdict format
+For `APPROVE FOR MERGE`, the SQL Server safety-harness tests must genuinely
+execute (not be skipped or gated) and pass through this disposable connection.
+A result that reports SQL safety tests as environment-gated is not an
+acceptable green outcome — if `(localdb)\MSSQLLocalDB` is genuinely
+unavailable in the review environment, do not substitute the persistent
+`MESP` runtime connection or alter that database; instead return `BLOCKED` or
+`CHANGES REQUIRED / ENVIRONMENT BLOCKED` with the exact non-secret evidence,
+not `APPROVE FOR MERGE` with gated SQL safety tests. Inspect the complete diff
+and `git diff --check` before the verdict.
 
-Return a review report with:
-1. Verdict: `APPROVE FOR MERGE`, `CHANGES REQUIRED`, or `BLOCKED`;
-2. exact reviewed SHA and PR state;
-3. evidence for F-1, F-2, and F-5;
-4. findings ordered P0/P1/P2/P3;
-5. explicit statement on Tenant isolation, accounting/stock integrity, and security;
-6. merge recommendation for PR #66.
+## Required verdict
 
+Return `APPROVE FOR MERGE`, `CHANGES REQUIRED`, or `BLOCKED`, with:
+
+- reviewed SHA and Draft PR state;
+- host/Tenant/platform findings ordered P0/P1/P2/P3;
+- exact backend, Angular, build, E2E, and audit evidence;
+- explicit Tenant-isolation, accounting/stock-integrity, asset, and scope
+  statements;
+- merge recommendation for the MESP-143 Draft PR.
+
+Do not execute any subsequent capability after this review.

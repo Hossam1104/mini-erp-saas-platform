@@ -9,7 +9,7 @@
     2. Assigning it exclusively to MESP_SQLSERVER_SAFETY_CONNECTION_STRING.
     3. Leaving MESP_SQLSERVER_CONNECTION_STRING (the persistent runtime variable)
        completely unchanged.
-    4. Running the full backend regression including the 21 SQL Server
+    4. Running the full backend regression including the SQL Server
        safety-harness tests.
     5. Restoring / removing the safety variable in a guaranteed finally block.
 

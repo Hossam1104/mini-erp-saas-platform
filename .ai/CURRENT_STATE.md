@@ -1,6 +1,94 @@
 # Current State
 
-## Current authoritative position - 17 August 2026 (MESP-123 Opus findings correction & ADR-019/MESP-143 governance reconciliation)
+## Current authoritative position - 17 August 2026 (MESP-143 pre-Opus validation reconciliation)
+
+The MESP-143 implementation on branch `feat/MESP-143-tenant-aware-entry`,
+Draft PR #67 against `main`, is unchanged from its implementation head
+`0fec629f330b8f73bbc329b579fc446280538729`. This session is validation and
+governance reconciliation only; zero product, test, migration, or schema code
+changed.
+
+The prior handoff reported the backend suite as 748/770 with 22 SQL safety
+tests environment-gated because the dedicated LocalDB safety connection was
+not genuinely exercised. This session re-ran the release build and the full
+backend suite through the approved safe entry point
+`scripts/Test-MiniErpBackend.ps1`, which builds a disposable
+`MiniErpFoundation_*` LocalDB target in process memory, assigns it only to
+`MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, and leaves the persistent
+`MESP_SQLSERVER_CONNECTION_STRING` runtime variable untouched throughout.
+
+Corrected validation baseline: Release build **0 warnings / 0 errors**;
+backend suite **770/770 passed, 0 skipped** (all 22 SQL Server safety-harness
+tests genuinely executed and passed against disposable database
+`MiniErpFoundation_20260817131747_f553ce07`, confirmed dropped with 0 orphan
+`MiniErpFoundation_*` databases remaining afterward); `MESP_SQLSERVER_CONNECTION_STRING`
+confirmed unmodified and the persistent `MESP` database was never a safety
+harness target. Frontend was rerun in full: Angular **204/204** across 23
+spec files; production build **490.85 kB** initial with a **91.94 kB**
+Supplier Quotation lazy chunk; Playwright **8/8**; `npm audit --omit=dev`
+**0 vulnerabilities** — all matching the implementation-head baseline.
+
+`TASK.md` is corrected so the next Claude Opus 5 MESP-143 review uses
+`scripts/Test-MiniErpBackend.ps1` as the sole accepted backend entry point and
+no longer accepts environment-gated SQL safety tests as a green
+`APPROVE FOR MERGE` outcome; genuine LocalDB unavailability must instead
+return `BLOCKED` or `CHANGES REQUIRED / ENVIRONMENT BLOCKED`.
+
+Draft PR #67 remains open, Draft, and unmerged. No Jira operation was
+performed (GPT-5.6 Sol owns Jira). The next exact session remains independent
+Claude Opus 5 targeted review of MESP-143 per the corrected `TASK.md`.
+
+## Historical authoritative position - 17 August 2026 (MESP-143 implementation)
+
+MESP-143 is implemented on branch `feat/MESP-143-tenant-aware-entry` from the
+synchronized `main` baseline. The source capability is intentionally bounded:
+
+- `TenantHostRegistry` normalizes configured host bindings, rejects malformed or
+  colliding identities, and resolves common, Tenant-specific, platform-admin,
+  or safe no-access entry modes. ASP.NET forwarded host/proto values are used
+  only when configured proxy IPs are trusted; client Tenant headers are not an
+  input.
+- `TenantEntryAuthority` combines the host candidate with the authenticated
+  server-side identity host. Tenant hosts select only the exact authorized
+  membership; common hosts return only active ordinary memberships and support
+  canonical-host routing; platform-admin hosts expose no Tenant ERP choices.
+- The first-party REST contract exposes `auth.entry.read`, operational-context
+  read/switch, generic branding, and SAR presentation metadata. Company/Branch
+  contexts are derived through the existing organization-scope authorization
+  seam and are automatically selected when singular or switched through the
+  header when multiple.
+- Angular lands authenticated users on Tenant Overview, keeps `/app/workspaces`
+  only as a compatibility/management surface, removes workspace selection from
+  primary navigation, and consumes server-resolved branding/currency data. The
+  reusable currency presentation service never converts, mutates, or persists
+  monetary values and preserves semantic currency-code fallbacks.
+- The Development launcher preserves the browser Host through its proxy and
+  supports `localhost`, `*.localhost`, and `admin.localhost` entry testing.
+  `MESP_DEV_AUTH_BYPASS` remains exact-Development, loopback-only, explicit,
+  server-actor based, and disabled by default.
+
+Owner-managed source assets under `frontend/assets` were inventoried and were
+not changed; no concrete Wafra or Saudi Riyal source asset was regenerated or
+fabricated by this session. No Tenant schema/migration, DNS/TLS automation,
+external integration, Jira operation, Purchase Order, receipt, invoice,
+payment, stock, or accounting behavior was added.
+
+Validation at handoff: Angular unit tests are 204/204 across 23 spec files;
+the production Angular build passes at 490.85 kB initial with a 91.94 kB
+Supplier Quotation lazy chunk; 16 focused MESP-143 host/configuration/security
+tests pass; the full backend suite is 748/770 with exactly 22 SQL safety cases
+environment-gated by the absent dedicated LocalDB connection; Playwright is
+8/8; and `npm audit --omit=dev` reports 0 vulnerabilities. The untrusted-
+forwarded-host and exact Tenant-host integration regressions pass. The SQL
+safety harness remains environment-gated when its dedicated LocalDB connection
+variable is absent.
+
+The next exact session is independent targeted Opus review of MESP-143 host and
+Tenant isolation, platform boundary, operational-context concurrency,
+branding/SAR fallback, and MESP-123 regression evidence. The Draft PR for this
+branch must remain open, Draft, and unmerged; Jira remains owned by GPT-5.6 Sol.
+
+## Historical authoritative position - 17 August 2026 (MESP-123 Opus findings correction & ADR-019/MESP-143 governance reconciliation)
 
 The MESP-123 pre-merge corrective session and pre-Opus governance reconciliation are complete on branch
 `feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against

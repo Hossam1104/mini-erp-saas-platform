@@ -4,44 +4,51 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ContextService } from '../../core/context/context.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
+import { OperationalContextSwitcherComponent } from '../../shared/ui/operational-context-switcher.component';
 
 @Component({
   selector: 'app-application-shell',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, BrandMarkComponent],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, BrandMarkComponent, OperationalContextSwitcherComponent],
   template: `
     <a class="skip-link" href="#main-content">{{ language.text('skipToContent') }}</a>
     <div class="shell">
       <aside class="sidebar" [attr.aria-label]="language.text('menu')">
         <div class="sidebar__brand">
-          <app-brand-mark class="brand-mark" variant="icon" theme="dark" />
+          @if (context.entry()?.branding?.logoLightUrl || context.entry()?.branding?.logoDarkUrl) {
+            <picture class="brand-mark brand-mark--tenant">
+              <source [srcset]="context.entry()?.branding?.logoDarkUrl ?? context.entry()?.branding?.logoLightUrl" media="(prefers-color-scheme: dark)" />
+              <img [src]="context.entry()?.branding?.logoLightUrl ?? context.entry()?.branding?.logoDarkUrl" [alt]="context.entry()?.branding?.logoAltText ?? ''" />
+            </picture>
+          } @else {
+            <app-brand-mark class="brand-mark" variant="icon" theme="dark" />
+          }
           <div>
-            <strong>{{ language.text('appName') }}</strong>
+            <strong>{{ brandName() }}</strong>
             <small>{{ language.text('appKicker') }}</small>
           </div>
         </div>
         <nav class="sidebar__nav">
+          @if (!context.entry() || (context.entry()?.entryMode !== 'PlatformAdminHost' && context.entry()?.entryMode !== 'NoAccess')) {
           <a routerLink="/app" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
             <span class="nav-icon" aria-hidden="true">⌂</span>{{ language.text('overview') }}
           </a>
-          <a routerLink="/app/workspaces" routerLinkActive="is-active">
-            <span class="nav-icon" aria-hidden="true">◈</span>{{ language.text('switchContext') }}
-          </a>
           <a routerLink="/app/master-data/categories" routerLinkActive="is-active">
-            <span class="nav-icon" aria-hidden="true">▦</span>{{ language.text('masterData') }}
+            <span class="nav-icon" aria-hidden="true">◆</span>{{ language.text('masterData') }}
           </a>
           <a routerLink="/app/price-lists" routerLinkActive="is-active">
-            <span class="nav-icon" aria-hidden="true">＄</span>{{ language.text('priceLists') }}
+            <span class="nav-icon" aria-hidden="true">$</span>{{ language.text('priceLists') }}
           </a>
           <a routerLink="/app/procurement/purchase-requests" routerLinkActive="is-active">
-            <span class="nav-icon" aria-hidden="true">▤</span>{{ language.text('purchaseRequestsNavLabel') }}
+            <span class="nav-icon" aria-hidden="true">↗</span>{{ language.text('purchaseRequestsNavLabel') }}
           </a>
           <a routerLink="/app/procurement/supplier-quotations" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">◇</span>{{ language.text('supplierQuotationsNavLabel') }}
           </a>
           <a routerLink="/app/master-data/imports" routerLinkActive="is-active">
-            <span class="nav-icon" aria-hidden="true">⇪</span>{{ language.text('importNavLabel') }}
+            <span class="nav-icon" aria-hidden="true">↪</span>{{ language.text('importNavLabel') }}
           </a>
+          }
         </nav>
         <div class="sidebar__footer">
           <p>{{ language.text('helpText') }}</p>
@@ -52,10 +59,12 @@ import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
       <div class="shell__body">
         <header class="topbar">
           <div>
-            <p class="eyebrow">{{ language.text('currentWorkspace') }}</p>
+            <p class="eyebrow">{{ language.text('currentTenant') }}</p>
             <p class="topbar__context">{{ contextLabel() }}</p>
           </div>
           <div class="topbar__actions">
+            <app-operational-context-switcher />
+            <a class="context-management-link" routerLink="/app/workspaces">{{ language.text('manageContexts') }}</a>
             <button class="language-button" type="button" (click)="language.toggle()" [attr.aria-label]="language.text('language')">
               <span aria-hidden="true">◐</span>{{ language.language() === 'en' ? language.text('switchToArabic') : language.text('switchToEnglish') }}
             </button>
@@ -93,6 +102,8 @@ import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
     .sidebar { display: flex; flex-direction: column; padding: 1.35rem 1rem; color: #eff5f2; background: var(--ink); }
     .sidebar__brand { display: flex; align-items: center; gap: 0.7rem; padding: 0.25rem 0.35rem 2.4rem; }
     .brand-mark { width: 2.25rem; flex: none; }
+    .brand-mark--tenant { display: block; height: 2.25rem; }
+    .brand-mark--tenant img { display: block; width: 100%; height: 100%; object-fit: contain; }
     .sidebar__brand strong, .sidebar__brand small { display: block; }
     .sidebar__brand strong { color: #fff; font: 700 0.9rem/1.2 var(--font-display); }
     .sidebar__brand small { margin-top: 0.2rem; color: #9eb2ab; font-size: 0.67rem; }
@@ -108,7 +119,9 @@ import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4.6rem; padding: 0 2.5rem; border-bottom: 1px solid var(--line); background: var(--surface-raised); }
     .eyebrow { margin: 0 0 0.18rem; color: var(--ink-muted); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
     .topbar__context { margin: 0; color: var(--ink); font: 700 1rem/1.2 var(--font-display); }
-    .topbar__actions { display: flex; align-items: center; gap: 1rem; }
+    .topbar__actions { display: flex; align-items: center; gap: 0.85rem; }
+    .context-management-link { color: var(--ink-muted); font-size: 0.75rem; font-weight: 750; text-decoration: none; }
+    .context-management-link:hover { color: var(--accent-strong); }
     .language-button, .sign-out { border: 0; color: var(--ink-muted); background: transparent; font: 700 0.78rem/1 var(--font-sans); cursor: pointer; }
     .sign-out { border-inline-start: 1px solid var(--line); padding-inline-start: 1rem; }
     .language-button:hover, .sign-out:hover { color: var(--accent-strong); }
@@ -117,7 +130,7 @@ import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
     .shell__content { padding: clamp(1.25rem, 3vw, 2.5rem); }
     .content-grid__main { width: min(100%, 78rem); margin: 0 auto; }
     @media (max-width: 860px) { .shell { grid-template-columns: 4.6rem minmax(0, 1fr); } .sidebar__brand div, .sidebar__nav a:not(.is-active)::after, .sidebar__nav a { justify-content: center; } .sidebar__brand div { display: none; } .sidebar__nav a { padding-inline: 0; font-size: 0; } .nav-icon { font-size: 1.05rem; } .sidebar__footer { display: none; } .topbar { padding-inline: 1.25rem; } }
-    @media (max-width: 520px) { .topbar { align-items: flex-start; flex-direction: column; padding-block: 1rem; } .topbar__actions { width: 100%; justify-content: space-between; } .shell__content { padding: 1rem; } }
+    @media (max-width: 700px) { .topbar { align-items: flex-start; flex-direction: column; padding-block: 1rem; } .topbar__actions { width: 100%; justify-content: space-between; flex-wrap: wrap; } .shell__content { padding: 1rem; } }
   `,
 })
 export class ApplicationShellComponent implements OnInit {
@@ -126,16 +139,21 @@ export class ApplicationShellComponent implements OnInit {
   readonly language = inject(LanguageService);
 
   ngOnInit(): void {
-    if (this.context.contexts().length === 0) {
-      void this.context.load();
+    if (this.context.contexts().length === 0 && !this.context.entry()) {
+      void this.context.loadEntry();
     }
   }
 
   contextLabel(): string {
-    return this.context.currentContext()?.displayName
+    return this.context.entry()?.candidateTenantDisplayName
+      ?? this.context.currentContext()?.displayName
       ?? (this.auth.session()?.selectedPath === 'PlatformGovernanceContext'
         ? this.language.text('platformGovernance')
-        : this.language.text('chooseWorkspace'));
+        : this.language.text('noTenantContext'));
+  }
+
+  brandName(): string {
+    return this.context.entry()?.branding.displayName ?? this.language.text('appName');
   }
 
   async signOut(): Promise<void> {

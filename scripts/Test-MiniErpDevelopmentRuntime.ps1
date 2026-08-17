@@ -35,6 +35,7 @@ if (-not (Test-Path -LiteralPath $launcherPath)) {
 $trackedProxy = Get-Content -LiteralPath $trackedProxyPath -Raw | ConvertFrom-Json
 $trackedTarget = $trackedProxy.PSObject.Properties['/api'].Value.target
 Assert-Equal -Actual $trackedTarget -Expected 'http://localhost:5000' -Message 'Tracked proxy default changed unexpectedly'
+Assert-Equal -Actual $trackedProxy.PSObject.Properties['/api'].Value.changeOrigin -Expected $false -Message 'Tracked proxy must preserve the browser Host for entry routing'
 
 $listener = New-Object System.Net.Sockets.TcpListener -ArgumentList @([System.Net.IPAddress]::Loopback, 0)
 $listener.Start()
@@ -58,6 +59,7 @@ try {
 $generatedProxy = Get-Content -LiteralPath $generatedProxyPath -Raw | ConvertFrom-Json
 $generatedTarget = $generatedProxy.PSObject.Properties['/api'].Value.target
 Assert-Equal -Actual $generatedTarget -Expected "http://localhost:$customPort" -Message 'Generated proxy did not follow MESP_DEV_API_URL'
+Assert-Equal -Actual $generatedProxy.PSObject.Properties['/api'].Value.changeOrigin -Expected $false -Message 'Generated proxy must preserve the browser Host for entry routing'
 $proxyBytes = [System.IO.File]::ReadAllBytes($generatedProxyPath)
 if ($proxyBytes.Length -ge 3 -and $proxyBytes[0] -eq 0xEF -and $proxyBytes[1] -eq 0xBB -and $proxyBytes[2] -eq 0xBF) {
     throw 'Generated Angular proxy must be UTF-8 without a BOM for the current Angular CLI toolchain.'

@@ -1,9 +1,9 @@
 # MESP-143 — Tenant-Aware Entry and Operational Workspace Execution Plan
 
-**Status:** Planned / Jira To Do  
+**Status:** Implemented at bounded repository scope on `feat/MESP-143-tenant-aware-entry`; Draft PR pending review
 **Primary Jira:** MESP-143  
 **Parent:** MESP-4 Multi-Tenancy and Tenant Lifecycle  
-**Prerequisite:** MESP-123 must complete its current final corrective + targeted review gate before MESP-143 activation.
+**Prerequisite:** MESP-123 corrective/review gate was inherited from the synchronized `main` baseline. MESP-143 remains subject to targeted independent security/integration review before merge.
 
 ## Goal
 
@@ -16,6 +16,38 @@ Replace the foundation-centric Tenant/workspace chooser with a production-orient
 - Platform Administration is a separate control plane;
 - Wafra logo is Tenant branding configuration;
 - Saudi Riyal symbol is Saudi/SAR country-pack presentation.
+
+## Bounded implementation handoff — 17 August 2026
+
+The repository implementation now provides the smallest reusable seam required
+by this plan:
+
+- `TenantHostRegistry` owns normalized, collision-safe configuration bindings
+  and common/platform host sets. `TenantEntryAuthority` combines a host
+  candidate with the existing server-side identity/membership authority;
+  hostname, forwarded headers, route parameters, and client Tenant headers do
+  not grant access.
+- `auth.entry.read`, `auth.operational-contexts.read`, and
+  `auth.operational-context-switch` are catalogued Foundation contracts. The
+  common host returns only authorized ordinary memberships, Tenant hosts
+  return only the exact authorized Tenant, and platform-admin entry exposes no
+  Tenant ERP choices.
+- Angular consumes the runtime entry contract, redirects single/common-host
+  selection to the configured canonical host, renders Tenant Overview first,
+  retains `/app/workspaces` as compatibility/management, and exposes only a
+  multi-context Company/Branch switcher in the header.
+- Branding and country/currency metadata are configuration-led with MESP/SAR
+  semantic fallbacks. The currency presentation service is display-only and
+  does not alter monetary values, tax, FX, accounting, or persistence.
+- The Development launcher supports common `localhost`, Tenant
+  `tenant.localhost`, and platform `admin.localhost` host testing while
+  preserving the browser Host through the local proxy. Owner-managed source
+  assets under `frontend/assets` were not changed.
+
+The next gate is the exact Opus review prompt in the root `TASK.md`. DNS/TLS
+provisioning, Tenant persistence/schema/migrations, full Platform
+Administration, external integrations, and downstream P2P/Finance/Inventory
+effects remain outside this bounded capability.
 
 ## Phase A — Contract and terminology correction
 

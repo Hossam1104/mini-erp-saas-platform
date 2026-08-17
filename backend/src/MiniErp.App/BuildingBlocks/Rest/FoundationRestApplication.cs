@@ -179,10 +179,14 @@ public interface ITrustedRequestContextResolver
 public sealed class DefaultTrustedRequestContextResolver : ITrustedRequestContextResolver
 {
     private readonly IFoundationIdentityHost identityHost;
+    private readonly ITenantEntryAuthority? tenantEntryAuthority;
 
-    public DefaultTrustedRequestContextResolver(IFoundationIdentityHost identityHost)
+    public DefaultTrustedRequestContextResolver(
+        IFoundationIdentityHost identityHost,
+        ITenantEntryAuthority? tenantEntryAuthority = null)
     {
         this.identityHost = identityHost ?? throw new ArgumentNullException(nameof(identityHost));
+        this.tenantEntryAuthority = tenantEntryAuthority;
     }
 
     public ValueTask<FoundationRequestContext> ResolveAsync(HttpContext httpContext, CancellationToken cancellationToken = default)
@@ -202,6 +206,15 @@ public sealed class DefaultTrustedRequestContextResolver : ITrustedRequestContex
             return ValueTask.FromResult(FoundationRequestContext.Unauthenticated());
         }
 
+        // Host routing is a candidate hint only. The entry authority can select
+        // an exact server-side membership/platform path, but it never accepts
+        // Tenant headers or request payloads as authorization.
+        // A common host is a routing entry point. Do not silently activate its
+        // single Tenant membership merely because a legacy business endpoint
+        // was called; the explicit entry response owns that transition. A
+        // Tenant-specific host still enforces its exact candidate on every
+        // protected request.
+        tenantEntryAuthority?.Prepare(httpContext.User, httpContext.Request.Host.Value, activateCommonHost: false);
         return ValueTask.FromResult(identityHost.ResolveContext(httpContext.User, correlationId, descriptor));
     }
 }

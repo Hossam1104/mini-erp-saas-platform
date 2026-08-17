@@ -973,7 +973,8 @@ internal sealed class IdentityAuthorizationService :
         TenantId requestedTenant,
         PermissionCode permission,
         OrganizationScope requestedScope,
-        CorrelationId correlationId)
+        CorrelationId correlationId,
+        bool allowTenantScopeExpansion = false)
     {
         lock (store.SyncRoot)
         {
@@ -993,7 +994,7 @@ internal sealed class IdentityAuthorizationService :
             }
 
             if (!HasPermissionUnsafe(membership, permission)
-                || !HasScopeUnsafe(membership, requestedScope))
+                || !HasScopeUnsafe(membership, requestedScope, allowTenantScopeExpansion))
             {
                 return Denied(user.Id, "ordinary", "role_permission_or_scope_denied", correlationId);
             }
@@ -2102,6 +2103,14 @@ internal sealed class IdentityAuthorizationService :
         return store.ScopeGrantsByMembership.TryGetValue(membership.Id, out var ids)
             && ids.Select(id => store.ScopeGrants[id]).Any(grant => grant.IsActive && ScopeContainsUnsafe(grant.Scope, requestedScope, allowTenantScopeExpansion));
     }
+
+    internal bool HasOrdinaryScope(
+        TenantMembership membership,
+        OrganizationScope requestedScope,
+        bool allowTenantScopeExpansion = false) =>
+        membership.Status == MembershipStatus.Active
+        && membership.TenantId == requestedScope.TenantId
+        && HasScopeUnsafe(membership, requestedScope, allowTenantScopeExpansion);
 
     private bool HasActiveOrdinaryAuthorizationUnsafe(UserId userId, TenantId tenantId, PermissionCode permission, OrganizationScope requestedScope)
     {

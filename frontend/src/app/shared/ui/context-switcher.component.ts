@@ -1,8 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { ContextService } from '../../core/context/context.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { StatusCardComponent } from './status-card.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-context-switcher',
@@ -12,7 +13,7 @@ import { StatusCardComponent } from './status-card.component';
     <section class="context-switcher" aria-labelledby="context-switcher-title">
       <div class="context-switcher__heading">
         <div>
-          <p class="eyebrow">{{ language.text('currentWorkspace') }}</p>
+          <p class="eyebrow">{{ language.text('availableTenants') }}</p>
           <h2 id="context-switcher-title">{{ contextLabel() }}</h2>
         </div>
         <span class="context-switcher__pill" [class.context-switcher__pill--support]="isSupport()">
@@ -22,14 +23,14 @@ import { StatusCardComponent } from './status-card.component';
 
       @if (context.loading()) {
         <p class="context-switcher__hint" role="status">{{ language.text('contextLoading') }}</p>
-      } @else if (context.contexts().length === 0) {
+      } @else if (tenantContexts().length === 0) {
         <app-status-card
           [title]="language.text('empty')"
           [message]="language.text('contextEmpty')"
           tone="neutral"
         />
       } @else {
-        <label class="field-label ui-field__label" for="workspace-select">{{ language.text('chooseWorkspace') }}</label>
+        <label class="field-label ui-field__label" for="workspace-select">{{ language.text('chooseTenant') }}</label>
         <select
           id="workspace-select"
           class="context-select ui-field__control"
@@ -37,8 +38,8 @@ import { StatusCardComponent } from './status-card.component';
           [disabled]="context.switching()"
           (change)="switchFromEvent($event)"
         >
-          <option value="" disabled>{{ language.text('chooseWorkspace') }}</option>
-          @for (candidate of context.contexts(); track candidate.contextId) {
+          <option value="" disabled>{{ language.text('chooseTenant') }}</option>
+          @for (candidate of tenantContexts(); track candidate.contextId) {
             <option [value]="candidate.contextId">
               {{ candidate.displayName }} · {{ kindLabel(candidate.kind) }}
             </option>
@@ -77,6 +78,10 @@ export class ContextSwitcherComponent implements OnInit {
   readonly context = inject(ContextService);
   readonly auth = inject(AuthService);
   readonly language = inject(LanguageService);
+  readonly router = inject(Router);
+  readonly tenantContexts = computed(() =>
+    this.context.contexts().filter((candidate) => candidate.kind === 'OrdinaryMembership'),
+  );
 
   ngOnInit(): void {
     if (this.context.contexts().length === 0) {
@@ -87,7 +92,11 @@ export class ContextSwitcherComponent implements OnInit {
   async switchFromEvent(event: Event): Promise<void> {
     const value = (event.target as HTMLSelectElement).value;
     if (value) {
-      await this.context.switchContext(value);
+      const switched = await this.context.switchContext(value);
+      if (switched && this.context.entry()?.entryMode === 'CommonHost') {
+        await this.context.loadEntry();
+        await this.router.navigate(['/app']);
+      }
     }
   }
 
@@ -98,12 +107,12 @@ export class ContextSwitcherComponent implements OnInit {
     }
     return this.auth.session()?.selectedPath === 'PlatformGovernanceContext'
       ? this.language.text('platformGovernance')
-      : this.language.text('chooseWorkspace');
+      : this.language.text('noTenantContext');
   }
 
   pathLabel(): string {
     const path = this.auth.session()?.selectedPath;
-    return path ? this.kindLabel(path) : this.language.text('chooseWorkspace');
+    return path ? this.kindLabel(path) : this.language.text('chooseTenant');
   }
 
   isSupport(): boolean {
@@ -113,7 +122,7 @@ export class ContextSwitcherComponent implements OnInit {
   kindLabel(kind: string): string {
     if (kind === 'SupportGrant') return this.language.text('supportGrant');
     if (kind === 'PlatformGovernanceContext') return this.language.text('platformGovernance');
-    return this.language.text('ordinaryMembership');
+    return this.language.text('tenantMembership');
   }
 
   errorMessage(code: string): string {

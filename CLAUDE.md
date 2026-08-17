@@ -9,7 +9,22 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 17 August 2026 (MESP-123 Opus findings corrected; pre-Opus governance reconciliation; forward ADR-019/MESP-143 alignment)
+## Current execution overlay - 17 August 2026 (MESP-143 implementation)
+
+The bounded MESP-143 implementation is active on branch
+`feat/MESP-143-tenant-aware-entry` from synchronized `main`. It establishes
+configuration-led host candidate routing with exact server-side Tenant
+membership authority, common/platform entry boundaries, Overview-first shell
+routing, post-Overview Company/Branch operational context, generic branding,
+and presentation-only SAR semantics. No Tenant schema, DNS/TLS automation,
+external provider, Jira write, or downstream Procurement capability is in scope.
+
+The branch is validated for one Draft PR against `main`, remains unmerged, and
+must not be force-pushed. Owner assets under `frontend/assets` are unchanged.
+The next exact session is independent targeted Opus review of MESP-143 security,
+UX, fallback, and regression evidence.
+
+## Historical execution overlay - 17 August 2026 (MESP-123 Opus findings corrected; pre-Opus governance reconciliation; forward ADR-019/MESP-143 alignment)
 
 The current bounded state is MESP-123 on branch
 `feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against `main`.

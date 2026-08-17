@@ -197,11 +197,73 @@ public sealed record FoundationContextCandidateResponse(
 public sealed record FoundationContextsResponse(
     IReadOnlyList<FoundationContextCandidateResponse> Contexts);
 
+/// <summary>One safe Tenant candidate returned by the entry-routing seam.</summary>
+public sealed record FoundationTenantCandidateResponse(
+    Guid TenantId,
+    string DisplayName,
+    string? CanonicalHost);
+
+/// <summary>One safe Company/Branch operational context candidate.</summary>
+public sealed record FoundationOperationalContextResponse(
+    Guid ContextId,
+    string Kind,
+    string DisplayName,
+    long EligibilityVersion);
+
+/// <summary>Safe tenant-aware branding configuration.</summary>
+public sealed record FoundationBrandingResponse(
+    string DisplayName,
+    string? LogoLightUrl,
+    string? LogoDarkUrl,
+    string LogoAltText,
+    bool TenantConfigured);
+
+/// <summary>Presentation-only currency symbol configuration.</summary>
+public sealed record FoundationCurrencyPresentationResponse(
+    string CurrencyCode,
+    string? SymbolAssetUrl,
+    string SymbolTextFallback);
+
+/// <summary>
+/// Server-owned entry resolution returned after authentication. The response
+/// contains only authorized candidates and safe presentation data; it never
+/// grants authority to a client-supplied Tenant identifier.
+/// </summary>
+public sealed record FoundationEntryResponse(
+    string EntryMode,
+    string? CanonicalHost,
+    Guid? CandidateTenantId,
+    string? CandidateTenantDisplayName,
+    IReadOnlyList<FoundationTenantCandidateResponse> AuthorizedTenants,
+    IReadOnlyList<FoundationOperationalContextResponse> OperationalContexts,
+    Guid? SelectedOperationalContextId,
+    long OperationalSelectionVersion,
+    FoundationBrandingResponse Branding,
+    FoundationCurrencyPresentationResponse CurrencyPresentation,
+    string? Code = null);
+
+/// <summary>Authorized operational-context list response.</summary>
+public sealed record FoundationOperationalContextsResponse(
+    IReadOnlyList<FoundationOperationalContextResponse> Contexts,
+    Guid? SelectedContextId,
+    long SelectionVersion);
+
 /// <summary>Server-confirmed context switch request.</summary>
 public sealed record FoundationContextSwitchRequest(
     Guid ContextId,
     long ExpectedSelectionVersion = 0,
     long ExpectedEligibilityVersion = 0);
+
+/// <summary>Server-confirmed Company/Branch context switch request.</summary>
+public sealed record FoundationOperationalContextSwitchRequest(
+    Guid ContextId,
+    long ExpectedSelectionVersion = 0,
+    long ExpectedEligibilityVersion = 0);
+
+/// <summary>Result of selecting one operational context.</summary>
+public sealed record FoundationOperationalContextSwitchResponse(
+    FoundationOperationalContextResponse SelectedContext,
+    long SelectionVersion);
 
 /// <summary>
 /// Stable, safe response for the representative Foundation context operation.
@@ -396,7 +458,10 @@ public static class FoundationOperationCatalog
         new("auth.sign-out", "/api/v1/auth/sign-out", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session", FoundationScopePolicy.None, RequiresAntiforgery: true, RequiresMandatoryAudit: false, IsUnsafe: true),
         new("auth.session.read", "/api/v1/auth/session", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session"),
         new("auth.contexts.read", "/api/v1/auth/contexts", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session"),
-        new("auth.context-switch", "/api/v1/auth/context-switch", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "foundation.context.switch", FoundationScopePolicy.None, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true)
+        new("auth.entry.read", "/api/v1/auth/entry", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session"),
+        new("auth.operational-contexts.read", "/api/v1/auth/operational-contexts", "GET", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "authenticated.session"),
+        new("auth.context-switch", "/api/v1/auth/context-switch", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "foundation.context.switch", FoundationScopePolicy.None, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true),
+        new("auth.operational-context-switch", "/api/v1/auth/operational-context-switch", "POST", FoundationSecurityProfile.AuthenticatedSession, FoundationOperationVisibility.Public, "foundation.context.switch", FoundationScopePolicy.None, RequiresAntiforgery: true, RequiresMandatoryAudit: true, IsUnsafe: true)
     ];
 
     /// <summary>Internal operations deliberately excluded from public routing.</summary>
