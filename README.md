@@ -173,8 +173,16 @@ normal credential testing, leave it disabled and follow [`Run.md`](Run.md).
 Expected local addresses:
 
 - Angular: <http://localhost:4300>
+- Common entry: <http://localhost:4300>
+- Tenant entry fixture: <http://tenant.localhost:4300>
+- Platform boundary fixture: <http://admin.localhost:4300>
 - API health: <http://localhost:5300/health>
 - OpenAPI/Scalar: Development/QA-only surfaces described in [`Run.md`](Run.md)
+
+The launcher and generated proxy preserve the browser `Host` so the API can
+resolve the MESP-143 entry mode. The browser consumes `auth/entry`; it does
+not authorize a Tenant from a subdomain, route parameter, local storage, or
+client-supplied Tenant identifier.
 
 If another local service owns port 5000, the explicit 5300/4300 override keeps
 the unrelated service untouched. Do not stop RMS or other unrelated listeners.

@@ -58,7 +58,24 @@ velocity, or forecast:
 - **Presentational Only**: Presentation-layer only; causes zero FX conversion, zero tax effect, zero accounting effect, and zero persisted amount change.
 - **Fallback & Non-SAR**: Safe text fallback (e.g. `SAR`) is preserved for semantic clarity in multi-currency comparison, audit, and exports. Non-SAR currencies remain completely unaffected. Governed by MESP-12 / MESP-37.
 
-## Current execution overlay - 17 August 2026 (MESP-123 Opus findings corrected; pre-Opus governance reconciliation; forward ADR-019/MESP-143 alignment)
+## Current execution overlay - 17 August 2026 (MESP-143 implementation)
+
+MESP-143 is implemented on branch `feat/MESP-143-tenant-aware-entry` from
+the synchronized `main` baseline. The bounded capability adds configuration-led
+Tenant host resolution, trusted-proxy handling, exact server-side membership
+authority, common/platform entry boundaries, Overview-first Angular routing,
+post-Overview Company/Branch context selection, generic Tenant branding, and
+presentation-only SAR semantics. It does not add Tenant persistence, DNS/TLS
+automation, external providers, Jira writes, or downstream Procurement work.
+
+The current branch is being validated for one Draft PR against `main`; it must
+remain unmerged and must not be force-pushed. Owner-managed assets under
+`frontend/assets` remain untouched. The next exact session after this bounded
+implementation is independent targeted Opus review of MESP-143 host/Tenant
+isolation, platform boundary, context concurrency, branding/SAR fallback, and
+MESP-123 regression evidence.
+
+## Historical execution overlay - 17 August 2026 (MESP-123 Opus findings corrected; pre-Opus governance reconciliation; forward ADR-019/MESP-143 alignment)
 
 MESP-123 is in progress on branch `feat/MESP-123-purchase-request-approval`,
 continuing Draft PR #66 against `main`. Bounded corrective implementation

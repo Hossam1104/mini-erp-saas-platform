@@ -1,6 +1,56 @@
 # Current State
 
-## Current authoritative position - 17 August 2026 (MESP-123 Opus findings correction & ADR-019/MESP-143 governance reconciliation)
+## Current authoritative position - 17 August 2026 (MESP-143 implementation)
+
+MESP-143 is implemented on branch `feat/MESP-143-tenant-aware-entry` from the
+synchronized `main` baseline. The source capability is intentionally bounded:
+
+- `TenantHostRegistry` normalizes configured host bindings, rejects malformed or
+  colliding identities, and resolves common, Tenant-specific, platform-admin,
+  or safe no-access entry modes. ASP.NET forwarded host/proto values are used
+  only when configured proxy IPs are trusted; client Tenant headers are not an
+  input.
+- `TenantEntryAuthority` combines the host candidate with the authenticated
+  server-side identity host. Tenant hosts select only the exact authorized
+  membership; common hosts return only active ordinary memberships and support
+  canonical-host routing; platform-admin hosts expose no Tenant ERP choices.
+- The first-party REST contract exposes `auth.entry.read`, operational-context
+  read/switch, generic branding, and SAR presentation metadata. Company/Branch
+  contexts are derived through the existing organization-scope authorization
+  seam and are automatically selected when singular or switched through the
+  header when multiple.
+- Angular lands authenticated users on Tenant Overview, keeps `/app/workspaces`
+  only as a compatibility/management surface, removes workspace selection from
+  primary navigation, and consumes server-resolved branding/currency data. The
+  reusable currency presentation service never converts, mutates, or persists
+  monetary values and preserves semantic currency-code fallbacks.
+- The Development launcher preserves the browser Host through its proxy and
+  supports `localhost`, `*.localhost`, and `admin.localhost` entry testing.
+  `MESP_DEV_AUTH_BYPASS` remains exact-Development, loopback-only, explicit,
+  server-actor based, and disabled by default.
+
+Owner-managed source assets under `frontend/assets` were inventoried and were
+not changed; no concrete Wafra or Saudi Riyal source asset was regenerated or
+fabricated by this session. No Tenant schema/migration, DNS/TLS automation,
+external integration, Jira operation, Purchase Order, receipt, invoice,
+payment, stock, or accounting behavior was added.
+
+Validation at handoff: Angular unit tests are 204/204 across 23 spec files;
+the production Angular build passes at 490.85 kB initial with a 91.94 kB
+Supplier Quotation lazy chunk; 16 focused MESP-143 host/configuration/security
+tests pass; the full backend suite is 748/770 with exactly 22 SQL safety cases
+environment-gated by the absent dedicated LocalDB connection; Playwright is
+8/8; and `npm audit --omit=dev` reports 0 vulnerabilities. The untrusted-
+forwarded-host and exact Tenant-host integration regressions pass. The SQL
+safety harness remains environment-gated when its dedicated LocalDB connection
+variable is absent.
+
+The next exact session is independent targeted Opus review of MESP-143 host and
+Tenant isolation, platform boundary, operational-context concurrency,
+branding/SAR fallback, and MESP-123 regression evidence. The Draft PR for this
+branch must remain open, Draft, and unmerged; Jira remains owned by GPT-5.6 Sol.
+
+## Historical authoritative position - 17 August 2026 (MESP-123 Opus findings correction & ADR-019/MESP-143 governance reconciliation)
 
 The MESP-123 pre-merge corrective session and pre-Opus governance reconciliation are complete on branch
 `feat/MESP-123-purchase-request-approval`, continuing Draft PR #66 against

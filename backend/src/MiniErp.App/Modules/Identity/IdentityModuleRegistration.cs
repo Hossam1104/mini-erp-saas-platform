@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MiniErp.App.BuildingBlocks.Work;
 
 namespace MiniErp.App.Modules.Identity;
@@ -30,10 +31,15 @@ public static class IdentityModuleRegistration
         services.AddSingleton<IAuthenticationAssuranceEvidenceSource, UnavailableAuthenticationAssuranceEvidenceSource>();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ITenantDisplayNameProvider, ConfiguredTenantDisplayNameProvider>();
+        services.TryAddSingleton<IFoundationOperationalContextProvider, NoFoundationOperationalContextProvider>();
+        services.AddSingleton<IFoundationTenantBrandingProvider, ConfiguredFoundationTenantBrandingProvider>();
         services.AddSingleton<IFoundationIdentityHost>(serviceProvider =>
             new FoundationIdentityHost(
                 serviceProvider.GetRequiredService<IdentityAuthorizationService>(),
-                serviceProvider.GetRequiredService<ITenantDisplayNameProvider>()));
+                serviceProvider.GetRequiredService<ITenantDisplayNameProvider>(),
+                serviceProvider.GetRequiredService<IFoundationOperationalContextProvider>()));
+        services.AddSingleton<TenantHostRegistry>();
+        services.AddSingleton<ITenantEntryAuthority, TenantEntryAuthority>();
         return services;
     }
 }

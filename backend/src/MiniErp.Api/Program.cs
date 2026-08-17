@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.Modules.Audit;
@@ -25,6 +26,55 @@ using MiniErp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 DevelopmentAuthBypassPolicy.ValidateStartup(builder.Environment, builder.Configuration);
+
+if (builder.Environment.IsDevelopment()
+    && string.Equals(builder.Configuration["MESP_DEV_BOOTSTRAP_ENABLED"], "true", StringComparison.OrdinalIgnoreCase)
+    && !builder.Configuration.GetSection("MESP_TENANT_HOST_BINDINGS").GetChildren().Any())
+{
+    // Development-only generic fixture binding. The host is configuration,
+    // not a customer or brand branch, and production requires explicit
+    // tenant-host configuration.
+    builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        ["MESP_TENANT_HOST_BINDINGS:0:Host"] = builder.Configuration["MESP_DEV_TENANT_HOST"] ?? "tenant.localhost",
+        ["MESP_TENANT_HOST_BINDINGS:0:TenantId"] = DevelopmentBootstrap.DevTenantId.Value.ToString("D"),
+        ["MESP_TENANT_HOST_BINDINGS:0:Active"] = "true",
+        ["MESP_TENANT_HOST_BINDINGS:0:CanonicalHost"] = builder.Configuration["MESP_DEV_TENANT_HOST"] ?? "tenant.localhost"
+    });
+}
+
+var trustedProxyIps = new List<IPAddress>();
+var trustedProxyValues = new List<string>();
+if (!string.IsNullOrWhiteSpace(builder.Configuration["MESP_TRUSTED_PROXY_IPS"]))
+{
+    trustedProxyValues.AddRange(builder.Configuration["MESP_TRUSTED_PROXY_IPS"]!
+        .Split([',', ';', ' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries));
+}
+
+trustedProxyValues.AddRange(builder.Configuration.GetSection("MESP_TRUSTED_PROXY_IPS").GetChildren()
+    .Where(item => !string.IsNullOrWhiteSpace(item.Value))
+    .Select(item => item.Value!));
+foreach (var value in trustedProxyValues.Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    if (!IPAddress.TryParse(value, out var address))
+    {
+        throw new InvalidOperationException("MESP_TRUSTED_PROXY_IPS contains an invalid IP address.");
+    }
+
+    trustedProxyIps.Add(address);
+}
+
+if (trustedProxyIps.Count > 0)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+        foreach (var address in trustedProxyIps)
+        {
+            options.KnownProxies.Add(address);
+        }
+    });
+}
 
 builder.Services.AddSingleton<IPlatformAdministrationModule>(_ => PlatformModuleRegistration.Create());
 builder.Services.AddSingleton<IMasterDataCatalogModule>(_ => MasterDataModuleRegistration.Create());
@@ -115,6 +165,17 @@ if (builder.Environment.IsDevelopment()
         new ConfiguredProcurementOrganizationScopeProvider(
         [
             new ProcurementOrganizationScopeOption(
+                developmentOrgScopeTenantId,
+                developmentOrgScopeCompanyId,
+                developmentOrgScopeBranchId,
+                developmentOrgScopeCompanyName,
+                developmentOrgScopeBranchName)
+        ]));
+
+    builder.Services.AddSingleton<IFoundationOperationalContextProvider>(_ =>
+        new ConfiguredFoundationOperationalContextProvider(
+        [
+            new FoundationOperationalContextOption(
                 developmentOrgScopeTenantId,
                 developmentOrgScopeCompanyId,
                 developmentOrgScopeBranchId,
@@ -219,6 +280,13 @@ if (developmentMasterDataSqliteConnectionString is not null
 }
 
 app.SeedDevelopmentBootstrap();
+
+if (trustedProxyIps.Count > 0)
+{
+    // Only configured known proxies may influence Request.Host. Without this
+    // middleware, forwarded-host headers remain untrusted and are ignored.
+    app.UseForwardedHeaders();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -446,6 +514,114 @@ app.MapGet("/api/v1/auth/contexts", (
 })
     .WithName("auth.contexts.read")
     .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.contexts.read")));
+
+app.MapGet("/api/v1/auth/entry", (
+    HttpContext httpContext,
+    IFoundationIdentityHost identityHost,
+    ITenantEntryAuthority entryAuthority) =>
+{
+    if (!identityHost.GetSession(httpContext.User).Authenticated)
+    {
+        return Results.Problem(
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Authentication required",
+            detail: "Authentication is required.",
+            type: "https://api.minierp.local/problems/authentication_failed");
+    }
+
+    return Results.Json(entryAuthority.BuildResponse(httpContext.User, httpContext.Request.Host.Value));
+})
+    .WithName("auth.entry.read")
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.entry.read")));
+
+app.MapGet("/api/v1/auth/operational-contexts", (
+    HttpContext httpContext,
+    IFoundationIdentityHost identityHost,
+    ITenantEntryAuthority entryAuthority) =>
+{
+    entryAuthority.Prepare(httpContext.User, httpContext.Request.Host.Value);
+    if (!identityHost.GetSession(httpContext.User).Authenticated)
+    {
+        return Results.Problem(
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Authentication required",
+            detail: "Authentication is required.",
+            type: "https://api.minierp.local/problems/authentication_failed");
+    }
+
+    return Results.Json(new FoundationOperationalContextsResponse(
+        identityHost.ListOperationalContexts(httpContext.User).Select(ToOperationalContextResponse).ToArray(),
+        identityHost.GetSelectedOperationalContext(httpContext.User)?.ContextId,
+        identityHost.GetOperationalSelectionVersion(httpContext.User)));
+})
+    .WithName("auth.operational-contexts.read")
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.operational-contexts.read")));
+
+app.MapPost("/api/v1/auth/operational-context-switch", async (
+    FoundationOperationalContextSwitchRequest? request,
+    HttpContext httpContext,
+    IFoundationIdentityHost identityHost,
+    ITenantEntryAuthority entryAuthority,
+    FoundationAuditCoordinator auditCoordinator) =>
+{
+    const string operationId = "auth.operational-context-switch";
+    if (!await EnsureAntiforgeryAsync(httpContext))
+    {
+        return await WriteProblemAsync(httpContext, StatusCodes.Status403Forbidden, "antiforgery_failed", "Antiforgery validation failed", "The request could not be validated.", operationId);
+    }
+
+    entryAuthority.Prepare(httpContext.User, httpContext.Request.Host.Value);
+    var state = identityHost.GetSession(httpContext.User);
+    if (!state.Authenticated || state.ActorId is null || state.SessionId is null)
+    {
+        return await WriteProblemAsync(httpContext, StatusCodes.Status401Unauthorized, "authentication_failed", "Authentication required", "Authentication is required.", operationId);
+    }
+
+    if (request is null || request.ContextId == Guid.Empty || request.ExpectedSelectionVersion < 0 || request.ExpectedEligibilityVersion < 0)
+    {
+        return await WriteProblemAsync(httpContext, StatusCodes.Status400BadRequest, "validation_failed", "Validation failed", "The request is invalid.", operationId);
+    }
+
+    var candidate = identityHost.ListOperationalContexts(httpContext.User)
+        .SingleOrDefault(item => item.ContextId == request.ContextId);
+    if (candidate is null || candidate.EligibilityVersion != request.ExpectedEligibilityVersion)
+    {
+        return await WriteProblemAsync(httpContext, StatusCodes.Status403Forbidden, "access_denied", "Access denied", "The requested operational context is not available.", operationId);
+    }
+
+    var descriptor = FoundationOperationCatalog.GetRequired(operationId);
+    var candidateContext = identityHost.ResolveCandidateOperationalContext(
+        httpContext.User,
+        request.ContextId,
+        descriptor,
+        GetCorrelation(httpContext));
+    if (candidateContext is null)
+    {
+        return await WriteProblemAsync(httpContext, StatusCodes.Status403Forbidden, "access_denied", "Access denied", "The requested operational context is not available.", operationId);
+    }
+
+    var execution = await auditCoordinator.ExecuteProtectedAsync(
+        candidateContext,
+        operationId,
+        GetCorrelation(httpContext),
+        FoundationAuditReason.Allowed,
+        () => Task.FromResult(identityHost.SwitchOperationalContext(
+            httpContext.User,
+            request.ContextId,
+            request.ExpectedSelectionVersion,
+            request.ExpectedEligibilityVersion)),
+        operationVersion: request.ExpectedSelectionVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    if (!execution.Succeeded || execution.Value is not { Succeeded: true, SelectedContext: { } selected })
+    {
+        return await WriteProblemAsync(httpContext, StatusCodes.Status409Conflict, "context_version_conflict", "Context selection conflict", "The operational context selection is stale or unavailable.", operationId);
+    }
+
+    return Results.Json(new FoundationOperationalContextSwitchResponse(
+        ToOperationalContextResponse(selected),
+        execution.Value.SelectionVersion));
+})
+    .WithName("auth.operational-context-switch")
+    .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("auth.operational-context-switch")));
 
 app.MapPost("/api/v1/auth/context-switch", async (
     FoundationContextSwitchRequest? request,
@@ -766,6 +942,9 @@ static FoundationSessionResponse ToSessionResponse(FoundationHostSessionState st
 
 static FoundationContextCandidateResponse ToContextResponse(FoundationHostContextCandidate candidate) =>
     new(candidate.ContextId, candidate.Kind.ToString(), candidate.TenantId, candidate.DisplayName, candidate.EligibilityVersion);
+
+static FoundationOperationalContextResponse ToOperationalContextResponse(FoundationHostOperationalContextCandidate candidate) =>
+    new(candidate.ContextId, candidate.Kind, candidate.DisplayName, candidate.EligibilityVersion);
 
 /// <summary>Entry point exposed for API integration tests.</summary>
 public partial class Program;

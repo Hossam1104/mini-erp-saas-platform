@@ -20,11 +20,23 @@ const sessionWithContext = {
   selectionVersion: 2,
 };
 
-test.describe('Wave 1 shell', () => {
+const tenantEntry = {
+  entryMode: 'TenantHost',
+  canonicalHost: '127.0.0.1',
+  candidateTenantId: 'tenant-a',
+  candidateTenantDisplayName: 'Alpha Tenant',
+  authorizedTenants: [{ tenantId: 'tenant-a', displayName: 'Alpha Tenant', canonicalHost: 'tenant.localhost' }],
+  operationalContexts: [{ contextId: 'operation-a', kind: 'Company', displayName: 'Alpha Company', eligibilityVersion: 1 }],
+  selectedOperationalContextId: 'operation-a',
+  operationalSelectionVersion: 1,
+  branding: { displayName: 'Alpha Tenant', logoLightUrl: null, logoDarkUrl: null, logoAltText: 'Alpha Tenant', tenantConfigured: true },
+  currencyPresentation: { currencyCode: 'SAR', symbolAssetUrl: null, symbolTextFallback: 'SAR' },
+  code: null,
+};
+
+test.describe('Tenant-aware shell', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/api/v1/auth/development-bypass', (route) => route.fulfill({
-      json: { authenticated: false },
-    }));
+    await page.route('**/api/v1/auth/development-bypass', (route) => route.fulfill({ json: { authenticated: false } }));
     await page.route('**/api/v1/auth/session', (route) => route.fulfill({ json: sessionWithoutContext }));
     await page.route('**/api/v1/auth/contexts', (route) => route.fulfill({
       json: {
@@ -37,6 +49,7 @@ test.describe('Wave 1 shell', () => {
         }],
       },
     }));
+    await page.route('**/api/v1/auth/entry', (route) => route.fulfill({ json: tenantEntry }));
     await page.route('**/api/v1/auth/antiforgery', (route) => route.fulfill({
       headers: { 'X-CSRF-TOKEN': 'playwright-token' },
       json: { status: 'issued' },
@@ -52,22 +65,22 @@ test.describe('Wave 1 shell', () => {
     }));
   });
 
-  test('bootstraps navigation, switches language direction, and adopts server-confirmed context', async ({ page }) => {
-    await page.goto('/app/workspaces');
-    await expect(page).toHaveURL(/\/app\/workspaces$/);
-    await expect(page.getByRole('heading', { name: 'Choose a workspace' })).toBeVisible();
+  test('enters the Tenant Overview first and keeps the legacy context route available', async ({ page }) => {
+    await page.goto('/app');
+    await expect(page).toHaveURL(/\/app$/);
+    await expect(page.locator('#tenant-overview-title')).toHaveText('Alpha Tenant');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
 
     await page.getByRole('button', { name: 'Language' }).click();
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.locator('#context-switcher-title')).toHaveText('اختر مساحة عمل');
 
+    await page.goto('/app/workspaces');
+    await expect(page.locator('#context-switcher-title')).toBeVisible();
     await page.locator('#workspace-select').selectOption('context-a');
     await expect(page.locator('#context-switcher-title')).toHaveText('Alpha workspace');
-    await expect(page.locator('.context-switcher__pill')).toHaveText('عضوية العميل');
   });
 
-  test('keeps the authenticated shell and selected context after an unconfirmed sign-out', async ({ page }) => {
+  test('keeps the authenticated shell and selected Tenant after an unconfirmed sign-out', async ({ page }) => {
     await page.route('**/api/v1/auth/session', (route) => route.fulfill({ json: sessionWithContext }));
     let signOutAttempts = 0;
     await page.route('**/api/v1/auth/sign-out', (route) => {
@@ -80,14 +93,14 @@ test.describe('Wave 1 shell', () => {
     });
 
     await page.goto('/app');
-    await expect(page.locator('#workspace-title')).toHaveText('Alpha workspace');
+    await expect(page.locator('#tenant-overview-title')).toHaveText('Alpha Tenant');
     await page.getByRole('button', { name: 'Sign out' }).click();
 
     await expect(page.getByRole('alert')).toHaveText(
       'Sign-out could not be confirmed. Your session may still be active. Please try again.',
     );
     await expect(page).toHaveURL(/\/app$/);
-    await expect(page.locator('#workspace-title')).toHaveText('Alpha workspace');
+    await expect(page.locator('#tenant-overview-title')).toHaveText('Alpha Tenant');
     await expect(page.getByRole('button', { name: 'Sign out' })).toBeEnabled();
     expect(signOutAttempts).toBe(1);
     expect(await page.evaluate(() => ({
@@ -118,9 +131,9 @@ test.describe('Wave 1 shell', () => {
     await page.getByRole('button', { name: 'Sign out' }).click();
 
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole('heading', { name: 'Sign in to your workspace' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sign in to MESP' })).toBeVisible();
     expect(signOutAttempts).toBe(2);
-    await expect(page.locator('#workspace-title')).toHaveCount(0);
+    await expect(page.locator('#tenant-overview-title')).toHaveCount(0);
   });
 
   test('treats a server-confirmed 401 as an expired session and returns to login', async ({ page }) => {
@@ -135,7 +148,7 @@ test.describe('Wave 1 shell', () => {
     await page.getByRole('button', { name: 'Sign out' }).click();
 
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole('heading', { name: 'Sign in to your workspace' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sign in to MESP' })).toBeVisible();
     await expect(page.getByRole('alert')).toHaveCount(0);
     expect(await page.evaluate(() => ({ localStorage: localStorage.length, sessionStorage: sessionStorage.length })))
       .toEqual({ localStorage: 0, sessionStorage: 0 });

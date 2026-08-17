@@ -1,10 +1,20 @@
 # ADR-019 — Tenant Host Resolution, Operational Workspace Context, and Configured Branding
 
-**Status:** Accepted for planned implementation  
+**Status:** Accepted; bounded MESP-143 implementation delivered on
+`feat/MESP-143-tenant-aware-entry` and pending independent review
 **Date:** 17 August 2026  
 **Decision owner:** Product Owner / Mini ERP SaaS Platform  
 **Primary Jira:** MESP-143  
 **Related Jira:** MESP-2, MESP-4, MESP-12, MESP-67, MESP-77, MESP-123
+
+## Implementation note — 17 August 2026
+
+The repository now contains the bounded host-resolution, Tenant-authority,
+Overview-first, operational Company/Branch context, generic branding, and
+SAR-presentation seams described by this decision. The implementation remains
+configuration-led and does not add DNS/TLS provisioning, a competing Tenant
+persistence model, broad Platform Administration, or statutory/external
+country-pack behavior. See `TASK.md` for the required independent review gate.
 
 ## 1. Context
 
