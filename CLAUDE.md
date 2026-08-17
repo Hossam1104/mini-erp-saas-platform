@@ -18,7 +18,8 @@ It establishes the server-authoritative Tenant and operational-context boundary
 required by the current MESP-124 work.
 
 MESP-124 is implemented on `feat/MESP-124-purchase-order-confirmation` from the
-synchronized `main` baseline. The bounded slice adds source-decision-gated
+synchronized `main` baseline and published as **Draft PR #68** against `main`.
+The bounded slice adds source-decision-gated
 Purchase Orders, immutable commercial/source snapshots, reusable approval/SoD/
 delegation, issue evidence, manual supplier confirmations with full/partial/
 rejected/no-response states, supplier change proposals and reapproval, immutable

@@ -68,9 +68,10 @@ SAR presentation authority is the required context for the bounded MESP-124
 implementation.
 
 MESP-124 is **implemented on branch `feat/MESP-124-purchase-order-confirmation`**
-from synchronized `main`, with Jira activation already present in the read-only
-record (MESP-124 In Progress; activation evidence comment `11394`; MESP-143 Done
-closure evidence comment `11393`). The bounded capability adds Tenant- and
+from synchronized `main` and published as **Draft PR #68** against `main`, with
+Jira activation already present in the read-only record (MESP-124 In Progress;
+activation evidence comment `11394`; MESP-143 Done closure evidence comment
+`11393`). The bounded capability adds Tenant- and
 Company/Branch-scoped Purchase Order source selection, immutable PR/quotation/
 source-decision and commercial snapshots, reusable approval/SoD/delegation
 seams, issue/commit evidence, manual Supplier Confirmation, exact per-line

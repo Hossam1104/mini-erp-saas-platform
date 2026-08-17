@@ -17,7 +17,7 @@ Review branch:
 
     feat/MESP-124-purchase-order-confirmation
 
-against the synchronized main baseline and its draft pull request.
+against the synchronized main baseline and Draft PR #68.
 
 MESP-124 is the bounded Purchase Order and Supplier Confirmation capability
 under Parent Epic MESP-7 — Procurement and Purchase-to-Pay. The implementation

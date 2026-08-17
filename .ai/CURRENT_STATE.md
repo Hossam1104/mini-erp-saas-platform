@@ -8,7 +8,8 @@ at commit `866cb75bb7d0d97c929216b1a449f458a2614097` (reviewed feature head:
 `25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged by the Owner).
 
 MESP-124 is implemented on branch `feat/MESP-124-purchase-order-confirmation`
-from that synchronized baseline. Jira was read-only verified as MESP-124 In
+from that synchronized baseline and published as **Draft PR #68** against
+`main`. Jira was read-only verified as MESP-124 In
 Progress with activation evidence comment `11394`; MESP-143 closure evidence is
 comment `11393`. No Jira write was performed.
 

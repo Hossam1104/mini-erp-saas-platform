@@ -19,7 +19,7 @@ real codebase, not a scope reduction.
 | Current control | Verified position |
 |---|---|
 | MESP-143 | Completed, independently reviewed by Claude Opus 5, and squash-merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67). |
-| MESP-124 | Repository implementation complete at bounded pre-merge scope on `feat/MESP-124-purchase-order-confirmation`; Jira was read-only verified In Progress with activation evidence comment `11394`; no Jira write was performed. |
+| MESP-124 | Repository implementation complete at bounded pre-merge scope on `feat/MESP-124-purchase-order-confirmation`; published as Draft PR #68 against `main`; Jira was read-only verified In Progress with activation evidence comment `11394`; no Jira write was performed. |
 | Production capability | **~40% overall; Procurement/P2P phase conservatively ~28%** after adding source-decision-gated Purchase Orders, approval/issue evidence, manual full/partial/rejected/no-response Supplier Confirmation, supplier-change reapproval, and immutable source/commercial/history/audit records. |
 | Validation | Release build 0 warnings/0 errors; official backend runner **773/773 passed, 0 skipped** against disposable LocalDB `MiniErpFoundation_20260817183503_0e07d663`; Angular **210/210** across 24 spec files; build **492.02 kB initial**, **72.78 kB Purchase Order lazy**, **91.94 kB Supplier Quotation lazy**; Chromium **15/15**; npm audit 0 vulnerabilities. |
 | Boundaries | No Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way matching, supplier portal, external integration, ZATCA/FATOORA, DNS/TLS, or Wafra-specific core behavior. Production/provider, MESP-48/MESP-50, specialist, legal, migration, and cutover gates remain open. |
