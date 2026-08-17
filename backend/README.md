@@ -11,7 +11,7 @@
 > preserved the source SQLite files and verified 59 mapped rows, IDs,
 > Tenant/foreign-key lineage, and source hashes.
 >
-> The 21 SQL Server safety-harness tests are run via a dedicated disposable
+> The SQL Server safety-harness tests are run via a dedicated disposable
 > LocalDB connection assigned only to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`.
 > That variable is the exclusive input for the destructive create/drop lifecycle;
 > `MESP_SQLSERVER_CONNECTION_STRING` (the persistent runtime variable) is never

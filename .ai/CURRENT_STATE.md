@@ -1,6 +1,44 @@
 # Current State
 
-## Current authoritative position - 17 August 2026 (MESP-143 implementation)
+## Current authoritative position - 17 August 2026 (MESP-143 pre-Opus validation reconciliation)
+
+The MESP-143 implementation on branch `feat/MESP-143-tenant-aware-entry`,
+Draft PR #67 against `main`, is unchanged from its implementation head
+`0fec629f330b8f73bbc329b579fc446280538729`. This session is validation and
+governance reconciliation only; zero product, test, migration, or schema code
+changed.
+
+The prior handoff reported the backend suite as 748/770 with 22 SQL safety
+tests environment-gated because the dedicated LocalDB safety connection was
+not genuinely exercised. This session re-ran the release build and the full
+backend suite through the approved safe entry point
+`scripts/Test-MiniErpBackend.ps1`, which builds a disposable
+`MiniErpFoundation_*` LocalDB target in process memory, assigns it only to
+`MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, and leaves the persistent
+`MESP_SQLSERVER_CONNECTION_STRING` runtime variable untouched throughout.
+
+Corrected validation baseline: Release build **0 warnings / 0 errors**;
+backend suite **770/770 passed, 0 skipped** (all 22 SQL Server safety-harness
+tests genuinely executed and passed against disposable database
+`MiniErpFoundation_20260817131747_f553ce07`, confirmed dropped with 0 orphan
+`MiniErpFoundation_*` databases remaining afterward); `MESP_SQLSERVER_CONNECTION_STRING`
+confirmed unmodified and the persistent `MESP` database was never a safety
+harness target. Frontend was rerun in full: Angular **204/204** across 23
+spec files; production build **490.85 kB** initial with a **91.94 kB**
+Supplier Quotation lazy chunk; Playwright **8/8**; `npm audit --omit=dev`
+**0 vulnerabilities** — all matching the implementation-head baseline.
+
+`TASK.md` is corrected so the next Claude Opus 5 MESP-143 review uses
+`scripts/Test-MiniErpBackend.ps1` as the sole accepted backend entry point and
+no longer accepts environment-gated SQL safety tests as a green
+`APPROVE FOR MERGE` outcome; genuine LocalDB unavailability must instead
+return `BLOCKED` or `CHANGES REQUIRED / ENVIRONMENT BLOCKED`.
+
+Draft PR #67 remains open, Draft, and unmerged. No Jira operation was
+performed (GPT-5.6 Sol owns Jira). The next exact session remains independent
+Claude Opus 5 targeted review of MESP-143 per the corrected `TASK.md`.
+
+## Historical authoritative position - 17 August 2026 (MESP-143 implementation)
 
 MESP-143 is implemented on branch `feat/MESP-143-tenant-aware-entry` from the
 synchronized `main` baseline. The source capability is intentionally bounded:

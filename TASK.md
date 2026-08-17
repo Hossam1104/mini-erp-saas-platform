@@ -41,7 +41,7 @@ Run the bounded available suite and record exact results:
 
 ```powershell
 dotnet build .\backend\MiniErp.sln --configuration Release --no-restore --verbosity minimal
-dotnet test .\backend\tests\MiniErp.ArchitectureTests\MiniErp.ArchitectureTests.csproj --configuration Release --no-restore --verbosity minimal
+.\scripts\Test-MiniErpBackend.ps1
 cd .\frontend
 npm test -- --watch=false --no-progress
 npm run build
@@ -49,10 +49,24 @@ npm run test:e2e
 npm audit --omit=dev
 ```
 
-If the dedicated SQL safety connection is unavailable, report it as an
-environment-gated validation item; do not substitute the persistent `MESP`
-runtime connection or alter the database. Inspect the complete diff and
-`git diff --check` before the verdict.
+Use `scripts\Test-MiniErpBackend.ps1` as the sole accepted backend entry point,
+not a direct `dotnet test` invocation. The script constructs a disposable
+LocalDB `MiniErpFoundation_*` target in process memory, assigns it only to
+`MESP_SQLSERVER_SAFETY_CONNECTION_STRING`, leaves the persistent
+`MESP_SQLSERVER_CONNECTION_STRING` runtime variable completely untouched, runs
+the full backend suite including every SQL Server safety-harness test, and
+restores/clears the safety variable in a guaranteed `finally` block. Confirm
+no orphan `MiniErpFoundation_*` database remains afterward.
+
+For `APPROVE FOR MERGE`, the SQL Server safety-harness tests must genuinely
+execute (not be skipped or gated) and pass through this disposable connection.
+A result that reports SQL safety tests as environment-gated is not an
+acceptable green outcome — if `(localdb)\MSSQLLocalDB` is genuinely
+unavailable in the review environment, do not substitute the persistent
+`MESP` runtime connection or alter that database; instead return `BLOCKED` or
+`CHANGES REQUIRED / ENVIRONMENT BLOCKED` with the exact non-secret evidence,
+not `APPROVE FOR MERGE` with gated SQL safety tests. Inspect the complete diff
+and `git diff --check` before the verdict.
 
 ## Required verdict
 
