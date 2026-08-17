@@ -1,852 +1,380 @@
 # MINI ERP SAAS PLATFORM
-# MESP-124 — PURCHASE ORDER + SUPPLIER CONFIRMATION
-# APPROVAL / ISSUE / PARTIAL CONFIRMATION / CHANGES / REAPPROVAL
-# COMPLETE BOUNDED PROCUREMENT CAPABILITY
+# CLAUDE OPUS 5 — INDEPENDENT MESP-124 PRE-MERGE REVIEW
+# PURCHASE ORDER + SUPPLIER CONFIRMATION
 
 Sole Executor:
-GPT-5.6 Luna Max
+Claude Opus 5
 
-Reasoning:
-MAXIMUM
+Review Mode:
+READ-ONLY INDEPENDENT PRE-MERGE REVIEW
 
-Mode:
-IMPLEMENTATION
+Repository:
+D:\AI Tools\Hossam\mini-erp-saas-platform
 
-## Activation Gate
+## Review target
 
-DO NOT EXECUTE this task unless GPT-5.6 Sol has confirmed:
+Review branch:
 
-- MESP-143 = Done in Jira;
-- MESP-124 = In Progress in Jira.
+    feat/MESP-124-purchase-order-confirmation
 
-If either condition is false:
+against the synchronized main baseline and its draft pull request.
 
-STOP without changing product code.
+MESP-124 is the bounded Purchase Order and Supplier Confirmation capability
+under Parent Epic MESP-7 — Procurement and Purchase-to-Pay. The implementation
+is complete on the feature branch and has passed the executor's required
+validation. This task is the independent checkpoint before any merge decision.
 
-## Mission
+Do not implement fixes during this review. Do not modify source, tests,
+migrations, documentation, TASK.md, generated artifacts, Jira, the pull
+request, or the database. Do not merge, push, close the draft PR, start
+MESP-125, or begin Goods Receipt, Inventory, Finance, AP, payments, or any
+external integration. If a problem is found, report the exact file, line or
+behavior, severity, evidence, and required correction; leave implementation to
+a later bounded executor session.
 
-Implement MESP-124:
+## Governance and activation context
 
-Purchase Order and Supplier Confirmation including partial changes.
+The bounded implementation was activated only after the following read-only
+Jira facts were verified:
 
-Owning Epic:
+- MESP-143 — Tenant-aware Entry, Host Resolution, Workspace Context, Branding
+  and SAR Presentation — is Done and squash-merged to main.
+- MESP-124 — Purchase Order and Supplier Confirmation — is In Progress.
+- MESP-42 — Purchase approval workflow — is Done.
+- MESP-43 — Supplier confirmation, partial confirmation, and supplier-change
+  behavior — is Done.
+- MESP-55 — Approval delegation behavior — is Done.
 
-MESP-7 — Procurement and Purchase-to-Pay.
+Jira writes are owned by GPT-5.6 Sol. This review must not write Jira.
 
-The capability must continue the already-implemented commercial sourcing chain:
+MESP-143 is the mandatory architecture prerequisite. Tenant is the security
+boundary and is not an ERP workspace. Host resolution is only candidate
+routing information; server-side authentication, exact-Tenant membership,
+trusted Tenant context, and authorized Company/Branch scope remain the
+authority. The MESP-124 implementation must not reintroduce a user-selectable
+Tenant filter, raw GUID workspace entry, unrelated-Tenant enumeration, or a
+parallel workspace authorization hierarchy.
 
-Purchase Request
-→ approval
-→ Supplier Quotations
-→ comparison
-→ Source Decision
-→ Purchase Order
-→ Supplier Confirmation
+## Required reading
 
-MESP-124 must NOT create:
+Read the complete current versions of these files before forming a verdict:
 
-stock
-Goods Receipt
-Purchase Invoice
-AP
-payment
-accounting posting.
+1. AGENTS.md
+2. CLAUDE.md
+3. .ai/CURRENT_STATE.md
+4. TASK.md
+5. docs/21_Procurement_and_Purchase_to_Pay_BRD.md
+6. docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md
+7. docs/MESP-143_Tenant_Aware_Entry_Execution_Plan.md
+8. docs/ADR-002_Backend_Project_Structure_and_Module_Enforcement.md
+9. docs/ADR-006_Module_Schemas_EF_Core_Migrations_Transactions.md
+10. the complete MESP-124 diff against main
 
-Supplier confirmation remains a Procurement commercial commitment/evidence
-capability only.
+Read materially dependent MESP-123 Purchase Request, Supplier Quotation,
+Source Decision, approval-policy, delegation, audit, authorization, and
+Foundation operation-catalogue code as needed to verify reuse and regression
+behavior. Do not treat ticket count, documentation, or a passing unit test as
+proof of production capability by itself.
 
-## Mandatory Architecture Inputs
+## Bounded capability under review
 
-Read completely before implementation:
-
-AGENTS.md
-CLAUDE.md
-.ai/CURRENT_STATE.md
-TASK.md
-
-Then relevant Procurement BRD:
-
-docs/21_Procurement_and_Purchase_to_Pay_BRD.md
-
-Then:
-
-docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md
-docs/MESP-143_Tenant_Aware_Entry_Execution_Plan.md
-
-Review relevant decision evidence for:
-
-MESP-42 — purchase approval workflow — Done
-MESP-43 — supplier confirmation / partial confirmation — Done
-MESP-55 — delegation / approval behavior — Done
-
-Inspect current MESP-123 implementation in full before designing duplicate
-capability.
-
-## Permanent Product Rules
-
-Generic SaaS only.
-
-Never:
-
-if tenant == Wafra
-
-No Wafra-specific:
-
-workflow
-schema
-permission
-route
-API
-report
-approval
-supplier logic.
-
-Tenant != Workspace.
-
-MESP-143 host/Tenant authority remains mandatory for all new PO/confirmation
-operations.
-
-Company/Branch scope remains server-authoritative.
-
-## Source Decision Prerequisite
-
-A Purchase Order must originate only from an eligible approved sourcing result
-according to the approved Procurement policy.
-
-Do not allow the Angular client to invent:
-
-Supplier
-currency
-commercial source
-Purchase Request
-quotation
-selected lines
-
-without server validation.
-
-Persist immutable source lineage:
+The implementation must deliver only this bounded commercial Procurement
+capability:
 
 Purchase Request
-Supplier Quotation
-Source Decision
-Supplier
-currency
-selected commercial facts.
+  -> eligible approved Supplier Quotation
+  -> approved Supplier Source Decision
+  -> Draft Purchase Order
+  -> Submitted / Pending Approval
+  -> Approved
+  -> Issued
+  -> manual Supplier Confirmation
+  -> Confirmed / Partially Confirmed / Rejected / No Response
+  -> controlled supplier change and reapproval where required
+
+Verify that the PO can be created only from an eligible server-validated source
+decision. The client must not be able to invent or substitute the Supplier,
+Currency, Purchase Request, quotation, selected lines, Company, Branch,
+payment terms, or commercial facts. Verify persisted source lineage and
+commercial snapshots include, where applicable:
+
+- Tenant and authorized Company/Branch scope;
+- Supplier and Currency;
+- Purchase Request, Supplier Quotation, and Source Decision identifiers;
+- payment-term snapshot;
+- product, SKU, UOM, quantity, price, discount, tax, and requested/committed
+  date facts;
+- source rationale and source-selection time;
+- deterministic source quotation line lineage.
+
+Verify that draft edits, where approved, remain creator-controlled,
+versioned, and auditable, and that organization scope cannot be edited after
+commercial commitment.
+
+## Independent review checklist
+
+### 1. Lifecycle and source integrity
+
+Review all backend commands, persistence transitions, API routes, Angular
+actions, and tests for:
+
+- eligible approved source decision prerequisite;
+- explicit Draft, submit, approval, issue, confirmation, rejection,
+  no-response, partial, cancellation, and supplier-change states;
+- no hidden transition that bypasses approval or separation of duties;
+- no silent replacement of the selected quotation or supplier;
+- no silent deletion of a PO, upstream Purchase Request, or sourcing decision;
+- no creation of a second PO when the source decision or request is reused;
+- source data revalidation at persistence time, not only in Angular;
+- exact selected-line set and source-line lineage validation;
+- no cross-tenant or cross-Company/Branch source substitution.
+
+### 2. Approval, separation of duties, and reapproval
+
+Verify reuse of the existing configuration-led approval and delegation
+capability rather than an independent approval engine:
+
+- effective approval policy is resolved server-side;
+- policy and version are snapshotted on the PO;
+- stage and approver evidence are preserved;
+- requester cannot self-approve;
+- duplicate approval is rejected;
+- only eligible approvers or valid delegated actors can approve;
+- rejection and return-for-change require and preserve a reason;
+- approval uses the exact PO optimistic-concurrency version;
+- supplier changes requiring reapproval move to a controlled pending state;
+- previous approval evidence remains history and is not overwritten;
+- new approval evidence records policy, actor, delegation, stage, version, and
+  resulting status;
+- rejected supplier changes preserve the prior commercial commitment.
+
+### 3. Supplier confirmation semantics
+
+Verify that confirmation is manual and records immutable evidence, including:
+
+- full confirmation;
+- per-line partial quantity confirmation;
+- exact ordered, confirmed, and remaining quantities;
+- supplier rejection with explicit reason;
+- no response / pending evidence;
+- changed quantity;
+- changed unit price;
+- changed delivery date;
+- supplier reference/contact and optional evidence references;
+- actor, timestamp, PO version, correlation, and audit context.
+
+Verify that server-side normalization recomputes remaining quantities and
+rejects invalid status/quantity combinations. Confirmations must not create
+stock reservations, goods receipts, warehouse movement, invoices, AP entries,
+payments, accounting postings, or external supplier calls.
+
+### 4. Supplier changes and commercial commitment safety
+
+Verify that an issued or confirmed PO is never silently mutated by a supplier
+proposal. Each proposed change must preserve:
+
+- previous/current value;
+- proposed value;
+- line and confirmation lineage;
+- reason;
+- proposing actor;
+- proposal timestamp;
+- decision actor and timestamp;
+- approval/rejection decision;
+- resulting PO status.
+
+Verify that approval applies only the approved proposed values, while rejection
+leaves the prior values in force. Verify that line-level confirmation history
+continues to reflect the exact commercial remainder after an approved change.
+
+### 5. Tenant, organization scope, and authorization
+
+Review every read and mutation path for:
+
+- server-owned Tenant context;
+- Tenant query filters and composite Tenant-owned relationships;
+- exact membership and permission checks;
+- Company/Branch scope checks independent of client-supplied identifiers;
+- safe no-access behavior for another Tenant or unauthorized scope;
+- no Tenant ID accepted as a scope-widening client filter;
+- no raw GUID UX requirement;
+- server-derived capability flags that do not replace authorization;
+- audit evidence containing Tenant, Company/Branch, actor, authorization path,
+  decision, correlation, and operation identity.
+
+Pay special attention to direct object reads, source-decision lookup,
+confirmation lookup, history, audit, replay, and idempotency paths.
+
+### 6. Concurrency, idempotency, and failure behavior
+
+Verify:
+
+- SQL Server rowversion / optimistic concurrency is used for PO, line, and
+  confirmation mutations as appropriate;
+- If-Match / exact expected-version handling is enforced;
+- stale edit, approval, issue, confirmation, and supplier-change requests
+  return a safe conflict and do not partially mutate data;
+- idempotency keys replay the original result rather than duplicate PO,
+  confirmation, history, or audit events;
+- replay lookup is Tenant- and actor/operation-scoped;
+- transaction rollback protects failed multi-row confirmation/reapproval
+  writes;
+- duplicate identifiers and invalid line sets are rejected;
+- persistence errors do not expose SQL, stack traces, or sensitive Tenant data.
+
+### 7. Persistence and migration
+
+Verify the four-project backend topology:
+
+- MiniErp.Api
+- MiniErp.App
+- MiniErp.Contracts
+- MiniErp.Infrastructure
+
+Verify Procurement module ownership, the procurement SQL Server schema,
+Tenant-owned entity coverage, composite Tenant foreign keys, appropriate
+indexes, restrictive/cascading delete choices, and the formal committed EF
+Core migration for Purchase Order and Supplier Confirmation. Verify that
+production authority remains SQL Server with migrations and that SQLite is
+only an explicit Development/test harness. No second database, competing
+migration chain, production EnsureCreated, or cross-module persistence is
+allowed.
+
+### 8. REST, Foundation catalogue, OpenAPI, and operational safety
 
-## Purchase Order Lifecycle
+Verify every public operation:
 
-Determine exact lifecycle from approved BRD/decision evidence.
+- has a stable operationId;
+- has a useful Summary and truthful response description;
+- is present in the Foundation operation catalogue;
+- declares the correct permission, security profile, scope policy, antiforgery,
+  idempotency, audit, and concurrency behavior;
+- is represented truthfully in generated OpenAPI/Scalar;
+- uses safe problem details without leaking implementation internals;
+- has unsafe mutation protection and the established correlation/audit seam.
 
-Expected bounded concepts include:
+Review all unsafe handlers for explicit antiforgery, permission, Tenant/scope,
+expected-version, idempotency, and audit behavior.
 
-Draft
-Submitted / Pending Approval where policy requires
-Approved
-Issued
-Supplier Confirmation pending
-Confirmed / Partially Confirmed / Changed / Rejected
-Cancelled where eligible
+### 9. Angular UX and regression safety
 
-Do not invent lifecycle states if approved source uses different terminology.
+Verify the bounded Angular workspace:
 
-Define state transitions explicitly.
-
-No transition may silently bypass approval or SoD.
-
-## Purchase Order Draft
-
-Support creating a PO from the approved sourcing decision.
-
-Snapshot relevant source facts:
-
-Tenant
-Company/Branch scope
-Supplier
-currency
-Product
-UOM
-ordered quantity
-commercial price
-tax selection/evidence
-payment term
-requested/committed dates where defined
-source quotation
-source decision
-source PR
-commercial evidence reference.
-
-Do not silently re-resolve mutable master-data values after order creation when
-audit evidence requires snapshots.
-
-## Lines
-
-PO lines must retain deterministic source lineage.
-
-Support only the approved PO behavior.
-
-Do not introduce:
-
-free arbitrary supplier-line divergence
-
-unless approved by the BRD.
-
-If quantity/price/date changes are permitted before issue:
-
-control them through document version/concurrency and approval policy.
-
-## Approval
-
-Reuse the existing reusable approval capability.
-
-Do NOT implement another independent approval engine.
-
-Preserve:
-
-configuration-led policy
-SoD
-no self-approval
-delegation seams
-approval evidence
-policy snapshot
-history
-audit
-server capability flags.
-
-PO approval must use exact relevant PO version.
-
-## Issue / Commit
-
-An Approved PO may be issued/committed according to the approved workflow.
-
-Issuing the PO means:
-
-commercial commitment evidence.
-
-It does NOT mean:
-
-stock received
-AP created
-invoice posted
-payment created
-accounting posted.
-
-No downstream side effect.
-
-## Supplier Confirmation
-
-Implement MANUAL supplier-confirmation capture.
-
-No supplier portal/integration is required unless already approved elsewhere.
-
-Confirmation must support approved cases such as:
-
-full confirmation
-partial quantity confirmation
-supplier rejection
-changed quantity
-changed date
-changed price
-no response / pending evidence
-
-according to MESP-43.
-
-Do not invent auto-confirmation.
-
-## Partial Confirmation
-
-Preserve per-line state.
-
-Example concept:
-
-ordered 100
-confirmed 60
-unconfirmed 40
-
-must not be collapsed into:
-
-confirmed 100.
-
-Track exact commercial remainder.
-
-Do not create stock reservations or receipts from confirmation.
-
-## Supplier-Initiated Changes
-
-For supplier-proposed changes to:
-
-quantity
-price
-delivery date
-
-apply the approved MESP-43 behavior.
-
-Where reapproval is required:
-
-the PO must return to the correct controlled state.
-
-Do not silently mutate an approved/issued commercial commitment.
-
-Persist:
-
-previous value
-proposed/accepted value
-reason/evidence
-actor
-timestamp
-resulting approval consequence.
-
-## Reapproval
-
-If a supplier change crosses a reapproval condition:
-
-invalidate/supersede prior approval evidence as appropriate without deleting it.
-
-Create new approval evidence.
-
-Preserve complete history.
-
-Do not overwrite old approval records.
-
-## Rejection
-
-Supplier rejection must be explicit and auditable.
-
-Do not:
-
-delete the PO
-silently cancel upstream PR
-silently choose another quotation
-automatically create another PO
-
-unless an approved rule explicitly requires it.
-
-Return usable sourcing state/evidence for subsequent user decision.
-
-## Confirmation Evidence
-
-Support bounded evidence references/attachments using existing project seams.
-
-Do not implement a new external document service.
-
-Evidence may include:
-
-supplier confirmation reference
-supplier document number
-communication reference
-notes
-attachment metadata
-
-according to current platform support.
-
-## Concurrency
-
-All editable/mutating PO and confirmation operations require proper optimistic
-concurrency.
-
-Use actual document version/ETag semantics.
-
-Stale client:
-
-409 concurrency_conflict
-
-No last-write-wins.
-
-Failed conflict must:
-
-not mutate PO
-not mutate confirmation
-not append false history
-not append false audit success.
-
-## Idempotency
-
-All unsafe commands that can be retried must follow the project's idempotency
-contract.
-
-Duplicate Idempotency-Key:
-
-same request
-→ replay-safe deterministic result.
-
-Different payload with same key:
-→ conflict according to current standard.
-
-Do not create duplicate PO/confirmation events.
-
-## Audit / History
-
-Persist immutable evidence for:
-
-creation
-edit
-submit
-approval
-return/reject where applicable
-issue
-confirmation
-partial confirmation
-supplier rejection
-supplier-proposed change
-reapproval
-eligible cancellation
-concurrency rejection where project's audit policy requires.
-
-No history rewriting.
-
-## Tenant Security
-
-Every PO/confirmation query/command must enforce:
-
-MESP-143 candidate-host/Tenant authority
-exact Tenant membership
-organization scope
-server authorization
-Tenant ownership.
-
-Tenant A actor must never read/write Tenant B PO.
-
-Client Tenant IDs cannot widen scope.
-
-## Company / Branch
-
-Honor current organization-scope model.
-
-Do not require raw GUID UX.
-
-Use server-resolved human-readable organization choices.
-
-PO organization scope must remain immutable after commitment where approved
-business meaning requires it.
-
-## Permissions
-
-Use explicit Foundation permissions.
-
-At minimum distinguish appropriately:
-
-read
-create/edit
-submit
-approve
-issue
-supplier-confirmation capture
-cancel
-
-Do not treat UI visibility as authorization.
-
-## REST / OpenAPI
-
-Every new public operation must:
-
-exist in Foundation operation catalogue
-have stable operationId
-have useful Summary
-have security/permission metadata
-have antiforgery classification
-have idempotency classification
-have audit classification
-have concurrency documentation
-appear truthfully in generated OpenAPI/Scalar.
-
-Do not repeat the MESP-143 P3 generic "Use Auth" summary problem.
-
-## Angular
-
-Implement complete bilingual PO workspace:
-
-list
-create
-edit where allowed
-detail
-history/audit
-approval actions
-issue action
-supplier confirmation
-partial confirmation
-supplier-change review
-reapproval status
-rejection status.
-
-Use server-provided canX flags as authoritative.
-
-Do not infer lifecycle authority client-side.
-
-## PO List
-
-Provide practical bounded filters:
-
-PO number/reference
-Supplier
-status
-date where current design supports it
-organization context
-
-Do not load an unrestricted cross-Tenant catalogue.
-
-## Create UX
-
-Create from eligible sourcing/source decision.
-
-Do NOT require users to manually type:
-
-Purchase Request GUID
-Supplier Quotation GUID
-Source Decision GUID
-Supplier GUID
-Company GUID
-Branch GUID.
-
-Use server-provided business choices and labels.
-
-## Detail UX
-
-Show:
-
-PO identity
-Supplier
-organization
-currency
-commercial totals
-lines
-source references
-approval
-issue state
-confirmation state
-supplier-change state
-history/audit.
-
-Technical GUIDs may appear only as secondary technical references.
-
-## Confirmation UX
-
-Allow users to record supplier response per approved business rules.
-
-For partial confirmation provide clear ordered / confirmed / remaining values.
-
-For supplier-proposed changes clearly distinguish:
-
-original
-supplier proposed
-accepted/current
-approval consequence.
-
-Never hide changed commercial terms.
-
-## EN / AR / RTL
-
-All new UI:
-
-English
-Arabic
-RTL/LTR.
-
-No raw translation keys.
-
-Use correct Procurement terminology.
-
-Do not equate Tenant with Workspace.
-
-## Accessibility
-
-Keyboard navigation
-focus
-labels
-headings
-native controls where suitable
-not color-only
-error announcements
-accessible line-grid/actions.
-
-## Responsive UX
-
-Validate:
-
-desktop
-medium
-narrow.
-
-Do not break commercial tables/actions on common business laptop resolutions.
-
-## MESP-143 Regression
-
-Explicitly preserve:
-
-Tenant-host entry
-common host
-Overview-first flow
-operational context
-host authority
-branding fallback
-SAR presentation.
-
-PO implementation must not bypass the MESP-143 server context model.
-
-## MESP-123 Regression
-
-Preserve:
-
-Purchase Requests
-approval
-Supplier Quotations
-comparison
-mixed-currency no-FX
-source decisions
-source-decision concurrency
-history/audit.
-
-PO must consume those facts, not rewrite them.
-
-## Database
-
-Use SQL Server runtime through:
-
-MESP_SQLSERVER_CONNECTION_STRING
-
-Formal EF migration if persistence/schema is added.
-
-Correct module ownership.
-
-No EnsureCreated production shortcut.
-
-No SQLite authority.
-
-No destructive reset.
-
-## SQL Safety
-
-Use ONLY:
-
-scripts/Test-MiniErpBackend.ps1
-
-for final full backend evidence.
-
-This runner creates the disposable:
-
-MESP_SQLSERVER_SAFETY_CONNECTION_STRING
-
-target automatically.
-
-Do not treat gated SQL safety as green.
-
-Persistent MESP must never be used as the destructive safety target.
-
-## Backend Validation
-
-Run:
-
-dotnet build .\backend\MiniErp.sln --configuration Release --no-restore --verbosity minimal
-
-Then:
-
-.\scripts\Test-MiniErpBackend.ps1
-
-Starting accepted baseline:
-
-770/770
-
-Final suite will increase.
-
-Required:
-
-ALL PASS
-0 skipped SQL safety cases
-disposable cleanup PASS.
-
-## Angular Validation
-
-Run:
-
-npm test -- --watch=false --no-progress
-npm run build
-npm audit --omit=dev
-
-Starting baseline:
-
-204/204
-23 spec files
-490.85 kB initial
-91.94 kB Supplier Quotation lazy
-0 vulnerabilities.
-
-Do not raise budgets merely to pass.
-
-## Playwright
-
-Extend E2E.
-
-Starting baseline:
-
-8/8.
-
-Cover at minimum:
-
-PO create from eligible source decision
-approval / issue
-full confirmation
-partial confirmation
-supplier rejection
-supplier-proposed change/reapproval path
-stale concurrency behavior
-Tenant/organization denial
-EN/AR smoke
-MESP-123 regression.
-
-Use deterministic fixtures.
-
-## Browser Validation
-
-Use Chromium/Playwright for visual/runtime proof.
-
-Clearly distinguish:
-
-automated E2E
-manual interactive browser
-API/HTTP evidence.
-
-Do not claim manual browser review if not performed.
-
-## Scope Exclusions
-
-DO NOT implement:
-
-Goods Receipt
-stock mutation
-warehouse movement
-Purchase Invoice
-AP
-payment
-accounting posting
-three-way matching
-supplier portal
-external supplier integration
-ZATCA/FATOORA
-production DNS/TLS
-MESP-125
-MESP-126
-MESP-127
-MESP-128+
-customer-specific Wafra logic.
-
-## Git
-
-Start from synchronized main after MESP-143 closure.
-
-Create:
-
-feat/MESP-124-purchase-order-confirmation
-
-Open one Draft PR against main.
-
-Suggested title:
-
-feat(MESP-124): implement purchase order and supplier confirmation
-
-No force push.
-
-No merge.
-
-## Jira
-
-ZERO Jira writes.
-
-GPT-5.6 Sol owns Jira.
-
-Return:
-
-activation evidence
-implementation evidence
-validation evidence
-remaining gaps
-review recommendation.
-
-## Documentation
-
-At completion update current/live:
-
-AGENTS.md
-CLAUDE.md
-.ai/CURRENT_STATE.md
-TASK.md
-README.md
-Run.md
-backend/README.md
-frontend/README.md
-docs/staticts.md
-
-and genuinely affected architecture/Procurement docs.
-
-Preserve historical evidence.
-
-## TASK.md Lifecycle
-
-If MESP-124 implementation is complete and fully validated:
-
-replace TASK.md with the FULL prompt for:
-
-CLAUDE OPUS 5
-INDEPENDENT MESP-124 PRE-MERGE REVIEW
-
-The review must cover:
-
-PO lifecycle
-source lineage
-approval/SoD
-supplier confirmation
-partial confirmation
-changed commercial terms
-reapproval
-Tenant isolation
-concurrency
-idempotency
-history/audit
-no stock/AP/accounting effects
-EN/AR/RTL
-SQL safety
-MESP-143 and MESP-123 regressions.
-
-If MESP-124 is incomplete:
-
-TASK.md must instead contain the FULL next bounded implementation prompt.
-
-Never leave TASK.md pointing to completed MESP-143 work.
-
-## Final Report
-
-Return:
-
-# MESP-124 Purchase Order + Supplier Confirmation: IMPLEMENTATION REPORT
-
-with:
-
-Repository
-PR
-PO lifecycle
-Source lineage
-Approval
-Issue
-Supplier confirmation
-Partial confirmation
-Supplier changes
-Reapproval
-Tenant/organization security
-Concurrency/idempotency
-Audit/history
-REST/OpenAPI
-Angular
-EN/AR/RTL/accessibility
-Database/migrations
-Backend validation
-Angular validation
-Playwright/browser validation
-MESP-143 regression
-MESP-123 regression
-Scope exclusions
-Git
-Jira payload
-Next exact session
-
-Then STOP.
-
-Do NOT merge.
-Do NOT update Jira.
-Do NOT start MESP-125.
+- follows the MESP-143 Overview-first authenticated shell and current
+  operational context;
+- has list, eligible-source selection, immutable source review, create/edit,
+  detail, approval, issue, cancel, confirmation, partial-confirmation,
+  rejection, supplier-change, reapproval, history, and audit surfaces;
+- does not expose downstream Inventory, Goods Receipt, Finance, AP, payment,
+  or external-integration UI;
+- displays ordered/confirmed/remaining quantities clearly;
+- disables or hides actions based on server capability while relying on the
+  server for authorization;
+- sends If-Match, idempotency, and antiforgery headers for mutations;
+- presents stale conflicts and safe access errors clearly;
+- keeps the main bundle within the existing budget and isolates the PO feature
+  appropriately;
+- preserves the MESP-123 Purchase Request, quotation, comparison, and source
+  decision journeys.
+
+Review EN, AR, RTL direction, accessible labels, keyboard/focus behavior,
+semantic tables or grids, role/status messaging, and the absence of hardcoded
+Wafra-specific core behavior. Owner-managed files under frontend/assets must
+remain untouched.
+
+## Required validation
+
+Run the following from the repository root, using only safe/disposable test
+state. Do not run a broad destructive command and do not use the owner's
+persistent MESP database for test seeding. The backend runner is the required
+safe harness and must preserve the MESP data-integrity sentinel.
+
+1. Inspect the complete diff and working tree:
+
+       git status --short
+       git diff --check
+       git diff main...HEAD --stat
+       git diff main...HEAD -- backend/src backend/tests frontend/src frontend/e2e
+
+2. Backend Release build and required safety runner:
+
+       dotnet build .\backend\MiniErp.sln --configuration Release --no-restore --verbosity minimal
+       .\scripts\Test-MiniErpBackend.ps1
+
+   The runner must pass with zero failures and must report that MESP data is
+   intact. Do not substitute an unsafe direct full-suite run for the runner.
+
+3. Targeted backend tests, if needed for diagnosis:
+
+       dotnet test .\backend\tests\MiniErp.ArchitectureTests\MiniErp.ArchitectureTests.csproj --configuration Release --no-build --filter "FullyQualifiedName~PurchaseOrderTests|FullyQualifiedName~RestFoundationTests" --verbosity minimal
+
+4. Angular:
+
+       Set-Location .\frontend
+       npm test -- --watch=false --no-progress
+       npm run build
+       npm audit --omit=dev
+
+   Do not raise bundle budgets to make this pass.
+
+5. Playwright Chromium:
+
+       npx playwright test e2e/purchase-order.spec.ts --project=chromium
+       npm run test:e2e -- --project=chromium
+
+   Confirm the suite covers PO creation from an eligible source decision,
+   approval/issue, full confirmation, partial confirmation, rejection,
+   supplier change/reapproval, stale concurrency, Tenant/organization denial,
+   EN/AR/RTL behavior, and MESP-123 regression. Distinguish automated
+   Chromium evidence from manual browser signoff; do not claim manual signoff
+   unless it actually occurred.
+
+## Verdict standard
+
+Return exactly one of these verdicts:
+
+### APPROVE FOR MERGE
+
+Use only when the complete diff is bounded, the lifecycle and source lineage
+are correct, Tenant and organization isolation is secure, persistence and
+migration ownership are sound, all required validation is green, no material
+security/accounting/data-integrity/regression issue remains, and the
+implementation does not cause excluded downstream side effects.
+
+### CHANGES REQUIRED
+
+Use when a concrete correctable implementation, test, documentation, UX,
+OpenAPI, concurrency, audit, or migration issue remains. List each finding
+with severity P0/P1/P2/P3, exact location, evidence, impact, and the smallest
+bounded correction. Do not edit the repository.
+
+### BLOCKED
+
+Use only for a genuine unresolved Tenant-isolation, accounting/data-integrity,
+destructive-migration/data-loss, legal/external-validation,
+credential/production-infrastructure, or material architecture blocker that
+cannot be safely corrected inside the bounded MESP-124 follow-up.
+
+## Required review report
+
+The review report must include:
+
+- verdict;
+- reviewed branch, commit, and PR;
+- exact commands run and their results;
+- lifecycle and source-lineage assessment;
+- approval/SoD/delegation/reapproval assessment;
+- confirmation, partial, rejection, and supplier-change assessment;
+- Tenant and Company/Branch isolation assessment;
+- concurrency/idempotency/transaction assessment;
+- audit/history/evidence assessment;
+- REST/Foundation/OpenAPI assessment;
+- persistence/migration assessment;
+- Angular EN/AR/RTL/accessibility and bundle assessment;
+- MESP-123 regression assessment;
+- scope-exclusion assessment;
+- every finding with severity and exact evidence;
+- explicit statement that no files, Jira, PR state, database, merge, or next
+  capability were changed by the review.
+
+After the report, STOP. Do not execute any future root task automatically.

@@ -9,20 +9,29 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 17 August 2026 (MESP-143 merged; post-merge reconciliation)
+## Current execution overlay - 17 August 2026 (MESP-124 implementation; pre-merge handoff)
 
 MESP-143 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE),
 and squash-merged to `main`** at commit `866cb75bb7d0d97c929216b1a449f458a2614097`
 (reviewed feature head: `25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged).
-It establishes configuration-led host candidate routing with exact server-side
-Tenant membership authority, common/platform entry boundaries, Overview-first
-shell routing, post-Overview Company/Branch operational context, generic branding,
-and presentation-only SAR semantics. Four non-blocking P3 observations (P3-1 through
-P3-4) and a Terra HIGH pre-production security audit recommendation are tracked.
-Owner assets under `frontend/assets` remain untouched. Zero product/test/schema changes.
+It establishes the server-authoritative Tenant and operational-context boundary
+required by the current MESP-124 work.
 
-The next selected implementation capability is **MESP-124 — Purchase Order and
-Supplier Confirmation** (MESP-7), to be activated by GPT-5.6 Sol after closing MESP-143.
+MESP-124 is implemented on `feat/MESP-124-purchase-order-confirmation` from the
+synchronized `main` baseline. The bounded slice adds source-decision-gated
+Purchase Orders, immutable commercial/source snapshots, reusable approval/SoD/
+delegation, issue evidence, manual supplier confirmations with full/partial/
+rejected/no-response states, supplier change proposals and reapproval, immutable
+history/audit, formal Procurement persistence/migration, operation-catalogue and
+OpenAPI metadata, and bilingual Angular list/create/edit/detail UI. It does not
+add Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way
+matching, supplier portal, external integration, statutory submission, DNS/TLS,
+or Wafra-specific core logic.
+
+Validation and delivery state are recorded in `.ai/CURRENT_STATE.md` and
+`docs/staticts.md`. Jira remains read-only in this session (activation evidence
+is recorded; GPT-5.6 Sol owns Jira closure). The branch remains unmerged and the
+next exact session is independent Claude Opus 5 pre-merge review of MESP-124.
 
 ## Historical execution overlay - 17 August 2026 (MESP-143 implementation; superseded by merge)
 

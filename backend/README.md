@@ -18,10 +18,14 @@
 > read by the safety harness. Use `scripts/Test-MiniErpBackend.ps1` or
 > `scripts/validate-foundation.ps1` to run the full suite safely.
 >
-> This is still not a production deployment: MESP-48/MESP-50, production
-> topology, deployment migrations, backup/restore, capacity, and specialist
-> gates remain open. The next selected capability is MESP-124 (Purchase Order
-> and Supplier Confirmation).
+> MESP-124 adds source-decision-gated Purchase Orders, immutable source and
+> commercial snapshots, reuse of approval/SoD/delegation, issue evidence,
+> manual full/partial/rejected/no-response confirmations, supplier-proposed
+> changes with controlled reapproval, history/audit, and formal Procurement
+> persistence. It adds no stock, receipt, invoice, AP/accounting, payment, or
+> external supplier effects. MESP-48/MESP-50, production topology, deployment
+> migration governance, backup/restore, capacity, and specialist gates remain
+> open; the branch is awaiting independent pre-merge review.
 
 This directory contains the Foundation backend. It began as the MESP-57
 Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant
@@ -99,6 +103,24 @@ authority and optimistic eligibility/selection versions.
 This seam does not create a second Tenant persistence model or migration. DNS,
 TLS, full Platform Administration, external providers, and downstream ERP
 effects remain outside MESP-143.
+
+## MESP-124 Procurement persistence and API
+
+The Purchase Order implementation remains inside the existing four-project
+modular-monolith direction. Public request/response records are in
+`MiniErp.Contracts`; application commands, validation, source-lineage
+revalidation, and approval orchestration are in `MiniErp.App`; SQL/SQLite EF
+entities, mappings, queries, and the formal migration are in
+`MiniErp.Infrastructure`; and literal REST handlers plus Foundation/OpenAPI
+metadata are in `MiniErp.Api`.
+
+The `procurement` schema owns Purchase Orders, lines, confirmations,
+confirmation lines, evidence, supplier changes, history, and audit. Each new
+entity is Tenant-owned and registered with the stored-owner verifier. Every
+read/write receives the server-derived Tenant and Company/Branch context; the
+client cannot widen scope or invent source IDs. The official backend evidence
+entry point remains `scripts/Test-MiniErpBackend.ps1`, which uses a disposable
+LocalDB safety target and leaves the persistent `MESP` connection untouched.
 
 ## Four-project direction
 

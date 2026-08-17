@@ -172,6 +172,32 @@ the full Foundation suite, use the dedicated safe runner:
 .\scripts\Test-MiniErpBackend.ps1
 ```
 
+## MESP-124 Purchase Order runtime
+
+The current Procurement runtime includes the bounded Purchase Order and manual
+Supplier Confirmation journey at these relative routes:
+
+- `/app/procurement/purchase-orders` - Tenant/context-scoped list and status filter;
+- `/app/procurement/purchase-orders/new` - eligible approved source-decision selection;
+- `/app/procurement/purchase-orders/:id` - source lineage, approval, issue,
+  confirmation, supplier-change, history, and audit detail;
+- `/app/procurement/purchase-orders/:id/edit` - controlled Draft editing.
+
+The server revalidates the approved Purchase Request, submitted Supplier
+Quotation, current Source Decision, supplier, currency, organization scope, and
+selected lines. It stores source/commercial snapshots and uses the existing
+approval, antiforgery, ETag, idempotency, audit, and Tenant-ownership seams.
+Supplier responses are manually recorded evidence only. Issue, confirmation,
+partial remainder, rejection, and supplier-change reapproval do not create
+Goods Receipt, stock, invoice, AP, payment, accounting, or three-way-match
+effects.
+
+When `MESP_SQLSERVER_CONNECTION_STRING` is configured, the formal Procurement
+migration `20260817143432_PurchaseOrderAndSupplierConfirmation` is applied by
+the Development migration sequence. Production startup still does not
+auto-migrate, and disposable SQL safety evidence must use
+`scripts/Test-MiniErpBackend.ps1`.
+
 ## SQL Server connection variable separation
 
 Two environment variables serve distinct, non-interchangeable roles:

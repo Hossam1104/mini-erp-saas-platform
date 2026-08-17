@@ -28,6 +28,26 @@ hashes, and retained the SQLite originals. This is local Development evidence,
 not a production migration, deployment, backup/restore, capacity, HA/DR,
 residency, retention, or MESP-48/MESP-50 approval.
 
+## MESP-124 Purchase Order persistence reconciliation - 17 August 2026
+
+The bounded Purchase Order and Supplier Confirmation slice preserves this ADR's
+module ownership. `ProcurementDbContext` owns the `procurement` tables for
+Purchase Orders, lines, confirmations, confirmation lines, evidence, supplier
+changes, lifecycle history, and audit. All eight entity types are Tenant-owned
+and registered with the stored-owner verifier; Company/Branch scope remains an
+application-authorized context inside the already authorized Tenant.
+
+The formal EF migration
+`20260817143432_PurchaseOrderAndSupplierConfirmation` adds these tables and
+indexes without introducing a second database, a competing migration history,
+or a shared-table ownership change. The application revalidates the approved
+Purchase Request, Supplier Quotation, Source Decision, supplier, currency,
+scope, and selected lines before creating immutable source/commercial snapshots.
+The migration is a Development/runtime artifact subject to the existing
+production migration, supported-volume, retention, privacy, backup/restore,
+and cutover gates. The official disposable SQL safety runner remains the only
+accepted full backend safety entry point.
+
 ## Context
 
 Release 1 uses a shared SQL Server database with strict application-layer

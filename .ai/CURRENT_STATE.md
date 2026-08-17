@@ -1,6 +1,73 @@
 # Current State
 
-## Current authoritative position - 17 August 2026 (MESP-143 merged; post-merge repository reconciliation)
+## Current authoritative position - 17 August 2026 (MESP-124 implementation; pre-merge handoff)
+
+MESP-143 (Tenant-Aware Entry Routing and Operational Workspace Context) is
+**implemented, independently reviewed by Claude Opus 5, and squash-merged to `main`**
+at commit `866cb75bb7d0d97c929216b1a449f458a2614097` (reviewed feature head:
+`25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged by the Owner).
+
+MESP-124 is implemented on branch `feat/MESP-124-purchase-order-confirmation`
+from that synchronized baseline. Jira was read-only verified as MESP-124 In
+Progress with activation evidence comment `11394`; MESP-143 closure evidence is
+comment `11393`. No Jira write was performed.
+
+### Bounded capability delivered
+
+- Tenant- and server-authorized Company/Branch-scoped Purchase Order list,
+  source selection, create, edit, detail, submit, approval, issue, rejection,
+  return-for-change, and cancellation paths.
+- Server revalidation of the approved Purchase Request, submitted Supplier
+  Quotation, current Source Decision, supplier, currency, scope, and selected
+  lines, with immutable source/commercial snapshots on the PO.
+- Reuse of the existing approval policy, SoD, delegation, exact-version
+  concurrency, idempotency, immutable lifecycle history, audit, and evidence
+  seams; no second approval engine.
+- Manual Supplier Confirmation with full, exact per-line partial, rejection,
+  no-response, evidence references, and supplier-proposed quantity/price/date
+  changes. Material changes return to controlled reapproval and retain prior,
+  proposed, accepted/current, actor, timestamp, reason, and decision evidence.
+- Formal Procurement EF Core migration for the PO/confirmation/history/audit/
+  supplier-change tables, registered Tenant ownership verification, Foundation
+  operation metadata/OpenAPI documentation, and bilingual Angular workspace.
+
+### Architecture and security outcome
+
+1. **Tenant != Workspace** remains enforced by the MESP-143 server context; PO
+   endpoints do not accept client Tenant authority or raw context selection.
+2. **Source lineage is server-owned**: the Angular client selects a business
+   source option, while the server validates the approved PR/quotation/decision,
+   supplier/currency, scope, and line set before persistence.
+3. **Company/Branch scope and Tenant ownership** are applied to every PO,
+   confirmation, evidence, history, audit, and supplier-change read/write path.
+4. **No downstream effect**: issue and supplier confirmation record commercial
+   evidence only; no stock, receipt, invoice, AP, payment, accounting, or
+   three-way matching behavior is present.
+5. **Owner assets** under `frontend/assets` are untouched; no Wafra-specific
+   branch or schema behavior was introduced.
+
+### Validation and next exact session
+
+- Release solution build: **0 warnings / 0 errors**.
+- Official `scripts/Test-MiniErpBackend.ps1`: **773/773 passed, 0 skipped**
+  against disposable LocalDB `MiniErpFoundation_20260817183503_0e07d663`;
+  the persistent `MESP_SQLSERVER_CONNECTION_STRING` was unchanged and the
+  safety target was cleaned by the runner.
+- Angular: **210/210 across 24 spec files**.
+- Production build: **492.02 kB initial**, **72.78 kB Purchase Order lazy
+  chunk**, **91.94 kB Supplier Quotation lazy chunk**, with no budget increase.
+- Chromium Playwright: **15/15** across the existing shell/quotation suites
+  and seven deterministic MESP-124 scenarios.
+- `npm audit --omit=dev`: **0 vulnerabilities**.
+
+Manual interactive browser review was not performed; Chromium Playwright and
+automated API/service/SQL safety evidence are reported separately.
+Production/provider migration governance, MESP-48/MESP-50, backup/restore,
+capacity, legal, specialist, and cutover gates remain open. The next exact
+session is independent **Claude Opus 5 MESP-124 pre-merge review**. Do not
+merge this branch and do not start MESP-125.
+
+## Historical authoritative position - 17 August 2026 (MESP-143 merged; post-merge repository reconciliation)
 
 MESP-143 (Tenant-Aware Entry Routing and Operational Workspace Context) is
 **implemented, independently reviewed by Claude Opus 5, and squash-merged to `main`**

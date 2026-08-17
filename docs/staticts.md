@@ -2,12 +2,30 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-17 16:45 +03:00
+**Last Updated:** 2026-08-17 18:40 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
-**Overall Production-Ready Completion:** **~39%**
+**Overall Production-Ready Completion:** **~40%**
 
-## Current authoritative fast-track snapshot — 17 August 2026 (MESP-143 merged; post-merge reconciliation)
+## Current authoritative fast-track snapshot - 17 August 2026 (MESP-124 implementation; pre-merge handoff)
+
+This current snapshot supersedes the MESP-143-only snapshot below while
+preserving all historical progress rows. The percentage movement reflects
+validated reusable Purchase Order and Supplier Confirmation capability, not
+Jira activity or test-count growth alone. Release 1 remains a full-feature
+reusable B2B ERP and the 31 August Integrated Preview remains a preview of the
+real codebase, not a scope reduction.
+
+| Current control | Verified position |
+|---|---|
+| MESP-143 | Completed, independently reviewed by Claude Opus 5, and squash-merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67). |
+| MESP-124 | Repository implementation complete at bounded pre-merge scope on `feat/MESP-124-purchase-order-confirmation`; Jira was read-only verified In Progress with activation evidence comment `11394`; no Jira write was performed. |
+| Production capability | **~40% overall; Procurement/P2P phase conservatively ~28%** after adding source-decision-gated Purchase Orders, approval/issue evidence, manual full/partial/rejected/no-response Supplier Confirmation, supplier-change reapproval, and immutable source/commercial/history/audit records. |
+| Validation | Release build 0 warnings/0 errors; official backend runner **773/773 passed, 0 skipped** against disposable LocalDB `MiniErpFoundation_20260817183503_0e07d663`; Angular **210/210** across 24 spec files; build **492.02 kB initial**, **72.78 kB Purchase Order lazy**, **91.94 kB Supplier Quotation lazy**; Chromium **15/15**; npm audit 0 vulnerabilities. |
+| Boundaries | No Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way matching, supplier portal, external integration, ZATCA/FATOORA, DNS/TLS, or Wafra-specific core behavior. Production/provider, MESP-48/MESP-50, specialist, legal, migration, and cutover gates remain open. |
+| Next exact session | Independent Claude Opus 5 MESP-124 pre-merge review; branch remains unmerged and MESP-125 is not started. |
+
+## Historical authoritative fast-track snapshot — 17 August 2026 (MESP-143 merged; post-merge reconciliation)
 
 This current snapshot supersedes earlier handoff wording while preserving the
 historical progress rows below. Release 1 remains a full-feature reusable B2B
@@ -108,17 +126,17 @@ Every future execution prompt should include:
 |---|---:|
 | Product / Requirements Definition | **~45%** |
 | Architecture & Technical Foundation | **~90%** |
-| Backend Overall | **~60%** |
-| Database / Persistence Overall | **~54%** |
-| Frontend Overall | **~33%** |
+| Backend Overall | **~64%** |
+| Database / Persistence Overall | **~58%** |
+| Frontend Overall | **~37%** |
 | Automated Technical Safety Foundation | **~60%** |
-| Full End-to-End Business System | **~34%** |
+| Full End-to-End Business System | **~36%** |
 | Production Readiness | **~29%** |
-| **Remaining to Real Production** | **~61%** |
+| **Remaining to Real Production** | **~60%** |
 
 ## Current management headline
 
-> **Mini ERP SaaS Platform Release 1 is approximately 39% complete toward a genuinely production-ready system.**
+> **Mini ERP SaaS Platform Release 1 is approximately 40% complete toward a genuinely production-ready system.**
 
 This percentage is intentionally lower than the raw Jira completion percentage because many completed Jira items represent architecture, governance, BRD, authorization, and technical-foundation work rather than completed business capabilities.
 
@@ -247,22 +265,22 @@ The following model represents progress toward a complete production Release 1.
 | 2. Architecture, security & technical foundation | 12% | **87%** | 10.4% |
 | 3. Platform Admin / IAM / Tenancy / Organization | 8% | **55%** | 4.4% |
 | 4. Master Data & Product Catalog | 10% | **68%** | 6.8% |
-| 5. Procurement / Purchase-to-Pay | 9% | **17%** | 1.5% |
+| 5. Procurement / Purchase-to-Pay | 9% | **28%** | 2.5% |
 | 6. Inventory / Warehouse | 9% | **3%** | 0.3% |
 | 7. Finance / Accounting / AR / AP / Cash | 12% | **3%** | 0.4% |
 | 8. B2B Sales / Order-to-Cash | 9% | **3%** | 0.3% |
 | 9. Reporting & Analytics | 4% | **2%** | 0.1% |
-| 10. Complete Angular Frontend / EN-AR / RTL | 8% | **31%** | 2.5% |
+| 10. Complete Angular Frontend / EN-AR / RTL | 8% | **37%** | 3.0% |
 | 11. Saudi Compliance & External Integrations | 4% | **8%** | 0.3% |
 | 12. Migration / Tenant Onboarding | 2% | **3%** | 0.1% |
 | 13. E2E QA, Performance, UAT, Deployment & Go-Live | 5% | **25%** | 1.3% |
 
-**Weighted overall result:** approximately **38%**.
+**Weighted overall result:** approximately **40%**.
 
 The weighted model remains an approximate planning band; the bounded
-Currency/Payment Terms, Tax/VAT, Exchange Rate, the bounded Supplier Quotation
-sourcing implementation, and this limited B2 shell/auth foundation support the
-conservative current 38% headline
+Currency/Payment Terms, Tax/VAT, Exchange Rate, Supplier Quotation/source
+decision, Purchase Order/Supplier Confirmation, and this limited B2 shell/auth
+foundation support the conservative current 40% headline
 below without resolving the SQL/provider,
 specialist, or production gates. The approved MESP-33 Inventory BRD is a documentation
 baseline only and does not increase usable Inventory or overall production
@@ -270,7 +288,7 @@ capability.
 
 For project reporting use:
 
-> **Overall production-ready completion = 37%**
+> **Overall production-ready completion = 40%**
 
 Do not present decimal precision as certainty.
 
@@ -1218,6 +1236,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-17 18:40 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 bounded Purchase Order and Supplier Confirmation implementation completed on `feat/MESP-124-purchase-order-confirmation`: server-authorized source-decision prerequisite, immutable PR/quotation/decision and commercial snapshots, reusable approval/SoD/delegation, issue evidence, manual full/partial/rejected/no-response confirmation, supplier-proposed changes with controlled reapproval, Tenant/Company/Branch enforcement, immutable history/audit, formal Procurement migration, Foundation/OpenAPI metadata, and bilingual Angular workspace. Release build 0/0; official backend runner **773/773 passed, 0 skipped** against disposable LocalDB; Angular **210/210** across 24 specs; build **492.02 kB initial / 72.78 kB PO lazy / 91.94 kB quotation lazy**; Chromium **15/15**; npm audit 0 vulnerabilities. No downstream stock/receipt/invoice/AP/accounting/payment/three-way-match behavior, Jira writes, external integrations, or Owner asset changes. Branch remains unmerged; exact next session is independent Claude Opus 5 MESP-124 pre-merge review. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-17 16:45 +03:00 | **39%** | **60%** | **54%** | **33%** | MESP-143 Tenant-aware entry routing and operational workspace context completed, reviewed by Claude Opus 5 (APPROVE FOR MERGE; 0 P0/P1/P2, 4 P3 observations), and squash-merged to main at commit `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67); backend 770/770 (all 22 SQL safety tests executed against disposable LocalDB `MiniErpFoundation_20260817144819_f27b32f1`), Angular 204/204 (23 specs), Playwright 8/8, bundle 490.85 kB initial / 91.94 kB quotation lazy chunk; 4 P3 follow-ups (P3-1 through P3-4) and Terra HIGH pre-production security audit recommendation recorded; root TASK.md prepared with full MESP-124 implementation prompt gated on Sol Jira activation; zero product/test/schema changes | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-17 13:30 +03:00 | **39%** | **60%** | **54%** | **33%** | MESP-143 pre-Opus validation reconciliation on `feat/MESP-143-tenant-aware-entry` (Draft PR #67); zero product/test/migration/schema code changed. Re-ran the full backend suite through the approved safe entry point `scripts/Test-MiniErpBackend.ps1`, replacing the prior 748/770-with-22-gated result: Release build 0 warnings/0 errors; backend **770/770 passed, 0 skipped**, with all 22 SQL Server safety-harness tests genuinely executed and passed against disposable database `MiniErpFoundation_20260817131747_f553ce07`, confirmed dropped with 0 orphan `MiniErpFoundation_*` databases remaining; `MESP_SQLSERVER_CONNECTION_STRING` confirmed unmodified throughout. Frontend rerun matches the implementation-head baseline: Angular 204/204 across 23 spec files, production build 490.85 kB initial / 91.94 kB Supplier Quotation lazy chunk, Playwright 8/8, `npm audit --omit=dev` 0 vulnerabilities. `TASK.md` corrected so the next Claude Opus 5 review requires the safe runner and genuine SQL safety execution, no longer accepting environment-gated SQL safety tests as a green `APPROVE FOR MERGE` outcome. No headline percentage increase claimed (validation-only, no new capability). PR #67 remains open/Draft/unmerged; no Jira operation performed; next exact session remains independent Claude Opus 5 targeted MESP-143 review. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-17 10:27 +03:00 | **39%** | **60%** | **54%** | **33%** | MESP-143 bounded implementation completed on `feat/MESP-143-tenant-aware-entry`: added configuration-led normalized Tenant host bindings, common/platform/no-access entry modes, trusted-proxy-only forwarded-host behavior, exact Tenant membership authority, canonical common-host routing, Overview-first Angular shell, post-Overview Company/Branch context, generic branding/MESP fallback, and presentation-only SAR/currency semantics. Added 16 focused MESP-143 backend host/security tests and 2 Angular currency-presentation tests; Angular passed 204/204 and the production build passed at 490.85 kB initial with a 91.94 kB Supplier Quotation lazy chunk. Full backend validation is 748/770 with exactly 22 SQL safety cases gated by the missing dedicated LocalDB connection; Playwright passed 8/8 and npm audit reports 0 vulnerabilities. No Tenant schema/migration, DNS/TLS, Jira, external provider, Owner asset, or downstream Procurement/Finance/Inventory behavior changed. Next exact handoff is independent Opus review of MESP-143 security and integration gates. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
@@ -1339,12 +1358,12 @@ Do not answer from percentages alone. Check the 100% Production Ready Definition
 
 > ## Mini ERP SaaS Platform — Release 1
 >
-> **Overall Production-Ready Completion:** ~39%
+> **Overall Production-Ready Completion:** ~40%
 > **Architecture/Foundation:** ~90%
-> **Backend:** ~60%
-> **Database:** ~54%
-> **Frontend:** ~33%
-> **End-to-End Business System:** ~34%
+> **Backend:** ~64%
+> **Database:** ~58%
+> **Frontend:** ~37%
+> **End-to-End Business System:** ~36%
 >
 > **Backend + DB Feature Complete Forecast:** Mid–Late September 2026  
 > **Full Feature Complete Forecast:** Late September–Mid October 2026  

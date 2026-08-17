@@ -38,6 +38,22 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
 
     internal DbSet<SupplierSourceDecisionHistoryEntity> SupplierSourceDecisionHistory => Set<SupplierSourceDecisionHistoryEntity>();
 
+    internal DbSet<PurchaseOrderEntity> PurchaseOrders => Set<PurchaseOrderEntity>();
+
+    internal DbSet<PurchaseOrderLineEntity> PurchaseOrderLines => Set<PurchaseOrderLineEntity>();
+
+    internal DbSet<PurchaseOrderConfirmationEntity> PurchaseOrderConfirmations => Set<PurchaseOrderConfirmationEntity>();
+
+    internal DbSet<PurchaseOrderConfirmationLineEntity> PurchaseOrderConfirmationLines => Set<PurchaseOrderConfirmationLineEntity>();
+
+    internal DbSet<PurchaseOrderEvidenceEntity> PurchaseOrderEvidence => Set<PurchaseOrderEvidenceEntity>();
+
+    internal DbSet<PurchaseOrderSupplierChangeEntity> PurchaseOrderSupplierChanges => Set<PurchaseOrderSupplierChangeEntity>();
+
+    internal DbSet<PurchaseOrderHistoryEntity> PurchaseOrderHistory => Set<PurchaseOrderHistoryEntity>();
+
+    internal DbSet<PurchaseOrderAuditEntity> PurchaseOrderAudit => Set<PurchaseOrderAuditEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -375,6 +391,279 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         sourceDecisionHistory.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var purchaseOrder = modelBuilder.Entity<PurchaseOrderEntity>();
+        ConfigureTable(purchaseOrder, "PurchaseOrders");
+        purchaseOrder.HasKey(item => item.Id);
+        purchaseOrder.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(purchaseOrder.Property(item => item.TenantId));
+        purchaseOrder.Property(item => item.PurchaseRequestId).IsRequired();
+        purchaseOrder.Property(item => item.SupplierQuotationId).IsRequired();
+        purchaseOrder.Property(item => item.SourceDecisionId).IsRequired();
+        purchaseOrder.Property(item => item.CompanyId).IsRequired();
+        purchaseOrder.Property(item => item.BranchId).IsRequired(false);
+        purchaseOrder.Property(item => item.CreatedByActorId).IsRequired();
+        purchaseOrder.Property(item => item.SupplierId).IsRequired();
+        purchaseOrder.Property(item => item.SupplierCode).HasMaxLength(128).IsRequired();
+        purchaseOrder.Property(item => item.SupplierName).HasMaxLength(256).IsRequired();
+        purchaseOrder.Property(item => item.SupplierQuotationReference).HasMaxLength(256).IsRequired();
+        purchaseOrder.Property(item => item.CurrencyId).IsRequired();
+        purchaseOrder.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired();
+        purchaseOrder.Property(item => item.CurrencyName).HasMaxLength(256).IsRequired();
+        purchaseOrder.Property(item => item.PaymentTermId).IsRequired(false);
+        purchaseOrder.Property(item => item.PaymentTermCode).HasMaxLength(128).IsRequired(false);
+        purchaseOrder.Property(item => item.PaymentTermName).HasMaxLength(256).IsRequired(false);
+        purchaseOrder.Property(item => item.PaymentTermVersion).IsRequired(false);
+        purchaseOrder.Property(item => item.SourcePurchaseRequestReference).HasMaxLength(128).IsRequired();
+        purchaseOrder.Property(item => item.SourcePurchaseRequestPurpose).HasMaxLength(2048).IsRequired(false);
+        purchaseOrder.Property(item => item.SourceDecisionRationale).HasMaxLength(4096).IsRequired();
+        purchaseOrder.Property(item => item.SourceSelectedAt).IsRequired();
+        purchaseOrder.Property(item => item.Status).IsRequired();
+        purchaseOrder.Property(item => item.Notes).HasMaxLength(4096).IsRequired(false);
+        purchaseOrder.Property(item => item.CreatedAt).IsRequired();
+        purchaseOrder.Property(item => item.UpdatedAt).IsRequired();
+        purchaseOrder.Property(item => item.SubmittedAt).IsRequired(false);
+        purchaseOrder.Property(item => item.ApprovedAt).IsRequired(false);
+        purchaseOrder.Property(item => item.IssuedAt).IsRequired(false);
+        purchaseOrder.Property(item => item.CancelledAt).IsRequired(false);
+        purchaseOrder.Property(item => item.LatestConfirmationId).IsRequired(false);
+        purchaseOrder.Property(item => item.LatestConfirmationStatus).IsRequired(false);
+        purchaseOrder.Property(item => item.StatusBeforeSupplierChange).IsRequired(false);
+        purchaseOrder.Property(item => item.ApprovalPolicySnapshotJson).HasMaxLength(32768).IsRequired();
+        purchaseOrder.Property(item => item.CurrentApprovalStageIndex).IsRequired();
+        purchaseOrder.Property(item => item.CurrentStageApprovalCount).IsRequired();
+        purchaseOrder.Property(item => item.CurrentStageApproverIdsJson).HasMaxLength(8192).IsRequired();
+        purchaseOrder.Property(item => item.IsReapproval).IsRequired();
+        ConfigureVersion(purchaseOrder.Property(item => item.Version));
+        purchaseOrder.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        purchaseOrder.HasIndex(item => new { item.TenantId, item.Status, item.UpdatedAt });
+        purchaseOrder.HasIndex(item => new { item.TenantId, item.PurchaseRequestId, item.CreatedAt });
+        purchaseOrder.HasOne<PurchaseRequestEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseRequestId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        purchaseOrder.HasOne<SupplierQuotationEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.SupplierQuotationId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        purchaseOrder.HasOne<SupplierSourceDecisionEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.SourceDecisionId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        purchaseOrder.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var purchaseOrderLine = modelBuilder.Entity<PurchaseOrderLineEntity>();
+        ConfigureTable(purchaseOrderLine, "PurchaseOrderLines");
+        purchaseOrderLine.HasKey(item => item.Id);
+        purchaseOrderLine.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(purchaseOrderLine.Property(item => item.TenantId));
+        purchaseOrderLine.Property(item => item.PurchaseOrderId).IsRequired();
+        purchaseOrderLine.Property(item => item.SourceQuotationLineId).IsRequired();
+        purchaseOrderLine.Property(item => item.PurchaseRequestLineId).IsRequired();
+        purchaseOrderLine.Property(item => item.ProductId).IsRequired();
+        purchaseOrderLine.Property(item => item.ProductSku).HasMaxLength(128).IsRequired();
+        purchaseOrderLine.Property(item => item.ProductName).HasMaxLength(256).IsRequired();
+        purchaseOrderLine.Property(item => item.UnitOfMeasureId).IsRequired();
+        purchaseOrderLine.Property(item => item.UnitOfMeasureCode).HasMaxLength(128).IsRequired();
+        purchaseOrderLine.Property(item => item.RequestedQuantity).HasPrecision(28, 8).IsRequired();
+        purchaseOrderLine.Property(item => item.OrderedQuantity).HasPrecision(28, 8).IsRequired();
+        purchaseOrderLine.Property(item => item.ConfirmedQuantity).HasPrecision(28, 8).IsRequired();
+        purchaseOrderLine.Property(item => item.RemainingQuantity).HasPrecision(28, 8).IsRequired();
+        purchaseOrderLine.Property(item => item.UnitPrice).HasPrecision(28, 8).IsRequired();
+        purchaseOrderLine.Property(item => item.DiscountAmount).HasPrecision(28, 8).IsRequired(false);
+        purchaseOrderLine.Property(item => item.DiscountPercentage).HasPrecision(9, 4).IsRequired(false);
+        purchaseOrderLine.Property(item => item.TaxId).IsRequired(false);
+        purchaseOrderLine.Property(item => item.TaxCode).HasMaxLength(128).IsRequired(false);
+        purchaseOrderLine.Property(item => item.TaxName).HasMaxLength(256).IsRequired(false);
+        purchaseOrderLine.Property(item => item.TaxRatePercentage).HasPrecision(9, 4).IsRequired(false);
+        purchaseOrderLine.Property(item => item.TaxAmount).HasPrecision(28, 8).IsRequired(false);
+        purchaseOrderLine.Property(item => item.RequestedNeedByDate).IsRequired();
+        purchaseOrderLine.Property(item => item.DeliveryDate).IsRequired(false);
+        purchaseOrderLine.Property(item => item.Notes).HasMaxLength(2048).IsRequired(false);
+        ConfigureVersion(purchaseOrderLine.Property(item => item.Version));
+        purchaseOrderLine.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        purchaseOrderLine.HasIndex(item => new { item.TenantId, item.PurchaseOrderId });
+        purchaseOrderLine.HasOne<PurchaseOrderEntity>()
+            .WithMany(item => item.Lines)
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Cascade);
+        purchaseOrderLine.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var confirmation = modelBuilder.Entity<PurchaseOrderConfirmationEntity>();
+        ConfigureTable(confirmation, "PurchaseOrderConfirmations");
+        confirmation.HasKey(item => item.Id);
+        confirmation.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(confirmation.Property(item => item.TenantId));
+        confirmation.Property(item => item.PurchaseOrderId).IsRequired();
+        confirmation.Property(item => item.Status).IsRequired();
+        confirmation.Property(item => item.ResponseDate).IsRequired();
+        confirmation.Property(item => item.SupplierReference).HasMaxLength(256).IsRequired(false);
+        confirmation.Property(item => item.SupplierContact).HasMaxLength(256).IsRequired(false);
+        confirmation.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        confirmation.Property(item => item.Notes).HasMaxLength(4096).IsRequired(false);
+        confirmation.Property(item => item.RecordedByActorId).IsRequired();
+        confirmation.Property(item => item.RecordedAt).IsRequired();
+        confirmation.Property(item => item.PurchaseOrderVersion).IsRequired();
+        ConfigureVersion(confirmation.Property(item => item.Version));
+        confirmation.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        confirmation.HasIndex(item => new { item.TenantId, item.PurchaseOrderId, item.RecordedAt });
+        confirmation.HasOne<PurchaseOrderEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        confirmation.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var confirmationLine = modelBuilder.Entity<PurchaseOrderConfirmationLineEntity>();
+        ConfigureTable(confirmationLine, "PurchaseOrderConfirmationLines");
+        confirmationLine.HasKey(item => item.Id);
+        confirmationLine.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(confirmationLine.Property(item => item.TenantId));
+        confirmationLine.Property(item => item.PurchaseOrderConfirmationId).IsRequired();
+        confirmationLine.Property(item => item.PurchaseOrderLineId).IsRequired();
+        confirmationLine.Property(item => item.OrderedQuantityAtResponse).HasPrecision(28, 8).IsRequired();
+        confirmationLine.Property(item => item.ConfirmedQuantity).HasPrecision(28, 8).IsRequired();
+        confirmationLine.Property(item => item.RemainingQuantity).HasPrecision(28, 8).IsRequired();
+        confirmationLine.Property(item => item.ExpectedDeliveryDate).IsRequired(false);
+        confirmationLine.Property(item => item.ProposedQuantity).HasPrecision(28, 8).IsRequired(false);
+        confirmationLine.Property(item => item.ProposedUnitPrice).HasPrecision(28, 8).IsRequired(false);
+        confirmationLine.Property(item => item.ProposedDeliveryDate).IsRequired(false);
+        confirmationLine.Property(item => item.ChangeReason).HasMaxLength(4096).IsRequired(false);
+        ConfigureVersion(confirmationLine.Property(item => item.Version));
+        confirmationLine.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        confirmationLine.HasIndex(item => new { item.TenantId, item.PurchaseOrderConfirmationId });
+        confirmationLine.HasOne<PurchaseOrderConfirmationEntity>()
+            .WithMany(item => item.Lines)
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderConfirmationId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Cascade);
+        confirmationLine.HasOne<PurchaseOrderLineEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        confirmationLine.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var evidence = modelBuilder.Entity<PurchaseOrderEvidenceEntity>();
+        ConfigureTable(evidence, "PurchaseOrderEvidence");
+        evidence.HasKey(item => item.Id);
+        evidence.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(evidence.Property(item => item.TenantId));
+        evidence.Property(item => item.PurchaseOrderConfirmationId).IsRequired();
+        evidence.Property(item => item.ReferenceId).HasMaxLength(256).IsRequired();
+        evidence.Property(item => item.FileName).HasMaxLength(255).IsRequired(false);
+        evidence.Property(item => item.ContentType).HasMaxLength(128).IsRequired(false);
+        evidence.Property(item => item.Description).HasMaxLength(1024).IsRequired(false);
+        evidence.Property(item => item.Source).HasMaxLength(256).IsRequired();
+        evidence.Property(item => item.ExternalReference).HasMaxLength(1024).IsRequired(false);
+        evidence.Property(item => item.RecordedByActorId).IsRequired();
+        evidence.Property(item => item.RecordedAt).IsRequired();
+        ConfigureVersion(evidence.Property(item => item.Version));
+        evidence.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        evidence.HasIndex(item => new { item.TenantId, item.PurchaseOrderConfirmationId, item.RecordedAt });
+        evidence.HasOne<PurchaseOrderConfirmationEntity>()
+            .WithMany(item => item.Evidence)
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderConfirmationId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Cascade);
+        evidence.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var change = modelBuilder.Entity<PurchaseOrderSupplierChangeEntity>();
+        ConfigureTable(change, "PurchaseOrderSupplierChanges");
+        change.HasKey(item => item.Id);
+        change.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(change.Property(item => item.TenantId));
+        change.Property(item => item.PurchaseOrderConfirmationId).IsRequired();
+        change.Property(item => item.PurchaseOrderLineId).IsRequired();
+        change.Property(item => item.PreviousOrderedQuantity).HasPrecision(28, 8).IsRequired();
+        change.Property(item => item.ProposedQuantity).HasPrecision(28, 8).IsRequired(false);
+        change.Property(item => item.PreviousUnitPrice).HasPrecision(28, 8).IsRequired();
+        change.Property(item => item.ProposedUnitPrice).HasPrecision(28, 8).IsRequired(false);
+        change.Property(item => item.PreviousDeliveryDate).IsRequired(false);
+        change.Property(item => item.ProposedDeliveryDate).IsRequired(false);
+        change.Property(item => item.Status).IsRequired();
+        change.Property(item => item.Reason).HasMaxLength(4096).IsRequired();
+        change.Property(item => item.ActorId).IsRequired();
+        change.Property(item => item.ProposedAt).IsRequired();
+        change.Property(item => item.DecidedAt).IsRequired(false);
+        change.Property(item => item.DecisionReason).HasMaxLength(4096).IsRequired(false);
+        ConfigureVersion(change.Property(item => item.Version));
+        change.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        change.HasIndex(item => new { item.TenantId, item.PurchaseOrderLineId, item.Status });
+        change.HasOne<PurchaseOrderConfirmationEntity>()
+            .WithMany(item => item.Changes)
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderConfirmationId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        change.HasOne<PurchaseOrderLineEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        change.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var purchaseOrderHistory = modelBuilder.Entity<PurchaseOrderHistoryEntity>();
+        ConfigureTable(purchaseOrderHistory, "PurchaseOrderHistory");
+        purchaseOrderHistory.HasKey(item => item.Id);
+        purchaseOrderHistory.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(purchaseOrderHistory.Property(item => item.TenantId));
+        purchaseOrderHistory.Property(item => item.PurchaseOrderId).IsRequired();
+        purchaseOrderHistory.Property(item => item.FromStatus).IsRequired();
+        purchaseOrderHistory.Property(item => item.ToStatus).IsRequired();
+        purchaseOrderHistory.Property(item => item.Action).IsRequired();
+        purchaseOrderHistory.Property(item => item.ActorId).IsRequired();
+        purchaseOrderHistory.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        purchaseOrderHistory.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        purchaseOrderHistory.Property(item => item.PolicyId).HasMaxLength(256).IsRequired(false);
+        purchaseOrderHistory.Property(item => item.PolicyVersion).IsRequired(false);
+        purchaseOrderHistory.Property(item => item.StageKey).HasMaxLength(128).IsRequired(false);
+        purchaseOrderHistory.Property(item => item.DelegatedFromActorId).IsRequired(false);
+        purchaseOrderHistory.Property(item => item.OccurredAt).IsRequired();
+        ConfigureVersion(purchaseOrderHistory.Property(item => item.Version));
+        purchaseOrderHistory.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        purchaseOrderHistory.HasIndex(item => new { item.TenantId, item.PurchaseOrderId, item.OccurredAt });
+        purchaseOrderHistory.HasOne<PurchaseOrderEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        purchaseOrderHistory.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var purchaseOrderAudit = modelBuilder.Entity<PurchaseOrderAuditEntity>();
+        ConfigureTable(purchaseOrderAudit, "PurchaseOrderAudit");
+        purchaseOrderAudit.HasKey(item => item.Id);
+        purchaseOrderAudit.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(purchaseOrderAudit.Property(item => item.TenantId));
+        purchaseOrderAudit.Property(item => item.PurchaseOrderId).IsRequired();
+        purchaseOrderAudit.Property(item => item.OccurredAt).IsRequired();
+        purchaseOrderAudit.Property(item => item.OperationId).HasMaxLength(128).IsRequired();
+        purchaseOrderAudit.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        purchaseOrderAudit.Property(item => item.ActorId).IsRequired();
+        purchaseOrderAudit.Property(item => item.SessionId).IsRequired();
+        purchaseOrderAudit.Property(item => item.AuthorizationPath).HasMaxLength(64).IsRequired();
+        purchaseOrderAudit.Property(item => item.Decision).HasMaxLength(64).IsRequired();
+        purchaseOrderAudit.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        purchaseOrderAudit.Property(item => item.BeforeStatus).IsRequired(false);
+        purchaseOrderAudit.Property(item => item.AfterStatus).IsRequired(false);
+        purchaseOrderAudit.Property(item => item.CompanyId).IsRequired();
+        purchaseOrderAudit.Property(item => item.BranchId).IsRequired(false);
+        purchaseOrderAudit.Property(item => item.BeforeSummary).HasMaxLength(4096).IsRequired(false);
+        purchaseOrderAudit.Property(item => item.AfterSummary).HasMaxLength(4096).IsRequired(false);
+        purchaseOrderAudit.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false);
+        ConfigureVersion(purchaseOrderAudit.Property(item => item.Version));
+        purchaseOrderAudit.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        purchaseOrderAudit.HasIndex(item => new { item.TenantId, item.PurchaseOrderId, item.OccurredAt });
+        purchaseOrderAudit.HasIndex(item => new { item.TenantId, item.ActorId, item.OperationId, item.IdempotencyKey });
+        purchaseOrderAudit.HasOne<PurchaseOrderEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        purchaseOrderAudit.HasQueryFilter(item => item.TenantId == TrustedTenantId);
     }
 
     private void ConfigureTable<TEntity>(EntityTypeBuilder<TEntity> entity, string tableName)

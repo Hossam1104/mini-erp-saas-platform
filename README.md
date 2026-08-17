@@ -24,28 +24,30 @@ module-owned persistence are product rules—not customer-specific forks.
 ## Current development status
 
 The latest merged delivery is MESP-143 (Tenant-aware entry routing and operational
-workspace context, merged in PR #67 at `866cb75bb7d0d97c929216b1a449f458a2614097`),
-building upon MESP-123 (Purchase Requests, Supplier Quotations, comparison, and
-source decision). It establishes configuration-led host candidate routing, exact
-server-side Tenant membership authority, common/platform entry boundaries, Overview-first
-shell routing, post-Overview Company/Branch operational context, generic branding, and
-presentation-only SAR semantics.
+workspace context, merged in PR #67 at `866cb75bb7d0d97c929216b1a449f458a2614097`).
+The current bounded delivery is MESP-124 on
+`feat/MESP-124-purchase-order-confirmation`: Purchase Orders now consume only
+server-authorized approved source decisions, preserve immutable sourcing and
+commercial snapshots, reuse approval/SoD/delegation, and record manual full,
+partial, rejected, no-response, and supplier-change/reapproval evidence. Issue
+and confirmation remain commercial Procurement evidence only; they create no
+stock, receipt, invoice, AP, payment, or accounting effect.
 
 The tracked project-control source of truth is [`docs/staticts.md`](docs/staticts.md).
 Its current conservative band is approximately:
 
 | Measure | Estimate | Meaning |
 |---|---:|---|
-| Release 1 production-ready capability | **~39%** | Usable capability, not ticket completion |
-| Frontend | **~33%** | Shared shell, Overview-first entry, plus bounded ERP journeys |
-| Backend | **~60%** | Foundation and implemented bounded module slices |
-| Database / persistence | **~54%** | Module-owned SQL/SQLite provider seams; production gates remain |
-| Full end-to-end business system | **~34%** | Integrated flows remain incomplete |
+| Release 1 production-ready capability | **~40%** | Usable capability, not ticket completion |
+| Frontend | **~37%** | Shared shell, Overview-first entry, and bounded ERP journeys |
+| Backend | **~64%** | Foundation and implemented bounded module slices |
+| Database / persistence | **~58%** | Module-owned SQL/SQLite provider seams; production gates remain |
+| Full end-to-end business system | **~36%** | Integrated flows remain incomplete |
 | Production readiness | **~29%** | Deployment, operations, legal, capacity, and specialist gates remain |
 
-MESP-143 is merged. The next selected implementation capability is **MESP-124 —
-Purchase Order and Supplier Confirmation**. This repository is an active Development
-system, not a production-readiness or regulatory approval.
+MESP-143 is merged and MESP-124 is implemented at its bounded pre-merge scope.
+This repository is an active Development system, not a production-readiness or
+regulatory approval.
 
 ## Capability matrix
 
@@ -64,7 +66,7 @@ Release 1 scope · 🔒 gated or validation pending.
 | Purchase Requests and configurable approval foundation | ✅ | Internal demand flow; downstream commitments are excluded |
 | Supplier Quotations, comparison and source decision | ✅ | Sourcing comparison and decision recording (MESP-123) |
 | SQL Server Development database | ✅ | Local `MESP` database and formal module migration path |
-| Purchase Orders and Supplier Confirmation | 📋 | Next selected Release 1 capability (MESP-124); not yet activated |
+| Purchase Orders and Supplier Confirmation | ✅ | Bounded MESP-124 slice: source lineage, approval, issue, manual confirmation, partials, rejection, changes and reapproval |
 | Goods Receipt, Purchase Invoice, AP and Payments | 📋 | Required Release 1 work; not started |
 | Inventory posting, B2B Sales, Accounting and Cash | 📋 | Required Release 1 work; not started |
 | Reporting, migration/onboarding and external integrations | 📋 / 🔒 | Product scope exists, implementation and gates remain |
@@ -104,7 +106,7 @@ flowchart TD
     UI --> API --> APP --> PERSIST --> SQL
     PERSIST --> T[Tenancy\nTenantOwnedRecords]
     PERSIST --> MD[Master Data\nBusiness Parties]
-    PERSIST --> PROC[Procurement\nPurchase Requests / Quotations]
+    PERSIST --> PROC[Procurement\nRequests / Quotations / Purchase Orders / Confirmations]
 ```
 
 The backend is a modular monolith with the enforced project direction
@@ -265,8 +267,8 @@ or local database process as a production deployment model.
 
 ## Scope discipline
 
-MESP-143 is merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097`. The
-repository is prepared for the next capability **MESP-124 — Purchase Order and
-Supplier Confirmation**. It does not implement Goods Receipt, invoicing, AP,
+MESP-143 is merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` and
+MESP-124 is complete at its bounded pre-merge implementation scope on the
+focused branch. The repository does not implement Goods Receipt, invoicing, AP,
 accounting, payment, stock mutation, a supplier portal, external providers,
 Jira operations, or changes under `frontend/assets`.

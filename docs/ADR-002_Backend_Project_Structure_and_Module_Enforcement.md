@@ -19,6 +19,17 @@
 > production validation remain gated by ADR-006 and the open MESP-48/MESP-49/
 > MESP-50 controls.
 
+## MESP-124 implementation evidence - 17 August 2026
+
+The Purchase Order and Supplier Confirmation slice confirms the same four
+project direction without adding a project or cross-module persistence path:
+Contracts owns public Procurement records, App owns source-lineage validation
+and lifecycle/approval orchestration, Infrastructure owns the Procurement EF
+model and formal migration, and Api owns route composition and OpenAPI
+metadata. Purchase Request and Supplier Quotation facts are consumed through
+their approved application contracts; PO persistence does not reach their
+tables directly.
+
 ## Context
 
 The approved Release 1 architecture is a modular monolith. The repository has
