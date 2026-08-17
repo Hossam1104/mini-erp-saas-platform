@@ -122,6 +122,14 @@ client cannot widen scope or invent source IDs. The official backend evidence
 entry point remains `scripts/Test-MiniErpBackend.ps1`, which uses a disposable
 LocalDB safety target and leaves the persistent `MESP` connection untouched.
 
+Idempotency replay is validated against a deterministic server-side SHA-256
+request fingerprint (`PurchaseOrderAudit.RequestFingerprint`, added by the
+additive migration `AddPurchaseOrderAuditRequestFingerprint`), not only the
+Tenant/actor/operation/key tuple. An identical retry replays the original
+result deterministically; the same key reused against a different payload or
+a different target returns HTTP 409 `idempotency_conflict` rather than ever
+replaying an unrelated Purchase Order's result.
+
 ## Four-project direction
 
 - `MiniErp.Contracts` contains only stable public module contracts and module

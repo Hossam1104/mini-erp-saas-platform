@@ -36,13 +36,21 @@ npm run test:e2e -- --project=chromium
 npm audit --omit=dev
 ```
 
-The current bounded evidence is Angular **210/210 across 24 spec files**;
-the production build is **492.02 kB initial** with a **72.78 kB Purchase Order
+The current bounded evidence is Angular **212/212 across 25 spec files**;
+the production build is **492.02 kB initial** with a **72.94 kB Purchase Order
 lazy chunk** and **91.94 kB Supplier Quotation lazy chunk**; Chromium coverage
 is **15/15** across the existing shell/quotation journeys and seven deterministic
-MESP-124 scenarios; `npm audit --omit=dev` reports zero vulnerabilities. The
-Playwright checks are automated API-fixture/browser evidence, not a manual
-interactive browser sign-off.
+MESP-124 scenarios. `npm audit` reports one pre-existing high-severity
+transitive `nanoid` advisory unrelated to any dependency change in this
+repository session; it is tracked for a separate Owner-authorized dependency
+update rather than patched silently. The Playwright checks are automated
+API-fixture/browser evidence, not a manual interactive browser sign-off.
+
+The Purchase Order workspace's `formatMoney` reuses the MESP-123 Supplier
+Quotation non-ISO-currency safe-fallback pattern: standard ISO currency codes
+render with `Intl.NumberFormat`'s currency style, while a valid MESP-configured
+non-ISO code (e.g. a custom currency) falls back to a localized decimal render
+suffixed with the raw currency code instead of throwing.
 
 The Playwright smoke journey mocks the approved entry, session, and business
 responses so it can verify Overview-first navigation, bounded compatibility

@@ -55,6 +55,72 @@ authority. The MESP-124 implementation must not reintroduce a user-selectable
 Tenant filter, raw GUID workspace entry, unrelated-Tenant enumeration, or a
 parallel workspace authorization hierarchy.
 
+## Pre-Opus Sol findings correction (must be explicitly re-verified)
+
+Before this review was activated, GPT-5.6 Sol raised two findings against the
+completed MESP-124 implementation. Claude Sonnet 5 performed a single bounded
+corrective session on `feat/MESP-124-purchase-order-confirmation` to resolve
+both. This review must explicitly re-verify both corrections rather than
+assume them proven by the executor's own report.
+
+**F-1 (Currency Rendering Resilience).** `formatMoney` in
+`frontend/src/app/features/procurement/purchase-order-workspace.component.ts`
+previously called raw `Intl.NumberFormat` with `style: 'currency'` and no
+fallback; a valid MESP-configured non-ISO currency code (e.g. `S2K`, `CUSTOM`)
+could throw `RangeError` and break Purchase Order list/detail rendering. The
+correction reuses the proven MESP-123 Supplier Quotation pattern: a try/catch
+around the ISO currency-styled format, falling back to a localized decimal
+format suffixed with the raw currency code (e.g. `1,234.56 S2K`), with the
+PO-specific `currencyDisplay: 'code'` UX preserved. Verify:
+
+- both the try branch and the fallback branch produce a stable 2-decimal
+  render for standard ISO currencies (SAR, USD) and non-ISO configured codes
+  (S2K, CUSTOM) without throwing;
+- the raw currency code is retained in the fallback text for audit/comparison
+  clarity;
+- zero FX conversion, zero currency substitution, and zero hidden-amount
+  behavior;
+- regression coverage in
+  `frontend/src/app/features/procurement/purchase-order-workspace.component.spec.ts`
+  (direct `formatMoney` safety test and a list-rendering test with a
+  non-ISO-currency row alongside a normal row) and that the existing
+  Supplier Quotation `S2K` behavior remains untouched.
+
+**F-2 (Idempotency Replay/Conflict Fidelity).**
+`PurchaseOrderPersistence.FindReplayAsync` previously matched only Tenant +
+ActorId + OperationId + IdempotencyKey and returned whichever PO that
+combination last touched, without validating target resource identity or a
+canonical request fingerprint — an identical key reused against a different
+request or a different target could silently replay an unrelated result. The
+correction threads a deterministic server-side SHA-256 request fingerprint
+from the REST endpoint layer through `PurchaseOrderService` into
+`PurchaseOrderPersistence`, and a 3-way `ReplayLookup` (NotFound / Replay /
+Conflict) across every unsafe MESP-124 command (create, edit, submit,
+approve, issue, confirmation capture, supplier-change approve/reject).
+Verify:
+
+- identical retry (same actor/operation/target/key/fingerprint) deterministically
+  replays the original result without re-mutating, even if the entity has
+  since moved on;
+- same key + same target + different semantic payload is rejected with HTTP
+  409 and code `idempotency_conflict`, without mutating the target;
+- same key reused against a different target (cross-target replay) is
+  rejected with the same conflict semantics rather than ever replaying an
+  unrelated Purchase Order's result;
+- the new `RequestFingerprint` column on `PurchaseOrderAudit` is delivered as
+  an additive EF Core migration
+  (`20260817211222_AddPurchaseOrderAuditRequestFingerprint`), not a rewrite of
+  an already-applied migration;
+- Tenant scoping of replay lookup is preserved (the `ProcurementDbContext`
+  Tenant query filter applies transparently to `FindReplayAsync`) — no
+  cross-Tenant replay or conflict leakage;
+- optimistic concurrency (`If-Match` / expected version), transactions, audit,
+  and history semantics are unweakened by the fingerprint check;
+- regression coverage in `PurchaseOrderTests.cs`
+  (`Distinguishes_identical_retry_replay_from_cross_target_and_same_target_fingerprint_conflicts`)
+  exercises all three outcomes (replay, same-target conflict, cross-target
+  conflict) with an explicit zero-mutation assertion on the untouched target.
+
 ## Required reading
 
 Read the complete current versions of these files before forming a verdict:
