@@ -58,9 +58,31 @@ velocity, or forecast:
 - **Presentational Only**: Presentation-layer only; causes zero FX conversion, zero tax effect, zero accounting effect, and zero persisted amount change.
 - **Fallback & Non-SAR**: Safe text fallback (e.g. `SAR`) is preserved for semantic clarity in multi-currency comparison, audit, and exports. Non-SAR currencies remain completely unaffected. Governed by MESP-12 / MESP-37.
 
-## Current execution overlay - 17 August 2026 (MESP-143 implementation)
+## Current execution overlay - 17 August 2026 (MESP-143 merged; post-merge reconciliation)
 
-MESP-143 is implemented on branch `feat/MESP-143-tenant-aware-entry` from
+MESP-143 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE),
+and squash-merged to `main`** at commit `866cb75bb7d0d97c929216b1a449f458a2614097`
+(reviewed feature head: `25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged).
+The bounded capability adds configuration-led Tenant host resolution, trusted-proxy
+handling, exact server-side membership authority, common/platform entry boundaries,
+Overview-first Angular routing, post-Overview Company/Branch context selection,
+generic Tenant branding, and presentation-only SAR semantics. Four non-blocking P3
+observations (P3-1 cross-host session continuity, P3-2 duplicate active membership
+invariant, P3-3 OpenAPI operation summary quality, P3-4 canonical-host ambiguity)
+and a Terra HIGH pre-production specialist security audit recommendation are
+tracked.
+
+Owner-managed assets under `frontend/assets` remain untouched. Zero product, test,
+or schema changes are made in this reconciliation.
+
+The next selected implementation capability is **MESP-124 — Purchase Order and
+Supplier Confirmation** under Parent Epic MESP-7 (Procurement and Purchase-to-Pay).
+Execution must NOT begin until GPT-5.6 Sol closes MESP-143 and activates MESP-124
+in Jira.
+
+## Historical execution overlay - 17 August 2026 (MESP-143 implementation; superseded by merge)
+
+MESP-143 was implemented on branch `feat/MESP-143-tenant-aware-entry` from
 the synchronized `main` baseline. The bounded capability adds configuration-led
 Tenant host resolution, trusted-proxy handling, exact server-side membership
 authority, common/platform entry boundaries, Overview-first Angular routing,

@@ -1,7 +1,7 @@
 # ADR-019 — Tenant Host Resolution, Operational Workspace Context, and Configured Branding
 
-**Status:** Accepted; bounded MESP-143 implementation delivered on
-`feat/MESP-143-tenant-aware-entry` and pending independent review
+**Status:** Accepted and Implemented; squash-merged to `main` at commit
+`866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67) following independent Claude Opus 5 approval
 **Date:** 17 August 2026  
 **Decision owner:** Product Owner / Mini ERP SaaS Platform  
 **Primary Jira:** MESP-143  
@@ -9,12 +9,22 @@
 
 ## Implementation note — 17 August 2026
 
-The repository now contains the bounded host-resolution, Tenant-authority,
-Overview-first, operational Company/Branch context, generic branding, and
-SAR-presentation seams described by this decision. The implementation remains
-configuration-led and does not add DNS/TLS provisioning, a competing Tenant
-persistence model, broad Platform Administration, or statutory/external
-country-pack behavior. See `TASK.md` for the required independent review gate.
+The bounded host-resolution, Tenant-authority, Overview-first, operational
+Company/Branch context, generic branding, and SAR-presentation seams described
+by this decision are **fully implemented, independently reviewed by Claude
+Opus 5 (APPROVE FOR MERGE), and merged to `main`** at commit
+`866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67).
+
+Four non-blocking P3 follow-ups are carried forward:
+- P3-1: Cross-host session continuity (`__Host-` cookie boundary between `mesp.com` and `*.mesp.com`; future cross-host SSO design item before production multi-host cutover).
+- P3-2: Duplicate active membership invariant (enforce/test invariant explicitly or handle duplicate membership fail-closed).
+- P3-3: OpenAPI operation summary quality (`auth.operational-context-switch` summary polish).
+- P3-4: Canonical-host ambiguity (enforce single canonical host per Tenant startup constraint).
+
+Specialist pre-production recommendation:
+- GPT-5.6 Terra HIGH specialist security audit recommended before production host/TLS/proxy cutover.
+
+Planned future production concerns (production DNS/TLS automation, cross-host SSO, real custom domain routing) remain future work before production cutover.
 
 ## 1. Context
 

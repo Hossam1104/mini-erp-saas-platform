@@ -1,6 +1,90 @@
 # Current State
 
-## Current authoritative position - 17 August 2026 (MESP-143 pre-Opus validation reconciliation)
+## Current authoritative position - 17 August 2026 (MESP-143 merged; post-merge repository reconciliation)
+
+MESP-143 (Tenant-Aware Entry Routing and Operational Workspace Context) is
+**implemented, independently reviewed by Claude Opus 5, and squash-merged to `main`**
+at commit `866cb75bb7d0d97c929216b1a449f458a2614097` (reviewed feature head:
+`25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged by the Owner).
+
+This session performs repository-state and governance reconciliation; zero
+product, test, migration, or schema code was changed.
+
+### Review Verdict and Validation Evidence
+
+- **Independent Reviewer**: Claude Opus 5
+- **Verdict**: `APPROVE FOR MERGE`
+- **Findings**: P0: **0**, P1: **0**, P2: **0**, P3: **4 non-blocking observations**
+- **Release solution build**: **0 warnings / 0 errors**
+- **Backend test suite**: **770/770 passed, 0 skipped** (all 22 SQL Server safety-harness
+  tests genuinely executed and passed against disposable LocalDB database
+  `MiniErpFoundation_20260817144819_f27b32f1`, confirmed cleanly dropped with 0
+  orphan databases remaining afterward); `MESP_SQLSERVER_CONNECTION_STRING`
+  confirmed unmodified throughout.
+- **Frontend test suite**: Angular **204/204 passed across 23 spec files**
+- **Production build**: **490.85 kB initial total** (119.53 kB transfer), **91.94 kB
+  lazy quotation chunk** (15.73 kB transfer), within the 500 kB budget
+- **Playwright E2E**: **8/8 passed across 2 spec files**
+- **`npm audit --omit=dev`**: **0 vulnerabilities**
+- **Live HTTP/API adversarial review**: PERFORMED (host routing, proxy forwarding,
+  context switching, concurrency, branding fallback, SAR presentation)
+- **Manual interactive browser**: NOT PERFORMED (automated Playwright and live HTTP evidence only)
+
+### Accepted Architecture & Security Outcome
+
+1. **Tenant != Workspace**: Tenant is the server-authorized isolation boundary. Host
+   resolution yields candidate Tenant only (`Host + Auth + Membership = TenantContext`).
+   Operational context is inside the Tenant and aligns with approved Company/Branch scope.
+2. **Entry Flow**: Tenant host routes to exact authorized membership (fails closed on
+   unknown/unauthorized); common host (`localhost`) presents bounded chooser of active
+   memberships only with canonical routing; platform-admin host (`admin.localhost`) is
+   a separate control plane with zero Tenant ERP authority.
+3. **Security Defenses**: Untrusted forwarded-host spoofing rejected (`MESP_TRUSTED_PROXY_IPS`
+   enforced); client Tenant header override rejected; context switches protected with
+   antiforgery, audit, and optimistic concurrency.
+4. **UX & Branding**: Overview is the initial authenticated landing surface; singular
+   context auto-selects; multiple contexts use the header switcher; generic Tenant branding
+   falls back to MESP (no `if tenant == Wafra` branch); SAR presentation asset has zero
+   FX, tax, accounting, or persisted amount effect.
+5. **Regressions & Scope**: Zero MESP-123 procurement regression; zero Tenant schema/migration
+   introduced; Owner assets under `frontend/assets` remain untouched.
+
+### Four Accepted Opus P3 Follow-Ups Carried Forward
+
+- **P3-1 (Cross-host session continuity)**: Existing auth uses `__Host-` cookie. Future
+  topology (`mesp.com` → `wafra.mesp.com`) requires re-authentication unless a deliberate
+  cross-host SSO architecture is introduced. Mandatory design item before production
+  multi-host cutover (currently UNDECIDED / FUTURE DESIGN).
+- **P3-2 (Duplicate active membership invariant)**: Tenant preparation uses `SingleOrDefault`
+  assuming at most one active membership per user + Tenant. Future hardening: enforce/test
+  invariant explicitly or handle duplicate membership fail-closed without 500.
+- **P3-3 (OpenAPI operation summary quality)**: `auth.operational-context-switch` summary
+  falls back to generic "Use Auth" (matching existing `auth.context-switch`). Future polish:
+  provide explicit descriptive summaries.
+- **P3-4 (Canonical-host ambiguity)**: `GetCanonicalHost` chooses the first match if a
+  Tenant has multiple bindings declaring different canonical hosts. Future hardening:
+  enforce single canonical host per Tenant at startup.
+
+### Terra HIGH Specialist Recommendation
+
+- **GPT-5.6 Terra HIGH specialist security audit**: RECOMMENDED BEFORE PRODUCTION
+  HOST/TLS/PROXY CUTOVER (not required now, not required for MESP-143 closure).
+- Scope when activated: reverse-proxy chain, trusted proxy config, Forwarded headers,
+  production DNS/TLS topology, cross-host auth/SSO, canonical-host constraints, host-header
+  abuse, cache/session isolation.
+
+### Current Position & Next Capability
+
+| Current fact | Verified position |
+|---|---|
+| Merged PR / Commit | PR #67 merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` (reviewed head `25b5ce5008aee3e15787f2dbd89649551786bb64`) |
+| Opus verdict | `APPROVE FOR MERGE` (0 P0, 0 P1, 0 P2, 4 P3 observations carried forward) |
+| Architecture / Security | ADR-019 implemented & accepted; Tenant != Workspace; Overview-first; generic branding; SAR presentation |
+| Validation baseline | Release build: **0/0**; Backend: **770/770** (22 SQL safety genuinely executed); Angular: **204/204** (23 specs); Bundle: **490.85 kB** initial / **91.94 kB** quotation lazy; Playwright: **8/8**; npm audit: **0 vulnerabilities** |
+| Assets & Schema | `frontend/assets` untouched; zero new schema/migrations; zero product code changes in this reconciliation |
+| Next selected capability | **MESP-124 — Purchase Order and Supplier Confirmation** (Parent: MESP-7; Decision gates: MESP-42, MESP-43, MESP-55 Done; To Do in Jira, NOT YET ACTIVATED by this executor; root `TASK.md` prepared with full prompt and activation gate) |
+
+## Historical authoritative position - 17 August 2026 (MESP-143 pre-Opus validation reconciliation)
 
 The MESP-143 implementation on branch `feat/MESP-143-tenant-aware-entry`,
 Draft PR #67 against `main`, is unchanged from its implementation head

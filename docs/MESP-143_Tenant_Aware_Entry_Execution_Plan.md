@@ -1,9 +1,9 @@
 # MESP-143 — Tenant-Aware Entry and Operational Workspace Execution Plan
 
-**Status:** Implemented at bounded repository scope on `feat/MESP-143-tenant-aware-entry`; Draft PR pending review
+**Status:** Implemented and merged to `main` at commit `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67); independent Claude Opus 5 review APPROVE FOR MERGE
 **Primary Jira:** MESP-143  
 **Parent:** MESP-4 Multi-Tenancy and Tenant Lifecycle  
-**Prerequisite:** MESP-123 corrective/review gate was inherited from the synchronized `main` baseline. MESP-143 remains subject to targeted independent security/integration review before merge.
+**Prerequisite:** MESP-123 completion was inherited from the synchronized `main` baseline. MESP-143 review and merge are complete.
 
 ## Goal
 
@@ -17,10 +17,10 @@ Replace the foundation-centric Tenant/workspace chooser with a production-orient
 - Wafra logo is Tenant branding configuration;
 - Saudi Riyal symbol is Saudi/SAR country-pack presentation.
 
-## Bounded implementation handoff — 17 August 2026
+## Merged implementation closure — 17 August 2026
 
-The repository implementation now provides the smallest reusable seam required
-by this plan:
+The repository implementation is **merged to `main` at commit `866cb75bb7d0d97c929216b1a449f458a2614097`**
+(PR #67) following independent Claude Opus 5 approval (`APPROVE FOR MERGE`; 0 P0, 0 P1, 0 P2, 4 non-blocking P3 observations):
 
 - `TenantHostRegistry` owns normalized, collision-safe configuration bindings
   and common/platform host sets. `TenantEntryAuthority` combines a host
@@ -44,10 +44,16 @@ by this plan:
   preserving the browser Host through the local proxy. Owner-managed source
   assets under `frontend/assets` were not changed.
 
-The next gate is the exact Opus review prompt in the root `TASK.md`. DNS/TLS
-provisioning, Tenant persistence/schema/migrations, full Platform
-Administration, external integrations, and downstream P2P/Finance/Inventory
-effects remain outside this bounded capability.
+Validation evidence: Release build 0/0; backend suite 770/770 (22/22 SQL safety
+genuinely executed on disposable LocalDB); Angular 204/204; production bundle
+490.85 kB initial / 91.94 kB lazy quotation chunk; Playwright 8/8; npm audit 0
+vulnerabilities.
+
+DNS/TLS provisioning, Tenant persistence/schema/migrations, full Platform
+Administration, external integrations, cross-host SSO architecture, and
+downstream P2P/Finance/Inventory effects remain planned future work before
+production cutover. A Terra HIGH specialist security audit is recommended
+prior to production host/TLS/proxy cutover.
 
 ## Phase A — Contract and terminology correction
 

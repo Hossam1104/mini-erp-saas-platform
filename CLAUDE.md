@@ -9,9 +9,24 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 17 August 2026 (MESP-143 implementation)
+## Current execution overlay - 17 August 2026 (MESP-143 merged; post-merge reconciliation)
 
-The bounded MESP-143 implementation is active on branch
+MESP-143 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE),
+and squash-merged to `main`** at commit `866cb75bb7d0d97c929216b1a449f458a2614097`
+(reviewed feature head: `25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged).
+It establishes configuration-led host candidate routing with exact server-side
+Tenant membership authority, common/platform entry boundaries, Overview-first
+shell routing, post-Overview Company/Branch operational context, generic branding,
+and presentation-only SAR semantics. Four non-blocking P3 observations (P3-1 through
+P3-4) and a Terra HIGH pre-production security audit recommendation are tracked.
+Owner assets under `frontend/assets` remain untouched. Zero product/test/schema changes.
+
+The next selected implementation capability is **MESP-124 — Purchase Order and
+Supplier Confirmation** (MESP-7), to be activated by GPT-5.6 Sol after closing MESP-143.
+
+## Historical execution overlay - 17 August 2026 (MESP-143 implementation; superseded by merge)
+
+The bounded MESP-143 implementation was active on branch
 `feat/MESP-143-tenant-aware-entry` from synchronized `main`. It establishes
 configuration-led host candidate routing with exact server-side Tenant
 membership authority, common/platform entry boundaries, Overview-first shell

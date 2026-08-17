@@ -1,15 +1,15 @@
 # Mini ERP backend foundation
 
-> **Current MESP-123 runtime overlay - 17 August 2026.** The backend now
-> carries the bounded Master Data, Business Parties, Purchase Request, and
-> Supplier Quotation/comparison source-decision slices in addition to the
-> Foundation seams below. With a nonblank
+> **Current MESP-143 runtime overlay - 17 August 2026.** The backend now
+> carries the merged MESP-143 Tenant-aware entry routing, candidate host
+> resolution, exact server-side membership authority, operational Company/Branch
+> context switching, generic branding, and SAR presentation metadata, alongside
+> the bounded Master Data, Business Parties, Purchase Request, and Supplier
+> Quotation/comparison source-decision slices. With a nonblank
 > `MESP_SQLSERVER_CONNECTION_STRING`, exact local `Development` uses the
 > formal module-owned SQL Server migrations against server `.` / database
 > `MESP`; the SQLite provider remains an explicit fallback when that setting is
-> absent. Production startup never auto-migrates. The local cutover utility
-> preserved the source SQLite files and verified 59 mapped rows, IDs,
-> Tenant/foreign-key lineage, and source hashes.
+> absent. Production startup never auto-migrates.
 >
 > The SQL Server safety-harness tests are run via a dedicated disposable
 > LocalDB connection assigned only to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`.
@@ -20,7 +20,8 @@
 >
 > This is still not a production deployment: MESP-48/MESP-50, production
 > topology, deployment migrations, backup/restore, capacity, and specialist
-> gates remain open.
+> gates remain open. The next selected capability is MESP-124 (Purchase Order
+> and Supplier Confirmation).
 
 This directory contains the Foundation backend. It began as the MESP-57
 Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant
