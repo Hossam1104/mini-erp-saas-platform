@@ -412,7 +412,19 @@ export class PurchaseOrderWorkspaceComponent implements OnInit {
   formatDate(value: string): string { return new Intl.DateTimeFormat(this.language.language(), { dateStyle: 'medium' }).format(new Date(value)); }
   formatDateTime(value: string): string { return new Intl.DateTimeFormat(this.language.language(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
   formatQuantity(value: number): string { return new Intl.NumberFormat(this.language.language(), { maximumFractionDigits: 6 }).format(value); }
-  formatMoney(value: number, currency: string): string { return new Intl.NumberFormat(this.language.language(), { style: 'currency', currency, currencyDisplay: 'code', maximumFractionDigits: 2 }).format(value); }
+  formatMoney(value: number, currency: string): string {
+    const language = this.language.language();
+    const safeCurrency = (currency || '').trim();
+    if (safeCurrency) {
+      try {
+        return new Intl.NumberFormat(language, { style: 'currency', currency: safeCurrency, currencyDisplay: 'code', maximumFractionDigits: 2 }).format(value);
+      } catch {
+        // Fall back safely if Intl rejects non-ISO or unrecognized currency code
+      }
+    }
+    const formatted = new Intl.NumberFormat(language, { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(value);
+    return safeCurrency ? `${formatted} ${safeCurrency}` : formatted;
+  }
   errorText(error: SafeUiError): string { return error.status === 409 ? this.poText('purchaseOrderConflict') : error.status === 403 ? this.language.text('accessDenied') : error.status === 404 ? this.poText('purchaseOrderNotFound') : this.language.text('requestError'); }
 
   private toEditLine(line: PurchaseOrderLineResponse): EditLine { return { id: line.id, productSku: line.productSku, productName: line.productName, unitOfMeasureCode: line.unitOfMeasureCode, orderedQuantity: line.orderedQuantity, unitPrice: line.unitPrice, deliveryDate: line.deliveryDate ?? '', notes: line.notes ?? '' }; }

@@ -654,6 +654,7 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
         purchaseOrderAudit.Property(item => item.BeforeSummary).HasMaxLength(4096).IsRequired(false);
         purchaseOrderAudit.Property(item => item.AfterSummary).HasMaxLength(4096).IsRequired(false);
         purchaseOrderAudit.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false);
+        purchaseOrderAudit.Property(item => item.RequestFingerprint).HasMaxLength(64).IsRequired(false);
         ConfigureVersion(purchaseOrderAudit.Property(item => item.Version));
         purchaseOrderAudit.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
         purchaseOrderAudit.HasIndex(item => new { item.TenantId, item.PurchaseOrderId, item.OccurredAt });

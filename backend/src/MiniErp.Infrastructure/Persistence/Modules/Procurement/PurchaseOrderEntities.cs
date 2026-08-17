@@ -551,6 +551,7 @@ internal sealed class PurchaseOrderAuditEntity : ITenantOwned
         BeforeSummary = evidence.BeforeSummary;
         AfterSummary = evidence.AfterSummary;
         IdempotencyKey = evidence.IdempotencyKey;
+        RequestFingerprint = evidence.RequestFingerprint;
     }
 
     internal Guid Id { get; private set; }
@@ -571,6 +572,7 @@ internal sealed class PurchaseOrderAuditEntity : ITenantOwned
     internal string? BeforeSummary { get; private set; }
     internal string? AfterSummary { get; private set; }
     internal string? IdempotencyKey { get; private set; }
+    internal string? RequestFingerprint { get; private set; }
     internal byte[] Version { get; private set; } = [];
 }
 

@@ -1,5 +1,7 @@
 #pragma warning disable CS1591
 
+using System.Security.Cryptography;
+using System.Text;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Contracts.Modules.Procurement;
@@ -133,6 +135,7 @@ public sealed class PurchaseOrderService
         ProcurementRequestContext context,
         PurchaseOrderCreateRequest request,
         string? idempotencyKey,
+        string? requestFingerprint,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -163,7 +166,7 @@ public sealed class PurchaseOrderService
             source.Value.Lines,
             occurredAt,
             idempotencyKey);
-        var evidence = CreateEvidence(context, id, source.Value.Scope, "procurement.purchase-order.create", null, PurchaseOrderStatus.Draft, null, idempotencyKey, null, "Draft");
+        var evidence = CreateEvidence(context, id, source.Value.Scope, "procurement.purchase-order.create", null, PurchaseOrderStatus.Draft, null, idempotencyKey, requestFingerprint, null, "Draft");
         return ToOperationResult(await persistence.CreateAsync(context.TenantContext, command, evidence, cancellationToken));
     }
 
@@ -173,6 +176,7 @@ public sealed class PurchaseOrderService
         PurchaseOrderEditRequest request,
         byte[] expectedVersion,
         string? idempotencyKey,
+        string? requestFingerprint,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -200,7 +204,7 @@ public sealed class PurchaseOrderService
             expectedVersion,
             DateTimeOffset.UtcNow,
             idempotencyKey);
-        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, "procurement.purchase-order.edit", current.Value.Status, current.Value.Status, null, idempotencyKey, $"{current.Value.Status};lines={current.Value.Lines.Count}", $"{current.Value.Status};lines={lines.Count}");
+        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, "procurement.purchase-order.edit", current.Value.Status, current.Value.Status, null, idempotencyKey, requestFingerprint, $"{current.Value.Status};lines={current.Value.Lines.Count}", $"{current.Value.Status};lines={lines.Count}");
         return ToOperationResult(await persistence.EditAsync(context.TenantContext, command, evidence, cancellationToken));
     }
 
@@ -209,6 +213,7 @@ public sealed class PurchaseOrderService
         Guid purchaseOrderId,
         byte[] expectedVersion,
         string? idempotencyKey,
+        string? requestFingerprint,
         CancellationToken cancellationToken = default)
     {
         var current = await GetAuthorizedAsync(context, purchaseOrderId, "procurement.purchase-order.submit", cancellationToken);
@@ -234,24 +239,25 @@ public sealed class PurchaseOrderService
         }
 
         var command = new PurchaseOrderSubmitCommand(purchaseOrderId, expectedVersion, policy!, false, DateTimeOffset.UtcNow, idempotencyKey);
-        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, "procurement.purchase-order.submit", current.Value.Status, PurchaseOrderStatus.PendingApproval, null, idempotencyKey, current.Value.Status.ToString(), "PendingApproval");
+        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, "procurement.purchase-order.submit", current.Value.Status, PurchaseOrderStatus.PendingApproval, null, idempotencyKey, requestFingerprint, current.Value.Status.ToString(), "PendingApproval");
         return ToOperationResult(await persistence.SubmitAsync(context.TenantContext, command, evidence, cancellationToken));
     }
 
-    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> ApproveAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? idempotencyKey, CancellationToken cancellationToken = default) =>
-        ApproveOrDecisionAsync(context, purchaseOrderId, expectedVersion, idempotencyKey, "procurement.purchase-order.approve", PurchaseOrderHistoryAction.ApprovalRecorded, null, cancellationToken);
+    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> ApproveAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? idempotencyKey, string? requestFingerprint, CancellationToken cancellationToken = default) =>
+        ApproveOrDecisionAsync(context, purchaseOrderId, expectedVersion, idempotencyKey, requestFingerprint, "procurement.purchase-order.approve", PurchaseOrderHistoryAction.ApprovalRecorded, null, cancellationToken);
 
-    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> RejectAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? reason, string? idempotencyKey, CancellationToken cancellationToken = default) =>
-        ApproveOrDecisionAsync(context, purchaseOrderId, expectedVersion, idempotencyKey, "procurement.purchase-order.reject", PurchaseOrderHistoryAction.Rejected, reason, cancellationToken);
+    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> RejectAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? reason, string? idempotencyKey, string? requestFingerprint, CancellationToken cancellationToken = default) =>
+        ApproveOrDecisionAsync(context, purchaseOrderId, expectedVersion, idempotencyKey, requestFingerprint, "procurement.purchase-order.reject", PurchaseOrderHistoryAction.Rejected, reason, cancellationToken);
 
-    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> ReturnForChangeAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? reason, string? idempotencyKey, CancellationToken cancellationToken = default) =>
-        ApproveOrDecisionAsync(context, purchaseOrderId, expectedVersion, idempotencyKey, "procurement.purchase-order.return-for-change", PurchaseOrderHistoryAction.ReturnedForChange, reason, cancellationToken);
+    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> ReturnForChangeAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? reason, string? idempotencyKey, string? requestFingerprint, CancellationToken cancellationToken = default) =>
+        ApproveOrDecisionAsync(context, purchaseOrderId, expectedVersion, idempotencyKey, requestFingerprint, "procurement.purchase-order.return-for-change", PurchaseOrderHistoryAction.ReturnedForChange, reason, cancellationToken);
 
     public async Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> IssueAsync(
         ProcurementRequestContext context,
         Guid purchaseOrderId,
         byte[] expectedVersion,
         string? idempotencyKey,
+        string? requestFingerprint,
         CancellationToken cancellationToken = default)
     {
         var current = await GetAuthorizedAsync(context, purchaseOrderId, "procurement.purchase-order.issue", cancellationToken);
@@ -271,7 +277,7 @@ public sealed class PurchaseOrderService
         }
 
         var command = new PurchaseOrderActionCommand(purchaseOrderId, expectedVersion, context.ActorId, null, DateTimeOffset.UtcNow, idempotencyKey);
-        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, "procurement.purchase-order.issue", current.Value.Status, PurchaseOrderStatus.Issued, null, idempotencyKey, "Approved", "Issued;no-stock-no-ap");
+        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, "procurement.purchase-order.issue", current.Value.Status, PurchaseOrderStatus.Issued, null, idempotencyKey, requestFingerprint, "Approved", "Issued;no-stock-no-ap");
         return ToOperationResult(await persistence.IssueAsync(context.TenantContext, command, evidence, cancellationToken));
     }
 
@@ -281,6 +287,7 @@ public sealed class PurchaseOrderService
         byte[] expectedVersion,
         string? reason,
         string? idempotencyKey,
+        string? requestFingerprint,
         CancellationToken cancellationToken = default)
     {
         var current = await GetAuthorizedAsync(context, purchaseOrderId, "procurement.purchase-order.cancel", cancellationToken);
@@ -305,7 +312,7 @@ public sealed class PurchaseOrderService
         }
 
         var command = new PurchaseOrderActionCommand(purchaseOrderId, expectedVersion, context.ActorId, normalizedReason, DateTimeOffset.UtcNow, idempotencyKey);
-        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, "procurement.purchase-order.cancel", current.Value.Status, PurchaseOrderStatus.Cancelled, normalizedReason, idempotencyKey, current.Value.Status.ToString(), "Cancelled");
+        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, "procurement.purchase-order.cancel", current.Value.Status, PurchaseOrderStatus.Cancelled, normalizedReason, idempotencyKey, requestFingerprint, current.Value.Status.ToString(), "Cancelled");
         return ToOperationResult(await persistence.CancelAsync(context.TenantContext, command, evidence, cancellationToken));
     }
 
@@ -315,6 +322,7 @@ public sealed class PurchaseOrderService
         PurchaseOrderConfirmationRequest request,
         byte[] expectedVersion,
         string? idempotencyKey,
+        string? requestFingerprint,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -435,15 +443,15 @@ public sealed class PurchaseOrderService
             PurchaseOrderConfirmationStatus.Rejected => PurchaseOrderStatus.Rejected,
             _ => PurchaseOrderStatus.NoResponse
         };
-        var evidence = CreateEvidence(context, purchaseOrderId, currentRecord.Scope, "procurement.purchase-order.confirmation.capture", currentRecord.Status, targetStatus, reason, idempotencyKey, currentRecord.Status.ToString(), targetStatus.ToString());
+        var evidence = CreateEvidence(context, purchaseOrderId, currentRecord.Scope, "procurement.purchase-order.confirmation.capture", currentRecord.Status, targetStatus, reason, idempotencyKey, requestFingerprint, currentRecord.Status.ToString(), targetStatus.ToString());
         return ToOperationResult(await persistence.RecordConfirmationAsync(context.TenantContext, command, evidence, cancellationToken));
     }
 
-    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> ApproveSupplierChangeAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? idempotencyKey, CancellationToken cancellationToken = default) =>
-        ApproveSupplierChangeOrRejectAsync(context, purchaseOrderId, expectedVersion, null, idempotencyKey, approve: true, cancellationToken);
+    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> ApproveSupplierChangeAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? idempotencyKey, string? requestFingerprint, CancellationToken cancellationToken = default) =>
+        ApproveSupplierChangeOrRejectAsync(context, purchaseOrderId, expectedVersion, null, idempotencyKey, requestFingerprint, approve: true, cancellationToken);
 
-    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> RejectSupplierChangeAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? reason, string? idempotencyKey, CancellationToken cancellationToken = default) =>
-        ApproveSupplierChangeOrRejectAsync(context, purchaseOrderId, expectedVersion, reason, idempotencyKey, approve: false, cancellationToken);
+    public Task<PurchaseOrderOperationResult<PurchaseOrderRecord>> RejectSupplierChangeAsync(ProcurementRequestContext context, Guid purchaseOrderId, byte[] expectedVersion, string? reason, string? idempotencyKey, string? requestFingerprint, CancellationToken cancellationToken = default) =>
+        ApproveSupplierChangeOrRejectAsync(context, purchaseOrderId, expectedVersion, reason, idempotencyKey, requestFingerprint, approve: false, cancellationToken);
 
     public async Task<PurchaseOrderOperationResult<IReadOnlyList<PurchaseOrderConfirmationRecord>>> ReadConfirmationsAsync(ProcurementRequestContext context, Guid purchaseOrderId, CancellationToken cancellationToken = default)
     {
@@ -504,6 +512,7 @@ public sealed class PurchaseOrderService
         Guid purchaseOrderId,
         byte[] expectedVersion,
         string? idempotencyKey,
+        string? requestFingerprint,
         string operationId,
         PurchaseOrderHistoryAction action,
         string? reason,
@@ -549,7 +558,7 @@ public sealed class PurchaseOrderService
         }
 
         var occurredAt = DateTimeOffset.UtcNow;
-        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, operationId, current.Value.Status, action == PurchaseOrderHistoryAction.ApprovalRecorded ? null : action == PurchaseOrderHistoryAction.Rejected ? PurchaseOrderStatus.Rejected : PurchaseOrderStatus.ReturnedForChange, reason, idempotencyKey, current.Value.Status.ToString(), action.ToString());
+        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, operationId, current.Value.Status, action == PurchaseOrderHistoryAction.ApprovalRecorded ? null : action == PurchaseOrderHistoryAction.Rejected ? PurchaseOrderStatus.Rejected : PurchaseOrderStatus.ReturnedForChange, reason, idempotencyKey, requestFingerprint, current.Value.Status.ToString(), action.ToString());
         if (action == PurchaseOrderHistoryAction.ApprovalRecorded)
         {
             return ToOperationResult(await persistence.ApproveAsync(context.TenantContext, new PurchaseOrderApprovalCommand(purchaseOrderId, expectedVersion, context.ActorId, eligibility.DelegatedFrom, occurredAt, idempotencyKey), evidence, cancellationToken));
@@ -568,6 +577,7 @@ public sealed class PurchaseOrderService
         byte[] expectedVersion,
         string? reason,
         string? idempotencyKey,
+        string? requestFingerprint,
         bool approve,
         CancellationToken cancellationToken)
     {
@@ -611,7 +621,7 @@ public sealed class PurchaseOrderService
         }
 
         var occurredAt = DateTimeOffset.UtcNow;
-        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, operationId, current.Value.Status, null, reason, idempotencyKey, "ChangedPendingApproval", approve ? "SupplierChangeApproved" : "SupplierChangeRejected");
+        var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, operationId, current.Value.Status, null, reason, idempotencyKey, requestFingerprint, "ChangedPendingApproval", approve ? "SupplierChangeApproved" : "SupplierChangeRejected");
         if (approve)
         {
             return ToOperationResult(await persistence.ApproveSupplierChangeAsync(context.TenantContext, new PurchaseOrderApprovalCommand(purchaseOrderId, expectedVersion, context.ActorId, eligibility.DelegatedFrom, occurredAt, idempotencyKey), evidence, cancellationToken));
@@ -772,7 +782,7 @@ public sealed class PurchaseOrderService
         decision.Rationale,
         decision.SelectedAt);
 
-    private static PurchaseOrderAuditEvidence CreateEvidence(ProcurementRequestContext context, Guid purchaseOrderId, PurchaseRequestScope scope, string operationId, PurchaseOrderStatus? beforeStatus, PurchaseOrderStatus? afterStatus, string? reason, string? idempotencyKey, string? beforeSummary, string? afterSummary) => new(
+    private static PurchaseOrderAuditEvidence CreateEvidence(ProcurementRequestContext context, Guid purchaseOrderId, PurchaseRequestScope scope, string operationId, PurchaseOrderStatus? beforeStatus, PurchaseOrderStatus? afterStatus, string? reason, string? idempotencyKey, string? requestFingerprint, string? beforeSummary, string? afterSummary) => new(
         Guid.NewGuid(),
         purchaseOrderId,
         DateTimeOffset.UtcNow,
@@ -790,7 +800,22 @@ public sealed class PurchaseOrderService
         scope.BranchId,
         beforeSummary,
         afterSummary,
-        idempotencyKey);
+        idempotencyKey,
+        ComputeRequestFingerprint(operationId, purchaseOrderId, requestFingerprint));
+
+    private static string? ComputeRequestFingerprint(string operationId, Guid purchaseOrderId, string? rawFingerprint)
+    {
+        if (string.IsNullOrWhiteSpace(rawFingerprint))
+        {
+            return null;
+        }
+
+        var targetDiscriminator = operationId == "procurement.purchase-order.create"
+            ? "new"
+            : purchaseOrderId.ToString("D");
+        var canonical = $"{operationId}|{targetDiscriminator}|{rawFingerprint}";
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
+    }
 
     private static PurchaseOrderOperationResult<T> ToOperationResult<T>(PurchaseOrderPersistenceResult<T> result) =>
         result.Succeeded && result.Value is not null

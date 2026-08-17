@@ -261,7 +261,8 @@ public sealed record PurchaseOrderAuditEvidence(
     Guid? BranchId,
     string? BeforeSummary,
     string? AfterSummary,
-    string? IdempotencyKey);
+    string? IdempotencyKey,
+    string? RequestFingerprint);
 
 public sealed record PurchaseOrderAuditRecord(
     Guid EvidenceId,

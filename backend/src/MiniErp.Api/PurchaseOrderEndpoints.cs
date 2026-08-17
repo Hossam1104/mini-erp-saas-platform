@@ -84,6 +84,7 @@ public static class PurchaseOrderEndpoints
                         return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "A Purchase Order source body is required.", "procurement.purchase-order.create");
                     }
 
+                    var fingerprint = Fingerprint(request);
                     return await ExecuteMutationAsync(
                         httpContext,
                         resolver,
@@ -91,8 +92,8 @@ public static class PurchaseOrderEndpoints
                         auditCoordinator,
                         idempotencyStore,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.create"),
-                        Fingerprint(request),
-                        context => service.CreateAsync(context, request, GetIdempotencyKey(httpContext), httpContext.RequestAborted),
+                        fingerprint,
+                        context => service.CreateAsync(context, request, GetIdempotencyKey(httpContext), fingerprint, httpContext.RequestAborted),
                         (context, record) => ToResponse(record, context),
                         setEtag: true);
                 })
@@ -109,6 +110,7 @@ public static class PurchaseOrderEndpoints
                         return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "A valid If-Match version and Purchase Order body are required.", "procurement.purchase-order.edit");
                     }
 
+                    var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion);
                     return await ExecuteMutationAsync(
                         httpContext,
                         resolver,
@@ -116,8 +118,8 @@ public static class PurchaseOrderEndpoints
                         auditCoordinator,
                         idempotencyStore,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.edit"),
-                        Fingerprint(request) + VersionFingerprint(expectedVersion),
-                        context => service.EditAsync(context, purchaseOrderId, request, expectedVersion, GetIdempotencyKey(httpContext), httpContext.RequestAborted),
+                        fingerprint,
+                        context => service.EditAsync(context, purchaseOrderId, request, expectedVersion, GetIdempotencyKey(httpContext), fingerprint, httpContext.RequestAborted),
                         (context, record) => ToResponse(record, context),
                         setEtag: true,
                         requireExpectedVersion: true);
@@ -151,6 +153,7 @@ public static class PurchaseOrderEndpoints
                         return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "A valid If-Match version and confirmation body are required.", "procurement.purchase-order.confirmation.capture");
                     }
 
+                    var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion);
                     return await ExecuteMutationAsync(
                         httpContext,
                         resolver,
@@ -158,8 +161,8 @@ public static class PurchaseOrderEndpoints
                         auditCoordinator,
                         idempotencyStore,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.confirmation.capture"),
-                        Fingerprint(request) + VersionFingerprint(expectedVersion),
-                        context => service.RecordConfirmationAsync(context, purchaseOrderId, request, expectedVersion, GetIdempotencyKey(httpContext), httpContext.RequestAborted),
+                        fingerprint,
+                        context => service.RecordConfirmationAsync(context, purchaseOrderId, request, expectedVersion, GetIdempotencyKey(httpContext), fingerprint, httpContext.RequestAborted),
                         (context, record) => ToResponse(record, context),
                         setEtag: true,
                         requireExpectedVersion: true);
@@ -216,7 +219,7 @@ public static class PurchaseOrderEndpoints
                         idempotencyStore,
                         service,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.submit"),
-                        (currentService, context, id, version, key, _) => currentService.SubmitAsync(context, id, version, key)))
+                        (currentService, context, id, version, key, fingerprint, _) => currentService.SubmitAsync(context, id, version, key, fingerprint)))
             .WithName("procurement.purchase-order.submit")
             .WithTags("Procurement / Purchase Orders")
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.purchase-order.submit")));
@@ -234,7 +237,7 @@ public static class PurchaseOrderEndpoints
                         idempotencyStore,
                         service,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.approve"),
-                        (currentService, context, id, version, key, _) => currentService.ApproveAsync(context, id, version, key)))
+                        (currentService, context, id, version, key, fingerprint, _) => currentService.ApproveAsync(context, id, version, key, fingerprint)))
             .WithName("procurement.purchase-order.approve")
             .WithTags("Procurement / Purchase Orders")
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.purchase-order.approve")));
@@ -252,7 +255,7 @@ public static class PurchaseOrderEndpoints
                         idempotencyStore,
                         service,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.reject"),
-                        (currentService, context, id, version, key, body) => currentService.RejectAsync(context, id, version, body?.Reason, key)))
+                        (currentService, context, id, version, key, fingerprint, body) => currentService.RejectAsync(context, id, version, body?.Reason, key, fingerprint)))
             .WithName("procurement.purchase-order.reject")
             .WithTags("Procurement / Purchase Orders")
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.purchase-order.reject")));
@@ -270,7 +273,7 @@ public static class PurchaseOrderEndpoints
                         idempotencyStore,
                         service,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.return-for-change"),
-                        (currentService, context, id, version, key, body) => currentService.ReturnForChangeAsync(context, id, version, body?.Reason, key)))
+                        (currentService, context, id, version, key, fingerprint, body) => currentService.ReturnForChangeAsync(context, id, version, body?.Reason, key, fingerprint)))
             .WithName("procurement.purchase-order.return-for-change")
             .WithTags("Procurement / Purchase Orders")
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.purchase-order.return-for-change")));
@@ -288,7 +291,7 @@ public static class PurchaseOrderEndpoints
                         idempotencyStore,
                         service,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.issue"),
-                        (currentService, context, id, version, key, _) => currentService.IssueAsync(context, id, version, key)))
+                        (currentService, context, id, version, key, fingerprint, _) => currentService.IssueAsync(context, id, version, key, fingerprint)))
             .WithName("procurement.purchase-order.issue")
             .WithTags("Procurement / Purchase Orders")
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.purchase-order.issue")));
@@ -306,7 +309,7 @@ public static class PurchaseOrderEndpoints
                         idempotencyStore,
                         service,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.cancel"),
-                        (currentService, context, id, version, key, body) => currentService.CancelAsync(context, id, version, body?.Reason, key)))
+                        (currentService, context, id, version, key, fingerprint, body) => currentService.CancelAsync(context, id, version, body?.Reason, key, fingerprint)))
             .WithName("procurement.purchase-order.cancel")
             .WithTags("Procurement / Purchase Orders")
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.purchase-order.cancel")));
@@ -327,7 +330,7 @@ public static class PurchaseOrderEndpoints
                         idempotencyStore,
                         service,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.supplier-change.approve"),
-                        (currentService, context, id, version, key, _) => currentService.ApproveSupplierChangeAsync(context, id, version, key)))
+                        (currentService, context, id, version, key, fingerprint, _) => currentService.ApproveSupplierChangeAsync(context, id, version, key, fingerprint)))
             .WithName("procurement.purchase-order.supplier-change.approve")
             .WithTags("Procurement / Purchase Orders")
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.purchase-order.supplier-change.approve")));
@@ -345,7 +348,7 @@ public static class PurchaseOrderEndpoints
                         idempotencyStore,
                         service,
                         FoundationOperationCatalog.GetRequired("procurement.purchase-order.supplier-change.reject"),
-                        (currentService, context, id, version, key, body) => currentService.RejectSupplierChangeAsync(context, id, version, body?.Reason, key)))
+                        (currentService, context, id, version, key, fingerprint, body) => currentService.RejectSupplierChangeAsync(context, id, version, body?.Reason, key, fingerprint)))
             .WithName("procurement.purchase-order.supplier-change.reject")
             .WithTags("Procurement / Purchase Orders")
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.purchase-order.supplier-change.reject")));
@@ -361,13 +364,14 @@ public static class PurchaseOrderEndpoints
         LocalMasterDataIdempotencyStore idempotencyStore,
         PurchaseOrderService service,
         FoundationOperationDescriptor descriptor,
-        Func<PurchaseOrderService, ProcurementRequestContext, Guid, byte[], string, PurchaseOrderActionRequest?, Task<PurchaseOrderOperationResult<PurchaseOrderRecord>>> operation)
+        Func<PurchaseOrderService, ProcurementRequestContext, Guid, byte[], string, string?, PurchaseOrderActionRequest?, Task<PurchaseOrderOperationResult<PurchaseOrderRecord>>> operation)
     {
         if (!TryReadExpectedVersion(httpContext, out var expectedVersion))
         {
             return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "A valid If-Match version is required.", descriptor.OperationId);
         }
 
+        var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion);
         return await ExecuteMutationAsync(
             httpContext,
             resolver,
@@ -375,8 +379,8 @@ public static class PurchaseOrderEndpoints
             auditCoordinator,
             idempotencyStore,
             descriptor,
-            Fingerprint(request) + VersionFingerprint(expectedVersion),
-            context => operation(service, context, purchaseOrderId, expectedVersion, GetIdempotencyKey(httpContext)!, request),
+            fingerprint,
+            context => operation(service, context, purchaseOrderId, expectedVersion, GetIdempotencyKey(httpContext)!, fingerprint, request),
             (context, record) => ToResponse(record, context),
             setEtag: true,
             requireExpectedVersion: true);
@@ -506,7 +510,7 @@ public static class PurchaseOrderEndpoints
             "permission_denied" or "resource_scope_denied" or "cross_tenant_target_denied" or "tenant_context_failed" or "authorization_profile_denied" => 403,
             "persistence_unavailable" or "authorization_operation_unmapped" => 503,
             "purchase_order_not_found" or "source_decision_not_found" or "source_not_found" => 404,
-            "concurrency_conflict" or "purchase_order_duplicate" or "edit_not_allowed" or "submit_not_allowed" or "decision_not_allowed" or "issue_not_allowed" or "confirmation_not_allowed" or "supplier_change_approval_not_allowed" or "supplier_change_rejection_not_allowed" or "cancel_not_allowed" or "source_quotation_not_eligible" or "purchase_request_not_approved" => 409,
+            "concurrency_conflict" or "idempotency_conflict" or "purchase_order_duplicate" or "edit_not_allowed" or "submit_not_allowed" or "decision_not_allowed" or "issue_not_allowed" or "confirmation_not_allowed" or "supplier_change_approval_not_allowed" or "supplier_change_rejection_not_allowed" or "cancel_not_allowed" or "source_quotation_not_eligible" or "purchase_request_not_approved" => 409,
             _ => 400
         };
 

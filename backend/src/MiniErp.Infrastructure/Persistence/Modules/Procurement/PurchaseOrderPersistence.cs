@@ -87,10 +87,15 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
         try
         {
             var replay = await FindReplayAsync(db, evidence, cancellationToken);
-            if (replay is not null)
+            if (replay.Outcome == ReplayOutcome.Conflict)
+            {
+                return Denied(PurchaseOrderPersistenceOutcome.Conflict, "idempotency_conflict");
+            }
+
+            if (replay.Outcome == ReplayOutcome.Replay)
             {
                 await transaction.CommitAsync(cancellationToken);
-                return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(replay);
+                return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(replay.Record!);
             }
 
             if (command.Scope.TenantId != tenantContext.TenantId.Value || command.Id == Guid.Empty)
@@ -426,10 +431,15 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
             }
 
             var replay = await FindReplayAsync(db, evidence, cancellationToken);
-            if (replay is not null)
+            if (replay.Outcome == ReplayOutcome.Conflict)
+            {
+                return Denied(PurchaseOrderPersistenceOutcome.Conflict, "idempotency_conflict");
+            }
+
+            if (replay.Outcome == ReplayOutcome.Replay)
             {
                 await transaction.CommitAsync(cancellationToken);
-                return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(replay);
+                return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(replay.Record!);
             }
 
             if (!VersionMatches(entity.Version, command.PurchaseOrderVersion))
@@ -865,10 +875,15 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
             }
 
             var replay = await FindReplayAsync(db, evidence, cancellationToken);
-            if (replay is not null)
+            if (replay.Outcome == ReplayOutcome.Conflict)
+            {
+                return Denied(PurchaseOrderPersistenceOutcome.Conflict, "idempotency_conflict");
+            }
+
+            if (replay.Outcome == ReplayOutcome.Replay)
             {
                 await transaction.CommitAsync(cancellationToken);
-                return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(replay);
+                return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(replay.Record!);
             }
 
             if (!VersionMatches(entity.Version, expectedVersion))
@@ -963,36 +978,52 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
         return SourceValidation.Success();
     }
 
-    private async Task<PurchaseOrderRecord?> FindReplayAsync(
+    private async Task<ReplayLookup> FindReplayAsync(
         ProcurementDbContext db,
         PurchaseOrderAuditEvidence evidence,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(evidence.IdempotencyKey))
         {
-            return null;
+            return ReplayLookup.NotFound;
         }
 
         var replayCandidates = await db.PurchaseOrderAudit
             .Where(item => item.ActorId == evidence.ActorId
                 && item.OperationId == evidence.OperationId
                 && item.IdempotencyKey == evidence.IdempotencyKey)
-            .Select(item => new { item.PurchaseOrderId, item.OccurredAt })
+            .Select(item => new { item.PurchaseOrderId, item.OccurredAt, item.RequestFingerprint })
             .ToListAsync(cancellationToken);
-        var replayId = replayCandidates
-            .OrderByDescending(item => item.OccurredAt)
-            .Select(item => item.PurchaseOrderId)
-            .FirstOrDefault();
-        if (replayId == Guid.Empty)
+        if (replayCandidates.Count == 0)
         {
-            return null;
+            return ReplayLookup.NotFound;
+        }
+
+        var latest = replayCandidates.OrderByDescending(item => item.OccurredAt).First();
+
+        // Create has no pre-existing target: `evidence.PurchaseOrderId` is a freshly generated id for
+        // this call and must not be compared against the previously created target's id.
+        var isCreateOperation = evidence.OperationId == "procurement.purchase-order.create";
+        if (!isCreateOperation && latest.PurchaseOrderId != evidence.PurchaseOrderId)
+        {
+            return ReplayLookup.Conflict;
+        }
+
+        if (!string.Equals(latest.RequestFingerprint, evidence.RequestFingerprint, StringComparison.Ordinal))
+        {
+            return ReplayLookup.Conflict;
         }
 
         var entity = await db.PurchaseOrders
             .AsNoTracking()
             .Include(item => item.Lines)
-            .SingleOrDefaultAsync(item => item.Id == replayId, cancellationToken);
-        return entity is null ? null : await ToRecordAsync(db, entity, cancellationToken);
+            .SingleOrDefaultAsync(item => item.Id == latest.PurchaseOrderId, cancellationToken);
+        if (entity is null)
+        {
+            return ReplayLookup.NotFound;
+        }
+
+        return ReplayLookup.ForReplay(await ToRecordAsync(db, entity, cancellationToken));
     }
 
     private async Task<PurchaseOrderRecord> ToRecordAsync(
@@ -1213,6 +1244,20 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
         internal bool Succeeded => Outcome == PurchaseOrderPersistenceOutcome.Succeeded;
         internal static SourceValidation Success() => new(PurchaseOrderPersistenceOutcome.Succeeded, "valid");
         internal static SourceValidation Denied(PurchaseOrderPersistenceOutcome outcome, string code) => new(outcome, code);
+    }
+
+    private enum ReplayOutcome
+    {
+        NotFound,
+        Replay,
+        Conflict
+    }
+
+    private sealed record ReplayLookup(ReplayOutcome Outcome, PurchaseOrderRecord? Record)
+    {
+        internal static readonly ReplayLookup NotFound = new(ReplayOutcome.NotFound, null);
+        internal static readonly ReplayLookup Conflict = new(ReplayOutcome.Conflict, null);
+        internal static ReplayLookup ForReplay(PurchaseOrderRecord record) => new(ReplayOutcome.Replay, record);
     }
 }
 
