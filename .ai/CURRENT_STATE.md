@@ -1,6 +1,134 @@
 # Current State
 
-## Current authoritative position - 18 August 2026 (MESP-124 pre-Opus Sol findings correction)
+## Current authoritative position - 18 August 2026 (MESP-124 durable idempotency ordering correction)
+
+GPT-5.6 Sol confirmed F-1 closed and accepted the F-2 SHA-256 request
+fingerprint design and the persistence-side same-key/different-request
+conflict detection, but raised one remaining F-2 **completeness** finding.
+Claude Sonnet 5 performed one further bounded corrective session, sole
+executor, on `feat/MESP-124-purchase-order-confirmation` (Draft PR #68) to
+close it without redesigning the accepted parts and without expanding scope.
+
+### The defect: ordering, not fingerprinting
+
+Several `PurchaseOrderService` commands performed lifecycle-state,
+optimistic-concurrency, approval-stage, approval-policy, delegation,
+supplier-change, and reapproval-policy checks *before* persisted idempotency
+evidence could be consulted. An identical retry therefore stopped being
+replayable as soon as the original success advanced state — and permanently
+so once the volatile ten-minute `LocalMasterDataIdempotencyStore` REST cache
+expired or the API process restarted. The affected commands returned
+`submit_not_allowed` once the order reached `PendingApproval`,
+`decision_not_allowed` once `Approved`, `issue_not_allowed` once `Issued`,
+`confirmation_not_allowed` for a Rejected confirmation once the order was
+`Rejected` or for a confirmation that had itself created
+`ChangedPendingApproval`, and `supplier_change_approval_not_allowed` once the
+order left `ChangedPendingApproval`.
+
+### The correction
+
+- A bounded read-only durable replay probe is exposed as
+  `IPurchaseOrderPersistence.ProbeReplayAsync(TenantContext, PurchaseOrderReplayQuery)`
+  returning `PurchaseOrderReplayProbe` with outcome NotFound / Replay /
+  Conflict. It reuses the already-stored Tenant-scoped audit evidence
+  (Tenant filter, ActorId, OperationId, Idempotency-Key, PurchaseOrderId where
+  applicable, RequestFingerprint) and does not duplicate the mutation engine.
+- `PurchaseOrderPersistence.FindReplayAsync` was refactored into a shared
+  query-based core plus an evidence-shaped wrapper, so the probe and the
+  in-transaction check resolve replay identically. Create is discriminated by
+  a null target rather than by a magic string, preserving prior behavior.
+- `PurchaseOrderService` calls the probe in the correct position on create,
+  edit, submit, cancel, issue, confirmation capture, approve/reject/
+  return-for-change, and supplier-change approve/reject.
+- **No schema change was introduced** and the accepted additive migration
+  `20260817211222_AddPurchaseOrderAuditRequestFingerprint` was not rewritten.
+  The probe query is covered by the existing
+  `(TenantId, ActorId, OperationId, IdempotencyKey)` index.
+
+### Security ordering (replay is not an authorization bypass)
+
+For an existing Purchase Order the probe runs only **after** the trusted
+Tenant context is established, the current target is resolved and proven to
+belong to that Tenant, and the current actor is authorized for that resource
+and operation (`GetAuthorizedAsync`). It runs **before** lifecycle-state
+requirements, current optimistic-concurrency comparison, approval-stage
+state, approval-policy re-resolution, delegation resolution, supplier-change
+current-state validation, and reapproval-policy re-resolution. Because replay
+is matched on the exact `ActorId`, separation of duties cannot be bypassed: a
+creator attempting self-approval can never match another actor's evidence. If
+current authorization has genuinely been revoked, the pre-probe authorization
+check fails first and idempotency does not reveal the old resource.
+
+Create has no pre-existing target, so an identical create retry is authorized
+against the scope of the Purchase Order the original request actually created
+before it is returned. A genuinely new create still runs full current
+source-decision validation and fails closed. A probe failure returns NotFound
+and falls through to the normal path, and the in-transaction persistence-side
+replay check inside `MutateAsync` / `RecordConfirmationAsync` / `CreateAsync`
+was retained as defense in depth.
+
+### Regression coverage
+
+Four new tests in
+`backend/tests/MiniErp.ArchitectureTests/PurchaseOrderTests.cs` exercise
+`PurchaseOrderService` plus real persistence and bypass the REST in-memory
+replay cache entirely:
+
+- `Replays_durable_submit_approve_and_issue_after_the_original_request_advanced_state`
+- `Replays_durable_confirmation_and_supplier_change_approval_after_the_order_left_the_eligible_state`
+  (covers both the confirmation that created `ChangedPendingApproval` and the
+  Rejected confirmation after the order became `Rejected`)
+- `Replays_durable_supplier_change_rejection_after_the_order_left_changed_pending_approval`
+- `Replays_durable_create_after_source_state_drift_without_weakening_new_create_validation`
+
+Each asserts the original version/result is returned, and that there is no
+duplicate history entry, no duplicate audit success entry, no duplicate
+confirmation, no duplicate supplier change, and no second mutation. Existing
+conflict coverage (same key + different fingerprint, same key + different
+target, conflict leaves the target unchanged) and the existing identical Edit
+replay remain green and unmodified.
+
+The four new tests were verified to be load-bearing rather than tautological:
+against the pre-correction `PurchaseOrderService` they fail 4/4 while the four
+pre-existing Purchase Order tests still pass.
+
+### Validation (this correction session)
+
+- Release solution build: **0 warnings / 0 errors**.
+- Official `scripts/Test-MiniErpBackend.ps1`: **778/778 passed, 0 skipped**
+  (up from 774; +4 new durable-replay regression tests) against disposable
+  LocalDB `MiniErpFoundation_20260818103729_8fb927af`. The SQL safety harness
+  genuinely executed against real LocalDB; the runner cleaned its target and
+  **zero orphan `MiniErpFoundation_*` databases** remain; the persistent
+  `MESP_SQLSERVER_CONNECTION_STRING` was unchanged and the persistent `MESP`
+  database is intact and was never the safety target.
+- Targeted `PurchaseOrderTests`/`RestFoundationTests` filter: **41/41 passed**
+  (up from 37).
+- Backend-only correction: **no frontend source, dependency, or asset file was
+  touched**, so the Angular unit, production build, and Playwright suites were
+  not rerun. Their last recorded evidence (212/212 Angular across 25 spec
+  files; 492.02 kB initial / 72.94 kB Purchase Order lazy / 91.94 kB Supplier
+  Quotation lazy; Chromium 15/15) stands unchanged.
+- `npm audit`: unchanged at **1 high** (`nanoid` transitive advisory,
+  GHSA-2v37-7h3g-55p8). `frontend/package.json` and
+  `frontend/package-lock.json` were not touched, `npm audit fix` was not run,
+  and the advisory remains a separate pre-production Owner/Sol
+  dependency-security follow-up rather than part of this correction.
+- `git status --short -- frontend/assets`: clean; Owner-managed assets
+  untouched.
+
+This is correction work, not new business scope: no production-capability
+percentage increase is claimed. Draft PR #68 remains **OPEN, DRAFT, and
+UNMERGED**; no force-push occurred. Zero Jira operations were performed
+(GPT-5.6 Sol owns Jira). The next exact session remains independent **Claude
+Opus 5 MESP-124 pre-merge review**, using the updated `TASK.md`, which now
+also requires explicit verification of durable replay after cache expiry and
+process restart, the six state-advanced replay scenarios, the
+`ChangedPendingApproval` confirmation replay, the absence of duplicate
+history/audit/evidence, and the unchanged 409 conflict semantics. Do not merge
+this branch and do not start MESP-125.
+
+## Historical authoritative position - 18 August 2026 (MESP-124 pre-Opus Sol findings correction; superseded by the durable idempotency ordering correction)
 
 Before independent Opus review, GPT-5.6 Sol raised two findings against the
 completed MESP-124 implementation on branch

@@ -10,6 +10,7 @@ namespace MiniErp.App.Modules.Procurement;
 
 public sealed class PurchaseOrderService
 {
+    private const string CreateOperationId = "procurement.purchase-order.create";
     private readonly PurchaseRequestAuthorizationService authorization;
     private readonly IPurchaseOrderPersistence persistence;
     private readonly IPurchaseRequestPersistence purchaseRequests;
@@ -144,13 +145,31 @@ public sealed class PurchaseOrderService
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("validation_failed");
         }
 
+        // Creation has no pre-existing target to authorize against, so the durable replay is authorized
+        // against the scope of the Purchase Order the original request actually created. That keeps an
+        // identical retry replayable after the mutable sourcing state has moved on, without weakening
+        // source validation for a genuinely new create.
+        var replayProbe = await ProbeReplayAsync(context, CreateOperationId, null, idempotencyKey, requestFingerprint, cancellationToken);
+        if (replayProbe.Outcome == PurchaseOrderReplayOutcome.Conflict)
+        {
+            return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("idempotency_conflict");
+        }
+
+        if (replayProbe is { Outcome: PurchaseOrderReplayOutcome.Replay, Record: { } replayed })
+        {
+            var replayAuthorized = authorization.Authorize(context, CreateOperationId, replayed.Scope);
+            return replayAuthorized.Allowed
+                ? PurchaseOrderOperationResult<PurchaseOrderRecord>.Success(replayed)
+                : PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure(replayAuthorized.Code);
+        }
+
         var source = await FindSourceOptionAsync(context, request.SourceDecisionId, cancellationToken);
         if (!source.Succeeded || source.Value is null)
         {
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure(source.Code);
         }
 
-        var authorized = authorization.Authorize(context, "procurement.purchase-order.create", source.Value.Scope);
+        var authorized = authorization.Authorize(context, CreateOperationId, source.Value.Scope);
         if (!authorized.Allowed)
         {
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure(authorized.Code);
@@ -166,7 +185,7 @@ public sealed class PurchaseOrderService
             source.Value.Lines,
             occurredAt,
             idempotencyKey);
-        var evidence = CreateEvidence(context, id, source.Value.Scope, "procurement.purchase-order.create", null, PurchaseOrderStatus.Draft, null, idempotencyKey, requestFingerprint, null, "Draft");
+        var evidence = CreateEvidence(context, id, source.Value.Scope, CreateOperationId, null, PurchaseOrderStatus.Draft, null, idempotencyKey, requestFingerprint, null, "Draft");
         return ToOperationResult(await persistence.CreateAsync(context.TenantContext, command, evidence, cancellationToken));
     }
 
@@ -197,6 +216,12 @@ public sealed class PurchaseOrderService
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("creator_only");
         }
 
+        var replay = await TryDurableReplayAsync(context, "procurement.purchase-order.edit", purchaseOrderId, idempotencyKey, requestFingerprint, cancellationToken);
+        if (replay is not null)
+        {
+            return replay;
+        }
+
         var command = new PurchaseOrderEditCommand(
             purchaseOrderId,
             notes,
@@ -225,6 +250,12 @@ public sealed class PurchaseOrderService
         if (expectedVersion is null || expectedVersion.Length == 0 || current.Value.CreatedByActorId != context.ActorId)
         {
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure(expectedVersion is null or { Length: 0 } ? "validation_failed" : "creator_only");
+        }
+
+        var replay = await TryDurableReplayAsync(context, "procurement.purchase-order.submit", purchaseOrderId, idempotencyKey, requestFingerprint, cancellationToken);
+        if (replay is not null)
+        {
+            return replay;
         }
 
         if (current.Value.Status is not (PurchaseOrderStatus.Draft or PurchaseOrderStatus.ReturnedForChange))
@@ -271,6 +302,12 @@ public sealed class PurchaseOrderService
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("validation_failed");
         }
 
+        var replay = await TryDurableReplayAsync(context, "procurement.purchase-order.issue", purchaseOrderId, idempotencyKey, requestFingerprint, cancellationToken);
+        if (replay is not null)
+        {
+            return replay;
+        }
+
         if (current.Value.Status != PurchaseOrderStatus.Approved)
         {
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("issue_not_allowed");
@@ -311,6 +348,12 @@ public sealed class PurchaseOrderService
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("reason_required");
         }
 
+        var replay = await TryDurableReplayAsync(context, "procurement.purchase-order.cancel", purchaseOrderId, idempotencyKey, requestFingerprint, cancellationToken);
+        if (replay is not null)
+        {
+            return replay;
+        }
+
         var command = new PurchaseOrderActionCommand(purchaseOrderId, expectedVersion, context.ActorId, normalizedReason, DateTimeOffset.UtcNow, idempotencyKey);
         var evidence = CreateEvidence(context, purchaseOrderId, current.Value.Scope, "procurement.purchase-order.cancel", current.Value.Status, PurchaseOrderStatus.Cancelled, normalizedReason, idempotencyKey, requestFingerprint, current.Value.Status.ToString(), "Cancelled");
         return ToOperationResult(await persistence.CancelAsync(context.TenantContext, command, evidence, cancellationToken));
@@ -336,6 +379,12 @@ public sealed class PurchaseOrderService
         if (!current.Succeeded || current.Value is null)
         {
             return current;
+        }
+
+        var replay = await TryDurableReplayAsync(context, "procurement.purchase-order.confirmation.capture", purchaseOrderId, idempotencyKey, requestFingerprint, cancellationToken);
+        if (replay is not null)
+        {
+            return replay;
         }
 
         var currentRecord = current.Value;
@@ -529,6 +578,14 @@ public sealed class PurchaseOrderService
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("validation_failed");
         }
 
+        // A replay can never bypass separation of duties: the persisted evidence is matched on this exact
+        // actor, so only an actor who already passed the SoD, stage, and delegation checks can replay.
+        var replay = await TryDurableReplayAsync(context, operationId, purchaseOrderId, idempotencyKey, requestFingerprint, cancellationToken);
+        if (replay is not null)
+        {
+            return replay;
+        }
+
         if (current.Value.Status != PurchaseOrderStatus.PendingApproval)
         {
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("decision_not_allowed");
@@ -591,6 +648,12 @@ public sealed class PurchaseOrderService
         if (expectedVersion is null || expectedVersion.Length == 0)
         {
             return PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("validation_failed");
+        }
+
+        var replay = await TryDurableReplayAsync(context, operationId, purchaseOrderId, idempotencyKey, requestFingerprint, cancellationToken);
+        if (replay is not null)
+        {
+            return replay;
         }
 
         if (current.Value.Status != PurchaseOrderStatus.ChangedPendingApproval)
@@ -810,11 +873,66 @@ public sealed class PurchaseOrderService
             return null;
         }
 
-        var targetDiscriminator = operationId == "procurement.purchase-order.create"
+        var targetDiscriminator = operationId == CreateOperationId
             ? "new"
             : purchaseOrderId.ToString("D");
         var canonical = $"{operationId}|{targetDiscriminator}|{rawFingerprint}";
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
+    }
+
+    /// <summary>
+    /// Consults durable persisted idempotency evidence for an existing Purchase Order after the trusted
+    /// Tenant context, the current target, and the caller's authority over that target have already been
+    /// established, but before any lifecycle, concurrency, approval-stage, delegation, or reapproval check
+    /// that the original successful request itself changed. Returns <c>null</c> when the caller must
+    /// continue through normal business validation and mutation.
+    /// </summary>
+    private async Task<PurchaseOrderOperationResult<PurchaseOrderRecord>?> TryDurableReplayAsync(
+        ProcurementRequestContext context,
+        string operationId,
+        Guid purchaseOrderId,
+        string? idempotencyKey,
+        string? requestFingerprint,
+        CancellationToken cancellationToken)
+    {
+        var probe = await ProbeReplayAsync(context, operationId, purchaseOrderId, idempotencyKey, requestFingerprint, cancellationToken);
+        return probe.Outcome switch
+        {
+            PurchaseOrderReplayOutcome.Replay when probe.Record is not null => PurchaseOrderOperationResult<PurchaseOrderRecord>.Success(probe.Record),
+            PurchaseOrderReplayOutcome.Conflict => PurchaseOrderOperationResult<PurchaseOrderRecord>.Failure("idempotency_conflict"),
+            _ => null
+        };
+    }
+
+    private async Task<PurchaseOrderReplayProbe> ProbeReplayAsync(
+        ProcurementRequestContext context,
+        string operationId,
+        Guid? purchaseOrderId,
+        string? idempotencyKey,
+        string? requestFingerprint,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            return PurchaseOrderReplayProbe.NotFound;
+        }
+
+        var query = new PurchaseOrderReplayQuery(
+            context.ActorId,
+            operationId,
+            idempotencyKey,
+            purchaseOrderId,
+            ComputeRequestFingerprint(operationId, purchaseOrderId ?? Guid.Empty, requestFingerprint));
+        try
+        {
+            return await persistence.ProbeReplayAsync(context.TenantContext, query, cancellationToken);
+        }
+        catch
+        {
+            // A probe failure must never approve a mutation on its own; fall through to the normal path,
+            // where the persistence-side replay check still runs inside the mutation transaction.
+            return PurchaseOrderReplayProbe.NotFound;
+        }
     }
 
     private static PurchaseOrderOperationResult<T> ToOperationResult<T>(PurchaseOrderPersistenceResult<T> result) =>

@@ -284,9 +284,36 @@ public sealed record PurchaseOrderAuditRecord(
     string? AfterSummary,
     string? IdempotencyKey);
 
+/// <summary>
+/// Bounded durable replay probe input. <paramref name="PurchaseOrderId"/> is null only for creation,
+/// which has no pre-existing target; every other operation must supply the exact resolved target so a
+/// reused key against a different Purchase Order can never replay an unrelated result.
+/// </summary>
+public sealed record PurchaseOrderReplayQuery(
+    Guid ActorId,
+    string OperationId,
+    string? IdempotencyKey,
+    Guid? PurchaseOrderId,
+    string? RequestFingerprint);
+
+public enum PurchaseOrderReplayOutcome
+{
+    NotFound = 1,
+    Replay = 2,
+    Conflict = 3
+}
+
+public sealed record PurchaseOrderReplayProbe(PurchaseOrderReplayOutcome Outcome, PurchaseOrderRecord? Record)
+{
+    public static readonly PurchaseOrderReplayProbe NotFound = new(PurchaseOrderReplayOutcome.NotFound, null);
+    public static readonly PurchaseOrderReplayProbe Conflict = new(PurchaseOrderReplayOutcome.Conflict, null);
+    public static PurchaseOrderReplayProbe ForReplay(PurchaseOrderRecord record) => new(PurchaseOrderReplayOutcome.Replay, record);
+}
+
 public interface IPurchaseOrderPersistence
 {
     Task<IReadOnlyList<PurchaseOrderListRecord>> ListAsync(TenantContext tenantContext, PurchaseOrderStatus? status, CancellationToken cancellationToken = default);
+    Task<PurchaseOrderReplayProbe> ProbeReplayAsync(TenantContext tenantContext, PurchaseOrderReplayQuery query, CancellationToken cancellationToken = default);
     Task<PurchaseOrderRecord?> FindAsync(TenantContext tenantContext, Guid purchaseOrderId, CancellationToken cancellationToken = default);
     Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> CreateAsync(TenantContext tenantContext, PurchaseOrderCreateCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default);
     Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> EditAsync(TenantContext tenantContext, PurchaseOrderEditCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default);
@@ -310,6 +337,7 @@ public sealed class UnavailablePurchaseOrderPersistence : IPurchaseOrderPersiste
         Task.FromResult(PurchaseOrderPersistenceResult<T>.Denied(PurchaseOrderPersistenceOutcome.Failure, "persistence_unavailable"));
 
     public Task<IReadOnlyList<PurchaseOrderListRecord>> ListAsync(TenantContext tenantContext, PurchaseOrderStatus? status, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseOrderListRecord>>([]);
+    public Task<PurchaseOrderReplayProbe> ProbeReplayAsync(TenantContext tenantContext, PurchaseOrderReplayQuery query, CancellationToken cancellationToken = default) => Task.FromResult(PurchaseOrderReplayProbe.NotFound);
     public Task<PurchaseOrderRecord?> FindAsync(TenantContext tenantContext, Guid purchaseOrderId, CancellationToken cancellationToken = default) => Task.FromResult<PurchaseOrderRecord?>(null);
     public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> CreateAsync(TenantContext tenantContext, PurchaseOrderCreateCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderRecord>();
     public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> EditAsync(TenantContext tenantContext, PurchaseOrderEditCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderRecord>();

@@ -130,6 +130,25 @@ result deterministically; the same key reused against a different payload or
 a different target returns HTTP 409 `idempotency_conflict` rather than ever
 replaying an unrelated Purchase Order's result.
 
+That replay evidence is durable and is consulted before state-dependent
+business validation. `IPurchaseOrderPersistence.ProbeReplayAsync` exposes a
+read-only three-way probe (NotFound / Replay / Conflict) over the persisted
+Tenant-scoped audit evidence, and `PurchaseOrderService` calls it only after
+the trusted Tenant context, the current target, and the caller's authority
+over that target have been established — but before lifecycle-state gates,
+optimistic-concurrency comparison, approval-stage state, approval-policy and
+delegation resolution, and supplier-change/reapproval validation. An identical
+retry of a command whose original success already advanced the order therefore
+still replays instead of returning `submit_not_allowed`, `decision_not_allowed`,
+`issue_not_allowed`, `confirmation_not_allowed`, or
+`supplier_change_approval_not_allowed`, and it survives both expiry of the
+volatile ten-minute REST-layer idempotency cache and an API process restart.
+Replay is never an authorization bypass: it is matched on the exact actor, so
+separation of duties, delegation, and Tenant/Company/Branch authority still
+have to be satisfied by the current request, and a genuinely new create still
+runs full current source-decision validation. The in-transaction
+persistence-side replay check remains in place as defense in depth.
+
 ## Four-project direction
 
 - `MiniErp.Contracts` contains only stable public module contracts and module

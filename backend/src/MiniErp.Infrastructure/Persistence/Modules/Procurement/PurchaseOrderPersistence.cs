@@ -10,6 +10,7 @@ namespace MiniErp.Infrastructure.Persistence.Modules.Procurement;
 
 public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
 {
+    private const string CreateOperationId = "procurement.purchase-order.create";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly DbContextOptions options;
 
@@ -59,6 +60,28 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
         var taxable = Math.Max(0m, gross - discount);
         var tax = line.TaxAmount ?? (line.TaxRatePercentage is { } rate ? taxable * rate / 100m : 0m);
         return taxable + tax;
+    }
+
+    /// <summary>
+    /// Read-only durable replay probe over the persisted Tenant-scoped audit evidence. It lets the
+    /// application layer resolve an identical, already-successful retry before any state-dependent
+    /// business validation runs, without duplicating the mutation engine. The persistence-side replay
+    /// check inside each mutation remains in place as defense in depth.
+    /// </summary>
+    public async Task<PurchaseOrderReplayProbe> ProbeReplayAsync(
+        TenantContext tenantContext,
+        PurchaseOrderReplayQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        await using var db = CreateContext(tenantContext);
+        var lookup = await FindReplayAsync(db, query, cancellationToken);
+        return lookup.Outcome switch
+        {
+            ReplayOutcome.Replay when lookup.Record is not null => PurchaseOrderReplayProbe.ForReplay(lookup.Record),
+            ReplayOutcome.Conflict => PurchaseOrderReplayProbe.Conflict,
+            _ => PurchaseOrderReplayProbe.NotFound
+        };
     }
 
     public async Task<PurchaseOrderRecord?> FindAsync(
@@ -978,20 +1001,36 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
         return SourceValidation.Success();
     }
 
-    private async Task<ReplayLookup> FindReplayAsync(
+    private Task<ReplayLookup> FindReplayAsync(
         ProcurementDbContext db,
         PurchaseOrderAuditEvidence evidence,
+        CancellationToken cancellationToken) =>
+        FindReplayAsync(db, ToReplayQuery(evidence), cancellationToken);
+
+    // Create has no pre-existing target: `evidence.PurchaseOrderId` is a freshly generated id for this
+    // call and must not be compared against the previously created target's id.
+    private static PurchaseOrderReplayQuery ToReplayQuery(PurchaseOrderAuditEvidence evidence) => new(
+        evidence.ActorId,
+        evidence.OperationId,
+        evidence.IdempotencyKey,
+        evidence.OperationId == CreateOperationId ? null : evidence.PurchaseOrderId,
+        evidence.RequestFingerprint);
+
+    private async Task<ReplayLookup> FindReplayAsync(
+        ProcurementDbContext db,
+        PurchaseOrderReplayQuery query,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(evidence.IdempotencyKey))
+        if (string.IsNullOrWhiteSpace(query.IdempotencyKey))
         {
             return ReplayLookup.NotFound;
         }
 
+        // Tenant scoping is applied transparently by the `ProcurementDbContext` Tenant query filter.
         var replayCandidates = await db.PurchaseOrderAudit
-            .Where(item => item.ActorId == evidence.ActorId
-                && item.OperationId == evidence.OperationId
-                && item.IdempotencyKey == evidence.IdempotencyKey)
+            .Where(item => item.ActorId == query.ActorId
+                && item.OperationId == query.OperationId
+                && item.IdempotencyKey == query.IdempotencyKey)
             .Select(item => new { item.PurchaseOrderId, item.OccurredAt, item.RequestFingerprint })
             .ToListAsync(cancellationToken);
         if (replayCandidates.Count == 0)
@@ -1000,16 +1039,12 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
         }
 
         var latest = replayCandidates.OrderByDescending(item => item.OccurredAt).First();
-
-        // Create has no pre-existing target: `evidence.PurchaseOrderId` is a freshly generated id for
-        // this call and must not be compared against the previously created target's id.
-        var isCreateOperation = evidence.OperationId == "procurement.purchase-order.create";
-        if (!isCreateOperation && latest.PurchaseOrderId != evidence.PurchaseOrderId)
+        if (query.PurchaseOrderId is { } targetId && latest.PurchaseOrderId != targetId)
         {
             return ReplayLookup.Conflict;
         }
 
-        if (!string.Equals(latest.RequestFingerprint, evidence.RequestFingerprint, StringComparison.Ordinal))
+        if (!string.Equals(latest.RequestFingerprint, query.RequestFingerprint, StringComparison.Ordinal))
         {
             return ReplayLookup.Conflict;
         }

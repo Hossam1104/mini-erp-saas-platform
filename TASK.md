@@ -121,6 +121,68 @@ Verify:
   exercises all three outcomes (replay, same-target conflict, cross-target
   conflict) with an explicit zero-mutation assertion on the untouched target.
 
+**F-2 completeness follow-up (durable replay ordering).** A second bounded
+correction closed the remaining F-2 completeness gap. The fingerprint design
+and the persistence-side conflict detection above were accepted and were not
+redesigned; the defect was **ordering** in `PurchaseOrderService`. Several
+commands performed lifecycle-state, optimistic-concurrency, approval-stage,
+approval-policy, delegation, supplier-change, and reapproval checks *before*
+persisted replay could be consulted, so an identical retry stopped being
+replayable once the original success advanced state — and permanently so once
+the volatile ten-minute `LocalMasterDataIdempotencyStore` REST cache expired
+or the API process restarted. The correction adds a bounded read-only probe
+`IPurchaseOrderPersistence.ProbeReplayAsync` returning NotFound / Replay /
+Conflict over the already-stored Tenant-scoped audit evidence, and calls it
+from `PurchaseOrderService` in the correct position. No schema change was
+introduced and the accepted additive migration was not rewritten. Verify:
+
+- **durability**: replay is resolved from persisted `PurchaseOrderAudit`
+  evidence, not from the in-memory REST idempotency cache, so it survives
+  cache expiry and an API process restart; confirm the regression tests
+  exercise `PurchaseOrderService` plus real persistence and genuinely bypass
+  `LocalMasterDataIdempotencyStore`;
+- **ordering is not an authorization bypass**: the probe runs only after the
+  trusted Tenant context, the current target resource, and the current
+  actor's authority over that resource are established, and before lifecycle
+  state, current version comparison, approval stage, approval-policy
+  re-resolution, delegation resolution, supplier-change current-state
+  validation, and reapproval-policy re-resolution. Confirm that a caller whose
+  authorization has genuinely been revoked cannot use idempotency to reveal
+  the old resource, and that separation of duties still holds (replay is
+  matched on the exact actor);
+- **identical replay after state advanced** for: submit after the order
+  reached `PendingApproval` (must not return `submit_not_allowed`), approve
+  after `Approved`, issue after `Issued`, a Rejected supplier confirmation
+  after the order became `Rejected`, a confirmation that created
+  `ChangedPendingApproval` (the exact original confirmation must replay, not
+  fail `confirmation_not_allowed`), supplier-change approval after the order
+  left `ChangedPendingApproval`, and supplier-change rejection after the order
+  left `ChangedPendingApproval`. In each case the original version/result must
+  be returned even though the expected version supplied by the original
+  request is now stale;
+- **no duplicated evidence** on any replay: no duplicate history entry, no
+  duplicate audit success entry, no duplicate confirmation, no duplicate
+  supplier change, and no second mutation;
+- **create**: an identical create retry replays the originally created
+  Purchase Order even after the mutable sourcing state has drifted, while
+  remaining Tenant- and actor-authorized against the replayed order's own
+  scope; a genuinely new create with a different key still runs full current
+  source-decision validation and fails closed
+  (`source_quotation_not_eligible`);
+- **conflict semantics are unweakened**: same key + different fingerprint and
+  same key + different target still return `idempotency_conflict` (HTTP 409)
+  and leave the target unmutated;
+- **defense in depth retained**: the in-transaction persistence-side replay
+  check inside `MutateAsync` / `RecordConfirmationAsync` / `CreateAsync` was
+  not removed, and a probe failure falls through to the normal path rather
+  than authorizing a mutation on its own;
+- regression coverage in `PurchaseOrderTests.cs`
+  (`Replays_durable_submit_approve_and_issue_after_the_original_request_advanced_state`,
+  `Replays_durable_confirmation_and_supplier_change_approval_after_the_order_left_the_eligible_state`,
+  `Replays_durable_supplier_change_rejection_after_the_order_left_changed_pending_approval`,
+  `Replays_durable_create_after_source_state_drift_without_weakening_new_create_validation`)
+  is genuinely load-bearing rather than tautological.
+
 ## Required reading
 
 Read the complete current versions of these files before forming a verdict:
