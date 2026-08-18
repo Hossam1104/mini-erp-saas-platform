@@ -19,6 +19,8 @@ public sealed class PurchaseOrderTests
     private static readonly Guid BranchA = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid Requester = Guid.Parse("44444444-4444-4444-4444-444444444444");
     private static readonly Guid Approver = Guid.Parse("55555555-5555-5555-5555-555555555555");
+    private static readonly Guid Delegatee = Guid.Parse("66666666-6666-6666-6666-666666666666");
+    private static readonly Guid IneligibleApprover = Guid.Parse("99999999-9999-9999-9999-999999999999");
     private static readonly Guid Supplier = Guid.Parse("aaaaaaaa-1111-1111-1111-111111111111");
     private static readonly Guid Currency = Guid.Parse("aaaaaaaa-3333-3333-3333-333333333333");
     private static readonly Guid Product = Guid.Parse("77777777-7777-7777-7777-777777777777");
@@ -50,6 +52,10 @@ public sealed class PurchaseOrderTests
             "fp-po-create-1");
         Assert.True(replay.Succeeded, replay.Code);
         Assert.Equal(created.Value.Id, replay.Value!.Id);
+
+        var consumedSources = await fixture.Service.ListSourceOptionsAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.view"));
+        Assert.True(consumedSources.Succeeded, consumedSources.Code);
+        Assert.Empty(consumedSources.Value!);
 
         var history = await fixture.Service.ReadHistoryAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.history"), created.Value.Id);
         Assert.True(history.Succeeded, history.Code);
@@ -96,6 +102,96 @@ public sealed class PurchaseOrderTests
     }
 
     [Fact]
+    public async Task Enforces_eligible_ineligible_delegated_and_invalid_delegated_approval_actors()
+    {
+        var policy = new PurchaseRequestApprovalPolicyDefinition(
+            "procurement.purchase-order.approver-tests",
+            2,
+            [new PurchaseRequestApprovalStageDefinition("manager", 1, 1, [Approver], true)],
+            true,
+            DateTimeOffset.MinValue);
+
+        await using (var eligibleFixture = await Fixture.CreateAsync(policy))
+        {
+            var pending = await eligibleFixture.PendingApprovalAsync("eligible");
+            var approved = await eligibleFixture.Service.ApproveAsync(
+                eligibleFixture.Context(Approver, "tenant.procurement.purchase-order.approve"),
+                pending.Id,
+                pending.Version,
+                "po-eligible-approve",
+                "fp-po-eligible-approve");
+            Assert.True(approved.Succeeded, approved.Code);
+            Assert.Equal(PurchaseOrderStatus.Approved, approved.Value!.Status);
+        }
+
+        await using (var ineligibleFixture = await Fixture.CreateAsync(policy))
+        {
+            var pending = await ineligibleFixture.PendingApprovalAsync("ineligible");
+            var denied = await ineligibleFixture.Service.ApproveAsync(
+                ineligibleFixture.Context(IneligibleApprover, "tenant.procurement.purchase-order.approve"),
+                pending.Id,
+                pending.Version,
+                "po-ineligible-approve",
+                "fp-po-ineligible-approve");
+            Assert.False(denied.Succeeded);
+            Assert.Equal("approval_not_eligible", denied.Code);
+        }
+
+        var validDelegation = new ConfiguredPurchaseRequestApprovalDelegationProvider(
+            [new PurchaseRequestApprovalDelegation(
+                TenantA,
+                CompanyA,
+                BranchA,
+                "manager",
+                Approver,
+                Delegatee,
+                DateTimeOffset.UtcNow.AddMinutes(-1),
+                DateTimeOffset.UtcNow.AddMinutes(10),
+                "Approved leave coverage")]);
+        await using (var delegatedFixture = await Fixture.CreateAsync(policy, validDelegation))
+        {
+            var pending = await delegatedFixture.PendingApprovalAsync("delegated");
+            var approved = await delegatedFixture.Service.ApproveAsync(
+                delegatedFixture.Context(Delegatee, "tenant.procurement.purchase-order.approve"),
+                pending.Id,
+                pending.Version,
+                "po-delegated-approve",
+                "fp-po-delegated-approve");
+            Assert.True(approved.Succeeded, approved.Code);
+            Assert.Equal(PurchaseOrderStatus.Approved, approved.Value!.Status);
+            var history = await delegatedFixture.Service.ReadHistoryAsync(
+                delegatedFixture.Context(Requester, "tenant.procurement.purchase-order.history"),
+                pending.Id);
+            Assert.True(history.Succeeded, history.Code);
+            Assert.Equal(Approver, Assert.Single(history.Value!, item => item.Action == PurchaseOrderHistoryAction.ApprovalRecorded).DelegatedFromActorId);
+        }
+
+        var invalidDelegation = new ConfiguredPurchaseRequestApprovalDelegationProvider(
+            [new PurchaseRequestApprovalDelegation(
+                TenantA,
+                CompanyA,
+                BranchA,
+                "manager",
+                IneligibleApprover,
+                Delegatee,
+                DateTimeOffset.UtcNow.AddMinutes(-1),
+                DateTimeOffset.UtcNow.AddMinutes(10),
+                "Invalid delegator is not an eligible approver")]);
+        await using (var invalidDelegationFixture = await Fixture.CreateAsync(policy, invalidDelegation))
+        {
+            var pending = await invalidDelegationFixture.PendingApprovalAsync("invalid-delegation");
+            var denied = await invalidDelegationFixture.Service.ApproveAsync(
+                invalidDelegationFixture.Context(Delegatee, "tenant.procurement.purchase-order.approve"),
+                pending.Id,
+                pending.Version,
+                "po-invalid-delegation-approve",
+                "fp-po-invalid-delegation-approve");
+            Assert.False(denied.Succeeded);
+            Assert.Equal("approval_not_eligible", denied.Code);
+        }
+    }
+
+    [Fact]
     public async Task Records_full_partial_rejected_and_supplier_change_reapproval_without_silent_mutation()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -126,12 +222,18 @@ public sealed class PurchaseOrderTests
             "fp-po-change-1");
         Assert.True(changed.Succeeded, changed.Code);
         Assert.Equal(PurchaseOrderStatus.ChangedPendingApproval, changed.Value!.Status);
+        Assert.Equal(PurchaseOrderConfirmationStatus.PartiallyConfirmed, changed.Value.LatestConfirmationStatus);
+        Assert.Equal(1m, changed.Value.Lines.Single().ConfirmedQuantity);
+        Assert.Equal(1m, changed.Value.Lines.Single().RemainingQuantity);
         Assert.Equal(12.5m, changed.Value.Lines.Single().UnitPrice);
         Assert.Single(changed.Value.PendingChanges);
         Assert.Equal(PurchaseOrderSupplierChangeStatus.PendingApproval, changed.Value.PendingChanges.Single().Status);
 
         var reapproved = await fixture.Service.ApproveSupplierChangeAsync(fixture.Context(Approver, "tenant.procurement.purchase-order.supplier-change.approve"), changed.Value.Id, changed.Value.Version, "po-change-approve", "fp-po-change-approve");
         Assert.True(reapproved.Succeeded, reapproved.Code);
+        Assert.Equal(PurchaseOrderStatus.Confirmed, reapproved.Value!.Status);
+        Assert.Equal(1m, reapproved.Value.Lines.Single().ConfirmedQuantity);
+        Assert.Equal(0m, reapproved.Value.Lines.Single().RemainingQuantity);
         Assert.Equal(15m, reapproved.Value!.Lines.Single().UnitPrice);
         var confirmationHistory = await fixture.Service.ReadConfirmationsAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.view"), reapproved.Value.Id);
         Assert.True(confirmationHistory.Succeeded, confirmationHistory.Code);
@@ -149,6 +251,115 @@ public sealed class PurchaseOrderTests
     }
 
     [Fact]
+    public async Task Preserves_confirmation_facts_through_supplier_change_rejection_and_approval_and_rejects_impossible_quantity_without_effects()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var issued = await fixture.IssuedOrderAsync("commercial-integrity");
+        var line = issued.Lines.Single();
+        var responseDate = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+
+        var partialChange = await fixture.Service.RecordConfirmationAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.capture"),
+            issued.Id,
+            new PurchaseOrderConfirmationRequest(
+                PurchaseOrderConfirmationStatus.PartiallyConfirmed,
+                responseDate,
+                "SUP-PARTIAL",
+                "supplier@test",
+                null,
+                null,
+                [new PurchaseOrderConfirmationLineRequest(line.Id, 1m, responseDate.AddDays(8), null, 15m, null, "Supplier proposed a revised unit price.")],
+                []),
+            issued.Version,
+            "po-commercial-partial",
+            "fp-po-commercial-partial");
+        Assert.True(partialChange.Succeeded, partialChange.Code);
+        Assert.Equal(PurchaseOrderStatus.ChangedPendingApproval, partialChange.Value!.Status);
+        Assert.Equal(1m, partialChange.Value.Lines.Single().ConfirmedQuantity);
+        Assert.Equal(1m, partialChange.Value.Lines.Single().RemainingQuantity);
+
+        var partialRejected = await fixture.Service.RejectSupplierChangeAsync(
+            fixture.Context(Approver, "tenant.procurement.purchase-order.supplier-change.reject"),
+            partialChange.Value.Id,
+            partialChange.Value.Version,
+            "The revised price is not accepted.",
+            "po-commercial-partial-reject",
+            "fp-po-commercial-partial-reject");
+        Assert.True(partialRejected.Succeeded, partialRejected.Code);
+        Assert.Equal(PurchaseOrderStatus.PartiallyConfirmed, partialRejected.Value!.Status);
+        Assert.Equal(1m, partialRejected.Value.Lines.Single().ConfirmedQuantity);
+        Assert.Equal(1m, partialRejected.Value.Lines.Single().RemainingQuantity);
+        Assert.Equal(12.5m, partialRejected.Value.Lines.Single().UnitPrice);
+
+        var fullChange = await fixture.Service.RecordConfirmationAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.capture"),
+            partialRejected.Value.Id,
+            new PurchaseOrderConfirmationRequest(
+                PurchaseOrderConfirmationStatus.Confirmed,
+                responseDate,
+                "SUP-FULL",
+                "supplier@test",
+                null,
+                null,
+                [new PurchaseOrderConfirmationLineRequest(line.Id, 2m, responseDate.AddDays(9), null, 16m, null, "Supplier proposed a final unit price.")],
+                []),
+            partialRejected.Value.Version,
+            "po-commercial-full",
+            "fp-po-commercial-full");
+        Assert.True(fullChange.Succeeded, fullChange.Code);
+        Assert.Equal(PurchaseOrderStatus.ChangedPendingApproval, fullChange.Value!.Status);
+        Assert.Equal(PurchaseOrderConfirmationStatus.Confirmed, fullChange.Value.LatestConfirmationStatus);
+        Assert.Equal(2m, fullChange.Value.Lines.Single().ConfirmedQuantity);
+        Assert.Equal(0m, fullChange.Value.Lines.Single().RemainingQuantity);
+
+        var fullApproved = await fixture.Service.ApproveSupplierChangeAsync(
+            fixture.Context(Approver, "tenant.procurement.purchase-order.supplier-change.approve"),
+            fullChange.Value.Id,
+            fullChange.Value.Version,
+            "po-commercial-full-approve",
+            "fp-po-commercial-full-approve");
+        Assert.True(fullApproved.Succeeded, fullApproved.Code);
+        Assert.Equal(PurchaseOrderStatus.Confirmed, fullApproved.Value!.Status);
+        Assert.Equal(2m, fullApproved.Value.Lines.Single().ConfirmedQuantity);
+        Assert.Equal(0m, fullApproved.Value.Lines.Single().RemainingQuantity);
+        Assert.Equal(16m, fullApproved.Value.Lines.Single().UnitPrice);
+
+        var confirmationsBeforeImpossible = await fixture.Service.ReadConfirmationsAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.view"), fullApproved.Value.Id);
+        var historyBeforeImpossible = await fixture.Service.ReadHistoryAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.history"), fullApproved.Value.Id);
+        var auditBeforeImpossible = await fixture.Service.ReadAuditAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.audit"), fullApproved.Value.Id);
+
+        var impossible = await fixture.Service.RecordConfirmationAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.capture"),
+            fullApproved.Value.Id,
+            new PurchaseOrderConfirmationRequest(
+                PurchaseOrderConfirmationStatus.Confirmed,
+                responseDate,
+                "SUP-IMPOSSIBLE",
+                "supplier@test",
+                null,
+                null,
+                [new PurchaseOrderConfirmationLineRequest(line.Id, 2m, null, 1m, null, null, "Impossible reduction below confirmed quantity.")],
+                []),
+            fullApproved.Value.Version,
+            "po-commercial-impossible",
+            "fp-po-commercial-impossible");
+        Assert.False(impossible.Succeeded);
+        Assert.Equal("proposed_quantity_below_confirmed", impossible.Code);
+
+        var current = await fixture.Service.GetAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.view"), fullApproved.Value.Id);
+        Assert.True(current.Succeeded, current.Code);
+        Assert.Equal(fullApproved.Value.Version, current.Value!.Version);
+        Assert.Equal(2m, current.Value.Lines.Single().ConfirmedQuantity);
+        Assert.Equal(16m, current.Value.Lines.Single().UnitPrice);
+        var confirmationsAfterImpossible = await fixture.Service.ReadConfirmationsAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.view"), fullApproved.Value.Id);
+        var historyAfterImpossible = await fixture.Service.ReadHistoryAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.history"), fullApproved.Value.Id);
+        var auditAfterImpossible = await fixture.Service.ReadAuditAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.audit"), fullApproved.Value.Id);
+        Assert.Equal(confirmationsBeforeImpossible.Value!.Count, confirmationsAfterImpossible.Value!.Count);
+        Assert.Equal(historyBeforeImpossible.Value!.Count, historyAfterImpossible.Value!.Count);
+        Assert.Equal(auditBeforeImpossible.Value!.Count, auditAfterImpossible.Value!.Count);
+    }
+
+    [Fact]
     public async Task Distinguishes_identical_retry_replay_from_cross_target_and_same_target_fingerprint_conflicts()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -156,9 +367,18 @@ public sealed class PurchaseOrderTests
 
         var poA = await fixture.Service.CreateAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.create"), new PurchaseOrderCreateRequest(source.Source.SourceDecisionId), "po-idem-create-a", "fp-idem-create-a");
         Assert.True(poA.Succeeded, poA.Code);
-        var poB = await fixture.Service.CreateAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.create"), new PurchaseOrderCreateRequest(source.Source.SourceDecisionId), "po-idem-create-b", "fp-idem-create-b");
+        var secondSource = await fixture.AddSecondSourceAsync();
+        var poB = await fixture.Service.CreateAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.create"), new PurchaseOrderCreateRequest(secondSource.Source.SourceDecisionId), "po-idem-create-b", "fp-idem-create-b");
         Assert.True(poB.Succeeded, poB.Code);
         Assert.NotEqual(poA.Value!.Id, poB.Value!.Id);
+
+        var duplicate = await fixture.Service.CreateAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.create"), new PurchaseOrderCreateRequest(source.Source.SourceDecisionId), "po-idem-create-duplicate", "fp-idem-create-duplicate");
+        Assert.False(duplicate.Succeeded);
+        Assert.Equal("purchase_order_duplicate", duplicate.Code);
+
+        var foreign = await fixture.Service.CreateAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.create", TenantB), new PurchaseOrderCreateRequest(source.Source.SourceDecisionId), "po-idem-create-foreign", "fp-po-idem-create-foreign");
+        Assert.False(foreign.Succeeded);
+        Assert.Equal("source_decision_not_found", foreign.Code);
 
         const string sharedKey = "po-idem-shared-edit-key";
         var editA = await fixture.Service.EditAsync(
@@ -169,6 +389,16 @@ public sealed class PurchaseOrderTests
             sharedKey,
             "fp-edit-a-payload-1");
         Assert.True(editA.Succeeded, editA.Code);
+
+        var editAAfterOriginal = await fixture.Service.EditAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.edit"),
+            poA.Value.Id,
+            new PurchaseOrderEditRequest("Second edit on A", [new PurchaseOrderLineEditRequest(poA.Value.Lines.Single().Id, 3m, 13.5m, null, "Second edit on A")]),
+            editA.Value!.Version,
+            "po-idem-edit-a-second",
+            "fp-edit-a-payload-second");
+        Assert.True(editAAfterOriginal.Succeeded, editAAfterOriginal.Code);
+        Assert.NotEqual(editA.Value.Version, editAAfterOriginal.Value!.Version);
 
         // Identical retry: same actor/operation/target/key/fingerprint must deterministically replay
         // the original result rather than mutate again, even though the entity has since moved on.
@@ -182,6 +412,8 @@ public sealed class PurchaseOrderTests
         Assert.True(editAReplay.Succeeded, editAReplay.Code);
         Assert.Equal(editA.Value!.Version, editAReplay.Value!.Version);
         Assert.Equal(editA.Value.Notes, editAReplay.Value.Notes);
+        Assert.Equal(2m, editAReplay.Value.Lines.Single().OrderedQuantity);
+        Assert.Equal(12.5m, editAReplay.Value.Lines.Single().UnitPrice);
 
         // Same key, same target, different semantic payload: must be rejected as a conflict rather
         // than silently replaying or silently re-mutating using the stale expected version.
@@ -189,7 +421,7 @@ public sealed class PurchaseOrderTests
             fixture.Context(Requester, "tenant.procurement.purchase-order.edit"),
             poA.Value.Id,
             new PurchaseOrderEditRequest("Different edit on A", [new PurchaseOrderLineEditRequest(poA.Value.Lines.Single().Id, 3m, 13.5m, null, "Different edit on A")]),
-            editA.Value.Version,
+            editAAfterOriginal.Value.Version,
             sharedKey,
             "fp-edit-a-payload-2");
         Assert.False(editASamePayloadDifferentFingerprint.Succeeded);
@@ -226,22 +458,47 @@ public sealed class PurchaseOrderTests
         var submitted = await fixture.Service.SubmitAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.submit"), created.Value!.Id, created.Value.Version, "po-durable-submit", "fp-durable-submit");
         Assert.True(submitted.Succeeded, submitted.Code);
         Assert.Equal(PurchaseOrderStatus.PendingApproval, submitted.Value!.Status);
+
+        var approved = await fixture.Service.ApproveAsync(fixture.Context(Approver, "tenant.procurement.purchase-order.approve"), submitted.Value.Id, submitted.Value.Version, "po-durable-approve", "fp-durable-approve");
+        Assert.True(approved.Succeeded, approved.Code);
+        Assert.Equal(PurchaseOrderStatus.Approved, approved.Value!.Status);
+
+        // The original submit response must remain replayable after approval has advanced the target.
         var submitReplay = await fixture.Service.SubmitAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.submit"), created.Value.Id, created.Value.Version, "po-durable-submit", "fp-durable-submit");
         Assert.True(submitReplay.Succeeded, submitReplay.Code);
         Assert.Equal(PurchaseOrderStatus.PendingApproval, submitReplay.Value!.Status);
         Assert.Equal(submitted.Value.Version, submitReplay.Value.Version);
 
-        var approved = await fixture.Service.ApproveAsync(fixture.Context(Approver, "tenant.procurement.purchase-order.approve"), submitted.Value.Id, submitted.Value.Version, "po-durable-approve", "fp-durable-approve");
-        Assert.True(approved.Succeeded, approved.Code);
-        Assert.Equal(PurchaseOrderStatus.Approved, approved.Value!.Status);
+        var issued = await fixture.Service.IssueAsync(fixture.Context(Approver, "tenant.procurement.purchase-order.issue"), approved.Value.Id, approved.Value.Version, "po-durable-issue", "fp-durable-issue");
+        Assert.True(issued.Succeeded, issued.Code);
+        Assert.Equal(PurchaseOrderStatus.Issued, issued.Value!.Status);
+
+        // The original approval response must remain replayable after issue has advanced the target.
         var approveReplay = await fixture.Service.ApproveAsync(fixture.Context(Approver, "tenant.procurement.purchase-order.approve"), submitted.Value.Id, submitted.Value.Version, "po-durable-approve", "fp-durable-approve");
         Assert.True(approveReplay.Succeeded, approveReplay.Code);
         Assert.Equal(PurchaseOrderStatus.Approved, approveReplay.Value!.Status);
         Assert.Equal(approved.Value.Version, approveReplay.Value.Version);
 
-        var issued = await fixture.Service.IssueAsync(fixture.Context(Approver, "tenant.procurement.purchase-order.issue"), approved.Value.Id, approved.Value.Version, "po-durable-issue", "fp-durable-issue");
-        Assert.True(issued.Succeeded, issued.Code);
-        Assert.Equal(PurchaseOrderStatus.Issued, issued.Value!.Status);
+        var issuedLine = issued.Value.Lines.Single();
+        var laterConfirmation = await fixture.Service.RecordConfirmationAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.capture"),
+            issued.Value.Id,
+            new PurchaseOrderConfirmationRequest(
+                PurchaseOrderConfirmationStatus.PartiallyConfirmed,
+                DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                "SUP-DURABLE-LATER",
+                "supplier@test",
+                null,
+                "Later state mutation after issue.",
+                [new PurchaseOrderConfirmationLineRequest(issuedLine.Id, 1m, null, null, null, null, null)],
+                []),
+            issued.Value.Version,
+            "po-durable-later-confirmation",
+            "fp-po-durable-later-confirmation");
+        Assert.True(laterConfirmation.Succeeded, laterConfirmation.Code);
+        Assert.Equal(PurchaseOrderStatus.PartiallyConfirmed, laterConfirmation.Value!.Status);
+
+        // The original issue response must remain replayable after a later confirmation mutation.
         var issueReplay = await fixture.Service.IssueAsync(fixture.Context(Approver, "tenant.procurement.purchase-order.issue"), approved.Value.Id, approved.Value.Version, "po-durable-issue", "fp-durable-issue");
         Assert.True(issueReplay.Succeeded, issueReplay.Code);
         Assert.Equal(PurchaseOrderStatus.Issued, issueReplay.Value!.Status);
@@ -264,7 +521,8 @@ public sealed class PurchaseOrderTests
 
         var current = await fixture.Service.GetAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.view"), created.Value.Id);
         Assert.True(current.Succeeded, current.Code);
-        Assert.Equal(issued.Value.Version, current.Value!.Version);
+        Assert.NotEqual(issued.Value.Version, current.Value!.Version);
+        Assert.Equal(PurchaseOrderStatus.PartiallyConfirmed, current.Value.Status);
     }
 
     [Fact]
@@ -300,10 +558,6 @@ public sealed class PurchaseOrderTests
         Assert.True(reapproved.Succeeded, reapproved.Code);
         Assert.NotEqual(PurchaseOrderStatus.ChangedPendingApproval, reapproved.Value!.Status);
         Assert.Equal(15m, reapproved.Value.Lines.Single().UnitPrice);
-        var reapprovalReplay = await fixture.Service.ApproveSupplierChangeAsync(fixture.Context(Approver, "tenant.procurement.purchase-order.supplier-change.approve"), changed.Value.Id, changed.Value.Version, "po-durable-change-approve", "fp-durable-change-approve");
-        Assert.True(reapprovalReplay.Succeeded, reapprovalReplay.Code);
-        Assert.Equal(reapproved.Value.Version, reapprovalReplay.Value!.Version);
-        Assert.Equal(15m, reapprovalReplay.Value.Lines.Single().UnitPrice);
 
         var rejectRequest = new PurchaseOrderConfirmationRequest(PurchaseOrderConfirmationStatus.Rejected, responseDate, "SUP-DURABLE-2", "supplier@test", "Supplier declined the order.", null, [], []);
         var rejected = await fixture.Service.RecordConfirmationAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.capture"), reapproved.Value.Id, rejectRequest, reapproved.Value.Version, "po-durable-reject", "fp-durable-reject");
@@ -315,6 +569,21 @@ public sealed class PurchaseOrderTests
         Assert.True(rejectedReplay.Succeeded, rejectedReplay.Code);
         Assert.Equal(PurchaseOrderStatus.Rejected, rejectedReplay.Value!.Status);
         Assert.Equal(rejected.Value.Version, rejectedReplay.Value.Version);
+
+        // Both original successful responses must remain exact after later mutations: the confirmation
+        // snapshot still contains its pending supplier change, and the approval snapshot still contains
+        // the approved commercial values rather than the current rejected state.
+        var changeReplayAfterMutation = await fixture.Service.RecordConfirmationAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.capture"), issued.Id, changeRequest, issued.Version, "po-durable-change", "fp-durable-change");
+        Assert.True(changeReplayAfterMutation.Succeeded, changeReplayAfterMutation.Code);
+        Assert.Equal(PurchaseOrderStatus.ChangedPendingApproval, changeReplayAfterMutation.Value!.Status);
+        Assert.Single(changeReplayAfterMutation.Value.PendingChanges);
+        Assert.Equal(15m, changeReplayAfterMutation.Value.PendingChanges.Single().ProposedUnitPrice);
+
+        var reapprovalReplay = await fixture.Service.ApproveSupplierChangeAsync(fixture.Context(Approver, "tenant.procurement.purchase-order.supplier-change.approve"), changed.Value.Id, changed.Value.Version, "po-durable-change-approve", "fp-durable-change-approve");
+        Assert.True(reapprovalReplay.Succeeded, reapprovalReplay.Code);
+        Assert.Equal(reapproved.Value.Version, reapprovalReplay.Value!.Version);
+        Assert.Equal(PurchaseOrderStatus.Confirmed, reapprovalReplay.Value.Status);
+        Assert.Equal(15m, reapprovalReplay.Value.Lines.Single().UnitPrice);
 
         var confirmations = (await fixture.Service.ReadConfirmationsAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.view"), issued.Id)).Value!;
         Assert.Equal(2, confirmations.Count);
@@ -392,7 +661,7 @@ public sealed class PurchaseOrderTests
         // A genuinely new create still runs full current source validation and fails closed.
         var freshCreate = await fixture.Service.CreateAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.create"), new PurchaseOrderCreateRequest(source.Source.SourceDecisionId), "po-durable-create-fresh", "fp-durable-create-fresh");
         Assert.False(freshCreate.Succeeded);
-        Assert.Equal("source_quotation_not_eligible", freshCreate.Code);
+        Assert.Equal("purchase_order_duplicate", freshCreate.Code);
 
         var history = (await fixture.Service.ReadHistoryAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.history"), created.Value.Id)).Value!;
         Assert.Equal(1, CountAction(history, PurchaseOrderHistoryAction.Created));
@@ -422,7 +691,9 @@ public sealed class PurchaseOrderTests
 
         public PurchaseOrderService Service { get; }
 
-        public static async Task<Fixture> CreateAsync()
+        public static async Task<Fixture> CreateAsync(
+            PurchaseRequestApprovalPolicyDefinition? approvalPolicy = null,
+            IPurchaseRequestApprovalDelegationProvider? approvalDelegationProvider = null)
         {
             var connection = new SqliteConnection("Data Source=:memory:");
             await connection.OpenAsync();
@@ -433,13 +704,19 @@ public sealed class PurchaseOrderTests
                 await SeedAsync(db);
             }
 
+            IPurchaseRequestApprovalPolicyProvider policyProvider = approvalPolicy is null
+                ? new DefaultPurchaseRequestApprovalPolicyProvider()
+                : new ConfiguredPurchaseRequestApprovalPolicyProvider(
+                    [new PurchaseRequestApprovalPolicyBinding(
+                        new PurchaseRequestScope(TenantA, CompanyA, BranchA),
+                        approvalPolicy)]);
             var service = new PurchaseOrderService(
                 new PurchaseRequestAuthorizationService(),
                 new PurchaseOrderPersistence(options),
                 new PurchaseRequestPersistence(options),
                 new SupplierQuotationPersistence(options),
-                new DefaultPurchaseRequestApprovalPolicyProvider(),
-                new NoPurchaseRequestApprovalDelegationProvider());
+                policyProvider,
+                approvalDelegationProvider ?? new NoPurchaseRequestApprovalDelegationProvider());
             return new Fixture(connection, options, service);
         }
 
@@ -449,6 +726,25 @@ public sealed class PurchaseOrderTests
             var foundation = FoundationRequestContext.ForTenant(actor, Guid.NewGuid(), CreateTenantContext(tenantId, actor), operation);
             var resolved = new ProcurementTenantContextResolver().Resolve(foundation);
             return Assert.IsType<ProcurementRequestContext>(resolved.Context);
+        }
+
+        public async Task<PurchaseOrderRecord> PendingApprovalAsync(string keyPrefix)
+        {
+            var source = Assert.Single((await Service.ListSourceOptionsAsync(Context(Requester, "tenant.procurement.purchase-order.view"))).Value!);
+            var created = await Service.CreateAsync(
+                Context(Requester, "tenant.procurement.purchase-order.create"),
+                new PurchaseOrderCreateRequest(source.Source.SourceDecisionId),
+                $"po-{keyPrefix}-create",
+                $"fp-po-{keyPrefix}-create");
+            Assert.True(created.Succeeded, created.Code);
+            var submitted = await Service.SubmitAsync(
+                Context(Requester, "tenant.procurement.purchase-order.submit"),
+                created.Value!.Id,
+                created.Value.Version,
+                $"po-{keyPrefix}-submit",
+                $"fp-po-{keyPrefix}-submit");
+            Assert.True(submitted.Succeeded, submitted.Code);
+            return submitted.Value!;
         }
 
         /// <summary>
@@ -467,6 +763,46 @@ public sealed class PurchaseOrderTests
             var issued = await Service.IssueAsync(Context(Approver, "tenant.procurement.purchase-order.issue"), approved.Value!.Id, approved.Value.Version, $"{keyPrefix}-issue", $"fp-{keyPrefix}-issue");
             Assert.True(issued.Succeeded, issued.Code);
             return issued.Value!;
+        }
+
+        public async Task<PurchaseOrderSourceOptionRecord> AddSecondSourceAsync()
+        {
+            await using var db = new ProcurementDbContext(options, CreateTenantContext(TenantA, Requester));
+            var now = DateTimeOffset.UtcNow;
+            var scope = new PurchaseRequestScope(TenantA, CompanyA, BranchA);
+            var requestId = Guid.NewGuid();
+            var requestLineId = Guid.NewGuid();
+            var quotationId = Guid.NewGuid();
+            var quotationLineId = Guid.NewGuid();
+            var decisionId = Guid.NewGuid();
+            var policy = new PurchaseRequestApprovalPolicyDefinition("procurement.purchase-order.test", 1, [new PurchaseRequestApprovalStageDefinition("manager", 1, 1, [], false)], true, now.AddDays(-1));
+            var request = new PurchaseRequestEntity(requestId, new TenantId(TenantA), CompanyA, BranchA, Requester, "Second approved demand", now);
+            request.Lines.Add(new PurchaseRequestLineEntity(requestLineId, new TenantId(TenantA), request.Id, new PurchaseRequestLineSnapshot(requestLineId, Product, "SKU-001", "Test Product", Unit, "EA", 2m, DateOnly.FromDateTime(now.UtcDateTime.Date.AddDays(7)), "Second approved demand line")));
+            request.Submit(policy, JsonSerializer.Serialize(policy), now);
+            request.RecordApproval(PurchaseRequestStatus.Approved, 0, 0, "[]", now);
+            request.TouchVersion();
+
+            var quotationLine = new SupplierQuotationLineSnapshot(quotationLineId, requestLineId, Product, "SKU-001", "Test Product", Unit, "EA", 2m, 2m, 12.5m, null, null, null, null, null, null, null, null, DateOnly.FromDateTime(now.UtcDateTime.Date.AddDays(7)), DateOnly.FromDateTime(now.UtcDateTime.Date.AddDays(9)), "9 days", "Second quoted line");
+            var supplier = new SupplierQuotationSupplierSnapshot(Supplier, "SUP-A", "Alpha Supplier");
+            var currency = new SupplierQuotationCurrencySnapshot(Currency, "USD", "US Dollar");
+            var quotationCommand = new SupplierQuotationCreateCommand(quotationId, request.Id, scope, Requester, supplier, "Q-PO-2", DateOnly.FromDateTime(now.UtcDateTime.Date), DateOnly.FromDateTime(now.UtcDateTime.Date.AddDays(14)), currency, null, "Delivered", DateOnly.FromDateTime(now.UtcDateTime.Date.AddDays(9)), "9 days", "Second seed quote", [quotationLine], [], now, "second-seed");
+            var quotation = new SupplierQuotationEntity(quotationCommand, new TenantId(TenantA));
+            quotation.Lines.Add(new SupplierQuotationLineEntity(new TenantId(TenantA), quotationId, request.Id, quotationLine));
+            quotation.SetStatus(SupplierQuotationStatus.Submitted, now);
+            quotation.TouchVersion();
+            var quotationRecord = new SupplierQuotationRecord(quotationId, TenantA, request.Id, scope, Requester, supplier, SupplierQuotationStatus.Submitted, "Q-PO-2", quotationCommand.OfferDate, quotationCommand.ValidUntil, currency, null, quotationCommand.DeliveryTerms, quotationCommand.OfferedDeliveryDate, quotationCommand.OfferedDeliveryLeadTime, quotationCommand.Notes, [quotationLine], [], now, now, now, quotation.Version);
+            var decisionCommand = new SupplierSourceDecisionCommand(decisionId, request.Id, scope, quotationId, Requester, now, "Selected for second test", null, null, null, "sha256:test-second", "{}", request.Version, "second-seed-decision");
+            var decision = new SupplierSourceDecisionEntity(decisionCommand, new TenantId(TenantA), quotationRecord);
+            decision.TouchVersion();
+
+            db.PurchaseRequests.Add(request);
+            db.SupplierQuotations.Add(quotation);
+            db.SupplierSourceDecisions.Add(decision);
+            await db.SaveChangesAsync();
+
+            var sources = await Service.ListSourceOptionsAsync(Context(Requester, "tenant.procurement.purchase-order.view"));
+            Assert.True(sources.Succeeded, sources.Code);
+            return Assert.Single(sources.Value!, item => item.Source.SourceDecisionId == decisionId);
         }
 
         /// <summary>

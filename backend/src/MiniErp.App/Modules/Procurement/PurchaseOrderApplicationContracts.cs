@@ -313,6 +313,7 @@ public sealed record PurchaseOrderReplayProbe(PurchaseOrderReplayOutcome Outcome
 public interface IPurchaseOrderPersistence
 {
     Task<IReadOnlyList<PurchaseOrderListRecord>> ListAsync(TenantContext tenantContext, PurchaseOrderStatus? status, CancellationToken cancellationToken = default);
+    Task<bool> SourceDecisionConsumedAsync(TenantContext tenantContext, Guid sourceDecisionId, CancellationToken cancellationToken = default);
     Task<PurchaseOrderReplayProbe> ProbeReplayAsync(TenantContext tenantContext, PurchaseOrderReplayQuery query, CancellationToken cancellationToken = default);
     Task<PurchaseOrderRecord?> FindAsync(TenantContext tenantContext, Guid purchaseOrderId, CancellationToken cancellationToken = default);
     Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> CreateAsync(TenantContext tenantContext, PurchaseOrderCreateCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default);
@@ -337,6 +338,7 @@ public sealed class UnavailablePurchaseOrderPersistence : IPurchaseOrderPersiste
         Task.FromResult(PurchaseOrderPersistenceResult<T>.Denied(PurchaseOrderPersistenceOutcome.Failure, "persistence_unavailable"));
 
     public Task<IReadOnlyList<PurchaseOrderListRecord>> ListAsync(TenantContext tenantContext, PurchaseOrderStatus? status, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseOrderListRecord>>([]);
+    public Task<bool> SourceDecisionConsumedAsync(TenantContext tenantContext, Guid sourceDecisionId, CancellationToken cancellationToken = default) => Task.FromResult(false);
     public Task<PurchaseOrderReplayProbe> ProbeReplayAsync(TenantContext tenantContext, PurchaseOrderReplayQuery query, CancellationToken cancellationToken = default) => Task.FromResult(PurchaseOrderReplayProbe.NotFound);
     public Task<PurchaseOrderRecord?> FindAsync(TenantContext tenantContext, Guid purchaseOrderId, CancellationToken cancellationToken = default) => Task.FromResult<PurchaseOrderRecord?>(null);
     public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> CreateAsync(TenantContext tenantContext, PurchaseOrderCreateCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderRecord>();

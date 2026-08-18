@@ -1,6 +1,68 @@
 # Current State
 
-## Current authoritative position - 18 August 2026 (MESP-124 durable idempotency ordering correction)
+## Current authoritative position - 18 August 2026 (MESP-124 Opus review remediation)
+
+The bounded MESP-124 remediation pass is implemented on
+`feat/MESP-124-purchase-order-confirmation`, continuing Draft PR #68 against
+`main`. Jira remained read-only; MESP-124 is still In Progress with activation
+evidence `11394`. MESP-143 remains the merged ADR-019 prerequisite at
+`866cb75bb7d0d97c929216b1a449f458a2614097`.
+
+### Remediation delivered
+
+- Supplier confirmation writes now persist confirmation facts even when the
+  same response proposes price/date/quantity changes. Approved and rejected
+  supplier changes recompute ordered, confirmed, remaining, latest response,
+  and resulting status from durable state. Proposed quantity reductions below
+  already confirmed quantity fail before mutation with
+  `proposed_quantity_below_confirmed`.
+- A source decision is consumed for the lifetime of its Tenant by the new
+  additive unique index `(TenantId, SourceDecisionId)` and migration
+  `20260818103736_PurchaseOrderCommercialIntegrityAndDurableReplay`. Existing
+  migrations `20260817143432_PurchaseOrderAndSupplierConfirmation` and
+  `20260817211222_AddPurchaseOrderAuditRequestFingerprint` were not rewritten.
+  Source options hide consumed decisions, create is server-authoritative, and
+  unique races map to `purchase_order_duplicate` / HTTP 409.
+- Successful create/edit/lifecycle/confirmation/supplier-change responses are
+  persisted as version-1 serialized `PurchaseOrderRecord` snapshots on the
+  immutable audit row. Replays return the original snapshot selected by the
+  original successful occurrence, after current target/resource authorization
+  and before state-dependent checks; raw requests are not stored as replay
+  payloads. Same-key fingerprint/target conflicts remain HTTP 409 and replay
+  has no duplicate effects.
+- Purchase Order HTTP mapping now classifies creator/self/ineligible approval
+  denial as HTTP 403 and approval duplication, source duplication, impossible
+  quantity, and idempotency conflicts as HTTP 409. ISO currency rendering has
+  explicit two-decimal bounds while non-ISO fallback preserves the raw code.
+- Angular PO tables use column scopes; tabs have stable tab/panel IDs and ARIA
+  relationships with keyboard navigation; action dialogs have entry focus,
+  Tab/Shift+Tab trapping, Escape close, backdrop safety, and opener restoration.
+
+### Validation evidence
+
+- Release backend solution build: 0 warnings / 0 errors.
+- Full backend ArchitectureTests: **787/787 passed, 0 skipped**, including all
+  SQL Server safety cases against a disposable LocalDB target. Focused PO
+  tests: **10/10**; PO endpoint failure classification: **7/7**.
+- Angular unit tests: **215/215** across 25 spec files. Production build:
+  **492.02 kB initial**, **75.39 kB Purchase Order lazy**, **91.94 kB Supplier
+  Quotation lazy**. Production dependency audit: 0 high/critical findings.
+- Playwright runtime validation is still pending in this session. No
+  production-capability percentage increase is claimed for this remediation.
+
+### Next exact gate
+
+The next session is an independent Claude Opus 5 read-only MESP-124 pre-merge
+review. It must explicitly verify the P1-A/P1-B commercial and uniqueness
+invariants, all exact durable replay-after-mutation cases including cache
+expiry/process restart, authorization-before-replay ordering, 403/409 HTTP
+semantics, eligible/ineligible/delegated/invalid-delegation/self-approval
+cases, PO keyboard/focus accessibility, additive migration integrity, and
+complete regression evidence. Do not merge PR #68, perform Jira writes, start
+MESP-125, or begin downstream Procurement, Inventory, Finance, AP, payment,
+or integration work.
+
+## Historical authoritative position - 18 August 2026 (MESP-124 durable idempotency ordering correction)
 
 GPT-5.6 Sol confirmed F-1 closed and accepted the F-2 SHA-256 request
 fingerprint design and the persistence-side same-key/different-request

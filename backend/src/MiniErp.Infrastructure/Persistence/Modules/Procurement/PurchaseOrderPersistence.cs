@@ -1,6 +1,8 @@
 #pragma warning disable CS1591
 
 using System.Text.Json;
+using Microsoft.Data.SqlClient;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Procurement;
@@ -11,6 +13,7 @@ namespace MiniErp.Infrastructure.Persistence.Modules.Procurement;
 public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
 {
     private const string CreateOperationId = "procurement.purchase-order.create";
+    private const int ReplayResponseSchemaVersion = 1;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly DbContextOptions options;
 
@@ -60,6 +63,22 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
         var taxable = Math.Max(0m, gross - discount);
         var tax = line.TaxAmount ?? (line.TaxRatePercentage is { } rate ? taxable * rate / 100m : 0m);
         return taxable + tax;
+    }
+
+    public async Task<bool> SourceDecisionConsumedAsync(
+        TenantContext tenantContext,
+        Guid sourceDecisionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (sourceDecisionId == Guid.Empty)
+        {
+            return false;
+        }
+
+        await using var db = CreateContext(tenantContext);
+        return await db.PurchaseOrders
+            .AsNoTracking()
+            .AnyAsync(item => item.SourceDecisionId == sourceDecisionId, cancellationToken);
     }
 
     /// <summary>
@@ -131,6 +150,11 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                 return Denied(PurchaseOrderPersistenceOutcome.Duplicate, "purchase_order_duplicate");
             }
 
+            if (await db.PurchaseOrders.AnyAsync(item => item.SourceDecisionId == command.Source.SourceDecisionId, cancellationToken))
+            {
+                return Denied(PurchaseOrderPersistenceOutcome.Duplicate, "purchase_order_duplicate");
+            }
+
             var sourceValidation = await ValidateSourceAsync(db, tenantContext, command, cancellationToken);
             if (!sourceValidation.Succeeded)
             {
@@ -164,14 +188,22 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                 null,
                 null,
                 command.OccurredAt));
-            db.PurchaseOrderAudit.Add(new PurchaseOrderAuditEntity(evidence));
+            var audit = new PurchaseOrderAuditEntity(evidence);
+            db.PurchaseOrderAudit.Add(audit);
+            await db.SaveChangesAsync(cancellationToken);
+            var response = await ToRecordAsync(db, entity, cancellationToken);
+            audit.SetReplayResponseSnapshot(ReplayResponseSchemaVersion, SerializeReplayResponse(response));
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(await ToRecordAsync(db, entity, cancellationToken));
+            return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(response);
         }
         catch (DbUpdateConcurrencyException)
         {
             return Denied(PurchaseOrderPersistenceOutcome.Conflict, "concurrency_conflict");
+        }
+        catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
+        {
+            return Denied(PurchaseOrderPersistenceOutcome.Duplicate, "purchase_order_duplicate");
         }
         catch (DbUpdateException)
         {
@@ -204,6 +236,14 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                 if (command.Lines.Count != existing.Count || command.Lines.Any(item => !existing.ContainsKey(item.PurchaseOrderLineId)))
                 {
                     return MutationDecision.Failure("line_set_mismatch");
+                }
+
+                foreach (var edit in command.Lines)
+                {
+                    if (edit.OrderedQuantity < existing[edit.PurchaseOrderLineId].ConfirmedQuantity)
+                    {
+                        return MutationDecision.Failure("proposed_quantity_below_confirmed");
+                    }
                 }
 
                 foreach (var edit in command.Lines)
@@ -486,6 +526,21 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
             foreach (var lineCommand in command.Lines)
             {
                 var line = lineMap[lineCommand.PurchaseOrderLineId];
+                if (lineCommand.ConfirmedQuantity > line.OrderedQuantity)
+                {
+                    return Denied(PurchaseOrderPersistenceOutcome.InvalidState, "confirmation_quantity_exceeds_ordered");
+                }
+
+                if (lineCommand.ProposedQuantity is { } proposedQuantity
+                    && proposedQuantity < Math.Max(line.ConfirmedQuantity, lineCommand.ConfirmedQuantity))
+                {
+                    return Denied(PurchaseOrderPersistenceOutcome.InvalidState, "proposed_quantity_below_confirmed");
+                }
+            }
+
+            foreach (var lineCommand in command.Lines)
+            {
+                var line = lineMap[lineCommand.PurchaseOrderLineId];
                 if (lineCommand.OrderedQuantityAtResponse != line.OrderedQuantity)
                 {
                     return Denied(PurchaseOrderPersistenceOutcome.Conflict, "concurrency_conflict");
@@ -507,6 +562,11 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                 }
             }
 
+            if (hasChanges && (command.ReapprovalPolicy is null || !PurchaseRequestValuePolicy.IsValidPolicy(command.ReapprovalPolicy)))
+            {
+                return Denied(PurchaseOrderPersistenceOutcome.InvalidState, "approval_policy_not_configured");
+            }
+
             foreach (var item in command.Evidence)
             {
                 confirmation.Evidence.Add(new PurchaseOrderEvidenceEntity(tenantContext.TenantId, confirmation.Id, item));
@@ -515,28 +575,23 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
             confirmation.TouchVersion();
             db.PurchaseOrderConfirmations.Add(confirmation);
             var fromStatus = entity.Status;
+            foreach (var lineCommand in command.Lines)
+            {
+                var line = lineMap[lineCommand.PurchaseOrderLineId];
+                line.RecordConfirmation(lineCommand.ConfirmedQuantity, lineCommand.ExpectedDeliveryDate);
+                line.TouchVersion();
+            }
+
             if (!hasChanges)
             {
-                foreach (var lineCommand in command.Lines)
-                {
-                    var line = lineMap[lineCommand.PurchaseOrderLineId];
-                    line.RecordConfirmation(lineCommand.ConfirmedQuantity, lineCommand.ExpectedDeliveryDate);
-                    line.TouchVersion();
-                }
-
                 entity.SetLatestConfirmation(command.Id, command.Status, command.OccurredAt);
             }
             else
             {
                 entity.SetLatestConfirmation(command.Id, command.Status, command.OccurredAt);
                 entity.BeginSupplierChangeApproval(fromStatus, command.OccurredAt);
-                if (command.ReapprovalPolicy is null || !PurchaseRequestValuePolicy.IsValidPolicy(command.ReapprovalPolicy))
-                {
-                    return Denied(PurchaseOrderPersistenceOutcome.InvalidState, "approval_policy_not_configured");
-                }
-
                 entity.SetReapprovalPolicy(
-                    command.ReapprovalPolicy,
+                    command.ReapprovalPolicy!,
                     JsonSerializer.Serialize(command.ReapprovalPolicy, JsonOptions));
             }
 
@@ -564,16 +619,20 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                 command.ReapprovalPolicy?.Stages.OrderBy(item => item.Sequence).FirstOrDefault()?.StageKey,
                 null,
                 command.OccurredAt));
-            db.PurchaseOrderAudit.Add(new PurchaseOrderAuditEntity(evidence with
+            var audit = new PurchaseOrderAuditEntity(evidence with
             {
                 BeforeStatus = fromStatus,
                 AfterStatus = entity.Status,
                 BeforeSummary = fromStatus.ToString(),
                 AfterSummary = entity.Status.ToString()
-            }));
+            });
+            db.PurchaseOrderAudit.Add(audit);
+            await db.SaveChangesAsync(cancellationToken);
+            var response = await ToRecordAsync(db, entity, cancellationToken);
+            audit.SetReplayResponseSnapshot(ReplayResponseSchemaVersion, SerializeReplayResponse(response));
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(await ToRecordAsync(db, entity, cancellationToken));
+            return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(response);
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -663,9 +722,23 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                 var lines = entity.Lines.ToDictionary(item => item.Id);
                 foreach (var change in changes)
                 {
+                    if (change.ProposedQuantity is { } proposedQuantity
+                        && (!lines.TryGetValue(change.PurchaseOrderLineId, out var line)
+                            || proposedQuantity < line.ConfirmedQuantity))
+                    {
+                        return MutationDecision.Failure("proposed_quantity_below_confirmed");
+                    }
+                }
+
+                foreach (var change in changes)
+                {
                     if (lines.TryGetValue(change.PurchaseOrderLineId, out var line))
                     {
-                        line.ApplySupplierChange(change.ProposedQuantity, change.ProposedUnitPrice, change.ProposedDeliveryDate);
+                        if (!line.TryApplySupplierChange(change.ProposedQuantity, change.ProposedUnitPrice, change.ProposedDeliveryDate))
+                        {
+                            return MutationDecision.Failure("proposed_quantity_below_confirmed");
+                        }
+
                         line.TouchVersion();
                     }
 
@@ -673,14 +746,7 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                     change.TouchVersion();
                 }
 
-                var latest = entity.LatestConfirmationStatus;
-                var resultingStatus = latest switch
-                {
-                    PurchaseOrderConfirmationStatus.Rejected => PurchaseOrderStatus.Rejected,
-                    PurchaseOrderConfirmationStatus.NoResponse => PurchaseOrderStatus.NoResponse,
-                    _ when entity.Lines.All(item => item.ConfirmedQuantity >= item.OrderedQuantity) => PurchaseOrderStatus.Confirmed,
-                    _ => PurchaseOrderStatus.PartiallyConfirmed
-                };
+                var resultingStatus = DeriveConfirmationStatus(entity);
                 entity.CompleteSupplierChangeApproval(resultingStatus, command.OccurredAt);
                 entity.ResetApprovalState();
                 entity.TouchVersion();
@@ -730,7 +796,7 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                     change.TouchVersion();
                 }
 
-                entity.RejectSupplierChange(command.OccurredAt);
+                entity.RejectSupplierChange(DeriveConfirmationStatus(entity), command.OccurredAt);
                 entity.TouchVersion();
                 db.PurchaseOrderHistory.Add(new PurchaseOrderHistoryEntity(
                     Guid.NewGuid(),
@@ -921,16 +987,20 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                 return Denied(PurchaseOrderPersistenceOutcome.InvalidState, decision.Code);
             }
 
-            db.PurchaseOrderAudit.Add(new PurchaseOrderAuditEntity(evidence with
+            var audit = new PurchaseOrderAuditEntity(evidence with
             {
                 BeforeStatus = evidence.BeforeStatus ?? fromStatus,
                 AfterStatus = evidence.AfterStatus ?? entity.Status,
                 BeforeSummary = evidence.BeforeSummary ?? fromStatus.ToString(),
                 AfterSummary = evidence.AfterSummary ?? entity.Status.ToString()
-            }));
+            });
+            db.PurchaseOrderAudit.Add(audit);
+            await db.SaveChangesAsync(cancellationToken);
+            var response = await ToRecordAsync(db, entity, cancellationToken);
+            audit.SetReplayResponseSnapshot(ReplayResponseSchemaVersion, SerializeReplayResponse(response));
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(await ToRecordAsync(db, entity, cancellationToken));
+            return PurchaseOrderPersistenceResult<PurchaseOrderRecord>.Success(response);
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -1031,34 +1101,64 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
             .Where(item => item.ActorId == query.ActorId
                 && item.OperationId == query.OperationId
                 && item.IdempotencyKey == query.IdempotencyKey)
-            .Select(item => new { item.PurchaseOrderId, item.OccurredAt, item.RequestFingerprint })
+            .Select(item => new
+            {
+                item.Id,
+                item.PurchaseOrderId,
+                item.OccurredAt,
+                item.RequestFingerprint,
+                item.ReplayResponseSchemaVersion,
+                item.ReplayResponseSnapshotJson
+            })
             .ToListAsync(cancellationToken);
         if (replayCandidates.Count == 0)
         {
             return ReplayLookup.NotFound;
         }
 
-        var latest = replayCandidates.OrderByDescending(item => item.OccurredAt).First();
-        if (query.PurchaseOrderId is { } targetId && latest.PurchaseOrderId != targetId)
+        if (replayCandidates.Select(item => item.PurchaseOrderId).Distinct().Count() != 1)
         {
             return ReplayLookup.Conflict;
         }
 
-        if (!string.Equals(latest.RequestFingerprint, query.RequestFingerprint, StringComparison.Ordinal))
+        if (query.PurchaseOrderId is { } targetId
+            && replayCandidates.Any(item => item.PurchaseOrderId != targetId))
         {
             return ReplayLookup.Conflict;
         }
 
-        var entity = await db.PurchaseOrders
-            .AsNoTracking()
-            .Include(item => item.Lines)
-            .SingleOrDefaultAsync(item => item.Id == latest.PurchaseOrderId, cancellationToken);
-        if (entity is null)
+        if (replayCandidates.Any(item => !string.Equals(item.RequestFingerprint, query.RequestFingerprint, StringComparison.Ordinal)))
         {
-            return ReplayLookup.NotFound;
+            return ReplayLookup.Conflict;
         }
 
-        return ReplayLookup.ForReplay(await ToRecordAsync(db, entity, cancellationToken));
+        var original = replayCandidates
+            .OrderBy(item => item.OccurredAt)
+            .ThenBy(item => item.Id)
+            .First();
+        if (original.ReplayResponseSchemaVersion != ReplayResponseSchemaVersion
+            || string.IsNullOrWhiteSpace(original.ReplayResponseSnapshotJson))
+        {
+            return ReplayLookup.Conflict;
+        }
+
+        try
+        {
+            var snapshot = JsonSerializer.Deserialize<ReplayResponseSnapshot>(original.ReplayResponseSnapshotJson, JsonOptions);
+            if (snapshot is null
+                || snapshot.SchemaVersion != ReplayResponseSchemaVersion
+                || snapshot.Response is null
+                || snapshot.Response.Id != original.PurchaseOrderId)
+            {
+                return ReplayLookup.Conflict;
+            }
+
+            return ReplayLookup.ForReplay(snapshot.Response);
+        }
+        catch (JsonException)
+        {
+            return ReplayLookup.Conflict;
+        }
     }
 
     private async Task<PurchaseOrderRecord> ToRecordAsync(
@@ -1076,6 +1176,9 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
             .ThenBy(item => item.Id)
             .ToArray());
     }
+
+    private static string SerializeReplayResponse(PurchaseOrderRecord response) =>
+        JsonSerializer.Serialize(new ReplayResponseSnapshot(ReplayResponseSchemaVersion, response), JsonOptions);
 
     private static PurchaseOrderRecord ToRecord(PurchaseOrderEntity entity, IReadOnlyList<PurchaseOrderSupplierChangeEntity> pendingChanges)
     {
@@ -1236,6 +1339,20 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
 
     private static bool VersionMatches(byte[] actual, byte[] expected) => actual.SequenceEqual(expected);
 
+    private static bool IsUniqueConstraintViolation(DbUpdateException exception)
+    {
+        for (var current = exception.InnerException; current is not null; current = current.InnerException)
+        {
+            if (current is SqlException { Number: 2601 or 2627 }
+                || current is SqliteException { SqliteErrorCode: 19 })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static PurchaseRequestApprovalPolicyDefinition? ReadPolicy(PurchaseOrderEntity entity)
     {
         if (string.IsNullOrWhiteSpace(entity.ApprovalPolicySnapshotJson))
@@ -1252,6 +1369,15 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
             return null;
         }
     }
+
+    private static PurchaseOrderStatus DeriveConfirmationStatus(PurchaseOrderEntity entity) =>
+        entity.LatestConfirmationStatus switch
+        {
+            PurchaseOrderConfirmationStatus.Rejected => PurchaseOrderStatus.Rejected,
+            PurchaseOrderConfirmationStatus.NoResponse => PurchaseOrderStatus.NoResponse,
+            _ when entity.Lines.Count > 0 && entity.Lines.All(item => item.ConfirmedQuantity >= item.OrderedQuantity) => PurchaseOrderStatus.Confirmed,
+            _ => PurchaseOrderStatus.PartiallyConfirmed
+        };
 
     private static IReadOnlyList<Guid> ReadApprovers(PurchaseOrderEntity entity)
     {
@@ -1294,6 +1420,8 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
         internal static readonly ReplayLookup Conflict = new(ReplayOutcome.Conflict, null);
         internal static ReplayLookup ForReplay(PurchaseOrderRecord record) => new(ReplayOutcome.Replay, record);
     }
+
+    private sealed record ReplayResponseSnapshot(int SchemaVersion, PurchaseOrderRecord Response);
 }
 
 #pragma warning restore CS1591

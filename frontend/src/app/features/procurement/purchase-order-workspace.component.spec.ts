@@ -3,7 +3,7 @@ import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter } from '@ang
 import { BehaviorSubject, of } from 'rxjs';
 import { vi } from 'vitest';
 import { LanguageService } from '../../core/i18n/language.service';
-import { PurchaseOrderListItemResponse } from './purchase-order.model';
+import { PurchaseOrderListItemResponse, PurchaseOrderResponse } from './purchase-order.model';
 import { PurchaseOrderService } from './purchase-order.service';
 import { PurchaseOrderWorkspaceComponent } from './purchase-order-workspace.component';
 
@@ -22,6 +22,57 @@ const purchaseOrderListItem: PurchaseOrderListItemResponse = {
   createdAt: '2026-08-14T10:00:00Z',
   updatedAt: '2026-08-14T10:00:00Z',
   version: 'POVERSION',
+};
+
+const purchaseOrderDetail: PurchaseOrderResponse = {
+  id: 'po-1',
+  tenantId: 'tenant-a',
+  companyId: 'company-1',
+  branchId: null,
+  createdByActorId: 'creator-1',
+  status: 'Draft',
+  source: {
+    purchaseRequestId: 'pr-1',
+    supplierQuotationId: 'quotation-1',
+    sourceDecisionId: 'decision-1',
+    purchaseRequestReference: 'PR-0001',
+    purchaseRequestPurpose: 'Office supplies',
+    supplierQuotationReference: 'SUP-Q-2026-001',
+    supplier: { id: 'supplier-1', code: 'SUP-001', name: 'Supplier One' },
+    currency: { id: 'currency-1', code: 'SAR', name: 'Saudi Riyal' },
+    paymentTerm: null,
+    sourceDecisionRationale: 'Selected quotation',
+    selectedAt: '2026-08-14T10:00:00Z',
+  },
+  notes: null,
+  createdAt: '2026-08-14T10:00:00Z',
+  updatedAt: '2026-08-14T10:00:00Z',
+  submittedAt: null,
+  approvedAt: null,
+  issuedAt: null,
+  cancelledAt: null,
+  latestConfirmationId: null,
+  latestConfirmationStatus: null,
+  approval: null,
+  lines: [{
+    id: 'line-1', sourceQuotationLineId: 'quotation-line-1', purchaseRequestLineId: 'request-line-1',
+    productSku: 'SKU-001', productName: 'Widget', unitOfMeasureCode: 'PCS', orderedQuantity: 5,
+    confirmedQuantity: 0, remainingQuantity: 5, unitPrice: 10, discountAmount: null, discountPercentage: null,
+    taxCode: null, taxName: null, taxRatePercentage: null, taxAmount: null, requestedNeedByDate: '2026-09-01',
+    deliveryDate: null, notes: null, version: 'LINEVERSION',
+  }],
+  pendingChanges: [],
+  version: 'POVERSION',
+  canEdit: true,
+  canSubmit: true,
+  canApprove: false,
+  canReject: true,
+  canReturnForChange: false,
+  canIssue: false,
+  canCancel: true,
+  canCaptureConfirmation: false,
+  canApproveSupplierChange: false,
+  canRejectSupplierChange: false,
 };
 
 function routeMap(id?: string): ParamMap {
@@ -128,5 +179,62 @@ describe('PurchaseOrderWorkspaceComponent', () => {
     // Subsequent row renders successfully
     expect(text).toContain('SUP-Q-USD');
     expect(text).toContain('2,500.00');
+  });
+
+  it('renders column headers with explicit scope semantics', () => {
+    const headers = Array.from(fixture.nativeElement.querySelectorAll('th')) as HTMLElement[];
+    expect(headers.length).toBeGreaterThan(0);
+    expect(headers.every((header) => header.getAttribute('scope') === 'col')).toBe(true);
+  });
+
+  it('keeps detail tabs and panels linked with stable accessible ids', async () => {
+    orders.get.mockReturnValue(of(purchaseOrderDetail));
+    routeUrls.next([{ path: 'purchase-orders' }, { path: ':id' }]);
+    routeParams.next(routeMap(purchaseOrderDetail.id));
+    await settle();
+
+    const tabs = Array.from(fixture.nativeElement.querySelectorAll('[role="tab"]')) as HTMLElement[];
+    expect(tabs).toHaveLength(5);
+    for (const tab of tabs) {
+      const panelId = tab.getAttribute('aria-controls');
+      expect(tab.id).toMatch(/^purchase-order-tab-/);
+      expect(panelId).toMatch(/^purchase-order-tabpanel-/);
+      const panel = fixture.nativeElement.querySelector(`#${panelId}`) as HTMLElement | null;
+      if (panel) {
+        expect(panel.getAttribute('aria-labelledby')).toBe(tab.id);
+      }
+    }
+  });
+
+  it('traps action-dialog focus, closes on Escape, and restores the opener focus', async () => {
+    orders.get.mockReturnValue(of(purchaseOrderDetail));
+    routeUrls.next([{ path: 'purchase-orders' }, { path: ':id' }]);
+    routeParams.next(routeMap(purchaseOrderDetail.id));
+    await settle();
+
+    const opener = fixture.nativeElement.querySelector('button.button--danger') as HTMLButtonElement;
+    opener.focus();
+    fixture.componentInstance.openAction('reject');
+    fixture.detectChanges();
+    await settle();
+
+    const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    const buttons = Array.from(dialog.querySelectorAll('button')) as HTMLButtonElement[];
+    const focusable = Array.from(dialog.querySelectorAll('textarea, button')) as HTMLElement[];
+    expect(document.activeElement).toBe(buttons[0]);
+
+    focusable.at(-1)?.focus();
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(focusable[0]);
+
+    focusable[0].focus();
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(focusable.at(-1));
+
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    await settle();
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(opener);
   });
 });

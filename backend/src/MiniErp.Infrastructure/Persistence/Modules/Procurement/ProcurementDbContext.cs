@@ -436,6 +436,7 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
         purchaseOrder.Property(item => item.IsReapproval).IsRequired();
         ConfigureVersion(purchaseOrder.Property(item => item.Version));
         purchaseOrder.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        purchaseOrder.HasIndex(item => new { item.TenantId, item.SourceDecisionId }).IsUnique();
         purchaseOrder.HasIndex(item => new { item.TenantId, item.Status, item.UpdatedAt });
         purchaseOrder.HasIndex(item => new { item.TenantId, item.PurchaseRequestId, item.CreatedAt });
         purchaseOrder.HasOne<PurchaseRequestEntity>()
@@ -655,6 +656,8 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
         purchaseOrderAudit.Property(item => item.AfterSummary).HasMaxLength(4096).IsRequired(false);
         purchaseOrderAudit.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false);
         purchaseOrderAudit.Property(item => item.RequestFingerprint).HasMaxLength(64).IsRequired(false);
+        purchaseOrderAudit.Property(item => item.ReplayResponseSchemaVersion).IsRequired(false);
+        purchaseOrderAudit.Property(item => item.ReplayResponseSnapshotJson).HasMaxLength(1_048_576).IsRequired(false);
         ConfigureVersion(purchaseOrderAudit.Property(item => item.Version));
         purchaseOrderAudit.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
         purchaseOrderAudit.HasIndex(item => new { item.TenantId, item.PurchaseOrderId, item.OccurredAt });

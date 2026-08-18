@@ -182,9 +182,9 @@ internal sealed class PurchaseOrderEntity : ITenantOwned
         }
     }
 
-    internal void RejectSupplierChange(DateTimeOffset occurredAt)
+    internal void RejectSupplierChange(PurchaseOrderStatus resultingStatus, DateTimeOffset occurredAt)
     {
-        Status = StatusBeforeSupplierChange ?? PurchaseOrderStatus.Issued;
+        Status = resultingStatus;
         StatusBeforeSupplierChange = null;
         UpdatedAt = occurredAt;
     }
@@ -290,11 +290,16 @@ internal sealed class PurchaseOrderLineEntity : ITenantOwned
         }
     }
 
-    internal void ApplySupplierChange(decimal? proposedQuantity, decimal? proposedUnitPrice, DateOnly? proposedDeliveryDate)
+    internal bool TryApplySupplierChange(decimal? proposedQuantity, decimal? proposedUnitPrice, DateOnly? proposedDeliveryDate)
     {
-        if (proposedQuantity is { } quantity)
+        if (proposedQuantity is { } quantity && quantity < ConfirmedQuantity)
         {
-            OrderedQuantity = quantity;
+            return false;
+        }
+
+        if (proposedQuantity is { } newQuantity)
+        {
+            OrderedQuantity = newQuantity;
         }
 
         if (proposedUnitPrice is { } price)
@@ -308,6 +313,7 @@ internal sealed class PurchaseOrderLineEntity : ITenantOwned
         }
 
         RemainingQuantity = Math.Max(0m, OrderedQuantity - ConfirmedQuantity);
+        return true;
     }
 
     internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
@@ -573,7 +579,15 @@ internal sealed class PurchaseOrderAuditEntity : ITenantOwned
     internal string? AfterSummary { get; private set; }
     internal string? IdempotencyKey { get; private set; }
     internal string? RequestFingerprint { get; private set; }
+    internal int? ReplayResponseSchemaVersion { get; private set; }
+    internal string? ReplayResponseSnapshotJson { get; private set; }
     internal byte[] Version { get; private set; } = [];
+
+    internal void SetReplayResponseSnapshot(int schemaVersion, string snapshotJson)
+    {
+        ReplayResponseSchemaVersion = schemaVersion;
+        ReplayResponseSnapshotJson = snapshotJson;
+    }
 }
 
 #pragma warning restore CS1591

@@ -84,6 +84,11 @@ public sealed class PurchaseOrderService
                     continue;
                 }
 
+                if (await persistence.SourceDecisionConsumedAsync(context.TenantContext, sourceDecision.Id, cancellationToken))
+                {
+                    continue;
+                }
+
                 var quotation = await quotations.FindAsync(context.TenantContext, sourceDecision.SelectedQuotationId, cancellationToken);
                 if (quotation is null || quotation.Status != SupplierQuotationStatus.Submitted)
                 {
@@ -776,6 +781,11 @@ public sealed class PurchaseOrderService
                 if (decision?.Id != sourceDecisionId)
                 {
                     continue;
+                }
+
+                if (await persistence.SourceDecisionConsumedAsync(context.TenantContext, decision.Id, cancellationToken))
+                {
+                    return PurchaseOrderOperationResult<PurchaseOrderSourceOptionRecord>.Failure("purchase_order_duplicate");
                 }
 
                 var quotation = await quotations.FindAsync(context.TenantContext, decision.SelectedQuotationId, cancellationToken);

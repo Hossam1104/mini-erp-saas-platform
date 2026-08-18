@@ -1,6 +1,89 @@
 # MINI ERP SAAS PLATFORM
-# CLAUDE OPUS 5 — INDEPENDENT MESP-124 PRE-MERGE REVIEW
-# PURCHASE ORDER + SUPPLIER CONFIRMATION
+# MESP-124 — CLAUDE OPUS 5 INDEPENDENT PRE-MERGE RE-REVIEW
+# PURCHASE ORDER COMMERCIAL INTEGRITY, SOURCE UNIQUENESS, DURABLE REPLAY,
+# ACCESSIBILITY, AND HTTP SEMANTICS
+
+## Canonical current handoff — read before the retained review checklist
+
+Sole executor: Claude Opus 5. Review mode: read-only independent pre-merge
+review of `feat/MESP-124-purchase-order-confirmation` / Draft PR #68 against
+the synchronized `main` baseline. Do not modify source, tests, migrations,
+generated artifacts, documentation, `TASK.md`, Jira, the pull request, or any
+database. Do not commit, push, merge, close the draft PR, start MESP-125, or
+begin Goods Receipt, Inventory, Finance, AP/accounting, payments, supplier
+portal, external integration, ZATCA/FATOORA, DNS/TLS, provider, production,
+or Wafra-specific core work. Jira is read-only and `frontend/assets` are
+owner-managed source assets that must remain untouched.
+
+The retained checklist below is historical context. Its current validation
+counts are superseded by `.ai/CURRENT_STATE.md` and `docs/staticts.md`; inspect
+the complete current diff and rerun the required checks before deciding.
+
+### Mandatory P1/P2 gates
+
+P1-A — Confirmation facts must survive commercial changes. Verify that the
+same supplier response persists status, response date, reference/contact,
+confirmed quantity, expected date, reason/notes, and line facts even when it
+proposes quantity, price, or delivery changes. Approving or rejecting a
+proposal must recompute ordered, confirmed, remaining, latest confirmation,
+and resulting status from durable facts; rejected price/date changes retain
+the prior commitment; approved quantity changes use the approved quantity.
+Proposed quantity below already confirmed quantity must fail before any
+confirmation, change, history, audit, line, version, or status mutation with
+an explicit safe error. Verify full/partial/rejected/no-response, all change
+types, approve/reject, impossible quantity, multi-line all-or-nothing, and no
+duplicate evidence/history/audit tests.
+
+P1-B — One PO consumes one source decision. Verify the Tenant-aware unique
+index `(TenantId, SourceDecisionId)` and the new additive migration
+`20260818103736_PurchaseOrderCommercialIntegrityAndDurableReplay`. Existing
+`20260817143432_PurchaseOrderAndSupplierConfirmation` and
+`20260817211222_AddPurchaseOrderAuditRequestFingerprint` must be unchanged.
+No terminal-state reuse is allowed without an approved rule. Consumed source
+options are hidden; create revalidates source, Tenant, Company/Branch,
+quotation, supplier, currency, and lines server-side; preflight and database
+races map to `purchase_order_duplicate` / HTTP 409, never 503; cross-Tenant
+visibility/consumption remains impossible.
+
+P2-C — Durable replay must return the exact original successful response, not
+mutable current PO reconstruction. Verify versioned immutable serialized
+`PurchaseOrderRecord` snapshots on audit evidence for create/edit/lifecycle,
+confirmation, and supplier-change successes, with no raw request replay
+payload. Current target/resource authorization must precede replay for existing
+targets. Exact actor/operation/key/target/fingerprint matching, conflict 409s,
+malformed snapshot fail-closed behavior, transaction ordering, and no replay
+side effects must remain intact. Verify replay after later mutation for submit,
+approve, issue, confirmation that created `ChangedPendingApproval`, supplier
+change approval/rejection, and create after source drift; also verify cache
+expiry/process restart durability and no duplicate history/audit/evidence/
+confirmation/change/version effects.
+
+P2-D — PO Angular accessibility must be real rendered behavior: every table
+uses `<th scope="col">`; tabs have stable IDs, tablist/tab roles,
+`aria-selected`, `aria-controls`, keyboard navigation, and linked tabpanel
+IDs/`aria-labelledby`; action dialogs have entry focus, Tab/Shift+Tab wrap,
+Escape, safe backdrop behavior, disabled/saving safety, and opener focus
+restoration after cancel/Escape/success. Verify LTR/RTL tab keys and focused
+tests, using the Purchase Request pattern without unrelated UI scope.
+
+### Mandatory P3 gates
+
+P3-E: `creator_only`, `self_approval_denied`, and `approval_not_eligible` are
+HTTP 403; `approval_duplicate`, `purchase_order_duplicate`, impossible
+quantity, confirmation conflicts, and idempotency conflicts are HTTP 409.
+P3-F: ISO money formatting explicitly uses 2 minimum/maximum fraction digits;
+non-ISO fallback stays localized and retains the raw code, with no FX,
+persisted amount, tax, or accounting effect. P3-H: tests cover eligible,
+ineligible, valid active delegation, invalid/expired/wrong-scope or
+ineligible-delegator delegation, and self-approval, including evidence.
+P3-J: after supplier-change rejection, `LatestConfirmationStatus`, PO status,
+ordered/confirmed/remaining quantities, and commercial values remain mutually
+consistent; do not restore stale `StatusBeforeSupplierChange`.
+
+Do not widen into P3-G retry UI or P3-I bundle optimization unless a direct
+regression is proven. Findings must state exact file/line or behavior,
+severity, evidence, impact, and smallest bounded correction. Stop after the
+independent verdict; do not activate another session.
 
 Sole Executor:
 Claude Opus 5

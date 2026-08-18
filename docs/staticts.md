@@ -2,12 +2,32 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-18 10:45 +03:00
+**Last Updated:** 2026-08-18 13:58 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~40%**
 
-## Current authoritative fast-track snapshot - 18 August 2026 (MESP-124 durable idempotency ordering correction)
+## Current authoritative fast-track snapshot - 18 August 2026 (MESP-124 Opus review remediation)
+
+This snapshot records the final bounded remediation pass requested by the
+independent Claude Opus 5 MESP-124 review. It corrects commercial-integrity,
+source-decision uniqueness, immutable durable replay, HTTP failure
+classification, approval/delegation regression coverage, and Purchase Order
+accessibility behavior. It does not add downstream Procurement, Inventory,
+Finance, external, production, or Wafra-specific scope, and it does not
+increase the conservative production-capability percentages.
+
+| Current control | Verified position |
+|---|---|
+| MESP-143 | Completed, independently reviewed by Claude Opus 5, and squash-merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67). |
+| MESP-124 | Remediation is implemented on `feat/MESP-124-purchase-order-confirmation`; Draft PR #68 remains OPEN/DRAFT/UNMERGED; Jira remained read-only and In Progress with activation evidence `11394`. |
+| Remediation scope | Confirmation facts now survive supplier commercial-change approval/rejection with recomputed ordered/confirmed/remaining/status values; one Tenant + Source Decision lifetime is enforced by a new additive unique-index migration `20260818103736_PurchaseOrderCommercialIntegrityAndDurableReplay`; successful operation responses are stored as versioned immutable audit snapshots; approval/HTTP semantics and PO dialog/tab/table accessibility are hardened. |
+| Production capability | **~40% overall; Procurement/P2P conservatively ~28%** — unchanged; this is correctness and review remediation, not additive business capability. |
+| Validation | Backend **787/787 passed, 0 skipped** including the SQL safety harness against disposable LocalDB; focused Purchase Order tests **10/10** and endpoint failure classification **7/7**; Angular **215/215** across 25 spec files; production build **492.02 kB initial / 75.39 kB Purchase Order lazy / 91.94 kB Supplier Quotation lazy**; `npm audit --omit=dev --audit-level=high` reports **0 vulnerabilities**. Playwright is the remaining runtime validation gate for this session. |
+| Boundaries | No Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way matching, supplier portal, external integration, ZATCA/FATOORA, DNS/TLS, or Wafra-specific core behavior. Production/provider, MESP-48/MESP-50, specialist, legal, migration, and cutover gates remain open. |
+| Next exact session | Independent Claude Opus 5 MESP-124 pre-merge review. It must re-verify P1-A/P1-B, exact durable replay after later mutation/cache expiry/process restart, Tenant/resource authorization before replay, HTTP 403/409 semantics, approval/delegation cases, accessibility keyboard/focus behavior, additive migration integrity, and full regression evidence. Do not merge this branch or start MESP-125. |
+
+## Historical authoritative fast-track snapshot - 18 August 2026 (MESP-124 durable idempotency ordering correction)
 
 This snapshot records a second bounded bug-fix/regression session, not new
 capability; the Procurement/P2P production-capability percentage is unchanged.

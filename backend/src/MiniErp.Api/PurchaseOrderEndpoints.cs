@@ -507,10 +507,10 @@ public static class PurchaseOrderEndpoints
         var code = result.Code;
         var status = code switch
         {
-            "permission_denied" or "resource_scope_denied" or "cross_tenant_target_denied" or "tenant_context_failed" or "authorization_profile_denied" => 403,
+            "permission_denied" or "resource_scope_denied" or "cross_tenant_target_denied" or "tenant_context_failed" or "authorization_profile_denied" or "creator_only" or "self_approval_denied" or "approval_not_eligible" => 403,
             "persistence_unavailable" or "authorization_operation_unmapped" => 503,
             "purchase_order_not_found" or "source_decision_not_found" or "source_not_found" => 404,
-            "concurrency_conflict" or "idempotency_conflict" or "purchase_order_duplicate" or "edit_not_allowed" or "submit_not_allowed" or "decision_not_allowed" or "issue_not_allowed" or "confirmation_not_allowed" or "supplier_change_approval_not_allowed" or "supplier_change_rejection_not_allowed" or "cancel_not_allowed" or "source_quotation_not_eligible" or "purchase_request_not_approved" => 409,
+            "concurrency_conflict" or "idempotency_conflict" or "purchase_order_duplicate" or "approval_duplicate" or "edit_not_allowed" or "submit_not_allowed" or "decision_not_allowed" or "issue_not_allowed" or "confirmation_not_allowed" or "confirmation_quantity_exceeds_ordered" or "proposed_quantity_below_confirmed" or "supplier_change_approval_not_allowed" or "supplier_change_rejection_not_allowed" or "cancel_not_allowed" or "source_decision_consumed" or "source_quotation_not_eligible" or "purchase_request_not_approved" => 409,
             _ => 400
         };
 
