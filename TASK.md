@@ -26,7 +26,7 @@ Parent Epic:
 MESP-7 — EPIC 07 - Procurement and Purchase-to-Pay
 
 Jira Status:
-IN PROGRESS (Activation comment `11503`)
+IN PROGRESS (Activation comment `11503`; Sol pre-implementation hold `11504`; Sol hold clarification `11505`)
 
 Prerequisite Gates Verified:
 - MESP-41 (Procurement approval policy): Done
@@ -51,17 +51,37 @@ Read completely before starting implementation:
 2. `CLAUDE.md` (Execution overlay & asset protection)
 3. `.ai/CURRENT_STATE.md` (Current authoritative baseline & merged capabilities)
 4. `docs/21_Procurement_and_Purchase_to_Pay_BRD.md` (Procurement requirements baseline)
-5. `docs/23_Finance_and_Accounting_BRD.md` (Finance requirements baseline)
-6. `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md` (§B6, PD-046 approved Finance contract)
-7. `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md` (MESP-125 scope & dependencies)
-8. `docs/Decisions.md` (ADR-002, ADR-005, ADR-006, ADR-011, ADR-018, ADR-019)
-9. `docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md` (Tenant isolation & context)
+5. `docs/22_Inventory_and_Warehouse_Management_BRD.md` (Inventory requirements baseline)
+6. `docs/23_Finance_and_Accounting_BRD.md` (Finance requirements baseline)
+7. `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md` (§B6, PD-027, PD-028, PD-046 approved Finance/Procurement/Inventory contract)
+8. `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md` (MESP-125 scope & dependencies)
+9. `docs/Decisions.md` (ADR-002, ADR-005, ADR-006, ADR-011, ADR-018, ADR-019)
+10. `docs/ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md` (Tenant isolation & context)
 
 Inspect existing merged MESP-124 / MESP-143 code before adding new components:
-- `backend/src/MiniErp.Procurement/` (Purchase Order, Supplier Confirmation, approval, snapshots, persistence)
-- `backend/src/MiniErp.Foundation/` (Authorization, audit, idempotency, REST metadata)
-- `frontend/src/app/features/procurement/` (Purchase Request, Quotation, Purchase Order workspaces)
-- `frontend/src/app/core/` (Session, context switcher, safe error handling, currency formatting)
+- `backend/src/MiniErp.App/Modules/Procurement/` (Purchase Order, Supplier Confirmation, approval, snapshots, services)
+- `backend/src/MiniErp.Contracts/Modules/Procurement/` (Contracts, commands, queries, responses, events)
+- `backend/src/MiniErp.Infrastructure/Persistence/Modules/Procurement/` (Entities, EF Core configurations, migrations, repositories)
+- `backend/src/MiniErp.Api/PurchaseOrderEndpoints.cs`
+- `backend/src/MiniErp.Api/Program.cs`
+- `backend/src/MiniErp.Api/RestOpenApiDocumentation.cs`
+- Applicable Foundation and building-block code under the real `App`, `Contracts`, `Infrastructure`, and `Api` project structure:
+  - `backend/src/MiniErp.Contracts/Modules/Foundation/`
+  - `backend/src/MiniErp.App/Modules/Identity/`
+  - `backend/src/MiniErp.App/Modules/Audit/`
+  - `backend/src/MiniErp.Infrastructure/Persistence/`
+- Frontend:
+  - `frontend/src/app/features/procurement/` (Purchase Request, Quotation, Purchase Order workspaces)
+  - `frontend/src/app/core/` (Session, context switcher, safe error handling, currency formatting)
+  - `frontend/src/app/features/`
+
+Note on Backend Layout:
+The backend solution consists strictly of:
+- `backend/src/MiniErp.Api`
+- `backend/src/MiniErp.App`
+- `backend/src/MiniErp.Contracts`
+- `backend/src/MiniErp.Infrastructure`
+Do NOT create new top-level projects merely because legacy prompt drafts named them.
 
 ============================================================
 2. PERMANENT PRODUCT & ARCHITECTURAL RULES
@@ -76,99 +96,104 @@ Inspect existing merged MESP-124 / MESP-143 code before adding new components:
    - Operational context (Company / Branch / Warehouse) exists inside the authorized Tenant.
    - Never require raw GUID entry in operational UX; use server-resolved context and business party/warehouse references.
 
-3. Cross-Module Ownership & Authority:
+3. Cross-Module Ownership & Lineage Authority:
    - Cross-module entity IDs (e.g. `PurchaseOrderId`, `GoodsReceiptId`) provide commercial lineage only.
    - Lineage NEVER grants authorization across modules or tenants.
    - Tenant, Company, Branch, and Warehouse authorization must always be derived and verified server-side.
 
+4. Source of Truth by Domain:
+   - **Procurement Domain**: Authoritative for commercial source, Purchase Orders, Supplier Confirmation, receipt eligibility, and commercial handoff.
+   - **Inventory Domain**: Authoritative for physical Goods Receipt recording, acceptance/rejection/condition evidence, warehouse custody, and eventual posted-stock truth.
+   - **Finance Domain**: Authoritative for Purchase Invoice, Accounts Payable (AP), tax/accounting interpretation, and financial posting.
+
+5. Persistence and Database Providers:
+   - Follow the existing module persistence/provider pattern.
+   - SQL Server remains the formal migration and runtime path.
+   - Preserve the existing Development SQLite fallback only where the current infrastructure already supports it.
+   - Do NOT invent a new provider architecture or require a second/parallel persistence strategy.
+
 ============================================================
-3. CORE DOMAIN BOUNDARIES & OWNERSHIP
+3. CORE DOMAIN BOUNDARIES & EXCLUSIONS
 ============================================================
 
 Preserve these exact domain boundaries:
 
-- **Procurement Domain owns**:
-  - Purchase Orders, supplier commitments, and commercial lineage;
-  - Supplier confirmation facts and commercial tolerances;
-  - Receipt eligibility, commercial remainder tracking, and handoff identity to Inventory and Finance.
+1. Goods Receipt / Stock Boundary:
+   - Physical Goods Receipt acceptance is Inventory-owned.
+   - Only POSTED accepted quantity may eventually increase stock.
+   - The full Inventory stock-ledger capability (MESP-128+) is owned by later Inventory work.
+   - MESP-125 must implement the approved receipt and handoff evidence needed by its own capability, preserve Inventory ownership, and maintain a clean future stock-posting boundary.
+   - NEVER create Procurement-owned stock balances or a temporary parallel stock ledger.
+   - If an authoritative Inventory stock-ledger / posting implementation does not yet exist, do NOT fabricate one inside MESP-125. Represent the receipt / posting boundary truthfully without claiming physical on-hand stock has changed.
 
-- **Inventory Domain owns**:
-  - Physical Goods Receipt facts and recording at authorized Warehouses;
-  - Accepted quantity, rejected quantity, damaged quantity, and quarantine/disposition facts;
-  - Warehouse ownership and physical warehouse location scoping;
-  - Posted physical-stock truth and stock-ledger mutations (when implemented).
-
-- **Finance Domain owns**:
-  - Purchase Invoices, Accounts Payable (AP), and supplier liabilities;
-  - Tax/VAT calculation and invoice accounting interpretation;
-  - Interim receipt-to-invoice accounting, clearing/accrual entries (per FIN-OD-01 / PD-046);
-  - Matching (two-way / three-way), fiscal period control, and financial reconciliation.
-
-============================================================
-4. STRICT BOUNDARIES & EXCLUSIONS
-============================================================
-
-1. Goods Receipt Stock Boundary:
-   - Inventory is the owner of posted physical stock.
-   - Do NOT silently invent the later Inventory stock-ledger implementation (MESP-128+).
-   - Goods Receipt in MESP-125 must expose a truthful handoff / posting eligibility boundary rather than creating a parallel or temporary stock truth.
-   - Never let Procurement persistence become the stock ledger.
-
-2. Purchase Invoice Boundary:
+2. Purchase Invoice Handoff Boundary:
    - MESP-125 provides the Purchase Invoice HANDOFF capability.
    - Goods Receipt itself MUST NOT automatically create:
-     - Accounts Payable;
+     - Accounts Payable (AP);
      - Supplier liability;
      - Supplier payment;
-     - General Ledger journal;
+     - General Ledger (GL) journal entries;
      - Tax posting;
      - Posted Purchase Invoice.
-   - Purchase Invoice source/handoff may be represented only at the approved non-posted handoff boundary. Finance remains authoritative for later AP/tax/posting.
+   - Purchase Invoice source/handoff is represented strictly at the approved non-posted handoff boundary. Finance remains authoritative for all downstream AP, tax, and posting decisions (per FIN-OD-01 / PD-046).
 
 3. MESP-126 Boundary:
    - Do NOT implement MESP-126 inside MESP-125.
    - Specifically do NOT implement the full PO ↔ Goods Receipt ↔ Purchase Invoice three-way matching engine, exception resolution engine, matching tolerance engine, or posting hold/release engine.
-   - Preserve the clean data and lineage needed for MESP-126 to consume later.
+   - Preserve sufficient immutable PO, Supplier Confirmation, Goods Receipt, line, quantity, unit price, currency, and tax-reference lineage for MESP-126 and later Finance work to consume.
 
 4. Other Exclusions:
    - Do NOT implement: supplier payment, AP settlement, GL posting, Inventory valuation engine, Moving Weighted Average (MWA) calculation engine, warehouse transfers, stock counts, stock issues, supplier returns, MESP-126, MESP-127, MESP-128+, external supplier portal, external provider integration, ZATCA/FATOORA, production credentials, or Wafra-specific behavior.
 
 ============================================================
-5. FUNCTIONAL SCOPE & BACKEND REQUIREMENTS
+4. FUNCTIONAL SCOPE & BACKEND REQUIREMENTS
 ============================================================
 
 Implement a complete, production-grade, bounded vertical slice for MESP-125:
 
-### 5.1 PO Eligibility & Receipt Handoff
-- Server-authorized check for PO eligibility:
-  - PO must be in an Issued or Confirmed state (not Draft, PendingApproval, Rejected, or Cancelled);
-  - Remaining receivable quantity on at least one line must be > 0;
+### 4.1 PO Receipt Eligibility & Derivation
+- Server-authoritative derivation of PO receipt eligibility:
+  - Do NOT hard-code PO status rules. Sonnet must derive receipt eligibility from PD-027, PD-028, existing MESP-124 PurchaseOrder status semantics (`Issued`, `Confirmed`, `PartiallyConfirmed`, `NoResponse`, `Rejected`, `ChangedPendingApproval`, `Cancelled`), the Procurement BRD, the Inventory BRD, and server-authoritative remaining quantity.
+  - Principle: A partial Supplier Confirmation can create only the confirmed operational obligation while the remainder stays pending/rejected.
+  - If approved evidence is genuinely ambiguous about an edge case, STOP and report that edge case rather than inventing an unapproved business rule.
+  - Remaining receivable quantity on at least one line must be > 0.
   - Caller must have authorized Tenant and Company/Branch/Warehouse context.
 - Receipt request / handoff from Procurement to Inventory with immutable lineage back to PO, Line, Product, UOM, Supplier, Source Decision, and PR.
 
-### 5.2 Goods Receipt Capture & Partial Receiving
+### 4.2 Goods Receipt Capture & Partial Receiving
 - Capture physical receipt events against eligible PO lines:
-  - Goods Receipt header: TenantId, CompanyId, BranchId, WarehouseId, PurchaseOrderId, SupplierId, ReceiptNumber/Reference, ReceiptDate, ReceivedByActorId, Notes, Status, Version, Audit timestamps;
-  - Goods Receipt lines: PurchaseOrderLineId, ProductId, UOMId, OrderedQuantity, PreviouslyReceivedQuantity, ReceivedQuantity, AcceptedQuantity, RejectedQuantity, DamagedQuantity, RemainingReceivableQuantity, RejectionReason, Notes.
+  - Goods Receipt header: TenantId, CompanyId, BranchId, WarehouseId, PurchaseOrderId, SupplierId, ReceiptNumber/Reference, ReceiptDate, ReceivedByActorId, Notes, Status, Version, Audit timestamps.
+  - Goods Receipt lines: PurchaseOrderLineId, ProductId, UOMId, OrderedQuantity, PreviouslyReceivedQuantity, ReceivedQuantity, AcceptedQuantity, RejectedQuantity, Condition/Damage evidence, RemainingReceivableQuantity, RejectionReason, Notes.
 - Support partial receipts: multiple sequential Goods Receipt events against one PO until all eligible quantities are fully received or closed.
-- Track exact remaining receivable quantity per line.
+- Track exact remaining receivable quantity per line derived authoritatively by the server.
 
-### 5.3 Server-Side Quantity Integrity Invariants
+### 4.3 Server-Side Quantity Integrity & Non-Overlapping Invariants
 - Enforce strict server-side quantity invariants:
-  - `ReceivedQuantity = AcceptedQuantity + RejectedQuantity + DamagedQuantity` (or accepted + rejected/damaged disposition);
-  - `AcceptedQuantity >= 0`, `RejectedQuantity >= 0`, `DamagedQuantity >= 0`;
-  - `AcceptedQuantity + RejectedQuantity + DamagedQuantity <= RemainingReceivableQuantity` (no over-receipt beyond approved/confirmed PO quantity unless explicit approved tolerance applies);
+  - `AcceptedQuantity >= 0`
+  - `RejectedQuantity >= 0`
+  - All explicit quantity fields `>= 0`
+  - No receipt may consume more than the server-derived eligible quantity.
+  - Do NOT enforce the unsafe equation `ReceivedQuantity = AcceptedQuantity + RejectedQuantity + DamagedQuantity`. Damaged quantity is condition/disposition evidence (e.g. damaged accepted vs. damaged rejected) and not automatically an additive third bucket.
+  - Rejected-at-receipt quantity is NOT automatically damaged stock; damaged quantity is NOT automatically rejected.
+  - Only posted accepted quantity may eventually increase stock.
+  - No quantity may be silently double-counted.
   - Client-calculated remainder is never authoritative; server derives and validates all remainder quantities.
 
-### 5.4 Purchase Invoice Handoff
-- Expose a truthful, immutable Purchase Invoice Handoff boundary:
-  - Sourced from eligible Goods Receipt(s) and/or PO;
-  - Captures commercial/receipt lineage, received/accepted quantities, supplier pricing references, tax references;
-  - Status: `EligibleForInvoice`, `HandoffCreated`, `PendingFinanceReview` (non-posted);
-  - Lineage connects PO line, Goods Receipt line, Product, UOM, unit price, tax rate reference, and commercial amounts;
-  - Does NOT create AP subledger or GL postings.
+### 4.4 Commercial Remainder Derivation
+- Do not automatically reduce the PO commercial remainder by every physically arrived quantity.
+- The server must derive the commercial/receivable remainder from authoritative PO, Supplier Confirmation, and Goods Receipt facts.
+- Rejected goods must not silently satisfy the supplier's remaining commercial obligation unless an approved disposition explicitly closes that quantity.
+- Procurement must retain visibility into accepted quantity, rejected/condition evidence, outstanding quantity, partial receipt status, and remaining/open commercial obligation.
 
-### 5.5 Concurrency, Idempotency & Audit
+### 4.5 Purchase Invoice Handoff & Lifecycle States
+- Implement the minimum explicit Goods Receipt and Purchase Invoice handoff lifecycle needed by the approved BRDs and MESP-125 contract.
+- State names and transitions must be derived from approved business semantics, remain auditable, and distinguish recorded/unposted/blocked/eligible/completed or equivalent states without implying AP, tax, GL, stock posting, or matching at the wrong stage.
+- Sourced from eligible Goods Receipt(s) and/or PO.
+- Captures commercial/receipt lineage, received/accepted quantities, supplier pricing references, tax rate references, and commercial amounts.
+- Lineage connects PO line, Goods Receipt line, Product, UOM, unit price, tax rate reference, and commercial amounts.
+- Does NOT create AP subledger, supplier liability, or GL postings.
+
+### 4.6 Concurrency, Idempotency & Audit
 - Optimistic concurrency: `If-Match` / ETag version tokens on receipt and handoff mutations;
 - Idempotency with durable replay:
   - Same idempotency key + identical request payload → deterministic replay of stored result;
@@ -177,15 +202,15 @@ Implement a complete, production-grade, bounded vertical slice for MESP-125:
   - Stored versioned audit snapshots prevent duplicate mutation, duplicate receipt, duplicate handoff, and duplicate audit records.
 - Immutable history and audit log for every Goods Receipt and handoff lifecycle event.
 
-### 5.6 Persistence & API Contracts
-- Formal module-owned persistence (dedicated SQL Server schema and SQLite fallback);
+### 4.7 Persistence & API Contracts
+- Formal module-owned persistence (dedicated SQL Server schema and SQLite fallback where supported);
 - Formal additive EF Core migrations for any new or altered schema;
 - Foundation REST operation catalogue with antiforgery protection for unsafe operations;
 - Complete OpenAPI / Scalar metadata and safe error contracts (RFC 7807 problem details);
 - No raw GUID exposure in operational user flows.
 
 ============================================================
-6. FRONTEND REQUIREMENTS (ANGULAR)
+5. FRONTEND REQUIREMENTS (ANGULAR)
 ============================================================
 
 1. Workspace & Routing:
@@ -202,18 +227,18 @@ Implement a complete, production-grade, bounded vertical slice for MESP-125:
    - Dense, professional ERP-grade layout matching established design system;
    - Table headers, ARIA attributes, keyboard navigation, tab panels, focus trapping in dialogs;
    - Safe initial focus and Escape handling on modal dialogs;
-   - Clear visual status badges for receipt state (Draft, Received, Partial, Complete) and handoff state;
-   - Server-authoritative action availability (`canReceive`, `canCreateInvoiceHandoff`).
+   - Clear visual status badges for receipt lifecycle state and invoice handoff state derived from approved semantics;
+   - Server-authoritative action availability (e.g. `canReceive`, `canCreateInvoiceHandoff`).
 
 4. Currency & Number Formatting:
    - Reusable `formatMoney` with non-ISO safe fallback;
    - SAR presentation asset support without hardcoding.
 
 ============================================================
-7. TESTING & VALIDATION REQUIREMENTS
+6. TESTING & VALIDATION REQUIREMENTS
 ============================================================
 
-### 7.1 Backend Validation
+### 6.1 Backend Validation
 - Release build must succeed with 0 warnings and 0 errors:
   ```powershell
   dotnet build .\backend\MiniErp.sln -c Release
@@ -226,19 +251,25 @@ Implement a complete, production-grade, bounded vertical slice for MESP-125:
   - Must genuinely execute the SQL Server safety harness against disposable LocalDB and clean up with 0 orphan databases;
   - `MESP_SQLSERVER_CONNECTION_STRING` must remain untouched.
 - Add comprehensive focused tests covering:
-  - PO receipt eligibility & state validation;
+  - Authorized receipt eligibility derived from approved PO/confirmation states;
+  - Wrong-stage receipt denial;
   - Single full Goods Receipt;
   - Partial Goods Receipt and exact remainder computation;
-  - Multiple sequential receipts against one PO until remainder = 0;
+  - Multiple sequential receipts against one PO until remainder is satisfied or closed;
+  - Exact outstanding/remainder derived server-side;
+  - Accepted/rejected/damaged/condition semantics without double counting;
+  - Rejected quantity not silently treated as accepted stock or closing supplier obligation;
   - Rejection of over-receipt beyond eligible receivable quantity;
-  - Rejected and damaged quantity recording;
   - Cross-Tenant isolation and Company/Branch/Warehouse authorization denial;
   - Optimistic concurrency conflict (`If-Match` mismatch);
-  - Durable idempotent replay (identical retry succeeds without duplicate history/audit, conflicting retry returns 409);
-  - Purchase Invoice handoff creation and lineage;
-  - Prevention of premature AP, tax posting, or GL entries.
+  - Durable idempotent replay (identical retry succeeds without duplicate history/audit, conflicting retry returns 409 `idempotency_conflict`);
+  - Same-key conflicting request 409;
+  - No duplicate receipt/history/audit;
+  - Purchase Invoice handoff creation and immutable lineage;
+  - Prevention of premature AP, tax posting, GL entries, or supplier payment;
+  - No Procurement-owned stock ledger or fabricated stock updates.
 
-### 7.2 Frontend Validation
+### 6.2 Frontend Validation
 - Angular unit tests:
   ```powershell
   cd frontend
@@ -258,7 +289,7 @@ Implement a complete, production-grade, bounded vertical slice for MESP-125:
   ```
   - Must report **0 vulnerabilities**.
 
-### 7.3 Playwright E2E Validation
+### 6.3 Playwright E2E Validation
 - Run focused and full Playwright tests:
   ```powershell
   npm run test:e2e -- --project=chromium
@@ -267,7 +298,7 @@ Implement a complete, production-grade, bounded vertical slice for MESP-125:
   - Full Chromium suite must pass cleanly.
 
 ============================================================
-8. DEVELOPMENT RUNTIME HANDOFF
+7. DEVELOPMENT RUNTIME HANDOFF
 ============================================================
 
 After all code changes, tests, and documentation are complete:
@@ -294,7 +325,7 @@ After all code changes, tests, and documentation are complete:
    - Leave API and Angular RUNNING for the Owner.
 
 ============================================================
-9. GIT, PR & COMPLETION RULES
+8. GIT, PR & COMPLETION RULES
 ============================================================
 
 1. Feature Branch:
