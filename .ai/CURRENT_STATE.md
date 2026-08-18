@@ -47,8 +47,12 @@ evidence `11394`. MESP-143 remains the merged ADR-019 prerequisite at
 - Angular unit tests: **215/215** across 25 spec files. Production build:
   **492.02 kB initial**, **75.39 kB Purchase Order lazy**, **91.94 kB Supplier
   Quotation lazy**. Production dependency audit: 0 high/critical findings.
-- Playwright runtime validation is still pending in this session. No
-  production-capability percentage increase is claimed for this remediation.
+- Playwright runtime validation is complete: focused Purchase Order Chromium
+  E2E **7/7** and full Chromium E2E **15/15** passed. The official Development
+  runtime smoke passed with API health/module registration and Angular HTTP
+  200 on API 5300 / Angular 4300; the repository-owned listeners remain live
+  for handoff. No production-capability percentage increase is claimed for
+  this remediation.
 
 ### Next exact gate
 
