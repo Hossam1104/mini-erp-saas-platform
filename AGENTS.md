@@ -58,41 +58,41 @@ velocity, or forecast:
 - **Presentational Only**: Presentation-layer only; causes zero FX conversion, zero tax effect, zero accounting effect, and zero persisted amount change.
 - **Fallback & Non-SAR**: Safe text fallback (e.g. `SAR`) is preserved for semantic clarity in multi-currency comparison, audit, and exports. Non-SAR currencies remain completely unaffected. Governed by MESP-12 / MESP-37.
 
-## Current execution overlay - 17 August 2026 (MESP-124 implementation; pre-merge handoff)
+## Current execution overlay - 19 August 2026 (MESP-124 merged; post-merge reconciliation; MESP-125 blocked on FIN-OD-01)
 
-MESP-143 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE),
-and squash-merged to `main`** at commit `866cb75bb7d0d97c929216b1a449f458a2614097`
-(reviewed feature head: `25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged).
-Its Tenant-aware host, membership, Overview, operational-context, branding, and
-SAR presentation authority is the required context for the bounded MESP-124
-implementation.
+MESP-124 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR
+MERGE), and squash-merged to `main`** at commit
+`c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (merge timestamp 2026-08-18T21:37:47Z;
+reviewed feature head `0eca12dbecffe7e8abeff6914566fa4de329d2c7`; PR #68
+merged).
 
-MESP-124 is **implemented on branch `feat/MESP-124-purchase-order-confirmation`**
-from synchronized `main` and published as **Draft PR #68** against `main`, with
-Jira activation already present in the read-only record (MESP-124 In Progress;
-activation evidence comment `11394`; MESP-143 Done closure evidence comment
-`11393`). The bounded capability adds Tenant- and
-Company/Branch-scoped Purchase Order source selection, immutable PR/quotation/
-source-decision and commercial snapshots, reusable approval/SoD/delegation
-seams, issue/commit evidence, manual Supplier Confirmation, exact per-line
-partial remainder, explicit rejection/no-response, supplier-proposed quantity/
-price/date changes with controlled reapproval, immutable history/audit, REST/
-OpenAPI metadata, and bilingual Angular list/create/edit/detail journeys.
+Its Tenant- and Company/Branch-scoped Purchase Order source selection, immutable
+PR/quotation/source-decision and commercial snapshots, reusable approval/SoD/
+delegation seams, issue/commit evidence, manual Supplier Confirmation (full,
+partial, rejected, no-response), supplier-proposed changes with controlled
+reapproval, exact confirmation remainder, lifetime Tenant-scoped uniqueness
+consumption, exact durable idempotent replay, immutable history/audit, REST/
+OpenAPI metadata, formal Procurement EF Core migrations, and bilingual EN/AR RTL
+Angular workspace are merged to `main`.
 
 No Goods Receipt, stock, warehouse movement, invoice, AP/accounting, payment,
 three-way matching, supplier portal, external integration, ZATCA/FATOORA,
-production DNS/TLS, or Wafra-specific core behavior was added. The formal
-Procurement EF migration is present; production/provider, MESP-48/MESP-50,
-backup/restore, capacity, legal, specialist, and cutover gates remain open.
-Owner-managed assets under `frontend/assets` remain untouched. Jira writes are
-prohibited for this session; GPT-5.6 Sol owns Jira closure.
+production DNS/TLS, or customer-specific (Wafra) core behavior was added.
+Production/provider, MESP-48/MESP-50, backup/restore, capacity, legal,
+specialist, and cutover gates remain open. Protected source assets under
+`frontend/assets` remain untouched. Jira writes are prohibited in this
+documentation-only reconciliation session; GPT-5.6 Sol owns Jira closure.
 
-The exact next session after this bounded implementation is an independent
-**Claude Opus 5 MESP-124 pre-merge review**. Do not merge this branch and do not
-start MESP-125 or any downstream Procurement, Inventory, Finance, or integration
-capability automatically.
+The planned next implementation capability is **MESP-125 (Goods Receipt and
+Purchase Invoice handoff)** under Epic MESP-7. However, MESP-125 is **NOT
+ACTIVATED** and is **BLOCKED ON FIN-OD-01** (unresolved Finance decision on
+interim Goods Receipt accounting, clearing/accrual, and valuation/posting
+treatment). Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, and MESP-113
+are Done. Do not start MESP-125 implementation or write source/schema/Jira
+changes until GPT-5.6 Sol and the Product Owner formally resolve and record
+FIN-OD-01.
 
-## Historical execution overlay - 17 August 2026 (MESP-143 implementation; superseded by merge)
+## Historical execution overlay - 17 August 2026 (MESP-124 implementation; superseded by merge)
 
 MESP-143 was implemented on branch `feat/MESP-143-tenant-aware-entry` from
 the synchronized `main` baseline. The bounded capability adds configuration-led

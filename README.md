@@ -23,15 +23,17 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-The latest merged delivery is MESP-143 (Tenant-aware entry routing and operational
-workspace context, merged in PR #67 at `866cb75bb7d0d97c929216b1a449f458a2614097`).
-The current bounded delivery is MESP-124 on
-`feat/MESP-124-purchase-order-confirmation`: Purchase Orders now consume only
-server-authorized approved source decisions, preserve immutable sourcing and
-commercial snapshots, reuse approval/SoD/delegation, and record manual full,
-partial, rejected, no-response, and supplier-change/reapproval evidence. Issue
-and confirmation remain commercial Procurement evidence only; they create no
+The latest merged delivery is MESP-124 (Purchase Orders and Supplier Confirmation,
+merged in PR #68 at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` following
+independent Claude Opus 5 review). Purchase Orders consume only server-authorized
+approved source decisions, preserve immutable sourcing and commercial snapshots,
+reuse approval/SoD/delegation, and record manual full, partial, rejected,
+no-response, and supplier-change/reapproval evidence with durable idempotent replay.
+Issue and confirmation remain commercial Procurement evidence only; they create no
 stock, receipt, invoice, AP, payment, or accounting effect.
+
+The planned next capability is MESP-125 (Goods Receipt and Purchase Invoice handoff),
+which is currently To Do / unactivated, and blocked on owner decision FIN-OD-01.
 
 The tracked project-control source of truth is [`docs/staticts.md`](docs/staticts.md).
 Its current conservative band is approximately:
@@ -45,9 +47,8 @@ Its current conservative band is approximately:
 | Full end-to-end business system | **~36%** | Integrated flows remain incomplete |
 | Production readiness | **~29%** | Deployment, operations, legal, capacity, and specialist gates remain |
 
-MESP-143 is merged and MESP-124 is implemented at its bounded pre-merge scope.
-This repository is an active Development system, not a production-readiness or
-regulatory approval.
+MESP-143 and MESP-124 are merged to `main`. This repository is an active
+Development system, not a production-readiness or regulatory approval.
 
 ## Capability matrix
 
@@ -66,8 +67,8 @@ Release 1 scope · 🔒 gated or validation pending.
 | Purchase Requests and configurable approval foundation | ✅ | Internal demand flow; downstream commitments are excluded |
 | Supplier Quotations, comparison and source decision | ✅ | Sourcing comparison and decision recording (MESP-123) |
 | SQL Server Development database | ✅ | Local `MESP` database and formal module migration path |
-| Purchase Orders and Supplier Confirmation | ✅ | Bounded MESP-124 slice: source lineage, approval, issue, manual confirmation, partials, rejection, changes and reapproval |
-| Goods Receipt, Purchase Invoice, AP and Payments | 📋 | Required Release 1 work; not started |
+| Purchase Orders and Supplier Confirmation | ✅ | Merged MESP-124 slice: source lineage, approval, issue, manual confirmation, partials, rejection, changes, reapproval, durable replay, EN/AR RTL workspace |
+| Goods Receipt, Purchase Invoice, AP and Payments | 📋 | Planned next candidate MESP-125; unactivated / blocked on FIN-OD-01 |
 | Inventory posting, B2B Sales, Accounting and Cash | 📋 | Required Release 1 work; not started |
 | Reporting, migration/onboarding and external integrations | 📋 / 🔒 | Product scope exists, implementation and gates remain |
 | ZATCA/FATOORA, statutory and legal certification | 🔒 | Outside this bounded implementation; requires qualified validation |

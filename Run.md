@@ -193,8 +193,8 @@ Goods Receipt, stock, invoice, AP, payment, accounting, or three-way-match
 effects.
 
 When `MESP_SQLSERVER_CONNECTION_STRING` is configured, the formal Procurement
-migration `20260817143432_PurchaseOrderAndSupplierConfirmation` is applied by
-the Development migration sequence. Production startup still does not
+migrations (through `20260818103736_PurchaseOrderCommercialIntegrityAndDurableReplay`)
+are applied by the Development migration sequence. Production startup still does not
 auto-migrate, and disposable SQL safety evidence must use
 `scripts/Test-MiniErpBackend.ps1`.
 

@@ -7,19 +7,22 @@
 > readiness claim. MESP-33 and later domain work are not started by this
 > document.
 
-> **Implementation reconciliation - MESP-124, 17 August 2026.** The approved
-> business baseline above is preserved. The bounded MESP-124 source slice now
-> implements Purchase Order and manual Supplier Confirmation behavior against
-> the already approved MESP-123 sourcing chain: approved PR, submitted
-> quotation, current Source Decision, immutable commercial snapshots,
-> reusable approval/SoD/delegation, issue evidence, full/partial/rejected/
-> no-response confirmation, supplier-proposed change records, controlled
-> reapproval, history, audit, and Tenant/Company/Branch scope. This note records
-> repository implementation status only; it does not close any remaining
-> Procurement decision, production, Inventory, Finance, legal, migration,
-> retention, or external-integration gate. Goods Receipt, stock, invoice, AP,
-> payment, accounting, and three-way matching remain downstream and are not
-> implemented by MESP-124.
+> **Implementation reconciliation - MESP-124, 19 August 2026.** The approved
+> business baseline above is preserved. The bounded MESP-124 source slice
+> (Purchase Orders and manual Supplier Confirmation) is complete, independently
+> reviewed by Claude Opus 5 (APPROVE FOR MERGE), and squash-merged to `main` at
+> commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (PR #68). It implements
+> Purchase Order and manual Supplier Confirmation behavior against the approved
+> MESP-123 sourcing chain: approved PR, submitted quotation, current Source
+> Decision, immutable commercial snapshots, reusable approval/SoD/delegation,
+> issue evidence, full/partial/rejected/no-response confirmation, supplier-proposed
+> change records, controlled reapproval, lifetime Tenant-scoped source decision
+> uniqueness consumption, durable idempotent replay, history, audit, and
+> Tenant/Company/Branch scope. The planned next candidate is MESP-125 (Goods
+> Receipt and Purchase Invoice handoff), which is currently To Do / unactivated
+> and blocked on FIN-OD-01. Goods Receipt, stock, invoice, AP, payment,
+> accounting, and three-way matching remain downstream and are not implemented
+> by MESP-124.
 
 ## 1. Document Control
 

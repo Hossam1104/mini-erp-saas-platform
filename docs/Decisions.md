@@ -2,25 +2,44 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
-## MESP-124 source-decision consumption and terminal recovery reconciliation - 18 August 2026
+## MESP-124 Purchase Order & Supplier Confirmation Merge Reconciliation - 19 August 2026
 
-The bounded MESP-124 implementation preserves the lifetime Tenant-scoped
-`(TenantId, SourceDecisionId)` uniqueness invariant: one Source Decision can
-create at most one Purchase Order. A Cancelled or Rejected Purchase Order does
-not release that source decision, and MESP-124 does not create a replacement PO
-from the same decision. Current recovery is a new sourcing action followed by a
-new Source Decision. This preserves the duplicate-commercial-commitment
-invariant and is now covered by a real duplicate-create behavior test, not only
-the EF model declaration.
+MESP-124 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE),
+and squash-merged to `main`** at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6`
+(merge timestamp 2026-08-18T21:37:47Z; reviewed feature head
+`0eca12dbecffe7e8abeff6914566fa4de329d2c7`; PR #68 merged).
+
+The implementation preserves the lifetime Tenant-scoped `(TenantId, SourceDecisionId)`
+uniqueness invariant: one Source Decision can create at most one Purchase Order.
+A Cancelled or Rejected Purchase Order does not release that source decision,
+and MESP-124 does not create a replacement PO from the same decision. Current
+recovery is a new sourcing action followed by a new Source Decision. This
+preserves the duplicate-commercial-commitment invariant and is covered by a real
+duplicate-create behavior test.
 
 Controlled reopening or replacement of the same eligible, unposted Purchase
 Order remains **FUTURE EXPLICIT CAPABILITY / DECISION**. When that future scope
 is authorized, it must preserve the original PO and source lineage together
 with actor, reason, timestamp, scope, prior/current status, and audit/history.
-This reconciliation does not implement reopening, alter the migration, or
-change Tenant/Company/Branch authorization. Terminal PO detail communicates
-the current new-source-decision rule in English and Arabic; it is explanatory
-UX and not an authorization mechanism.
+Terminal PO detail communicates the current new-source-decision rule in English
+and Arabic; it is explanatory UX and not an authorization mechanism.
+
+### Carried Forward Non-Blocking P3 Observations (MESP-124)
+- **P3-1**: Approval stage empty `EligibleApproverIds` semantics are implicit/inherited from MESP-123.
+- **P3-2**: Supplier-change rejection pending-change query has minor line-ID predicate asymmetry.
+- **P3-3**: Some state/config errors still map to generic HTTP 400 rather than more precise HTTP 409 / 503 semantics.
+- **P3-4**: Angular creates a new idempotency key per explicit user retry; durable replay is therefore mainly server/API retry protection.
+- **P3-5**: `ReplayResponseSnapshotJson` duplicates commercial data in immutable audit and must feed retention/privacy/purge governance (MESP-50).
+- **P3-6**: `scripts/Test-MiniErpBackend.ps1` should neutralize inherited `MESP_DEV_AUTH_BYPASS` during tests.
+- **P3-7**: Cancelled/Rejected PO permanently consumes the source decision in MESP-124; controlled reopen remains a future explicit capability/decision.
+- **P3-8**: Transitive `nanoid` lockfile-only security patch is intentionally present.
+
+### Downstream Next Candidate & Decision Gate
+The planned next capability is **MESP-125 (Goods Receipt and Purchase Invoice handoff)**
+under Epic MESP-7. It is **To Do / NOT ACTIVATED** and **BLOCKED ON FIN-OD-01**
+(interim Goods Receipt accounting, clearing/accrual, and valuation/posting
+treatment). Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, and MESP-113
+are Done.
 
 ## Current Architecture Acceptance (ADR-019) - 17 August 2026
 

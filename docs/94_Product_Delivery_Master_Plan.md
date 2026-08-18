@@ -1,7 +1,7 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative current full-feature fast-track overlay — 12 August 2026
-> (MESP-116).** Release 1 remains the full-feature reusable B2B ERP. The
+> **Authoritative current full-feature fast-track overlay — 19 August 2026
+> (MESP-124 merge reconciliation).** Release 1 remains the full-feature reusable B2B ERP. The
 > milestone is **31 August 2026 — Release 1 Integrated Preview**, a running
 > preview of the real codebase, not an MVP, throwaway/demo UI, Wafra fork, or
 > scope cut. Unfinished capability remains required after the preview.
@@ -10,25 +10,14 @@
 > Canonical Owner Decision Pack: `docs/31_Release_1_Consolidated_Owner_Decision_Pack.md`.
 > Tax/VAT clarification: `docs/32_Release_1_Tax_VAT_Scope_Clarification.md`.
 > Approved decision/dependency map: `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`.
-> PD-024 records only explicit Owner directions. MESP-116 approved A1-A16
-> and B1-B6 at their exact bounded positions and appended PD-025 through
-> PD-046. Class B is the Release 1 product/implementation contract, subject
-> to mandatory specialist validation before production or irreversible
-> accounting, migration, and cutover decisions. C1-C9 remain open gates.
-> Internal reusable
-> configuration-led Tax/VAT is restored to Release 1 without statutory,
-> ZATCA/FATOORA, legal, certification, submission, clearance, provider,
-> credential, or external-integration scope.
+> MESP-143 is merged (PR #67). MESP-124 (Purchase Orders and Supplier Confirmation)
+> is complete, reviewed by Claude Opus 5 (APPROVE FOR MERGE), and squash-merged to `main`
+> at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (PR #68).
 >
-> MESP-38 is Done. MESP-115 is Done through focused PR #58, reviewed at
-> `0681c0182b0b6894f5f2b83db1728253ac54e279` and merged at
-> `a5ee9426d252901e74888bdc3ca94970c969aa20`. MESP-39 remains To Do, unactivated, and not executed as a
-> future-release Integrations and External Services BRD. MESP-40 remains an
-> unactivated Release 1 migration/onboarding requirement in Wave H. MESP-23
-> remains In Progress; its reconciliation evidence is Jira comment 10976.
-> MESP-117-MESP-142 remain To Do/not activated under the existing module
-> Epics. MESP-117 is the approved first capability handoff, documented in
-> Jira comment 10977 and docs/33; no implementation starts automatically.
+> The planned next capability is MESP-125 (Goods Receipt and Purchase Invoice handoff),
+> which is currently To Do / unactivated, and blocked on owner decision FIN-OD-01.
+> Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, and MESP-113 are Done.
+> No implementation starts automatically.
 
 > **Historical pre-fast-track overlay — MESP-38 completion.** The prior
 > MESP-38/MESP-39 overlay immediately below remains preserved evidence only;

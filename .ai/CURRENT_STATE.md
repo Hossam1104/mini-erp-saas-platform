@@ -1,6 +1,102 @@
 # Current State
 
-## Current authoritative position - 18 August 2026 (MESP-124 final Opus P2 remediation)
+## Current authoritative position - 19 August 2026 (MESP-124 merged; post-merge reconciliation)
+
+MESP-124 is **complete, independently reviewed by Claude Opus 5 (verdict:
+APPROVE FOR MERGE), and squash-merged to `main`** at commit
+`c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (merge timestamp 2026-08-18T21:37:47Z;
+reviewed feature head `0eca12dbecffe7e8abeff6914566fa4de329d2c7`; PR #68
+merged). The repository `main` branch is synchronized with `origin/main`.
+Jira closure is managed by GPT-5.6 Sol; zero Jira writes were performed in this
+documentation and governance reconciliation session.
+
+### MESP-124 Merged Capability
+
+- **Source Lineage & Sourcing Prerequisite**: Purchase Orders are created
+  exclusively from server-authorized approved Purchase Requests, submitted
+  Supplier Quotations, and active Source Decisions.
+- **PO Lifecycle & Management**: Full draft, edit, submit, approval, rejection,
+  return-for-change, issue, and cancel workflows with optimistic concurrency
+  (`If-Match` / ETag).
+- **Approval Engine & Governance**: Multi-stage approval, configured delegation,
+  and strict separation of duties (no self-approval).
+- **Supplier Confirmation**: Manual confirmation capture supporting full,
+  partial, rejected, and no-response outcomes, with exact confirmation remainder
+  calculation across multiple lines.
+- **Supplier Change Proposals & Controlled Reapproval**: Capture of supplier-proposed
+  quantity, price, and delivery-date changes; multi-stage reapproval with stage
+  approver reset; rejection retaining prior commitments; and safety validations
+  preventing quantity reduction below already confirmed amounts.
+- **Lifetime Source Decision Consumption**: Lifetime Tenant-scoped uniqueness
+  `(TenantId, SourceDecisionId)` enforced via additive EF Core migration
+  `20260818103736_PurchaseOrderCommercialIntegrityAndDurableReplay`. Cancelled
+  or Rejected POs permanently consume the source decision; recovery requires a
+  new sourcing decision. Controlled same-PO reopening is deferred as a future
+  explicit capability/decision.
+- **Durable Idempotency & Immutable Audit**: Versioned serialized snapshots
+  stored in immutable audit records; safe replay probe executed after trusted
+  Tenant and actor authorization but before state-dependent checks; 409 conflict
+  on key reuse across differing payloads or targets.
+- **Angular Frontend & Accessibility**: Complete English / Arabic (RTL/LTR)
+  workspace with tab/panel ARIA semantics, focus trapping, keyboard navigation,
+  dialog backdrop safety, and localized non-ISO currency fallback.
+- **Module Persistence**: Dedicated SQL Server schema `procurement` with formal
+  EF Core migrations.
+
+### Accepted Validation Evidence at Merge
+
+- **Release Build**: 0 warnings / 0 errors (`dotnet build backend\MiniErp.sln -c Release`).
+- **Backend ArchitectureTests**: **793/793 passed, 0 skipped**, with the SQL Server
+  safety harness genuinely executed against disposable LocalDB and dropped cleanly
+  with zero orphan databases.
+- **Focused Purchase Order Tests**: **14/14 passed**; focused PO + REST foundation
+  tests: **47/47 passed**.
+- **Angular Unit Tests**: **216/216 passed** across 25 spec files.
+- **Production Build**: **492.02 kB initial bundle**, **76.78 kB PO lazy chunk**,
+  **91.94 kB Supplier Quotation lazy chunk** (under the 500 kB budget).
+- **Security & Vulnerabilities**: `npm audit --omit=dev`: **0 vulnerabilities**;
+  full `npm audit`: **0 vulnerabilities** (transitive `nanoid` 3.3.18 lockfile patch).
+- **Playwright E2E**: Focused Purchase Order Chromium **8/8 passed**; full Chromium
+  **16/16 passed**.
+- **Manual Interactive Browser**: NOT PERFORMED (automated Chromium evidence only).
+
+### Domain Boundaries & Non-Scope Invariants
+
+- **Procurement Scope Only**: No Goods Receipt, stock mutation, warehouse movement,
+  Purchase Invoice, Accounts Payable (AP), payment, accounting posting, or three-way
+  matching was implemented in MESP-124.
+- **External & Infrastructure**: No supplier portal, external supplier integration,
+  ZATCA/FATOORA, production DNS/TLS, or customer-specific (Wafra) branching was added.
+- **Production Gates**: Formal migration is present; production/provider, MESP-48,
+  MESP-50, backup/restore, capacity, legal, specialist, and cutover gates remain open.
+- **Owner Assets**: Protected source assets under `frontend/assets` remain untouched.
+
+### Non-Blocking P3 Observations Carried Forward
+
+- **P3-1**: Approval stage empty `EligibleApproverIds` semantics are implicit/inherited from MESP-123.
+- **P3-2**: Supplier-change rejection pending-change query has minor line-ID predicate asymmetry.
+- **P3-3**: Some state/config errors still map to generic HTTP 400 rather than more precise HTTP 409 / 503 semantics.
+- **P3-4**: Angular creates a new idempotency key per explicit user retry; durable replay is therefore mainly server/API retry protection.
+- **P3-5**: `ReplayResponseSnapshotJson` duplicates commercial data in immutable audit and must feed retention/privacy/purge governance (MESP-50).
+- **P3-6**: `scripts/Test-MiniErpBackend.ps1` should neutralize inherited `MESP_DEV_AUTH_BYPASS` during tests.
+- **P3-7**: Cancelled/Rejected PO permanently consumes the source decision in MESP-124; controlled reopen remains a future explicit capability/decision.
+- **P3-8**: Transitive `nanoid` lockfile-only security patch is intentionally present.
+
+### Next Capability & Decision Gates
+
+- **Next Planned Capability**: **MESP-125 — Goods Receipt and Purchase Invoice handoff** (Parent Epic: MESP-7).
+- **Current Status**: **To Do / NOT ACTIVATED**.
+- **Prerequisite Gate Status**:
+  - MESP-41 (Procurement approval policy): **Done**
+  - MESP-43 (Supplier quote evaluation): **Done**
+  - MESP-44 (Purchase order lifecycle & confirmation): **Done**
+  - MESP-45 (Goods receipt physical & tolerance baseline): **Done**
+  - MESP-113 (INV-OD-004 inventory valuation method): **Done**
+  - **FIN-OD-01** (Goods Receipt interim accounting, clearing/accrual, valuation/posting treatment):
+    **UNRESOLVED / OWNER DECISION REQUIRED**.
+- **Implementation Status**: MESP-125 is **NOT IMPLEMENTATION-READY** until GPT-5.6 Sol / Product Owner (Hossam) resolves and records FIN-OD-01. Do not start MESP-125 implementation or write source/schema/Jira changes.
+
+## Historical authoritative position - 18 August 2026 (MESP-124 final Opus P2 remediation)
 
 The bounded MESP-124 final P2 remediation pass is implemented on
 `feat/MESP-124-purchase-order-confirmation`, continuing Draft PR #68 against

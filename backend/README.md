@@ -1,15 +1,17 @@
 # Mini ERP backend foundation
 
-> **Current MESP-143 runtime overlay - 17 August 2026.** The backend now
-> carries the merged MESP-143 Tenant-aware entry routing, candidate host
-> resolution, exact server-side membership authority, operational Company/Branch
-> context switching, generic branding, and SAR presentation metadata, alongside
-> the bounded Master Data, Business Parties, Purchase Request, and Supplier
-> Quotation/comparison source-decision slices. With a nonblank
-> `MESP_SQLSERVER_CONNECTION_STRING`, exact local `Development` uses the
-> formal module-owned SQL Server migrations against server `.` / database
-> `MESP`; the SQLite provider remains an explicit fallback when that setting is
-> absent. Production startup never auto-migrates.
+> **Current MESP-124 runtime overlay - 19 August 2026.** The backend carries
+> the merged MESP-124 Purchase Order and Supplier Confirmation slice (merged in
+> PR #68 at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` following
+> independent Claude Opus 5 review) alongside MESP-143 Tenant-aware entry
+> routing, candidate host resolution, exact server-side membership authority,
+> operational Company/Branch context switching, generic branding, and SAR
+> presentation metadata, as well as the bounded Master Data, Business Parties,
+> Purchase Request, and Supplier Quotation/comparison source-decision slices.
+> With a nonblank `MESP_SQLSERVER_CONNECTION_STRING`, exact local `Development`
+> uses the formal module-owned SQL Server migrations against server `.` /
+> database `MESP`; the SQLite provider remains an explicit fallback when that
+> setting is absent. Production startup never auto-migrates.
 >
 > The SQL Server safety-harness tests are run via a dedicated disposable
 > LocalDB connection assigned only to `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`.
@@ -18,30 +20,30 @@
 > read by the safety harness. Use `scripts/Test-MiniErpBackend.ps1` or
 > `scripts/validate-foundation.ps1` to run the full suite safely.
 >
-> MESP-124 adds source-decision-gated Purchase Orders, immutable source and
+> MESP-124 provides source-decision-gated Purchase Orders, immutable source and
 > commercial snapshots, reuse of approval/SoD/delegation, issue evidence,
 > manual full/partial/rejected/no-response confirmations, supplier-proposed
-> changes with controlled reapproval, history/audit, and formal Procurement
-> persistence. It adds no stock, receipt, invoice, AP/accounting, payment, or
-> external supplier effects. MESP-48/MESP-50, production topology, deployment
-> migration governance, backup/restore, capacity, and specialist gates remain
-> open; the branch is awaiting independent pre-merge review.
+> changes with controlled reapproval, exact confirmation remainder, lifetime
+> Tenant-scoped source decision uniqueness, durable idempotent replay,
+> history/audit, and formal Procurement persistence. It adds no stock, receipt,
+> invoice, AP/accounting, payment, or external supplier effects. The planned next
+> candidate is MESP-125 (Goods Receipt and Purchase Invoice handoff), which is
+> currently To Do / unactivated and blocked on FIN-OD-01. MESP-48/MESP-50,
+> production topology, deployment migration governance, backup/restore,
+> capacity, and specialist gates remain open.
 
-The final bounded pre-review validation is Release build **0 warnings / 0
+The accepted validation baseline on merge is Release build **0 warnings / 0
 errors** and **793/793** ArchitectureTests passed with **0 skipped**, including
 the disposable SQL Server safety harness. Focused Purchase Order tests pass
 **14/14** and the focused Purchase Order + REST foundation filter passes
-**47/47**. The new coverage directly proves multi-stage supplier-change
+**47/47**. The test suite directly covers multi-stage supplier-change
 reapproval stage reset, genuine Stage-B approvals, reapproval delegation and
-self-approval boundaries, and duplicate-source behavior mapping to
+self-approval boundaries, durable idempotent replay after state advancement and
+cache expiry, and duplicate-source behavior mapping to
 `purchase_order_duplicate` without a second history/audit aggregate. A
 Source Decision remains consumed for the lifetime of its Tenant; terminal PO
 recovery requires a new sourcing decision, while controlled same-PO reopening
-is future capability/decision and is not implemented here. The runtime
-launcher has been smoke-tested with the repository-owned API on port 5300 and
-Angular server on port 4300; those local processes are intentionally left
-running for the independent handoff. These correctness and regression checks
-do not increase the tracked production-capability percentage.
+is future capability/decision and is not implemented here.
 
 This directory contains the Foundation backend. It began as the MESP-57
 Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant

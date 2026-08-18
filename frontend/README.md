@@ -5,7 +5,7 @@ contains the responsive application shell, EN/AR localization and RTL/LTR
 direction switching, sign-in/session bootstrap, server-resolved Tenant entry,
 Overview-first routing, post-Overview Company/Branch context switching,
 configuration-led branding/currency presentation, antiforgery bootstrap, and
-accessible safe states. The bounded MESP-124 Purchase Order workspace adds
+accessible safe states. The merged MESP-124 Purchase Order workspace adds
 server-provided source selection, list/create/edit/detail, approval/issue
 actions, manual full/partial/rejected/no-response confirmation, supplier-change
 reapproval, history, and audit views. The browser never stores an

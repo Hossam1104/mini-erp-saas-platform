@@ -9,32 +9,38 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 17 August 2026 (MESP-124 implementation; pre-merge handoff)
+## Current execution overlay - 19 August 2026 (MESP-124 merged; post-merge reconciliation; MESP-125 blocked on FIN-OD-01)
 
-MESP-143 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE),
-and squash-merged to `main`** at commit `866cb75bb7d0d97c929216b1a449f458a2614097`
-(reviewed feature head: `25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged).
-It establishes the server-authoritative Tenant and operational-context boundary
-required by the current MESP-124 work.
+MESP-124 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR
+MERGE), and squash-merged to `main`** at commit
+`c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (merge timestamp 2026-08-18T21:37:47Z;
+reviewed feature head `0eca12dbecffe7e8abeff6914566fa4de329d2c7`; PR #68
+merged).
 
-MESP-124 is implemented on `feat/MESP-124-purchase-order-confirmation` from the
-synchronized `main` baseline and published as **Draft PR #68** against `main`.
-The bounded slice adds source-decision-gated
-Purchase Orders, immutable commercial/source snapshots, reusable approval/SoD/
-delegation, issue evidence, manual supplier confirmations with full/partial/
-rejected/no-response states, supplier change proposals and reapproval, immutable
-history/audit, formal Procurement persistence/migration, operation-catalogue and
-OpenAPI metadata, and bilingual Angular list/create/edit/detail UI. It does not
-add Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way
-matching, supplier portal, external integration, statutory submission, DNS/TLS,
-or Wafra-specific core logic.
+Its Tenant- and Company/Branch-scoped Purchase Order source selection, immutable
+PR/quotation/source-decision and commercial snapshots, reusable approval/SoD/
+delegation seams, issue/commit evidence, manual Supplier Confirmation (full,
+partial, rejected, no-response), supplier-proposed changes with controlled
+reapproval, exact confirmation remainder, lifetime Tenant-scoped uniqueness
+consumption, exact durable idempotent replay, immutable history/audit, REST/
+OpenAPI metadata, formal Procurement EF Core migrations, and bilingual EN/AR RTL
+Angular workspace are merged to `main`.
 
-Validation and delivery state are recorded in `.ai/CURRENT_STATE.md` and
-`docs/staticts.md`. Jira remains read-only in this session (activation evidence
-is recorded; GPT-5.6 Sol owns Jira closure). The branch remains unmerged and the
-next exact session is independent Claude Opus 5 pre-merge review of MESP-124.
+No Goods Receipt, stock, warehouse movement, invoice, AP/accounting, payment,
+three-way matching, supplier portal, external integration, ZATCA/FATOORA,
+production DNS/TLS, or customer-specific (Wafra) core behavior was added.
+Protected source assets under `frontend/assets` remain untouched. Zero Jira
+operations were performed; GPT-5.6 Sol owns Jira closure.
 
-## Historical execution overlay - 17 August 2026 (MESP-143 implementation; superseded by merge)
+The planned next implementation capability is **MESP-125 (Goods Receipt and
+Purchase Invoice handoff)** under Epic MESP-7. However, MESP-125 is **NOT
+ACTIVATED** and is **BLOCKED ON FIN-OD-01** (unresolved Finance decision on
+interim Goods Receipt accounting, clearing/accrual, and valuation/posting
+treatment). Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, and MESP-113
+are Done. Do not start MESP-125 implementation until GPT-5.6 Sol and the
+Product Owner formally resolve and record FIN-OD-01.
+
+## Historical execution overlay - 17 August 2026 (MESP-124 implementation; superseded by merge)
 
 The bounded MESP-143 implementation was active on branch
 `feat/MESP-143-tenant-aware-entry` from synchronized `main`. It establishes
