@@ -68,7 +68,7 @@ Data entities, migrations, endpoints, or database access.
 
 ## Prerequisites
 
-- .NET SDK 10.0.302 (the repository pins this SDK in `global.json`)
+- .NET SDK 10.0.400 (the repository pins this SDK in `global.json`)
 
 ## Commands
 

@@ -151,7 +151,7 @@ Run.md         Local runtime, SQL and validation guide
 
 Prerequisites:
 
-- .NET SDK 10.0.302 (the pinned SDK is in `backend/global.json`);
+- .NET SDK 10.0.400 (the pinned SDK is in `backend/global.json`);
 - Node.js/npm compatible with the checked-in `package-lock.json`;
 - Angular CLI dependencies installed by `npm install`;
 - SQL Server for the local `MESP` Development database when exercising the
