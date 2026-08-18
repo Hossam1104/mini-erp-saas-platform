@@ -205,6 +205,18 @@ describe('PurchaseOrderWorkspaceComponent', () => {
     }
   });
 
+  it('communicates new-source-decision recovery for terminal rejected or cancelled orders', async () => {
+    orders.get.mockReturnValue(of({ ...purchaseOrderDetail, status: 'Rejected' }));
+    routeUrls.next([{ path: 'purchase-orders' }, { path: ':id' }]);
+    routeParams.next(routeMap(purchaseOrderDetail.id));
+    await settle();
+
+    const recovery = fixture.nativeElement.querySelector('[data-testid="purchase-order-terminal-recovery"]') as HTMLElement | null;
+    expect(recovery).not.toBeNull();
+    expect(recovery?.textContent).toContain('consumed its source decision');
+    expect(recovery?.textContent).toContain('Controlled reopening is not available');
+  });
+
   it('traps action-dialog focus, closes on Escape, and restores the opener focus', async () => {
     orders.get.mockReturnValue(of(purchaseOrderDetail));
     routeUrls.next([{ path: 'purchase-orders' }, { path: ':id' }]);

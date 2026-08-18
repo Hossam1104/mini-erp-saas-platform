@@ -29,14 +29,54 @@ confirmation-quantity error spellings map to HTTP 409; the Tenant-scoped
 inactive tabpanel anchors keep every tab `aria-controls` relationship
 rendered; and the frontend lockfile resolves `nanoid` 3.3.18. Current evidence
 is recorded in `.ai/CURRENT_STATE.md` and `docs/staticts.md`: Release build
-0/0, backend **790/790**, focused Purchase Order **11/11**, failure
-classification **9/9**, Angular **215/215**, focused Chromium **7/7**, full
-Chromium **15/15**, production bundle **492.02 kB initial / 75.74 kB PO lazy /
-91.94 kB quotation lazy**, and both production-only and full `npm audit` at
+0/0, backend **793/793**, focused Purchase Order **14/14**, focused Purchase
+Order + REST foundation **47/47**, Angular **216/216**, focused Chromium
+**8/8**, full Chromium **16/16**, production bundle **492.02 kB initial /
+76.78 kB PO lazy / 91.94 kB quotation lazy**, and both production-only and full `npm audit` at
 zero vulnerabilities. The official runtime configuration smoke passed, live
 API health/module registration and Angular root checks returned HTTP 200 on
 5300/4300, and the repository-owned listeners remain running. This evidence
 does not replace the independent review or authorize a merge.
+
+### Final Opus P2 remediation handoff — 18 August 2026
+
+The bounded executor correction adds the final MESP-124 P2/P3 follow-up before
+this read-only review. The review must explicitly verify the following rather
+than treating the executor's report as proof:
+
+- `ApproveSupplierChangeAsync` resets completed-stage approver IDs and count
+  when a later supplier-change approval stage begins; incomplete stages retain
+  their current evidence.
+- The direct two-stage supplier-change test proves stage-A completion, a zeroed
+  stage-B approval set/count, two genuine stage-B approvals before the
+  commercial change applies, correct stage keys in history, and rejection of
+  former stage-A actors as stage-B approvals.
+- Supplier-change reapproval directly covers eligible and ineligible actors,
+  self-approval denial, valid configured delegation, and invalid, expired, or
+  wrong-actor delegation failure. Reuse of the existing delegation seam must
+  remain intact.
+- Tenant lifetime `(TenantId, SourceDecisionId)` uniqueness remains
+  intentional. A Cancelled or Rejected PO does not release its Source Decision
+  in MESP-124; recovery requires a new sourcing/source-decision action.
+- Controlled reopen or same-PO replacement semantics are explicitly deferred
+  as a **FUTURE EXPLICIT CAPABILITY / DECISION**, with no second PO created from
+  the consumed Source Decision.
+- Terminal Cancelled/Rejected detail UI communicates the new-source-decision
+  recovery rule in EN and AR without exposing technical identifiers or making
+  the message an authorization mechanism.
+- The real duplicate-source behavior test proves a second create with a new
+  key is rejected, only one PO exists, and no second history/audit aggregate is
+  created.
+- The optional durable `X-Idempotent-Replay` response header is explicitly
+  deferred as P3 because adding it would require a public result-contract
+  redesign; existing durable replay behavior remains independently verified.
+- Full backend validation was genuinely run with usable .NET SDK 10.0.400,
+  including SQL safety cleanup and the updated test count; frontend, build,
+  audit, focused/full Chromium, and runtime evidence are actual current
+  results.
+- All previously accepted P1-A, P1-B, P2-C, P2-D, currency, idempotency,
+  HTTP classification, Tenant/scope, accessibility, and MESP-123 corrections
+  remain green.
 
 ### Mandatory P1/P2 gates
 

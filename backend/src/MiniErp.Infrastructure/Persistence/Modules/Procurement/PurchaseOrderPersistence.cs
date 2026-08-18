@@ -689,11 +689,12 @@ public sealed class PurchaseOrderPersistence : IPurchaseOrderPersistence
                 var nextStageIndex = entity.CurrentApprovalStageIndex + (stageComplete ? 1 : 0);
                 if (!stageComplete || nextStageIndex < stages.Length)
                 {
+                    Guid[] nextApprovers = stageComplete ? [] : approvers.ToArray();
                     entity.RecordApproval(
                         PurchaseOrderStatus.ChangedPendingApproval,
                         nextStageIndex,
-                        approvers.Count,
-                        JsonSerializer.Serialize(approvers, JsonOptions),
+                        stageComplete ? 0 : approvers.Count,
+                        JsonSerializer.Serialize(nextApprovers, JsonOptions),
                         command.OccurredAt);
                     entity.TouchVersion();
                     db.PurchaseOrderHistory.Add(new PurchaseOrderHistoryEntity(

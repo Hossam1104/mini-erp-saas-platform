@@ -21,6 +21,10 @@ public sealed class PurchaseOrderTests
     private static readonly Guid Approver = Guid.Parse("55555555-5555-5555-5555-555555555555");
     private static readonly Guid Delegatee = Guid.Parse("66666666-6666-6666-6666-666666666666");
     private static readonly Guid IneligibleApprover = Guid.Parse("99999999-9999-9999-9999-999999999999");
+    private static readonly Guid StageASecondApprover = Guid.Parse("aaaaaaaa-5555-5555-5555-555555555555");
+    private static readonly Guid StageBFirstApprover = Guid.Parse("bbbbbbbb-5555-5555-5555-555555555555");
+    private static readonly Guid StageBSecondApprover = Guid.Parse("cccccccc-5555-5555-5555-555555555555");
+    private static readonly Guid WrongDelegatee = Guid.Parse("dddddddd-5555-5555-5555-555555555555");
     private static readonly Guid Supplier = Guid.Parse("aaaaaaaa-1111-1111-1111-111111111111");
     private static readonly Guid Currency = Guid.Parse("aaaaaaaa-3333-3333-3333-333333333333");
     private static readonly Guid Product = Guid.Parse("77777777-7777-7777-7777-777777777777");
@@ -38,6 +42,42 @@ public sealed class PurchaseOrderTests
             index => index.Properties.Select(property => property.Name).SequenceEqual(["TenantId", "SourceDecisionId"]));
 
         Assert.True(sourceDecisionIndex.IsUnique);
+    }
+
+    [Fact]
+    public async Task Rejects_second_purchase_order_from_same_source_decision_with_only_one_durable_aggregate()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var source = Assert.Single((await fixture.Service.ListSourceOptionsAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.view"))).Value!);
+
+        var first = await fixture.Service.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.create"),
+            new PurchaseOrderCreateRequest(source.Source.SourceDecisionId),
+            "po-source-unique-1",
+            "fp-po-source-unique-1");
+        Assert.True(first.Succeeded, first.Code);
+
+        var duplicate = await fixture.Service.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.create"),
+            new PurchaseOrderCreateRequest(source.Source.SourceDecisionId),
+            "po-source-unique-2",
+            "fp-po-source-unique-2");
+        Assert.False(duplicate.Succeeded);
+        Assert.Equal("purchase_order_duplicate", duplicate.Code);
+
+        var orders = await fixture.Service.ListAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.view"), null);
+        Assert.True(orders.Succeeded, orders.Code);
+        Assert.NotNull(orders.Value);
+        Assert.Single(orders.Value!);
+        Assert.Equal(first.Value!.Id, orders.Value!.Single().Id);
+
+        var history = await fixture.Service.ReadHistoryAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.history"), first.Value.Id);
+        Assert.True(history.Succeeded, history.Code);
+        Assert.Equal(1, history.Value!.Count(item => item.Action == PurchaseOrderHistoryAction.Created));
+
+        var audit = await fixture.Service.ReadAuditAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.audit"), first.Value.Id);
+        Assert.True(audit.Succeeded, audit.Code);
+        Assert.Equal(1, audit.Value!.Count(item => item.OperationId == "procurement.purchase-order.create"));
     }
 
     [Fact]
@@ -262,6 +302,271 @@ public sealed class PurchaseOrderTests
             "fp-po-rejected-1");
         Assert.True(rejected.Succeeded, rejected.Code);
         Assert.Equal(PurchaseOrderStatus.Rejected, rejected.Value!.Status);
+    }
+
+    [Fact]
+    public async Task Resets_supplier_change_reapproval_stage_approvers_and_requires_genuine_approvals_per_stage()
+    {
+        var policy = new PurchaseRequestApprovalPolicyDefinition(
+            "procurement.purchase-order.multi-stage-reapproval",
+            2,
+            [
+                new PurchaseRequestApprovalStageDefinition("stage-a", 1, 2, [Approver, StageASecondApprover], true),
+                new PurchaseRequestApprovalStageDefinition("stage-b", 2, 2, [StageBFirstApprover, StageBSecondApprover], true),
+            ],
+            true,
+            DateTimeOffset.MinValue);
+
+        await using var fixture = await Fixture.CreateAsync(policy);
+        var source = Assert.Single((await fixture.Service.ListSourceOptionsAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.view"))).Value!);
+        var created = await fixture.Service.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.create"),
+            new PurchaseOrderCreateRequest(source.Source.SourceDecisionId),
+            "po-multi-stage-create",
+            "fp-po-multi-stage-create");
+        Assert.True(created.Succeeded, created.Code);
+
+        var submitted = await fixture.Service.SubmitAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.submit"),
+            created.Value!.Id,
+            created.Value.Version,
+            "po-multi-stage-submit",
+            "fp-po-multi-stage-submit");
+        Assert.True(submitted.Succeeded, submitted.Code);
+
+        var stageAFirst = await fixture.Service.ApproveAsync(
+            fixture.Context(Approver, "tenant.procurement.purchase-order.approve"),
+            submitted.Value!.Id,
+            submitted.Value.Version,
+            "po-multi-stage-a1",
+            "fp-po-multi-stage-a1");
+        Assert.True(stageAFirst.Succeeded, stageAFirst.Code);
+        Assert.Equal(0, stageAFirst.Value!.Approval!.StageIndex);
+        Assert.Equal(1, stageAFirst.Value.Approval.RecordedApprovals);
+
+        var stageASecond = await fixture.Service.ApproveAsync(
+            fixture.Context(StageASecondApprover, "tenant.procurement.purchase-order.approve"),
+            stageAFirst.Value.Id,
+            stageAFirst.Value.Version,
+            "po-multi-stage-a2",
+            "fp-po-multi-stage-a2");
+        Assert.True(stageASecond.Succeeded, stageASecond.Code);
+
+        var stageBFirst = await fixture.Service.ApproveAsync(
+            fixture.Context(StageBFirstApprover, "tenant.procurement.purchase-order.approve"),
+            stageASecond.Value!.Id,
+            stageASecond.Value.Version,
+            "po-multi-stage-b1",
+            "fp-po-multi-stage-b1");
+        Assert.True(stageBFirst.Succeeded, stageBFirst.Code);
+        var stageBSecond = await fixture.Service.ApproveAsync(
+            fixture.Context(StageBSecondApprover, "tenant.procurement.purchase-order.approve"),
+            stageBFirst.Value!.Id,
+            stageBFirst.Value.Version,
+            "po-multi-stage-b2",
+            "fp-po-multi-stage-b2");
+        Assert.True(stageBSecond.Succeeded, stageBSecond.Code);
+        var issued = await fixture.Service.IssueAsync(
+            fixture.Context(StageBSecondApprover, "tenant.procurement.purchase-order.issue"),
+            stageBSecond.Value!.Id,
+            stageBSecond.Value.Version,
+            "po-multi-stage-issue",
+            "fp-po-multi-stage-issue");
+        Assert.True(issued.Succeeded, issued.Code);
+
+        var line = issued.Value!.Lines.Single();
+        var changed = await fixture.Service.RecordConfirmationAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.capture"),
+            issued.Value.Id,
+            new PurchaseOrderConfirmationRequest(
+                PurchaseOrderConfirmationStatus.PartiallyConfirmed,
+                DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                "SUP-MULTI-STAGE",
+                "supplier@test",
+                null,
+                null,
+                [new PurchaseOrderConfirmationLineRequest(line.Id, 1m, null, null, 15m, null, "Supplier proposed a revised price.")],
+                []),
+            issued.Value.Version,
+            "po-multi-stage-change",
+            "fp-po-multi-stage-change");
+        Assert.True(changed.Succeeded, changed.Code);
+        Assert.Equal(PurchaseOrderStatus.ChangedPendingApproval, changed.Value!.Status);
+        Assert.Equal(0, changed.Value.Approval!.RecordedApprovals);
+        Assert.Equal(0, changed.Value.Approval.StageIndex);
+        Assert.Equal("stage-a", changed.Value.Approval.StageKey);
+
+        var reapprovalAFirst = await fixture.Service.ApproveSupplierChangeAsync(
+            fixture.Context(Approver, "tenant.procurement.purchase-order.supplier-change.approve"),
+            changed.Value.Id,
+            changed.Value.Version,
+            "po-multi-stage-reapproval-a1",
+            "fp-po-multi-stage-reapproval-a1");
+        Assert.True(reapprovalAFirst.Succeeded, reapprovalAFirst.Code);
+        Assert.Equal(0, reapprovalAFirst.Value!.Approval!.StageIndex);
+        Assert.Equal(1, reapprovalAFirst.Value.Approval.RecordedApprovals);
+        Assert.Equal(12.5m, reapprovalAFirst.Value.Lines.Single().UnitPrice);
+
+        var reapprovalASecond = await fixture.Service.ApproveSupplierChangeAsync(
+            fixture.Context(StageASecondApprover, "tenant.procurement.purchase-order.supplier-change.approve"),
+            reapprovalAFirst.Value.Id,
+            reapprovalAFirst.Value.Version,
+            "po-multi-stage-reapproval-a2",
+            "fp-po-multi-stage-reapproval-a2");
+        Assert.True(reapprovalASecond.Succeeded, reapprovalASecond.Code);
+        Assert.Equal(PurchaseOrderStatus.ChangedPendingApproval, reapprovalASecond.Value!.Status);
+        Assert.Equal(1, reapprovalASecond.Value.Approval!.StageIndex);
+        Assert.Equal("stage-b", reapprovalASecond.Value.Approval.StageKey);
+        Assert.Equal(0, reapprovalASecond.Value.Approval.RecordedApprovals);
+        Assert.Equal(12.5m, reapprovalASecond.Value.Lines.Single().UnitPrice);
+
+        // Stage-A approvers are not stage-B approvals. They fail eligibility rather than being
+        // treated as duplicate stage-B approvals, and the stage-B count remains zero.
+        var formerStageA = await fixture.Service.ApproveSupplierChangeAsync(
+            fixture.Context(Approver, "tenant.procurement.purchase-order.supplier-change.approve"),
+            reapprovalASecond.Value.Id,
+            reapprovalASecond.Value.Version,
+            "po-multi-stage-former-a",
+            "fp-po-multi-stage-former-a");
+        Assert.False(formerStageA.Succeeded);
+        Assert.Equal("approval_not_eligible", formerStageA.Code);
+
+        var reapprovalBFirst = await fixture.Service.ApproveSupplierChangeAsync(
+            fixture.Context(StageBFirstApprover, "tenant.procurement.purchase-order.supplier-change.approve"),
+            reapprovalASecond.Value.Id,
+            reapprovalASecond.Value.Version,
+            "po-multi-stage-reapproval-b1",
+            "fp-po-multi-stage-reapproval-b1");
+        Assert.True(reapprovalBFirst.Succeeded, reapprovalBFirst.Code);
+        Assert.Equal(1, reapprovalBFirst.Value!.Approval!.StageIndex);
+        Assert.Equal(1, reapprovalBFirst.Value.Approval.RecordedApprovals);
+        Assert.Equal(12.5m, reapprovalBFirst.Value.Lines.Single().UnitPrice);
+        Assert.Equal(PurchaseOrderStatus.ChangedPendingApproval, reapprovalBFirst.Value.Status);
+
+        var reapprovalBSecond = await fixture.Service.ApproveSupplierChangeAsync(
+            fixture.Context(StageBSecondApprover, "tenant.procurement.purchase-order.supplier-change.approve"),
+            reapprovalBFirst.Value.Id,
+            reapprovalBFirst.Value.Version,
+            "po-multi-stage-reapproval-b2",
+            "fp-po-multi-stage-reapproval-b2");
+        Assert.True(reapprovalBSecond.Succeeded, reapprovalBSecond.Code);
+        Assert.Equal(PurchaseOrderStatus.PartiallyConfirmed, reapprovalBSecond.Value!.Status);
+        Assert.Equal(15m, reapprovalBSecond.Value.Lines.Single().UnitPrice);
+        Assert.Empty(reapprovalBSecond.Value.PendingChanges);
+
+        var confirmations = await fixture.Service.ReadConfirmationsAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.confirmation.view"), reapprovalBSecond.Value.Id);
+        Assert.True(confirmations.Succeeded, confirmations.Code);
+        Assert.Equal(PurchaseOrderSupplierChangeStatus.Approved, confirmations.Value!.Single().Changes.Single().Status);
+
+        var history = await fixture.Service.ReadHistoryAsync(fixture.Context(Requester, "tenant.procurement.purchase-order.history"), reapprovalBSecond.Value.Id);
+        Assert.True(history.Succeeded, history.Code);
+        var reapprovalHistory = history.Value!
+            .SkipWhile(item => item.Action != PurchaseOrderHistoryAction.SupplierChangeProposed)
+            .Skip(1)
+            .ToArray();
+        var reapprovalApprovalHistory = reapprovalHistory
+            .Where(item => item.Action == PurchaseOrderHistoryAction.ApprovalRecorded)
+            .ToArray();
+        Assert.Equal(["stage-a", "stage-a", "stage-b"], reapprovalApprovalHistory.Select(item => item.StageKey ?? string.Empty).ToArray());
+        var finalApprovalHistory = Assert.Single(reapprovalHistory, item => item.Action == PurchaseOrderHistoryAction.SupplierChangeApproved);
+        Assert.Equal("stage-b", finalApprovalHistory.StageKey);
+        Assert.DoesNotContain(reapprovalHistory, item => item.ActorId == Approver && item.StageKey == "stage-b");
+    }
+
+    [Fact]
+    public async Task Enforces_supplier_change_reapproval_eligibility_delegation_and_self_approval()
+    {
+        var policy = new PurchaseRequestApprovalPolicyDefinition(
+            "procurement.purchase-order.reapproval-actor-tests",
+            3,
+            [new PurchaseRequestApprovalStageDefinition("manager", 1, 1, [Approver], true)],
+            true,
+            DateTimeOffset.MinValue);
+
+        await using (var eligibleFixture = await Fixture.CreateAsync(policy))
+        {
+            var changed = await eligibleFixture.ChangedPendingApprovalAsync("reapproval-eligible");
+            var self = await eligibleFixture.Service.ApproveSupplierChangeAsync(
+                eligibleFixture.Context(Requester, "tenant.procurement.purchase-order.supplier-change.approve"),
+                changed.Id,
+                changed.Version,
+                "po-reapproval-self",
+                "fp-po-reapproval-self");
+            Assert.False(self.Succeeded);
+            Assert.Equal("self_approval_denied", self.Code);
+
+            var ineligible = await eligibleFixture.Service.ApproveSupplierChangeAsync(
+                eligibleFixture.Context(IneligibleApprover, "tenant.procurement.purchase-order.supplier-change.approve"),
+                changed.Id,
+                changed.Version,
+                "po-reapproval-ineligible",
+                "fp-po-reapproval-ineligible");
+            Assert.False(ineligible.Succeeded);
+            Assert.Equal("approval_not_eligible", ineligible.Code);
+
+            var eligible = await eligibleFixture.Service.ApproveSupplierChangeAsync(
+                eligibleFixture.Context(Approver, "tenant.procurement.purchase-order.supplier-change.approve"),
+                changed.Id,
+                changed.Version,
+                "po-reapproval-eligible",
+                "fp-po-reapproval-eligible");
+            Assert.True(eligible.Succeeded, eligible.Code);
+            Assert.Equal(PurchaseOrderStatus.Confirmed, eligible.Value!.Status);
+        }
+
+        var validDelegation = new ConfiguredPurchaseRequestApprovalDelegationProvider(
+            [new PurchaseRequestApprovalDelegation(
+                TenantA,
+                CompanyA,
+                BranchA,
+                "manager",
+                Approver,
+                Delegatee,
+                DateTimeOffset.UtcNow.AddMinutes(-1),
+                DateTimeOffset.UtcNow.AddMinutes(10),
+                "Approved leave coverage")]);
+        await using (var delegatedFixture = await Fixture.CreateAsync(policy, validDelegation))
+        {
+            var changed = await delegatedFixture.ChangedPendingApprovalAsync("reapproval-delegated");
+            var delegated = await delegatedFixture.Service.ApproveSupplierChangeAsync(
+                delegatedFixture.Context(Delegatee, "tenant.procurement.purchase-order.supplier-change.approve"),
+                changed.Id,
+                changed.Version,
+                "po-reapproval-delegated",
+                "fp-po-reapproval-delegated");
+            Assert.True(delegated.Succeeded, delegated.Code);
+            Assert.Equal(PurchaseOrderStatus.Confirmed, delegated.Value!.Status);
+            var history = await delegatedFixture.Service.ReadHistoryAsync(delegatedFixture.Context(Requester, "tenant.procurement.purchase-order.history"), changed.Id);
+            Assert.True(history.Succeeded, history.Code);
+            Assert.Equal(Approver, Assert.Single(history.Value!, item => item.Action == PurchaseOrderHistoryAction.SupplierChangeApproved).DelegatedFromActorId);
+        }
+
+        var invalidOrExpiredDelegations = new ConfiguredPurchaseRequestApprovalDelegationProvider(
+            [
+                new PurchaseRequestApprovalDelegation(TenantA, CompanyA, BranchA, "manager", IneligibleApprover, Delegatee, DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(10), "Invalid delegator"),
+                new PurchaseRequestApprovalDelegation(TenantA, CompanyA, BranchA, "manager", Approver, Delegatee, DateTimeOffset.UtcNow.AddMinutes(-20), DateTimeOffset.UtcNow.AddMinutes(-10), "Expired delegation"),
+            ]);
+        await using (var invalidFixture = await Fixture.CreateAsync(policy, invalidOrExpiredDelegations))
+        {
+            var changed = await invalidFixture.ChangedPendingApprovalAsync("reapproval-invalid-delegation");
+            var invalid = await invalidFixture.Service.ApproveSupplierChangeAsync(
+                invalidFixture.Context(Delegatee, "tenant.procurement.purchase-order.supplier-change.approve"),
+                changed.Id,
+                changed.Version,
+                "po-reapproval-invalid-delegation",
+                "fp-po-reapproval-invalid-delegation");
+            Assert.False(invalid.Succeeded);
+            Assert.Equal("approval_not_eligible", invalid.Code);
+
+            var wrongActor = await invalidFixture.Service.ApproveSupplierChangeAsync(
+                invalidFixture.Context(WrongDelegatee, "tenant.procurement.purchase-order.supplier-change.approve"),
+                changed.Id,
+                changed.Version,
+                "po-reapproval-wrong-actor",
+                "fp-po-reapproval-wrong-actor");
+            Assert.False(wrongActor.Succeeded);
+            Assert.Equal("approval_not_eligible", wrongActor.Code);
+        }
     }
 
     [Fact]
@@ -778,6 +1083,30 @@ public sealed class PurchaseOrderTests
             var issued = await Service.IssueAsync(Context(Approver, "tenant.procurement.purchase-order.issue"), approved.Value!.Id, approved.Value.Version, $"{keyPrefix}-issue", $"fp-{keyPrefix}-issue");
             Assert.True(issued.Succeeded, issued.Code);
             return issued.Value!;
+        }
+
+        public async Task<PurchaseOrderRecord> ChangedPendingApprovalAsync(string keyPrefix)
+        {
+            var issued = await IssuedOrderAsync(keyPrefix);
+            var line = issued.Lines.Single();
+            var changed = await Service.RecordConfirmationAsync(
+                Context(Requester, "tenant.procurement.purchase-order.confirmation.capture"),
+                issued.Id,
+                new PurchaseOrderConfirmationRequest(
+                    PurchaseOrderConfirmationStatus.Confirmed,
+                    DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                    $"SUP-{keyPrefix}",
+                    "supplier@test",
+                    null,
+                    null,
+                    [new PurchaseOrderConfirmationLineRequest(line.Id, line.OrderedQuantity, null, null, 15m, null, "Supplier proposed a revised price.")],
+                    []),
+                issued.Version,
+                $"{keyPrefix}-change",
+                $"fp-{keyPrefix}-change");
+            Assert.True(changed.Succeeded, changed.Code);
+            Assert.Equal(PurchaseOrderStatus.ChangedPendingApproval, changed.Value!.Status);
+            return changed.Value!;
         }
 
         public async Task<PurchaseOrderSourceOptionRecord> AddSecondSourceAsync()

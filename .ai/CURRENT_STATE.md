@@ -1,8 +1,8 @@
 # Current State
 
-## Current authoritative position - 18 August 2026 (MESP-124 final pre-review correction)
+## Current authoritative position - 18 August 2026 (MESP-124 final Opus P2 remediation)
 
-The bounded MESP-124 remediation pass is implemented on
+The bounded MESP-124 final P2 remediation pass is implemented on
 `feat/MESP-124-purchase-order-confirmation`, continuing Draft PR #68 against
 `main`. Jira remained read-only; MESP-124 is still In Progress with activation
 evidence `11394`. MESP-143 remains the merged ADR-019 prerequisite at
@@ -42,35 +42,57 @@ evidence `11394`. MESP-143 remains the merged ADR-019 prerequisite at
   close, backdrop safety, and opener restoration.
 - The frontend lockfile now resolves the patched transitive `nanoid` 3.3.18
   release; both production-only and full `npm audit` are clean.
+- Supplier-change reapproval now resets completed-stage approver IDs and count
+  before entering the next stage, while incomplete stages retain their current
+  approvers. A direct two-stage load-bearing test proves A/B complete Stage A,
+  C alone cannot complete Stage B, and D completes the genuine Stage B change;
+  history records `stage-a`, `stage-a`, `stage-b`, and the final `stage-b`
+  approval action without treating A as a Stage-B duplicate.
+- Direct supplier-change reapproval coverage now proves eligible and
+  ineligible actors, self-approval denial, valid delegation, invalid/expired
+  delegation, and wrong-actor delegation failure through the existing
+  approval/delegation engine.
+- A real duplicate-source behavior test creates one PO and proves a second
+  create from the same Tenant + Source Decision returns
+  `purchase_order_duplicate` with one PO, history aggregate, and audit
+  aggregate. The lifetime source-consumption rule remains unchanged.
+- Cancelled/Rejected PO detail now states in EN/AR that the source decision is
+  consumed and recovery requires a new sourcing decision. Controlled same-PO
+  reopen/replacement semantics remain explicitly future capability/decision;
+  no source reuse or reopen workflow was implemented. Durable replay-header
+  work is deferred as P3 because it would require a public result-contract
+  redesign.
 
 ### Validation evidence
 
 - Release backend solution build: 0 warnings / 0 errors.
-- Full backend ArchitectureTests: **790/790 passed, 0 skipped**, including all
+- Full backend ArchitectureTests: **793/793 passed, 0 skipped**, including all
   SQL Server safety cases against a disposable LocalDB target. Focused PO
-  tests: **11/11**; PO endpoint failure classification: **9/9**.
-- Angular unit tests: **215/215** across 25 spec files. Production build:
-  **492.02 kB initial**, **75.74 kB Purchase Order lazy**, **91.94 kB Supplier
+  tests: **14/14**; focused PO + REST foundation tests: **47/47**.
+- Angular unit tests: **216/216** across 25 spec files. Production build:
+  **492.02 kB initial**, **76.78 kB Purchase Order lazy**, **91.94 kB Supplier
   Quotation lazy**. Both production-only and full `npm audit` report 0
   vulnerabilities.
 - Playwright runtime validation is complete: focused Purchase Order Chromium
-  E2E **7/7** and full Chromium E2E **15/15** passed. The official Development
+  E2E **8/8** and full Chromium E2E **16/16** passed. The official Development
   configuration smoke passed; live API `/health` and module-registration
-  returned HTTP 200, Angular returned HTTP 200 on API 5300 / Angular 4300, and
-  the repository-owned listeners remain live for handoff. No
+  returned HTTP 200, the Angular root and PO route returned HTTP 200, and the
+  repository-owned listeners remain live for handoff on API 5300 / Angular
+  4300. The unauthenticated API PO list correctly retained its 401 boundary. No
   production-capability percentage increase is claimed for this remediation.
 
 ### Next exact gate
 
 The next session is an independent Claude Opus 5 read-only MESP-124 pre-merge
 review. It must explicitly verify the P1-A/P1-B commercial and uniqueness
-invariants, all exact durable replay-after-mutation cases including cache
-expiry/process restart, authorization-before-replay ordering, 403/409 HTTP
-semantics, eligible/ineligible/delegated/invalid-delegation/self-approval
-cases, PO keyboard/focus accessibility, additive migration integrity, and
-complete regression evidence. Do not merge PR #68, perform Jira writes, start
-MESP-125, or begin downstream Procurement, Inventory, Finance, AP, payment,
-or integration work.
+invariants, multi-stage supplier-change stage reset and genuine two-stage
+coverage, supplier-change delegation/self-approval cases, all exact durable
+replay-after-mutation cases including cache expiry/process restart,
+authorization-before-replay ordering, 403/409 HTTP semantics, terminal
+new-source recovery wording, controlled reopen deferral, PO keyboard/focus
+accessibility, additive migration integrity, and complete regression evidence.
+Do not merge PR #68, perform Jira writes, start MESP-125, or begin downstream
+Procurement, Inventory, Finance, AP, payment, or integration work.
 
 ## Historical authoritative position - 18 August 2026 (MESP-124 durable idempotency ordering correction)
 

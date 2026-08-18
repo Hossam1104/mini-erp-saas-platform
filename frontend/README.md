@@ -36,14 +36,20 @@ npm run test:e2e -- --project=chromium
 npm audit --omit=dev
 ```
 
-The current bounded evidence is Angular **215/215 across 25 spec files**;
-the production build is **492.02 kB initial** with a **75.74 kB Purchase Order
+The current bounded evidence is Angular **216/216 across 25 spec files**;
+the production build is **492.02 kB initial** with a **76.78 kB Purchase Order
 lazy chunk** and **91.94 kB Supplier Quotation lazy chunk**; Chromium coverage
-is **15/15** across the existing shell/quotation journeys and seven deterministic
+is **16/16** across the existing shell/quotation journeys and eight deterministic
 MESP-124 scenarios. Both `npm audit --omit=dev` and full `npm audit` report
 **0 vulnerabilities** after the lockfile-only `nanoid` 3.3.18 patch. The
 Playwright checks are automated
 API-fixture/browser evidence, not a manual interactive browser sign-off.
+
+Terminal Cancelled/Rejected Purchase Order detail communicates the bounded
+recovery rule in English and Arabic: the source decision is consumed and
+continuation requires a new sourcing decision. Controlled same-Purchase-Order
+reopening remains a future explicit capability/decision and is not implied by
+the UI.
 
 The Purchase Order workspace's `formatMoney` reuses the MESP-123 Supplier
 Quotation non-ISO-currency safe-fallback pattern: standard ISO currency codes

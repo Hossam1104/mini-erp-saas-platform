@@ -295,6 +295,14 @@ test.describe('Purchase Order and Supplier Confirmation workspace', () => {
     await expect(page.locator('.timeline').getByText(/Issued.*Rejected/)).toBeVisible();
   });
 
+  test('explains new-source-decision recovery for a terminal rejected order', async ({ page }) => {
+    const harness = orderHarness('Rejected');
+    await page.route('**/api/v1/procurement/**', harness.route);
+    await page.goto(`/app/procurement/purchase-orders/${purchaseOrderId}`);
+    await expect(page.getByTestId('purchase-order-terminal-recovery')).toContainText('consumed its source decision');
+    await expect(page.getByTestId('purchase-order-terminal-recovery')).toContainText('Controlled reopening is not available');
+  });
+
   test('keeps original values visible while supplier changes await reapproval, then applies the approved proposal', async ({ page }) => {
     const harness = orderHarness('Issued');
     await page.route('**/api/v1/procurement/**', harness.route);

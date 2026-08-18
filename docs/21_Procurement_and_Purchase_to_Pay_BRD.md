@@ -950,6 +950,24 @@ decision process remains open for the named owners above.
 
 ## 23. Source Conflicts, Corrections, and Review Notes
 
+### MESP-124 source-decision consumption and terminal recovery reconciliation
+
+For the bounded MESP-124 Purchase Order slice, one Supplier Source Decision
+creates at most one Purchase Order per Tenant. Once a Purchase Order has been
+created, its Source Decision remains consumed for its lifetime; a Cancelled or
+Rejected Purchase Order does not release that source for another Purchase
+Order. Recovery currently requires a new sourcing action and a new Source
+Decision. This preserves the duplicate-spend and duplicate-commercial-
+commitment invariant.
+
+Controlled reopening of the same Purchase Order, or replacement semantics for
+eligible unposted work, is a **FUTURE EXPLICIT CAPABILITY / DECISION** and is
+not implemented by MESP-124. Any future reopen must preserve the original PO,
+source lineage, actor, reason, timestamp, scope, prior status, current status,
+and linked audit/history. The MESP-124 UI communicates the current new-source
+recovery rule for terminal Cancelled/Rejected states and must not imply that
+the full BRD reopen capability is available.
+
 1. The approved current sequence is MESP-25 comment `10057`: MESP-31 Master
    Data, then MESP-32 Procurement, then MESP-33 Inventory, then MESP-34
    Finance. Older sequencing notes that reverse Finance and Sales are not used.

@@ -28,9 +28,16 @@
 > open; the branch is awaiting independent pre-merge review.
 
 The final bounded pre-review validation is Release build **0 warnings / 0
-errors** and **790/790** ArchitectureTests passed with **0 skipped**, including
+errors** and **793/793** ArchitectureTests passed with **0 skipped**, including
 the disposable SQL Server safety harness. Focused Purchase Order tests pass
-**11/11** and endpoint failure classification passes **9/9**. The runtime
+**14/14** and the focused Purchase Order + REST foundation filter passes
+**47/47**. The new coverage directly proves multi-stage supplier-change
+reapproval stage reset, genuine Stage-B approvals, reapproval delegation and
+self-approval boundaries, and duplicate-source behavior mapping to
+`purchase_order_duplicate` without a second history/audit aggregate. A
+Source Decision remains consumed for the lifetime of its Tenant; terminal PO
+recovery requires a new sourcing decision, while controlled same-PO reopening
+is future capability/decision and is not implemented here. The runtime
 launcher has been smoke-tested with the repository-owned API on port 5300 and
 Angular server on port 4300; those local processes are intentionally left
 running for the independent handoff. These correctness and regression checks

@@ -2,6 +2,26 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
+## MESP-124 source-decision consumption and terminal recovery reconciliation - 18 August 2026
+
+The bounded MESP-124 implementation preserves the lifetime Tenant-scoped
+`(TenantId, SourceDecisionId)` uniqueness invariant: one Source Decision can
+create at most one Purchase Order. A Cancelled or Rejected Purchase Order does
+not release that source decision, and MESP-124 does not create a replacement PO
+from the same decision. Current recovery is a new sourcing action followed by a
+new Source Decision. This preserves the duplicate-commercial-commitment
+invariant and is now covered by a real duplicate-create behavior test, not only
+the EF model declaration.
+
+Controlled reopening or replacement of the same eligible, unposted Purchase
+Order remains **FUTURE EXPLICIT CAPABILITY / DECISION**. When that future scope
+is authorized, it must preserve the original PO and source lineage together
+with actor, reason, timestamp, scope, prior/current status, and audit/history.
+This reconciliation does not implement reopening, alter the migration, or
+change Tenant/Company/Branch authorization. Terminal PO detail communicates
+the current new-source-decision rule in English and Arabic; it is explanatory
+UX and not an authorization mechanism.
+
 ## Current Architecture Acceptance (ADR-019) - 17 August 2026
 
 ADR-019 ([`ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md`](ADR-019_Tenant_Host_Resolution_Workspace_Context_and_Branding.md))
