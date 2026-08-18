@@ -84,17 +84,19 @@ documentation and governance reconciliation session.
 
 ### Next Capability & Decision Gates
 
-- **Next Planned Capability**: **MESP-125 — Goods Receipt and Purchase Invoice handoff** (Parent Epic: MESP-7).
-- **Current Status**: **To Do / NOT ACTIVATED**.
+- **Active Capability**: **MESP-125 — Goods Receipt and Purchase Invoice handoff** (Parent Epic: MESP-7).
+- **Current Status**: **IN PROGRESS / ACTIVATED** (Jira activation comment `11503`).
+- **Immediate Implementation Executor**: Claude Sonnet 5 (Reasoning: HIGH) on branch `feat/MESP-125-goods-receipt-purchase-invoice-handoff` per root `TASK.md`.
 - **Prerequisite Gate Status**:
   - MESP-41 (Procurement approval policy): **Done**
   - MESP-43 (Supplier quote evaluation): **Done**
   - MESP-44 (Purchase order lifecycle & confirmation): **Done**
   - MESP-45 (Goods receipt physical & tolerance baseline): **Done**
   - MESP-113 (INV-OD-004 inventory valuation method): **Done**
-  - **FIN-OD-01** (Goods Receipt interim accounting, clearing/accrual, valuation/posting treatment):
-    **UNRESOLVED / OWNER DECISION REQUIRED**.
-- **Implementation Status**: MESP-125 is **NOT IMPLEMENTATION-READY** until GPT-5.6 Sol / Product Owner (Hossam) resolves and records FIN-OD-01. Do not start MESP-125 implementation or write source/schema/Jira changes.
+  - MESP-116 (Release 1 Consolidated Owner Decision Approval): **Done** (Owner approval comment `10957`)
+  - **FIN-OD-01 / PD-046** (Goods Receipt interim accounting, clearing/accrual, valuation/posting treatment):
+    **APPROVED CONTRACT-BOUND** under MESP-116 (comment `10957`) and PD-046 (`docs/31_Release_1_Consolidated_Owner_Decision_Pack.md` §B6 / MESP-22 comment `10958`). Class-B Release 1 product/implementation contract is established: Finance owns balanced journals, source-to-GL mapping, account and period validation, subledger reconciliation, inventory valuation handoff, controlled corrections and reversals, and auditable posting evidence; operational modules own source documents and do not fabricate accounting entries outside the approved Finance contract. Production/statutory/specialist validation remains a later open gate and does not block safe bounded application development.
+- **Implementation Status**: MESP-125 is **ACTIVATED and IMPLEMENTATION-READY** for execution by Claude Sonnet 5 per `TASK.md`.
 
 ## Historical authoritative position - 18 August 2026 (MESP-124 final Opus P2 remediation)
 

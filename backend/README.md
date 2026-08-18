@@ -26,11 +26,11 @@
 > changes with controlled reapproval, exact confirmation remainder, lifetime
 > Tenant-scoped source decision uniqueness, durable idempotent replay,
 > history/audit, and formal Procurement persistence. It adds no stock, receipt,
-> invoice, AP/accounting, payment, or external supplier effects. The planned next
-> candidate is MESP-125 (Goods Receipt and Purchase Invoice handoff), which is
-> currently To Do / unactivated and blocked on FIN-OD-01. MESP-48/MESP-50,
-> production topology, deployment migration governance, backup/restore,
-> capacity, and specialist gates remain open.
+> invoice, AP/accounting, payment, or external supplier effects. The active
+> capability is MESP-125 (Goods Receipt and Purchase Invoice handoff), which is
+> In Progress / activated under Epic MESP-7 (FIN-OD-01 resolved contract-bound under
+> MESP-116 / PD-046). MESP-48/MESP-50, production topology, deployment migration
+> governance, backup/restore, capacity, and specialist gates remain open.
 
 The accepted validation baseline on merge is Release build **0 warnings / 0
 errors** and **793/793** ArchitectureTests passed with **0 skipped**, including

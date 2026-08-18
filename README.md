@@ -32,8 +32,9 @@ no-response, and supplier-change/reapproval evidence with durable idempotent rep
 Issue and confirmation remain commercial Procurement evidence only; they create no
 stock, receipt, invoice, AP, payment, or accounting effect.
 
-The planned next capability is MESP-125 (Goods Receipt and Purchase Invoice handoff),
-which is currently To Do / unactivated, and blocked on owner decision FIN-OD-01.
+The active capability is MESP-125 (Goods Receipt and Purchase Invoice handoff),
+which is In Progress / activated under Epic MESP-7 (FIN-OD-01 resolved contract-bound
+under MESP-116 / PD-046).
 
 The tracked project-control source of truth is [`docs/staticts.md`](docs/staticts.md).
 Its current conservative band is approximately:
@@ -68,7 +69,7 @@ Release 1 scope · 🔒 gated or validation pending.
 | Supplier Quotations, comparison and source decision | ✅ | Sourcing comparison and decision recording (MESP-123) |
 | SQL Server Development database | ✅ | Local `MESP` database and formal module migration path |
 | Purchase Orders and Supplier Confirmation | ✅ | Merged MESP-124 slice: source lineage, approval, issue, manual confirmation, partials, rejection, changes, reapproval, durable replay, EN/AR RTL workspace |
-| Goods Receipt, Purchase Invoice, AP and Payments | 📋 | Planned next candidate MESP-125; unactivated / blocked on FIN-OD-01 |
+| Goods Receipt, Purchase Invoice, AP and Payments | 🚧 | MESP-125 activated: Goods Receipt & Purchase Invoice handoff slice (FIN-OD-01 approved contract-bound); AP/Payments remain downstream |
 | Inventory posting, B2B Sales, Accounting and Cash | 📋 | Required Release 1 work; not started |
 | Reporting, migration/onboarding and external integrations | 📋 / 🔒 | Product scope exists, implementation and gates remain |
 | ZATCA/FATOORA, statutory and legal certification | 🔒 | Outside this bounded implementation; requires qualified validation |

@@ -14,10 +14,11 @@
 > is complete, reviewed by Claude Opus 5 (APPROVE FOR MERGE), and squash-merged to `main`
 > at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (PR #68).
 >
-> The planned next capability is MESP-125 (Goods Receipt and Purchase Invoice handoff),
-> which is currently To Do / unactivated, and blocked on owner decision FIN-OD-01.
-> Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, and MESP-113 are Done.
-> No implementation starts automatically.
+> The active implementation capability is MESP-125 (Goods Receipt and Purchase
+> Invoice handoff), which is In Progress / activated under Epic MESP-7 (FIN-OD-01
+> resolved contract-bound under MESP-116 / PD-046). Prerequisite gates MESP-41,
+> MESP-43, MESP-44, MESP-45, MESP-113, and MESP-116 are Done. Immediate implementation
+> executor is Claude Sonnet 5 per `TASK.md`.
 
 > **Historical pre-fast-track overlay — MESP-38 completion.** The prior
 > MESP-38/MESP-39 overlay immediately below remains preserved evidence only;

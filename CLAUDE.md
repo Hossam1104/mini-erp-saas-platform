@@ -9,7 +9,7 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 19 August 2026 (MESP-124 merged; post-merge reconciliation; MESP-125 blocked on FIN-OD-01)
+## Current execution overlay - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
 
 MESP-124 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR
 MERGE), and squash-merged to `main`** at commit
@@ -30,15 +30,20 @@ No Goods Receipt, stock, warehouse movement, invoice, AP/accounting, payment,
 three-way matching, supplier portal, external integration, ZATCA/FATOORA,
 production DNS/TLS, or customer-specific (Wafra) core behavior was added.
 Protected source assets under `frontend/assets` remain untouched. Zero Jira
-operations were performed; GPT-5.6 Sol owns Jira closure.
+operations were performed; GPT-5.6 Sol owns Jira management.
 
-The planned next implementation capability is **MESP-125 (Goods Receipt and
-Purchase Invoice handoff)** under Epic MESP-7. However, MESP-125 is **NOT
-ACTIVATED** and is **BLOCKED ON FIN-OD-01** (unresolved Finance decision on
-interim Goods Receipt accounting, clearing/accrual, and valuation/posting
-treatment). Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, and MESP-113
-are Done. Do not start MESP-125 implementation until GPT-5.6 Sol and the
-Product Owner formally resolve and record FIN-OD-01.
+The active implementation capability is **MESP-125 (Goods Receipt and Purchase
+Invoice handoff)** under Epic MESP-7. MESP-125 is **IN PROGRESS / ACTIVATED**
+(Jira activation comment `11503`). FIN-OD-01 is **APPROVED CONTRACT-BOUND** under
+MESP-116 (comment `10957`) and PD-046 (MESP-22 comment `10958`): Finance owns
+balanced journals, source-to-GL mapping, account and period validation, subledger
+reconciliation, Inventory valuation handoff, controlled corrections and
+reversals, and auditable posting evidence; operational modules own source
+documents and do not fabricate accounting entries outside the approved Finance
+contract. Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, MESP-113, and
+MESP-116 are Done. Immediate implementation executor is Claude Sonnet 5
+(Reasoning: HIGH) on branch `feat/MESP-125-goods-receipt-purchase-invoice-handoff`
+per root `TASK.md`.
 
 ## Historical execution overlay - 17 August 2026 (MESP-124 implementation; superseded by merge)
 

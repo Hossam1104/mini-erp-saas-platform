@@ -19,10 +19,10 @@
 > change records, controlled reapproval, lifetime Tenant-scoped source decision
 > uniqueness consumption, durable idempotent replay, history, audit, and
 > Tenant/Company/Branch scope. The planned next candidate is MESP-125 (Goods
-> Receipt and Purchase Invoice handoff), which is currently To Do / unactivated
-> and blocked on FIN-OD-01. Goods Receipt, stock, invoice, AP, payment,
-> accounting, and three-way matching remain downstream and are not implemented
-> by MESP-124.
+> Receipt and Purchase Invoice handoff), which is currently In Progress / activated
+> under Epic MESP-7 (FIN-OD-01 resolved contract-bound under MESP-116 / PD-046).
+> Goods Receipt, stock, invoice, AP, payment, accounting, and three-way matching
+> remain downstream and are not implemented by MESP-124.
 
 ## 1. Document Control
 

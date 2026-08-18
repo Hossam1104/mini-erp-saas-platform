@@ -2,12 +2,12 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-19 01:05 +03:00
+**Last Updated:** 2026-08-19 01:15 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~40%**
 
-## Current authoritative fast-track snapshot - 19 August 2026 (MESP-124 merged; post-merge reconciliation)
+## Current authoritative fast-track snapshot - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
 
 This snapshot records the merge closure of MESP-124 following independent
 Claude Opus 5 review (`APPROVE FOR MERGE`). MESP-124 is squash-merged to `main`
@@ -18,9 +18,9 @@ immutable PR/quotation/source-decision lineage, approval/delegation/SoD, manual
 Supplier Confirmation (full, partial, rejected, no-response), supplier-proposed
 changes with controlled reapproval, lifetime Tenant-scoped source decision
 uniqueness, durable idempotent replay, immutable audit snapshots, and bilingual
-EN/AR RTL Angular workspace. The planned next capability is MESP-125 (Goods
-Receipt and Purchase Invoice handoff), which is To Do / unactivated and blocked
-on FIN-OD-01.
+EN/AR RTL Angular workspace. The active capability is MESP-125 (Goods
+Receipt and Purchase Invoice handoff), which is In Progress / activated under
+Epic MESP-7 (FIN-OD-01 resolved contract-bound under MESP-116 / PD-046).
 
 | Current control | Verified position |
 |---|---|
@@ -30,7 +30,7 @@ on FIN-OD-01.
 | Production capability | **~40% overall; Procurement/P2P conservatively ~28%** — validated capability merged; documentation reconciliation does not claim artificial percentage increases. |
 | Validation baseline | Release build 0 warnings/0 errors; backend **793/793 passed, 0 skipped** including LocalDB SQL safety harness; focused Purchase Order **14/14**; focused PO + REST foundation **47/47**; Angular **216/216** across 25 spec files; production build **492.02 kB initial / 76.78 kB PO lazy / 91.94 kB quotation lazy**; `npm audit` **0 vulnerabilities**; Playwright focused PO **8/8** and full Chromium **16/16** passed. |
 | Boundaries | No Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way matching, supplier portal, external integration, ZATCA/FATOORA, DNS/TLS, or Wafra-specific core behavior. Production/provider, MESP-48/MESP-50, specialist, legal, migration, and cutover gates remain open. |
-| Next candidate & gate | **MESP-125 (Goods Receipt and Purchase Invoice handoff)** is the planned next capability under Epic MESP-7. It is **To Do / NOT ACTIVATED** and **BLOCKED ON FIN-OD-01** (unresolved Finance decision on interim Goods Receipt accounting, clearing/accrual, and valuation/posting treatment). Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, and MESP-113 are Done. Implementation is prohibited until FIN-OD-01 is resolved by Sol and Product Owner. |
+| Next candidate & gate | **MESP-125 (Goods Receipt and Purchase Invoice handoff)** is the active capability under Epic MESP-7. It is **IN PROGRESS / ACTIVATED** (Jira activation comment `11503`). FIN-OD-01 is **APPROVED CONTRACT-BOUND** under MESP-116 (comment `10957`) and PD-046 (`docs/31_Release_1_Consolidated_Owner_Decision_Pack.md` §B6 / MESP-22 comment `10958`). Finance owns balanced journals, source-to-GL mapping, account and period validation, subledger reconciliation, inventory valuation handoff, controlled corrections and reversals, and auditable posting evidence; operational modules own their source documents and do not fabricate accounting entries outside the approved Finance contract. Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, MESP-113, and MESP-116 are Done. Immediate implementation executor: Claude Sonnet 5 per `TASK.md`. |
 
 ## Historical authoritative fast-track snapshot - 18 August 2026 (MESP-124 final Opus P2 remediation)
 
@@ -1333,6 +1333,7 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-19 01:15 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-125 governance reconciliation completed: FIN-OD-01 reconciled as APPROVED CONTRACT-BOUND under MESP-116 / PD-046 (was previously mischaracterized as an unresolved blocker); MESP-125 is IN PROGRESS / ACTIVATED under Epic MESP-7 (Jira activation comment `11503`); prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, MESP-113, and MESP-116 verified Done; root `TASK.md` prepared with the complete Claude Sonnet 5 MESP-125 implementation prompt on branch `feat/MESP-125-goods-receipt-purchase-invoice-handoff`; zero product/test/schema changes; no percentage change. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-19 01:05 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 (Purchase Order and Supplier Confirmation) completed, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE), and squash-merged to `main` at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (merge timestamp 2026-08-18T21:37:47Z; PR #68 merged; reviewed feature head `0eca12dbecffe7e8abeff6914566fa4de329d2c7`). Release build 0/0; backend 793/793, 0 skipped, disposable LocalDB safety harness passed; focused PO 14/14, focused PO + REST foundation 47/47; Angular 216/216 across 25 specs; production bundle 492.02 kB initial / 76.78 kB PO lazy / 91.94 kB quotation lazy; npm audit 0 vulnerabilities; Playwright focused PO 8/8, full Chromium 16/16 passed. Zero Jira writes in this docs-only session; GPT-5.6 Sol owns Jira closure. Next candidate MESP-125 is To Do / NOT ACTIVATED and BLOCKED ON FIN-OD-01 (interim Goods Receipt accounting/clearing decision). | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-18 23:43 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 final Opus P2 remediation completed on `feat/MESP-124-purchase-order-confirmation` (Draft PR #68, unmerged): completed supplier-change approval stages now reset approver IDs/count before the next stage; a direct two-stage test proves genuine Stage-B approvals and correct history keys; supplier-change eligible/ineligible, valid/invalid/expired/wrong-actor delegation, and self-approval cases are covered through the existing engine; a real duplicate-source create test proves one PO/history/audit aggregate and `purchase_order_duplicate`; terminal Cancelled/Rejected PO detail communicates new-source-decision recovery in EN/AR while controlled same-PO reopen remains future capability/decision; F-5 durable replay header is deferred as P3 because it would require public result-contract redesign. No production-capability percentage change. Release build 0/0; official backend runner **793/793**, 0 skipped, disposable LocalDB safety target; focused PO **14/14**, PO + REST foundation **47/47**, Angular **216/216**, focused Chromium **8/8**, full Chromium **16/16**, build **492.02 kB initial / 76.78 kB PO lazy / 91.94 kB quotation lazy**, both npm audits 0 vulnerabilities; live API 5300/frontend 4300 health, module-registration, root, and PO-route checks passed, expected unauthenticated PO API boundary 401; no Jira writes, downstream scope, or Owner asset changes. Branch remains OPEN/DRAFT/UNMERGED for independent Claude Opus 5 pre-merge review. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-18 16:55 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 final pre-review correction completed on `feat/MESP-124-purchase-order-confirmation` (Draft PR #68, unmerged): REST idempotency cache fingerprints now include the target PO, impossible confirmation-quantity aliases map to HTTP 409, the Tenant + SourceDecision uniqueness model invariant has focused coverage, inactive tabpanel anchors keep every tab relationship rendered, and the transitive `nanoid` lockfile patch brings both production-only and full `npm audit` to zero vulnerabilities. No production-capability percentage change. Release build 0/0; backend **790/790**, focused PO **11/11**, failure classification **9/9**, Angular **215/215**, focused Chromium **7/7**, full Chromium **15/15**, build **492.02 kB initial / 75.74 kB PO lazy / 91.94 kB quotation lazy**; official runtime configuration smoke passed and live API/module-registration/frontend checks returned HTTP 200 on 5300/4300. No Jira writes, downstream scope, or Owner asset changes; branch remains OPEN/DRAFT/UNMERGED for the next independent Claude Opus 5 pre-merge review. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |

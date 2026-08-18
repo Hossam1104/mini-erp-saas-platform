@@ -35,11 +35,15 @@ and Arabic; it is explanatory UX and not an authorization mechanism.
 - **P3-8**: Transitive `nanoid` lockfile-only security patch is intentionally present.
 
 ### Downstream Next Candidate & Decision Gate
-The planned next capability is **MESP-125 (Goods Receipt and Purchase Invoice handoff)**
-under Epic MESP-7. It is **To Do / NOT ACTIVATED** and **BLOCKED ON FIN-OD-01**
-(interim Goods Receipt accounting, clearing/accrual, and valuation/posting
-treatment). Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, and MESP-113
-are Done.
+The active implementation capability is **MESP-125 (Goods Receipt and Purchase Invoice handoff)**
+under Epic MESP-7. It is **IN PROGRESS / ACTIVATED** (Jira activation comment `11503`).
+FIN-OD-01 is **APPROVED CONTRACT-BOUND** under MESP-116 (comment `10957`) and PD-046
+(`docs/31_Release_1_Consolidated_Owner_Decision_Pack.md` §B6 / MESP-22 comment `10958`):
+Finance owns balanced journals, source-to-GL mapping, account and period validation,
+subledger reconciliation, inventory valuation handoff, controlled corrections and
+reversals, and auditable posting evidence; operational modules own source documents
+and do not fabricate accounting entries outside the approved Finance contract.
+Prerequisite gates MESP-41, MESP-43, MESP-44, MESP-45, MESP-113, and MESP-116 are Done.
 
 ## Current Architecture Acceptance (ADR-019) - 17 August 2026
 
