@@ -7,6 +7,20 @@
 > readiness claim. MESP-33 and later domain work are not started by this
 > document.
 
+> **Implementation reconciliation - MESP-124, 17 August 2026.** The approved
+> business baseline above is preserved. The bounded MESP-124 source slice now
+> implements Purchase Order and manual Supplier Confirmation behavior against
+> the already approved MESP-123 sourcing chain: approved PR, submitted
+> quotation, current Source Decision, immutable commercial snapshots,
+> reusable approval/SoD/delegation, issue evidence, full/partial/rejected/
+> no-response confirmation, supplier-proposed change records, controlled
+> reapproval, history, audit, and Tenant/Company/Branch scope. This note records
+> repository implementation status only; it does not close any remaining
+> Procurement decision, production, Inventory, Finance, legal, migration,
+> retention, or external-integration gate. Goods Receipt, stock, invoice, AP,
+> payment, accounting, and three-way matching remain downstream and are not
+> implemented by MESP-124.
+
 ## 1. Document Control
 
 | Field | Value |
@@ -935,6 +949,24 @@ No Owner response was fabricated or inferred during this session. The normal
 decision process remains open for the named owners above.
 
 ## 23. Source Conflicts, Corrections, and Review Notes
+
+### MESP-124 source-decision consumption and terminal recovery reconciliation
+
+For the bounded MESP-124 Purchase Order slice, one Supplier Source Decision
+creates at most one Purchase Order per Tenant. Once a Purchase Order has been
+created, its Source Decision remains consumed for its lifetime; a Cancelled or
+Rejected Purchase Order does not release that source for another Purchase
+Order. Recovery currently requires a new sourcing action and a new Source
+Decision. This preserves the duplicate-spend and duplicate-commercial-
+commitment invariant.
+
+Controlled reopening of the same Purchase Order, or replacement semantics for
+eligible unposted work, is a **FUTURE EXPLICIT CAPABILITY / DECISION** and is
+not implemented by MESP-124. Any future reopen must preserve the original PO,
+source lineage, actor, reason, timestamp, scope, prior status, current status,
+and linked audit/history. The MESP-124 UI communicates the current new-source
+recovery rule for terminal Cancelled/Rejected states and must not imply that
+the full BRD reopen capability is available.
 
 1. The approved current sequence is MESP-25 comment `10057`: MESP-31 Master
    Data, then MESP-32 Procurement, then MESP-33 Inventory, then MESP-34

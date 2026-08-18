@@ -2,12 +2,102 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-17 16:45 +03:00
+**Last Updated:** 2026-08-18 23:43 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
-**Overall Production-Ready Completion:** **~39%**
+**Overall Production-Ready Completion:** **~40%**
 
-## Current authoritative fast-track snapshot — 17 August 2026 (MESP-143 merged; post-merge reconciliation)
+## Current authoritative fast-track snapshot - 18 August 2026 (MESP-124 final Opus P2 remediation)
+
+This snapshot records the final bounded P2/P3 remediation pass requested by
+the independent Claude Opus 5 MESP-124 review. It corrects multi-stage
+supplier-change approval stage reset, adds direct reapproval actor/delegation
+and duplicate-source behavior coverage, and adds bilingual terminal source
+recovery guidance while preserving the accepted commercial-integrity,
+source-decision uniqueness, immutable durable replay, HTTP failure
+classification, and Purchase Order accessibility corrections. It does not
+add downstream Procurement, Inventory, Finance, external, production, or
+Wafra-specific scope, and it does not increase the conservative
+production-capability percentages.
+
+| Current control | Verified position |
+|---|---|
+| MESP-143 | Completed, independently reviewed by Claude Opus 5, and squash-merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67). |
+| MESP-124 | Remediation is implemented on `feat/MESP-124-purchase-order-confirmation`; Draft PR #68 remains OPEN/DRAFT/UNMERGED; Jira remained read-only and In Progress with activation evidence `11394`. |
+| Remediation scope | Confirmation facts now survive supplier commercial-change approval/rejection with recomputed ordered/confirmed/remaining/status values; one Tenant + Source Decision lifetime is enforced by a new additive unique-index migration `20260818103736_PurchaseOrderCommercialIntegrityAndDurableReplay`; successful operation responses are stored as versioned immutable audit snapshots; completed supplier-change approval stages reset approver IDs/count before the next stage; duplicate-source behavior and reapproval delegation are directly covered; terminal PO recovery explains the new-source-decision rule in EN/AR; approval/HTTP semantics and PO dialog/tab/table accessibility are hardened. |
+| Production capability | **~40% overall; Procurement/P2P conservatively ~28%** — unchanged; this is correctness and review remediation, not additive business capability. |
+| Validation | Backend **793/793 passed, 0 skipped** including the SQL safety harness against disposable LocalDB; focused Purchase Order tests **14/14** and focused Purchase Order + REST foundation tests **47/47**; Angular **216/216** across 25 spec files; production build **492.02 kB initial / 76.78 kB Purchase Order lazy / 91.94 kB Supplier Quotation lazy**; both production-only and full `npm audit` report **0 vulnerabilities**; focused Purchase Order Playwright **8/8** and full Chromium Playwright **16/16** passed; official runtime configuration smoke passed, live API health/module-registration and Angular root/PO-route checks returned HTTP 200 on API 5300 / Angular 4300, with the unauthenticated API PO list retaining its expected 401 boundary. |
+| Boundaries | No Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way matching, supplier portal, external integration, ZATCA/FATOORA, DNS/TLS, or Wafra-specific core behavior. Production/provider, MESP-48/MESP-50, specialist, legal, migration, and cutover gates remain open. |
+| Next exact session | Independent Claude Opus 5 MESP-124 pre-merge review. It must re-verify P1-A/P1-B, multi-stage supplier-change stage reset and direct two-stage evidence, reapproval delegation/self-approval cases, exact durable replay after later mutation/cache expiry/process restart, Tenant/resource authorization before replay, HTTP 403/409 semantics, terminal new-source recovery wording and controlled-reopen deferral, accessibility keyboard/focus behavior, additive migration integrity, and full regression evidence. Do not merge this branch or start MESP-125. |
+
+## Historical authoritative fast-track snapshot - 18 August 2026 (MESP-124 durable idempotency ordering correction)
+
+This snapshot records a second bounded bug-fix/regression session, not new
+capability; the Procurement/P2P production-capability percentage is unchanged.
+GPT-5.6 Sol confirmed F-1 closed and accepted the F-2 SHA-256 request
+fingerprint design and persistence-side conflict detection, but raised one
+remaining F-2 **completeness** finding: `PurchaseOrderService` ran
+lifecycle-state, concurrency, approval-stage, approval-policy, delegation,
+supplier-change, and reapproval checks before persisted idempotency evidence
+could be consulted, so an identical retry stopped being replayable once the
+original success advanced state — permanently so once the volatile ten-minute
+REST idempotency cache expired or the API process restarted. Claude Sonnet 5,
+sole executor, closed it by adding a bounded read-only durable replay probe
+(`IPurchaseOrderPersistence.ProbeReplayAsync`, NotFound/Replay/Conflict) over
+the already-stored Tenant-scoped audit evidence and calling it in the correct
+position, with no schema change and no rewrite of the accepted additive
+migration.
+
+| Current control | Verified position |
+|---|---|
+| MESP-143 | Completed, independently reviewed by Claude Opus 5, and squash-merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67). |
+| MESP-124 | Repository implementation complete at bounded pre-merge scope on `feat/MESP-124-purchase-order-confirmation`; Draft PR #68 against `main` remains OPEN/DRAFT/UNMERGED; Jira read-only In Progress with activation evidence comment `11394`. This session closed the final F-2 completeness finding with zero Jira write. |
+| Production capability | **~40% overall; Procurement/P2P phase conservatively ~28%** — unchanged; this is correction work, not additive business scope. |
+| Security ordering | Replay is not an authorization bypass: the probe runs only after trusted Tenant context, current target resolution, and current actor authorization, and before lifecycle/concurrency/approval-stage/policy/delegation/supplier-change/reapproval validation. Replay is matched on the exact actor, so separation of duties still holds; a genuinely new create still runs full current source-decision validation; the in-transaction persistence-side replay check is retained as defense in depth. |
+| Validation | Release build 0 warnings/0 errors; official backend runner **778/778 passed, 0 skipped** (up from 774; +4 new durable-replay regression tests) against disposable LocalDB `MiniErpFoundation_20260818103729_8fb927af`, SQL safety harness genuinely executed, runner cleanup succeeded, **zero orphan `MiniErpFoundation_*` databases**, persistent `MESP_SQLSERVER_CONNECTION_STRING` unchanged and persistent `MESP` intact; targeted `PurchaseOrderTests`/`RestFoundationTests` **41/41** (up from 37); the 4 new tests verified load-bearing (4/4 fail against the pre-correction service while the 4 pre-existing PO tests still pass). Backend-only: no frontend source, dependency, or asset file changed, so Angular **212/212**, build **492.02 kB initial / 72.94 kB PO lazy / 91.94 kB quotation lazy**, and Chromium **15/15** stand unchanged from the prior session; `npm audit` unchanged at **1 high** (pre-existing `nanoid` transitive advisory; `npm audit fix` not run and dependency files untouched — a separate pre-production Owner/Sol dependency-security follow-up). |
+| Boundaries | No Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way matching, supplier portal, external integration, ZATCA/FATOORA, DNS/TLS, or Wafra-specific core behavior. Production/provider, MESP-48/MESP-50, specialist, legal, migration, and cutover gates remain open. |
+| Next exact session | Independent Claude Opus 5 MESP-124 pre-merge review, with `TASK.md` updated to require explicit verification of durable replay after cache expiry/process restart, the six state-advanced replay scenarios, the `ChangedPendingApproval` confirmation replay, absence of duplicate history/audit/evidence, and unchanged 409 conflict semantics; branch remains unmerged and MESP-125 is not started. |
+
+## Historical authoritative fast-track snapshot - 18 August 2026 (MESP-124 pre-Opus Sol findings correction; superseded by the durable idempotency ordering correction)
+
+This snapshot records a bounded bug-fix correction session, not new capability;
+the Procurement/P2P production-capability percentage is unchanged from the
+MESP-124 implementation snapshot below, since currency-rendering resilience
+and idempotency-fidelity hardening are correctness corrections to already-
+counted capability rather than additive scope. Claude Sonnet 5, sole
+executor, resolved two GPT-5.6 Sol pre-Opus findings (F-1 currency rendering
+resilience; F-2 idempotency replay/conflict fidelity) on
+`feat/MESP-124-purchase-order-confirmation`, Draft PR #68, with focused
+regression coverage and zero Jira operations.
+
+| Current control | Verified position |
+|---|---|
+| MESP-143 | Completed, independently reviewed by Claude Opus 5, and squash-merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67). |
+| MESP-124 | Repository implementation complete at bounded pre-merge scope on `feat/MESP-124-purchase-order-confirmation`; published as Draft PR #68 against `main`; Jira was read-only verified In Progress with activation evidence comment `11394`. This session corrected GPT-5.6 Sol's two pre-Opus findings (F-1, F-2) with zero Jira write. |
+| Production capability | **~40% overall; Procurement/P2P phase conservatively ~28%** — unchanged from the MESP-124 implementation snapshot; this session is a correctness/regression-hardening correction, not additive capability. |
+| Validation | Release build 0 warnings/0 errors; official backend runner **774/774 passed, 0 skipped** against disposable LocalDB `MiniErpFoundation_20260818002533_bd5e030f` (+1 new F-2 regression test); targeted `PurchaseOrderTests`/`RestFoundationTests` **37/37**; Angular **212/212** across 25 spec files (+1 new spec file); build **492.02 kB initial**, **72.94 kB Purchase Order lazy**, **91.94 kB Supplier Quotation lazy**; Chromium **15/15**; `npm audit` **1 high** (pre-existing `nanoid` transitive advisory, unrelated to this session — dependency files untouched — left for a separate Owner-authorized update decision). |
+| Boundaries | No Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way matching, supplier portal, external integration, ZATCA/FATOORA, DNS/TLS, or Wafra-specific core behavior. Production/provider, MESP-48/MESP-50, specialist, legal, migration, and cutover gates remain open. |
+| Next exact session | Independent Claude Opus 5 MESP-124 pre-merge review, now with `TASK.md` updated to require explicit re-verification of F-1 and F-2; branch remains unmerged and MESP-125 is not started. |
+
+## Historical authoritative fast-track snapshot - 17 August 2026 (MESP-124 implementation; pre-merge handoff; superseded by pre-Opus Sol findings correction)
+
+This snapshot supersedes the MESP-143-only snapshot below while
+preserving all historical progress rows. The percentage movement reflects
+validated reusable Purchase Order and Supplier Confirmation capability, not
+Jira activity or test-count growth alone. Release 1 remains a full-feature
+reusable B2B ERP and the 31 August Integrated Preview remains a preview of the
+real codebase, not a scope reduction.
+
+| Current control | Verified position |
+|---|---|
+| MESP-143 | Completed, independently reviewed by Claude Opus 5, and squash-merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67). |
+| MESP-124 | Repository implementation complete at bounded pre-merge scope on `feat/MESP-124-purchase-order-confirmation`; published as Draft PR #68 against `main`; Jira was read-only verified In Progress with activation evidence comment `11394`; no Jira write was performed. |
+| Production capability | **~40% overall; Procurement/P2P phase conservatively ~28%** after adding source-decision-gated Purchase Orders, approval/issue evidence, manual full/partial/rejected/no-response Supplier Confirmation, supplier-change reapproval, and immutable source/commercial/history/audit records. |
+| Validation | Release build 0 warnings/0 errors; official backend runner **773/773 passed, 0 skipped** against disposable LocalDB `MiniErpFoundation_20260817183503_0e07d663`; Angular **210/210** across 24 spec files; build **492.02 kB initial**, **72.78 kB Purchase Order lazy**, **91.94 kB Supplier Quotation lazy**; Chromium **15/15**; npm audit 0 vulnerabilities. |
+| Boundaries | No Goods Receipt, stock, warehouse, invoice, AP/accounting, payment, three-way matching, supplier portal, external integration, ZATCA/FATOORA, DNS/TLS, or Wafra-specific core behavior. Production/provider, MESP-48/MESP-50, specialist, legal, migration, and cutover gates remain open. |
+| Next exact session | Independent Claude Opus 5 MESP-124 pre-merge review; branch remains unmerged and MESP-125 is not started. |
+
+## Historical authoritative fast-track snapshot — 17 August 2026 (MESP-143 merged; post-merge reconciliation)
 
 This current snapshot supersedes earlier handoff wording while preserving the
 historical progress rows below. Release 1 remains a full-feature reusable B2B
@@ -108,17 +198,17 @@ Every future execution prompt should include:
 |---|---:|
 | Product / Requirements Definition | **~45%** |
 | Architecture & Technical Foundation | **~90%** |
-| Backend Overall | **~60%** |
-| Database / Persistence Overall | **~54%** |
-| Frontend Overall | **~33%** |
+| Backend Overall | **~64%** |
+| Database / Persistence Overall | **~58%** |
+| Frontend Overall | **~37%** |
 | Automated Technical Safety Foundation | **~60%** |
-| Full End-to-End Business System | **~34%** |
+| Full End-to-End Business System | **~36%** |
 | Production Readiness | **~29%** |
-| **Remaining to Real Production** | **~61%** |
+| **Remaining to Real Production** | **~60%** |
 
 ## Current management headline
 
-> **Mini ERP SaaS Platform Release 1 is approximately 39% complete toward a genuinely production-ready system.**
+> **Mini ERP SaaS Platform Release 1 is approximately 40% complete toward a genuinely production-ready system.**
 
 This percentage is intentionally lower than the raw Jira completion percentage because many completed Jira items represent architecture, governance, BRD, authorization, and technical-foundation work rather than completed business capabilities.
 
@@ -247,22 +337,22 @@ The following model represents progress toward a complete production Release 1.
 | 2. Architecture, security & technical foundation | 12% | **87%** | 10.4% |
 | 3. Platform Admin / IAM / Tenancy / Organization | 8% | **55%** | 4.4% |
 | 4. Master Data & Product Catalog | 10% | **68%** | 6.8% |
-| 5. Procurement / Purchase-to-Pay | 9% | **17%** | 1.5% |
+| 5. Procurement / Purchase-to-Pay | 9% | **28%** | 2.5% |
 | 6. Inventory / Warehouse | 9% | **3%** | 0.3% |
 | 7. Finance / Accounting / AR / AP / Cash | 12% | **3%** | 0.4% |
 | 8. B2B Sales / Order-to-Cash | 9% | **3%** | 0.3% |
 | 9. Reporting & Analytics | 4% | **2%** | 0.1% |
-| 10. Complete Angular Frontend / EN-AR / RTL | 8% | **31%** | 2.5% |
+| 10. Complete Angular Frontend / EN-AR / RTL | 8% | **37%** | 3.0% |
 | 11. Saudi Compliance & External Integrations | 4% | **8%** | 0.3% |
 | 12. Migration / Tenant Onboarding | 2% | **3%** | 0.1% |
 | 13. E2E QA, Performance, UAT, Deployment & Go-Live | 5% | **25%** | 1.3% |
 
-**Weighted overall result:** approximately **38%**.
+**Weighted overall result:** approximately **40%**.
 
 The weighted model remains an approximate planning band; the bounded
-Currency/Payment Terms, Tax/VAT, Exchange Rate, the bounded Supplier Quotation
-sourcing implementation, and this limited B2 shell/auth foundation support the
-conservative current 38% headline
+Currency/Payment Terms, Tax/VAT, Exchange Rate, Supplier Quotation/source
+decision, Purchase Order/Supplier Confirmation, and this limited B2 shell/auth
+foundation support the conservative current 40% headline
 below without resolving the SQL/provider,
 specialist, or production gates. The approved MESP-33 Inventory BRD is a documentation
 baseline only and does not increase usable Inventory or overall production
@@ -270,7 +360,7 @@ capability.
 
 For project reporting use:
 
-> **Overall production-ready completion = 37%**
+> **Overall production-ready completion = 40%**
 
 Do not present decimal precision as certainty.
 
@@ -1218,6 +1308,12 @@ Do not delete historical rows. Add one row whenever project statistics materiall
 
 | Date | Overall | Backend | DB | Frontend | Main Change | Forecast |
 |---|---:|---:|---:|---:|---|---|
+| 2026-08-18 23:43 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 final Opus P2 remediation completed on `feat/MESP-124-purchase-order-confirmation` (Draft PR #68, unmerged): completed supplier-change approval stages now reset approver IDs/count before the next stage; a direct two-stage test proves genuine Stage-B approvals and correct history keys; supplier-change eligible/ineligible, valid/invalid/expired/wrong-actor delegation, and self-approval cases are covered through the existing engine; a real duplicate-source create test proves one PO/history/audit aggregate and `purchase_order_duplicate`; terminal Cancelled/Rejected PO detail communicates new-source-decision recovery in EN/AR while controlled same-PO reopen remains future capability/decision; F-5 durable replay header is deferred as P3 because it would require public result-contract redesign. No production-capability percentage change. Release build 0/0; official backend runner **793/793**, 0 skipped, disposable LocalDB safety target; focused PO **14/14**, PO + REST foundation **47/47**, Angular **216/216**, focused Chromium **8/8**, full Chromium **16/16**, build **492.02 kB initial / 76.78 kB PO lazy / 91.94 kB quotation lazy**, both npm audits 0 vulnerabilities; live API 5300/frontend 4300 health, module-registration, root, and PO-route checks passed, expected unauthenticated PO API boundary 401; no Jira writes, downstream scope, or Owner asset changes. Branch remains OPEN/DRAFT/UNMERGED for independent Claude Opus 5 pre-merge review. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
+| 2026-08-18 16:55 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 final pre-review correction completed on `feat/MESP-124-purchase-order-confirmation` (Draft PR #68, unmerged): REST idempotency cache fingerprints now include the target PO, impossible confirmation-quantity aliases map to HTTP 409, the Tenant + SourceDecision uniqueness model invariant has focused coverage, inactive tabpanel anchors keep every tab relationship rendered, and the transitive `nanoid` lockfile patch brings both production-only and full `npm audit` to zero vulnerabilities. No production-capability percentage change. Release build 0/0; backend **790/790**, focused PO **11/11**, failure classification **9/9**, Angular **215/215**, focused Chromium **7/7**, full Chromium **15/15**, build **492.02 kB initial / 75.74 kB PO lazy / 91.94 kB quotation lazy**; official runtime configuration smoke passed and live API/module-registration/frontend checks returned HTTP 200 on 5300/4300. No Jira writes, downstream scope, or Owner asset changes; branch remains OPEN/DRAFT/UNMERGED for the next independent Claude Opus 5 pre-merge review. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
+| 2026-08-18 14:14 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 bounded Opus-review remediation completed on `feat/MESP-124-purchase-order-confirmation` (Draft PR #68, unmerged): commercial confirmation facts/status recomputation, Tenant + SourceDecision lifetime uniqueness with additive migration `20260818103736_PurchaseOrderCommercialIntegrityAndDurableReplay`, exact immutable durable replay after later mutation, HTTP 403/409 classification, approval/delegation coverage, ISO money bounds, and Purchase Order accessibility were corrected. No production-capability percentage change. Release build 0/0; backend **787/787**, focused PO **10/10**, failure classification **7/7**, Angular **215/215**, focused Chromium **7/7**, full Chromium **15/15**, `npm audit` **0 vulnerabilities**; official runtime health/module-registration/frontend smoke passed on 5300/4300; no Jira writes, downstream scope, or Owner asset changes. `TASK.md`, `.ai/CURRENT_STATE.md`, and PR #68 are prepared for the next independent Claude Opus 5 pre-merge review; branch remains OPEN/DRAFT/UNMERGED. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
+| 2026-08-18 10:45 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 final pre-Opus F-2 completeness correction completed on `feat/MESP-124-purchase-order-confirmation` (Draft PR #68, unmerged), sole executor Claude Sonnet 5: durable idempotent replay is now consulted before state-dependent business validation. The accepted SHA-256 fingerprint design and persistence-side conflict detection were kept; the defect was ordering in `PurchaseOrderService`, which ran lifecycle/concurrency/approval-stage/policy/delegation/supplier-change/reapproval checks before persisted replay, so identical retries stopped being replayable after the original success advanced state and after the volatile ten-minute REST idempotency cache expired or the API restarted. A bounded read-only probe `IPurchaseOrderPersistence.ProbeReplayAsync` (NotFound/Replay/Conflict) over already-stored Tenant-scoped audit evidence is now called after trusted Tenant context, target resolution, and actor authorization but before state-dependent validation — no schema change, accepted additive migration not rewritten, in-transaction replay check retained as defense in depth, and replay matched on the exact actor so separation of duties and revoked authorization are unaffected. Four new backend regression tests prove durable replay for submit-after-PendingApproval, approve-after-Approved, issue-after-Issued, Rejected-confirmation-after-Rejected, the confirmation that created ChangedPendingApproval, supplier-change approval and rejection after the order left ChangedPendingApproval, and create-after-source-drift, each asserting no duplicate history/audit/confirmation/supplier-change and no second mutation; 409 conflict semantics unchanged. No production-capability percentage change (correction work, not additive scope). Release build 0/0; official backend runner **778/778 passed, 0 skipped** against disposable LocalDB `MiniErpFoundation_20260818103729_8fb927af` with zero orphan safety databases and the persistent MESP connection untouched; targeted PurchaseOrderTests/RestFoundationTests **41/41**; backend-only, so Angular **212/212**, build **492.02 kB initial / 72.94 kB PO lazy / 91.94 kB quotation lazy**, and Chromium **15/15** stand unchanged and were not rerun; `npm audit` unchanged at **1 high** (pre-existing `nanoid` advisory; dependency files untouched, `npm audit fix` not run). Owner assets under `frontend/assets` untouched; zero Jira operations. `TASK.md` updated so the next Claude Opus 5 MESP-124 pre-merge review explicitly verifies durable replay ordering and duplicate-evidence absence. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
+| 2026-08-18 00:35 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 pre-Opus GPT-5.6 Sol findings correction completed on `feat/MESP-124-purchase-order-confirmation` (Draft PR #68, unmerged), sole executor Claude Sonnet 5: F-1 currency rendering resilience — `formatMoney` in the Purchase Order workspace now reuses the proven MESP-123 non-ISO-currency safe-fallback pattern instead of raw `Intl.NumberFormat`, with new focused Angular spec coverage; F-2 idempotency replay/conflict fidelity — `PurchaseOrderPersistence.FindReplayAsync` now validates a deterministic server-side SHA-256 request fingerprint (additive EF Core migration `AddPurchaseOrderAuditRequestFingerprint`) across all unsafe MESP-124 commands, so identical retries replay deterministically while a reused key against a different payload or a different target returns HTTP 409 `idempotency_conflict` instead of ever silently replaying an unrelated result; new backend regression test exercises replay/same-target-conflict/cross-target-conflict with an explicit zero-mutation assertion. No production-capability percentage change (correctness/regression-hardening correction to already-counted MESP-124 capability, not additive scope). Release build 0/0; official backend runner **774/774 passed, 0 skipped**; targeted PurchaseOrderTests/RestFoundationTests **37/37**; Angular **212/212** across 25 spec files; build **492.02 kB initial / 72.94 kB PO lazy / 91.94 kB quotation lazy**; Chromium **15/15**; `npm audit` **1 high** (pre-existing unrelated `nanoid` transitive advisory, dependency files untouched, left for separate Owner-authorized update). Owner assets under `frontend/assets` untouched; zero Jira operations. `TASK.md` updated so the next Claude Opus 5 MESP-124 pre-merge review explicitly re-verifies F-1 and F-2. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
+| 2026-08-17 18:40 +03:00 | **40%** | **64%** | **58%** | **37%** | MESP-124 bounded Purchase Order and Supplier Confirmation implementation completed on `feat/MESP-124-purchase-order-confirmation`: server-authorized source-decision prerequisite, immutable PR/quotation/decision and commercial snapshots, reusable approval/SoD/delegation, issue evidence, manual full/partial/rejected/no-response confirmation, supplier-proposed changes with controlled reapproval, Tenant/Company/Branch enforcement, immutable history/audit, formal Procurement migration, Foundation/OpenAPI metadata, and bilingual Angular workspace. Release build 0/0; official backend runner **773/773 passed, 0 skipped** against disposable LocalDB; Angular **210/210** across 24 specs; build **492.02 kB initial / 72.78 kB PO lazy / 91.94 kB quotation lazy**; Chromium **15/15**; npm audit 0 vulnerabilities. No downstream stock/receipt/invoice/AP/accounting/payment/three-way-match behavior, Jira writes, external integrations, or Owner asset changes. Branch remains unmerged; exact next session is independent Claude Opus 5 MESP-124 pre-merge review. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-17 16:45 +03:00 | **39%** | **60%** | **54%** | **33%** | MESP-143 Tenant-aware entry routing and operational workspace context completed, reviewed by Claude Opus 5 (APPROVE FOR MERGE; 0 P0/P1/P2, 4 P3 observations), and squash-merged to main at commit `866cb75bb7d0d97c929216b1a449f458a2614097` (PR #67); backend 770/770 (all 22 SQL safety tests executed against disposable LocalDB `MiniErpFoundation_20260817144819_f27b32f1`), Angular 204/204 (23 specs), Playwright 8/8, bundle 490.85 kB initial / 91.94 kB quotation lazy chunk; 4 P3 follow-ups (P3-1 through P3-4) and Terra HIGH pre-production security audit recommendation recorded; root TASK.md prepared with full MESP-124 implementation prompt gated on Sol Jira activation; zero product/test/schema changes | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-17 13:30 +03:00 | **39%** | **60%** | **54%** | **33%** | MESP-143 pre-Opus validation reconciliation on `feat/MESP-143-tenant-aware-entry` (Draft PR #67); zero product/test/migration/schema code changed. Re-ran the full backend suite through the approved safe entry point `scripts/Test-MiniErpBackend.ps1`, replacing the prior 748/770-with-22-gated result: Release build 0 warnings/0 errors; backend **770/770 passed, 0 skipped**, with all 22 SQL Server safety-harness tests genuinely executed and passed against disposable database `MiniErpFoundation_20260817131747_f553ce07`, confirmed dropped with 0 orphan `MiniErpFoundation_*` databases remaining; `MESP_SQLSERVER_CONNECTION_STRING` confirmed unmodified throughout. Frontend rerun matches the implementation-head baseline: Angular 204/204 across 23 spec files, production build 490.85 kB initial / 91.94 kB Supplier Quotation lazy chunk, Playwright 8/8, `npm audit --omit=dev` 0 vulnerabilities. `TASK.md` corrected so the next Claude Opus 5 review requires the safe runner and genuine SQL safety execution, no longer accepting environment-gated SQL safety tests as a green `APPROVE FOR MERGE` outcome. No headline percentage increase claimed (validation-only, no new capability). PR #67 remains open/Draft/unmerged; no Jira operation performed; next exact session remains independent Claude Opus 5 targeted MESP-143 review. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
 | 2026-08-17 10:27 +03:00 | **39%** | **60%** | **54%** | **33%** | MESP-143 bounded implementation completed on `feat/MESP-143-tenant-aware-entry`: added configuration-led normalized Tenant host bindings, common/platform/no-access entry modes, trusted-proxy-only forwarded-host behavior, exact Tenant membership authority, canonical common-host routing, Overview-first Angular shell, post-Overview Company/Branch context, generic branding/MESP fallback, and presentation-only SAR/currency semantics. Added 16 focused MESP-143 backend host/security tests and 2 Angular currency-presentation tests; Angular passed 204/204 and the production build passed at 490.85 kB initial with a 91.94 kB Supplier Quotation lazy chunk. Full backend validation is 748/770 with exactly 22 SQL safety cases gated by the missing dedicated LocalDB connection; Playwright passed 8/8 and npm audit reports 0 vulnerabilities. No Tenant schema/migration, DNS/TLS, Jira, external provider, Owner asset, or downstream Procurement/Finance/Inventory behavior changed. Next exact handoff is independent Opus review of MESP-143 security and integration gates. | 31 Aug 2026 Integrated Preview; serious RC/production forecast remains gate-dependent and realistically late Oct-mid Nov 2026 |
@@ -1339,12 +1435,12 @@ Do not answer from percentages alone. Check the 100% Production Ready Definition
 
 > ## Mini ERP SaaS Platform — Release 1
 >
-> **Overall Production-Ready Completion:** ~39%
+> **Overall Production-Ready Completion:** ~40%
 > **Architecture/Foundation:** ~90%
-> **Backend:** ~60%
-> **Database:** ~54%
-> **Frontend:** ~33%
-> **End-to-End Business System:** ~34%
+> **Backend:** ~64%
+> **Database:** ~58%
+> **Frontend:** ~37%
+> **End-to-End Business System:** ~36%
 >
 > **Backend + DB Feature Complete Forecast:** Mid–Late September 2026  
 > **Full Feature Complete Forecast:** Late September–Mid October 2026  

@@ -1,6 +1,368 @@
 # Current State
 
-## Current authoritative position - 17 August 2026 (MESP-143 merged; post-merge repository reconciliation)
+## Current authoritative position - 18 August 2026 (MESP-124 final Opus P2 remediation)
+
+The bounded MESP-124 final P2 remediation pass is implemented on
+`feat/MESP-124-purchase-order-confirmation`, continuing Draft PR #68 against
+`main`. Jira remained read-only; MESP-124 is still In Progress with activation
+evidence `11394`. MESP-143 remains the merged ADR-019 prerequisite at
+`866cb75bb7d0d97c929216b1a449f458a2614097`.
+
+### Remediation delivered
+
+- Supplier confirmation writes now persist confirmation facts even when the
+  same response proposes price/date/quantity changes. Approved and rejected
+  supplier changes recompute ordered, confirmed, remaining, latest response,
+  and resulting status from durable state. Proposed quantity reductions below
+  already confirmed quantity fail before mutation with
+  `proposed_quantity_below_confirmed`.
+- A source decision is consumed for the lifetime of its Tenant by the new
+  additive unique index `(TenantId, SourceDecisionId)` and migration
+  `20260818103736_PurchaseOrderCommercialIntegrityAndDurableReplay`. Existing
+  migrations `20260817143432_PurchaseOrderAndSupplierConfirmation` and
+  `20260817211222_AddPurchaseOrderAuditRequestFingerprint` were not rewritten.
+  Source options hide consumed decisions, create is server-authoritative, and
+  unique races map to `purchase_order_duplicate` / HTTP 409.
+- Successful create/edit/lifecycle/confirmation/supplier-change responses are
+  persisted as version-1 serialized `PurchaseOrderRecord` snapshots on the
+  immutable audit row. Replays return the original snapshot selected by the
+  original successful occurrence, after current target/resource authorization
+  and before state-dependent checks; raw requests are not stored as replay
+  payloads. Same-key fingerprint/target conflicts remain HTTP 409 and replay
+  has no duplicate effects.
+- Purchase Order HTTP mapping now classifies creator/self/ineligible approval
+  denial as HTTP 403 and approval duplication, source duplication, impossible
+  quantity, and idempotency conflicts as HTTP 409. REST fingerprints now bind
+  edit/confirmation/lifecycle cache entries to their target PO as well as
+  request/version. ISO currency rendering has explicit two-decimal bounds
+  while non-ISO fallback preserves the raw code.
+- Angular PO tables use column scopes; tabs have stable tab/panel IDs and ARIA
+  relationships with keyboard navigation, including rendered inactive-panel
+  anchors; action dialogs have entry focus, Tab/Shift+Tab trapping, Escape
+  close, backdrop safety, and opener restoration.
+- The frontend lockfile now resolves the patched transitive `nanoid` 3.3.18
+  release; both production-only and full `npm audit` are clean.
+- Supplier-change reapproval now resets completed-stage approver IDs and count
+  before entering the next stage, while incomplete stages retain their current
+  approvers. A direct two-stage load-bearing test proves A/B complete Stage A,
+  C alone cannot complete Stage B, and D completes the genuine Stage B change;
+  history records `stage-a`, `stage-a`, `stage-b`, and the final `stage-b`
+  approval action without treating A as a Stage-B duplicate.
+- Direct supplier-change reapproval coverage now proves eligible and
+  ineligible actors, self-approval denial, valid delegation, invalid/expired
+  delegation, and wrong-actor delegation failure through the existing
+  approval/delegation engine.
+- A real duplicate-source behavior test creates one PO and proves a second
+  create from the same Tenant + Source Decision returns
+  `purchase_order_duplicate` with one PO, history aggregate, and audit
+  aggregate. The lifetime source-consumption rule remains unchanged.
+- Cancelled/Rejected PO detail now states in EN/AR that the source decision is
+  consumed and recovery requires a new sourcing decision. Controlled same-PO
+  reopen/replacement semantics remain explicitly future capability/decision;
+  no source reuse or reopen workflow was implemented. Durable replay-header
+  work is deferred as P3 because it would require a public result-contract
+  redesign.
+
+### Validation evidence
+
+- Release backend solution build: 0 warnings / 0 errors.
+- Full backend ArchitectureTests: **793/793 passed, 0 skipped**, including all
+  SQL Server safety cases against a disposable LocalDB target. Focused PO
+  tests: **14/14**; focused PO + REST foundation tests: **47/47**.
+- Angular unit tests: **216/216** across 25 spec files. Production build:
+  **492.02 kB initial**, **76.78 kB Purchase Order lazy**, **91.94 kB Supplier
+  Quotation lazy**. Both production-only and full `npm audit` report 0
+  vulnerabilities.
+- Playwright runtime validation is complete: focused Purchase Order Chromium
+  E2E **8/8** and full Chromium E2E **16/16** passed. The official Development
+  configuration smoke passed; live API `/health` and module-registration
+  returned HTTP 200, the Angular root and PO route returned HTTP 200, and the
+  repository-owned listeners remain live for handoff on API 5300 / Angular
+  4300. The unauthenticated API PO list correctly retained its 401 boundary. No
+  production-capability percentage increase is claimed for this remediation.
+
+### Next exact gate
+
+The next session is an independent Claude Opus 5 read-only MESP-124 pre-merge
+review. It must explicitly verify the P1-A/P1-B commercial and uniqueness
+invariants, multi-stage supplier-change stage reset and genuine two-stage
+coverage, supplier-change delegation/self-approval cases, all exact durable
+replay-after-mutation cases including cache expiry/process restart,
+authorization-before-replay ordering, 403/409 HTTP semantics, terminal
+new-source recovery wording, controlled reopen deferral, PO keyboard/focus
+accessibility, additive migration integrity, and complete regression evidence.
+Do not merge PR #68, perform Jira writes, start MESP-125, or begin downstream
+Procurement, Inventory, Finance, AP, payment, or integration work.
+
+## Historical authoritative position - 18 August 2026 (MESP-124 durable idempotency ordering correction)
+
+GPT-5.6 Sol confirmed F-1 closed and accepted the F-2 SHA-256 request
+fingerprint design and the persistence-side same-key/different-request
+conflict detection, but raised one remaining F-2 **completeness** finding.
+Claude Sonnet 5 performed one further bounded corrective session, sole
+executor, on `feat/MESP-124-purchase-order-confirmation` (Draft PR #68) to
+close it without redesigning the accepted parts and without expanding scope.
+
+### The defect: ordering, not fingerprinting
+
+Several `PurchaseOrderService` commands performed lifecycle-state,
+optimistic-concurrency, approval-stage, approval-policy, delegation,
+supplier-change, and reapproval-policy checks *before* persisted idempotency
+evidence could be consulted. An identical retry therefore stopped being
+replayable as soon as the original success advanced state — and permanently
+so once the volatile ten-minute `LocalMasterDataIdempotencyStore` REST cache
+expired or the API process restarted. The affected commands returned
+`submit_not_allowed` once the order reached `PendingApproval`,
+`decision_not_allowed` once `Approved`, `issue_not_allowed` once `Issued`,
+`confirmation_not_allowed` for a Rejected confirmation once the order was
+`Rejected` or for a confirmation that had itself created
+`ChangedPendingApproval`, and `supplier_change_approval_not_allowed` once the
+order left `ChangedPendingApproval`.
+
+### The correction
+
+- A bounded read-only durable replay probe is exposed as
+  `IPurchaseOrderPersistence.ProbeReplayAsync(TenantContext, PurchaseOrderReplayQuery)`
+  returning `PurchaseOrderReplayProbe` with outcome NotFound / Replay /
+  Conflict. It reuses the already-stored Tenant-scoped audit evidence
+  (Tenant filter, ActorId, OperationId, Idempotency-Key, PurchaseOrderId where
+  applicable, RequestFingerprint) and does not duplicate the mutation engine.
+- `PurchaseOrderPersistence.FindReplayAsync` was refactored into a shared
+  query-based core plus an evidence-shaped wrapper, so the probe and the
+  in-transaction check resolve replay identically. Create is discriminated by
+  a null target rather than by a magic string, preserving prior behavior.
+- `PurchaseOrderService` calls the probe in the correct position on create,
+  edit, submit, cancel, issue, confirmation capture, approve/reject/
+  return-for-change, and supplier-change approve/reject.
+- **No schema change was introduced** and the accepted additive migration
+  `20260817211222_AddPurchaseOrderAuditRequestFingerprint` was not rewritten.
+  The probe query is covered by the existing
+  `(TenantId, ActorId, OperationId, IdempotencyKey)` index.
+
+### Security ordering (replay is not an authorization bypass)
+
+For an existing Purchase Order the probe runs only **after** the trusted
+Tenant context is established, the current target is resolved and proven to
+belong to that Tenant, and the current actor is authorized for that resource
+and operation (`GetAuthorizedAsync`). It runs **before** lifecycle-state
+requirements, current optimistic-concurrency comparison, approval-stage
+state, approval-policy re-resolution, delegation resolution, supplier-change
+current-state validation, and reapproval-policy re-resolution. Because replay
+is matched on the exact `ActorId`, separation of duties cannot be bypassed: a
+creator attempting self-approval can never match another actor's evidence. If
+current authorization has genuinely been revoked, the pre-probe authorization
+check fails first and idempotency does not reveal the old resource.
+
+Create has no pre-existing target, so an identical create retry is authorized
+against the scope of the Purchase Order the original request actually created
+before it is returned. A genuinely new create still runs full current
+source-decision validation and fails closed. A probe failure returns NotFound
+and falls through to the normal path, and the in-transaction persistence-side
+replay check inside `MutateAsync` / `RecordConfirmationAsync` / `CreateAsync`
+was retained as defense in depth.
+
+### Regression coverage
+
+Four new tests in
+`backend/tests/MiniErp.ArchitectureTests/PurchaseOrderTests.cs` exercise
+`PurchaseOrderService` plus real persistence and bypass the REST in-memory
+replay cache entirely:
+
+- `Replays_durable_submit_approve_and_issue_after_the_original_request_advanced_state`
+- `Replays_durable_confirmation_and_supplier_change_approval_after_the_order_left_the_eligible_state`
+  (covers both the confirmation that created `ChangedPendingApproval` and the
+  Rejected confirmation after the order became `Rejected`)
+- `Replays_durable_supplier_change_rejection_after_the_order_left_changed_pending_approval`
+- `Replays_durable_create_after_source_state_drift_without_weakening_new_create_validation`
+
+Each asserts the original version/result is returned, and that there is no
+duplicate history entry, no duplicate audit success entry, no duplicate
+confirmation, no duplicate supplier change, and no second mutation. Existing
+conflict coverage (same key + different fingerprint, same key + different
+target, conflict leaves the target unchanged) and the existing identical Edit
+replay remain green and unmodified.
+
+The four new tests were verified to be load-bearing rather than tautological:
+against the pre-correction `PurchaseOrderService` they fail 4/4 while the four
+pre-existing Purchase Order tests still pass.
+
+### Validation (this correction session)
+
+- Release solution build: **0 warnings / 0 errors**.
+- Official `scripts/Test-MiniErpBackend.ps1`: **778/778 passed, 0 skipped**
+  (up from 774; +4 new durable-replay regression tests) against disposable
+  LocalDB `MiniErpFoundation_20260818103729_8fb927af`. The SQL safety harness
+  genuinely executed against real LocalDB; the runner cleaned its target and
+  **zero orphan `MiniErpFoundation_*` databases** remain; the persistent
+  `MESP_SQLSERVER_CONNECTION_STRING` was unchanged and the persistent `MESP`
+  database is intact and was never the safety target.
+- Targeted `PurchaseOrderTests`/`RestFoundationTests` filter: **41/41 passed**
+  (up from 37).
+- Backend-only correction: **no frontend source, dependency, or asset file was
+  touched**, so the Angular unit, production build, and Playwright suites were
+  not rerun. Their last recorded evidence (212/212 Angular across 25 spec
+  files; 492.02 kB initial / 72.94 kB Purchase Order lazy / 91.94 kB Supplier
+  Quotation lazy; Chromium 15/15) stands unchanged.
+- `npm audit`: unchanged at **1 high** (`nanoid` transitive advisory,
+  GHSA-2v37-7h3g-55p8). `frontend/package.json` and
+  `frontend/package-lock.json` were not touched, `npm audit fix` was not run,
+  and the advisory remains a separate pre-production Owner/Sol
+  dependency-security follow-up rather than part of this correction.
+- `git status --short -- frontend/assets`: clean; Owner-managed assets
+  untouched.
+
+This is correction work, not new business scope: no production-capability
+percentage increase is claimed. Draft PR #68 remains **OPEN, DRAFT, and
+UNMERGED**; no force-push occurred. Zero Jira operations were performed
+(GPT-5.6 Sol owns Jira). The next exact session remains independent **Claude
+Opus 5 MESP-124 pre-merge review**, using the updated `TASK.md`, which now
+also requires explicit verification of durable replay after cache expiry and
+process restart, the six state-advanced replay scenarios, the
+`ChangedPendingApproval` confirmation replay, the absence of duplicate
+history/audit/evidence, and the unchanged 409 conflict semantics. Do not merge
+this branch and do not start MESP-125.
+
+## Historical authoritative position - 18 August 2026 (MESP-124 pre-Opus Sol findings correction; superseded by the durable idempotency ordering correction)
+
+Before independent Opus review, GPT-5.6 Sol raised two findings against the
+completed MESP-124 implementation on branch
+`feat/MESP-124-purchase-order-confirmation`, Draft PR #68. Claude Sonnet 5
+performed one bounded corrective session, sole executor, that resolved both
+without expanding scope:
+
+- **F-1 (Currency Rendering Resilience)**: `formatMoney` in
+  `frontend/src/app/features/procurement/purchase-order-workspace.component.ts`
+  now reuses the proven MESP-123 Supplier Quotation safety pattern — a
+  try/catch around ISO currency-styled `Intl.NumberFormat`, falling back to a
+  localized 2-decimal render suffixed with the raw currency code (e.g.
+  `1,234.56 S2K`) — preserving the PO-specific `currencyDisplay: 'code'` UX.
+  Zero FX/currency substitution/hidden-amount effect. New focused coverage in
+  `purchase-order-workspace.component.spec.ts` (direct `formatMoney` safety
+  test plus a non-ISO-currency list-rendering test), modeled on the MESP-123
+  spec.
+- **F-2 (Idempotency Replay/Conflict Fidelity)**:
+  `PurchaseOrderPersistence.FindReplayAsync` previously matched only Tenant +
+  ActorId + OperationId + IdempotencyKey and returned whichever PO that
+  combination last touched. A deterministic server-side SHA-256 request
+  fingerprint is now threaded from the REST endpoint layer through
+  `PurchaseOrderService` into persistence, with a 3-way `ReplayLookup`
+  (NotFound / Replay / Conflict) applied to every unsafe MESP-124 command.
+  Identical retries deterministically replay; a reused key against a
+  different payload or a different target now returns HTTP 409
+  `idempotency_conflict` rather than ever silently replaying an unrelated
+  result. Delivered as an additive EF Core migration
+  (`20260817211222_AddPurchaseOrderAuditRequestFingerprint`) adding
+  `PurchaseOrderAudit.RequestFingerprint`; no applied migration was rewritten.
+  New regression test
+  `Distinguishes_identical_retry_replay_from_cross_target_and_same_target_fingerprint_conflicts`
+  in `PurchaseOrderTests.cs` exercises replay, same-target conflict, and
+  cross-target conflict, with an explicit zero-mutation assertion.
+
+Tenant scoping of replay lookup is preserved transparently by the existing
+`ProcurementDbContext` Tenant query filter; no cross-Tenant replay path was
+introduced or altered.
+
+### Validation (this correction session)
+
+- Release solution build: **0 warnings / 0 errors**.
+- Official `scripts/Test-MiniErpBackend.ps1`: **774/774 passed, 0 skipped**
+  against disposable LocalDB `MiniErpFoundation_20260818002533_bd5e030f`; the
+  persistent `MESP_SQLSERVER_CONNECTION_STRING` was unchanged and the safety
+  target was cleaned by the runner.
+- Targeted `PurchaseOrderTests`/`RestFoundationTests` filter: **37/37 passed**.
+- Angular: **212/212 across 25 spec files** (new
+  `purchase-order-workspace.component.spec.ts`).
+- Production build: **492.02 kB initial**, **72.94 kB Purchase Order lazy
+  chunk**, **91.94 kB Supplier Quotation lazy chunk** (unchanged), no budget
+  increase.
+- Chromium Playwright: **15/15**, full existing suite including all seven
+  MESP-124 scenarios, unchanged.
+- `npm audit`: **1 high** (`nanoid` transitive advisory, GHSA-2v37-7h3g-55p8).
+  Confirmed pre-existing and unrelated: `frontend/package.json` and
+  `frontend/package-lock.json` were not touched by this session or by
+  MESP-124; the advisory reflects a newly published upstream disclosure
+  against an already-installed transitive dependency, not a regression
+  introduced here. Left unresolved for a separate Owner-authorized dependency
+  update decision rather than silently patched inside this bounded
+  correction.
+- `git status --short -- frontend/assets`: clean; Owner-managed assets
+  untouched.
+
+Draft PR #68 remains **OPEN, DRAFT, and UNMERGED**; no force-push occurred.
+Zero Jira operations were performed (GPT-5.6 Sol owns Jira). The next exact
+session remains independent **Claude Opus 5 MESP-124 pre-merge review**,
+using the updated `TASK.md`, which now requires explicit re-verification of
+F-1 and F-2. Do not merge this branch and do not start MESP-125.
+
+## Historical authoritative position - 17 August 2026 (MESP-124 implementation; pre-merge handoff; superseded by pre-Opus Sol findings correction)
+
+MESP-143 (Tenant-Aware Entry Routing and Operational Workspace Context) is
+**implemented, independently reviewed by Claude Opus 5, and squash-merged to `main`**
+at commit `866cb75bb7d0d97c929216b1a449f458a2614097` (reviewed feature head:
+`25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged by the Owner).
+
+MESP-124 is implemented on branch `feat/MESP-124-purchase-order-confirmation`
+from that synchronized baseline and published as **Draft PR #68** against
+`main`. Jira was read-only verified as MESP-124 In
+Progress with activation evidence comment `11394`; MESP-143 closure evidence is
+comment `11393`. No Jira write was performed.
+
+### Bounded capability delivered
+
+- Tenant- and server-authorized Company/Branch-scoped Purchase Order list,
+  source selection, create, edit, detail, submit, approval, issue, rejection,
+  return-for-change, and cancellation paths.
+- Server revalidation of the approved Purchase Request, submitted Supplier
+  Quotation, current Source Decision, supplier, currency, scope, and selected
+  lines, with immutable source/commercial snapshots on the PO.
+- Reuse of the existing approval policy, SoD, delegation, exact-version
+  concurrency, idempotency, immutable lifecycle history, audit, and evidence
+  seams; no second approval engine.
+- Manual Supplier Confirmation with full, exact per-line partial, rejection,
+  no-response, evidence references, and supplier-proposed quantity/price/date
+  changes. Material changes return to controlled reapproval and retain prior,
+  proposed, accepted/current, actor, timestamp, reason, and decision evidence.
+- Formal Procurement EF Core migration for the PO/confirmation/history/audit/
+  supplier-change tables, registered Tenant ownership verification, Foundation
+  operation metadata/OpenAPI documentation, and bilingual Angular workspace.
+
+### Architecture and security outcome
+
+1. **Tenant != Workspace** remains enforced by the MESP-143 server context; PO
+   endpoints do not accept client Tenant authority or raw context selection.
+2. **Source lineage is server-owned**: the Angular client selects a business
+   source option, while the server validates the approved PR/quotation/decision,
+   supplier/currency, scope, and line set before persistence.
+3. **Company/Branch scope and Tenant ownership** are applied to every PO,
+   confirmation, evidence, history, audit, and supplier-change read/write path.
+4. **No downstream effect**: issue and supplier confirmation record commercial
+   evidence only; no stock, receipt, invoice, AP, payment, accounting, or
+   three-way matching behavior is present.
+5. **Owner assets** under `frontend/assets` are untouched; no Wafra-specific
+   branch or schema behavior was introduced.
+
+### Validation and next exact session
+
+- Release solution build: **0 warnings / 0 errors**.
+- Official `scripts/Test-MiniErpBackend.ps1`: **773/773 passed, 0 skipped**
+  against disposable LocalDB `MiniErpFoundation_20260817183503_0e07d663`;
+  the persistent `MESP_SQLSERVER_CONNECTION_STRING` was unchanged and the
+  safety target was cleaned by the runner.
+- Angular: **210/210 across 24 spec files**.
+- Production build: **492.02 kB initial**, **72.78 kB Purchase Order lazy
+  chunk**, **91.94 kB Supplier Quotation lazy chunk**, with no budget increase.
+- Chromium Playwright: **15/15** across the existing shell/quotation suites
+  and seven deterministic MESP-124 scenarios.
+- `npm audit --omit=dev`: **0 vulnerabilities**.
+
+Manual interactive browser review was not performed; Chromium Playwright and
+automated API/service/SQL safety evidence are reported separately.
+Production/provider migration governance, MESP-48/MESP-50, backup/restore,
+capacity, legal, specialist, and cutover gates remain open. The next exact
+session is independent **Claude Opus 5 MESP-124 pre-merge review**. Do not
+merge this branch and do not start MESP-125.
+
+## Historical authoritative position - 17 August 2026 (MESP-143 merged; post-merge repository reconciliation)
 
 MESP-143 (Tenant-Aware Entry Routing and Operational Workspace Context) is
 **implemented, independently reviewed by Claude Opus 5, and squash-merged to `main`**

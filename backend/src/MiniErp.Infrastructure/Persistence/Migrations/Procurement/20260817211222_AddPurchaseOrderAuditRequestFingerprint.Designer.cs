@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Procurement
 {
     [DbContext(typeof(ProcurementDbContext))]
-    partial class ProcurementDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817211222_AddPurchaseOrderAuditRequestFingerprint")]
+    partial class AddPurchaseOrderAuditRequestFingerprint
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -115,13 +118,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Procurement
 
                     b.Property<string>("Reason")
                         .HasMaxLength(4096)
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ReplayResponseSchemaVersion")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ReplayResponseSnapshotJson")
-                        .HasMaxLength(1048576)
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RequestFingerprint")
@@ -425,8 +421,7 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Procurement
                     b.HasIndex("TenantId", "Id")
                         .IsUnique();
 
-                    b.HasIndex("TenantId", "SourceDecisionId")
-                        .IsUnique();
+                    b.HasIndex("TenantId", "SourceDecisionId");
 
                     b.HasIndex("TenantId", "SupplierQuotationId");
 

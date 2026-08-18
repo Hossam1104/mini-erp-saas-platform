@@ -221,6 +221,23 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.source-decision.record" => "Record the Purchase Request source decision",
         "procurement.quotation.history.read" => "Read Supplier Quotation lifecycle history",
         "procurement.quotation.audit.read" => "Read Supplier Quotation audit evidence",
+        "procurement.purchase-order.source.list" => "List eligible approved source decisions for Purchase Order creation",
+        "procurement.purchase-order.list" => "List Tenant-scoped Purchase Orders",
+        "procurement.purchase-order.read" => "Read one Purchase Order with source lineage and confirmation state",
+        "procurement.purchase-order.create" => "Create a Draft Purchase Order from an eligible source decision",
+        "procurement.purchase-order.edit" => "Edit a Draft or ReturnedForChange Purchase Order",
+        "procurement.purchase-order.submit" => "Submit a Purchase Order for approval",
+        "procurement.purchase-order.approve" => "Approve a Purchase Order",
+        "procurement.purchase-order.reject" => "Reject a Purchase Order",
+        "procurement.purchase-order.return-for-change" => "Return a Purchase Order for change",
+        "procurement.purchase-order.issue" => "Issue an approved Purchase Order to the supplier",
+        "procurement.purchase-order.cancel" => "Cancel an eligible Purchase Order",
+        "procurement.purchase-order.confirmation.read" => "Read Purchase Order supplier confirmations",
+        "procurement.purchase-order.confirmation.capture" => "Record a manual supplier confirmation or rejection",
+        "procurement.purchase-order.supplier-change.approve" => "Approve a proposed supplier change and reissue the Purchase Order",
+        "procurement.purchase-order.supplier-change.reject" => "Reject a proposed supplier change",
+        "procurement.purchase-order.history.read" => "Read Purchase Order lifecycle and confirmation history",
+        "procurement.purchase-order.audit.read" => "Read Purchase Order audit evidence",
         _ => GenericSummary(operationId)
     };
 
@@ -347,6 +364,14 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "Comparison is deterministic and preserves transaction currencies; mixed currencies are not ranked or converted because no FX source is invoked. Source decision records the selected quotation, rationale, actor/time, policy-stage evidence, and a hashed comparison snapshot. This boundary creates no Purchase Order, supplier portal account, receipt, invoice, AP, payment, stock, accounting, or external-provider effect. Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and the current If-Match value where declared.";
         }
 
+        if (descriptor.OperationId.StartsWith("procurement.purchase-order", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Purchase Order creation is permitted only from an Approved Purchase Request, a Submitted eligible Supplier Quotation, and the current server-authorized source decision. The persisted order preserves immutable Tenant, Company/Branch, Supplier, Currency, payment-term, source-decision, requested-line, quantity, price, discount, tax, and delivery snapshots. "
+                + "The lifecycle is Draft, PendingApproval, Approved, Issued, Confirmed, PartiallyConfirmed, ChangedPendingApproval, Rejected, ReturnedForChange, NoResponse, or Cancelled. Approval reuses the configured policy with separation of duties and bounded delegation evidence. Supplier confirmation is manual and evidence-first; partial quantities preserve the remainder, rejection and no-response are explicit, and proposed supplier quantity/price/date changes preserve previous and proposed values until an authorized reapproval decision. "
+                + "This boundary creates no receipt, stock movement, warehouse effect, invoice, AP, payment, three-way match, accounting, supplier portal, external integration, or government submission. Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and the current If-Match value where declared.";
+        }
+
         return contextRules
             + "The operation is part of the reusable internal ERP contract. Response failures use Problem Details "
             + "with a stable code, correlation identifier, and operation identifier; provider details and internal "
@@ -405,6 +430,23 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.source-decision.record" => "The persisted source decision and immutable selection history; no Purchase Order or downstream accounting effect is created.",
         "procurement.quotation.history.read" => "Immutable Tenant-filtered Supplier Quotation lifecycle history.",
         "procurement.quotation.audit.read" => "Immutable Tenant-filtered Supplier Quotation operation audit evidence.",
+        "procurement.purchase-order.source.list" => "The server-filtered approved source decisions that the caller may use to create a Purchase Order.",
+        "procurement.purchase-order.list" => "Tenant- and scope-filtered Purchase Order summaries with supplier, currency, total, lifecycle status, and concurrency version.",
+        "procurement.purchase-order.read" => "One Tenant-filtered Purchase Order with immutable source lineage, line snapshots, approval state, pending supplier changes, and server-derived action affordances.",
+        "procurement.purchase-order.create" => "The persisted Draft Purchase Order with immutable source-decision, Supplier, Currency, payment-term, and commercial-line snapshots.",
+        "procurement.purchase-order.edit" => "The updated Draft or ReturnedForChange Purchase Order with a new optimistic-concurrency version.",
+        "procurement.purchase-order.submit" => "The Purchase Order in PendingApproval with the effective approval-policy snapshot.",
+        "procurement.purchase-order.approve" => "The Purchase Order after the immutable approval decision and any resulting policy-stage transition.",
+        "procurement.purchase-order.reject" => "The rejected Purchase Order with the recorded reason and approval evidence.",
+        "procurement.purchase-order.return-for-change" => "The Purchase Order returned for change with the recorded reason and approval evidence.",
+        "procurement.purchase-order.issue" => "The approved Purchase Order in Issued status with immutable issue evidence and no downstream stock or accounting mutation.",
+        "procurement.purchase-order.cancel" => "The eligible Purchase Order in Cancelled status with immutable cancellation evidence.",
+        "procurement.purchase-order.confirmation.read" => "Immutable supplier confirmation records, line-level quantities, evidence references, and proposed supplier changes for the Purchase Order.",
+        "procurement.purchase-order.confirmation.capture" => "The Purchase Order after a manual supplier confirmation, partial confirmation, rejection, or no-response record, preserving remaining quantities and proposed changes.",
+        "procurement.purchase-order.supplier-change.approve" => "The Purchase Order after authorized reapproval of proposed supplier changes, with previous/proposed values and decision evidence preserved.",
+        "procurement.purchase-order.supplier-change.reject" => "The Purchase Order after rejection of proposed supplier changes, preserving the original commercial values and the rejection evidence.",
+        "procurement.purchase-order.history.read" => "Immutable Tenant-filtered Purchase Order lifecycle, approval, confirmation, and supplier-change history.",
+        "procurement.purchase-order.audit.read" => "Immutable Tenant-filtered Purchase Order operation audit evidence with authorization, concurrency, and idempotency context.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 

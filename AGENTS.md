@@ -58,27 +58,39 @@ velocity, or forecast:
 - **Presentational Only**: Presentation-layer only; causes zero FX conversion, zero tax effect, zero accounting effect, and zero persisted amount change.
 - **Fallback & Non-SAR**: Safe text fallback (e.g. `SAR`) is preserved for semantic clarity in multi-currency comparison, audit, and exports. Non-SAR currencies remain completely unaffected. Governed by MESP-12 / MESP-37.
 
-## Current execution overlay - 17 August 2026 (MESP-143 merged; post-merge reconciliation)
+## Current execution overlay - 17 August 2026 (MESP-124 implementation; pre-merge handoff)
 
 MESP-143 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE),
 and squash-merged to `main`** at commit `866cb75bb7d0d97c929216b1a449f458a2614097`
 (reviewed feature head: `25b5ce5008aee3e15787f2dbd89649551786bb64`; PR #67 merged).
-The bounded capability adds configuration-led Tenant host resolution, trusted-proxy
-handling, exact server-side membership authority, common/platform entry boundaries,
-Overview-first Angular routing, post-Overview Company/Branch context selection,
-generic Tenant branding, and presentation-only SAR semantics. Four non-blocking P3
-observations (P3-1 cross-host session continuity, P3-2 duplicate active membership
-invariant, P3-3 OpenAPI operation summary quality, P3-4 canonical-host ambiguity)
-and a Terra HIGH pre-production specialist security audit recommendation are
-tracked.
+Its Tenant-aware host, membership, Overview, operational-context, branding, and
+SAR presentation authority is the required context for the bounded MESP-124
+implementation.
 
-Owner-managed assets under `frontend/assets` remain untouched. Zero product, test,
-or schema changes are made in this reconciliation.
+MESP-124 is **implemented on branch `feat/MESP-124-purchase-order-confirmation`**
+from synchronized `main` and published as **Draft PR #68** against `main`, with
+Jira activation already present in the read-only record (MESP-124 In Progress;
+activation evidence comment `11394`; MESP-143 Done closure evidence comment
+`11393`). The bounded capability adds Tenant- and
+Company/Branch-scoped Purchase Order source selection, immutable PR/quotation/
+source-decision and commercial snapshots, reusable approval/SoD/delegation
+seams, issue/commit evidence, manual Supplier Confirmation, exact per-line
+partial remainder, explicit rejection/no-response, supplier-proposed quantity/
+price/date changes with controlled reapproval, immutable history/audit, REST/
+OpenAPI metadata, and bilingual Angular list/create/edit/detail journeys.
 
-The next selected implementation capability is **MESP-124 — Purchase Order and
-Supplier Confirmation** under Parent Epic MESP-7 (Procurement and Purchase-to-Pay).
-Execution must NOT begin until GPT-5.6 Sol closes MESP-143 and activates MESP-124
-in Jira.
+No Goods Receipt, stock, warehouse movement, invoice, AP/accounting, payment,
+three-way matching, supplier portal, external integration, ZATCA/FATOORA,
+production DNS/TLS, or Wafra-specific core behavior was added. The formal
+Procurement EF migration is present; production/provider, MESP-48/MESP-50,
+backup/restore, capacity, legal, specialist, and cutover gates remain open.
+Owner-managed assets under `frontend/assets` remain untouched. Jira writes are
+prohibited for this session; GPT-5.6 Sol owns Jira closure.
+
+The exact next session after this bounded implementation is an independent
+**Claude Opus 5 MESP-124 pre-merge review**. Do not merge this branch and do not
+start MESP-125 or any downstream Procurement, Inventory, Finance, or integration
+capability automatically.
 
 ## Historical execution overlay - 17 August 2026 (MESP-143 implementation; superseded by merge)
 

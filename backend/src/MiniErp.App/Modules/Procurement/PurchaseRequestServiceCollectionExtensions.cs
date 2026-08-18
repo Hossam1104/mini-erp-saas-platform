@@ -15,11 +15,13 @@ public static class PurchaseRequestServiceCollectionExtensions
         services.AddSingleton<PurchaseRequestAuthorizationService>();
         services.AddSingleton<IPurchaseRequestPersistence, UnavailablePurchaseRequestPersistence>();
         services.AddSingleton<ISupplierQuotationPersistence, UnavailableSupplierQuotationPersistence>();
+        services.AddSingleton<IPurchaseOrderPersistence, UnavailablePurchaseOrderPersistence>();
         services.AddSingleton<IPurchaseRequestApprovalPolicyProvider, DefaultPurchaseRequestApprovalPolicyProvider>();
         services.AddSingleton<IPurchaseRequestApprovalDelegationProvider, NoPurchaseRequestApprovalDelegationProvider>();
         services.AddSingleton<IProcurementOrganizationScopeProvider, NoProcurementOrganizationScopeProvider>();
         services.AddSingleton<PurchaseRequestService>();
         services.AddSingleton<SupplierQuotationService>();
+        services.AddSingleton<PurchaseOrderService>();
         return services;
     }
 }

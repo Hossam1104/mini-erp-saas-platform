@@ -14,7 +14,7 @@ describe('Application route contract', () => {
     expect(compatibilityRoute?.canActivate).toBeUndefined();
   });
 
-  it('exposes the bounded B2 navigation surfaces without opening future procurement pages', () => {
+  it('exposes the bounded procurement navigation surfaces without opening downstream inventory or finance pages', () => {
     const appRoute = routes.find((route) => route.path === 'app');
     const childPaths = (appRoute?.children ?? []).map((route) => route.path);
 
@@ -23,6 +23,9 @@ describe('Application route contract', () => {
     expect(childPaths).toContain('master-data/imports');
     expect(childPaths).toContain('price-lists');
     expect(childPaths).toContain('procurement/purchase-requests');
-    expect(childPaths).not.toContain('procurement/purchase-orders');
+    expect(childPaths).toContain('procurement/supplier-quotations');
+    expect(childPaths).toContain('procurement/purchase-orders');
+    expect(childPaths).not.toContain('inventory/goods-receipts');
+    expect(childPaths).not.toContain('finance/accounts-payable');
   });
 });

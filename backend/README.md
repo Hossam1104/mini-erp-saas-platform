@@ -18,10 +18,30 @@
 > read by the safety harness. Use `scripts/Test-MiniErpBackend.ps1` or
 > `scripts/validate-foundation.ps1` to run the full suite safely.
 >
-> This is still not a production deployment: MESP-48/MESP-50, production
-> topology, deployment migrations, backup/restore, capacity, and specialist
-> gates remain open. The next selected capability is MESP-124 (Purchase Order
-> and Supplier Confirmation).
+> MESP-124 adds source-decision-gated Purchase Orders, immutable source and
+> commercial snapshots, reuse of approval/SoD/delegation, issue evidence,
+> manual full/partial/rejected/no-response confirmations, supplier-proposed
+> changes with controlled reapproval, history/audit, and formal Procurement
+> persistence. It adds no stock, receipt, invoice, AP/accounting, payment, or
+> external supplier effects. MESP-48/MESP-50, production topology, deployment
+> migration governance, backup/restore, capacity, and specialist gates remain
+> open; the branch is awaiting independent pre-merge review.
+
+The final bounded pre-review validation is Release build **0 warnings / 0
+errors** and **793/793** ArchitectureTests passed with **0 skipped**, including
+the disposable SQL Server safety harness. Focused Purchase Order tests pass
+**14/14** and the focused Purchase Order + REST foundation filter passes
+**47/47**. The new coverage directly proves multi-stage supplier-change
+reapproval stage reset, genuine Stage-B approvals, reapproval delegation and
+self-approval boundaries, and duplicate-source behavior mapping to
+`purchase_order_duplicate` without a second history/audit aggregate. A
+Source Decision remains consumed for the lifetime of its Tenant; terminal PO
+recovery requires a new sourcing decision, while controlled same-PO reopening
+is future capability/decision and is not implemented here. The runtime
+launcher has been smoke-tested with the repository-owned API on port 5300 and
+Angular server on port 4300; those local processes are intentionally left
+running for the independent handoff. These correctness and regression checks
+do not increase the tracked production-capability percentage.
 
 This directory contains the Foundation backend. It began as the MESP-57
 Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant
@@ -55,7 +75,7 @@ Data entities, migrations, endpoints, or database access.
 
 ## Prerequisites
 
-- .NET SDK 10.0.302 (the repository pins this SDK in `global.json`)
+- .NET SDK 10.0.400 (the repository pins this SDK in `global.json`)
 
 ## Commands
 
@@ -99,6 +119,51 @@ authority and optimistic eligibility/selection versions.
 This seam does not create a second Tenant persistence model or migration. DNS,
 TLS, full Platform Administration, external providers, and downstream ERP
 effects remain outside MESP-143.
+
+## MESP-124 Procurement persistence and API
+
+The Purchase Order implementation remains inside the existing four-project
+modular-monolith direction. Public request/response records are in
+`MiniErp.Contracts`; application commands, validation, source-lineage
+revalidation, and approval orchestration are in `MiniErp.App`; SQL/SQLite EF
+entities, mappings, queries, and the formal migration are in
+`MiniErp.Infrastructure`; and literal REST handlers plus Foundation/OpenAPI
+metadata are in `MiniErp.Api`.
+
+The `procurement` schema owns Purchase Orders, lines, confirmations,
+confirmation lines, evidence, supplier changes, history, and audit. Each new
+entity is Tenant-owned and registered with the stored-owner verifier. Every
+read/write receives the server-derived Tenant and Company/Branch context; the
+client cannot widen scope or invent source IDs. The official backend evidence
+entry point remains `scripts/Test-MiniErpBackend.ps1`, which uses a disposable
+LocalDB safety target and leaves the persistent `MESP` connection untouched.
+
+Idempotency replay is validated against a deterministic server-side SHA-256
+request fingerprint (`PurchaseOrderAudit.RequestFingerprint`, added by the
+additive migration `AddPurchaseOrderAuditRequestFingerprint`), not only the
+Tenant/actor/operation/key tuple. An identical retry replays the original
+result deterministically; the same key reused against a different payload or
+a different target returns HTTP 409 `idempotency_conflict` rather than ever
+replaying an unrelated Purchase Order's result.
+
+That replay evidence is durable and is consulted before state-dependent
+business validation. `IPurchaseOrderPersistence.ProbeReplayAsync` exposes a
+read-only three-way probe (NotFound / Replay / Conflict) over the persisted
+Tenant-scoped audit evidence, and `PurchaseOrderService` calls it only after
+the trusted Tenant context, the current target, and the caller's authority
+over that target have been established — but before lifecycle-state gates,
+optimistic-concurrency comparison, approval-stage state, approval-policy and
+delegation resolution, and supplier-change/reapproval validation. An identical
+retry of a command whose original success already advanced the order therefore
+still replays instead of returning `submit_not_allowed`, `decision_not_allowed`,
+`issue_not_allowed`, `confirmation_not_allowed`, or
+`supplier_change_approval_not_allowed`, and it survives both expiry of the
+volatile ten-minute REST-layer idempotency cache and an API process restart.
+Replay is never an authorization bypass: it is matched on the exact actor, so
+separation of duties, delegation, and Tenant/Company/Branch authority still
+have to be satisfied by the current request, and a genuinely new create still
+runs full current source-decision validation. The in-transaction
+persistence-side replay check remains in place as defense in depth.
 
 ## Four-project direction
 
