@@ -110,7 +110,7 @@ public static class PurchaseOrderEndpoints
                         return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "A valid If-Match version and Purchase Order body are required.", "procurement.purchase-order.edit");
                     }
 
-                    var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion);
+                    var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion) + TargetFingerprint(purchaseOrderId);
                     return await ExecuteMutationAsync(
                         httpContext,
                         resolver,
@@ -153,7 +153,7 @@ public static class PurchaseOrderEndpoints
                         return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "A valid If-Match version and confirmation body are required.", "procurement.purchase-order.confirmation.capture");
                     }
 
-                    var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion);
+                    var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion) + TargetFingerprint(purchaseOrderId);
                     return await ExecuteMutationAsync(
                         httpContext,
                         resolver,
@@ -371,7 +371,7 @@ public static class PurchaseOrderEndpoints
             return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "A valid If-Match version is required.", descriptor.OperationId);
         }
 
-        var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion);
+        var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion) + TargetFingerprint(purchaseOrderId);
         return await ExecuteMutationAsync(
             httpContext,
             resolver,
@@ -510,7 +510,7 @@ public static class PurchaseOrderEndpoints
             "permission_denied" or "resource_scope_denied" or "cross_tenant_target_denied" or "tenant_context_failed" or "authorization_profile_denied" or "creator_only" or "self_approval_denied" or "approval_not_eligible" => 403,
             "persistence_unavailable" or "authorization_operation_unmapped" => 503,
             "purchase_order_not_found" or "source_decision_not_found" or "source_not_found" => 404,
-            "concurrency_conflict" or "idempotency_conflict" or "purchase_order_duplicate" or "approval_duplicate" or "edit_not_allowed" or "submit_not_allowed" or "decision_not_allowed" or "issue_not_allowed" or "confirmation_not_allowed" or "confirmation_quantity_exceeds_ordered" or "proposed_quantity_below_confirmed" or "supplier_change_approval_not_allowed" or "supplier_change_rejection_not_allowed" or "cancel_not_allowed" or "source_decision_consumed" or "source_quotation_not_eligible" or "purchase_request_not_approved" => 409,
+            "concurrency_conflict" or "idempotency_conflict" or "purchase_order_duplicate" or "approval_duplicate" or "edit_not_allowed" or "submit_not_allowed" or "decision_not_allowed" or "issue_not_allowed" or "confirmation_not_allowed" or "confirmed_quantity_exceeds_ordered" or "confirmation_quantity_exceeds_ordered" or "proposed_quantity_below_confirmed" or "supplier_change_approval_not_allowed" or "supplier_change_rejection_not_allowed" or "cancel_not_allowed" or "source_decision_consumed" or "source_quotation_not_eligible" or "purchase_request_not_approved" => 409,
             _ => 400
         };
 
@@ -606,6 +606,7 @@ public static class PurchaseOrderEndpoints
     private static string? GetIdempotencyKey(HttpContext httpContext) => httpContext.Request.Headers["Idempotency-Key"].FirstOrDefault();
     private static string Fingerprint(object? value) => JsonSerializer.Serialize(value);
     private static string VersionFingerprint(byte[] version) => $"|version:{Convert.ToBase64String(version)}";
+    private static string TargetFingerprint(Guid purchaseOrderId) => $"|target:{purchaseOrderId:D}";
     private static string Version(byte[] version) => Convert.ToBase64String(version);
 
     private static async Task<bool> EnsureAntiforgeryAsync(HttpContext httpContext)

@@ -15,6 +15,8 @@ public sealed class PurchaseOrderFailureClassificationTests
     [InlineData("approval_not_eligible", StatusCodes.Status403Forbidden)]
     [InlineData("approval_duplicate", StatusCodes.Status409Conflict)]
     [InlineData("purchase_order_duplicate", StatusCodes.Status409Conflict)]
+    [InlineData("confirmed_quantity_exceeds_ordered", StatusCodes.Status409Conflict)]
+    [InlineData("confirmation_quantity_exceeds_ordered", StatusCodes.Status409Conflict)]
     [InlineData("proposed_quantity_below_confirmed", StatusCodes.Status409Conflict)]
     [InlineData("validation_failed", StatusCodes.Status400BadRequest)]
     public void Purchase_order_endpoint_preserves_business_failure_classification(string code, int expectedStatus)

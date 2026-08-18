@@ -36,14 +36,13 @@ npm run test:e2e -- --project=chromium
 npm audit --omit=dev
 ```
 
-The current bounded evidence is Angular **212/212 across 25 spec files**;
-the production build is **492.02 kB initial** with a **72.94 kB Purchase Order
+The current bounded evidence is Angular **215/215 across 25 spec files**;
+the production build is **492.02 kB initial** with a **75.74 kB Purchase Order
 lazy chunk** and **91.94 kB Supplier Quotation lazy chunk**; Chromium coverage
 is **15/15** across the existing shell/quotation journeys and seven deterministic
-MESP-124 scenarios. `npm audit` reports one pre-existing high-severity
-transitive `nanoid` advisory unrelated to any dependency change in this
-repository session; it is tracked for a separate Owner-authorized dependency
-update rather than patched silently. The Playwright checks are automated
+MESP-124 scenarios. Both `npm audit --omit=dev` and full `npm audit` report
+**0 vulnerabilities** after the lockfile-only `nanoid` 3.3.18 patch. The
+Playwright checks are automated
 API-fixture/browser evidence, not a manual interactive browser sign-off.
 
 The Purchase Order workspace's `formatMoney` reuses the MESP-123 Supplier

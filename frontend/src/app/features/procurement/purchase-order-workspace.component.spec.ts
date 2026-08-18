@@ -200,9 +200,8 @@ describe('PurchaseOrderWorkspaceComponent', () => {
       expect(tab.id).toMatch(/^purchase-order-tab-/);
       expect(panelId).toMatch(/^purchase-order-tabpanel-/);
       const panel = fixture.nativeElement.querySelector(`#${panelId}`) as HTMLElement | null;
-      if (panel) {
-        expect(panel.getAttribute('aria-labelledby')).toBe(tab.id);
-      }
+      expect(panel).not.toBeNull();
+      expect(panel?.getAttribute('aria-labelledby')).toBe(tab.id);
     }
   });
 

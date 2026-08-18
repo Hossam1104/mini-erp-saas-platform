@@ -27,6 +27,15 @@
 > migration governance, backup/restore, capacity, and specialist gates remain
 > open; the branch is awaiting independent pre-merge review.
 
+The final bounded pre-review validation is Release build **0 warnings / 0
+errors** and **790/790** ArchitectureTests passed with **0 skipped**, including
+the disposable SQL Server safety harness. Focused Purchase Order tests pass
+**11/11** and endpoint failure classification passes **9/9**. The runtime
+launcher has been smoke-tested with the repository-owned API on port 5300 and
+Angular server on port 4300; those local processes are intentionally left
+running for the independent handoff. These correctness and regression checks
+do not increase the tracked production-capability percentage.
+
 This directory contains the Foundation backend. It began as the MESP-57
 Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant
 context and persistence guardrails, the MESP-59/MESP-88/MESP-89 identity,

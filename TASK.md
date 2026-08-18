@@ -19,6 +19,25 @@ The retained checklist below is historical context. Its current validation
 counts are superseded by `.ai/CURRENT_STATE.md` and `docs/staticts.md`; inspect
 the complete current diff and rerun the required checks before deciding.
 
+### Executor evidence handoff — 18 August 2026
+
+The final bounded executor correction is present on the branch before this
+read-only review: REST idempotency cache fingerprints now include the target
+Purchase Order for edit, confirmation, and lifecycle routes; both impossible
+confirmation-quantity error spellings map to HTTP 409; the Tenant-scoped
+`(TenantId, SourceDecisionId)` unique-index model invariant has a focused test;
+inactive tabpanel anchors keep every tab `aria-controls` relationship
+rendered; and the frontend lockfile resolves `nanoid` 3.3.18. Current evidence
+is recorded in `.ai/CURRENT_STATE.md` and `docs/staticts.md`: Release build
+0/0, backend **790/790**, focused Purchase Order **11/11**, failure
+classification **9/9**, Angular **215/215**, focused Chromium **7/7**, full
+Chromium **15/15**, production bundle **492.02 kB initial / 75.74 kB PO lazy /
+91.94 kB quotation lazy**, and both production-only and full `npm audit` at
+zero vulnerabilities. The official runtime configuration smoke passed, live
+API health/module registration and Angular root checks returned HTTP 200 on
+5300/4300, and the repository-owned listeners remain running. This evidence
+does not replace the independent review or authorize a merge.
+
 ### Mandatory P1/P2 gates
 
 P1-A — Confirmation facts must survive commercial changes. Verify that the

@@ -27,6 +27,20 @@ public sealed class PurchaseOrderTests
     private static readonly Guid Unit = Guid.Parse("88888888-8888-8888-8888-888888888888");
 
     [Fact]
+    public async Task Defines_tenant_scoped_source_decision_uniqueness_as_a_database_invariant()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        await using var db = new ProcurementDbContext(fixture.Options, CreateTenantContext(TenantA, Requester));
+
+        var purchaseOrderType = db.Model.FindEntityType(typeof(PurchaseOrderEntity));
+        var sourceDecisionIndex = Assert.Single(
+            purchaseOrderType!.GetIndexes(),
+            index => index.Properties.Select(property => property.Name).SequenceEqual(["TenantId", "SourceDecisionId"]));
+
+        Assert.True(sourceDecisionIndex.IsUnique);
+    }
+
+    [Fact]
     public async Task Creates_from_current_source_decision_and_preserves_lineage_idempotently()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -690,6 +704,7 @@ public sealed class PurchaseOrderTests
         }
 
         public PurchaseOrderService Service { get; }
+        public DbContextOptions Options => options;
 
         public static async Task<Fixture> CreateAsync(
             PurchaseRequestApprovalPolicyDefinition? approvalPolicy = null,

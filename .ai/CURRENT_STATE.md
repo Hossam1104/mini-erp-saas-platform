@@ -1,6 +1,6 @@
 # Current State
 
-## Current authoritative position - 18 August 2026 (MESP-124 Opus review remediation)
+## Current authoritative position - 18 August 2026 (MESP-124 final pre-review correction)
 
 The bounded MESP-124 remediation pass is implemented on
 `feat/MESP-124-purchase-order-confirmation`, continuing Draft PR #68 against
@@ -32,27 +32,33 @@ evidence `11394`. MESP-143 remains the merged ADR-019 prerequisite at
   has no duplicate effects.
 - Purchase Order HTTP mapping now classifies creator/self/ineligible approval
   denial as HTTP 403 and approval duplication, source duplication, impossible
-  quantity, and idempotency conflicts as HTTP 409. ISO currency rendering has
-  explicit two-decimal bounds while non-ISO fallback preserves the raw code.
+  quantity, and idempotency conflicts as HTTP 409. REST fingerprints now bind
+  edit/confirmation/lifecycle cache entries to their target PO as well as
+  request/version. ISO currency rendering has explicit two-decimal bounds
+  while non-ISO fallback preserves the raw code.
 - Angular PO tables use column scopes; tabs have stable tab/panel IDs and ARIA
-  relationships with keyboard navigation; action dialogs have entry focus,
-  Tab/Shift+Tab trapping, Escape close, backdrop safety, and opener restoration.
+  relationships with keyboard navigation, including rendered inactive-panel
+  anchors; action dialogs have entry focus, Tab/Shift+Tab trapping, Escape
+  close, backdrop safety, and opener restoration.
+- The frontend lockfile now resolves the patched transitive `nanoid` 3.3.18
+  release; both production-only and full `npm audit` are clean.
 
 ### Validation evidence
 
 - Release backend solution build: 0 warnings / 0 errors.
-- Full backend ArchitectureTests: **787/787 passed, 0 skipped**, including all
+- Full backend ArchitectureTests: **790/790 passed, 0 skipped**, including all
   SQL Server safety cases against a disposable LocalDB target. Focused PO
-  tests: **10/10**; PO endpoint failure classification: **7/7**.
+  tests: **11/11**; PO endpoint failure classification: **9/9**.
 - Angular unit tests: **215/215** across 25 spec files. Production build:
-  **492.02 kB initial**, **75.39 kB Purchase Order lazy**, **91.94 kB Supplier
-  Quotation lazy**. Production dependency audit: 0 high/critical findings.
+  **492.02 kB initial**, **75.74 kB Purchase Order lazy**, **91.94 kB Supplier
+  Quotation lazy**. Both production-only and full `npm audit` report 0
+  vulnerabilities.
 - Playwright runtime validation is complete: focused Purchase Order Chromium
   E2E **7/7** and full Chromium E2E **15/15** passed. The official Development
-  runtime smoke passed with API health/module registration and Angular HTTP
-  200 on API 5300 / Angular 4300; the repository-owned listeners remain live
-  for handoff. No production-capability percentage increase is claimed for
-  this remediation.
+  configuration smoke passed; live API `/health` and module-registration
+  returned HTTP 200, Angular returned HTTP 200 on API 5300 / Angular 4300, and
+  the repository-owned listeners remain live for handoff. No
+  production-capability percentage increase is claimed for this remediation.
 
 ### Next exact gate
 
