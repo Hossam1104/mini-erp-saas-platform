@@ -225,18 +225,18 @@ function procurementHarness() {
       }
 
       // Purchase Invoice Handoff endpoints
-      if (request.method() === 'GET' && path.endsWith('/invoice-handoff-sources')) return route.fulfill({ json: [eligibleHandoffSource] });
-      if (request.method() === 'GET' && path.endsWith('/invoice-handoffs')) return route.fulfill({ json: [invoiceHandoff()] });
-      if (request.method() === 'GET' && path.endsWith(`/invoice-handoffs/${invoiceHandoffId}`)) return route.fulfill({ json: invoiceHandoff() });
-      if (request.method() === 'GET' && path.endsWith(`/invoice-handoffs/${invoiceHandoffId}/history`)) return route.fulfill({ json: [] });
-      if (request.method() === 'GET' && path.endsWith(`/invoice-handoffs/${invoiceHandoffId}/audit`)) return route.fulfill({ json: [] });
+      if (request.method() === 'GET' && path.endsWith('/purchase-invoice-handoff-sources')) return route.fulfill({ json: [eligibleHandoffSource] });
+      if (request.method() === 'GET' && path.endsWith('/purchase-invoice-handoffs')) return route.fulfill({ json: [invoiceHandoff()] });
+      if (request.method() === 'GET' && path.endsWith(`/purchase-invoice-handoffs/${invoiceHandoffId}`)) return route.fulfill({ json: invoiceHandoff() });
+      if (request.method() === 'GET' && path.endsWith(`/purchase-invoice-handoffs/${invoiceHandoffId}/history`)) return route.fulfill({ json: [] });
+      if (request.method() === 'GET' && path.endsWith(`/purchase-invoice-handoffs/${invoiceHandoffId}/audit`)) return route.fulfill({ json: [] });
 
-      if (request.method() === 'POST' && path.endsWith('/invoice-handoffs')) {
+      if (request.method() === 'POST' && path.endsWith('/purchase-invoice-handoffs')) {
         pihStatus = 'Recorded';
         pihVersionNumber += 1;
         return route.fulfill({ status: 201, headers: { ETag: `"${pihVersion()}"` }, json: invoiceHandoff() });
       }
-      if (request.method() === 'POST' && path.endsWith(`/invoice-handoffs/${invoiceHandoffId}/cancel`)) {
+      if (request.method() === 'POST' && path.endsWith(`/purchase-invoice-handoffs/${invoiceHandoffId}/cancel`)) {
         pihStatus = 'Cancelled';
         pihVersionNumber += 1;
         return route.fulfill({ json: invoiceHandoff() });

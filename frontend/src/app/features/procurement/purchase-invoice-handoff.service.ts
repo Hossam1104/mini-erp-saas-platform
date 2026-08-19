@@ -25,32 +25,32 @@ export class PurchaseInvoiceHandoffService {
     if (status) params.set('status', status);
     if (purchaseOrderId) params.set('purchaseOrderId', purchaseOrderId);
     const query = params.toString() ? `?${params.toString()}` : '';
-    return this.api.get<PurchaseInvoiceHandoffListItemResponse[]>(`${this.basePath}/invoice-handoffs${query}`);
+    return this.api.get<PurchaseInvoiceHandoffListItemResponse[]>(`${this.basePath}/purchase-invoice-handoffs${query}`);
   }
 
   eligibleSources(): Observable<PurchaseInvoiceHandoffEligibleSourceResponse[]> {
-    return this.api.get<PurchaseInvoiceHandoffEligibleSourceResponse[]>(`${this.basePath}/invoice-handoff-sources`);
+    return this.api.get<PurchaseInvoiceHandoffEligibleSourceResponse[]>(`${this.basePath}/purchase-invoice-handoff-sources`);
   }
 
   get(id: string): Observable<PurchaseInvoiceHandoffResponse> {
-    return this.api.get<PurchaseInvoiceHandoffResponse>(`${this.basePath}/invoice-handoffs/${id}`);
+    return this.api.get<PurchaseInvoiceHandoffResponse>(`${this.basePath}/purchase-invoice-handoffs/${id}`);
   }
 
   history(id: string): Observable<PurchaseInvoiceHandoffHistoryResponse[]> {
-    return this.api.get<PurchaseInvoiceHandoffHistoryResponse[]>(`${this.basePath}/invoice-handoffs/${id}/history`);
+    return this.api.get<PurchaseInvoiceHandoffHistoryResponse[]>(`${this.basePath}/purchase-invoice-handoffs/${id}/history`);
   }
 
   audit(id: string): Observable<PurchaseInvoiceHandoffAuditResponse[]> {
-    return this.api.get<PurchaseInvoiceHandoffAuditResponse[]>(`${this.basePath}/invoice-handoffs/${id}/audit`);
+    return this.api.get<PurchaseInvoiceHandoffAuditResponse[]>(`${this.basePath}/purchase-invoice-handoffs/${id}/audit`);
   }
 
   create(payload: PurchaseInvoiceHandoffCreateRequest): Promise<PurchaseInvoiceHandoffResponse> {
-    return this.mutate<PurchaseInvoiceHandoffResponse>(`${this.basePath}/invoice-handoffs`, payload);
+    return this.mutate<PurchaseInvoiceHandoffResponse>(`${this.basePath}/purchase-invoice-handoffs`, payload);
   }
 
   cancel(id: string, version: string, reason?: string): Promise<PurchaseInvoiceHandoffResponse> {
     const payload: PurchaseInvoiceHandoffActionRequest = { reason: reason?.trim() || null };
-    return this.mutate<PurchaseInvoiceHandoffResponse>(`${this.basePath}/invoice-handoffs/${id}/cancel`, payload, version);
+    return this.mutate<PurchaseInvoiceHandoffResponse>(`${this.basePath}/purchase-invoice-handoffs/${id}/cancel`, payload, version);
   }
 
   private async mutate<T>(path: string, payload: unknown, version?: string): Promise<T> {
