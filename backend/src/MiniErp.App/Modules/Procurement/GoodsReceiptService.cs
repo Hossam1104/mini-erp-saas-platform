@@ -9,11 +9,11 @@ namespace MiniErp.App.Modules.Procurement;
 
 /// <summary>
 /// Records the physical receipt of goods against an already Confirmed/PartiallyConfirmed Purchase Order.
-/// This is Inventory-owned physical acceptance evidence only: it never creates or updates any stock
-/// ledger (none exists yet), never creates AP/supplier liability/GL/tax posting, and <c>WarehouseId</c>
-/// is a required descriptive physical-location reference only, NOT a server-authorized scope dimension
-/// (Identity has no Warehouse-membership concept; authorization reuses the existing Tenant/Company/Branch
-/// <see cref="PurchaseRequestScope"/> exactly as Procurement already does).
+/// This is Inventory-owned physical acceptance evidence: it never creates or updates any stock
+/// ledger (none exists yet), never creates AP/supplier liability/GL/tax posting. Warehouse options
+/// are server-authoritatively validated against the caller's Tenant and Company/Branch scope via
+/// <see cref="IProcurementWarehouseProvider"/>, ensuring client-supplied warehouse identifiers never
+/// self-authorize or cross organizational boundaries.
 /// </summary>
 public sealed class GoodsReceiptService
 {
@@ -21,11 +21,39 @@ public sealed class GoodsReceiptService
     private const string CancelOperationId = "procurement.goods-receipt.cancel";
     private readonly PurchaseRequestAuthorizationService authorization;
     private readonly IGoodsReceiptPersistence persistence;
+    private readonly IProcurementWarehouseProvider warehouseProvider;
 
-    public GoodsReceiptService(PurchaseRequestAuthorizationService authorization, IGoodsReceiptPersistence persistence)
+    public GoodsReceiptService(
+        PurchaseRequestAuthorizationService authorization,
+        IGoodsReceiptPersistence persistence,
+        IProcurementWarehouseProvider warehouseProvider)
     {
         this.authorization = authorization ?? throw new ArgumentNullException(nameof(authorization));
         this.persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
+        this.warehouseProvider = warehouseProvider ?? throw new ArgumentNullException(nameof(warehouseProvider));
+    }
+
+    public async Task<GoodsReceiptOperationResult<IReadOnlyList<ProcurementWarehouseOption>>> ListWarehousesAsync(
+        ProcurementRequestContext context,
+        Guid? companyId = null,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var authorized = authorization.Authorize(context, "procurement.warehouse.list");
+        if (!authorized.Allowed)
+        {
+            return GoodsReceiptOperationResult<IReadOnlyList<ProcurementWarehouseOption>>.Failure(authorized.Code);
+        }
+
+        try
+        {
+            var options = await warehouseProvider.ListAsync(context, companyId, branchId, cancellationToken);
+            return GoodsReceiptOperationResult<IReadOnlyList<ProcurementWarehouseOption>>.Success(options);
+        }
+        catch
+        {
+            return GoodsReceiptOperationResult<IReadOnlyList<ProcurementWarehouseOption>>.Failure("persistence_unavailable");
+        }
     }
 
     public async Task<GoodsReceiptOperationResult<IReadOnlyList<GoodsReceiptListRecord>>> ListAsync(
@@ -132,6 +160,22 @@ public sealed class GoodsReceiptService
         if (!authorized.Allowed)
         {
             return GoodsReceiptOperationResult<GoodsReceiptRecord>.Failure(authorized.Code);
+        }
+
+        var warehouseOption = await warehouseProvider.FindAsync(context, request.WarehouseId, cancellationToken);
+        if (warehouseOption is null)
+        {
+            return GoodsReceiptOperationResult<GoodsReceiptRecord>.Failure("warehouse_not_authorized");
+        }
+
+        if (!warehouseOption.IsActive)
+        {
+            return GoodsReceiptOperationResult<GoodsReceiptRecord>.Failure("warehouse_inactive");
+        }
+
+        if (warehouseOption.CompanyId != source.Scope.CompanyId || (source.Scope.BranchId.HasValue && warehouseOption.BranchId.HasValue && warehouseOption.BranchId != source.Scope.BranchId))
+        {
+            return GoodsReceiptOperationResult<GoodsReceiptRecord>.Failure("warehouse_scope_denied");
         }
 
         var eligibleLines = source.Lines.ToDictionary(item => item.PurchaseOrderLineId);

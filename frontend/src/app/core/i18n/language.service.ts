@@ -779,6 +779,8 @@ const translations = {
     clientSideSearch: 'Filter loaded results (client-side)',
     clientSideSearchHint: 'This filters only the requests already loaded on this page. Use the status filter to query the server.',
     purchaseOrdersNavLabel: 'Purchase Orders',
+    goodsReceiptsNavLabel: 'Goods Receipts',
+    invoiceHandoffsNavLabel: 'Invoice Handoffs',
   },
   ar: {
     currentTenant: '\u0627\u0644\u0639\u0645\u064a\u0644 \u0627\u0644\u062d\u0627\u0644\u064a',
@@ -1554,6 +1556,8 @@ const translations = {
     clientSideSearch: '\u062a\u0635\u0641\u064a\u0629 \u0627\u0644\u0646\u062a\u0627\u0626\u062c \u0627\u0644\u0645\u062d\u0645\u0651\u0644\u0629 (\u0645\u0646 \u062c\u0647\u0629 \u0627\u0644\u0639\u0645\u064a\u0644)',
     clientSideSearchHint: '\u064a\u0642\u0648\u0645 \u0647\u0630\u0627 \u0628\u062a\u0635\u0641\u064a\u0629 \u0627\u0644\u0637\u0644\u0628\u0627\u062a \u0627\u0644\u0645\u062d\u0645\u0651\u0644\u0629 \u0641\u064a \u0647\u0630\u0647 \u0627\u0644\u0635\u0641\u062d\u0629 \u0641\u0642\u0637. \u0627\u0633\u062a\u062e\u062f\u0645 \u0645\u0631\u0634\u0651\u062d \u0627\u0644\u062d\u0627\u0644\u0629 \u0644\u0644\u0627\u0633\u062a\u0639\u0644\u0627\u0645 \u0645\u0646 \u0627\u0644\u062e\u0627\u062f\u0645.',
     purchaseOrdersNavLabel: '\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0634\u0631\u0627\u0621',
+    goodsReceiptsNavLabel: '\u0633\u0646\u062f\u0627\u062a \u0627\u0644\u0627\u0633\u062a\u0644\u0627\u0645',
+    invoiceHandoffsNavLabel: '\u062a\u0633\u0644\u064a\u0645 \u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631',
   },
 } as const;
 

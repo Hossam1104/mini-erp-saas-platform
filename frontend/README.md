@@ -5,11 +5,16 @@ contains the responsive application shell, EN/AR localization and RTL/LTR
 direction switching, sign-in/session bootstrap, server-resolved Tenant entry,
 Overview-first routing, post-Overview Company/Branch context switching,
 configuration-led branding/currency presentation, antiforgery bootstrap, and
-accessible safe states. The merged MESP-124 Purchase Order workspace adds
-server-provided source selection, list/create/edit/detail, approval/issue
-actions, manual full/partial/rejected/no-response confirmation, supplier-change
-reapproval, history, and audit views. The browser never stores an
-authentication token or establishes Tenant authority.
+accessible safe states.
+
+The Procurement workspaces include:
+- **Purchase Requests & Approvals**: request creation, submission, multi-stage approval, and cancellation.
+- **Supplier Quotations & Source Decisions**: quotation capture, side-by-side comparison, and single-source decision.
+- **Purchase Orders & Confirmations**: server-provided source selection, list/create/edit/detail, approval/issue actions, manual full/partial/rejected/no-response confirmation, supplier-change reapproval, history, and audit views.
+- **Goods Receipts**: receipt creation from Confirmed POs, authorized warehouse selection, physical partition (`Received = Accepted + Rejected`), descriptive damage overlay (`Damaged <= Received`), commercial remainder tracking, receipt cancellation, and history/audit tabs.
+- **Purchase Invoice Handoffs**: handoff creation from accepted Goods Receipt lines, pro-rata tax allocation preview, un-invoiced remainder tracking, supplier invoice reference & date capture, handoff cancellation, and history/audit tabs.
+
+The browser never stores an authentication token or establishes Tenant authority.
 
 ## Local development
 
@@ -36,14 +41,14 @@ npm run test:e2e -- --project=chromium
 npm audit --omit=dev
 ```
 
-The current bounded evidence is Angular **216/216 across 25 spec files**;
-the production build is **492.02 kB initial** with a **76.78 kB Purchase Order
-lazy chunk** and **91.94 kB Supplier Quotation lazy chunk**; Chromium coverage
-is **16/16** across the existing shell/quotation journeys and eight deterministic
-MESP-124 scenarios. Both `npm audit --omit=dev` and full `npm audit` report
-**0 vulnerabilities** after the lockfile-only `nanoid` 3.3.18 patch. The
-Playwright checks are automated
-API-fixture/browser evidence, not a manual interactive browser sign-off.
+The current bounded evidence is Angular **232/232 across 29 spec files**;
+the production build is **493.41 kB initial total** (under the 500 kB budget)
+with a **53.14 kB Goods Receipt lazy chunk**, a **53.41 kB Invoice Handoff lazy chunk**,
+a **76.78 kB Purchase Order lazy chunk**, and a **91.94 kB Supplier Quotation lazy chunk**;
+Chromium coverage is **19/19 passed** across the full e2e suite. Both
+`npm audit --omit=dev` and full `npm audit` report **0 vulnerabilities**. The
+Playwright checks are automated API-fixture/browser evidence, not a manual
+interactive browser sign-off.
 
 Terminal Cancelled/Rejected Purchase Order detail communicates the bounded
 recovery rule in English and Arabic: the source decision is consumed and

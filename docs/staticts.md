@@ -2,12 +2,34 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-19 01:15 +03:00
+**Last Updated:** 2026-08-19 17:45 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
-**Overall Production-Ready Completion:** **~40%**
+**Overall Production-Ready Completion:** **~42%**
 
-## Current authoritative fast-track snapshot - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
+## Current authoritative fast-track snapshot - 19 August 2026 (MESP-125 implementation complete; pre-Opus handoff)
+
+This snapshot records the repository completion of MESP-125 (Goods Receipt and
+Purchase Invoice Handoff) on branch `feat/MESP-125-goods-receipt-purchase-invoice-handoff`.
+It delivers Tenant- and Company/Branch-scoped Goods Receipts and Purchase Invoice
+Handoffs, Confirmed Purchase Order source selection, warehouse authorization &
+active validation, inspection & damage tracking, over-receipt prevention,
+pro-rata tax distribution, invoice-handoff referencing, controlled receipt and
+handoff cancellation, durable idempotent replay, immutable audit & history
+lineage, full bilingual EN/AR RTL Angular workspaces, REST/OpenAPI contracts, and
+EF Core persistence with optimistic concurrency.
+
+| Current control | Verified position |
+|---|---|
+| MESP-124 | Completed, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE), and squash-merged to `main` at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (PR #68 merged). |
+| MESP-125 | **Repository implementation complete at bounded pre-merge scope on `feat/MESP-125-goods-receipt-purchase-invoice-handoff`; published as Draft PR against `main`.** |
+| Capability delivered | Goods Receipt creation from Confirmed POs, warehouse selection/scoping, strict physical partition (`Received = Accepted + Rejected`), descriptive non-additive damage overlay (`Damaged <= Received`), commercial receivable remainder calculation (`Confirmed - sum(Active Accepted)`), over-receipt prevention, receipt cancellation (blocked when referenced by active handoff); Purchase Invoice Handoff creation from accepted receipts, pro-rata tax allocation, un-invoiced remainder tracking, handoff cancellation; durable idempotent replay with audit snapshots; bilingual EN/AR RTL Angular workspaces; dialog/tab accessibility; EF Core persistence with optimistic concurrency. |
+| Production capability | **~42% overall; Procurement/P2P conservatively ~35%** after adding warehouse-authorized Goods Receipts, inspection/damage tracking, and pro-rata Purchase Invoice handoff. |
+| Validation baseline | Release build 0 warnings/0 errors; official backend runner **812/812 passed, 0 skipped** including LocalDB SQL safety harness (`MiniErpFoundation_*` created and dropped with 0 orphans); Angular unit tests **232/232 passed** across 29 spec files; production build **493.41 kB initial total** (under 500 kB budget); `npm audit` **0 vulnerabilities**; Playwright E2E full suite **19/19 passed**. |
+| Boundaries | No stock movement/ledger, warehouse BIN allocation, general ledger posting, AP subledger posting, payment processing, three-way matching completion (Finance domain), supplier portal, external integration, ZATCA/FATOORA, DNS/TLS, or Wafra-specific core behavior. FIN-OD-01 / PD-046 preserved: Finance owns GL/AP/tax/posting; operational modules own source documents. |
+| Next exact session | **Independent Claude Opus 5 pre-merge review for MESP-125** per `TASK.md`. PR remains open, Draft, and unmerged. Zero Jira operations in this repository session; GPT-5.6 Sol owns Jira management. |
+
+## Historical authoritative fast-track snapshot - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
 
 This snapshot records the merge closure of MESP-124 following independent
 Claude Opus 5 review (`APPROVE FOR MERGE`). MESP-124 is squash-merged to `main`
@@ -223,17 +245,17 @@ Every future execution prompt should include:
 |---|---:|
 | Product / Requirements Definition | **~45%** |
 | Architecture & Technical Foundation | **~90%** |
-| Backend Overall | **~64%** |
-| Database / Persistence Overall | **~58%** |
-| Frontend Overall | **~37%** |
-| Automated Technical Safety Foundation | **~60%** |
-| Full End-to-End Business System | **~36%** |
-| Production Readiness | **~29%** |
-| **Remaining to Real Production** | **~60%** |
+| Backend Overall | **~67%** |
+| Database / Persistence Overall | **~60%** |
+| Frontend Overall | **~40%** |
+| Automated Technical Safety Foundation | **~65%** |
+| Full End-to-End Business System | **~40%** |
+| Production Readiness | **~31%** |
+| **Remaining to Real Production** | **~58%** |
 
 ## Current management headline
 
-> **Mini ERP SaaS Platform Release 1 is approximately 40% complete toward a genuinely production-ready system.**
+> **Mini ERP SaaS Platform Release 1 is approximately 42% complete toward a genuinely production-ready system.**
 
 This percentage is intentionally lower than the raw Jira completion percentage because many completed Jira items represent architecture, governance, BRD, authorization, and technical-foundation work rather than completed business capabilities.
 
@@ -362,22 +384,22 @@ The following model represents progress toward a complete production Release 1.
 | 2. Architecture, security & technical foundation | 12% | **87%** | 10.4% |
 | 3. Platform Admin / IAM / Tenancy / Organization | 8% | **55%** | 4.4% |
 | 4. Master Data & Product Catalog | 10% | **68%** | 6.8% |
-| 5. Procurement / Purchase-to-Pay | 9% | **28%** | 2.5% |
-| 6. Inventory / Warehouse | 9% | **3%** | 0.3% |
-| 7. Finance / Accounting / AR / AP / Cash | 12% | **3%** | 0.4% |
+| 5. Procurement / Purchase-to-Pay | 9% | **35%** | 3.2% |
+| 6. Inventory / Warehouse | 9% | **5%** | 0.5% |
+| 7. Finance / Accounting / AR / AP / Cash | 12% | **4%** | 0.5% |
 | 8. B2B Sales / Order-to-Cash | 9% | **3%** | 0.3% |
 | 9. Reporting & Analytics | 4% | **2%** | 0.1% |
-| 10. Complete Angular Frontend / EN-AR / RTL | 8% | **37%** | 3.0% |
+| 10. Complete Angular Frontend / EN-AR / RTL | 8% | **40%** | 3.2% |
 | 11. Saudi Compliance & External Integrations | 4% | **8%** | 0.3% |
 | 12. Migration / Tenant Onboarding | 2% | **3%** | 0.1% |
 | 13. E2E QA, Performance, UAT, Deployment & Go-Live | 5% | **25%** | 1.3% |
 
-**Weighted overall result:** approximately **40%**.
+**Weighted overall result:** approximately **42%**.
 
 The weighted model remains an approximate planning band; the bounded
 Currency/Payment Terms, Tax/VAT, Exchange Rate, Supplier Quotation/source
-decision, Purchase Order/Supplier Confirmation, and this limited B2 shell/auth
-foundation support the conservative current 40% headline
+decision, Purchase Order/Supplier Confirmation, Goods Receipt, and Purchase
+Invoice Handoff foundations support the conservative current 42% headline
 below without resolving the SQL/provider,
 specialist, or production gates. The approved MESP-33 Inventory BRD is a documentation
 baseline only and does not increase usable Inventory or overall production
@@ -385,7 +407,7 @@ capability.
 
 For project reporting use:
 
-> **Overall production-ready completion = 40%**
+> **Overall production-ready completion = 42%**
 
 Do not present decimal precision as certainty.
 
@@ -403,7 +425,7 @@ These percentages measure **usable production capability**, not Jira workflow st
 | MESP-4 | Multi-Tenancy | **75%** |
 | MESP-5 | Organization & Company Structure | **50%** |
 | MESP-6 | Master Data & Product Catalog | **68%** |
-| MESP-7 | Procurement & Purchase-to-Pay | **10–12%** |
+| MESP-7 | Procurement & Purchase-to-Pay | **18–20%** |
 | MESP-8 | Inventory & Warehouse | **3–5%** |
 | MESP-9 | B2B Sales & Order-to-Cash | **3–5%** |
 | MESP-10 | Finance & Accounting | **3–5%** |

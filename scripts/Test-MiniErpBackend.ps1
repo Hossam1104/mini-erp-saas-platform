@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Safe dedicated entry point for the full MiniERP backend test suite.
 
@@ -77,6 +77,7 @@ $safetyConnectionString = "Server=$localDbServer;Database=$databaseName;Integrat
 #    The runtime variable is intentionally never read, never changed.
 # -----------------------------------------------------------------------
 $previousSafetyConnectionString = $env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING
+$previousDevAuthBypass          = $env:MESP_DEV_AUTH_BYPASS
 
 Write-Host "Generated disposable safety target: $localDbServer / $databaseName"
 Write-Host "MESP_SQLSERVER_CONNECTION_STRING (runtime): unchanged"
@@ -84,9 +85,11 @@ Write-Host "MESP_SQLSERVER_CONNECTION_STRING (runtime): unchanged"
 try {
     # ------------------------------------------------------------------
     # 4. Assign the disposable connection to the dedicated safety variable.
-    #    The runtime variable is left completely unchanged.
+    #    Neutralize inherited MESP_DEV_AUTH_BYPASS so host tests (which run in
+    #    Production/Staging modes) are not invalidated by development bypass settings.
     # ------------------------------------------------------------------
     $env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING = $safetyConnectionString
+    Remove-Item Env:MESP_DEV_AUTH_BYPASS -ErrorAction SilentlyContinue
 
     Push-Location $repositoryRoot
     try {
@@ -124,6 +127,13 @@ finally {
     }
     else {
         $env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING = $previousSafetyConnectionString
+    }
+
+    if ($null -eq $previousDevAuthBypass) {
+        Remove-Item Env:MESP_DEV_AUTH_BYPASS -ErrorAction SilentlyContinue
+    }
+    else {
+        $env:MESP_DEV_AUTH_BYPASS = $previousDevAuthBypass
     }
 
     # Remind the operator that the persistent runtime database was not touched.

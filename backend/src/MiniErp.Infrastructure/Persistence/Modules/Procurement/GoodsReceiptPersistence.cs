@@ -203,6 +203,7 @@ public sealed class GoodsReceiptPersistence : IGoodsReceiptPersistence
                     remaining - lineCommand.AcceptedQuantity));
             }
 
+            order.TouchVersion();
             entity.TouchVersion();
             db.GoodsReceipts.Add(entity);
             db.GoodsReceiptHistory.Add(new GoodsReceiptHistoryEntity(

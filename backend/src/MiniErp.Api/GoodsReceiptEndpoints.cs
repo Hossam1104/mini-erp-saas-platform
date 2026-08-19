@@ -32,6 +32,46 @@ public static class GoodsReceiptEndpoints
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.goods-receipt.eligible-source.list")));
 
         endpoints.MapGet(
+                "/api/v1/procurement/warehouses",
+                async (HttpContext httpContext, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, GoodsReceiptService service) =>
+                {
+                    Guid? companyId = null;
+                    var rawCompanyId = httpContext.Request.Query["companyId"].FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(rawCompanyId))
+                    {
+                        if (!Guid.TryParse(rawCompanyId, out var parsedCompanyId))
+                        {
+                            return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "The company filter is invalid.", "procurement.warehouse.list");
+                        }
+
+                        companyId = parsedCompanyId;
+                    }
+
+                    Guid? branchId = null;
+                    var rawBranchId = httpContext.Request.Query["branchId"].FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(rawBranchId))
+                    {
+                        if (!Guid.TryParse(rawBranchId, out var parsedBranchId))
+                        {
+                            return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "The branch filter is invalid.", "procurement.warehouse.list");
+                        }
+
+                        branchId = parsedBranchId;
+                    }
+
+                    return await ExecuteReadAsync(
+                        httpContext,
+                        resolver,
+                        tenantResolver,
+                        FoundationOperationCatalog.GetRequired("procurement.warehouse.list"),
+                        context => service.ListWarehousesAsync(context, companyId, branchId, httpContext.RequestAborted),
+                        (_, records) => records.Select(ToWarehouseResponse).ToArray());
+                })
+            .WithName("procurement.warehouse.list")
+            .WithTags("Procurement / Goods Receipts")
+            .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.warehouse.list")));
+
+        endpoints.MapGet(
                 "/api/v1/procurement/goods-receipts",
                 async (HttpContext httpContext, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, GoodsReceiptService service) =>
                 {
@@ -292,15 +332,24 @@ public static class GoodsReceiptEndpoints
         var code = result.Code;
         var status = code switch
         {
-            "permission_denied" or "resource_scope_denied" or "cross_tenant_target_denied" or "tenant_context_failed" or "authorization_profile_denied" => 403,
+            "permission_denied" or "resource_scope_denied" or "cross_tenant_target_denied" or "tenant_context_failed" or "authorization_profile_denied" or "warehouse_not_authorized" or "warehouse_scope_denied" => 403,
             "persistence_unavailable" or "authorization_operation_unmapped" => 503,
             "goods_receipt_not_found" => 404,
-            "concurrency_conflict" or "idempotency_conflict" or "goods_receipt_duplicate" or "goods_receipt_source_not_eligible" or "goods_receipt_line_not_eligible" or "over_receipt_not_allowed" or "cancel_not_allowed" or "goods_receipt_referenced_by_active_invoice_handoff" or "reason_required" => 409,
+            "concurrency_conflict" or "idempotency_conflict" or "goods_receipt_duplicate" or "goods_receipt_source_not_eligible" or "goods_receipt_line_not_eligible" or "over_receipt_not_allowed" or "cancel_not_allowed" or "goods_receipt_referenced_by_active_invoice_handoff" or "reason_required" or "warehouse_inactive" => 409,
             _ => 400
         };
 
         return Results.Problem(statusCode: status, title: status == 403 ? "Access denied" : "Goods Receipt operation failed", detail: "The Goods Receipt operation could not be completed.", type: $"https://api.minierp.local/problems/{code}", extensions: new Dictionary<string, object?> { ["code"] = code, ["correlationId"] = GetCorrelation(httpContext), ["operationId"] = operationId });
     }
+
+    private static ProcurementWarehouseOptionResponse ToWarehouseResponse(ProcurementWarehouseOption option) => new(
+        option.TenantId,
+        option.CompanyId,
+        option.BranchId,
+        option.WarehouseId,
+        option.Code,
+        option.Name,
+        option.DisplayName);
 
     private static GoodsReceiptEligibleSourceResponse ToEligibleSourceResponse(GoodsReceiptEligibleSourceRecord record) => new(
         record.PurchaseOrderId,

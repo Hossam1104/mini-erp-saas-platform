@@ -182,9 +182,11 @@ try {
     # The persistent runtime variable MESP_SQLSERVER_CONNECTION_STRING is intentionally
     # left completely unchanged throughout; the two variables serve distinct purposes.
     $previousSafetyConnectionString = $env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING
+    $previousDevAuthBypass          = $env:MESP_DEV_AUTH_BYPASS
 
     try {
         $env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING = $connectionString
+        Remove-Item Env:MESP_DEV_AUTH_BYPASS -ErrorAction SilentlyContinue
         Push-Location $repositoryRoot
 
         Write-Host '--- Backend restore ---'
@@ -253,6 +255,13 @@ try {
             }
             else {
                 $env:MESP_SQLSERVER_SAFETY_CONNECTION_STRING = $previousSafetyConnectionString
+            }
+
+            if ($null -eq $previousDevAuthBypass) {
+                Remove-Item Env:MESP_DEV_AUTH_BYPASS -ErrorAction SilentlyContinue
+            }
+            else {
+                $env:MESP_DEV_AUTH_BYPASS = $previousDevAuthBypass
             }
             # MESP_SQLSERVER_CONNECTION_STRING is the persistent runtime variable and
             # is never modified by this script; no restoration is needed.

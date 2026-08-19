@@ -21,6 +21,7 @@ public static class PurchaseRequestServiceCollectionExtensions
         services.AddSingleton<IPurchaseRequestApprovalPolicyProvider, DefaultPurchaseRequestApprovalPolicyProvider>();
         services.AddSingleton<IPurchaseRequestApprovalDelegationProvider, NoPurchaseRequestApprovalDelegationProvider>();
         services.AddSingleton<IProcurementOrganizationScopeProvider, NoProcurementOrganizationScopeProvider>();
+        services.AddSingleton<IProcurementWarehouseProvider, NoProcurementWarehouseProvider>();
         services.AddSingleton<PurchaseRequestService>();
         services.AddSingleton<SupplierQuotationService>();
         services.AddSingleton<PurchaseOrderService>();

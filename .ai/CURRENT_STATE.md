@@ -1,6 +1,61 @@
 # Current State
 
-## Current authoritative position - 19 August 2026 (MESP-124 merged; post-merge reconciliation)
+## Current authoritative position - 19 August 2026 (MESP-125 implementation complete; pre-Opus handoff)
+
+MESP-125 (Goods Receipt and Purchase Invoice Handoff) is **repository-complete on
+branch `feat/MESP-125-goods-receipt-purchase-invoice-handoff`** and published as a
+Draft PR against `main`. It completes the physical receiving, warehouse scoping,
+damage tracking, and pro-rata Purchase Invoice handoff slice under Epic MESP-7.
+
+### MESP-125 Delivered Capability
+
+- **Goods Receipt Lifecycle & Receiving**:
+  - Receipt creation strictly from eligible Confirmed Purchase Orders with server-enforced line matching.
+  - Authorized warehouse selection and active validation via `IProcurementWarehouseProvider` (`ConfiguredProcurementWarehouseProvider` registered in API bootstrap). Unknown, cross-tenant, inactive, or scope-mismatched warehouses are rejected (`warehouse_not_authorized`, `warehouse_inactive`, `warehouse_scope_denied`).
+  - Line receiving with strict physical partition and damage overlay semantics:
+    - Physical partition invariant: `ReceivedQuantity = AcceptedQuantity + RejectedQuantity` (`ReceivedQuantity > 0`, `AcceptedQuantity >= 0`, `RejectedQuantity >= 0`).
+    - Damaged condition overlay: `DamagedQuantity <= ReceivedQuantity` (independent descriptive condition/disposition overlay, non-additive, never double-counted; `Received != Accepted + Rejected + Damaged` and `Received != Accepted + Damaged`).
+    - Line notes, damage notes, and rejection reasons.
+  - Commercial remainder calculation: `RemainingReceivableQuantity = ConfirmedQuantity - sum(Active AcceptedQuantity)`. Rejected physical quantity does not satisfy the supplier's commercial obligation.
+  - Over-receipt enforcement: total accepted quantity across all active receipts cannot exceed the PO line receivable quantity (`over_receipt_not_allowed`).
+  - Receipt cancellation with mandatory reason. Cancellation is blocked if the receipt is referenced by an active Purchase Invoice Handoff (`goods_receipt_referenced_by_active_invoice_handoff`). When cancelled, accepted quantity is released back to the PO line remainder.
+- **Purchase Invoice Handoff**:
+  - Handoff creation from accepted Goods Receipt lines belonging to Confirmed Purchase Orders.
+  - Pro-rata tax distribution and un-invoiced quantity remainder tracking (`RemainingHandoffQuantity = AcceptedQuantity - sum(Active HandedOffQuantity)`).
+  - Supplier invoice reference, invoice date, and external document notes capture.
+  - Handoff cancellation with mandatory reason, releasing referenced receipt lines for re-invoicing.
+- **Architectural & Concurrency Governance**:
+  - FIN-OD-01 / PD-046 strictly adhered to: Finance owns balanced journals, GL mapping, and posting; operational modules own source documents and do not fabricate accounting entries.
+  - Concurrency safety: calling `.TouchVersion()` on source PO and Receipt entities prevents race conditions and over-receipt / over-invoicing across concurrent requests (`concurrency_conflict` / HTTP 409).
+  - Durable idempotency replay probe pattern with versioned audit snapshots.
+  - Tenant and Company/Branch authorization on every read and mutation endpoint.
+- **Bilingual Angular Workspaces & Accessibility**:
+  - Full Goods Receipt workspace at `/app/procurement/goods-receipts` (List, Create with PO source selector and warehouse picker, Detail with summary/lines/damage/history/audit tabs, Cancel dialog).
+  - Full Purchase Invoice Handoff workspace at `/app/procurement/invoice-handoffs` (List, Create with receipt line selector and pro-rata tax preview, Detail with summary/lines/sources/history/audit tabs, Cancel dialog).
+  - Bilingual English/Arabic support with RTL/LTR layout, ARIA tabs, keyboard navigation, focus trapping, and error classification.
+
+### Validation Evidence
+
+- **Release Build**: 0 warnings / 0 errors (`dotnet build backend\MiniErp.sln -c Release`).
+- **Backend Tests**: **812 / 812 passed, 0 skipped** via `validate-foundation.ps1` and `Test-MiniErpBackend.ps1`, including the SQL Server LocalDB safety harness against disposable database `MiniErpFoundation_*` (cleanly removed with 0 orphan databases).
+- **Angular Unit Tests**: **232 / 232 passed** across 29 spec files via `ng test --watch=false`.
+- **Production Bundle**: **493.41 kB initial total** (118.91 kB transfer, under 500 kB budget), **53.14 kB Goods Receipt lazy chunk**, **53.41 kB Invoice Handoff lazy chunk**.
+- **Playwright E2E**: **19 / 19 passed** across full Chromium suite, including end-to-end receipt creation, inspection, warehouse selection, invoice handoff, pro-rata tax calculation, cancellation, and bilingual switching.
+- **Security**: `npm audit --omit=dev`: **0 vulnerabilities**; full `npm audit`: **0 vulnerabilities**.
+- **Git diff**: Whitespace check clean.
+
+### Domain Boundaries & Non-Scope Invariants
+
+- **Inventory Boundary**: No stock ledger posting, warehouse bin movement, or inventory valuation journal was fabricated (reserved for inventory/accounting module integration).
+- **Finance Boundary**: No general ledger journal entry, accounts payable invoice, payment record, or three-way matching completion was performed (reserved for Finance domain under FIN-OD-01).
+- **Protected Assets**: Files under `frontend/assets` remain untouched.
+- **Zero Jira Writes**: GPT-5.6 Sol owns Jira management; no Jira operations performed in this session.
+
+### Next Exact Gate
+
+- **Independent Claude Opus 5 pre-merge review** for MESP-125 per `TASK.md`. PR remains open, Draft, and unmerged.
+
+## Historical authoritative position - 19 August 2026 (MESP-124 merged; post-merge reconciliation)
 
 MESP-124 is **complete, independently reviewed by Claude Opus 5 (verdict:
 APPROVE FOR MERGE), and squash-merged to `main`** at commit

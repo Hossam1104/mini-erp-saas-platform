@@ -305,4 +305,88 @@ public static class GoodsReceiptValuePolicy
     }
 }
 
+public sealed record ProcurementWarehouseOption(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid WarehouseId,
+    string Code,
+    string Name,
+    bool IsActive = true)
+{
+    public string DisplayName => string.IsNullOrWhiteSpace(Code) ? Name : $"{Code} - {Name}";
+}
+
+public interface IProcurementWarehouseProvider
+{
+    Task<IReadOnlyList<ProcurementWarehouseOption>> ListAsync(
+        ProcurementRequestContext context,
+        Guid? companyId = null,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ProcurementWarehouseOption?> FindAsync(
+        ProcurementRequestContext context,
+        Guid warehouseId,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class NoProcurementWarehouseProvider : IProcurementWarehouseProvider
+{
+    public Task<IReadOnlyList<ProcurementWarehouseOption>> ListAsync(
+        ProcurementRequestContext context,
+        Guid? companyId = null,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<ProcurementWarehouseOption>>([]);
+
+    public Task<ProcurementWarehouseOption?> FindAsync(
+        ProcurementRequestContext context,
+        Guid warehouseId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<ProcurementWarehouseOption?>(null);
+}
+
+public sealed class ConfiguredProcurementWarehouseProvider : IProcurementWarehouseProvider
+{
+    private readonly IReadOnlyList<ProcurementWarehouseOption> options;
+
+    public ConfiguredProcurementWarehouseProvider(IEnumerable<ProcurementWarehouseOption> options)
+    {
+        this.options = options?.ToArray() ?? throw new ArgumentNullException(nameof(options));
+    }
+
+    public Task<IReadOnlyList<ProcurementWarehouseOption>> ListAsync(
+        ProcurementRequestContext context,
+        Guid? companyId = null,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        var filtered = options.Where(item => item.TenantId == context.TenantId.Value && item.IsActive);
+        if (companyId.HasValue)
+        {
+            filtered = filtered.Where(item => item.CompanyId == companyId.Value);
+        }
+
+        if (branchId.HasValue)
+        {
+            filtered = filtered.Where(item => item.BranchId == branchId.Value);
+        }
+
+        var results = filtered.OrderBy(item => item.Code).ThenBy(item => item.Name).ToArray();
+        return Task.FromResult<IReadOnlyList<ProcurementWarehouseOption>>(results);
+    }
+
+    public Task<ProcurementWarehouseOption?> FindAsync(
+        ProcurementRequestContext context,
+        Guid warehouseId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        var match = options.FirstOrDefault(item => item.TenantId == context.TenantId.Value && item.WarehouseId == warehouseId);
+        return Task.FromResult(match);
+    }
+}
+
 #pragma warning restore CS1591

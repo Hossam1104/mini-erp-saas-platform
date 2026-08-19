@@ -141,4 +141,13 @@ public sealed record GoodsReceiptAuditResponse(
     string? AfterSummary,
     string? IdempotencyKey);
 
+public sealed record ProcurementWarehouseOptionResponse(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid WarehouseId,
+    string Code,
+    string Name,
+    string DisplayName);
+
 #pragma warning restore CS1591

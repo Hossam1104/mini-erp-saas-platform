@@ -239,6 +239,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.purchase-order.history.read" => "Read Purchase Order lifecycle and confirmation history",
         "procurement.purchase-order.audit.read" => "Read Purchase Order audit evidence",
         "procurement.goods-receipt.eligible-source.list" => "List Purchase Orders eligible for a Goods Receipt",
+        "procurement.warehouse.list" => "List server-authorized Warehouse options for Goods Receipt",
         "procurement.goods-receipt.list" => "List Tenant-scoped Goods Receipts",
         "procurement.goods-receipt.read" => "Read one Goods Receipt with accepted/rejected/damaged line evidence",
         "procurement.goods-receipt.create" => "Record a manual Goods Receipt against an eligible Purchase Order",
@@ -357,6 +358,14 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "trusted authorization scope; a request can never widen this to an arbitrary Company or Branch identity. This is not a "
                 + "Company/Branch CRUD boundary; it exposes read-only display names for an existing or Development-configured organization "
                 + "structure so the client never needs to type or display a raw internal identifier as the primary means of selection.";
+        }
+
+        if (descriptor.OperationId == "procurement.warehouse.list")
+        {
+            return contextRules
+                + "Warehouse options are the trusted, server-configured set of physical warehouse locations a caller may select when recording "
+                + "a Goods Receipt. Options are filtered to the caller's Tenant and Company/Branch scope; client-supplied warehouse identifiers "
+                + "are server-authoritatively validated and never self-authorizing.";
         }
 
         if (descriptor.OperationId.StartsWith("procurement.purchase-request", StringComparison.Ordinal))
@@ -483,6 +492,7 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.purchase-order.history.read" => "Immutable Tenant-filtered Purchase Order lifecycle, approval, confirmation, and supplier-change history.",
         "procurement.purchase-order.audit.read" => "Immutable Tenant-filtered Purchase Order operation audit evidence with authorization, concurrency, and idempotency context.",
         "procurement.goods-receipt.eligible-source.list" => "The server-filtered Issued/Confirmed/PartiallyConfirmed Purchase Orders with a remaining eligible quantity that the caller may receive against.",
+        "procurement.warehouse.list" => "The Tenant- and scope-filtered set of server-authorized Warehouse options with human-readable display names.",
         "procurement.goods-receipt.list" => "Tenant- and scope-filtered Goods Receipt summaries with source Purchase Order, status, and concurrency version.",
         "procurement.goods-receipt.read" => "One Tenant-filtered Goods Receipt with immutable source lineage, accepted/rejected/damaged line evidence, and server-derived action affordances.",
         "procurement.goods-receipt.create" => "The persisted Goods Receipt with immutable Purchase Order source lineage and accepted/rejected/damaged line snapshots.",

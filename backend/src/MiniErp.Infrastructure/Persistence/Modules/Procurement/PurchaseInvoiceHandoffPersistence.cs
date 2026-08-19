@@ -225,6 +225,14 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
                     lineAmount));
             }
 
+            var receiptIds = command.Sources.Select(s => s.GoodsReceiptId).Distinct().ToArray();
+            var receipts = await db.GoodsReceipts.Where(r => receiptIds.Contains(r.Id)).ToListAsync(cancellationToken);
+            foreach (var receipt in receipts)
+            {
+                receipt.TouchVersion();
+            }
+
+            order.TouchVersion();
             entity.TouchVersion();
             db.PurchaseInvoiceHandoffs.Add(entity);
             db.PurchaseInvoiceHandoffHistory.Add(new PurchaseInvoiceHandoffHistoryEntity(
