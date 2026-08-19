@@ -823,6 +823,8 @@ app.MapMasterDataImportEndpoints();
 app.MapPurchaseRequestEndpoints();
 app.MapSupplierQuotationEndpoints();
 app.MapPurchaseOrderEndpoints();
+app.MapGoodsReceiptEndpoints();
+app.MapPurchaseInvoiceHandoffEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

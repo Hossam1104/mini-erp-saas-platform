@@ -24,6 +24,10 @@ public static class ProcurementPersistenceServiceCollectionExtensions
             new SupplierQuotationPersistence(optionsBuilder.Options));
         services.AddSingleton<IPurchaseOrderPersistence>(
             new PurchaseOrderPersistence(optionsBuilder.Options));
+        services.AddSingleton<IGoodsReceiptPersistence>(
+            new GoodsReceiptPersistence(optionsBuilder.Options));
+        services.AddSingleton<IPurchaseInvoiceHandoffPersistence>(
+            new PurchaseInvoiceHandoffPersistence(optionsBuilder.Options));
         return services;
     }
 
