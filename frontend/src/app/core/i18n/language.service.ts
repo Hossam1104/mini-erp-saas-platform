@@ -781,6 +781,7 @@ const translations = {
     purchaseOrdersNavLabel: 'Purchase Orders',
     goodsReceiptsNavLabel: 'Goods Receipts',
     invoiceHandoffsNavLabel: 'Invoice Handoffs',
+    invoiceMatchingNavLabel: 'Three-way Matching',
   },
   ar: {
     currentTenant: '\u0627\u0644\u0639\u0645\u064a\u0644 \u0627\u0644\u062d\u0627\u0644\u064a',
@@ -1558,6 +1559,7 @@ const translations = {
     purchaseOrdersNavLabel: '\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0634\u0631\u0627\u0621',
     goodsReceiptsNavLabel: '\u0633\u0646\u062f\u0627\u062a \u0627\u0644\u0627\u0633\u062a\u0644\u0627\u0645',
     invoiceHandoffsNavLabel: '\u062a\u0633\u0644\u064a\u0645 \u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631',
+    invoiceMatchingNavLabel: '\u0627\u0644\u0645\u0637\u0627\u0628\u0642\u0629 \u0627\u0644\u062b\u0644\u0627\u062b\u064a\u0629',
   },
 } as const;
 

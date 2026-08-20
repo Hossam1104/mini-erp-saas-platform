@@ -158,7 +158,13 @@ internal sealed class TenantOwnershipVerifierRegistry
             ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceHandoffLineEntity>(),
             ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceHandoffSourceEntity>(),
             ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceHandoffHistoryEntity>(),
-            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceHandoffAuditEntity>()
+            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceHandoffAuditEntity>(),
+            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceDeclaredEvidenceEntity>(),
+            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceDeclaredEvidenceLineEntity>(),
+            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceDeclaredEvidenceAllocationEntity>(),
+            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceMatchEvaluationEntity>(),
+            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceMatchHistoryEntity>(),
+            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceMatchAuditEntity>()
         ]);
     }
 

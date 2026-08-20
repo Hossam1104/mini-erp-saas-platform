@@ -61,6 +61,267 @@ public sealed class PurchaseInvoiceHandoffTests
     }
 
     [Fact]
+    public async Task Legacy_handoff_without_independent_invoice_evidence_is_not_match_ready()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipt = await fixture.RecordedReceiptAsync("pih-legacy-match");
+        var receiptLine = receipt.Lines.Single();
+        var handoff = await fixture.InvoiceHandoffService.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.invoice-handoff.create"),
+            new PurchaseInvoiceHandoffCreateRequest(
+                receipt.PurchaseOrderId,
+                "INV-LEGACY-MATCH",
+                DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                null,
+                [new PurchaseInvoiceHandoffSourceRequest(receipt.Id, receiptLine.Id, 1m)]),
+            "pih-legacy-match-key",
+            "fp-pih-legacy-match");
+        Assert.True(handoff.Succeeded, handoff.Code);
+
+        var evaluation = await fixture.MatchService.EvaluateAsync(
+            fixture.Context(Requester, "tenant.procurement.matching.evaluate"),
+            handoff.Value!.Id,
+            handoff.Value.Version,
+            new PurchaseInvoiceMatchEvaluateRequest(),
+            "pih-legacy-match-evaluate-key",
+            "fp-pih-legacy-match-evaluate");
+
+        Assert.True(evaluation.Succeeded, evaluation.Code);
+        Assert.Equal(PurchaseInvoiceMatchResult.NotMatchReady, evaluation.Value!.Result);
+        Assert.Contains(evaluation.Value.Variances, item => item.Classification == "InvoiceEvidenceMissing");
+    }
+
+    [Fact]
+    public async Task Independent_declared_invoice_evidence_supports_exact_partial_match_and_preserves_its_price()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipt = await fixture.RecordedReceiptAsync("pih-independent-match");
+        var receiptLine = receipt.Lines.Single();
+        var declaredEvidence = new PurchaseInvoiceDeclaredEvidenceRequest(
+            "INV-INDEPENDENT-MATCH",
+            DateOnly.FromDateTime(DateTime.UtcNow.Date),
+            "USD",
+            12.5m,
+            null,
+            1.88m,
+            14.38m,
+            [new PurchaseInvoiceDeclaredEvidenceLineRequest(
+                receiptLine.PurchaseOrderLineId,
+                1m,
+                12.5m,
+                null,
+                15m,
+                "VAT15",
+                1.88m,
+                12.5m,
+                14.38m,
+                "Supplier declared line",
+                [new PurchaseInvoiceDeclaredEvidenceAllocationRequest(receipt.Id, receiptLine.Id, 1m)])]);
+        var handoff = await fixture.InvoiceHandoffService.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.invoice-handoff.create"),
+            new PurchaseInvoiceHandoffCreateRequest(
+                receipt.PurchaseOrderId,
+                "INV-INDEPENDENT-MATCH",
+                DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                null,
+                [new PurchaseInvoiceHandoffSourceRequest(receipt.Id, receiptLine.Id, 1m)],
+                declaredEvidence),
+            "pih-independent-match-key",
+            "fp-pih-independent-match");
+        Assert.True(handoff.Succeeded, handoff.Code);
+        Assert.Equal(12.5m, handoff.Value!.DeclaredEvidence!.Lines.Single().UnitPrice);
+        Assert.Equal("USD", handoff.Value.DeclaredEvidence.CurrencyCode);
+        Assert.Equal(1m, handoff.Value.DeclaredEvidence.Lines.Single().Quantity);
+
+        var evaluation = await fixture.MatchService.EvaluateAsync(
+            fixture.Context(Requester, "tenant.procurement.matching.evaluate"),
+            handoff.Value.Id,
+            handoff.Value.Version,
+            new PurchaseInvoiceMatchEvaluateRequest(),
+            "pih-independent-match-evaluate-key",
+            "fp-pih-independent-match-evaluate");
+
+        Assert.True(evaluation.Succeeded, evaluation.Code);
+        Assert.Equal(PurchaseInvoiceMatchResult.ExactMatch, evaluation.Value!.Result);
+        Assert.Empty(evaluation.Value.Variances);
+    }
+
+    [Fact]
+    public async Task Exact_safe_matching_holds_both_favorable_and_unfavorable_price_variances()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipt = await fixture.RecordedReceiptAsync("pih-price-variance");
+        var receiptLine = receipt.Lines.Single();
+        var declaredEvidence = new PurchaseInvoiceDeclaredEvidenceRequest(
+            "INV-PRICE-VARIANCE",
+            DateOnly.FromDateTime(DateTime.UtcNow.Date),
+            "USD",
+            11.5m,
+            null,
+            1.73m,
+            13.23m,
+            [new PurchaseInvoiceDeclaredEvidenceLineRequest(
+                receiptLine.PurchaseOrderLineId,
+                1m,
+                11.5m,
+                null,
+                15m,
+                "VAT15",
+                1.73m,
+                11.5m,
+                13.23m,
+                null,
+                [new PurchaseInvoiceDeclaredEvidenceAllocationRequest(receipt.Id, receiptLine.Id, 1m)])]);
+        var handoff = await fixture.InvoiceHandoffService.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.invoice-handoff.create"),
+            new PurchaseInvoiceHandoffCreateRequest(
+                receipt.PurchaseOrderId,
+                "INV-PRICE-VARIANCE",
+                DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                null,
+                [new PurchaseInvoiceHandoffSourceRequest(receipt.Id, receiptLine.Id, 1m)],
+                declaredEvidence),
+            "pih-price-variance-key",
+            "fp-pih-price-variance");
+        Assert.True(handoff.Succeeded, handoff.Code);
+
+        var evaluation = await fixture.MatchService.EvaluateAsync(
+            fixture.Context(Requester, "tenant.procurement.matching.evaluate"),
+            handoff.Value!.Id,
+            handoff.Value.Version,
+            new PurchaseInvoiceMatchEvaluateRequest(),
+            "pih-price-variance-evaluate-key",
+            "fp-pih-price-variance-evaluate");
+
+        Assert.True(evaluation.Succeeded, evaluation.Code);
+        Assert.Equal(PurchaseInvoiceMatchResult.ExceptionHold, evaluation.Value!.Result);
+        Assert.Contains(evaluation.Value.Variances, item => item.Classification == "PriceVariance" && item.Variance == -1m);
+    }
+
+    [Fact]
+    public async Task Different_currency_without_an_applied_rate_fails_closed_as_not_match_ready()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipt = await fixture.RecordedReceiptAsync("pih-currency-hold");
+        var receiptLine = receipt.Lines.Single();
+        var declaredEvidence = new PurchaseInvoiceDeclaredEvidenceRequest(
+            "INV-CURRENCY-HOLD",
+            DateOnly.FromDateTime(DateTime.UtcNow.Date),
+            "EUR",
+            12.5m,
+            null,
+            1.88m,
+            14.38m,
+            [new PurchaseInvoiceDeclaredEvidenceLineRequest(
+                receiptLine.PurchaseOrderLineId,
+                1m,
+                12.5m,
+                null,
+                15m,
+                "VAT15",
+                1.88m,
+                12.5m,
+                14.38m,
+                null,
+                [new PurchaseInvoiceDeclaredEvidenceAllocationRequest(receipt.Id, receiptLine.Id, 1m)])]);
+        var handoff = await fixture.InvoiceHandoffService.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.invoice-handoff.create"),
+            new PurchaseInvoiceHandoffCreateRequest(
+                receipt.PurchaseOrderId,
+                "INV-CURRENCY-HOLD",
+                DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                null,
+                [new PurchaseInvoiceHandoffSourceRequest(receipt.Id, receiptLine.Id, 1m)],
+                declaredEvidence),
+            "pih-currency-hold-key",
+            "fp-pih-currency-hold");
+        Assert.True(handoff.Succeeded, handoff.Code);
+
+        var evaluation = await fixture.MatchService.EvaluateAsync(
+            fixture.Context(Requester, "tenant.procurement.matching.evaluate"),
+            handoff.Value!.Id,
+            handoff.Value.Version,
+            new PurchaseInvoiceMatchEvaluateRequest(),
+            "pih-currency-hold-evaluate-key",
+            "fp-pih-currency-hold-evaluate");
+
+        Assert.True(evaluation.Succeeded, evaluation.Code);
+        Assert.Equal(PurchaseInvoiceMatchResult.NotMatchReady, evaluation.Value!.Result);
+        Assert.Contains(evaluation.Value.Variances, item => item.Classification == "CurrencyNotComparable");
+    }
+
+    [Fact]
+    public async Task Exception_resolution_replays_the_original_response_after_the_state_transition()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipt = await fixture.RecordedReceiptAsync("pih-resolution-replay");
+        var receiptLine = receipt.Lines.Single();
+        var declaredEvidence = new PurchaseInvoiceDeclaredEvidenceRequest(
+            "INV-RESOLUTION-REPLAY",
+            DateOnly.FromDateTime(DateTime.UtcNow.Date),
+            "USD",
+            11.5m,
+            null,
+            1.73m,
+            13.23m,
+            [new PurchaseInvoiceDeclaredEvidenceLineRequest(
+                receiptLine.PurchaseOrderLineId,
+                1m,
+                11.5m,
+                null,
+                15m,
+                "VAT15",
+                1.73m,
+                11.5m,
+                13.23m,
+                null,
+                [new PurchaseInvoiceDeclaredEvidenceAllocationRequest(receipt.Id, receiptLine.Id, 1m)])]);
+        var handoff = await fixture.InvoiceHandoffService.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.invoice-handoff.create"),
+            new PurchaseInvoiceHandoffCreateRequest(
+                receipt.PurchaseOrderId,
+                "INV-RESOLUTION-REPLAY",
+                DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                null,
+                [new PurchaseInvoiceHandoffSourceRequest(receipt.Id, receiptLine.Id, 1m)],
+                declaredEvidence),
+            "pih-resolution-replay-key",
+            "fp-pih-resolution-replay");
+        Assert.True(handoff.Succeeded, handoff.Code);
+        var evaluation = await fixture.MatchService.EvaluateAsync(
+            fixture.Context(Requester, "tenant.procurement.matching.evaluate"),
+            handoff.Value!.Id,
+            handoff.Value.Version,
+            new PurchaseInvoiceMatchEvaluateRequest(),
+            "pih-resolution-replay-evaluate-key",
+            "fp-pih-resolution-replay-evaluate");
+        Assert.True(evaluation.Succeeded, evaluation.Code);
+
+        var resolverContext = fixture.Context(Approver, "tenant.procurement.matching.resolve");
+        var first = await fixture.MatchService.ResolveAsync(
+            resolverContext,
+            evaluation.Value!.Id,
+            evaluation.Value.Version,
+            new PurchaseInvoiceMatchResolveRequest("Reviewed supplier evidence"),
+            "pih-resolution-replay-resolve-key",
+            "fp-pih-resolution-replay-resolve");
+        var replay = await fixture.MatchService.ResolveAsync(
+            resolverContext,
+            evaluation.Value.Id,
+            evaluation.Value.Version,
+            new PurchaseInvoiceMatchResolveRequest("Reviewed supplier evidence"),
+            "pih-resolution-replay-resolve-key",
+            "fp-pih-resolution-replay-resolve");
+
+        Assert.True(first.Succeeded, first.Code);
+        Assert.True(replay.Succeeded, replay.Code);
+        Assert.Equal(PurchaseInvoiceMatchResult.ResolvedException, first.Value!.Result);
+        Assert.Equal(first.Value.Id, replay.Value!.Id);
+        Assert.Equal(first.Value.Version, replay.Value.Version);
+        Assert.Equal(first.Value.ResolutionPolicy!.PolicyId, replay.Value.ResolutionPolicy!.PolicyId);
+    }
+
+    [Fact]
     public async Task Creates_invoice_handoff_with_exact_prorata_tax_recalculation()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -408,18 +669,21 @@ public sealed class PurchaseInvoiceHandoffTests
             DbContextOptions options,
             PurchaseOrderService purchaseOrderService,
             GoodsReceiptService goodsReceiptService,
-            PurchaseInvoiceHandoffService invoiceHandoffService)
+            PurchaseInvoiceHandoffService invoiceHandoffService,
+            PurchaseInvoiceMatchService matchService)
         {
             this.connection = connection;
             this.options = options;
             PurchaseOrderService = purchaseOrderService;
             GoodsReceiptService = goodsReceiptService;
             InvoiceHandoffService = invoiceHandoffService;
+            MatchService = matchService;
         }
 
         public PurchaseOrderService PurchaseOrderService { get; }
         public GoodsReceiptService GoodsReceiptService { get; }
         public PurchaseInvoiceHandoffService InvoiceHandoffService { get; }
+        public PurchaseInvoiceMatchService MatchService { get; }
 
         public static async Task<Fixture> CreateAsync()
         {
@@ -446,7 +710,13 @@ public sealed class PurchaseInvoiceHandoffTests
             ]);
             var goodsReceiptService = new GoodsReceiptService(authorization, new GoodsReceiptPersistence(options), warehouseProvider);
             var invoiceHandoffService = new PurchaseInvoiceHandoffService(authorization, new PurchaseInvoiceHandoffPersistence(options));
-            return new Fixture(connection, options, purchaseOrderService, goodsReceiptService, invoiceHandoffService);
+            var matchService = new PurchaseInvoiceMatchService(
+                authorization,
+                new PurchaseInvoiceHandoffPersistence(options),
+                new PurchaseInvoiceMatchPersistence(options),
+                new ExactSafePurchaseInvoiceMatchingTolerancePolicyProvider(),
+                new DefaultPurchaseInvoiceMatchingResolutionPolicyProvider());
+            return new Fixture(connection, options, purchaseOrderService, goodsReceiptService, invoiceHandoffService, matchService);
         }
 
         public ProcurementRequestContext Context(Guid actor, string operation, Guid tenantId = default)

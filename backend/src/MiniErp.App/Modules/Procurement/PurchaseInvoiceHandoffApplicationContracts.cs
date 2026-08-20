@@ -47,6 +47,39 @@ public sealed record PurchaseInvoiceHandoffSourceRecord(
     Guid PurchaseOrderLineId,
     decimal Quantity);
 
+public sealed record PurchaseInvoiceDeclaredEvidenceAllocationRecord(
+    Guid GoodsReceiptId,
+    Guid GoodsReceiptLineId,
+    decimal Quantity);
+
+public sealed record PurchaseInvoiceDeclaredEvidenceLineRecord(
+    Guid Id,
+    Guid PurchaseOrderLineId,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal? DiscountAmount,
+    decimal? TaxRatePercentage,
+    string? TaxCode,
+    decimal? TaxAmount,
+    decimal? NetAmount,
+    decimal? GrossAmount,
+    string? Description,
+    IReadOnlyList<PurchaseInvoiceDeclaredEvidenceAllocationRecord> Allocations);
+
+public sealed record PurchaseInvoiceDeclaredEvidenceRecord(
+    Guid Id,
+    int VersionNumber,
+    string? SupplierInvoiceReference,
+    DateOnly? SupplierInvoiceDate,
+    string CurrencyCode,
+    decimal? SubtotalAmount,
+    decimal? DiscountAmount,
+    decimal? TaxAmount,
+    decimal? GrossAmount,
+    DateTimeOffset RecordedAt,
+    Guid RecordedByActorId,
+    IReadOnlyList<PurchaseInvoiceDeclaredEvidenceLineRecord> Lines);
+
 public sealed record PurchaseInvoiceHandoffLineRecord(
     Guid Id,
     Guid PurchaseOrderLineId,
@@ -80,7 +113,8 @@ public sealed record PurchaseInvoiceHandoffRecord(
     string? CancellationReason,
     IReadOnlyList<PurchaseInvoiceHandoffLineRecord> Lines,
     IReadOnlyList<PurchaseInvoiceHandoffSourceRecord> Sources,
-    byte[] Version);
+    byte[] Version,
+    PurchaseInvoiceDeclaredEvidenceRecord? DeclaredEvidence = null);
 
 public sealed record PurchaseInvoiceHandoffListRecord(
     Guid Id,
@@ -163,6 +197,16 @@ public sealed record PurchaseInvoiceHandoffCreateCommand(
     string? Notes,
     IReadOnlyList<PurchaseInvoiceHandoffSourceCommand> Sources,
     DateTimeOffset OccurredAt,
+    string? IdempotencyKey,
+    PurchaseInvoiceDeclaredEvidenceRequest? DeclaredEvidence = null);
+
+public sealed record PurchaseInvoiceDeclaredEvidenceCaptureCommand(
+    Guid PurchaseInvoiceHandoffId,
+    byte[] ExpectedHandoffVersion,
+    Guid ActorId,
+    PurchaseInvoiceDeclaredEvidenceRequest Evidence,
+    string? Reason,
+    DateTimeOffset OccurredAt,
     string? IdempotencyKey);
 
 public sealed record PurchaseInvoiceHandoffActionCommand(
@@ -219,6 +263,7 @@ public interface IPurchaseInvoiceHandoffPersistence
     Task<PurchaseInvoiceHandoffReplayProbe> ProbeReplayAsync(TenantContext tenantContext, PurchaseInvoiceHandoffReplayQuery query, CancellationToken cancellationToken = default);
     Task<PurchaseInvoiceHandoffRecord?> FindAsync(TenantContext tenantContext, Guid purchaseInvoiceHandoffId, CancellationToken cancellationToken = default);
     Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CreateAsync(TenantContext tenantContext, PurchaseInvoiceHandoffCreateCommand command, PurchaseInvoiceHandoffAuditEvidence evidence, CancellationToken cancellationToken = default);
+    Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CaptureDeclaredEvidenceAsync(TenantContext tenantContext, PurchaseInvoiceDeclaredEvidenceCaptureCommand command, PurchaseInvoiceHandoffAuditEvidence evidence, CancellationToken cancellationToken = default);
     Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CancelAsync(TenantContext tenantContext, PurchaseInvoiceHandoffActionCommand command, PurchaseInvoiceHandoffAuditEvidence evidence, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PurchaseInvoiceHandoffHistoryRecord>> ReadHistoryAsync(TenantContext tenantContext, Guid purchaseInvoiceHandoffId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PurchaseInvoiceHandoffAuditRecord>> ReadAuditAsync(TenantContext tenantContext, Guid purchaseInvoiceHandoffId, CancellationToken cancellationToken = default);
@@ -235,6 +280,7 @@ public sealed class UnavailablePurchaseInvoiceHandoffPersistence : IPurchaseInvo
     public Task<PurchaseInvoiceHandoffReplayProbe> ProbeReplayAsync(TenantContext tenantContext, PurchaseInvoiceHandoffReplayQuery query, CancellationToken cancellationToken = default) => Task.FromResult(PurchaseInvoiceHandoffReplayProbe.NotFound);
     public Task<PurchaseInvoiceHandoffRecord?> FindAsync(TenantContext tenantContext, Guid purchaseInvoiceHandoffId, CancellationToken cancellationToken = default) => Task.FromResult<PurchaseInvoiceHandoffRecord?>(null);
     public Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CreateAsync(TenantContext tenantContext, PurchaseInvoiceHandoffCreateCommand command, PurchaseInvoiceHandoffAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseInvoiceHandoffRecord>();
+    public Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CaptureDeclaredEvidenceAsync(TenantContext tenantContext, PurchaseInvoiceDeclaredEvidenceCaptureCommand command, PurchaseInvoiceHandoffAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseInvoiceHandoffRecord>();
     public Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CancelAsync(TenantContext tenantContext, PurchaseInvoiceHandoffActionCommand command, PurchaseInvoiceHandoffAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseInvoiceHandoffRecord>();
     public Task<IReadOnlyList<PurchaseInvoiceHandoffHistoryRecord>> ReadHistoryAsync(TenantContext tenantContext, Guid purchaseInvoiceHandoffId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseInvoiceHandoffHistoryRecord>>([]);
     public Task<IReadOnlyList<PurchaseInvoiceHandoffAuditRecord>> ReadAuditAsync(TenantContext tenantContext, Guid purchaseInvoiceHandoffId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseInvoiceHandoffAuditRecord>>([]);
@@ -292,6 +338,83 @@ public static class PurchaseInvoiceHandoffValuePolicy
         sources = normalized;
         return true;
     }
+
+    public static bool TryNormalizeDeclaredEvidence(
+        PurchaseInvoiceDeclaredEvidenceRequest? request,
+        out PurchaseInvoiceDeclaredEvidenceRequest? normalized)
+    {
+        normalized = null;
+        if (request is null)
+        {
+            return true;
+        }
+
+        if (!TryText(request.SupplierInvoiceReference, 256, true, out var reference)
+            || !TryText(request.CurrencyCode, 16, false, out var currency)
+            || request.Lines is null
+            || request.Lines.Count is < 1 or > 1000
+            || !AmountsAreValid(request.SubtotalAmount, request.DiscountAmount, request.TaxAmount, request.GrossAmount))
+        {
+            return false;
+        }
+
+        var lines = new List<PurchaseInvoiceDeclaredEvidenceLineRequest>(request.Lines.Count);
+        foreach (var line in request.Lines)
+        {
+            if (line.PurchaseOrderLineId == Guid.Empty
+                || line.Quantity <= 0
+                || line.UnitPrice < 0
+                || !AmountsAreValid(line.DiscountAmount, line.TaxAmount, line.NetAmount, line.GrossAmount)
+                || line.TaxRatePercentage is < 0 or > 100
+                || !TryText(line.TaxCode, 128, true, out var taxCode)
+                || !TryText(line.Description, 512, true, out var description)
+                || line.Allocations is null
+                || line.Allocations.Count == 0
+                || line.Allocations.Count > 1000)
+            {
+                return false;
+            }
+
+            var allocations = new List<PurchaseInvoiceDeclaredEvidenceAllocationRequest>(line.Allocations.Count);
+            var allocationTotal = 0m;
+            var seen = new HashSet<(Guid ReceiptId, Guid LineId)>();
+            foreach (var allocation in line.Allocations)
+            {
+                if (allocation.GoodsReceiptId == Guid.Empty
+                    || allocation.GoodsReceiptLineId == Guid.Empty
+                    || allocation.Quantity <= 0
+                    || !seen.Add((allocation.GoodsReceiptId, allocation.GoodsReceiptLineId)))
+                {
+                    return false;
+                }
+
+                allocationTotal += allocation.Quantity;
+                allocations.Add(allocation);
+            }
+
+            if (allocationTotal != line.Quantity)
+            {
+                return false;
+            }
+
+            lines.Add(line with
+            {
+                TaxCode = taxCode,
+                Description = description,
+                Allocations = allocations
+            });
+        }
+
+        normalized = request with
+        {
+            SupplierInvoiceReference = reference,
+            CurrencyCode = currency,
+            Lines = lines
+        };
+        return true;
+    }
+
+    private static bool AmountsAreValid(params decimal?[] amounts) => amounts.All(item => item is null or >= 0);
 
     public static decimal Total(PurchaseInvoiceHandoffRecord handoff) => handoff.Lines.Sum(line => line.LineAmount);
 }

@@ -40,6 +40,8 @@ export const routes: Routes = [
       { path: 'procurement/invoice-handoffs', loadComponent: () => import('./features/procurement/purchase-invoice-handoff-workspace.component').then((module) => module.PurchaseInvoiceHandoffWorkspaceComponent) },
       { path: 'procurement/invoice-handoffs/new', loadComponent: () => import('./features/procurement/purchase-invoice-handoff-workspace.component').then((module) => module.PurchaseInvoiceHandoffWorkspaceComponent) },
       { path: 'procurement/invoice-handoffs/:id', loadComponent: () => import('./features/procurement/purchase-invoice-handoff-workspace.component').then((module) => module.PurchaseInvoiceHandoffWorkspaceComponent) },
+      { path: 'procurement/invoice-matching', loadComponent: () => import('./features/procurement/purchase-invoice-matching-workspace.component').then((module) => module.PurchaseInvoiceMatchingWorkspaceComponent) },
+      { path: 'procurement/invoice-matching/:id', loadComponent: () => import('./features/procurement/purchase-invoice-matching-workspace.component').then((module) => module.PurchaseInvoiceMatchingWorkspaceComponent) },
     ],
   },
   { path: 'tenant/select', pathMatch: 'full', redirectTo: 'app/workspaces' },

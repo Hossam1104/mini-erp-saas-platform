@@ -11,7 +11,8 @@ public enum PurchaseInvoiceHandoffStatus
 public enum PurchaseInvoiceHandoffHistoryAction
 {
     Recorded = 1,
-    Cancelled = 2
+    Cancelled = 2,
+    DeclaredEvidenceCaptured = 3
 }
 
 public sealed record PurchaseInvoiceHandoffSourceRequest(
@@ -19,12 +20,45 @@ public sealed record PurchaseInvoiceHandoffSourceRequest(
     Guid GoodsReceiptLineId,
     decimal Quantity);
 
+public sealed record PurchaseInvoiceDeclaredEvidenceAllocationRequest(
+    Guid GoodsReceiptId,
+    Guid GoodsReceiptLineId,
+    decimal Quantity);
+
+public sealed record PurchaseInvoiceDeclaredEvidenceLineRequest(
+    Guid PurchaseOrderLineId,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal? DiscountAmount,
+    decimal? TaxRatePercentage,
+    string? TaxCode,
+    decimal? TaxAmount,
+    decimal? NetAmount,
+    decimal? GrossAmount,
+    string? Description,
+    IReadOnlyList<PurchaseInvoiceDeclaredEvidenceAllocationRequest> Allocations);
+
+public sealed record PurchaseInvoiceDeclaredEvidenceRequest(
+    string? SupplierInvoiceReference,
+    DateOnly? SupplierInvoiceDate,
+    string? CurrencyCode,
+    decimal? SubtotalAmount,
+    decimal? DiscountAmount,
+    decimal? TaxAmount,
+    decimal? GrossAmount,
+    IReadOnlyList<PurchaseInvoiceDeclaredEvidenceLineRequest> Lines);
+
 public sealed record PurchaseInvoiceHandoffCreateRequest(
     Guid PurchaseOrderId,
     string? SupplierInvoiceReference,
     DateOnly? SupplierInvoiceDate,
     string? Notes,
-    IReadOnlyList<PurchaseInvoiceHandoffSourceRequest> Sources);
+    IReadOnlyList<PurchaseInvoiceHandoffSourceRequest> Sources,
+    PurchaseInvoiceDeclaredEvidenceRequest? DeclaredEvidence = null);
+
+public sealed record PurchaseInvoiceDeclaredEvidenceCaptureRequest(
+    PurchaseInvoiceDeclaredEvidenceRequest Evidence,
+    string? Reason);
 
 public sealed record PurchaseInvoiceHandoffActionRequest(string? Reason);
 
@@ -110,7 +144,41 @@ public sealed record PurchaseInvoiceHandoffResponse(
     IReadOnlyList<PurchaseInvoiceHandoffLineResponse> Lines,
     IReadOnlyList<PurchaseInvoiceHandoffSourceResponse> Sources,
     string Version,
-    bool CanCancel);
+    bool CanCancel,
+    PurchaseInvoiceDeclaredEvidenceResponse? DeclaredEvidence = null);
+
+public sealed record PurchaseInvoiceDeclaredEvidenceAllocationResponse(
+    Guid GoodsReceiptId,
+    Guid GoodsReceiptLineId,
+    decimal Quantity);
+
+public sealed record PurchaseInvoiceDeclaredEvidenceLineResponse(
+    Guid Id,
+    Guid PurchaseOrderLineId,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal? DiscountAmount,
+    decimal? TaxRatePercentage,
+    string? TaxCode,
+    decimal? TaxAmount,
+    decimal? NetAmount,
+    decimal? GrossAmount,
+    string? Description,
+    IReadOnlyList<PurchaseInvoiceDeclaredEvidenceAllocationResponse> Allocations);
+
+public sealed record PurchaseInvoiceDeclaredEvidenceResponse(
+    Guid Id,
+    int VersionNumber,
+    string? SupplierInvoiceReference,
+    DateOnly? SupplierInvoiceDate,
+    string CurrencyCode,
+    decimal? SubtotalAmount,
+    decimal? DiscountAmount,
+    decimal? TaxAmount,
+    decimal? GrossAmount,
+    DateTimeOffset RecordedAt,
+    Guid RecordedByActorId,
+    IReadOnlyList<PurchaseInvoiceDeclaredEvidenceLineResponse> Lines);
 
 public sealed record PurchaseInvoiceHandoffHistoryResponse(
     Guid EvidenceId,

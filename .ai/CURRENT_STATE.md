@@ -1,6 +1,41 @@
 # Current State
 
-## Current authoritative position - 19 August 2026 (MESP-125 implementation complete; pre-Opus handoff)
+## Current authoritative position - 20 August 2026 (MESP-126 implementation complete; independent review handoff)
+
+MESP-125 (Goods Receipt and Purchase Invoice Handoff) is **Done** and
+squash-merged to `main` by PR #69 at merge SHA
+`42e51b673de5d076b56426180d914f7e3d07c54c`. The synchronized main baseline
+passed the Release build with 0 warnings and 0 errors before MESP-126 began.
+
+MESP-126 (Three-Way Matching, Tolerances, and Authorized Exception Resolution)
+is **activated / implementation-complete at bounded scope** under Epic MESP-7
+on `feat/MESP-126-three-way-matching-tolerances`. It adds independent
+supplier-declared invoice evidence beside the preserved MESP-125 PO-derived
+handoff preview; accepted Goods Receipt allocations; deterministic exact-safe
+and configured tolerance evaluation; currency/tax evidence comparison;
+durable source snapshots, fingerprints, history, audit, and replay; authorized
+reasoned exception resolution with resolution-policy evidence; optimistic
+concurrency; REST/OpenAPI registration; EF Core migrations; and a bilingual
+EN/AR RTL matching workspace.
+
+Legacy handoffs without independent evidence remain readable and explicitly
+evaluate as not match-ready. Procurement remains the source/evidence owner;
+Finance owns AP, GL, tax accounting, posting, reconciliation, and payment.
+There is no stock/on-hand mutation, Inventory valuation, external FX or invoice
+integration, supplier portal, statutory/ZATCA/FATOORA behavior, or Wafra-specific
+core behavior.
+
+Validation: Release build 0 warnings/0 errors; focused handoff/matching tests
+13/13; full backend 795 non-SQL passed with 22 SQL safety tests unavailable
+because `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` was absent; Angular 235/235
+across 30 spec files; production bundle 494.00 kB initial with a 29.75 kB
+matching lazy chunk; Chromium Playwright 21/21; both npm audits report 0
+vulnerabilities; EF migration listing includes the MESP-126 evidence and
+resolution-policy migrations. No Jira writes were performed. Independent
+read-only Claude Opus 5 review remains required before merge, and the Draft PR
+must remain unmerged.
+
+## Historical authoritative position - 19 August 2026 (MESP-125 implementation complete; pre-Opus handoff)
 
 MESP-125 (Goods Receipt and Purchase Invoice Handoff) is **repository-complete on
 branch `feat/MESP-125-goods-receipt-purchase-invoice-handoff`** and published as a

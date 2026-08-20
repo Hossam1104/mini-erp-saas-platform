@@ -33,6 +33,7 @@ internal sealed class PurchaseInvoiceHandoffEntity : ITenantOwned
         Notes = command.Notes;
         CreatedAt = command.OccurredAt;
         UpdatedAt = command.OccurredAt;
+        CurrentDeclaredEvidenceVersion = null;
     }
 
     internal Guid Id { get; private set; }
@@ -53,10 +54,13 @@ internal sealed class PurchaseInvoiceHandoffEntity : ITenantOwned
     internal DateTimeOffset UpdatedAt { get; private set; }
     internal DateTimeOffset? CancelledAt { get; private set; }
     internal string? CancellationReason { get; private set; }
+    internal Guid? CurrentDeclaredEvidenceId { get; private set; }
+    internal int? CurrentDeclaredEvidenceVersion { get; private set; }
     internal byte[] Version { get; private set; } = [];
 
     internal List<PurchaseInvoiceHandoffLineEntity> Lines { get; } = [];
     internal List<PurchaseInvoiceHandoffSourceEntity> Sources { get; } = [];
+    internal List<PurchaseInvoiceDeclaredEvidenceEntity> DeclaredEvidenceVersions { get; } = [];
 
     internal void Cancel(string reason, DateTimeOffset occurredAt)
     {
@@ -67,6 +71,13 @@ internal sealed class PurchaseInvoiceHandoffEntity : ITenantOwned
     }
 
     internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
+
+    internal void SetDeclaredEvidence(Guid evidenceId, int versionNumber, DateTimeOffset occurredAt)
+    {
+        CurrentDeclaredEvidenceId = evidenceId;
+        CurrentDeclaredEvidenceVersion = versionNumber;
+        UpdatedAt = occurredAt;
+    }
 }
 
 internal sealed class PurchaseInvoiceHandoffLineEntity : ITenantOwned
@@ -243,6 +254,133 @@ internal sealed class PurchaseInvoiceHandoffAuditEntity : ITenantOwned
         ReplayResponseSchemaVersion = schemaVersion;
         ReplayResponseSnapshotJson = snapshotJson;
     }
+}
+
+internal sealed class PurchaseInvoiceDeclaredEvidenceEntity : ITenantOwned
+{
+    private PurchaseInvoiceDeclaredEvidenceEntity()
+    {
+        CurrencyCode = string.Empty;
+    }
+
+    internal PurchaseInvoiceDeclaredEvidenceEntity(
+        TenantId tenantId,
+        Guid handoffId,
+        Guid id,
+        int versionNumber,
+        Guid recordedByActorId,
+        PurchaseInvoiceDeclaredEvidenceRequest request,
+        DateTimeOffset recordedAt)
+    {
+        Id = id;
+        TenantId = tenantId;
+        PurchaseInvoiceHandoffId = handoffId;
+        VersionNumber = versionNumber;
+        IsCurrent = true;
+        RecordedByActorId = recordedByActorId;
+        SupplierInvoiceReference = request.SupplierInvoiceReference;
+        SupplierInvoiceDate = request.SupplierInvoiceDate;
+        CurrencyCode = request.CurrencyCode!.Trim();
+        SubtotalAmount = request.SubtotalAmount;
+        DiscountAmount = request.DiscountAmount;
+        TaxAmount = request.TaxAmount;
+        GrossAmount = request.GrossAmount;
+        RecordedAt = recordedAt;
+    }
+
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid PurchaseInvoiceHandoffId { get; private set; }
+    internal int VersionNumber { get; private set; }
+    internal bool IsCurrent { get; private set; }
+    internal Guid RecordedByActorId { get; private set; }
+    internal string? SupplierInvoiceReference { get; private set; }
+    internal DateOnly? SupplierInvoiceDate { get; private set; }
+    internal string CurrencyCode { get; private set; }
+    internal decimal? SubtotalAmount { get; private set; }
+    internal decimal? DiscountAmount { get; private set; }
+    internal decimal? TaxAmount { get; private set; }
+    internal decimal? GrossAmount { get; private set; }
+    internal DateTimeOffset RecordedAt { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal List<PurchaseInvoiceDeclaredEvidenceLineEntity> Lines { get; } = [];
+
+    internal void MarkSuperseded() => IsCurrent = false;
+}
+
+internal sealed class PurchaseInvoiceDeclaredEvidenceLineEntity : ITenantOwned
+{
+    private PurchaseInvoiceDeclaredEvidenceLineEntity()
+    {
+        Description = null;
+        TaxCode = null;
+    }
+
+    internal PurchaseInvoiceDeclaredEvidenceLineEntity(
+        TenantId tenantId,
+        Guid evidenceId,
+        Guid id,
+        PurchaseInvoiceDeclaredEvidenceLineRequest request)
+    {
+        Id = id;
+        TenantId = tenantId;
+        PurchaseInvoiceDeclaredEvidenceId = evidenceId;
+        PurchaseOrderLineId = request.PurchaseOrderLineId;
+        Quantity = request.Quantity;
+        UnitPrice = request.UnitPrice;
+        DiscountAmount = request.DiscountAmount;
+        TaxRatePercentage = request.TaxRatePercentage;
+        TaxCode = request.TaxCode;
+        TaxAmount = request.TaxAmount;
+        NetAmount = request.NetAmount;
+        GrossAmount = request.GrossAmount;
+        Description = request.Description;
+    }
+
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid PurchaseInvoiceDeclaredEvidenceId { get; private set; }
+    internal Guid PurchaseOrderLineId { get; private set; }
+    internal decimal Quantity { get; private set; }
+    internal decimal UnitPrice { get; private set; }
+    internal decimal? DiscountAmount { get; private set; }
+    internal decimal? TaxRatePercentage { get; private set; }
+    internal string? TaxCode { get; private set; }
+    internal decimal? TaxAmount { get; private set; }
+    internal decimal? NetAmount { get; private set; }
+    internal decimal? GrossAmount { get; private set; }
+    internal string? Description { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal List<PurchaseInvoiceDeclaredEvidenceAllocationEntity> Allocations { get; } = [];
+}
+
+internal sealed class PurchaseInvoiceDeclaredEvidenceAllocationEntity : ITenantOwned
+{
+    private PurchaseInvoiceDeclaredEvidenceAllocationEntity()
+    {
+    }
+
+    internal PurchaseInvoiceDeclaredEvidenceAllocationEntity(
+        TenantId tenantId,
+        Guid evidenceLineId,
+        Guid id,
+        PurchaseInvoiceDeclaredEvidenceAllocationRequest request)
+    {
+        Id = id;
+        TenantId = tenantId;
+        PurchaseInvoiceDeclaredEvidenceLineId = evidenceLineId;
+        GoodsReceiptId = request.GoodsReceiptId;
+        GoodsReceiptLineId = request.GoodsReceiptLineId;
+        Quantity = request.Quantity;
+    }
+
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid PurchaseInvoiceDeclaredEvidenceLineId { get; private set; }
+    internal Guid GoodsReceiptId { get; private set; }
+    internal Guid GoodsReceiptLineId { get; private set; }
+    internal decimal Quantity { get; private set; }
+    internal byte[] Version { get; private set; } = [];
 }
 
 #pragma warning restore CS1591
