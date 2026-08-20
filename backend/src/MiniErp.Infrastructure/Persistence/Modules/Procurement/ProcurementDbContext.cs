@@ -54,6 +54,24 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
 
     internal DbSet<PurchaseOrderAuditEntity> PurchaseOrderAudit => Set<PurchaseOrderAuditEntity>();
 
+    internal DbSet<GoodsReceiptEntity> GoodsReceipts => Set<GoodsReceiptEntity>();
+
+    internal DbSet<GoodsReceiptLineEntity> GoodsReceiptLines => Set<GoodsReceiptLineEntity>();
+
+    internal DbSet<GoodsReceiptHistoryEntity> GoodsReceiptHistory => Set<GoodsReceiptHistoryEntity>();
+
+    internal DbSet<GoodsReceiptAuditEntity> GoodsReceiptAudit => Set<GoodsReceiptAuditEntity>();
+
+    internal DbSet<PurchaseInvoiceHandoffEntity> PurchaseInvoiceHandoffs => Set<PurchaseInvoiceHandoffEntity>();
+
+    internal DbSet<PurchaseInvoiceHandoffLineEntity> PurchaseInvoiceHandoffLines => Set<PurchaseInvoiceHandoffLineEntity>();
+
+    internal DbSet<PurchaseInvoiceHandoffSourceEntity> PurchaseInvoiceHandoffSources => Set<PurchaseInvoiceHandoffSourceEntity>();
+
+    internal DbSet<PurchaseInvoiceHandoffHistoryEntity> PurchaseInvoiceHandoffHistory => Set<PurchaseInvoiceHandoffHistoryEntity>();
+
+    internal DbSet<PurchaseInvoiceHandoffAuditEntity> PurchaseInvoiceHandoffAudit => Set<PurchaseInvoiceHandoffAuditEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -668,6 +686,278 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         purchaseOrderAudit.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var goodsReceipt = modelBuilder.Entity<GoodsReceiptEntity>();
+        ConfigureTable(goodsReceipt, "GoodsReceipts");
+        goodsReceipt.HasKey(item => item.Id);
+        goodsReceipt.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(goodsReceipt.Property(item => item.TenantId));
+        goodsReceipt.Property(item => item.PurchaseOrderId).IsRequired();
+        goodsReceipt.Property(item => item.WarehouseId).IsRequired();
+        goodsReceipt.Property(item => item.CompanyId).IsRequired();
+        goodsReceipt.Property(item => item.BranchId).IsRequired(false);
+        goodsReceipt.Property(item => item.ReceivedByActorId).IsRequired();
+        goodsReceipt.Property(item => item.Status).IsRequired();
+        goodsReceipt.Property(item => item.SupplierId).IsRequired();
+        goodsReceipt.Property(item => item.SupplierCode).HasMaxLength(128).IsRequired();
+        goodsReceipt.Property(item => item.SupplierName).HasMaxLength(256).IsRequired();
+        goodsReceipt.Property(item => item.ReceivedDate).IsRequired();
+        goodsReceipt.Property(item => item.ReferenceNote).HasMaxLength(256).IsRequired(false);
+        goodsReceipt.Property(item => item.Notes).HasMaxLength(4096).IsRequired(false);
+        goodsReceipt.Property(item => item.CreatedAt).IsRequired();
+        goodsReceipt.Property(item => item.UpdatedAt).IsRequired();
+        goodsReceipt.Property(item => item.CancelledAt).IsRequired(false);
+        goodsReceipt.Property(item => item.CancellationReason).HasMaxLength(4096).IsRequired(false);
+        ConfigureVersion(goodsReceipt.Property(item => item.Version));
+        goodsReceipt.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        goodsReceipt.HasIndex(item => new { item.TenantId, item.PurchaseOrderId, item.CreatedAt });
+        goodsReceipt.HasIndex(item => new { item.TenantId, item.Status, item.UpdatedAt });
+        goodsReceipt.HasOne<PurchaseOrderEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        goodsReceipt.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var goodsReceiptLine = modelBuilder.Entity<GoodsReceiptLineEntity>();
+        ConfigureTable(goodsReceiptLine, "GoodsReceiptLines");
+        goodsReceiptLine.HasKey(item => item.Id);
+        goodsReceiptLine.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(goodsReceiptLine.Property(item => item.TenantId));
+        goodsReceiptLine.Property(item => item.GoodsReceiptId).IsRequired();
+        goodsReceiptLine.Property(item => item.PurchaseOrderLineId).IsRequired();
+        goodsReceiptLine.Property(item => item.ProductId).IsRequired();
+        goodsReceiptLine.Property(item => item.ProductSku).HasMaxLength(128).IsRequired();
+        goodsReceiptLine.Property(item => item.ProductName).HasMaxLength(256).IsRequired();
+        goodsReceiptLine.Property(item => item.UnitOfMeasureCode).HasMaxLength(128).IsRequired();
+        goodsReceiptLine.Property(item => item.OrderedQuantityAtReceipt).HasPrecision(28, 8).IsRequired();
+        goodsReceiptLine.Property(item => item.ReceivedQuantity).HasPrecision(28, 8).IsRequired();
+        goodsReceiptLine.Property(item => item.AcceptedQuantity).HasPrecision(28, 8).IsRequired();
+        goodsReceiptLine.Property(item => item.RejectedQuantity).HasPrecision(28, 8).IsRequired();
+        goodsReceiptLine.Property(item => item.DamagedQuantity).HasPrecision(28, 8).IsRequired(false);
+        goodsReceiptLine.Property(item => item.DamageNotes).HasMaxLength(2048).IsRequired(false);
+        goodsReceiptLine.Property(item => item.RemainingReceivableQuantityAfter).HasPrecision(28, 8).IsRequired();
+        goodsReceiptLine.Property(item => item.Notes).HasMaxLength(2048).IsRequired(false);
+        ConfigureVersion(goodsReceiptLine.Property(item => item.Version));
+        goodsReceiptLine.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        goodsReceiptLine.HasIndex(item => new { item.TenantId, item.GoodsReceiptId });
+        goodsReceiptLine.HasIndex(item => new { item.TenantId, item.PurchaseOrderLineId });
+        goodsReceiptLine.HasOne<GoodsReceiptEntity>()
+            .WithMany(item => item.Lines)
+            .HasForeignKey(item => new { item.TenantId, item.GoodsReceiptId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Cascade);
+        goodsReceiptLine.HasOne<PurchaseOrderLineEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        goodsReceiptLine.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var goodsReceiptHistory = modelBuilder.Entity<GoodsReceiptHistoryEntity>();
+        ConfigureTable(goodsReceiptHistory, "GoodsReceiptHistory");
+        goodsReceiptHistory.HasKey(item => item.Id);
+        goodsReceiptHistory.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(goodsReceiptHistory.Property(item => item.TenantId));
+        goodsReceiptHistory.Property(item => item.GoodsReceiptId).IsRequired();
+        goodsReceiptHistory.Property(item => item.FromStatus).IsRequired();
+        goodsReceiptHistory.Property(item => item.ToStatus).IsRequired();
+        goodsReceiptHistory.Property(item => item.Action).IsRequired();
+        goodsReceiptHistory.Property(item => item.ActorId).IsRequired();
+        goodsReceiptHistory.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        goodsReceiptHistory.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        goodsReceiptHistory.Property(item => item.OccurredAt).IsRequired();
+        ConfigureVersion(goodsReceiptHistory.Property(item => item.Version));
+        goodsReceiptHistory.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        goodsReceiptHistory.HasIndex(item => new { item.TenantId, item.GoodsReceiptId, item.OccurredAt });
+        goodsReceiptHistory.HasOne<GoodsReceiptEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.GoodsReceiptId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        goodsReceiptHistory.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var goodsReceiptAudit = modelBuilder.Entity<GoodsReceiptAuditEntity>();
+        ConfigureTable(goodsReceiptAudit, "GoodsReceiptAudit");
+        goodsReceiptAudit.HasKey(item => item.Id);
+        goodsReceiptAudit.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(goodsReceiptAudit.Property(item => item.TenantId));
+        goodsReceiptAudit.Property(item => item.GoodsReceiptId).IsRequired();
+        goodsReceiptAudit.Property(item => item.OccurredAt).IsRequired();
+        goodsReceiptAudit.Property(item => item.OperationId).HasMaxLength(128).IsRequired();
+        goodsReceiptAudit.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        goodsReceiptAudit.Property(item => item.ActorId).IsRequired();
+        goodsReceiptAudit.Property(item => item.SessionId).IsRequired();
+        goodsReceiptAudit.Property(item => item.AuthorizationPath).HasMaxLength(64).IsRequired();
+        goodsReceiptAudit.Property(item => item.Decision).HasMaxLength(64).IsRequired();
+        goodsReceiptAudit.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        goodsReceiptAudit.Property(item => item.BeforeStatus).IsRequired(false);
+        goodsReceiptAudit.Property(item => item.AfterStatus).IsRequired(false);
+        goodsReceiptAudit.Property(item => item.CompanyId).IsRequired();
+        goodsReceiptAudit.Property(item => item.BranchId).IsRequired(false);
+        goodsReceiptAudit.Property(item => item.BeforeSummary).HasMaxLength(4096).IsRequired(false);
+        goodsReceiptAudit.Property(item => item.AfterSummary).HasMaxLength(4096).IsRequired(false);
+        goodsReceiptAudit.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false);
+        goodsReceiptAudit.Property(item => item.RequestFingerprint).HasMaxLength(64).IsRequired(false);
+        goodsReceiptAudit.Property(item => item.ReplayResponseSchemaVersion).IsRequired(false);
+        goodsReceiptAudit.Property(item => item.ReplayResponseSnapshotJson).IsRequired(false);
+        ConfigureVersion(goodsReceiptAudit.Property(item => item.Version));
+        goodsReceiptAudit.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        goodsReceiptAudit.HasIndex(item => new { item.TenantId, item.GoodsReceiptId, item.OccurredAt });
+        goodsReceiptAudit.HasIndex(item => new { item.TenantId, item.ActorId, item.OperationId, item.IdempotencyKey });
+        goodsReceiptAudit.HasOne<GoodsReceiptEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.GoodsReceiptId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        goodsReceiptAudit.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var invoiceHandoff = modelBuilder.Entity<PurchaseInvoiceHandoffEntity>();
+        ConfigureTable(invoiceHandoff, "PurchaseInvoiceHandoffs");
+        invoiceHandoff.HasKey(item => item.Id);
+        invoiceHandoff.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(invoiceHandoff.Property(item => item.TenantId));
+        invoiceHandoff.Property(item => item.PurchaseOrderId).IsRequired();
+        invoiceHandoff.Property(item => item.CompanyId).IsRequired();
+        invoiceHandoff.Property(item => item.BranchId).IsRequired(false);
+        invoiceHandoff.Property(item => item.CreatedByActorId).IsRequired();
+        invoiceHandoff.Property(item => item.Status).IsRequired();
+        invoiceHandoff.Property(item => item.SupplierId).IsRequired();
+        invoiceHandoff.Property(item => item.SupplierCode).HasMaxLength(128).IsRequired();
+        invoiceHandoff.Property(item => item.SupplierName).HasMaxLength(256).IsRequired();
+        invoiceHandoff.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired();
+        invoiceHandoff.Property(item => item.SupplierInvoiceReference).HasMaxLength(256).IsRequired(false);
+        invoiceHandoff.Property(item => item.SupplierInvoiceDate).IsRequired(false);
+        invoiceHandoff.Property(item => item.Notes).HasMaxLength(4096).IsRequired(false);
+        invoiceHandoff.Property(item => item.CreatedAt).IsRequired();
+        invoiceHandoff.Property(item => item.UpdatedAt).IsRequired();
+        invoiceHandoff.Property(item => item.CancelledAt).IsRequired(false);
+        invoiceHandoff.Property(item => item.CancellationReason).HasMaxLength(4096).IsRequired(false);
+        ConfigureVersion(invoiceHandoff.Property(item => item.Version));
+        invoiceHandoff.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        invoiceHandoff.HasIndex(item => new { item.TenantId, item.PurchaseOrderId, item.CreatedAt });
+        invoiceHandoff.HasIndex(item => new { item.TenantId, item.Status, item.UpdatedAt });
+        invoiceHandoff.HasOne<PurchaseOrderEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        invoiceHandoff.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var invoiceHandoffLine = modelBuilder.Entity<PurchaseInvoiceHandoffLineEntity>();
+        ConfigureTable(invoiceHandoffLine, "PurchaseInvoiceHandoffLines");
+        invoiceHandoffLine.HasKey(item => item.Id);
+        invoiceHandoffLine.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(invoiceHandoffLine.Property(item => item.TenantId));
+        invoiceHandoffLine.Property(item => item.PurchaseInvoiceHandoffId).IsRequired();
+        invoiceHandoffLine.Property(item => item.PurchaseOrderLineId).IsRequired();
+        invoiceHandoffLine.Property(item => item.ProductId).IsRequired();
+        invoiceHandoffLine.Property(item => item.ProductSku).HasMaxLength(128).IsRequired();
+        invoiceHandoffLine.Property(item => item.ProductName).HasMaxLength(256).IsRequired();
+        invoiceHandoffLine.Property(item => item.UnitOfMeasureCode).HasMaxLength(128).IsRequired();
+        invoiceHandoffLine.Property(item => item.HandoffQuantity).HasPrecision(28, 8).IsRequired();
+        invoiceHandoffLine.Property(item => item.UnitPrice).HasPrecision(28, 8).IsRequired();
+        invoiceHandoffLine.Property(item => item.TaxRatePercentage).HasPrecision(9, 4).IsRequired(false);
+        invoiceHandoffLine.Property(item => item.TaxAmount).HasPrecision(28, 8).IsRequired(false);
+        invoiceHandoffLine.Property(item => item.LineAmount).HasPrecision(28, 8).IsRequired();
+        ConfigureVersion(invoiceHandoffLine.Property(item => item.Version));
+        invoiceHandoffLine.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        invoiceHandoffLine.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceHandoffId });
+        invoiceHandoffLine.HasOne<PurchaseInvoiceHandoffEntity>()
+            .WithMany(item => item.Lines)
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceHandoffId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Cascade);
+        invoiceHandoffLine.HasOne<PurchaseOrderLineEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        invoiceHandoffLine.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var invoiceHandoffSource = modelBuilder.Entity<PurchaseInvoiceHandoffSourceEntity>();
+        ConfigureTable(invoiceHandoffSource, "PurchaseInvoiceHandoffSources");
+        invoiceHandoffSource.HasKey(item => item.Id);
+        invoiceHandoffSource.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(invoiceHandoffSource.Property(item => item.TenantId));
+        invoiceHandoffSource.Property(item => item.PurchaseInvoiceHandoffId).IsRequired();
+        invoiceHandoffSource.Property(item => item.GoodsReceiptId).IsRequired();
+        invoiceHandoffSource.Property(item => item.GoodsReceiptLineId).IsRequired();
+        invoiceHandoffSource.Property(item => item.PurchaseOrderLineId).IsRequired();
+        invoiceHandoffSource.Property(item => item.Quantity).HasPrecision(28, 8).IsRequired();
+        ConfigureVersion(invoiceHandoffSource.Property(item => item.Version));
+        invoiceHandoffSource.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        invoiceHandoffSource.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceHandoffId });
+        invoiceHandoffSource.HasIndex(item => new { item.TenantId, item.GoodsReceiptLineId });
+        invoiceHandoffSource.HasOne<PurchaseInvoiceHandoffEntity>()
+            .WithMany(item => item.Sources)
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceHandoffId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Cascade);
+        invoiceHandoffSource.HasOne<GoodsReceiptLineEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.GoodsReceiptLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        invoiceHandoffSource.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var invoiceHandoffHistory = modelBuilder.Entity<PurchaseInvoiceHandoffHistoryEntity>();
+        ConfigureTable(invoiceHandoffHistory, "PurchaseInvoiceHandoffHistory");
+        invoiceHandoffHistory.HasKey(item => item.Id);
+        invoiceHandoffHistory.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(invoiceHandoffHistory.Property(item => item.TenantId));
+        invoiceHandoffHistory.Property(item => item.PurchaseInvoiceHandoffId).IsRequired();
+        invoiceHandoffHistory.Property(item => item.FromStatus).IsRequired();
+        invoiceHandoffHistory.Property(item => item.ToStatus).IsRequired();
+        invoiceHandoffHistory.Property(item => item.Action).IsRequired();
+        invoiceHandoffHistory.Property(item => item.ActorId).IsRequired();
+        invoiceHandoffHistory.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        invoiceHandoffHistory.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        invoiceHandoffHistory.Property(item => item.OccurredAt).IsRequired();
+        ConfigureVersion(invoiceHandoffHistory.Property(item => item.Version));
+        invoiceHandoffHistory.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        invoiceHandoffHistory.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceHandoffId, item.OccurredAt });
+        invoiceHandoffHistory.HasOne<PurchaseInvoiceHandoffEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceHandoffId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        invoiceHandoffHistory.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var invoiceHandoffAudit = modelBuilder.Entity<PurchaseInvoiceHandoffAuditEntity>();
+        ConfigureTable(invoiceHandoffAudit, "PurchaseInvoiceHandoffAudit");
+        invoiceHandoffAudit.HasKey(item => item.Id);
+        invoiceHandoffAudit.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(invoiceHandoffAudit.Property(item => item.TenantId));
+        invoiceHandoffAudit.Property(item => item.PurchaseInvoiceHandoffId).IsRequired();
+        invoiceHandoffAudit.Property(item => item.OccurredAt).IsRequired();
+        invoiceHandoffAudit.Property(item => item.OperationId).HasMaxLength(128).IsRequired();
+        invoiceHandoffAudit.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        invoiceHandoffAudit.Property(item => item.ActorId).IsRequired();
+        invoiceHandoffAudit.Property(item => item.SessionId).IsRequired();
+        invoiceHandoffAudit.Property(item => item.AuthorizationPath).HasMaxLength(64).IsRequired();
+        invoiceHandoffAudit.Property(item => item.Decision).HasMaxLength(64).IsRequired();
+        invoiceHandoffAudit.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        invoiceHandoffAudit.Property(item => item.BeforeStatus).IsRequired(false);
+        invoiceHandoffAudit.Property(item => item.AfterStatus).IsRequired(false);
+        invoiceHandoffAudit.Property(item => item.CompanyId).IsRequired();
+        invoiceHandoffAudit.Property(item => item.BranchId).IsRequired(false);
+        invoiceHandoffAudit.Property(item => item.BeforeSummary).HasMaxLength(4096).IsRequired(false);
+        invoiceHandoffAudit.Property(item => item.AfterSummary).HasMaxLength(4096).IsRequired(false);
+        invoiceHandoffAudit.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false);
+        invoiceHandoffAudit.Property(item => item.RequestFingerprint).HasMaxLength(64).IsRequired(false);
+        invoiceHandoffAudit.Property(item => item.ReplayResponseSchemaVersion).IsRequired(false);
+        invoiceHandoffAudit.Property(item => item.ReplayResponseSnapshotJson).IsRequired(false);
+        ConfigureVersion(invoiceHandoffAudit.Property(item => item.Version));
+        invoiceHandoffAudit.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        invoiceHandoffAudit.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceHandoffId, item.OccurredAt });
+        invoiceHandoffAudit.HasIndex(item => new { item.TenantId, item.ActorId, item.OperationId, item.IdempotencyKey });
+        invoiceHandoffAudit.HasOne<PurchaseInvoiceHandoffEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceHandoffId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        invoiceHandoffAudit.HasQueryFilter(item => item.TenantId == TrustedTenantId);
     }
 
     private void ConfigureTable<TEntity>(EntityTypeBuilder<TEntity> entity, string tableName)

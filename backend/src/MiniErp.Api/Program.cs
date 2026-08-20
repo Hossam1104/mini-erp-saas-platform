@@ -172,6 +172,20 @@ if (builder.Environment.IsDevelopment()
                 developmentOrgScopeBranchName)
         ]));
 
+    var defaultWarehouseId = Guid.Parse("cccccccc-1111-1111-1111-111111111111");
+    builder.Services.AddSingleton<IProcurementWarehouseProvider>(_ =>
+        new ConfiguredProcurementWarehouseProvider(
+        [
+            new ProcurementWarehouseOption(
+                developmentOrgScopeTenantId,
+                developmentOrgScopeCompanyId,
+                developmentOrgScopeBranchId,
+                defaultWarehouseId,
+                "WH-MAIN",
+                "Main Central Warehouse",
+                IsActive: true)
+        ]));
+
     builder.Services.AddSingleton<IFoundationOperationalContextProvider>(_ =>
         new ConfiguredFoundationOperationalContextProvider(
         [
@@ -823,6 +837,8 @@ app.MapMasterDataImportEndpoints();
 app.MapPurchaseRequestEndpoints();
 app.MapSupplierQuotationEndpoints();
 app.MapPurchaseOrderEndpoints();
+app.MapGoodsReceiptEndpoints();
+app.MapPurchaseInvoiceHandoffEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

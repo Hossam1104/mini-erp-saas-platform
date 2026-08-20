@@ -16,12 +16,17 @@ public static class PurchaseRequestServiceCollectionExtensions
         services.AddSingleton<IPurchaseRequestPersistence, UnavailablePurchaseRequestPersistence>();
         services.AddSingleton<ISupplierQuotationPersistence, UnavailableSupplierQuotationPersistence>();
         services.AddSingleton<IPurchaseOrderPersistence, UnavailablePurchaseOrderPersistence>();
+        services.AddSingleton<IGoodsReceiptPersistence, UnavailableGoodsReceiptPersistence>();
+        services.AddSingleton<IPurchaseInvoiceHandoffPersistence, UnavailablePurchaseInvoiceHandoffPersistence>();
         services.AddSingleton<IPurchaseRequestApprovalPolicyProvider, DefaultPurchaseRequestApprovalPolicyProvider>();
         services.AddSingleton<IPurchaseRequestApprovalDelegationProvider, NoPurchaseRequestApprovalDelegationProvider>();
         services.AddSingleton<IProcurementOrganizationScopeProvider, NoProcurementOrganizationScopeProvider>();
+        services.AddSingleton<IProcurementWarehouseProvider, NoProcurementWarehouseProvider>();
         services.AddSingleton<PurchaseRequestService>();
         services.AddSingleton<SupplierQuotationService>();
         services.AddSingleton<PurchaseOrderService>();
+        services.AddSingleton<GoodsReceiptService>();
+        services.AddSingleton<PurchaseInvoiceHandoffService>();
         return services;
     }
 }

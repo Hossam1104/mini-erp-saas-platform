@@ -238,6 +238,21 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.purchase-order.supplier-change.reject" => "Reject a proposed supplier change",
         "procurement.purchase-order.history.read" => "Read Purchase Order lifecycle and confirmation history",
         "procurement.purchase-order.audit.read" => "Read Purchase Order audit evidence",
+        "procurement.goods-receipt.eligible-source.list" => "List Purchase Orders eligible for a Goods Receipt",
+        "procurement.warehouse.list" => "List server-authorized Warehouse options for Goods Receipt",
+        "procurement.goods-receipt.list" => "List Tenant-scoped Goods Receipts",
+        "procurement.goods-receipt.read" => "Read one Goods Receipt with accepted/rejected/damaged line evidence",
+        "procurement.goods-receipt.create" => "Record a manual Goods Receipt against an eligible Purchase Order",
+        "procurement.goods-receipt.cancel" => "Cancel an eligible Goods Receipt",
+        "procurement.goods-receipt.history.read" => "Read Goods Receipt lifecycle history",
+        "procurement.goods-receipt.audit.read" => "Read Goods Receipt audit evidence",
+        "procurement.invoice-handoff.eligible-source.list" => "List Goods Receipts eligible for a Purchase Invoice handoff",
+        "procurement.invoice-handoff.list" => "List Tenant-scoped Purchase Invoice handoffs",
+        "procurement.invoice-handoff.read" => "Read one Purchase Invoice handoff with lineage and line evidence",
+        "procurement.invoice-handoff.create" => "Create a non-posted Purchase Invoice handoff from an eligible Goods Receipt",
+        "procurement.invoice-handoff.cancel" => "Cancel an eligible Purchase Invoice handoff",
+        "procurement.invoice-handoff.history.read" => "Read Purchase Invoice handoff lifecycle history",
+        "procurement.invoice-handoff.audit.read" => "Read Purchase Invoice handoff audit evidence",
         _ => GenericSummary(operationId)
     };
 
@@ -345,6 +360,14 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "structure so the client never needs to type or display a raw internal identifier as the primary means of selection.";
         }
 
+        if (descriptor.OperationId == "procurement.warehouse.list")
+        {
+            return contextRules
+                + "Warehouse options are the trusted, server-configured set of physical warehouse locations a caller may select when recording "
+                + "a Goods Receipt. Options are filtered to the caller's Tenant and Company/Branch scope; client-supplied warehouse identifiers "
+                + "are server-authoritatively validated and never self-authorizing.";
+        }
+
         if (descriptor.OperationId.StartsWith("procurement.purchase-request", StringComparison.Ordinal))
         {
             return contextRules
@@ -370,6 +393,27 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "Purchase Order creation is permitted only from an Approved Purchase Request, a Submitted eligible Supplier Quotation, and the current server-authorized source decision. The persisted order preserves immutable Tenant, Company/Branch, Supplier, Currency, payment-term, source-decision, requested-line, quantity, price, discount, tax, and delivery snapshots. "
                 + "The lifecycle is Draft, PendingApproval, Approved, Issued, Confirmed, PartiallyConfirmed, ChangedPendingApproval, Rejected, ReturnedForChange, NoResponse, or Cancelled. Approval reuses the configured policy with separation of duties and bounded delegation evidence. Supplier confirmation is manual and evidence-first; partial quantities preserve the remainder, rejection and no-response are explicit, and proposed supplier quantity/price/date changes preserve previous and proposed values until an authorized reapproval decision. "
                 + "This boundary creates no receipt, stock movement, warehouse effect, invoice, AP, payment, three-way match, accounting, supplier portal, external integration, or government submission. Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and the current If-Match value where declared.";
+        }
+
+        if (descriptor.OperationId.StartsWith("procurement.goods-receipt", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Goods Receipt is a manually recorded, Inventory-owned physical acceptance evidence boundary against an Issued/Confirmed/PartiallyConfirmed Purchase Order. "
+                + "Each line preserves the Purchase Order's immutable source lineage and requires AcceptedQuantity + RejectedQuantity = ReceivedQuantity, with an optional non-additive DamagedQuantity no greater than ReceivedQuantity; "
+                + "over-receipt beyond the server-derived eligible remainder is rejected, and client-supplied remainder values are never authoritative. "
+                + "This boundary does not fabricate or mutate a stock ledger, warehouse balance, or inventory movement (no such ledger exists yet), and creates no AP liability, "
+                + "Posted Purchase Invoice, tax posting, GL entry, or payment. A Goods Receipt referenced by an active Purchase Invoice handoff cannot be cancelled. "
+                + "Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and the current If-Match value where declared.";
+        }
+
+        if (descriptor.OperationId.StartsWith("procurement.invoice-handoff", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Purchase Invoice handoff is a non-posted Finance handoff record created only from an eligible recorded Goods Receipt, preserving immutable Purchase Order, "
+                + "Supplier, Currency, and accepted-quantity/commercial line lineage for the eventual three-way-match and posting boundary (MESP-126), which this operation does not implement. "
+                + "It creates no AP liability, supplier payable, payment, GL entry, or Posted Purchase Invoice, and performs no statutory tax submission; any tax figures are reproduced "
+                + "from prior commercial snapshots, not recalculated or posted. Cancellation of a handoff never blocks or reverses its source Goods Receipt. "
+                + "Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and the current If-Match value where declared.";
         }
 
         return contextRules
@@ -447,6 +491,21 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.purchase-order.supplier-change.reject" => "The Purchase Order after rejection of proposed supplier changes, preserving the original commercial values and the rejection evidence.",
         "procurement.purchase-order.history.read" => "Immutable Tenant-filtered Purchase Order lifecycle, approval, confirmation, and supplier-change history.",
         "procurement.purchase-order.audit.read" => "Immutable Tenant-filtered Purchase Order operation audit evidence with authorization, concurrency, and idempotency context.",
+        "procurement.goods-receipt.eligible-source.list" => "The server-filtered Issued/Confirmed/PartiallyConfirmed Purchase Orders with a remaining eligible quantity that the caller may receive against.",
+        "procurement.warehouse.list" => "The Tenant- and scope-filtered set of server-authorized Warehouse options with human-readable display names.",
+        "procurement.goods-receipt.list" => "Tenant- and scope-filtered Goods Receipt summaries with source Purchase Order, status, and concurrency version.",
+        "procurement.goods-receipt.read" => "One Tenant-filtered Goods Receipt with immutable source lineage, accepted/rejected/damaged line evidence, and server-derived action affordances.",
+        "procurement.goods-receipt.create" => "The persisted Goods Receipt with immutable Purchase Order source lineage and accepted/rejected/damaged line snapshots.",
+        "procurement.goods-receipt.cancel" => "The eligible Goods Receipt in Cancelled status with immutable cancellation evidence.",
+        "procurement.goods-receipt.history.read" => "Immutable Tenant-filtered Goods Receipt lifecycle history.",
+        "procurement.goods-receipt.audit.read" => "Immutable Tenant-filtered Goods Receipt operation audit evidence.",
+        "procurement.invoice-handoff.eligible-source.list" => "The server-filtered recorded Goods Receipts with a remaining eligible quantity that the caller may hand off to Purchase Invoice.",
+        "procurement.invoice-handoff.list" => "Tenant- and scope-filtered Purchase Invoice handoff summaries with source Goods Receipt, status, and concurrency version.",
+        "procurement.invoice-handoff.read" => "One Tenant-filtered Purchase Invoice handoff with immutable Goods Receipt/Purchase Order lineage, commercial line snapshots, and server-derived action affordances.",
+        "procurement.invoice-handoff.create" => "The persisted non-posted Purchase Invoice handoff with immutable Goods Receipt source lineage and commercial line snapshots.",
+        "procurement.invoice-handoff.cancel" => "The eligible Purchase Invoice handoff in Cancelled status with immutable cancellation evidence and no effect on its source Goods Receipt.",
+        "procurement.invoice-handoff.history.read" => "Immutable Tenant-filtered Purchase Invoice handoff lifecycle history.",
+        "procurement.invoice-handoff.audit.read" => "Immutable Tenant-filtered Purchase Invoice handoff operation audit evidence.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 
