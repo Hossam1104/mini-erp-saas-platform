@@ -8,7 +8,12 @@ Feature branch: `feat/MESP-126-three-way-matching-tolerances`
 
 Required base SHA: `42e51b673de5d076b56426180d914f7e3d07c54c`
 
-Final feature HEAD SHA: `TO_BE_FILLED_AFTER_IMPLEMENTATION_COMMIT`
+Final feature implementation HEAD SHA: `3abec8556897627b5c6f81e92e1278073829b954`
+
+The branch may receive a subsequent documentation-only handoff commit after
+this implementation commit; reviewers must still verify the complete branch
+diff against `main` and preserve the implementation SHA above as the feature
+baseline.
 
 Draft PR: the single Draft PR for this branch, if present
 
