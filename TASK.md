@@ -1,234 +1,151 @@
-# MESP-126 — Independent Pre-Merge Review Prompt
+# MESP-126 — Independent Claude Opus 5 Pre-Merge Review Prompt
 
 Reviewer: Claude Opus 5 (independent, read-only)
 
 Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 
-Feature branch: `feat/MESP-126-three-way-matching-tolerances`
+Branch: `feat/MESP-126-three-way-matching-tolerances`
 
-Required base SHA: `42e51b673de5d076b56426180d914f7e3d07c54c`
+Base SHA: `42e51b673de5d076b56426180d914f7e3d07c54c`
 
-Final feature implementation HEAD SHA: `3abec8556897627b5c6f81e92e1278073829b954`
+Previous SOL review anchor: `178a49fca9dab6ba55f71871bf3bfcc0e709606a`
 
-The branch may receive a subsequent documentation-only handoff commit after
-this implementation commit; reviewers must still verify the complete branch
-diff against `main` and preserve the implementation SHA above as the feature
-baseline.
+Exact new feature implementation SHA: `02e99f4ff2d962adc72efc46b5ebb8986df4d2f1`
 
-Draft PR: the single Draft PR for this branch, if present
+Draft PR: `#70` — must remain open, Draft, and unmerged.
+
+Jira: MESP-126 remains **IN PROGRESS**. No Jira writes are permitted.
 
 ## Review rules
 
-This is a read-only independent review. Do not edit files, commit, push, merge,
-close, or retarget the Draft PR. Do not write Jira, Confluence, or any other
-external tracker. GPT-5.6 Sol owns Jira. Do not start MESP-127 or any other
-capability. Report findings with severity, file/line evidence, reproduction
-commands, and a merge recommendation.
+This is a complete, independent, read-only review. Do not edit files, commit,
+push, merge, close, retarget, or comment on PR #70. Do not write Jira,
+Confluence, or any other external tracker. Do not start MESP-127 or Finance,
+AP, GL, Inventory, payment, external integration, or production work. Report
+P0/P1/P2/P3 findings with file/line evidence, reproduction commands, and one
+of `APPROVE FOR MERGE`, `REQUEST CHANGES`, or `BLOCK`.
 
-Start by verifying the branch, clean/dirty state, base ancestry, and final HEAD
-against the values above. Read `AGENTS.md`, `CLAUDE.md`, `.ai/CURRENT_STATE.md`,
-this prompt, the MESP-126 task brief, and the relevant Procurement, Inventory,
-Finance, currency, tax, authorization, audit, REST, and ADR documents. Inspect
-the complete feature diff against the required base; do not rely only on the
-summary below.
+First verify branch, clean/dirty state, base ancestry, the previous review
+anchor, and the exact implementation SHA. Read `AGENTS.md`, `CLAUDE.md`,
+`.ai/CURRENT_STATE.md`, this prompt, the MESP-126 brief, relevant Procurement,
+Inventory, Finance, currency, tax, authorization, audit, REST, and ADR
+documents, and the complete branch diff against `main`.
 
-## Capability under review
+## Required capability review
 
-MESP-126 is Procurement evidence/orchestration only. It compares:
+MESP-126 is Procurement evidence orchestration only. It compares the Purchase
+Order commercial snapshot, active accepted Goods Receipt evidence, and
+independent supplier-declared invoice evidence. It must not post AP, GL, tax
+accounting, payment, stock/on-hand, Inventory valuation, statutory data,
+supplier portal data, or external FX/invoice integrations.
 
-1. Purchase Order commercial commitment and lineage;
-2. active accepted Goods Receipt physical evidence; and
-3. independent supplier-declared invoice evidence attached to a Purchase
-   Invoice Handoff.
+Verify independent invoice evidence remains separate from the PO-derived
+handoff preview and preserves header reference/date/currency/totals, line
+quantity/unit price/discount/tax code/rate/amount/net/gross/description,
+Purchase Order lineage, legitimate receipt allocations, immutable corrections,
+history, audit, Tenant and Company/Branch scope, optimistic concurrency,
+idempotency, and legacy handoff `NotMatchReady` behavior.
 
-The slice must not post AP, GL, tax accounting, payment, stock/on-hand,
-Inventory valuation, statutory submissions, supplier portal data, or external
-FX/invoice integrations.
+### Quantity tolerance and evidence truth
 
-## Review 1 — Independent Side-3 evidence
+Verify quantity matching uses the current partial Handoff/source quantity,
+never the entire Purchase Order:
 
-Verify that the MESP-125 PO-derived handoff preview fields retain their old
-meaning and are never treated as supplier invoice truth. Confirm that a legacy
-handoff without declared evidence is valid historical data but evaluates as
-`NotMatchReady` / invoice evidence incomplete.
+`Variance = declared supplier quantity - current Handoff/source quantity`
 
-Verify the additive supplier-declared evidence contract and persistence:
+`AllowedTolerance = absolute + abs(expected) * percentage / 100`
 
-- header supplier invoice reference/date, declared currency, subtotal,
-  discount, tax, and gross totals;
-- independent line quantity, unit price, discount, tax code/rate/amount, net,
-  gross, description, and Purchase Order line lineage;
-- explicit allocations to one or more eligible Goods Receipt lines;
-- no requirement that one PO line equals one receipt or one invoice line;
-- immutable prior versions, current pointer, optimistic concurrency, bounded
-  correction reason, durable history/audit, and no silent overwrite;
-- independent declared unit price/tax/currency/totals remain visible in API and
-  Angular evidence views.
+Zero configured policy means zero tolerance; both under- and over-declarations
+remain explicit variances. Verify exact partial 100/100/40/40, zero-tolerance
+39 and 41 holds, configured tolerance within and exactly on the boundary gives
+`WithinTolerance`, and just outside gives `ExceptionHold`.
 
-Check Tenant, Company, Branch, Purchase Order, Goods Receipt, and line lineage
-validation. Cross-Tenant or wrong-scope IDs must not be accepted merely because
-the caller supplied a GUID.
+Verify supplier-declared over/under quantity remains recordable evidence rather
+than being rejected as an intake error or being fabricated into receipt
+allocation. Hard-invalid foreign Tenant, wrong PO, wrong line/receipt,
+negative, malformed, and cross-scope data must still fail closed. Rejected
+receipt quantity must not expand eligibility. Cancelled receipts and cancelled
+handoffs must contribute zero current quantity. Cumulative active declared
+invoice quantity must be explicitly blocked when it exceeds applicable active
+accepted Goods Receipt or confirmed commercial quantity; tolerance must never
+create physical stock or supplier entitlement.
 
-## Review 2 — Three-way evaluation and partials
+### Runtime configuration and SoD
 
-Verify deterministic evaluation from genuine source evidence, not from the
-PO-derived handoff preview. Check the result/lifecycle separation:
+Verify normal application composition uses a live generic .NET configuration /
+`IOptions` tolerance provider, with Tenant-isolated exact Company/Branch scope,
+effective/versioned deterministic selection, no Wafra/customer values, and
+exact-safe zero-tolerance fallback. The immutable selected policy must remain
+in the evaluation snapshot. Verify configured non-zero tolerance is exercised
+through the provider path.
 
-- `NotMatchReady` for missing or non-comparable required evidence;
-- `ExactMatch` for exact evidence under the selected policy;
-- `WithinTolerance` only for an applicable configured policy;
-- `ExceptionHold` for out-of-tolerance or blocked evidence;
-- `ResolvedException` only after a separately authorized decision;
-- `Current` versus `Superseded` historical lineage.
+Verify resolution fallback requires server-side permission, Tenant/scope
+authorization, bounded non-empty reason, audit/history, idempotency, and
+concurrency, but does not invent a universal different-actor rule. A
+configured `RequireDifferentActor=true` policy must deny the same actor and
+allow an authorized different actor; unauthorized actors remain denied
+regardless of SoD configuration. Resolution must not mutate source documents.
 
-Verify exact-safe defaults use zero tolerance. Both higher and lower supplier
-prices are variances. No favorable-price shortcut is allowed. Check quantity,
-price, amount, discount, tax code/rate/amount, header totals, currency, and
-structured variance classifications.
+### Server-authoritative MESP-120 FX
 
-Verify all of these load-bearing semantics:
+Verify the matching request accepts only a stable server-owned Exchange Rate
+reference (`ExchangeRateId` and any existing effective-date input). Raw client
+`Rate`, `Scale`, `Source`, `Version`, or currency-pair facts must not be
+authoritative or accepted as matching inputs. Verify the narrow provider backed
+by MESP-120 server persistence enforces:
 
-- one PO line may have multiple receipts;
-- partial receipts and replacement deliveries work;
-- one receipt may support multiple partial invoices;
-- one invoice may allocate across multiple receipt lines;
-- rejected quantity never satisfies invoice eligibility;
-- cancelled receipts and cancelled handoffs contribute zero active quantity;
-- cumulative active handoff/invoice quantity cannot exceed active accepted and
-  confirmed quantity;
-- a PO 100 / active accepted receipt 100 / invoice 40 case can be exact while
-  60 remains available.
+- Tenant ownership;
+- active Exchange Rate identity;
+- effective-dated version existence;
+- supplier declared currency equals source and PO currency equals target;
+- positive rate/scale and server-owned version, provenance, and source notes.
 
-Review the source snapshot and fingerprint for all relevant IDs, versions,
-active receipt/accepted quantities, allocations, declared evidence, policy,
-currency, calculated variances, actor, time, correlation, and supersession
-lineage. Confirm historical evaluations remain reproducible.
+Same-currency matching requires no FX reference. Different currency without a
+valid reference is `CurrencyNotComparable` / `NotMatchReady`. Foreign Tenant,
+wrong pair, inactive identity, and missing effective version all fail closed.
+When valid, the exact `ExchangeRateId`, version ID/number, pair, rate, scale,
+effective date/window, provenance, and source metadata are persisted in the
+immutable match snapshot. Later MESP-120 edits or versions must not rewrite a
+historical evaluation. There is no external FX feed, realized/unrealized FX,
+revaluation, or Finance journal.
 
-## Review 3 — Tolerance, FX, and tax boundaries
+### Regression and boundaries
 
-Verify tolerance selection is Tenant-isolated, deterministic, effective/versioned
-where applicable, configuration-led, and snapshotted with each evaluation. No
-hardcoded Wafra/customer values or invented numerical defaults are allowed.
-Check exact boundaries, within-boundary behavior, and just-outside behavior.
+Recheck price, discount, tax code/rate/amount, line/header amount, currency,
+source fingerprint, immutable evidence versioning, history/audit, replay,
+supersession, current/non-stale evaluation, optimistic concurrency, durable
+idempotency, Tenant isolation, Company/Branch scope, migration shape and
+provider portability. Verify REST/Foundation catalogue, route handlers,
+OpenAPI/Scalar metadata, antiforgery, mandatory audit, `If-Match`, and
+idempotency are consistent.
 
-For same currency, verify nominal comparison from immutable source evidence. For
-different currencies, verify that only a retained immutable applied-rate
-snapshot with matching source/target currencies, rate, scale, provenance, and
-version is accepted. Missing or mismatched rate evidence must fail closed with
-an explicit currency variance. There must be no live FX fetch, realized or
-unrealized FX, revaluation, or Finance entry.
+Review Angular models/service/E2E for the corrected request and response. No
+raw FX authority or raw-GUID workflow may be exposed. Human-readable evidence,
+quantity, amount, policy, variance, and server-owned FX snapshot information
+must remain understandable with English/Arabic copy, RTL/LTR behavior,
+keyboard/ARIA/focus accessibility, responsive/reduced-motion behavior, and
+protected `frontend/assets` untouched. No Wafra-specific core behavior.
 
-Tax matching is source-evidence comparison only. Verify PO tax snapshots,
-supplier-declared tax code/rate/amount, pro-rata line basis, and the existing
-approved rounding rule. Tax variance must hold. Verify there is no recoverable
-VAT, tax liability, GL, statutory-return, ZATCA, or FATOORA behavior.
-
-Verify that both tolerance policy evidence and the configured resolution/SoD
-policy identity/version are retained and visible where the response/history
-supports them.
-
-## Review 4 — Exception resolution, authorization, and Tenant isolation
-
-Verify server-side authorization precedes resource disclosure and durable replay.
-Cross-Tenant, unauthorized Company/Branch, wrong Warehouse lineage, inactive
-source, or forged cross-module IDs must fail closed. Platform Administrator or
-hostname knowledge must not grant Tenant ERP authority.
-
-Exception resolution must require the exact matching resolve permission, current
-Tenant/scope authority, non-empty bounded reason, antiforgery, mandatory audit,
-idempotency, and optimistic `If-Match` concurrency. Resolution must not mutate
-PO, GR, handoff, inventory, AP, or Finance source documents.
-
-Verify Separation of Duties is policy/configuration-driven. Do not accept a
-universal hardcoded “creator can never resolve” rule, but enforce a configured
-different-actor rule when the applicable policy requires it. Verify the policy
-snapshot and resolution reason survive reload and are shown in history/audit.
-
-## Review 5 — Concurrency, staleness, and idempotency
-
-Inspect transaction isolation, unique constraints, row/version handling, and
-source re-read behavior. Verify at minimum:
-
-- concurrent evaluations cannot create competing current evaluations;
-- evaluation versus receipt cancellation cannot produce a successful invalid
-  current decision;
-- evidence/handoff changes invalidate the old source version;
-- two resolvers cannot both transition the same hold;
-- stale resolution refuses to proceed and requires a new evaluation;
-- re-evaluation supersedes prior history without deleting it.
-
-Verify the strong idempotency contract for evidence capture/correction,
-evaluation, and resolution: same Tenant + actor + operation + target + key +
-semantic request replays the original response; same key with changed payload or
-target returns `409 idempotency_conflict`; no duplicate declaration, evaluation,
-history, audit, or resolution is created. Retry after the state transition must
-still replay the durable original response. Authorization must precede replay
-disclosure.
-
-## Review 6 — Persistence and migration
-
-Verify Procurement module ownership, Tenant query filters, composite Tenant
-foreign keys, unique indexes, concurrency/version columns, safe deletes, and
-provider portability. Inspect the MESP-126 migrations and model snapshot,
-including independent evidence, lines, allocations, match evaluations,
-history/audit, fingerprints, source/policy snapshots, and resolution-policy
-snapshot. Confirm no mutable Product/Supplier/UOM authority is duplicated.
-
-Check SQL Server formal migration shape and SQLite test-provider behavior. Do
-not claim SQL safety validation passed unless the disposable LocalDB gate is
-actually supplied and exercised.
-
-## Review 7 — REST, OpenAPI, and Angular UX
-
-Verify the backend is the source of truth and every matching operation is
-registered consistently in the Foundation REST catalogue, authorization
-catalogue, OpenAPI/Scalar metadata, route handlers, frontend service, and E2E
-mocks. Review list, detail, evaluate/re-evaluate, resolve, history, audit, and
-declared-evidence capture/read use cases. Unsafe operations must retain
-antiforgery, mandatory audit, idempotency, and `If-Match` behavior.
-
-Review the Angular workspace for a real business workflow, not a debug panel:
-
-- clear exact/tolerance/hold/resolved/stale states;
-- PO, Goods Receipt, supplier invoice, supplier, product SKU/name, UOM,
-  warehouse, quantities, amounts, currencies, policy, and variances shown with
-  human-readable labels rather than a raw GUID workflow;
-- partial allocations and evidence lineage understandable side by side;
-- authorized reasoned exception resolution and safe conflict/stale errors;
-- English and Arabic copy, RTL/LTR direction, keyboard/ARIA/focus behavior,
-  responsive layout, and reduced-motion handling;
-- SAR remains presentation-only through generic currency presentation; no
-  `if tenant == Wafra`, Wafra-specific behavior, or asset mutation.
-
-## Independent evidence already produced by the implementation session
-
-Treat these as claims to verify against files and command output, not as a
-substitute for review:
+## Validation evidence to verify
 
 - Release backend build: 0 warnings, 0 errors.
-- Focused Procurement handoff/matching tests: 13/13 passed.
-- Full backend: 795 non-SQL tests passed; 22 SQL safety tests were
-  connection-gated because `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` was not
-  available. No SQL assertion is claimed.
-- EF migration listing included
-  `20260820094805_ThreeWayMatchingAndDeclaredInvoiceEvidence` and
-  `20260820102459_MESP126ResolutionPolicyEvidence` using a disposable-named
-  LocalDB design-time connection.
+- Focused handoff/matching remediation tests: 30/30 passed.
+- Canonical backend runner: 834/834 passed, 0 skipped, including all 22 SQL
+  safety tests against disposable LocalDB `MiniErpFoundation_*`; verify the
+  persistent runtime connection was not used or changed.
 - Angular unit tests: 235/235 across 30 spec files.
-- Production Angular build: 494.00 kB initial; 29.75 kB matching lazy chunk;
-  initial budget remains 500 kB.
-- Chromium Playwright suite: 21/21 passed, including exact-result/Arabic RTL
-  and ExceptionHold resolution browser scenarios. These are fixture-backed
-  browser tests, not production/provider sign-off.
-- `npm audit --omit=dev` and full `npm audit`: 0 vulnerabilities.
-- API runtime smoke exercised only the repository API `/health` endpoint on
-  port 5300 and returned `{ "status": "ok" }`. Do not infer live matching,
-  SQL-provider, or production deployment validation from that smoke.
+- Angular production build: 494.00 kB initial and 29.75 kB matching lazy
+  chunk, below the 500 kB initial budget.
+- Focused matching Playwright: 2/2; full Chromium suite: 21/21. These are
+  fixture-backed browser checks, not production/provider sign-off.
+- `npm audit --omit=dev`: 0 vulnerabilities; full `npm audit`: 0
+  vulnerabilities.
+- `git diff --check` and complete branch diff review.
 
-## Required review result
+## Required result
 
-Return one of `APPROVE FOR MERGE`, `REQUEST CHANGES`, or `BLOCK`. Include exact
-P0/P1/P2/P3 findings, affected files/lines, test evidence, and any remaining
-production/provider/legal/cutover gates. Preserve the Draft PR and branch for
-Owner/Sol decision. MESP-126 must not be merged by this review and no Jira
-writes are permitted.
+Return `APPROVE FOR MERGE`, `REQUEST CHANGES`, or `BLOCK`, with exact severity,
+file/line evidence, test commands, remaining production/provider/legal/
+specialist/cutover gates, and explicit confirmation that the review is
+read-only. Preserve branch `feat/MESP-126-three-way-matching-tolerances` and
+Draft PR #70 for Owner/Sol decision. Do not merge MESP-126. Do not write Jira.
