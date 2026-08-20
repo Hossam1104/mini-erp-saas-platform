@@ -84,7 +84,7 @@ builder.Services.AddProductIdentity();
 builder.Services.AddSupplierIdentity();
 builder.Services.AddCustomerIdentity();
 builder.Services.AddMasterDataImport();
-builder.Services.AddPurchaseRequestApprovalFoundation();
+builder.Services.AddPurchaseRequestApprovalFoundation(builder.Configuration);
 string? developmentMasterDataSqliteConnectionString = null;
 string? developmentBusinessPartiesSqliteConnectionString = null;
 string? developmentProcurementSqliteConnectionString = null;

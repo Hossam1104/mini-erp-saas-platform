@@ -17,17 +17,12 @@ public enum PurchaseInvoiceMatchLifecycle
     Superseded = 2
 }
 
-public sealed record PurchaseInvoiceAppliedExchangeRateRequest(
-    string SourceCurrencyCode,
-    string TargetCurrencyCode,
-    decimal Rate,
-    int Scale,
-    string? Source,
-    string? Version,
-    DateOnly? EffectiveOn);
+public sealed record PurchaseInvoiceExchangeRateReferenceRequest(
+    Guid ExchangeRateId,
+    DateOnly? EffectiveOn = null);
 
 public sealed record PurchaseInvoiceMatchEvaluateRequest(
-    PurchaseInvoiceAppliedExchangeRateRequest? AppliedExchangeRate = null);
+    PurchaseInvoiceExchangeRateReferenceRequest? ExchangeRateReference = null);
 
 public sealed record PurchaseInvoiceMatchResolveRequest(string? Reason);
 
@@ -66,13 +61,18 @@ public sealed record PurchaseInvoiceMatchResolutionPolicyResponse(
     DateTimeOffset? EffectiveTo);
 
 public sealed record PurchaseInvoiceMatchExchangeRateResponse(
+    Guid ExchangeRateId,
+    Guid ExchangeRateVersionId,
+    int VersionNumber,
     string SourceCurrencyCode,
     string TargetCurrencyCode,
     decimal Rate,
     int Scale,
+    string? Provenance,
     string? Source,
-    string? Version,
-    DateOnly? EffectiveOn);
+    DateOnly EffectiveOn,
+    DateOnly EffectiveFrom,
+    DateOnly? EffectiveTo);
 
 public sealed record PurchaseInvoiceMatchResponse(
     Guid Id,

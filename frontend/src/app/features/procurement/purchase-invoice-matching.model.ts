@@ -1,18 +1,13 @@
 export type PurchaseInvoiceMatchResult = 'NotMatchReady' | 'ExactMatch' | 'WithinTolerance' | 'ExceptionHold' | 'ResolvedException' | string;
 export type PurchaseInvoiceMatchLifecycle = 'Current' | 'Superseded' | string;
 
-export interface PurchaseInvoiceAppliedExchangeRateRequest {
-  sourceCurrencyCode: string;
-  targetCurrencyCode: string;
-  rate: number;
-  scale: number;
-  source?: string | null;
-  version?: string | null;
+export interface PurchaseInvoiceExchangeRateReferenceRequest {
+  exchangeRateId: string;
   effectiveOn?: string | null;
 }
 
 export interface PurchaseInvoiceMatchEvaluateRequest {
-  appliedExchangeRate?: PurchaseInvoiceAppliedExchangeRateRequest | null;
+  exchangeRateReference?: PurchaseInvoiceExchangeRateReferenceRequest | null;
 }
 
 export interface PurchaseInvoiceMatchResolveRequest {
@@ -57,13 +52,18 @@ export interface PurchaseInvoiceMatchResolutionPolicyResponse {
 }
 
 export interface PurchaseInvoiceMatchExchangeRateResponse {
+  exchangeRateId: string;
+  exchangeRateVersionId: string;
+  versionNumber: number;
   sourceCurrencyCode: string;
   targetCurrencyCode: string;
   rate: number;
   scale: number;
+  provenance: string | null;
   source: string | null;
-  version: string | null;
-  effectiveOn: string | null;
+  effectiveOn: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
 }
 
 export interface PurchaseInvoiceMatchListItemResponse {

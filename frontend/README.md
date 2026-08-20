@@ -15,6 +15,12 @@ The Procurement workspaces include:
 - **Purchase Invoice Handoffs**: handoff creation from accepted Goods Receipt lines, pro-rata tax allocation preview, un-invoiced remainder tracking, supplier invoice reference & date capture, handoff cancellation, and history/audit tabs.
 - **Three-way Matching**: independent supplier invoice evidence, PO/accepted-receipt/invoice lineage, exact-safe and configured tolerance outcomes, variance evidence, controlled exception resolution, and bilingual history/audit views.
 
+Cross-currency matching exposes only a server-owned Exchange Rate identity and
+optional effective date in the request model. Rate, scale, version, pair,
+effective window, and provenance are returned as the immutable MESP-120-backed
+evaluation snapshot; the browser cannot author FX facts. Same-currency matching
+continues to evaluate without an FX reference.
+
 The browser never stores an authentication token or establishes Tenant authority.
 
 ## Local development

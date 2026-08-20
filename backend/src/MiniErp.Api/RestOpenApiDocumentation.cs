@@ -427,7 +427,9 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         {
             return contextRules
                 + "Three-way matching is a durable, non-posting comparison of the Purchase Order commercial snapshot, active accepted Goods Receipt evidence, and an independent supplier-declared invoice evidence snapshot. "
-                + "Legacy handoffs without supplier-declared invoice evidence remain readable but are explicitly NotMatchReady. Rejected or cancelled receipt evidence is excluded; source versions, policy, variance classifications, and any applied exchange-rate evidence are immutable on the evaluation. "
+                + "Legacy handoffs without supplier-declared invoice evidence remain readable but are explicitly NotMatchReady. Rejected or cancelled receipt evidence is excluded; current partial-handoff quantity is matched against independent declared quantity, and cumulative active declared quantity cannot exceed accepted or confirmed source limits. "
+                + "Tolerance and resolution policy are selected from server configuration with an exact-safe zero-tolerance fallback. Cross-currency evaluation accepts only a Tenant-owned Exchange Rate identity/effective-date reference; rate, scale, version, effective window, and provenance are resolved from MESP-120 and snapshotted by the evaluation. Raw caller-supplied FX facts are not authoritative. "
+                + "Source versions, policy, variance classifications, and any applied exchange-rate evidence are immutable on the evaluation. "
                 + "The boundary creates no AP liability, invoice posting, tax posting, GL entry, payment, stock movement, or statutory submission. Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and If-Match.";
         }
 
@@ -524,8 +526,8 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.invoice-handoff.audit.read" => "Immutable Tenant-filtered Purchase Invoice handoff operation audit evidence.",
         "procurement.matching.list" => "Tenant- and scope-filtered durable three-way match evaluation summaries.",
         "procurement.matching.read" => "A durable three-way match evaluation with source versions, immutable tolerance/FX snapshots, explicit variance classifications, and source evidence.",
-        "procurement.matching.evaluate" => "The deterministic Purchase Order / active accepted Goods Receipt / independent supplier invoice evaluation result; exact-safe zero tolerance is used when no configured policy applies.",
-        "procurement.matching.resolve-exception" => "A controlled, reasoned, optimistic-concurrency-protected exception resolution that never posts Finance/AP/accounting entries.",
+        "procurement.matching.evaluate" => "The deterministic Purchase Order / active accepted Goods Receipt / independent supplier invoice evaluation result, including current partial-handoff quantity, cumulative quantity protection, configured tolerance snapshot, and server-owned MESP-120 FX evidence when applicable; exact-safe zero tolerance is used when no configured policy applies.",
+        "procurement.matching.resolve-exception" => "A controlled, reasoned, optimistic-concurrency-protected exception resolution whose different-actor requirement is policy-driven and which never posts Finance/AP/accounting entries.",
         "procurement.matching.history.read" => "Immutable Tenant-filtered three-way match evaluation history.",
         "procurement.matching.audit.read" => "Immutable Tenant-filtered three-way match evaluation audit evidence.",
         _ => "The documented operation result with no provider or internal implementation details."

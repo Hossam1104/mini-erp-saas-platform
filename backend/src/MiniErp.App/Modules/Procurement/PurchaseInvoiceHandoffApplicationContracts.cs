@@ -392,7 +392,12 @@ public static class PurchaseInvoiceHandoffValuePolicy
                 allocations.Add(allocation);
             }
 
-            if (allocationTotal != line.Quantity)
+            // Supplier-declared quantity is independent invoice evidence. The
+            // allocations identify the physically supported portion and may
+            // be smaller than the supplier declaration; the matcher records
+            // the difference as a quantity variance. Allocating more than the
+            // declared quantity would be structurally impossible evidence.
+            if (allocationTotal > line.Quantity)
             {
                 return false;
             }

@@ -127,8 +127,9 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
                 .Include(item => item.Lines)
                 .Where(item => item.PurchaseOrderId == order.Id)
                 .ToListAsync(cancellationToken);
+            var activeHandoffs = await LoadActiveHandoffsAsync(db, order.Id, cancellationToken);
             var evidenceVersion = handoff.DeclaredEvidenceVersions.SingleOrDefault(item => item.IsCurrent);
-            var source = BuildSourceSnapshot(handoff, order, receipts, evidenceVersion, command.Policy, command.AppliedExchangeRate);
+            var source = BuildSourceSnapshot(handoff, order, receipts, activeHandoffs, evidenceVersion, command.Policy, command.AppliedExchangeRate);
             var sourceJson = JsonSerializer.Serialize(source, JsonOptions);
             fingerprint = Fingerprint(sourceJson);
 
@@ -140,7 +141,7 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
                 return PurchaseInvoiceMatchPersistenceResult<PurchaseInvoiceMatchRecord>.Success(ToRecord(existing));
             }
 
-            var evaluation = EvaluateSources(handoff, order, receipts, evidenceVersion, command.Policy, command.AppliedExchangeRate);
+            var evaluation = EvaluateSources(handoff, order, receipts, activeHandoffs, evidenceVersion, command.Policy, command.AppliedExchangeRate);
             var id = evidence.MatchEvaluationId == Guid.Empty ? Guid.NewGuid() : evidence.MatchEvaluationId;
             var entity = new PurchaseInvoiceMatchEvaluationEntity(
                 tenantContext.TenantId,
@@ -264,12 +265,13 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
             }
 
             var receipts = await db.GoodsReceipts.Include(item => item.Lines).Where(item => item.PurchaseOrderId == order.Id).ToListAsync(cancellationToken);
+            var activeHandoffs = await LoadActiveHandoffsAsync(db, order.Id, cancellationToken);
             var evidenceVersion = handoff.DeclaredEvidenceVersions.SingleOrDefault(item => item.IsCurrent);
             var policy = JsonSerializer.Deserialize<PurchaseInvoiceMatchingToleranceDefinition>(entity.PolicySnapshotJson, JsonOptions) ?? PurchaseInvoiceMatchingToleranceDefinition.ExactSafe(command.OccurredAt);
             var fx = string.IsNullOrWhiteSpace(entity.ExchangeRateSnapshotJson)
                 ? null
                 : JsonSerializer.Deserialize<PurchaseInvoiceMatchExchangeRateRecord>(entity.ExchangeRateSnapshotJson, JsonOptions);
-            var sourceJson = JsonSerializer.Serialize(BuildSourceSnapshot(handoff, order, receipts, evidenceVersion, policy, fx), JsonOptions);
+            var sourceJson = JsonSerializer.Serialize(BuildSourceSnapshot(handoff, order, receipts, activeHandoffs, evidenceVersion, policy, fx), JsonOptions);
             if (!string.Equals(entity.SourceFingerprint, Fingerprint(sourceJson), StringComparison.Ordinal)
                 || !entity.HandoffVersion.SequenceEqual(handoff.Version)
                 || !entity.PurchaseOrderVersion.SequenceEqual(order.Version))
@@ -352,10 +354,22 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
                     .ThenInclude(item => item.Allocations)
             .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
 
+    private static async Task<IReadOnlyList<PurchaseInvoiceHandoffEntity>> LoadActiveHandoffsAsync(
+        ProcurementDbContext db,
+        Guid purchaseOrderId,
+        CancellationToken cancellationToken) =>
+        await db.PurchaseInvoiceHandoffs
+            .Where(item => item.PurchaseOrderId == purchaseOrderId && item.Status == PurchaseInvoiceHandoffStatus.Recorded)
+            .Include(item => item.Sources)
+            .Include(item => item.DeclaredEvidenceVersions)
+                .ThenInclude(item => item.Lines)
+            .ToListAsync(cancellationToken);
+
     private static MatchCalculation EvaluateSources(
         PurchaseInvoiceHandoffEntity handoff,
         PurchaseOrderEntity order,
         IReadOnlyList<GoodsReceiptEntity> receipts,
+        IReadOnlyList<PurchaseInvoiceHandoffEntity> activeHandoffs,
         PurchaseInvoiceDeclaredEvidenceEntity? declared,
         PurchaseInvoiceMatchingToleranceDefinition policy,
         PurchaseInvoiceMatchExchangeRateRecord? exchangeRate)
@@ -374,12 +388,46 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
         var handoffSources = handoff.Sources
             .GroupBy(item => item.GoodsReceiptLineId)
             .ToDictionary(group => group.Key, group => group.Sum(item => item.Quantity));
+        var handoffQuantitiesByPurchaseOrderLine = handoff.Sources
+            .GroupBy(item => item.PurchaseOrderLineId)
+            .ToDictionary(group => group.Key, group => group.Sum(item => item.Quantity));
         var orderLines = order.Lines.ToDictionary(item => item.Id);
+        var acceptedQuantitiesByPurchaseOrderLine = receipts
+            .Where(item => item.Status == GoodsReceiptStatus.Recorded)
+            .SelectMany(item => item.Lines)
+            .GroupBy(item => item.PurchaseOrderLineId)
+            .ToDictionary(group => group.Key, group => group.Sum(item => item.AcceptedQuantity));
+        var cumulativeDeclaredQuantitiesByPurchaseOrderLine = activeHandoffs
+            .SelectMany(item => item.DeclaredEvidenceVersions
+                .SingleOrDefault(version => version.IsCurrent)?.Lines ?? [])
+            .GroupBy(item => item.PurchaseOrderLineId)
+            .ToDictionary(group => group.Key, group => group.Sum(item => item.Quantity));
         var comparableCurrency = string.Equals(declared.CurrencyCode, order.CurrencyCode, StringComparison.OrdinalIgnoreCase);
-        var convert = comparableCurrency ? (Func<decimal, decimal>)(value => value) : value => exchangeRate is null ? value : value * exchangeRate.Rate / exchangeRate.Scale;
-        if (!comparableCurrency && !IsValidExchangeRate(exchangeRate, declared.CurrencyCode, order.CurrencyCode))
+        var validExchangeRate = IsValidExchangeRate(exchangeRate, declared.CurrencyCode, order.CurrencyCode);
+        var convert = comparableCurrency ? (Func<decimal, decimal>)(value => value) : value => validExchangeRate ? value * exchangeRate!.Rate / exchangeRate.Scale : value;
+        if (!comparableCurrency && !validExchangeRate)
         {
             variances.Add(new("CurrencyNotComparable", null, null, null, null, null, 0m, order.CurrencyCode, "An immutable applied exchange-rate evidence snapshot is required for different currencies."));
+        }
+
+        foreach (var (purchaseOrderLineId, cumulativeDeclaredQuantity) in cumulativeDeclaredQuantitiesByPurchaseOrderLine)
+        {
+            var confirmedQuantity = orderLines.GetValueOrDefault(purchaseOrderLineId)?.ConfirmedQuantity ?? 0m;
+            var acceptedQuantity = acceptedQuantitiesByPurchaseOrderLine.GetValueOrDefault(purchaseOrderLineId);
+            var sourceLimit = acceptedQuantity > 0m ? acceptedQuantity : confirmedQuantity;
+            if (cumulativeDeclaredQuantity > sourceLimit)
+            {
+                variances.Add(new(
+                    "CumulativeQuantityLimitExceeded",
+                    purchaseOrderLineId,
+                    null,
+                    sourceLimit,
+                    cumulativeDeclaredQuantity,
+                    cumulativeDeclaredQuantity - sourceLimit,
+                    0m,
+                    null,
+                    "Cumulative active supplier-declared invoice quantity exceeds the active accepted or confirmed source quantity."));
+            }
         }
 
         foreach (var line in declared.Lines)
@@ -405,10 +453,16 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
                 }
             }
 
-            if (allocationTotal != line.Quantity)
+            if (allocationTotal > line.Quantity)
             {
-                variances.Add(new("InvoiceQuantityAllocationMismatch", line.PurchaseOrderLineId, null, line.Quantity, allocationTotal, allocationTotal - line.Quantity, 0m, null, "Invoice line quantity must equal the sum of its receipt allocations."));
+                // Supplier-declared quantity is independent evidence. The
+                // allocation is only the supported portion, so a smaller
+                // allocation is intentionally not an intake failure.
+                variances.Add(new("InvoiceAllocationExceedsDeclaredQuantity", line.PurchaseOrderLineId, null, line.Quantity, allocationTotal, allocationTotal - line.Quantity, 0m, null, "Receipt allocation cannot exceed the supplier-declared invoice quantity."));
             }
+
+            var expectedQuantity = handoffQuantitiesByPurchaseOrderLine.GetValueOrDefault(line.PurchaseOrderLineId);
+            Compare(variances, "QuantityVariance", line.PurchaseOrderLineId, null, expectedQuantity, line.Quantity, policy.QuantityAbsoluteTolerance, policy.QuantityPercentageTolerance, null, "Supplier-declared invoice quantity differs from the current handoff/source quantity.");
 
             Compare(variances, "PriceVariance", line.PurchaseOrderLineId, null, poLine.UnitPrice, convert(line.UnitPrice), policy.PriceAbsoluteTolerance, policy.PricePercentageTolerance, order.CurrencyCode, "Supplier unit price differs from the Purchase Order.");
             if (line.TaxRatePercentage is not null || poLine.TaxRatePercentage is not null)
@@ -493,7 +547,7 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
             Compare(variances, "HeaderGrossVariance", null, null, expectedSubtotal + expectedTaxTotal, convert(grossTotal), policy.AmountAbsoluteTolerance, policy.AmountPercentageTolerance, order.CurrencyCode, "Supplier gross total differs from line-derived total.");
         }
 
-        var blocking = variances.Any(item => item.Classification is "InvoiceEvidenceMissing" or "CurrencyNotComparable" or "InvoiceLineNotOnPurchaseOrder" or "InvoiceAllocationNotEligible" or "InvoiceQuantityAllocationMismatch" || item.Variance is { } variance && Math.Abs(variance) > item.AllowedTolerance);
+        var blocking = variances.Any(item => item.Classification is "InvoiceEvidenceMissing" or "CurrencyNotComparable" or "InvoiceLineNotOnPurchaseOrder" or "InvoiceAllocationNotEligible" or "InvoiceAllocationExceedsDeclaredQuantity" or "CumulativeQuantityLimitExceeded" || item.Variance is { } variance && Math.Abs(variance) > item.AllowedTolerance);
         var result = blocking
             ? (variances.Any(item => item.Classification is "InvoiceEvidenceMissing" or "CurrencyNotComparable") ? PurchaseInvoiceMatchResult.NotMatchReady : PurchaseInvoiceMatchResult.ExceptionHold)
             : variances.Count == 0 ? PurchaseInvoiceMatchResult.ExactMatch : PurchaseInvoiceMatchResult.WithinTolerance;
@@ -524,6 +578,7 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
         PurchaseInvoiceHandoffEntity handoff,
         PurchaseOrderEntity order,
         IReadOnlyList<GoodsReceiptEntity> receipts,
+        IReadOnlyList<PurchaseInvoiceHandoffEntity> activeHandoffs,
         PurchaseInvoiceDeclaredEvidenceEntity? evidence,
         PurchaseInvoiceMatchingToleranceDefinition policy,
         PurchaseInvoiceMatchExchangeRateRecord? exchangeRate) => new
@@ -531,15 +586,32 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
             handoff = new { handoff.Id, Version = Convert.ToBase64String(handoff.Version), handoff.Status, handoff.PurchaseOrderId, sources = handoff.Sources.OrderBy(item => item.Id).Select(source => new { source.Id, source.GoodsReceiptId, source.GoodsReceiptLineId, source.PurchaseOrderLineId, source.Quantity }) },
             purchaseOrder = new { order.Id, Version = Convert.ToBase64String(order.Version), order.CurrencyCode, lines = order.Lines.OrderBy(item => item.Id).Select(item => new { item.Id, item.OrderedQuantity, item.UnitPrice, item.DiscountAmount, item.TaxCode, item.TaxRatePercentage, item.TaxAmount }) },
             goodsReceipts = receipts.Where(item => item.Status == GoodsReceiptStatus.Recorded).OrderBy(item => item.Id).Select(item => new { item.Id, Version = Convert.ToBase64String(item.Version), item.Status, lines = item.Lines.OrderBy(line => line.Id).Select(line => new { line.Id, line.PurchaseOrderLineId, line.AcceptedQuantity, line.RejectedQuantity }) }),
+            activeDeclaredEvidence = activeHandoffs.OrderBy(item => item.Id).Select(item => new
+            {
+                item.Id,
+                Version = Convert.ToBase64String(item.Version),
+                evidence = item.DeclaredEvidenceVersions
+                    .SingleOrDefault(version => version.IsCurrent) is { } current
+                    ? new
+                    {
+                        current.Id,
+                        current.VersionNumber,
+                        lines = current.Lines.OrderBy(line => line.Id).Select(line => new { line.Id, line.PurchaseOrderLineId, line.Quantity })
+                    }
+                    : null
+            }),
             declaredEvidence = evidence is null ? null : new { evidence.Id, evidence.VersionNumber, evidence.IsCurrent, evidence.CurrencyCode, evidence.SupplierInvoiceReference, evidence.SupplierInvoiceDate, evidence.SubtotalAmount, evidence.DiscountAmount, evidence.TaxAmount, evidence.GrossAmount, lines = evidence.Lines.OrderBy(item => item.Id).Select(line => new { line.Id, line.PurchaseOrderLineId, line.Quantity, line.UnitPrice, line.DiscountAmount, line.TaxRatePercentage, line.TaxCode, line.TaxAmount, line.NetAmount, line.GrossAmount, allocations = line.Allocations.OrderBy(item => item.Id).Select(allocation => new { allocation.GoodsReceiptId, allocation.GoodsReceiptLineId, allocation.Quantity }) }) },
             policy,
             exchangeRate
         };
 
     private static bool IsValidExchangeRate(PurchaseInvoiceMatchExchangeRateRecord? rate, string source, string target) =>
-        rate is not null && rate.Rate > 0m && rate.Scale > 0 && rate.Scale <= 1_000_000
+        rate is not null && rate.ExchangeRateId != Guid.Empty && rate.ExchangeRateVersionId != Guid.Empty && rate.VersionNumber > 0
+        && rate.Rate > 0m && rate.Scale > 0 && rate.Scale <= 1_000_000
         && string.Equals(rate.SourceCurrencyCode, source, StringComparison.OrdinalIgnoreCase)
-        && string.Equals(rate.TargetCurrencyCode, target, StringComparison.OrdinalIgnoreCase);
+        && string.Equals(rate.TargetCurrencyCode, target, StringComparison.OrdinalIgnoreCase)
+        && rate.EffectiveFrom <= rate.EffectiveOn
+        && (rate.EffectiveTo is null || rate.EffectiveOn <= rate.EffectiveTo.Value);
 
     private async Task<PurchaseInvoiceMatchRecord?> FindByFingerprintAsync(TenantContext tenantContext, Guid handoffId, string fingerprint, CancellationToken cancellationToken)
     {

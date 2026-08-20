@@ -27,19 +27,22 @@ public sealed class PurchaseInvoiceMatchService
     private readonly IPurchaseInvoiceMatchPersistence persistence;
     private readonly IPurchaseInvoiceMatchingTolerancePolicyProvider tolerancePolicies;
     private readonly IPurchaseInvoiceMatchingResolutionPolicyProvider resolutionPolicies;
+    private readonly IPurchaseInvoiceMatchingExchangeRateReferenceProvider exchangeRates;
 
     public PurchaseInvoiceMatchService(
         PurchaseRequestAuthorizationService authorization,
         IPurchaseInvoiceHandoffPersistence handoffPersistence,
         IPurchaseInvoiceMatchPersistence persistence,
         IPurchaseInvoiceMatchingTolerancePolicyProvider tolerancePolicies,
-        IPurchaseInvoiceMatchingResolutionPolicyProvider resolutionPolicies)
+        IPurchaseInvoiceMatchingResolutionPolicyProvider resolutionPolicies,
+        IPurchaseInvoiceMatchingExchangeRateReferenceProvider exchangeRates)
     {
         this.authorization = authorization ?? throw new ArgumentNullException(nameof(authorization));
         this.handoffPersistence = handoffPersistence ?? throw new ArgumentNullException(nameof(handoffPersistence));
         this.persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
         this.tolerancePolicies = tolerancePolicies ?? throw new ArgumentNullException(nameof(tolerancePolicies));
         this.resolutionPolicies = resolutionPolicies ?? throw new ArgumentNullException(nameof(resolutionPolicies));
+        this.exchangeRates = exchangeRates ?? throw new ArgumentNullException(nameof(exchangeRates));
     }
 
     public async Task<PurchaseInvoiceMatchOperationResult<IReadOnlyList<PurchaseInvoiceMatchListRecord>>> ListAsync(
@@ -83,12 +86,28 @@ public sealed class PurchaseInvoiceMatchService
         var occurredAt = DateTimeOffset.UtcNow;
         var policy = await tolerancePolicies.ResolveAsync(handoff.Value.Scope, occurredAt, cancellationToken);
         if (!IsValidPolicy(policy)) return PurchaseInvoiceMatchOperationResult<PurchaseInvoiceMatchRecord>.Failure("matching_policy_invalid");
-        if (!TryNormalizeExchangeRate(request.AppliedExchangeRate, handoff.Value.CurrencyCode, out var exchangeRate)) return PurchaseInvoiceMatchOperationResult<PurchaseInvoiceMatchRecord>.Failure("exchange_rate_invalid");
-        if (exchangeRate is not null
-            && handoff.Value.DeclaredEvidence is { } declaredEvidence
-            && !string.Equals(exchangeRate.SourceCurrencyCode, declaredEvidence.CurrencyCode, StringComparison.OrdinalIgnoreCase))
+
+        PurchaseInvoiceMatchExchangeRateRecord? exchangeRate = null;
+        if (request.ExchangeRateReference is { } exchangeRateReference
+            && handoff.Value.DeclaredEvidence is { } declaredEvidence)
         {
-            return PurchaseInvoiceMatchOperationResult<PurchaseInvoiceMatchRecord>.Failure("exchange_rate_invalid");
+            if (string.Equals(declaredEvidence.CurrencyCode, handoff.Value.CurrencyCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return PurchaseInvoiceMatchOperationResult<PurchaseInvoiceMatchRecord>.Failure("exchange_rate_invalid");
+            }
+
+            var resolution = await exchangeRates.ResolveAsync(
+                context.TenantContext,
+                exchangeRateReference.ExchangeRateId,
+                declaredEvidence.CurrencyCode,
+                handoff.Value.CurrencyCode,
+                exchangeRateReference.EffectiveOn,
+                declaredEvidence.SupplierInvoiceDate ?? handoff.Value.SupplierInvoiceDate,
+                cancellationToken);
+            // An unresolved reference deliberately remains null so persistence
+            // records CurrencyNotComparable/NotMatchReady. No client value is
+            // ever used as a fallback.
+            exchangeRate = resolution.Value;
         }
 
         var matchId = Guid.NewGuid();
@@ -171,20 +190,6 @@ public sealed class PurchaseInvoiceMatchService
         {
             return PurchaseInvoiceHandoffOperationResult<PurchaseInvoiceHandoffRecord>.Failure("persistence_unavailable");
         }
-    }
-
-    private static bool TryNormalizeExchangeRate(PurchaseInvoiceAppliedExchangeRateRequest? request, string targetCurrency, out PurchaseInvoiceMatchExchangeRateRecord? normalized)
-    {
-        normalized = null;
-        if (request is null) return true;
-        if (!PurchaseInvoiceHandoffValuePolicy.TryText(request.SourceCurrencyCode, 16, false, out var source)
-            || !PurchaseInvoiceHandoffValuePolicy.TryText(request.TargetCurrencyCode, 16, false, out var target)
-            || !string.Equals(target, targetCurrency, StringComparison.OrdinalIgnoreCase)
-            || request.Rate <= 0m || request.Scale <= 0 || request.Scale > 1_000_000
-            || !PurchaseInvoiceHandoffValuePolicy.TryText(request.Source, 128, true, out var provenance)
-            || !PurchaseInvoiceHandoffValuePolicy.TryText(request.Version, 128, true, out var version)) return false;
-        normalized = new(source!.ToUpperInvariant(), target!.ToUpperInvariant(), request.Rate, request.Scale, provenance, version, request.EffectiveOn);
-        return true;
     }
 
     private static bool IsValidPolicy(PurchaseInvoiceMatchingToleranceDefinition policy) =>

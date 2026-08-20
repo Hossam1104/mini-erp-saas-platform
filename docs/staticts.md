@@ -2,12 +2,12 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-20 13:35 +03:00
+**Last Updated:** 2026-08-20 14:30 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~44%**
 
-## Current authoritative fast-track snapshot - 20 August 2026 (MESP-126 implementation complete; independent review handoff)
+## Current authoritative fast-track snapshot - 20 August 2026 (MESP-126 SOL acceptance remediation complete; independent review handoff)
 
 This snapshot records the bounded implementation of MESP-126 — Three-way
 Matching, Tolerances, and Authorized Exception Resolution — on branch
@@ -22,12 +22,21 @@ bilingual EN/AR RTL matching workspace. This remains Procurement evidence
 orchestration; it does not post Finance/AP/GL, mutate stock, settle payment,
 submit statutory data, or add external integrations.
 
+The remediation also closes SOL acceptance findings: quantity compares the
+current partial handoff/source quantity, over/under supplier declarations remain
+truthful evidence, cumulative active declarations are bounded by accepted or
+confirmed source quantity, runtime tolerance and resolution/SoD policy is
+configuration-led, and cross-currency matching resolves immutable
+server-authoritative MESP-120 Exchange Rate snapshots. Headline percentages are
+unchanged because this session is correctness remediation rather than additive
+scope.
+
 | Current control | Verified position |
 |---|---|
 | MESP-125 | Done and squash-merged to `main` at `42e51b673de5d076b56426180d914f7e3d07c54c` (PR #69). |
 | MESP-126 | **Implementation complete on `feat/MESP-126-three-way-matching-tolerances`; Draft PR remains unmerged for independent Claude Opus 5 review.** |
 | Production capability | **~44% overall; Procurement/P2P conservatively ~39%** after adding independent invoice evidence, deterministic matching, partial allocation semantics, tolerance/FX evidence, and authorized exception resolution. This is a bounded capability increase, not Jira or test-count credit. |
-| Validation | Release build **0 warnings/0 errors**; focused Procurement handoff/matching **13/13**; full backend **795 non-SQL passed / 22 SQL safety tests connection-gated** without `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`; Angular **235/235** across 30 spec files; production build **494.00 kB initial**, **29.75 kB matching lazy chunk**; Chromium Playwright **21/21**; production-only and full `npm audit` **0 vulnerabilities**; EF migration list includes `20260820094805_ThreeWayMatchingAndDeclaredInvoiceEvidence` and `20260820102459_MESP126ResolutionPolicyEvidence`. |
+| Validation | Release build **0 warnings/0 errors**; focused Procurement handoff/matching remediation **30/30**; canonical full backend runner **834/834 passed, 0 skipped**, including all **22 SQL safety tests** against disposable LocalDB `MiniErpFoundation_20260820141956_c9bac843`; Angular **235/235** across 30 spec files; production build **494.00 kB initial**, **29.75 kB matching lazy chunk**; focused matching Playwright **2/2** and full Chromium **21/21**; production-only and full `npm audit` **0 vulnerabilities**; EF migration list includes `20260820094805_ThreeWayMatchingAndDeclaredInvoiceEvidence` and `20260820102459_MESP126ResolutionPolicyEvidence`. |
 | Boundaries | No AP liability/posting, GL journals, payment, stock/on-hand mutation, Inventory valuation, realized/unrealized FX, revaluation, VAT accounting, ZATCA/FATOORA, supplier portal, external invoice/FX integration, MESP-127+, DNS/TLS, or Wafra-specific core behavior. |
 | Next exact session | **Independent Claude Opus 5 read-only pre-merge review for MESP-126** per the full prompt in `TASK.md`. No Jira writes and no merge are authorized in this handoff. |
 
@@ -35,6 +44,7 @@ submit statutory data, or add external integrations.
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
+| 2026-08-20 | MESP-126 SOL acceptance remediation complete: current partial-handoff quantity tolerance, truthful over/under evidence, cumulative active quantity protection, runtime configuration providers, server-authoritative MESP-120 FX references/snapshots, and policy-driven resolution SoD. | ~44% | ~39% | Correctness/remediation only; headline percentages unchanged. Focused 30/30; canonical backend 834/834 including 22 disposable LocalDB SQL safety cases; Angular 235/235; focused matching Playwright 2/2; full Chromium 21/21; both npm audits 0 vulnerabilities. Draft PR #70 remains open/Draft/unmerged; independent read-only Opus review is next; no Jira writes. |
 | 2026-08-20 | MESP-126 implementation complete: independent supplier invoice evidence, accepted-receipt allocations, exact-safe/configured matching outcomes, FX/currency fail-closed semantics, tolerance and resolution policy snapshots, exception history/audit/replay, REST/OpenAPI, migrations, and bilingual matching workspace. | ~44% | ~39% | Release build 0/0; focused 13/13; full backend 795 non-SQL passed with 22 SQL safety tests unavailable because the required disposable LocalDB connection variable was absent; Angular 235/235; Playwright 21/21; audits 0 vulnerabilities. Independent Opus review remains required; Jira read-only. |
 
 ## Current authoritative fast-track snapshot - 19 August 2026 (MESP-125 implementation complete; pre-Opus handoff)

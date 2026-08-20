@@ -1,6 +1,6 @@
 # Current State
 
-## Current authoritative position - 20 August 2026 (MESP-126 implementation complete; independent review handoff)
+## Current authoritative position - 20 August 2026 (MESP-126 SOL acceptance remediation complete; independent review handoff)
 
 MESP-125 (Goods Receipt and Purchase Invoice Handoff) is **Done** and
 squash-merged to `main` by PR #69 at merge SHA
@@ -12,11 +12,14 @@ is **activated / implementation-complete at bounded scope** under Epic MESP-7
 on `feat/MESP-126-three-way-matching-tolerances`. It adds independent
 supplier-declared invoice evidence beside the preserved MESP-125 PO-derived
 handoff preview; accepted Goods Receipt allocations; deterministic exact-safe
-and configured tolerance evaluation; currency/tax evidence comparison;
-durable source snapshots, fingerprints, history, audit, and replay; authorized
-reasoned exception resolution with resolution-policy evidence; optimistic
-concurrency; REST/OpenAPI registration; EF Core migrations; and a bilingual
-EN/AR RTL matching workspace.
+and runtime-configured tolerance evaluation against the current partial handoff;
+truthful over/under supplier quantity evidence with cumulative accepted/confirmed
+source limits; currency/tax evidence comparison with server-authoritative
+MESP-120 Exchange Rate references; durable source snapshots, fingerprints,
+history, audit, and replay; authorized reasoned exception resolution with
+configuration-led resolution/SoD policy evidence; optimistic concurrency;
+REST/OpenAPI registration; EF Core migrations; and a bilingual EN/AR RTL
+matching workspace.
 
 Legacy handoffs without independent evidence remain readable and explicitly
 evaluate as not match-ready. Procurement remains the source/evidence owner;
@@ -25,14 +28,15 @@ There is no stock/on-hand mutation, Inventory valuation, external FX or invoice
 integration, supplier portal, statutory/ZATCA/FATOORA behavior, or Wafra-specific
 core behavior.
 
-Validation: Release build 0 warnings/0 errors; focused handoff/matching tests
-13/13; full backend 795 non-SQL passed with 22 SQL safety tests unavailable
-because `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` was absent; Angular 235/235
-across 30 spec files; production bundle 494.00 kB initial with a 29.75 kB
-matching lazy chunk; Chromium Playwright 21/21; both npm audits report 0
+Validation: Release build 0 warnings/0 errors; focused handoff/matching
+regression tests 30/30; canonical full backend runner 834/834 passed with all
+22 SQL safety cases executed against a disposable LocalDB database; Angular
+235/235 across 30 spec files; production bundle 494.00 kB initial with a
+29.75 kB matching lazy chunk; focused matching Playwright 2/2 and full
+Chromium Playwright 21/21; production-only and full npm audits report 0
 vulnerabilities; EF migration listing includes the MESP-126 evidence and
 resolution-policy migrations. No Jira writes were performed. Independent
-read-only Claude Opus 5 review remains required before merge, and the Draft PR
+read-only Claude Opus 5 review remains required before merge, and Draft PR #70
 must remain unmerged.
 
 ## Historical authoritative position - 19 August 2026 (MESP-125 implementation complete; pre-Opus handoff)

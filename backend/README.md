@@ -4,11 +4,15 @@
 > carries deterministic three-way matching as Procurement evidence
 > orchestration: independent supplier-declared invoice evidence is stored
 > separately from the MESP-125 PO-derived handoff preview, exact-safe and
-> configured tolerance policies are snapshotted with evaluations, immutable
-> source fingerprints support supersession/staleness checks, and authorized
-> exception resolution records reason, history, audit, idempotency, and
-> optimistic concurrency. This slice does not post AP, GL, tax accounting,
-> stock, payment, FX revaluation, ZATCA/FATOORA, or external integrations.
+> configured runtime tolerance policies are selected by Tenant/
+> Company/Branch scope and snapshotted with evaluations, current partial-handoff
+> quantity and cumulative accepted/confirmed source limits are enforced,
+> over/under supplier declarations remain truthful evidence, MESP-120
+> Exchange Rate references are resolved server-side and snapshotted, and
+> authorized exception resolution records reason, history, audit, idempotency,
+> optimistic concurrency, and policy-driven SoD. This slice does not post AP,
+> GL, tax accounting, stock, payment, FX revaluation, ZATCA/FATOORA, or
+> external integrations.
 
 > **Current MESP-125 runtime overlay - 19 August 2026.** The backend carries
 > the complete MESP-125 Goods Receipt and Purchase Invoice Handoff slice alongside
@@ -43,10 +47,10 @@
 > governance, backup/restore, capacity, and specialist gates remain open.
 
 The accepted MESP-126 validation baseline is Release build **0 warnings / 0
-errors**; focused Invoice Handoff/matching tests pass **13/13** and the full
-backend run passes **795/795 non-SQL tests**, with **22 SQL safety tests
-connection-gated** when `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is absent
-(817 total, with no SQL assertion run without the required gate). The previous
+errors**; focused Invoice Handoff/matching remediation tests pass **30/30** and
+the canonical backend runner passes **834/834 tests, 0 skipped**, including all
+**22 SQL safety tests** against a disposable LocalDB `MiniErpFoundation_*`
+database. The previous
 repository baseline was **812/812** ArchitectureTests passed with **0 skipped**,
 including
 the disposable SQL Server safety harness. Focused Goods Receipt tests pass

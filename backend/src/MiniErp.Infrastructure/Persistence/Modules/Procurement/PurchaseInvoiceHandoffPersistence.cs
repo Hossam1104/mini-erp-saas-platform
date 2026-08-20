@@ -659,7 +659,12 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
                 }
             }
 
-            if (allocationTotal != line.Quantity) return false;
+            // The declared supplier quantity is independent evidence. Only
+            // the physically/commercially supported allocation is constrained
+            // here; any declared excess remains recordable for matching to
+            // classify, while allocation itself can never fabricate receipt
+            // quantity.
+            if (allocationTotal > line.Quantity) return false;
         }
 
         return totalsByReceiptLine.All(item => receiptLines.TryGetValue(item.Key, out var receiptLine) && item.Value <= receiptLine.Line.AcceptedQuantity && handoffQuantitiesByReceiptLine.GetValueOrDefault(item.Key) >= item.Value);
