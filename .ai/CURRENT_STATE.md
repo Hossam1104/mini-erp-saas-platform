@@ -1,5 +1,63 @@
 # Current State
 
+## Current authoritative position - 22 August 2026 (MESP-128 Opus stock-integrity delta remediation complete; delta-only review handoff)
+
+MESP-128 remains bounded to the Inventory-owned physical-stock foundation on
+branch `feat/MESP-128-inventory-ledger-foundation`, based exactly on main
+`f54b6abe383edd304911eb0a53db43fafdcb3066`. This bounded delta session started
+from the synchronized branch head
+`7e1df0f9a4f27f9f7e0dad91170accd8247c8236`; implementation commit
+`3a419377bfa09047f5b849020f8a6dc793bc868c` contains the bounded source,
+migration, and regression changes. Draft PR #72 remains open,
+Draft, and unmerged. Jira remains read-only; no Jira writes were performed.
+
+The business opening-source fingerprint now excludes `ExtractedAt`, while
+retaining extraction time as immutable evidence. Therefore identical business
+provenance with different extraction timestamps is still one duplicate and
+cannot post twice; distinct stable `SourceLineReference` values remain
+distinct. The bounded single-row Angular workspace requires the user source
+reference and sends that same value as the row source-line reference, with no
+invented `line-1`. Future multi-row import UI must carry stable source-line
+references from its source context.
+
+SQL Server contention classification is narrow: only errors 1205 and 1222,
+including nested provider exceptions, become the existing conflict/HTTP 409
+outcome. Genuine persistence failures remain unavailable/HTTP 503. Shared
+stock-identity anchors retain Serializable locking and now perform a real
+provider-independent mutable `TouchSequence` write; SQL Server receives an
+actual UPDATE and SQLite exercises the same seam. The nullable-Branch unique
+stock-identity index is explicitly unfiltered, so SQL Server enforces repeated
+`BranchId IS NULL` identities.
+
+The formal additive Inventory migration history now includes
+`20260821113311_MESP128InventoryLedgerFoundation`,
+`20260821132738_MESP128StockIntegrityRemediation`, and
+`20260821213832_MESP128OpusStockIntegrityRemediation`. REST/OpenAPI/Foundation
+metadata, Tenant query filters, audit/history, durable replay/conflict,
+SQLite compatibility, and the bilingual EN/AR RTL workspace remain intact.
+The existing Product `TrackingEnabled` boolean remains the complete tracking
+rule; batch/lot/serial/manufacturing/expiry mode enforcement remains an
+upstream Product-model limitation.
+
+Validation is clean: Release build 0 warnings/0 errors; focused Inventory
+coverage 17/17; SQL Server safety coverage 26/26; canonical full backend
+871/871 passed, 0 skipped with disposable LocalDB safety execution; Angular
+241/241 across 32 spec files; production initial bundle 499.97 kB with
+Inventory lazy chunk 25.82 kB; focused Chromium 2/2; full Chromium 26/26;
+both npm audits 0 vulnerabilities; disposable SQL migration apply, rollback,
+reapply, and drop all succeeded; and final git diff --check is clean.
+Protected `frontend/assets` remains untouched.
+
+Headline production percentages remain unchanged at approximately 47% overall
+and 41% Procurement/P2P because this is correctness remediation, not new
+headline scope. No Goods Receipt authoritative Inventory posting, Warehouse
+Transfer, InTransit lifecycle, Supplier/Customer Return physical posting,
+Stock Adjustment, Inventory Count, Stock Issue, MWA valuation, AP/AR/GL, tax
+accounting, payment, external/statutory, production cutover, DNS/TLS, supplier
+portal, or Wafra-specific core behavior was added. MESP-129 and all downstream
+implementation remain unstarted. The next independent review is delta-only;
+do not merge or start downstream implementation from this handoff.
+
 ## Current authoritative position - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
 
 MESP-127 is implementation-complete at its bounded Procurement-owned scope on

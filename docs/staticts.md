@@ -2,10 +2,46 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-21 06:40 +03:00
+**Last Updated:** 2026-08-22 01:00 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
-**Overall Production-Ready Completion:** **~45%**
+**Overall Production-Ready Completion:** **~47%**
+
+## Current authoritative fast-track snapshot - 22 August 2026 (MESP-128 Opus stock-integrity delta remediation complete; delta-only review handoff)
+
+This snapshot records the bounded MESP-128 Opus stock-integrity delta remediation
+on branch feat/MESP-128-inventory-ledger-foundation, created from the exact
+synchronized main base f54b6abe383edd304911eb0a53db43fafdcb3066. The delta
+starting head was 7e1df0f9a4f27f9f7e0dad91170accd8247c8236. This is correctness
+remediation within the already delivered MESP-128 capability, so the overall
+~47% and Procurement/P2P ~41% headlines remain unchanged. No Jira statistics
+or completion credit were inferred from ticket activity.
+
+The delta removes ExtractedAt from the business source fingerprint while
+retaining it as evidence; makes the single-row frontend source reference
+truthful and stable; narrowly classifies SQL 1205/1222 contention; adds a
+provider-independent mutable TouchSequence anchor write; removes the
+nullable-Branch unique-index filter; and adds executable SQLite/LocalDB SQL
+regressions for duplicate provenance, anchor persistence, database uniqueness,
+real contention, and overlapping reservation non-overallocation.
+No Goods Receipt authoritative Inventory posting, transfer, InTransit, Stock
+Adjustment, Count, Issue, MWA valuation, Finance/AP/AR/GL, tax/payment,
+external/statutory, production cutover, or Wafra-specific core behavior was
+added. MESP-129, MESP-130, and MESP-131 remain downstream.
+
+| Current control | Verified position |
+|---|---|
+| MESP-128 code | Delta remediation implementation commit 3a419377bfa09047f5b849020f8a6dc793bc868c on feat/MESP-128-inventory-ledger-foundation, started at 7e1df0f9a4f27f9f7e0dad91170accd8247c8236; Draft PR #72 remains open/Draft/unmerged. |
+| Production capability | ~47% overall; Procurement/P2P conservatively ~41%. Headline unchanged because this is correctness remediation; no Jira/test-count credit is used. |
+| Validation | Release build 0/0; focused Inventory 17/17; SQL safety 26/26; canonical backend 871/871 passed, 0 skipped with disposable LocalDB SQL safety; Angular 241/241 across 32 spec files; production build 499.97 kB initial / 25.82 kB Inventory lazy; focused Chromium 2/2; full Chromium 26/26; both npm audits 0 vulnerabilities; disposable migration apply/rollback/reapply/drop passed; git diff --check clean. |
+| Delivery boundaries | Formal migrations 20260821113311_MESP128InventoryLedgerFoundation, 20260821132738_MESP128StockIntegrityRemediation, and 20260821213832_MESP128OpusStockIntegrityRemediation; frontend/assets untouched; no Jira writes; no MESP-129 or downstream implementation. |
+| Next exact session | Independent delta-only review of the accepted Opus findings against the final branch tip, migration/index integrity, anchor writes, contention classification, stable source references, and validation evidence. Do not merge or start downstream work. |
+
+## Progress history - 22 August 2026
+
+| Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
+|---|---|---:|---:|---|
+| 2026-08-22 | MESP-128 Opus stock-integrity delta remediation complete: ExtractedAt-independent business provenance, truthful stable frontend source-line reference, narrow SQL 1205/1222 contention classification, provider-independent anchor touch, unfiltered nullable-Branch uniqueness, additive migration, and executable SQLite/LocalDB regressions. | ~47% | ~41% | Correctness remediation; headlines unchanged. Release build 0/0; focused Inventory 17/17; SQL safety 26/26; canonical backend 871/871 including disposable LocalDB SQL safety; Angular 241/241; production bundle 499.97 kB initial / 25.82 kB Inventory lazy; focused Chromium 2/2; full Chromium 26/26; both npm audits 0 vulnerabilities. Draft PR #72 remains open/Draft/unmerged; no Jira writes; next review is delta-only. |
 
 ## Current authoritative fast-track snapshot - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
 

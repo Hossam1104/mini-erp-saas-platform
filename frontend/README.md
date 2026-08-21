@@ -1,5 +1,21 @@
 # Mini ERP Tenant-Aware Shell
 
+> **Current MESP-128 workspace overlay - 21 August 2026.** The shell now
+> includes a lazy Inventory workspace at /app/inventory with server-provided
+> Warehouse scope, human-readable Product/UOM selection, six distinct stock
+> facts, append-only ledger visibility, opening-balance create/validate/post/
+> correction controls, and partial reservation create/reduce/release controls.
+> It preserves EN/AR RTL/LTR, accessible labels, responsive layout, safe server
+> errors, and no client-supplied Tenant authority. Expected/Damaged/InTransit
+> display the truthful zero state because those later posting workflows remain
+> out of scope.
+
+> **MESP-128 validation.** Angular passes **241/241 across 32 spec files**;
+> production build is **499.97 kB initial total** with a **25.82 kB Inventory
+> lazy chunk**; focused Inventory Chromium coverage is **2/2** and full
+> Chromium is **26/26**; both npm audit --omit=dev and full npm audit report
+> **0 vulnerabilities**.
+
 > **Current MESP-127 workspace overlay - 21 August 2026.** The Procurement
 > shell now includes a lazy Supplier Returns workspace at
 > `/app/procurement/supplier-returns`, `/new`, and `/:id`. It provides a

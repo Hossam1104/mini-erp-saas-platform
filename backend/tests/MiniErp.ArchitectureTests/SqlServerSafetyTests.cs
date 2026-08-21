@@ -1,9 +1,16 @@
 using System.Data;
+using System.Data.Common;
 using System.Reflection;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.App.BuildingBlocks.Rest;
+using MiniErp.App.Modules.Inventory;
+using MiniErp.Contracts.Modules.Foundation;
+using MiniErp.Contracts.Modules.Inventory;
 using MiniErp.Infrastructure.Persistence;
+using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 using Xunit;
 
 namespace MiniErp.ArchitectureTests;
@@ -66,6 +73,7 @@ internal static class SqlServerSafetyConfigurationValidator
 public sealed class SqlServerSafetyFixture : IAsyncLifetime
 {
     private string _connectionString = string.Empty;
+    private string _inventoryConnectionString = string.Empty;
     private DbContextOptions _options = null!;
 
     public TenantContext TenantA { get; private set; } = null!;
@@ -109,6 +117,20 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
             await context.Database.EnsureCreatedAsync();
         }
 
+        var inventoryBuilder = new SqlConnectionStringBuilder(_connectionString)
+        {
+            InitialCatalog = $"{builder.InitialCatalog}_Inventory"
+        };
+        _inventoryConnectionString = inventoryBuilder.ConnectionString;
+        await EnsureDatabaseExistsAsync(inventoryBuilder);
+        var inventoryOptions = new DbContextOptionsBuilder()
+            .UseSqlServer(_inventoryConnectionString)
+            .Options;
+        await using (var inventory = new InventoryDbContext(inventoryOptions, TenantA))
+        {
+            await inventory.Database.EnsureCreatedAsync();
+        }
+
         await CreateProbeTablesAsync();
         Factory = new TenantPersistenceSessionFactory(_options);
     }
@@ -120,17 +142,8 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
             return;
         }
 
-        var builder = new SqlConnectionStringBuilder(_connectionString);
-        var databaseName = builder.InitialCatalog;
-        builder.InitialCatalog = "master";
-
-        await using var connection = new SqlConnection(builder.ConnectionString);
-        await connection.OpenAsync();
-        await using var command = connection.CreateCommand();
-        command.CommandText = $"IF DB_ID(N'{EscapeLiteral(databaseName)}') IS NOT NULL "
-            + $"BEGIN ALTER DATABASE [{EscapeIdentifier(databaseName)}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; "
-            + $"DROP DATABASE [{EscapeIdentifier(databaseName)}]; END;";
-        await command.ExecuteNonQueryAsync();
+        await DropDatabaseAsync(_inventoryConnectionString);
+        await DropDatabaseAsync(_connectionString);
     }
 
     internal TenantPersistenceDbContext CreateDbContext(TenantContext tenantContext)
@@ -141,6 +154,13 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
     public async Task<SqlConnection> OpenConnectionAsync()
     {
         var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+        return connection;
+    }
+
+    public async Task<SqlConnection> OpenInventoryConnectionAsync()
+    {
+        var connection = new SqlConnection(_inventoryConnectionString);
         await connection.OpenAsync();
         return connection;
     }
@@ -167,6 +187,25 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
         await using var command = connection.CreateCommand();
         command.CommandText = $"IF DB_ID(N'{EscapeLiteral(databaseName)}') IS NULL "
             + $"CREATE DATABASE [{EscapeIdentifier(databaseName)}];";
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private static async Task DropDatabaseAsync(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return;
+        }
+
+        var builder = new SqlConnectionStringBuilder(connectionString);
+        var databaseName = builder.InitialCatalog;
+        builder.InitialCatalog = "master";
+        await using var connection = new SqlConnection(builder.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"IF DB_ID(N'{EscapeLiteral(databaseName)}') IS NOT NULL "
+            + $"BEGIN ALTER DATABASE [{EscapeIdentifier(databaseName)}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; "
+            + $"DROP DATABASE [{EscapeIdentifier(databaseName)}]; END;";
         await command.ExecuteNonQueryAsync();
     }
 
@@ -324,6 +363,241 @@ public sealed class SqlServerSafetyTests
         var staleDeleteException = await Assert.ThrowsAsync<TenantPersistenceViolationException>(
             () => staleDelete.SaveChangesAsync());
         Assert.Equal(TenantPersistenceViolationCode.PersistenceConflict, staleDeleteException.Code);
+    }
+
+    [Fact]
+    public async Task Inventory_sql_server_existing_anchor_touch_persists_a_real_update()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = new DbContextOptionsBuilder().UseSqlServer(connectionString).Options;
+        var anchorId = Guid.NewGuid();
+        await using (var createDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            await createDb.Database.EnsureCreatedAsync();
+            var anchor = CreateAnchor(_fixture.TenantA.TenantId, anchorId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+            anchor.Touch();
+            createDb.ConcurrencyAnchors.Add(anchor);
+            await createDb.SaveChangesAsync();
+        }
+
+        long beforeSequence;
+        byte[] beforeVersion;
+        await using (var touchDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            var anchor = await touchDb.ConcurrencyAnchors.SingleAsync(item => item.Id == anchorId);
+            beforeSequence = anchor.TouchSequence;
+            beforeVersion = anchor.Version.ToArray();
+            anchor.Touch();
+            await touchDb.SaveChangesAsync();
+        }
+
+        await using var verifyDb = new InventoryDbContext(options, _fixture.TenantA);
+        var persisted = await verifyDb.ConcurrencyAnchors.AsNoTracking().SingleAsync(item => item.Id == anchorId);
+        Assert.Equal(beforeSequence + 1, persisted.TouchSequence);
+        Assert.NotEqual(beforeVersion, persisted.Version);
+    }
+
+    [Fact]
+    public async Task Inventory_sql_server_branch_null_anchor_identity_is_database_unique_and_unfiltered()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = new DbContextOptionsBuilder().UseSqlServer(connectionString).Options;
+        var companyId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        await using (var createDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            await createDb.Database.EnsureCreatedAsync();
+            createDb.ConcurrencyAnchors.Add(CreateAnchor(_fixture.TenantA.TenantId, Guid.NewGuid(), companyId, warehouseId, productId, unitId));
+            await createDb.SaveChangesAsync();
+        }
+
+        await using (var duplicateDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            duplicateDb.ConcurrencyAnchors.Add(CreateAnchor(_fixture.TenantA.TenantId, Guid.NewGuid(), companyId, warehouseId, productId, unitId));
+            await Assert.ThrowsAsync<DbUpdateException>(() => duplicateDb.SaveChangesAsync());
+        }
+
+        await using var connection = await _fixture.OpenConnectionAsync();
+        await using var indexCommand = connection.CreateCommand();
+        indexCommand.CommandText = """
+            SELECT filter_definition
+            FROM sys.indexes
+            WHERE object_id = OBJECT_ID(N'[inventory].[ConcurrencyAnchors]')
+              AND name = N'IX_ConcurrencyAnchors_TenantId_CompanyId_BranchId_WarehouseId_ProductId_UnitOfMeasureId_TrackingKey';
+            """;
+        Assert.Null(await indexCommand.ExecuteScalarAsync());
+    }
+
+    [Fact]
+    public async Task Inventory_sql_server_contention_is_classified_as_conflict_without_reservation_effect()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var seedOptions = new DbContextOptionsBuilder().UseSqlServer(connectionString).Options;
+        var tenantId = _fixture.TenantA.TenantId;
+        var warehouseId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        var anchorId = Guid.NewGuid();
+        var warehouse = new InventoryWarehouseOption(tenantId.Value, Guid.NewGuid(), null, warehouseId, "WH-CONTENTION", "Contention warehouse");
+        var product = new InventoryProductReference(tenantId.Value, productId, "SKU-CONTENTION", "Contention product", unitId, "EA", true, true, false);
+
+        await using (var seedDb = new InventoryDbContext(seedOptions, _fixture.TenantA))
+        {
+            await seedDb.Database.EnsureCreatedAsync();
+            var anchor = CreateAnchor(tenantId, anchorId, warehouse.CompanyId, warehouseId, productId, unitId);
+            anchor.Touch();
+            seedDb.ConcurrencyAnchors.Add(anchor);
+            seedDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId,
+                Guid.NewGuid(),
+                warehouse.CompanyId,
+                warehouse.BranchId,
+                warehouse.WarehouseId,
+                warehouse.Code,
+                warehouse.Name,
+                product.ProductId,
+                product.Sku,
+                product.Name,
+                product.BaseUnitOfMeasureId,
+                product.BaseUnitOfMeasureCode,
+                InventoryMovementDirection.Inbound,
+                10m,
+                1m,
+                "SAR",
+                null,
+                InventoryMovementSourceType.OpeningBalance,
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                new DateOnly(2026, 8, 22),
+                Guid.NewGuid(),
+                "sql-contention-seed",
+                DateTimeOffset.UtcNow));
+            await seedDb.SaveChangesAsync();
+        }
+
+        var gate = new FirstInventoryConnectionClosedGate();
+        var operationOptions = new DbContextOptionsBuilder()
+            .UseSqlServer(connectionString, sql => sql.CommandTimeout(5))
+            .AddInterceptors(gate)
+            .Options;
+        var inventoryContext = InventoryContext(_fixture.TenantA, "tenant.inventory.reservation.create");
+        var service = new InventoryService(
+            new InventoryPersistence(operationOptions),
+            new InventoryResourceAuthorizationService(),
+            new ConfiguredInventoryWarehouseProvider([warehouse]),
+            new StaticInventoryProductProvider(product));
+        var request = new InventoryReservationCreateRequest(
+            warehouse.CompanyId,
+            warehouse.BranchId,
+            warehouse.WarehouseId,
+            product.ProductId,
+            product.BaseUnitOfMeasureId,
+            7m,
+            "Demand",
+            "SQL-CONTENTION-DEMAND",
+            true,
+            null);
+
+        var operation = service.CreateReservationAsync(inventoryContext, request, "sql-contention-key");
+        await gate.WaitAsync();
+
+        await using var blocker = await _fixture.OpenInventoryConnectionAsync();
+        await using var transaction = (SqlTransaction)await blocker.BeginTransactionAsync(IsolationLevel.Serializable);
+        await using (var lockCommand = blocker.CreateCommand())
+        {
+            lockCommand.Transaction = transaction;
+            lockCommand.CommandText = """
+                SELECT [TouchSequence]
+                FROM [inventory].[ConcurrencyAnchors] WITH (UPDLOCK, HOLDLOCK)
+                WHERE [Id] = @anchorId;
+                """;
+            lockCommand.Parameters.AddWithValue("@anchorId", anchorId);
+            Assert.NotNull(await lockCommand.ExecuteScalarAsync());
+        }
+
+        var result = await operation;
+        Assert.False(result.Succeeded);
+        Assert.Equal("conflict", result.Code);
+
+        await transaction.RollbackAsync();
+        var persistence = new InventoryPersistence(seedOptions);
+        var reservations = await persistence.ListReservationsAsync(inventoryContext, new InventoryScope(tenantId.Value, warehouse.CompanyId, warehouse.BranchId, warehouse.WarehouseId));
+        Assert.Empty(reservations);
+    }
+
+    [Fact]
+    public async Task Inventory_sql_server_overlapping_reservations_cannot_over_allocate()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = new DbContextOptionsBuilder().UseSqlServer(connectionString, sql => sql.CommandTimeout(15)).Options;
+        var tenantId = _fixture.TenantA.TenantId;
+        var companyId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        var warehouse = new InventoryWarehouseOption(tenantId.Value, companyId, null, warehouseId, "WH-RESERVATION", "Reservation warehouse");
+        var product = new InventoryProductReference(tenantId.Value, productId, "SKU-RESERVATION", "Reservation product", unitId, "EA", true, true, false);
+        await using (var seedDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            await seedDb.Database.EnsureCreatedAsync();
+            var anchor = CreateAnchor(tenantId, Guid.NewGuid(), companyId, warehouseId, productId, unitId);
+            anchor.Touch();
+            seedDb.ConcurrencyAnchors.Add(anchor);
+            seedDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId,
+                Guid.NewGuid(),
+                companyId,
+                null,
+                warehouseId,
+                warehouse.Code,
+                warehouse.Name,
+                productId,
+                product.Sku,
+                product.Name,
+                unitId,
+                product.BaseUnitOfMeasureCode,
+                InventoryMovementDirection.Inbound,
+                10m,
+                1m,
+                "SAR",
+                null,
+                InventoryMovementSourceType.OpeningBalance,
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                new DateOnly(2026, 8, 22),
+                Guid.NewGuid(),
+                "sql-reservation-seed",
+                DateTimeOffset.UtcNow));
+            await seedDb.SaveChangesAsync();
+        }
+
+        var context = InventoryContext(_fixture.TenantA);
+        using var barrier = new Barrier(2);
+        var firstPersistence = new InventoryPersistence(options);
+        var secondPersistence = new InventoryPersistence(options);
+        var first = Task.Run(async () =>
+        {
+            barrier.SignalAndWait();
+            return await firstPersistence.CreateReservationAsync(context, ReservationCommand(tenantId.Value, companyId, warehouseId, productId, unitId, warehouse, product, "SQL-RESERVATION-1"), 10m);
+        });
+        var second = Task.Run(async () =>
+        {
+            barrier.SignalAndWait();
+            return await secondPersistence.CreateReservationAsync(context, ReservationCommand(tenantId.Value, companyId, warehouseId, productId, unitId, warehouse, product, "SQL-RESERVATION-2"), 10m);
+        });
+
+        var results = await Task.WhenAll(first, second);
+        var reservations = await firstPersistence.ListReservationsAsync(context, new InventoryScope(tenantId.Value, companyId, null, warehouseId));
+        Assert.NotEmpty(reservations);
+        Assert.True(reservations.Sum(item => item.ReservedQuantity) <= 10m);
+        Assert.Contains(
+            reservations.Sum(item => item.ReservedQuantity) + reservations.Sum(item => item.UnallocatedQuantity),
+            new[] { 7m, 14m });
+        Assert.Contains(results, item => item is not null);
     }
 
     [Fact]
@@ -548,6 +822,102 @@ public sealed class SqlServerSafetyTests
         // Either condition alone is sufficient for rejection.
         Assert.Throws<InvalidOperationException>(
             () => SqlServerSafetyConfigurationValidator.ValidateSafeConnectionString(runtimeConnectionString));
+    }
+
+    private async Task<string> GetConnectionStringAsync()
+    {
+        await using var connection = await _fixture.OpenInventoryConnectionAsync();
+        return connection.ConnectionString;
+    }
+
+    private static InventoryConcurrencyAnchorEntity CreateAnchor(
+        TenantId tenantId,
+        Guid id,
+        Guid companyId = default,
+        Guid warehouseId = default,
+        Guid productId = default,
+        Guid unitOfMeasureId = default)
+    {
+        return new InventoryConcurrencyAnchorEntity(
+            tenantId,
+            id,
+            companyId == Guid.Empty ? Guid.Parse("11111111-1111-1111-1111-111111111111") : companyId,
+            null,
+            warehouseId == Guid.Empty ? Guid.Parse("cccccccc-1111-1111-1111-111111111111") : warehouseId,
+            productId == Guid.Empty ? Guid.Parse("77777777-7777-7777-7777-777777777777") : productId,
+            unitOfMeasureId == Guid.Empty ? Guid.Parse("88888888-8888-8888-8888-888888888888") : unitOfMeasureId,
+            string.Empty);
+    }
+
+    private static InventoryRequestContext InventoryContext(
+        TenantContext tenantContext,
+        string permission = "tenant.inventory.ledger.view") =>
+        new InventoryTenantContextResolver().Resolve(
+            FoundationRequestContext.ForTenant(
+                Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                Guid.Parse("55555555-5555-5555-5555-555555555555"),
+                tenantContext,
+                permission)).Context!;
+
+    private static InventoryReservationCommand ReservationCommand(
+        Guid tenantId,
+        Guid companyId,
+        Guid warehouseId,
+        Guid productId,
+        Guid unitId,
+        InventoryWarehouseOption warehouse,
+        InventoryProductReference product,
+        string sourceReference) => new(
+        Guid.NewGuid(),
+        new InventoryScope(tenantId, companyId, warehouse.BranchId, warehouseId),
+        productId,
+        unitId,
+        7m,
+        "Demand",
+        sourceReference,
+        true,
+        null,
+        product,
+        warehouse.Code,
+        warehouse.Name,
+        Guid.Parse("44444444-4444-4444-4444-444444444444"),
+        DateTimeOffset.UtcNow,
+        $"sql-reservation-{Guid.NewGuid():N}",
+        $"sql-reservation-key-{Guid.NewGuid():N}",
+        $"sql-reservation-fingerprint-{Guid.NewGuid():N}");
+
+    private sealed class StaticInventoryProductProvider(InventoryProductReference product) : IInventoryProductProvider
+    {
+        public Task<InventoryProductReference?> FindAsync(InventoryRequestContext context, Guid productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<InventoryProductReference?>(product.TenantId == context.TenantId.Value && product.ProductId == productId ? product : null);
+    }
+
+    private sealed class FirstInventoryConnectionClosedGate : DbConnectionInterceptor
+    {
+        private readonly TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int signaled;
+
+        internal Task WaitAsync() => completion.Task.WaitAsync(TimeSpan.FromSeconds(15));
+
+        public override async Task ConnectionOpenedAsync(
+            DbConnection connection,
+            ConnectionEndEventData eventData,
+            CancellationToken cancellationToken = default)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SET LOCK_TIMEOUT 1000;";
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        public override Task ConnectionClosedAsync(DbConnection connection, ConnectionEndEventData eventData)
+        {
+            if (Interlocked.Exchange(ref signaled, 1) == 0)
+            {
+                completion.TrySetResult(true);
+            }
+
+            return Task.CompletedTask;
+        }
     }
 
     private static async Task ExecuteProbeInsertAsync(

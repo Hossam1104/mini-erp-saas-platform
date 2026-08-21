@@ -5,6 +5,7 @@ using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
+using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
 namespace MiniErp.Infrastructure.Persistence;
 
@@ -170,6 +171,26 @@ internal sealed class TenantOwnershipVerifierRegistry
             ProcurementTenantOwnershipVerifier.For<SupplierReturnEvidenceEntity>(),
             ProcurementTenantOwnershipVerifier.For<SupplierReturnHistoryEntity>(),
             ProcurementTenantOwnershipVerifier.For<SupplierReturnAuditEntity>()
+        ]);
+    }
+
+    internal static TenantOwnershipVerifierRegistry CreateInventory()
+    {
+        return new TenantOwnershipVerifierRegistry(
+        [
+            new TenantOwnershipVerifierRegistration(
+                typeof(TenantOwnedRecord),
+                TenantOwnershipStoreVerifier.ReadStoredTenantId,
+                TenantOwnershipStoreVerifier.ReadStoredTenantIdAsync),
+            InventoryTenantOwnershipVerifier.For<InventoryOpeningBalanceEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryOpeningBalanceRowEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryOpeningBalanceHistoryEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryStockMovementEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryReservationEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryReservationHistoryEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryAuditEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryIdempotencyEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryConcurrencyAnchorEntity>()
         ]);
     }
 

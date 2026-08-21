@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
+using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
 namespace MiniErp.Infrastructure.Persistence;
 
@@ -57,6 +58,15 @@ public static class DevelopmentSqlServerDatabaseMigrator
                    SqlServerDesignTimeDbContextConfiguration.CreateTenantContext()))
         {
             MigrateWithDatabaseCreationRaceRetry(procurement);
+        }
+
+        using (var inventory = new InventoryDbContext(
+                   SqlServerMigrationConfiguration.Configure(
+                       connectionString,
+                       SqlServerMigrationConfiguration.InventoryHistoryTable),
+                   SqlServerDesignTimeDbContextConfiguration.CreateTenantContext()))
+        {
+            MigrateWithDatabaseCreationRaceRetry(inventory);
         }
     }
 
