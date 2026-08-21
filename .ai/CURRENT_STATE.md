@@ -6,7 +6,8 @@ MESP-128 remains bounded to the Inventory-owned physical-stock foundation on
 branch `feat/MESP-128-inventory-ledger-foundation`, based exactly on main
 `f54b6abe383edd304911eb0a53db43fafdcb3066`. The required remediation starting
 head was `cec9fee911a4d4ba14867a358f852ebd36a89fba`; implementation commit
-`0cd5defd109dceffead9bf4781c7f271275bffed` applies the SOL P1 findings. Draft PR #72 remains open, Draft, and
+`5247733511dce791cf99031b421589d2e83865b1` is the final remediation/test
+commit sequence applying the SOL P1 findings. Draft PR #72 remains open, Draft, and
 unmerged. Jira remains read-only; no Jira writes were performed.
 
 The remediation separates durable opening-source identity from request

@@ -12,7 +12,7 @@ Exact main base SHA: f54b6abe383edd304911eb0a53db43fafdcb3066
 
 Initial implementation commit: 9893b41
 
-SOL P1 remediation commit: 0cd5defd109dceffead9bf4781c7f271275bffed
+SOL P1 remediation/test commit: 5247733511dce791cf99031b421589d2e83865b1
 
 Jira: MESP-128 is IN PROGRESS under activation comment 11745. Jira,
 Confluence, and other Jira tracker writes are prohibited in this acceptance
