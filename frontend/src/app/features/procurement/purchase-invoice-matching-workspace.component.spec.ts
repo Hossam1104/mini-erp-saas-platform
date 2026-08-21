@@ -244,6 +244,32 @@ describe('PurchaseInvoiceMatchingWorkspaceComponent', () => {
     });
   });
 
+  it('resolves the exchange rate selector label to bilingual copy rather than the raw translation key', () => {
+    const component = fixture.componentInstance;
+    const lang = TestBed.inject(LanguageService);
+    component.mode.set('detail');
+    component.match.set(match);
+    component.handoff.set(handoff);
+    component.purchaseOrder.set(purchaseOrder);
+    component.exchangeRates.set([exchangeRate]);
+    fixture.detectChanges();
+
+    const englishLabel = fixture.nativeElement.querySelector('.fx-selector span')?.textContent ?? '';
+    expect(englishLabel).toContain('Select Exchange Rate');
+    expect(englishLabel).not.toContain('selectExchangeRate');
+    expect(fixture.nativeElement.textContent).not.toContain('selectExchangeRate');
+
+    lang.setLanguage('ar');
+    fixture.detectChanges();
+
+    const arabicLabel = fixture.nativeElement.querySelector('.fx-selector span')?.textContent ?? '';
+    expect(arabicLabel).toContain('اختر سعر الصرف');
+    expect(arabicLabel).not.toContain('selectExchangeRate');
+    expect(fixture.nativeElement.textContent).not.toContain('selectExchangeRate');
+
+    lang.setLanguage('en');
+  });
+
   it('does not request an exchange-rate reference when currencies already match', async () => {
     const component = fixture.componentInstance;
     const sameCurrencyHandoff = {
