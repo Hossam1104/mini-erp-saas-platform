@@ -12,7 +12,7 @@ using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Procurement
 {
     [DbContext(typeof(ProcurementDbContext))]
-    [Migration("20260821025312_MESP127SupplierReturnEvidence")]
+    [Migration("20260821031935_MESP127SupplierReturnEvidence")]
     partial class MESP127SupplierReturnEvidence
     {
         /// <inheritdoc />
@@ -2553,6 +2553,408 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Procurement
                     b.ToTable("SupplierQuotationLines", "procurement");
                 });
 
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnAuditEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("AfterStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AfterSummary")
+                        .HasMaxLength(4096)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AuthorizationPath")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int?>("BeforeStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BeforeSummary")
+                        .HasMaxLength(4096)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("OperationId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(4096)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ReplayResponseSchemaVersion")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReplayResponseSnapshotJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RequestFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SupplierReturnId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "SupplierReturnId", "OccurredAt");
+
+                    b.HasIndex("TenantId", "ActorId", "OperationId", "IdempotencyKey");
+
+                    b.ToTable("SupplierReturnAudit", "procurement");
+                });
+
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("CommercialOutcome")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Condition")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("CorrectionOfId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("CreatedByActorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<decimal?>("FinanceAmount")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("decimal(28,8)");
+
+                    b.Property<string>("FinanceCurrencyCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("FinanceReference")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTimeOffset?>("FinanceReferenceRecordedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("GoodsReceiptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("InventoryHandoffEvidenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("InventoryHandoffRecordedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("InventoryHandoffReference")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4096)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("PurchaseOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ReasonCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReasonDetail")
+                        .HasMaxLength(4096)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly>("ReturnDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset?>("ReversedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SupplierCode")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<Guid?>("SupplierConfirmationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "PurchaseOrderId");
+
+                    b.HasIndex("TenantId", "GoodsReceiptId", "Status");
+
+                    b.HasIndex("TenantId", "Status", "UpdatedAt");
+
+                    b.HasIndex("TenantId", "SupplierId", "CreatedAt");
+
+                    b.ToTable("SupplierReturns", "procurement");
+                });
+
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnEvidenceEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReferenceId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<Guid>("SupplierReturnId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "SupplierReturnId", "RecordedAt");
+
+                    b.ToTable("SupplierReturnEvidence", "procurement");
+                });
+
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnHistoryEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("FromStatus")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(4096)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("SupplierReturnId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ToStatus")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "SupplierReturnId", "OccurredAt");
+
+                    b.ToTable("SupplierReturnHistory", "procurement");
+                });
+
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnLineEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AcceptedQuantityAtReturn")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("decimal(28,8)");
+
+                    b.Property<decimal?>("EligibleQuantityAfter")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("decimal(28,8)");
+
+                    b.Property<Guid>("GoodsReceiptLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ProductSku")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<Guid>("PurchaseOrderLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("ReturnQuantity")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("decimal(28,8)");
+
+                    b.Property<Guid>("SupplierReturnId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UnitOfMeasureCode")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "GoodsReceiptLineId");
+
+                    b.HasIndex("TenantId", "Id")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "PurchaseOrderLineId");
+
+                    b.HasIndex("TenantId", "SupplierReturnId");
+
+                    b.ToTable("SupplierReturnLines", "procurement");
+                });
+
             modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierSourceDecisionEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3106,6 +3508,77 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Procurement
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnAuditEntity", b =>
+                {
+                    b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnEntity", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "SupplierReturnId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnEntity", b =>
+                {
+                    b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Procurement.GoodsReceiptEntity", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "GoodsReceiptId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Procurement.PurchaseOrderEntity", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "PurchaseOrderId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnEvidenceEntity", b =>
+                {
+                    b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnEntity", null)
+                        .WithMany("Evidence")
+                        .HasForeignKey("TenantId", "SupplierReturnId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnHistoryEntity", b =>
+                {
+                    b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnEntity", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "SupplierReturnId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnLineEntity", b =>
+                {
+                    b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Procurement.GoodsReceiptLineEntity", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "GoodsReceiptLineId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Procurement.PurchaseOrderLineEntity", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "PurchaseOrderLineId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnEntity", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("TenantId", "SupplierReturnId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierSourceDecisionEntity", b =>
                 {
                     b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Procurement.PurchaseRequestEntity", null)
@@ -3177,6 +3650,13 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Procurement
                 });
 
             modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierQuotationEntity", b =>
+                {
+                    b.Navigation("Evidence");
+
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Procurement.SupplierReturnEntity", b =>
                 {
                     b.Navigation("Evidence");
 

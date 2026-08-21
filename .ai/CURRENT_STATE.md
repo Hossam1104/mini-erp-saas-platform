@@ -1,5 +1,50 @@
 # Current State
 
+## Current authoritative position - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
+
+MESP-127 is implementation-complete at its bounded Procurement-owned scope on
+branch `feat/MESP-127-supplier-return-corrections`, based exactly on
+`e5568c1ea186995dcc4f0cb0075b2f6b20a15064`. The completing implementation
+commit SHA is recorded in the final session handoff and must remain the branch
+tip. Draft PR creation is the only permitted external delivery action; the
+branch remains unmerged and Jira remains read-only.
+
+The capability records Supplier Returns from accepted Goods Receipt evidence
+with linked Purchase Order/PO line, Supplier Confirmation where present,
+Goods Receipt/receipt line, Supplier, Warehouse, Product/UOM, quantity,
+reason/condition, commercial outcome, private evidence-reference, and
+Tenant/Company/Branch snapshots. Server-derived eligibility is accepted
+receipt quantity less active non-reversed Supplier Return quantity. Rejected
+receipt quantity is never eligible and the MESP-125 damaged quantity remains a
+non-additive condition overlay. Source version touching and optimistic
+concurrency prevent overlapping returns from consuming the same remainder.
+
+The lifecycle is Draft -> Submitted -> Approved -> AwaitingInventory ->
+AwaitingFinance -> Completed, with truthful Rejected/Cancelled/Reversed and
+forward-linked CorrectionLinked successor records. Inventory handoff and
+Finance correction/credit references are Procurement evidence only: no stock
+ledger, on-hand, Inventory valuation, AP, GL, tax posting, payment, supplier
+balance, or authoritative downstream posting is created. Posted/source facts
+remain immutable; corrections and reversals preserve original evidence,
+actor, reason, timestamp, authorization, correlation, idempotency, history,
+and audit.
+
+REST/OpenAPI/Foundation metadata, antiforgery, ETags/If-Match, durable
+idempotency replay/conflict handling, Tenant-safe EF persistence, the additive
+`20260821031935_MESP127SupplierReturnEvidence` migration, operational reporting
+rows/metrics, and a bilingual responsive Angular workspace are included.
+Validation is Release build 0 warnings/0 errors; backend 844/844 with 0
+skipped including the disposable LocalDB safety harness; focused Supplier
+Return architecture tests 3/3; Angular 239/239 across 31 spec files;
+production bundle 494.71 kB initial with 57.40 kB Supplier Return lazy chunk;
+focused Supplier Return Chromium 2/2; full Chromium 24/24; both npm audits 0
+vulnerabilities; `git diff --check` clean. `frontend/assets` is untouched.
+
+No Jira writes were performed. No MESP-128, Inventory, Finance/AP, payment,
+external integration, statutory/ZATCA/FATOORA, DNS/TLS, or Wafra-specific core
+behavior was started. The next exact session is Sol acceptance of this branch
+and Draft PR; do not merge or begin MESP-128 from this handoff.
+
 ## Current authoritative position - 21 August 2026 (MESP-126 Opus P1 remediation complete; delta review handoff)
 
 MESP-126 P1 remediation is committed at

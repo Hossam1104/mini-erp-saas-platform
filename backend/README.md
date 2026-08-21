@@ -13,7 +13,7 @@
 > operational report rows are persisted in Procurement. No stock ledger,
 > on-hand, Inventory valuation, AP, GL, tax posting, payment, or authoritative
 > Finance/Inventory event is fabricated. The formal migration is
-> `20260821025312_MESP127SupplierReturnEvidence`.
+> `20260821031935_MESP127SupplierReturnEvidence`.
 
 > **MESP-127 validation baseline.** Release build is **0 warnings / 0
 > errors**; the canonical disposable-LocalDB backend runner passes **844/844,
