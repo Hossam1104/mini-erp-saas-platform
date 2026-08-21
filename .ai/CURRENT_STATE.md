@@ -1,5 +1,58 @@
 # Current State
 
+## Current authoritative position - 21 August 2026 (MESP-128 Inventory Ledger Foundation implementation complete; Sol acceptance handoff)
+
+MESP-128 is implementation-complete at its bounded Inventory-owned
+foundation scope on branch feat/MESP-128-inventory-ledger-foundation, based
+exactly on f54b6abe383edd304911eb0a53db43fafdcb3066. The implementation commit
+is 9893b41. The branch remains unmerged; the required delivery is one Draft PR
+against main; Jira remains read-only and no Jira writes were performed.
+
+Inventory now owns an append-only, Tenant-safe stock ledger with immutable
+opening-balance provenance, validation/quarantine, post and linked correction
+movements, server-derived OnHand/Reserved/Available projections, truthful zero
+Expected/Damaged/InTransit projections, and explicit Warehouse/Product/UOM
+provider seams. Reservations are Tenant/Warehouse/Product/UOM scoped,
+tracking-aware where the existing Product boolean configuration enables it,
+partial-allocation capable, reducible/releasable, history/audit-backed,
+idempotent, and serialized through stock-identity concurrency anchors so
+over-allocation cannot be accepted. Posted movements are never edited;
+correction/reversal effects remain linked to their originals.
+
+The formal module-owned EF migration is
+20260821113311_MESP128InventoryLedgerFoundation. REST/OpenAPI/Foundation
+operation metadata, antiforgery, mandatory audit, durable idempotency replay/
+conflict handling, optimistic If-Match/ETag, Tenant query filters, SQLite
+compatibility, and a bilingual EN/AR RTL responsive Inventory workspace are
+included. The workspace exposes all six stock facts, opening validation/
+posting/correction, reservation partial allocation/reduction/release, human
+Warehouse/Product/UOM labels, and deterministic browser journeys.
+
+Repository facts preserved from inspection: Product currently exposes
+configuration-led TrackingEnabled as a boolean, not a tracking-kind enum; the
+Product provider does not expose a base-UOM code, so alternate-UOM use fails
+closed and no tracking-kind or barcode standard was invented; Warehouse is
+still a configured provider seam rather than a persisted Warehouse module. No
+direct cross-module persistence was introduced.
+
+Validation is clean: Release build 0 warnings/0 errors; focused Inventory
+module/persistence/architecture coverage 5/5; canonical full backend 855/855
+passed, 0 skipped with disposable LocalDB safety execution and unchanged
+persistent MESP_SQLSERVER_CONNECTION_STRING; Angular 241/241 across 32 spec
+files; production initial bundle 499.97 kB with Inventory lazy chunk 25.82 kB;
+focused Inventory Chromium 2/2; full Chromium 26/26; production-only and
+full npm audits 0 vulnerabilities; and git diff --check is clean.
+frontend/assets remains untouched.
+
+No Goods Receipt authoritative Inventory posting, Warehouse Transfer,
+InTransit lifecycle, Supplier/Customer Return physical posting, Stock
+Adjustment, Inventory Count, Stock Issue, MWA valuation, AP/AR/GL, tax
+accounting, payment, external integration, statutory/ZATCA/FATOORA,
+production cutover, DNS/TLS, supplier portal, or Wafra-specific core behavior
+was added. MESP-129, MESP-130, and MESP-131 remain downstream. The next exact
+session is Sol acceptance of this branch and Draft PR; do not merge or start
+the downstream capability from this handoff.
+
 ## Current authoritative position - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
 
 MESP-127 is implementation-complete at its bounded Procurement-owned scope on

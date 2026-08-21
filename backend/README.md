@@ -1,5 +1,23 @@
 # Mini ERP backend foundation
 
+> **Current MESP-128 runtime overlay - 21 August 2026.** The backend now
+> carries the Inventory-owned append-only stock ledger foundation, controlled
+> opening-balance provenance with validation/quarantine/post/correction,
+> server-derived OnHand/Reserved/Available and truthful zero
+> Expected/Damaged/InTransit projections, plus Tenant/Warehouse/Product/UOM
+> scope and tracking-aware reservation seams. Reservations support partial
+> allocation, reduce/release, mandatory history/audit, durable replay/conflict
+> handling, and stock-identity concurrency anchors. The formal migration is
+> 20260821113311_MESP128InventoryLedgerFoundation. No Goods Receipt stock
+> posting, transfer, Stock Adjustment/Count/Issue, MWA, Finance/AP/GL,
+> payment, external/statutory, or Wafra-specific behavior is included.
+
+> **MESP-128 validation.** Release build is **0 warnings / 0 errors**;
+> focused Inventory module/persistence/architecture coverage is **5/5**; the
+> canonical disposable-LocalDB backend runner passes **855/855, 0 skipped**;
+> the persistent runtime connection is unchanged and MESP data is intact.
+> frontend/assets remains untouched and no Jira writes were performed.
+
 > **Current MESP-127 runtime overlay - 21 August 2026.** The backend now
 > carries Procurement-owned Supplier Returns from accepted Goods Receipt
 > evidence through Draft, Submitted, Approved, rejection/cancellation,
