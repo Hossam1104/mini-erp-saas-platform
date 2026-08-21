@@ -1,115 +1,147 @@
-# MINI ERP SAAS PLATFORM
-# MESP-125 — GOODS RECEIPT + PURCHASE INVOICE HANDOFF
-# INDEPENDENT PRE-MERGE CAPABILITY & SECURITY REVIEW TASK
+# MESP-126 — Independent Claude Opus 5 Delta Re-Review Prompt
 
-Sole Reviewer:
-Claude Opus 5
+Reviewer: Claude Opus 5 (independent, read-only)
 
-Reasoning:
-HIGH
+Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 
-Mode:
-INDEPENDENT PRE-MERGE CAPABILITY & SECURITY REVIEW (READ-ONLY)
+Branch: `feat/MESP-126-three-way-matching-tolerances`
 
-Feature Branch:
-feat/MESP-125-goods-receipt-purchase-invoice-handoff
+Base SHA: `42e51b673de5d076b56426180d914f7e3d07c54c`
 
-Base Branch:
-main
+Previous SOL review anchor: `178a49fca9dab6ba55f71871bf3bfcc0e709606a`
 
-============================================================
-0. REVIEW MANDATE & RULES
-============================================================
+New code remediation SHA: `d2a107e427df335a0067c77c30d07562608ab743`
 
-Review Mandate:
-Conduct a rigorous, independent, read-only pre-merge review of the MESP-125
-(Goods Receipt and Purchase Invoice Handoff) implementation on branch
-`feat/MESP-125-goods-receipt-purchase-invoice-handoff`.
+Final branch handoff SHA for this bounded implementation state:
+`d2a107e427df335a0067c77c30d07562608ab743`
 
-Rules for Claude Opus 5:
-1. READ-ONLY: Do NOT modify code, delete assets, or write Jira.
-2. DO NOT MERGE: The branch remains a Draft PR against `main`. GPT-5.6 Sol and
-   the Owner decide on PR merge and Jira closure.
-3. Protected Assets: Verify that `frontend/assets/` remains completely untouched.
-4. Port Rules: API is port 5300, Angular is port 4300. Ports 5000/5001 are
-   unrelated protected services.
+Draft PR: `#70` — must remain open, Draft, and unmerged.
 
-============================================================
-1. MANDATORY REVIEW CRITERIA
-============================================================
+Jira: MESP-126 remains **IN PROGRESS**. No Jira writes are permitted.
 
-Verify the following 12 key architectural, security, and functional dimensions:
+## Review rules
 
-### 1. Tenant & Operational Scope Isolation
-- Verify Tenant isolation on all Goods Receipt and Invoice Handoff read/write paths.
-- Ensure Company/Branch/Warehouse operational context is derived and authorized server-side.
-- Ensure cross-tenant or mismatched-scope warehouse selections fail closed (`warehouse_not_authorized`, `warehouse_scope_denied`).
+This is a bounded independent delta review of the P1 remediation and completed
+cross-currency UX. It is read-only. Do not edit files, commit, push, merge,
+close, retarget, or comment on PR #70. Do not write Jira, Confluence, or any
+other external tracker. Do not start MESP-127 or Finance, AP, GL, Inventory,
+payment, external integration, production, or FX-override work.
 
-### 2. Warehouse Provider & Authorization
-- Verify `IProcurementWarehouseProvider` contract and its DI registration in API bootstrap.
-- Confirm inactive warehouses are rejected (`warehouse_inactive`).
-- Verify warehouse listing returns only active warehouses belonging to the authorized Tenant.
+First verify the branch, clean/dirty state, base ancestry, previous review
+anchor, new code remediation SHA, and final branch handoff SHA. Read
+`AGENTS.md`, `CLAUDE.md`, `.ai/CURRENT_STATE.md`, this prompt, the attached
+MESP-126 brief, and the relevant Procurement, currency, tax, authorization,
+audit, REST, and ADR documents. Inspect the complete branch diff against the
+base, then concentrate the re-review on the delta below while checking for
+regressions in the already accepted MESP-126 capability.
 
-### 3. Physical Receiving & Quantity Invariants
-- Verify physical partition invariant: `ReceivedQuantity = AcceptedQuantity + RejectedQuantity` (`ReceivedQuantity > 0`, `AcceptedQuantity >= 0`, `RejectedQuantity >= 0`).
-- Confirm independent condition overlay: `DamagedQuantity <= ReceivedQuantity` (descriptive condition/disposition overlay, non-additive, never double-counted; `Received != Accepted + Rejected + Damaged` and `Received != Accepted + Damaged`).
-- Verify over-receipt prevention: total accepted quantity across all active receipts cannot exceed the PO line receivable quantity (`over_receipt_not_allowed`).
-- Confirm damaged quantity is preserved as condition evidence without double-counting against physical total.
+## P1 remediation delta to verify
 
-### 4. Commercial Remainder & PO Receipt Eligibility
-- Verify receipt eligibility is derived from Confirmed POs with receivable remainder > 0.
-- Verify commercial remainder calculation: `RemainingReceivableQuantity = ConfirmedQuantity - sum(Active AcceptedQuantity)`. Rejected physical quantity does not satisfy the supplier's commercial obligation.
-- Confirm wrong-stage POs (Draft, PendingApproval, Rejected, Cancelled) reject receipt attempts.
-- Confirm partial receipts correctly decrement server-derived receivable remainder, and cancelled receipts restore the remainder.
+### 1. FX authority and request contract
 
-### 5. Goods Receipt Cancellation & Active Handoff Reference Blocking
-- Verify receipt cancellation requires a reason note.
-- Verify cancellation is blocked if the receipt is referenced by an active Purchase Invoice Handoff (`goods_receipt_referenced_by_active_invoice_handoff`).
-- Verify that cancelling the referencing handoff releases the receipt, allowing subsequent cancellation.
+Verify the public `PurchaseInvoiceExchangeRateReferenceRequest` exposes exactly
+one property: `ExchangeRateId`. `EffectiveOn` and any other caller-supplied
+historical date must not be accepted. Raw rate, scale, currency-pair, version,
+effective-date, provenance, or source facts must not be matching inputs.
 
-### 6. Purchase Invoice Handoff & Pro-Rata Tax
-- Verify handoff is created strictly from accepted Goods Receipt lines belonging to Confirmed POs.
-- Verify pro-rata tax allocation matches line proportion without rounding leaks.
-- Verify un-invoiced remainder tracking prevents duplicate invoicing of the same received line (`RemainingHandoffQuantity = AcceptedQuantity - sum(Active HandedOffQuantity)`).
-- Verify handoff cancellation releases receipt lines for re-invoicing.
+Verify the narrow MESP-120 provider selects the effective version only from the
+immutable supplier invoice date captured in supplier-declared invoice evidence.
+The only allowed fallback is the existing immutable handoff date field because
+the current contract calls it `SupplierInvoiceDate`. A missing date fails
+closed. The provider must continue to enforce Tenant ownership, active identity,
+source/target currency pair, effective-dated version, positive rate and scale,
+and server-owned snapshot metadata. Later master-data edits must not rewrite an
+immutable match evaluation.
 
-### 7. FIN-OD-01 / PD-046 Boundary Preservation
-- Confirm that Goods Receipt and Invoice Handoff do NOT fabricate general ledger journal entries, AP subledger postings, supplier payments, or inventory stock ledger entries.
-- Confirm Finance domain authority is fully respected.
+Required evidence includes provider/service tests for date authority and
+missing-date failure, DTO-shape/reflection or equivalent contract coverage, and
+snapshot assertions for version ID/number, pair, rate, scale, effective date
+and window, provenance, and source notes.
 
-### 8. Concurrency & Race Condition Prevention
-- Verify optimistic concurrency via `If-Match` / ETag headers on all mutation endpoints.
-- Verify that `.TouchVersion()` on source entities (PO, Receipt) enforces EF Core concurrency checks to prevent concurrent over-receipt or over-invoicing races (10 -> 7/7 concurrent requests result in 1 success and 1 `concurrency_conflict` / `over_receipt_not_allowed`).
+### 2. Aggregate quantity and allocation semantics
 
-### 9. Idempotency & Durable Replay
-- Verify deterministic request fingerprinting (SHA-256).
-- Verify versioned immutable audit snapshots.
-- Verify identical retries replay stored responses, and conflicting retries return HTTP 409 `idempotency_conflict`.
+Verify repeated supplier-declared lines for one `PurchaseOrderLineId` are
+aggregated before quantity comparison so exactly one quantity variance is
+recorded per PO line. The comparison remains against the current partial
+Handoff/source quantity, not the original PO quantity. Under- and
+over-declarations remain truthful evidence and use the configured absolute plus
+percentage tolerance formula, including exact-boundary behavior.
 
-### 10. Bilingual Angular Workspaces & Accessibility
-- Verify Goods Receipt workspace at `/app/procurement/goods-receipts` (List, Create with PO source selector and warehouse picker, Detail with tabs, Cancel dialog).
-- Verify Purchase Invoice Handoff workspace at `/app/procurement/invoice-handoffs` (List, Create with receipt lines and pro-rata tax preview, Detail with tabs, Cancel dialog).
-- Verify English/Arabic bilingual toggle, RTL/LTR layout, ARIA attributes, focus trapping, and keyboard navigation.
+Verify allocations are aggregated by `GoodsReceiptLineId`. The total declared
+allocation must not exceed the handoff-represented quantity or active accepted
+quantity for that receipt line. Duplicate allocations must be preserved as
+supplier evidence and classified as an aggregate mismatch; they must not be
+silently double-consumed or rejected at evidence intake merely because two
+invoice lines refer to one physical receipt. Invalid foreign Tenant, wrong PO,
+wrong line/receipt, negative, malformed, cancelled, rejected, and cross-scope
+data must still fail closed. Valid allocations across multiple receipt lines
+must remain valid without double-consumption.
 
-### 11. Asset & Schema Integrity
-- Verify zero modifications to `frontend/assets/`.
-- Verify EF Core migrations for procurement persistence.
+Verify individual price, discount, tax code/rate/amount, net/gross/line amount,
+and header subtotal/discount/tax/gross comparisons remain intact and are not
+replaced by the aggregation logic.
 
-### 12. Full Verification Baseline
-- Release solution build: `dotnet build backend\MiniErp.sln -c Release` (0 warnings / 0 errors).
-- Official backend test runner: `.\scripts\validate-foundation.ps1` or `.\scripts\Test-MiniErpBackend.ps1` (812/812 passing against disposable LocalDB).
-- Angular unit tests: `npm test -- --watch=false --no-progress` inside `frontend/` (232/232 passing across 29 spec files).
-- Production build: `npm run build` inside `frontend/` (initial bundle <= 500 kB budget).
-- Playwright E2E: `npm run test:e2e` inside `frontend/` (19/19 passing).
-- Dependency security: `npm audit --omit=dev` (0 vulnerabilities).
+### 3. Scope and policy boundary
 
-============================================================
-2. OUTPUT VERDICT FORMAT
-============================================================
+Verify exact Tenant and Company/Branch scope remains server-derived and
+explicit. Do not infer or invent Company-to-Branch policy inheritance. Verify
+the existing tolerance, resolution, SoD, authorization, audit, concurrency,
+idempotency, source snapshot, and legacy no-evidence `NotMatchReady` behavior
+remain unchanged except for the bounded remediation above.
 
-Your review report must include:
-1. Executive Verdict: `APPROVE FOR MERGE` | `CHANGES REQUIRED` | `BLOCKED`
-2. Findings Breakdown: P0 (Blocker), P1 (Critical), P2 (Major), P3 (Minor/Observation)
-3. Architectural & Domain Invariant Assessment (Tenant isolation, FIN-OD-01, quantity integrity, concurrency, idempotency)
-4. Full Validation Evidence Summary
-5. Jira & Handoff Recommendation for GPT-5.6 Sol and Owner
+### 4. Cross-currency Angular UX
+
+Verify same-currency matching renders no Exchange Rate selector and submits no
+FX reference. For different currencies, verify the workspace loads the existing
+MESP-120 Exchange Rate list and shows a human-readable selector only for active
+identities whose source/target pair matches supplier invoice currency to PO
+currency and whose version window covers the immutable supplier invoice date.
+
+The browser must expose no raw GUID text and no editable rate, scale, version,
+effective date, pair, provenance, or source fields. The request must send only
+`ExchangeRateId`. No eligible identity or missing invoice date must remain
+fail-closed and visibly Not match-ready. After evaluation, the UI must display
+the applied server snapshot including pair, version, effective date, and
+provenance/source metadata. Verify English/Arabic copy, RTL/LTR direction,
+keyboard operation, label/description relationships, alert/status semantics,
+responsive layout, and reduced-motion behavior. Verify focused and full
+Chromium Playwright coverage, including request-body inspection.
+
+## Required regression review
+
+Recheck independent invoice evidence remains separate from the MESP-125
+PO-derived handoff preview and preserves reference/date/currency/totals, line
+quantity/unit price/discount/tax/amount/net/gross/description, Purchase Order
+lineage, legitimate receipt allocations, immutable evidence versioning,
+history/audit/replay, supersession/current evaluation, optimistic concurrency,
+Tenant and Company/Branch scope, migrations, provider portability, REST/
+OpenAPI/Foundation registration, antiforgery, `If-Match`, and idempotency.
+
+This capability remains Procurement evidence orchestration only. It must not
+post AP, GL, tax accounting, stock/on-hand, Inventory valuation, payment,
+realized/unrealized FX, revaluation, statutory data, supplier portal data,
+external invoice/FX integration, or Wafra-specific core behavior.
+
+## Validation evidence to verify
+
+- `dotnet build backend/MiniErp.sln -c Release`: 0 warnings, 0 errors.
+- Focused Invoice Handoff/matching remediation tests: 37/37 passed.
+- Full backend runner: 841/841 passed, 0 skipped, including 22 SQL safety
+  tests against a disposable LocalDB `MiniErpFoundation_*` database; verify the
+  persistent runtime connection was unchanged and zero disposable databases
+  remained.
+- Angular unit tests: 238/238 across 31 spec files.
+- Angular production build: 494.00 kB initial and 38.05 kB matching lazy
+  chunk, below the 500 kB initial budget.
+- Focused matching Playwright: 3/3; full Chromium suite: 22/22.
+- `npm audit --omit=dev` and full `npm audit`: 0 vulnerabilities.
+- `git diff --check` and complete branch diff review.
+
+## Required result
+
+Return exactly one of `APPROVE FOR MERGE`, `REQUEST CHANGES`, or `BLOCK`, with
+P0/P1/P2/P3 findings, exact file/line evidence, reproduction commands,
+regression evidence, remaining production/provider/legal/specialist/cutover
+gates, and explicit confirmation that the review was read-only. Preserve
+branch `feat/MESP-126-three-way-matching-tolerances` and Draft PR #70 for
+Owner/Sol decision. Do not merge MESP-126. Do not write Jira.

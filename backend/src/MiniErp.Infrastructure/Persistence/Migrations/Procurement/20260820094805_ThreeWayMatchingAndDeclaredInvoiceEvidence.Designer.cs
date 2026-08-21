@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Procurement
 {
     [DbContext(typeof(ProcurementDbContext))]
-    partial class ProcurementDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260820094805_ThreeWayMatchingAndDeclaredInvoiceEvidence")]
+    partial class ThreeWayMatchingAndDeclaredInvoiceEvidence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1021,10 +1024,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Procurement
                         .HasColumnType("int");
 
                     b.Property<string>("ReplayResponseSnapshotJson")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ResolutionPolicySnapshotJson")
-                        .HasMaxLength(32768)
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ResolutionReason")

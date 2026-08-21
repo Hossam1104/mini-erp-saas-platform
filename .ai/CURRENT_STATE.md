@@ -1,6 +1,88 @@
 # Current State
 
-## Current authoritative position - 19 August 2026 (MESP-125 implementation complete; pre-Opus handoff)
+## Current authoritative position - 21 August 2026 (MESP-126 Opus P1 remediation complete; delta review handoff)
+
+MESP-126 P1 remediation is committed at
+`d2a107e427df335a0067c77c30d07562608ab743` on
+`feat/MESP-126-three-way-matching-tolerances`, continuing Draft PR #70 against
+`main`. The public `PurchaseInvoiceExchangeRateReferenceRequest` now accepts
+only `ExchangeRateId`; the MESP-120 provider derives the effective version
+from immutable supplier invoice-date evidence and uses only the existing
+immutable handoff date field as its fallback. A missing date fails closed.
+Provider, service, DTO-shape, snapshot, and missing-date tests cover the
+authority boundary.
+
+Supplier-declared lines are quantity-aggregated by `PurchaseOrderLineId` so
+each PO line gets one quantity variance. Declared allocations are aggregated by
+`GoodsReceiptLineId` and compared against the handoff-supported and active
+AcceptedQuantity bound; duplicate supplier evidence is preserved and
+classified rather than rejected or double-consumed. Individual price, tax,
+discount, line amount, and header total comparisons remain in place. Exact
+Tenant/Company/Branch scope remains server-derived and explicit; no
+Company-to-Branch policy inheritance was invented.
+
+The Angular matching detail now provides an accessible EN/AR RTL
+human-readable Exchange Rate selector only for active pair-compatible
+identities with a valid immutable invoice-date version. The browser sends only
+the selected identity and displays the applied server-owned rate/version/date/
+provenance snapshot; no raw GUID or editable rate/scale/version/effective-date
+input is exposed. Same-currency evaluation remains reference-free, and missing
+cross-currency choices remain fail-closed. Focused and full Playwright cover
+the selector and payload behavior.
+
+Validation after this remediation: Release build 0 warnings/0 errors; focused
+handoff/matching remediation 37/37; full backend 841/841 passed, 0 skipped,
+including 22 disposable LocalDB SQL safety cases with zero orphan databases;
+Angular 238/238 across 31 spec files; production bundle 494.00 kB initial with
+38.05 kB matching lazy chunk; focused matching Chromium 3/3 and full Chromium
+22/22; production-only and full npm audits 0 vulnerabilities; `git diff --check`
+clean. Headline production percentages remain ~44% overall and ~39%
+Procurement/P2P because this session is correctness remediation and UX
+completion, not additive business scope. No Jira writes were performed. Draft
+PR #70 remains open, Draft, and unmerged. Independent Claude Opus 5
+read-only delta re-review is the next exact session; no MESP-127/AP/GL/payment/
+stock/FX override or merge is authorized.
+
+## Current authoritative position - 20 August 2026 (MESP-126 SOL acceptance remediation complete; independent review handoff)
+
+MESP-125 (Goods Receipt and Purchase Invoice Handoff) is **Done** and
+squash-merged to `main` by PR #69 at merge SHA
+`42e51b673de5d076b56426180d914f7e3d07c54c`. The synchronized main baseline
+passed the Release build with 0 warnings and 0 errors before MESP-126 began.
+
+MESP-126 (Three-Way Matching, Tolerances, and Authorized Exception Resolution)
+is **activated / implementation-complete at bounded scope** under Epic MESP-7
+on `feat/MESP-126-three-way-matching-tolerances`. It adds independent
+supplier-declared invoice evidence beside the preserved MESP-125 PO-derived
+handoff preview; accepted Goods Receipt allocations; deterministic exact-safe
+and runtime-configured tolerance evaluation against the current partial handoff;
+truthful over/under supplier quantity evidence with cumulative accepted/confirmed
+source limits; currency/tax evidence comparison with server-authoritative
+MESP-120 Exchange Rate references; durable source snapshots, fingerprints,
+history, audit, and replay; authorized reasoned exception resolution with
+configuration-led resolution/SoD policy evidence; optimistic concurrency;
+REST/OpenAPI registration; EF Core migrations; and a bilingual EN/AR RTL
+matching workspace.
+
+Legacy handoffs without independent evidence remain readable and explicitly
+evaluate as not match-ready. Procurement remains the source/evidence owner;
+Finance owns AP, GL, tax accounting, posting, reconciliation, and payment.
+There is no stock/on-hand mutation, Inventory valuation, external FX or invoice
+integration, supplier portal, statutory/ZATCA/FATOORA behavior, or Wafra-specific
+core behavior.
+
+Validation: Release build 0 warnings/0 errors; focused handoff/matching
+regression tests 30/30; canonical full backend runner 834/834 passed with all
+22 SQL safety cases executed against a disposable LocalDB database; Angular
+235/235 across 30 spec files; production bundle 494.00 kB initial with a
+29.75 kB matching lazy chunk; focused matching Playwright 2/2 and full
+Chromium Playwright 21/21; production-only and full npm audits report 0
+vulnerabilities; EF migration listing includes the MESP-126 evidence and
+resolution-policy migrations. No Jira writes were performed. Independent
+read-only Claude Opus 5 review remains required before merge, and Draft PR #70
+must remain unmerged.
+
+## Historical authoritative position - 19 August 2026 (MESP-125 implementation complete; pre-Opus handoff)
 
 MESP-125 (Goods Receipt and Purchase Invoice Handoff) is **repository-complete on
 branch `feat/MESP-125-goods-receipt-purchase-invoice-handoff`** and published as a

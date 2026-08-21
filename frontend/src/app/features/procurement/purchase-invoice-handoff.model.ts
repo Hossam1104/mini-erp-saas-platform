@@ -12,6 +12,43 @@ export interface PurchaseInvoiceHandoffCreateRequest {
   supplierInvoiceDate: string;
   notes?: string | null;
   sources: PurchaseInvoiceHandoffSourceRequest[];
+  declaredEvidence?: PurchaseInvoiceDeclaredEvidenceRequest | null;
+}
+
+export interface PurchaseInvoiceDeclaredEvidenceAllocationRequest {
+  goodsReceiptId: string;
+  goodsReceiptLineId: string;
+  quantity: number;
+}
+
+export interface PurchaseInvoiceDeclaredEvidenceLineRequest {
+  purchaseOrderLineId: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount?: number | null;
+  taxRatePercentage?: number | null;
+  taxCode?: string | null;
+  taxAmount?: number | null;
+  netAmount?: number | null;
+  grossAmount?: number | null;
+  description?: string | null;
+  allocations: PurchaseInvoiceDeclaredEvidenceAllocationRequest[];
+}
+
+export interface PurchaseInvoiceDeclaredEvidenceRequest {
+  supplierInvoiceReference?: string | null;
+  supplierInvoiceDate?: string | null;
+  currencyCode: string;
+  subtotalAmount?: number | null;
+  discountAmount?: number | null;
+  taxAmount?: number | null;
+  grossAmount?: number | null;
+  lines: PurchaseInvoiceDeclaredEvidenceLineRequest[];
+}
+
+export interface PurchaseInvoiceDeclaredEvidenceCaptureRequest {
+  evidence: PurchaseInvoiceDeclaredEvidenceRequest;
+  reason?: string | null;
 }
 
 export interface PurchaseInvoiceHandoffActionRequest {
@@ -114,6 +151,43 @@ export interface PurchaseInvoiceHandoffResponse {
   sources: PurchaseInvoiceHandoffSourceResponse[];
   version: string;
   canCancel: boolean;
+  declaredEvidence?: PurchaseInvoiceDeclaredEvidenceResponse | null;
+}
+
+export interface PurchaseInvoiceDeclaredEvidenceAllocationResponse {
+  goodsReceiptId: string;
+  goodsReceiptLineId: string;
+  quantity: number;
+}
+
+export interface PurchaseInvoiceDeclaredEvidenceLineResponse {
+  id: string;
+  purchaseOrderLineId: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount: number | null;
+  taxRatePercentage: number | null;
+  taxCode: string | null;
+  taxAmount: number | null;
+  netAmount: number | null;
+  grossAmount: number | null;
+  description: string | null;
+  allocations: PurchaseInvoiceDeclaredEvidenceAllocationResponse[];
+}
+
+export interface PurchaseInvoiceDeclaredEvidenceResponse {
+  id: string;
+  versionNumber: number;
+  supplierInvoiceReference: string | null;
+  supplierInvoiceDate: string | null;
+  currencyCode: string;
+  subtotalAmount: number | null;
+  discountAmount: number | null;
+  taxAmount: number | null;
+  grossAmount: number | null;
+  recordedAt: string;
+  recordedByActorId: string;
+  lines: PurchaseInvoiceDeclaredEvidenceLineResponse[];
 }
 
 export interface PurchaseInvoiceHandoffHistoryResponse {

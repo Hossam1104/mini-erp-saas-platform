@@ -72,6 +72,18 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
 
     internal DbSet<PurchaseInvoiceHandoffAuditEntity> PurchaseInvoiceHandoffAudit => Set<PurchaseInvoiceHandoffAuditEntity>();
 
+    internal DbSet<PurchaseInvoiceDeclaredEvidenceEntity> PurchaseInvoiceDeclaredEvidence => Set<PurchaseInvoiceDeclaredEvidenceEntity>();
+
+    internal DbSet<PurchaseInvoiceDeclaredEvidenceLineEntity> PurchaseInvoiceDeclaredEvidenceLines => Set<PurchaseInvoiceDeclaredEvidenceLineEntity>();
+
+    internal DbSet<PurchaseInvoiceDeclaredEvidenceAllocationEntity> PurchaseInvoiceDeclaredEvidenceAllocations => Set<PurchaseInvoiceDeclaredEvidenceAllocationEntity>();
+
+    internal DbSet<PurchaseInvoiceMatchEvaluationEntity> PurchaseInvoiceMatchEvaluations => Set<PurchaseInvoiceMatchEvaluationEntity>();
+
+    internal DbSet<PurchaseInvoiceMatchHistoryEntity> PurchaseInvoiceMatchHistory => Set<PurchaseInvoiceMatchHistoryEntity>();
+
+    internal DbSet<PurchaseInvoiceMatchAuditEntity> PurchaseInvoiceMatchAudit => Set<PurchaseInvoiceMatchAuditEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -833,6 +845,8 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
         invoiceHandoff.Property(item => item.UpdatedAt).IsRequired();
         invoiceHandoff.Property(item => item.CancelledAt).IsRequired(false);
         invoiceHandoff.Property(item => item.CancellationReason).HasMaxLength(4096).IsRequired(false);
+        invoiceHandoff.Property(item => item.CurrentDeclaredEvidenceId).IsRequired(false);
+        invoiceHandoff.Property(item => item.CurrentDeclaredEvidenceVersion).IsRequired(false);
         ConfigureVersion(invoiceHandoff.Property(item => item.Version));
         invoiceHandoff.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
         invoiceHandoff.HasIndex(item => new { item.TenantId, item.PurchaseOrderId, item.CreatedAt });
@@ -843,6 +857,197 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         invoiceHandoff.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var declaredEvidence = modelBuilder.Entity<PurchaseInvoiceDeclaredEvidenceEntity>();
+        ConfigureTable(declaredEvidence, "PurchaseInvoiceDeclaredEvidence");
+        declaredEvidence.HasKey(item => item.Id);
+        declaredEvidence.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(declaredEvidence.Property(item => item.TenantId));
+        declaredEvidence.Property(item => item.PurchaseInvoiceHandoffId).IsRequired();
+        declaredEvidence.Property(item => item.VersionNumber).IsRequired();
+        declaredEvidence.Property(item => item.IsCurrent).IsRequired();
+        declaredEvidence.Property(item => item.RecordedByActorId).IsRequired();
+        declaredEvidence.Property(item => item.SupplierInvoiceReference).HasMaxLength(256).IsRequired(false);
+        declaredEvidence.Property(item => item.SupplierInvoiceDate).IsRequired(false);
+        declaredEvidence.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired();
+        declaredEvidence.Property(item => item.SubtotalAmount).HasPrecision(28, 8).IsRequired(false);
+        declaredEvidence.Property(item => item.DiscountAmount).HasPrecision(28, 8).IsRequired(false);
+        declaredEvidence.Property(item => item.TaxAmount).HasPrecision(28, 8).IsRequired(false);
+        declaredEvidence.Property(item => item.GrossAmount).HasPrecision(28, 8).IsRequired(false);
+        declaredEvidence.Property(item => item.RecordedAt).IsRequired();
+        ConfigureVersion(declaredEvidence.Property(item => item.Version));
+        declaredEvidence.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        declaredEvidence.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceHandoffId, item.VersionNumber }).IsUnique();
+        declaredEvidence.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceHandoffId, item.IsCurrent });
+        declaredEvidence.HasOne<PurchaseInvoiceHandoffEntity>()
+            .WithMany(item => item.DeclaredEvidenceVersions)
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceHandoffId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        declaredEvidence.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var declaredEvidenceLine = modelBuilder.Entity<PurchaseInvoiceDeclaredEvidenceLineEntity>();
+        ConfigureTable(declaredEvidenceLine, "PurchaseInvoiceDeclaredEvidenceLines");
+        declaredEvidenceLine.HasKey(item => item.Id);
+        declaredEvidenceLine.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(declaredEvidenceLine.Property(item => item.TenantId));
+        declaredEvidenceLine.Property(item => item.PurchaseInvoiceDeclaredEvidenceId).IsRequired();
+        declaredEvidenceLine.Property(item => item.PurchaseOrderLineId).IsRequired();
+        declaredEvidenceLine.Property(item => item.Quantity).HasPrecision(28, 8).IsRequired();
+        declaredEvidenceLine.Property(item => item.UnitPrice).HasPrecision(28, 8).IsRequired();
+        declaredEvidenceLine.Property(item => item.DiscountAmount).HasPrecision(28, 8).IsRequired(false);
+        declaredEvidenceLine.Property(item => item.TaxRatePercentage).HasPrecision(9, 4).IsRequired(false);
+        declaredEvidenceLine.Property(item => item.TaxCode).HasMaxLength(128).IsRequired(false);
+        declaredEvidenceLine.Property(item => item.TaxAmount).HasPrecision(28, 8).IsRequired(false);
+        declaredEvidenceLine.Property(item => item.NetAmount).HasPrecision(28, 8).IsRequired(false);
+        declaredEvidenceLine.Property(item => item.GrossAmount).HasPrecision(28, 8).IsRequired(false);
+        declaredEvidenceLine.Property(item => item.Description).HasMaxLength(512).IsRequired(false);
+        ConfigureVersion(declaredEvidenceLine.Property(item => item.Version));
+        declaredEvidenceLine.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        declaredEvidenceLine.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceDeclaredEvidenceId });
+        declaredEvidenceLine.HasOne<PurchaseInvoiceDeclaredEvidenceEntity>()
+            .WithMany(item => item.Lines)
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceDeclaredEvidenceId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Cascade);
+        declaredEvidenceLine.HasOne<PurchaseOrderLineEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        declaredEvidenceLine.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var declaredEvidenceAllocation = modelBuilder.Entity<PurchaseInvoiceDeclaredEvidenceAllocationEntity>();
+        ConfigureTable(declaredEvidenceAllocation, "PurchaseInvoiceDeclaredEvidenceAllocations");
+        declaredEvidenceAllocation.HasKey(item => item.Id);
+        declaredEvidenceAllocation.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(declaredEvidenceAllocation.Property(item => item.TenantId));
+        declaredEvidenceAllocation.Property(item => item.PurchaseInvoiceDeclaredEvidenceLineId).IsRequired();
+        declaredEvidenceAllocation.Property(item => item.GoodsReceiptId).IsRequired();
+        declaredEvidenceAllocation.Property(item => item.GoodsReceiptLineId).IsRequired();
+        declaredEvidenceAllocation.Property(item => item.Quantity).HasPrecision(28, 8).IsRequired();
+        ConfigureVersion(declaredEvidenceAllocation.Property(item => item.Version));
+        declaredEvidenceAllocation.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        declaredEvidenceAllocation.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceDeclaredEvidenceLineId });
+        declaredEvidenceAllocation.HasIndex(item => new { item.TenantId, item.GoodsReceiptLineId });
+        declaredEvidenceAllocation.HasOne<PurchaseInvoiceDeclaredEvidenceLineEntity>()
+            .WithMany(item => item.Allocations)
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceDeclaredEvidenceLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Cascade);
+        declaredEvidenceAllocation.HasOne<GoodsReceiptLineEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.GoodsReceiptLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        declaredEvidenceAllocation.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var matchEvaluation = modelBuilder.Entity<PurchaseInvoiceMatchEvaluationEntity>();
+        ConfigureTable(matchEvaluation, "PurchaseInvoiceMatchEvaluations");
+        matchEvaluation.HasKey(item => item.Id);
+        matchEvaluation.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(matchEvaluation.Property(item => item.TenantId));
+        matchEvaluation.Property(item => item.PurchaseInvoiceHandoffId).IsRequired();
+        matchEvaluation.Property(item => item.PurchaseOrderId).IsRequired();
+        matchEvaluation.Property(item => item.CompanyId).IsRequired();
+        matchEvaluation.Property(item => item.BranchId).IsRequired(false);
+        matchEvaluation.Property(item => item.Lifecycle).IsRequired();
+        matchEvaluation.Property(item => item.Result).IsRequired();
+        matchEvaluation.Property(item => item.EvaluatedAt).IsRequired();
+        matchEvaluation.Property(item => item.EvaluatedByActorId).IsRequired();
+        matchEvaluation.Property(item => item.ResolvedByActorId).IsRequired(false);
+        matchEvaluation.Property(item => item.ResolvedAt).IsRequired(false);
+        matchEvaluation.Property(item => item.ResolutionReason).HasMaxLength(4096).IsRequired(false);
+        matchEvaluation.Property(item => item.SourceFingerprint).HasMaxLength(128).IsRequired();
+        matchEvaluation.Property(item => item.PurchaseOrderVersion).IsRequired();
+        matchEvaluation.Property(item => item.HandoffVersion).IsRequired();
+        matchEvaluation.Property(item => item.DeclaredEvidenceId).IsRequired(false);
+         matchEvaluation.Property(item => item.DeclaredEvidenceVersion).IsRequired(false);
+         matchEvaluation.Property(item => item.PolicySnapshotJson).HasMaxLength(32768).IsRequired();
+         matchEvaluation.Property(item => item.ResolutionPolicySnapshotJson).HasMaxLength(32768).IsRequired(false);
+         matchEvaluation.Property(item => item.ExchangeRateSnapshotJson).HasMaxLength(32768).IsRequired(false);
+        matchEvaluation.Property(item => item.VariancesJson).HasMaxLength(131072).IsRequired();
+        matchEvaluation.Property(item => item.SourceSnapshotJson).HasMaxLength(262144).IsRequired();
+        matchEvaluation.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        matchEvaluation.Property(item => item.ReplayResponseSchemaVersion).IsRequired(false);
+        matchEvaluation.Property(item => item.ReplayResponseSnapshotJson).IsRequired(false);
+        ConfigureVersion(matchEvaluation.Property(item => item.Version));
+        matchEvaluation.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        matchEvaluation.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceHandoffId, item.SourceFingerprint }).IsUnique();
+        matchEvaluation.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceHandoffId, item.Lifecycle, item.EvaluatedAt });
+        matchEvaluation.HasIndex(item => new { item.TenantId, item.PurchaseOrderId, item.EvaluatedAt });
+        matchEvaluation.HasOne<PurchaseInvoiceHandoffEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceHandoffId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        matchEvaluation.HasOne<PurchaseOrderEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        matchEvaluation.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var matchHistory = modelBuilder.Entity<PurchaseInvoiceMatchHistoryEntity>();
+        ConfigureTable(matchHistory, "PurchaseInvoiceMatchHistory");
+        matchHistory.HasKey(item => item.Id);
+        matchHistory.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(matchHistory.Property(item => item.TenantId));
+        matchHistory.Property(item => item.PurchaseInvoiceMatchEvaluationId).IsRequired();
+        matchHistory.Property(item => item.PurchaseInvoiceHandoffId).IsRequired();
+        matchHistory.Property(item => item.Result).IsRequired();
+        matchHistory.Property(item => item.Action).HasMaxLength(128).IsRequired();
+        matchHistory.Property(item => item.ActorId).IsRequired();
+        matchHistory.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        matchHistory.Property(item => item.OccurredAt).IsRequired();
+        matchHistory.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        ConfigureVersion(matchHistory.Property(item => item.Version));
+        matchHistory.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        matchHistory.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceMatchEvaluationId, item.OccurredAt });
+        matchHistory.HasOne<PurchaseInvoiceMatchEvaluationEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceMatchEvaluationId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        matchHistory.HasOne<PurchaseInvoiceHandoffEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceHandoffId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        matchHistory.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var matchAudit = modelBuilder.Entity<PurchaseInvoiceMatchAuditEntity>();
+        ConfigureTable(matchAudit, "PurchaseInvoiceMatchAudit");
+        matchAudit.HasKey(item => item.Id);
+        matchAudit.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(matchAudit.Property(item => item.TenantId));
+        matchAudit.Property(item => item.PurchaseInvoiceMatchEvaluationId).IsRequired();
+        matchAudit.Property(item => item.PurchaseInvoiceHandoffId).IsRequired();
+        matchAudit.Property(item => item.OccurredAt).IsRequired();
+        matchAudit.Property(item => item.OperationId).HasMaxLength(128).IsRequired();
+        matchAudit.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        matchAudit.Property(item => item.ActorId).IsRequired();
+        matchAudit.Property(item => item.Decision).HasMaxLength(64).IsRequired();
+        matchAudit.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        matchAudit.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false);
+        matchAudit.Property(item => item.RequestFingerprint).HasMaxLength(128).IsRequired(false);
+        matchAudit.Property(item => item.ReplayResponseSchemaVersion).IsRequired(false);
+        matchAudit.Property(item => item.ReplayResponseSnapshotJson).IsRequired(false);
+        ConfigureVersion(matchAudit.Property(item => item.Version));
+        matchAudit.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        matchAudit.HasIndex(item => new { item.TenantId, item.PurchaseInvoiceMatchEvaluationId, item.OccurredAt });
+        matchAudit.HasIndex(item => new { item.TenantId, item.ActorId, item.OperationId, item.IdempotencyKey });
+        matchAudit.HasOne<PurchaseInvoiceMatchEvaluationEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceMatchEvaluationId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        matchAudit.HasOne<PurchaseInvoiceHandoffEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseInvoiceHandoffId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        matchAudit.HasQueryFilter(item => item.TenantId == TrustedTenantId);
 
         var invoiceHandoffLine = modelBuilder.Entity<PurchaseInvoiceHandoffLineEntity>();
         ConfigureTable(invoiceHandoffLine, "PurchaseInvoiceHandoffLines");

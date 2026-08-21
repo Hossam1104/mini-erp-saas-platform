@@ -1,5 +1,19 @@
 # Mini ERP backend foundation
 
+> **Current MESP-126 runtime overlay - 21 August 2026.** The backend now
+> carries deterministic three-way matching as Procurement evidence
+> orchestration: independent supplier-declared invoice evidence is stored
+> separately from the MESP-125 PO-derived handoff preview, exact-safe and
+> configured runtime tolerance policies are selected by Tenant/
+> Company/Branch scope and snapshotted with evaluations, current partial-handoff
+> quantity and cumulative accepted/confirmed source limits are enforced,
+> over/under supplier declarations remain truthful evidence, MESP-120
+> Exchange Rate references are resolved server-side and snapshotted, and
+> authorized exception resolution records reason, history, audit, idempotency,
+> optimistic concurrency, and policy-driven SoD. This slice does not post AP,
+> GL, tax accounting, stock, payment, FX revaluation, ZATCA/FATOORA, or
+> external integrations.
+
 > **Current MESP-125 runtime overlay - 19 August 2026.** The backend carries
 > the complete MESP-125 Goods Receipt and Purchase Invoice Handoff slice alongside
 > the merged MESP-124 Purchase Order and Supplier Confirmation slice, MESP-143
@@ -28,17 +42,26 @@
 > pro-rata tax allocation preview, handoff cancellation, durable idempotent
 > replay, history/audit, and EF Core persistence with optimistic concurrency.
 > It adds no inventory/warehouse movement postings, general ledger journals,
-> AP subledger liabilities, or three-way matching completion (Finance domain under
-> FIN-OD-01 / PD-046). MESP-48/MESP-50, production topology, deployment migration
+> AP subledger liabilities, or Finance posting outside FIN-OD-01 / PD-046.
+> MESP-48/MESP-50, production topology, deployment migration
 > governance, backup/restore, capacity, and specialist gates remain open.
 
-The accepted validation baseline is Release build **0 warnings / 0
-errors** and **812/812** ArchitectureTests passed with **0 skipped**, including
-the disposable SQL Server safety harness. Focused Goods Receipt tests pass
-**11/11**, focused Purchase Invoice Handoff tests pass **8/8**, focused Purchase
-Order tests pass **14/14**, and the full suite directly covers physical receipt
-quantity invariants A through I, concurrent race prevention (10 -> 7/7), warehouse
-scoping, and durable replay.
+The accepted MESP-126 validation baseline is Release build **0 warnings / 0
+errors**; focused Invoice Handoff/matching remediation tests pass **37/37** and
+the canonical backend runner passes **841/841 tests, 0 skipped**, including all
+**22 SQL safety tests** against a disposable LocalDB `MiniErpFoundation_*`
+database. The P1 remediation also verifies the public FX request is identity-
+only, server version selection uses immutable supplier-invoice-date evidence,
+missing dates fail closed, repeated declared lines aggregate by Purchase Order
+line, and repeated allocations aggregate by Goods Receipt line without
+double-consuming valid receipt evidence. Exact Company/Branch scope remains
+server-derived and explicit; no broader Company-to-Branch inheritance policy
+is introduced. The previous repository baseline was **812/812** ArchitectureTests
+passed with **0 skipped**, including the disposable SQL Server safety harness.
+Focused Goods Receipt tests pass **11/11**, focused Purchase Invoice Handoff
+tests pass **8/8**, focused Purchase Order tests pass **14/14**, and the full
+suite directly covers physical receipt quantity invariants A through I,
+concurrent race prevention (10 -> 7/7), warehouse scoping, and durable replay.
 
 This directory contains the Foundation backend. It began as the MESP-57
 Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant

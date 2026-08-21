@@ -125,6 +125,9 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
             .AsNoTracking()
             .Include(item => item.Lines)
             .Include(item => item.Sources)
+            .Include(item => item.DeclaredEvidenceVersions)
+                .ThenInclude(item => item.Lines)
+                    .ThenInclude(item => item.Allocations)
             .SingleOrDefaultAsync(item => item.Id == purchaseInvoiceHandoffId, cancellationToken);
         return entity is null ? null : ToRecord(entity);
     }
@@ -173,6 +176,11 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
 
             var source = await ToEligibleSourceRecordAsync(db, order, cancellationToken);
             var eligibleLines = source.Lines.ToDictionary(item => (item.GoodsReceiptId, item.GoodsReceiptLineId));
+            if (command.DeclaredEvidence is not null
+                && !await IsDeclaredEvidenceEligibleAsync(db, order.Id, command.Sources.ToDictionary(item => item.GoodsReceiptLineId, item => item.Quantity), command.DeclaredEvidence, cancellationToken))
+            {
+                return Denied(PurchaseInvoiceHandoffPersistenceOutcome.InvalidState, "invoice_evidence_invalid");
+            }
             var poLineMap = order.Lines.ToDictionary(item => item.Id);
             var entity = new PurchaseInvoiceHandoffEntity(command, tenantContext.TenantId, order.SupplierId, order.SupplierCode, order.SupplierName, order.CurrencyCode);
 
@@ -225,6 +233,12 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
                     lineAmount));
             }
 
+            if (command.DeclaredEvidence is not null
+                && !TryAddDeclaredEvidence(entity, command.DeclaredEvidence, command.CreatedByActorId, command.OccurredAt))
+            {
+                return Denied(PurchaseInvoiceHandoffPersistenceOutcome.InvalidState, "invoice_evidence_invalid");
+            }
+
             var receiptIds = command.Sources.Select(s => s.GoodsReceiptId).Distinct().ToArray();
             var receipts = await db.GoodsReceipts.Where(r => receiptIds.Contains(r.Id)).ToListAsync(cancellationToken);
             foreach (var receipt in receipts)
@@ -262,6 +276,136 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
         catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
         {
             return Denied(PurchaseInvoiceHandoffPersistenceOutcome.Duplicate, "invoice_handoff_duplicate");
+        }
+        catch (DbUpdateException)
+        {
+            return Denied(PurchaseInvoiceHandoffPersistenceOutcome.Failure, "persistence_unavailable");
+        }
+        catch
+        {
+            return Denied(PurchaseInvoiceHandoffPersistenceOutcome.Failure, "persistence_unavailable");
+        }
+    }
+
+    public async Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CaptureDeclaredEvidenceAsync(
+        TenantContext tenantContext,
+        PurchaseInvoiceDeclaredEvidenceCaptureCommand command,
+        PurchaseInvoiceHandoffAuditEvidence evidence,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(command.Evidence);
+        ArgumentNullException.ThrowIfNull(evidence);
+        if (command.ExpectedHandoffVersion is null || command.ExpectedHandoffVersion.Length == 0)
+        {
+            return Denied(PurchaseInvoiceHandoffPersistenceOutcome.Conflict, "concurrency_conflict");
+        }
+
+        await using var db = CreateContext(tenantContext);
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var handoff = await db.PurchaseInvoiceHandoffs
+                .Include(item => item.Lines)
+                .Include(item => item.Sources)
+                .Include(item => item.DeclaredEvidenceVersions)
+                    .ThenInclude(item => item.Lines)
+                        .ThenInclude(item => item.Allocations)
+                .SingleOrDefaultAsync(item => item.Id == command.PurchaseInvoiceHandoffId, cancellationToken);
+            if (handoff is null)
+            {
+                return Denied(PurchaseInvoiceHandoffPersistenceOutcome.NotFound, "invoice_handoff_not_found");
+            }
+
+            var replay = await FindReplayAsync(db, evidence, cancellationToken);
+            if (replay.Outcome == ReplayOutcome.Conflict)
+            {
+                return Denied(PurchaseInvoiceHandoffPersistenceOutcome.Conflict, "idempotency_conflict");
+            }
+
+            if (replay.Outcome == ReplayOutcome.Replay)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>.Success(replay.Record!);
+            }
+
+            if (!VersionMatches(handoff.Version, command.ExpectedHandoffVersion))
+            {
+                return Denied(PurchaseInvoiceHandoffPersistenceOutcome.Conflict, "concurrency_conflict");
+            }
+
+            if (handoff.Status != PurchaseInvoiceHandoffStatus.Recorded)
+            {
+                return Denied(PurchaseInvoiceHandoffPersistenceOutcome.InvalidState, "invoice_handoff_not_active");
+            }
+
+            if (!await IsDeclaredEvidenceEligibleAsync(
+                    db,
+                    handoff.PurchaseOrderId,
+                    handoff.Sources.GroupBy(item => item.GoodsReceiptLineId).ToDictionary(group => group.Key, group => group.Sum(item => item.Quantity)),
+                    command.Evidence,
+                    cancellationToken))
+            {
+                return Denied(PurchaseInvoiceHandoffPersistenceOutcome.InvalidState, "invoice_evidence_invalid");
+            }
+
+            var existing = handoff.DeclaredEvidenceVersions.SingleOrDefault(item => item.IsCurrent);
+            if (existing is not null)
+            {
+                if (string.IsNullOrWhiteSpace(command.Reason))
+                {
+                    return Denied(PurchaseInvoiceHandoffPersistenceOutcome.InvalidState, "evidence_correction_reason_required");
+                }
+
+                existing.MarkSuperseded();
+            }
+
+            var nextVersion = (handoff.DeclaredEvidenceVersions.Count == 0
+                ? 0
+                : handoff.DeclaredEvidenceVersions.Max(item => item.VersionNumber)) + 1;
+            var declared = new PurchaseInvoiceDeclaredEvidenceEntity(
+                tenantContext.TenantId,
+                handoff.Id,
+                Guid.NewGuid(),
+                nextVersion,
+                command.ActorId,
+                command.Evidence,
+                command.OccurredAt);
+            AddDeclaredEvidenceLines(declared, tenantContext.TenantId, command.Evidence);
+            handoff.SetDeclaredEvidence(declared.Id, nextVersion, command.OccurredAt);
+            handoff.TouchVersion();
+            db.PurchaseInvoiceDeclaredEvidence.Add(declared);
+            db.PurchaseInvoiceHandoffHistory.Add(new PurchaseInvoiceHandoffHistoryEntity(
+                Guid.NewGuid(),
+                tenantContext.TenantId,
+                handoff.Id,
+                handoff.Status,
+                handoff.Status,
+                PurchaseInvoiceHandoffHistoryAction.DeclaredEvidenceCaptured,
+                command.ActorId,
+                command.Reason,
+                evidence.CorrelationId,
+                command.OccurredAt));
+            var audit = new PurchaseInvoiceHandoffAuditEntity(evidence with
+            {
+                BeforeSummary = evidence.BeforeSummary ?? $"declared-evidence:{existing?.VersionNumber.ToString() ?? "none"}",
+                AfterSummary = evidence.AfterSummary ?? $"declared-evidence:{nextVersion}"
+            });
+            db.PurchaseInvoiceHandoffAudit.Add(audit);
+            await db.SaveChangesAsync(cancellationToken);
+            var response = ToRecord(handoff);
+            audit.SetReplayResponseSnapshot(ReplayResponseSchemaVersion, SerializeReplayResponse(response));
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>.Success(response);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Denied(PurchaseInvoiceHandoffPersistenceOutcome.Conflict, "concurrency_conflict");
+        }
+        catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
+        {
+            return Denied(PurchaseInvoiceHandoffPersistenceOutcome.Duplicate, "invoice_evidence_duplicate");
         }
         catch (DbUpdateException)
         {
@@ -417,6 +561,115 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
                 item.IdempotencyKey))
             .ToListAsync(cancellationToken);
         return records.OrderBy(item => item.OccurredAt).ThenBy(item => item.EvidenceId).ToArray();
+    }
+
+    private static bool TryAddDeclaredEvidence(
+        PurchaseInvoiceHandoffEntity handoff,
+        PurchaseInvoiceDeclaredEvidenceRequest request,
+        Guid actorId,
+        DateTimeOffset occurredAt)
+    {
+        if (!PurchaseInvoiceHandoffValuePolicy.TryNormalizeDeclaredEvidence(request, out var normalized)
+            || normalized is null)
+        {
+            return false;
+        }
+
+        var declared = new PurchaseInvoiceDeclaredEvidenceEntity(
+            handoff.TenantId,
+            handoff.Id,
+            Guid.NewGuid(),
+            1,
+            actorId,
+            normalized,
+            occurredAt);
+        AddDeclaredEvidenceLines(declared, handoff.TenantId, normalized);
+        handoff.SetDeclaredEvidence(declared.Id, 1, occurredAt);
+        handoff.DeclaredEvidenceVersions.Add(declared);
+        return true;
+    }
+
+    private static void AddDeclaredEvidenceLines(
+        PurchaseInvoiceDeclaredEvidenceEntity declared,
+        TenantId tenantId,
+        PurchaseInvoiceDeclaredEvidenceRequest request)
+    {
+        foreach (var lineRequest in request.Lines)
+        {
+            var line = new PurchaseInvoiceDeclaredEvidenceLineEntity(
+                tenantId,
+                declared.Id,
+                Guid.NewGuid(),
+                lineRequest);
+            foreach (var allocation in lineRequest.Allocations)
+            {
+                line.Allocations.Add(new PurchaseInvoiceDeclaredEvidenceAllocationEntity(
+                    tenantId,
+                    line.Id,
+                    Guid.NewGuid(),
+                    allocation));
+            }
+
+            declared.Lines.Add(line);
+        }
+    }
+
+    private static async Task<bool> IsDeclaredEvidenceEligibleAsync(
+        ProcurementDbContext db,
+        Guid purchaseOrderId,
+        IReadOnlyDictionary<Guid, decimal> handoffQuantitiesByReceiptLine,
+        PurchaseInvoiceDeclaredEvidenceRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.Lines is null || handoffQuantitiesByReceiptLine.Count == 0) return false;
+        var receiptLineIds = request.Lines.SelectMany(line => line.Allocations ?? []).Select(allocation => allocation.GoodsReceiptLineId).Distinct().ToArray();
+        if (receiptLineIds.Length == 0) return false;
+        var receipts = await db.GoodsReceipts
+            .Include(item => item.Lines)
+            .Where(item => item.PurchaseOrderId == purchaseOrderId)
+            .ToListAsync(cancellationToken);
+        var receiptLines = receipts
+            .Where(item => item.Status == GoodsReceiptStatus.Recorded)
+            .SelectMany(receipt => receipt.Lines.Select(line => (Receipt: receipt, Line: line)))
+            .Where(item => receiptLineIds.Contains(item.Line.Id))
+            .ToDictionary(item => item.Line.Id);
+        var poLineIds = request.Lines.Select(item => item.PurchaseOrderLineId).Distinct().ToArray();
+        var poLineSet = await db.PurchaseOrderLines
+            .Where(item => item.PurchaseOrderId == purchaseOrderId && poLineIds.Contains(item.Id))
+            .Select(item => item.Id)
+            .ToListAsync(cancellationToken);
+        if (poLineSet.Count != poLineIds.Length) return false;
+
+        foreach (var line in request.Lines)
+        {
+            var allocationTotal = 0m;
+            foreach (var allocation in line.Allocations ?? [])
+            {
+                allocationTotal += allocation.Quantity;
+                if (!receiptLines.TryGetValue(allocation.GoodsReceiptLineId, out var receiptLine)
+                    || receiptLine.Receipt.Id != allocation.GoodsReceiptId
+                    || receiptLine.Line.PurchaseOrderLineId != line.PurchaseOrderLineId
+                    || receiptLine.Line.AcceptedQuantity <= 0
+                    || !handoffQuantitiesByReceiptLine.TryGetValue(allocation.GoodsReceiptLineId, out var handoffQuantity)
+                    || allocation.Quantity > handoffQuantity)
+                {
+                    return false;
+                }
+            }
+
+            // The declared supplier quantity is independent evidence. Only
+            // the physically/commercially supported allocation is constrained
+            // here; any declared excess remains recordable for matching to
+            // classify, while allocation itself can never fabricate receipt
+            // quantity.
+            if (allocationTotal > line.Quantity) return false;
+        }
+
+        // A supplier may declare the same physical receipt quantity from more
+        // than one invoice line. Preserve that independent evidence so the
+        // matching evaluator can aggregate it and record a blocking mismatch;
+        // intake must not silently discard the supplier declaration.
+        return true;
     }
 
     // A Purchase Order line's stored `TaxAmount` is the total tax for its full ordered quantity, so it
@@ -641,7 +894,46 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
                 item.PurchaseOrderLineId,
                 item.Quantity))
             .ToArray(),
-        entity.Version.ToArray());
+        entity.Version.ToArray(),
+        ToDeclaredEvidenceRecord(entity.DeclaredEvidenceVersions.FirstOrDefault(item => item.IsCurrent)));
+
+    private static PurchaseInvoiceDeclaredEvidenceRecord? ToDeclaredEvidenceRecord(PurchaseInvoiceDeclaredEvidenceEntity? entity) =>
+        entity is null
+            ? null
+            : new PurchaseInvoiceDeclaredEvidenceRecord(
+                entity.Id,
+                entity.VersionNumber,
+                entity.SupplierInvoiceReference,
+                entity.SupplierInvoiceDate,
+                entity.CurrencyCode,
+                entity.SubtotalAmount,
+                entity.DiscountAmount,
+                entity.TaxAmount,
+                entity.GrossAmount,
+                entity.RecordedAt,
+                entity.RecordedByActorId,
+                entity.Lines
+                    .OrderBy(item => item.Id)
+                    .Select(line => new PurchaseInvoiceDeclaredEvidenceLineRecord(
+                        line.Id,
+                        line.PurchaseOrderLineId,
+                        line.Quantity,
+                        line.UnitPrice,
+                        line.DiscountAmount,
+                        line.TaxRatePercentage,
+                        line.TaxCode,
+                        line.TaxAmount,
+                        line.NetAmount,
+                        line.GrossAmount,
+                        line.Description,
+                        line.Allocations
+                            .OrderBy(item => item.Id)
+                            .Select(allocation => new PurchaseInvoiceDeclaredEvidenceAllocationRecord(
+                                allocation.GoodsReceiptId,
+                                allocation.GoodsReceiptLineId,
+                                allocation.Quantity))
+                            .ToArray()))
+                    .ToArray());
 
     private ProcurementDbContext CreateContext(TenantContext tenantContext) => new(options, tenantContext);
 

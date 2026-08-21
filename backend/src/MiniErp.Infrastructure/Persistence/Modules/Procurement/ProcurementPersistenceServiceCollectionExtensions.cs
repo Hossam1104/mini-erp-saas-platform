@@ -28,6 +28,8 @@ public static class ProcurementPersistenceServiceCollectionExtensions
             new GoodsReceiptPersistence(optionsBuilder.Options));
         services.AddSingleton<IPurchaseInvoiceHandoffPersistence>(
             new PurchaseInvoiceHandoffPersistence(optionsBuilder.Options));
+        services.AddSingleton<IPurchaseInvoiceMatchPersistence>(
+            new PurchaseInvoiceMatchPersistence(optionsBuilder.Options));
         return services;
     }
 

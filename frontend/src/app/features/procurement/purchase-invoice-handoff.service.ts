@@ -7,6 +7,7 @@ import {
   PurchaseInvoiceHandoffActionRequest,
   PurchaseInvoiceHandoffAuditResponse,
   PurchaseInvoiceHandoffCreateRequest,
+  PurchaseInvoiceDeclaredEvidenceCaptureRequest,
   PurchaseInvoiceHandoffEligibleSourceResponse,
   PurchaseInvoiceHandoffHistoryResponse,
   PurchaseInvoiceHandoffListItemResponse,
@@ -51,6 +52,10 @@ export class PurchaseInvoiceHandoffService {
   cancel(id: string, version: string, reason?: string): Promise<PurchaseInvoiceHandoffResponse> {
     const payload: PurchaseInvoiceHandoffActionRequest = { reason: reason?.trim() || null };
     return this.mutate<PurchaseInvoiceHandoffResponse>(`${this.basePath}/purchase-invoice-handoffs/${id}/cancel`, payload, version);
+  }
+
+  captureDeclaredEvidence(id: string, version: string, payload: PurchaseInvoiceDeclaredEvidenceCaptureRequest): Promise<PurchaseInvoiceHandoffResponse> {
+    return this.mutate<PurchaseInvoiceHandoffResponse>(`${this.basePath}/purchase-invoice-handoffs/${id}/declared-evidence`, payload, version);
   }
 
   private async mutate<T>(path: string, payload: unknown, version?: string): Promise<T> {

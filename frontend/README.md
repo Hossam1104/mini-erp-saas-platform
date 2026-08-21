@@ -13,6 +13,21 @@ The Procurement workspaces include:
 - **Purchase Orders & Confirmations**: server-provided source selection, list/create/edit/detail, approval/issue actions, manual full/partial/rejected/no-response confirmation, supplier-change reapproval, history, and audit views.
 - **Goods Receipts**: receipt creation from Confirmed POs, authorized warehouse selection, physical partition (`Received = Accepted + Rejected`), descriptive damage overlay (`Damaged <= Received`), commercial remainder tracking, receipt cancellation, and history/audit tabs.
 - **Purchase Invoice Handoffs**: handoff creation from accepted Goods Receipt lines, pro-rata tax allocation preview, un-invoiced remainder tracking, supplier invoice reference & date capture, handoff cancellation, and history/audit tabs.
+- **Three-way Matching**: independent supplier invoice evidence, PO/accepted-receipt/invoice lineage, exact-safe and configured tolerance outcomes, variance evidence, controlled exception resolution, and bilingual history/audit views.
+
+Cross-currency matching exposes only a server-owned Exchange Rate identity in
+the request model. The server derives the effective version exclusively from
+immutable supplier-invoice-date evidence. Rate, scale, version, pair, effective
+window, effective date, and provenance are returned as the immutable
+MESP-120-backed evaluation snapshot; the browser cannot author FX facts. The
+workspace shows a human-readable selector only for active, pair-compatible
+identities with a valid invoice-date version; it shows no raw GUID or editable
+rate/scale/version/effective-date controls. Same-currency matching continues
+to evaluate without an FX reference.
+
+Matching keeps the existing exact server-derived Company/Branch scope. It does
+not invent Company-to-Branch policy inheritance or allow a browser-selected
+scope to widen the evidence boundary.
 
 The browser never stores an authentication token or establishes Tenant authority.
 
@@ -41,11 +56,12 @@ npm run test:e2e -- --project=chromium
 npm audit --omit=dev
 ```
 
-The current bounded evidence is Angular **232/232 across 29 spec files**;
-the production build is **493.41 kB initial total** (under the 500 kB budget)
-with a **53.14 kB Goods Receipt lazy chunk**, a **53.41 kB Invoice Handoff lazy chunk**,
-a **76.78 kB Purchase Order lazy chunk**, and a **91.94 kB Supplier Quotation lazy chunk**;
-Chromium coverage is **19/19 passed** across the full e2e suite. Both
+The current bounded evidence is Angular **238/238 across 31 spec files**;
+the production build is **494.00 kB initial total** (under the 500 kB budget)
+with a **51.75 kB Goods Receipt lazy chunk**, a **52.09 kB Invoice Handoff lazy chunk**,
+a **74.78 kB Purchase Order lazy chunk**, a **91.94 kB Supplier Quotation lazy chunk**,
+and a **38.05 kB Three-way Matching lazy chunk**; Chromium coverage is
+**22/22 passed** across the full e2e suite. Both
 `npm audit --omit=dev` and full `npm audit` report **0 vulnerabilities**. The
 Playwright checks are automated API-fixture/browser evidence, not a manual
 interactive browser sign-off.
@@ -78,7 +94,7 @@ inventing business data.
 - `e2e` — focused Playwright TypeScript smoke coverage.
 
 Tenant schema/migrations, DNS/TLS provisioning, full Platform Administration,
-Purchase Order downstream effects (Goods Receipt, stock, invoice, AP, payment,
-accounting, and three-way matching), Inventory, Finance, B2B Sales, Retail POS,
+Purchase Order downstream effects (stock, invoice posting, AP, payment,
+accounting), Inventory, Finance posting, B2B Sales, Retail POS,
 Wafra-specific core behavior, production deployment, and external/statutory
 country-pack behavior remain explicitly out of scope.

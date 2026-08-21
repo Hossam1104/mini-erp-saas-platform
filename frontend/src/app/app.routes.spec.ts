@@ -24,6 +24,7 @@ describe('Application route contract', () => {
     expect(childPaths).toContain('price-lists');
     expect(childPaths).toContain('procurement/purchase-requests');
     expect(childPaths).toContain('procurement/supplier-quotations');
+    expect(childPaths).toContain('procurement/invoice-matching');
     expect(childPaths).toContain('procurement/purchase-orders');
     expect(childPaths).not.toContain('inventory/goods-receipts');
     expect(childPaths).not.toContain('finance/accounts-payable');

@@ -250,9 +250,16 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.invoice-handoff.list" => "List Tenant-scoped Purchase Invoice handoffs",
         "procurement.invoice-handoff.read" => "Read one Purchase Invoice handoff with lineage and line evidence",
         "procurement.invoice-handoff.create" => "Create a non-posted Purchase Invoice handoff from an eligible Goods Receipt",
+        "procurement.invoice-handoff.evidence.capture" => "Capture or correct independent supplier-declared invoice evidence",
         "procurement.invoice-handoff.cancel" => "Cancel an eligible Purchase Invoice handoff",
         "procurement.invoice-handoff.history.read" => "Read Purchase Invoice handoff lifecycle history",
         "procurement.invoice-handoff.audit.read" => "Read Purchase Invoice handoff audit evidence",
+        "procurement.matching.list" => "List durable three-way match evaluations",
+        "procurement.matching.read" => "Read one durable three-way match evaluation and source snapshot",
+        "procurement.matching.evaluate" => "Evaluate a Purchase Order, accepted Goods Receipt, and supplier invoice evidence",
+        "procurement.matching.resolve-exception" => "Resolve a three-way match exception with controlled authorization",
+        "procurement.matching.history.read" => "Read three-way match evaluation history",
+        "procurement.matching.audit.read" => "Read three-way match evaluation audit evidence",
         _ => GenericSummary(operationId)
     };
 
@@ -416,6 +423,16 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
                 + "Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and the current If-Match value where declared.";
         }
 
+        if (descriptor.OperationId.StartsWith("procurement.matching", StringComparison.Ordinal))
+        {
+            return contextRules
+                + "Three-way matching is a durable, non-posting comparison of the Purchase Order commercial snapshot, active accepted Goods Receipt evidence, and an independent supplier-declared invoice evidence snapshot. "
+                + "Legacy handoffs without supplier-declared invoice evidence remain readable but are explicitly NotMatchReady. Rejected or cancelled receipt evidence is excluded; current partial-handoff quantity is matched against independent declared quantity, and cumulative active declared quantity cannot exceed accepted or confirmed source limits. "
+                + "Tolerance and resolution policy are selected from server configuration with an exact-safe zero-tolerance fallback. Cross-currency evaluation accepts only a Tenant-owned Exchange Rate identity/effective-date reference; rate, scale, version, effective window, and provenance are resolved from MESP-120 and snapshotted by the evaluation. Raw caller-supplied FX facts are not authoritative. "
+                + "Source versions, policy, variance classifications, and any applied exchange-rate evidence are immutable on the evaluation. "
+                + "The boundary creates no AP liability, invoice posting, tax posting, GL entry, payment, stock movement, or statutory submission. Mutations require Idempotency-Key, antiforgery, mandatory audit evidence, and If-Match.";
+        }
+
         return contextRules
             + "The operation is part of the reusable internal ERP contract. Response failures use Problem Details "
             + "with a stable code, correlation identifier, and operation identifier; provider details and internal "
@@ -503,9 +520,16 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.invoice-handoff.list" => "Tenant- and scope-filtered Purchase Invoice handoff summaries with source Goods Receipt, status, and concurrency version.",
         "procurement.invoice-handoff.read" => "One Tenant-filtered Purchase Invoice handoff with immutable Goods Receipt/Purchase Order lineage, commercial line snapshots, and server-derived action affordances.",
         "procurement.invoice-handoff.create" => "The persisted non-posted Purchase Invoice handoff with immutable Goods Receipt source lineage and commercial line snapshots.",
+        "procurement.invoice-handoff.evidence.capture" => "The persisted independent supplier-declared invoice header, line, tax, and Goods Receipt allocation evidence snapshot; corrections supersede prior evidence and require a reason.",
         "procurement.invoice-handoff.cancel" => "The eligible Purchase Invoice handoff in Cancelled status with immutable cancellation evidence and no effect on its source Goods Receipt.",
         "procurement.invoice-handoff.history.read" => "Immutable Tenant-filtered Purchase Invoice handoff lifecycle history.",
         "procurement.invoice-handoff.audit.read" => "Immutable Tenant-filtered Purchase Invoice handoff operation audit evidence.",
+        "procurement.matching.list" => "Tenant- and scope-filtered durable three-way match evaluation summaries.",
+        "procurement.matching.read" => "A durable three-way match evaluation with source versions, immutable tolerance/FX snapshots, explicit variance classifications, and source evidence.",
+        "procurement.matching.evaluate" => "The deterministic Purchase Order / active accepted Goods Receipt / independent supplier invoice evaluation result, including current partial-handoff quantity, cumulative quantity protection, configured tolerance snapshot, and server-owned MESP-120 FX evidence when applicable; exact-safe zero tolerance is used when no configured policy applies.",
+        "procurement.matching.resolve-exception" => "A controlled, reasoned, optimistic-concurrency-protected exception resolution whose different-actor requirement is policy-driven and which never posts Finance/AP/accounting entries.",
+        "procurement.matching.history.read" => "Immutable Tenant-filtered three-way match evaluation history.",
+        "procurement.matching.audit.read" => "Immutable Tenant-filtered three-way match evaluation audit evidence.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 

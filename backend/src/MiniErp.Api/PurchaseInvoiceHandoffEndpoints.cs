@@ -102,6 +102,33 @@ public static class PurchaseInvoiceHandoffEndpoints
             .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.invoice-handoff.create")));
 
         endpoints.MapPost(
+                "/api/v1/procurement/purchase-invoice-handoffs/{purchaseInvoiceHandoffId:guid}/declared-evidence",
+                async (Guid purchaseInvoiceHandoffId, PurchaseInvoiceDeclaredEvidenceCaptureRequest? request, HttpContext httpContext, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, FoundationAuditCoordinator auditCoordinator, LocalMasterDataIdempotencyStore idempotencyStore, PurchaseInvoiceHandoffService service) =>
+                {
+                    if (!TryReadExpectedVersion(httpContext, out var expectedVersion))
+                    {
+                        return await WriteProblemAsync(httpContext, 400, "validation_failed", "Validation failed", "A valid If-Match version is required.", "procurement.invoice-handoff.evidence.capture");
+                    }
+
+                    var fingerprint = Fingerprint(request) + VersionFingerprint(expectedVersion) + TargetFingerprint(purchaseInvoiceHandoffId);
+                    return await ExecuteMutationAsync(
+                        httpContext,
+                        resolver,
+                        tenantResolver,
+                        auditCoordinator,
+                        idempotencyStore,
+                        FoundationOperationCatalog.GetRequired("procurement.invoice-handoff.evidence.capture"),
+                        fingerprint,
+                        context => service.CaptureDeclaredEvidenceAsync(context, purchaseInvoiceHandoffId, expectedVersion, request!, GetIdempotencyKey(httpContext), fingerprint, httpContext.RequestAborted),
+                        (context, record) => ToResponse(record, context),
+                        setEtag: true,
+                        requireExpectedVersion: true);
+                })
+            .WithName("procurement.invoice-handoff.evidence.capture")
+            .WithTags("Procurement / Purchase Invoice Handoffs")
+            .WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("procurement.invoice-handoff.evidence.capture")));
+
+        endpoints.MapPost(
                 "/api/v1/procurement/purchase-invoice-handoffs/{purchaseInvoiceHandoffId:guid}/cancel",
                 async (Guid purchaseInvoiceHandoffId, PurchaseInvoiceHandoffActionRequest? request, HttpContext httpContext, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, FoundationAuditCoordinator auditCoordinator, LocalMasterDataIdempotencyStore idempotencyStore, PurchaseInvoiceHandoffService service) =>
                 {
@@ -283,7 +310,7 @@ public static class PurchaseInvoiceHandoffEndpoints
             "permission_denied" or "resource_scope_denied" or "cross_tenant_target_denied" or "tenant_context_failed" or "authorization_profile_denied" => 403,
             "persistence_unavailable" or "authorization_operation_unmapped" => 503,
             "invoice_handoff_not_found" => 404,
-            "concurrency_conflict" or "idempotency_conflict" or "invoice_handoff_duplicate" or "invoice_handoff_source_not_eligible" or "invoice_handoff_line_not_eligible" or "over_handoff_not_allowed" or "cancel_not_allowed" or "reason_required" => 409,
+            "concurrency_conflict" or "idempotency_conflict" or "invoice_handoff_duplicate" or "invoice_handoff_source_not_eligible" or "invoice_handoff_line_not_eligible" or "over_handoff_not_allowed" or "cancel_not_allowed" or "reason_required" or "evidence_correction_reason_required" or "invoice_evidence_invalid" or "invoice_handoff_not_active" => 409,
             _ => 400
         };
 
@@ -335,9 +362,34 @@ public static class PurchaseInvoiceHandoffEndpoints
         record.CancelledAt,
         record.CancellationReason,
         record.Lines.Select(ToLineResponse).ToArray(),
-        record.Sources.Select(ToSourceResponse).ToArray(),
-        Version(record.Version),
-        record.Status == PurchaseInvoiceHandoffStatus.Recorded);
+            record.Sources.Select(ToSourceResponse).ToArray(),
+            Version(record.Version),
+            record.Status == PurchaseInvoiceHandoffStatus.Recorded,
+            record.DeclaredEvidence is null ? null : new PurchaseInvoiceDeclaredEvidenceResponse(
+                record.DeclaredEvidence.Id,
+                record.DeclaredEvidence.VersionNumber,
+                record.DeclaredEvidence.SupplierInvoiceReference,
+                record.DeclaredEvidence.SupplierInvoiceDate,
+                record.DeclaredEvidence.CurrencyCode,
+                record.DeclaredEvidence.SubtotalAmount,
+                record.DeclaredEvidence.DiscountAmount,
+                record.DeclaredEvidence.TaxAmount,
+                record.DeclaredEvidence.GrossAmount,
+                record.DeclaredEvidence.RecordedAt,
+                record.DeclaredEvidence.RecordedByActorId,
+                record.DeclaredEvidence.Lines.Select(line => new PurchaseInvoiceDeclaredEvidenceLineResponse(
+                    line.Id,
+                    line.PurchaseOrderLineId,
+                    line.Quantity,
+                    line.UnitPrice,
+                    line.DiscountAmount,
+                    line.TaxRatePercentage,
+                    line.TaxCode,
+                    line.TaxAmount,
+                    line.NetAmount,
+                    line.GrossAmount,
+                    line.Description,
+                    line.Allocations.Select(allocation => new PurchaseInvoiceDeclaredEvidenceAllocationResponse(allocation.GoodsReceiptId, allocation.GoodsReceiptLineId, allocation.Quantity)).ToArray())).ToArray()));
 
     private static PurchaseInvoiceHandoffLineResponse ToLineResponse(PurchaseInvoiceHandoffLineRecord line) => new(line.Id, line.PurchaseOrderLineId, line.ProductId, line.ProductSku, line.ProductName, line.UnitOfMeasureCode, line.HandoffQuantity, line.UnitPrice, line.TaxRatePercentage, line.TaxAmount, line.LineAmount);
 

@@ -84,7 +84,7 @@ builder.Services.AddProductIdentity();
 builder.Services.AddSupplierIdentity();
 builder.Services.AddCustomerIdentity();
 builder.Services.AddMasterDataImport();
-builder.Services.AddPurchaseRequestApprovalFoundation();
+builder.Services.AddPurchaseRequestApprovalFoundation(builder.Configuration);
 string? developmentMasterDataSqliteConnectionString = null;
 string? developmentBusinessPartiesSqliteConnectionString = null;
 string? developmentProcurementSqliteConnectionString = null;
@@ -839,6 +839,7 @@ app.MapSupplierQuotationEndpoints();
 app.MapPurchaseOrderEndpoints();
 app.MapGoodsReceiptEndpoints();
 app.MapPurchaseInvoiceHandoffEndpoints();
+app.MapPurchaseInvoiceMatchingEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

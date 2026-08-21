@@ -17,6 +17,7 @@ public sealed class PurchaseInvoiceHandoffService
 {
     private const string CreateOperationId = "procurement.invoice-handoff.create";
     private const string CancelOperationId = "procurement.invoice-handoff.cancel";
+    private const string EvidenceCaptureOperationId = "procurement.invoice-handoff.evidence.capture";
     private readonly PurchaseRequestAuthorizationService authorization;
     private readonly IPurchaseInvoiceHandoffPersistence persistence;
 
@@ -88,7 +89,8 @@ public sealed class PurchaseInvoiceHandoffService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (!PurchaseInvoiceHandoffValuePolicy.TryNormalizeCreate(request, out var supplierInvoiceReference, out var notes, out var sources))
+        if (!PurchaseInvoiceHandoffValuePolicy.TryNormalizeCreate(request, out var supplierInvoiceReference, out var notes, out var sources)
+            || !PurchaseInvoiceHandoffValuePolicy.TryNormalizeDeclaredEvidence(request.DeclaredEvidence, out var declaredEvidence))
         {
             return PurchaseInvoiceHandoffOperationResult<PurchaseInvoiceHandoffRecord>.Failure("validation_failed");
         }
@@ -160,9 +162,47 @@ public sealed class PurchaseInvoiceHandoffService
             notes,
             commandSources,
             occurredAt,
-            idempotencyKey);
+            idempotencyKey,
+            declaredEvidence);
         var evidence = CreateEvidence(context, id, source.Scope, CreateOperationId, null, PurchaseInvoiceHandoffStatus.Recorded, null, idempotencyKey, requestFingerprint, null, "Recorded");
         return ToOperationResult(await persistence.CreateAsync(context.TenantContext, command, evidence, cancellationToken));
+    }
+
+    public async Task<PurchaseInvoiceHandoffOperationResult<PurchaseInvoiceHandoffRecord>> CaptureDeclaredEvidenceAsync(
+        ProcurementRequestContext context,
+        Guid purchaseInvoiceHandoffId,
+        byte[] expectedVersion,
+        PurchaseInvoiceDeclaredEvidenceCaptureRequest request,
+        string? idempotencyKey,
+        string? requestFingerprint,
+        CancellationToken cancellationToken = default)
+    {
+        var current = await GetAuthorizedAsync(context, purchaseInvoiceHandoffId, EvidenceCaptureOperationId, cancellationToken);
+        if (!current.Succeeded || current.Value is null) return current;
+        if (expectedVersion is null || expectedVersion.Length == 0) return PurchaseInvoiceHandoffOperationResult<PurchaseInvoiceHandoffRecord>.Failure("validation_failed");
+        if (request is null || !PurchaseInvoiceHandoffValuePolicy.TryNormalizeDeclaredEvidence(request.Evidence, out var normalized) || normalized is null)
+        {
+            return PurchaseInvoiceHandoffOperationResult<PurchaseInvoiceHandoffRecord>.Failure("invoice_evidence_invalid");
+        }
+
+        var replay = await TryDurableReplayAsync(context, EvidenceCaptureOperationId, purchaseInvoiceHandoffId, idempotencyKey, requestFingerprint, cancellationToken);
+        if (replay is not null) return replay;
+        if (current.Value.Status != PurchaseInvoiceHandoffStatus.Recorded) return PurchaseInvoiceHandoffOperationResult<PurchaseInvoiceHandoffRecord>.Failure("invoice_handoff_not_active");
+        if (current.Value.DeclaredEvidence is not null && !PurchaseInvoiceHandoffValuePolicy.TryReason(request.Reason, out var reason))
+        {
+            return PurchaseInvoiceHandoffOperationResult<PurchaseInvoiceHandoffRecord>.Failure("evidence_correction_reason_required");
+        }
+
+        var command = new PurchaseInvoiceDeclaredEvidenceCaptureCommand(
+            purchaseInvoiceHandoffId,
+            expectedVersion,
+            context.ActorId,
+            normalized,
+            string.IsNullOrWhiteSpace(request.Reason) ? null : request.Reason.Trim(),
+            DateTimeOffset.UtcNow,
+            idempotencyKey);
+        var evidence = CreateEvidence(context, purchaseInvoiceHandoffId, current.Value.Scope, EvidenceCaptureOperationId, current.Value.Status, current.Value.Status, command.Reason, idempotencyKey, requestFingerprint, $"declared-evidence:{current.Value.DeclaredEvidence?.VersionNumber.ToString() ?? "none"}", "declared-evidence:captured");
+        return ToOperationResult(await persistence.CaptureDeclaredEvidenceAsync(context.TenantContext, command, evidence, cancellationToken));
     }
 
     public async Task<PurchaseInvoiceHandoffOperationResult<PurchaseInvoiceHandoffRecord>> CancelAsync(
