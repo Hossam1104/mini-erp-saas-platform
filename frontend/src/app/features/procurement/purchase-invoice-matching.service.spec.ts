@@ -29,7 +29,7 @@ describe('PurchaseInvoiceMatchingService', () => {
   });
 
   it('evaluates and resolves with antiforgery, idempotency, and optimistic concurrency headers', async () => {
-    const evaluatePayload = { exchangeRateReference: { exchangeRateId: 'rate-1', effectiveOn: '2026-08-20' } };
+    const evaluatePayload = { exchangeRateReference: { exchangeRateId: 'rate-1' } };
     const evaluate = service.evaluate('handoff-1', 'V1', evaluatePayload);
     await Promise.resolve();
     const evaluation = httpMock.expectOne('/api/v1/procurement/purchase-invoice-handoffs/handoff-1/evaluate-match');

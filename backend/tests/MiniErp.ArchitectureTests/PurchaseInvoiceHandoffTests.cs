@@ -115,6 +115,138 @@ public sealed class PurchaseInvoiceHandoffTests
     }
 
     [Theory]
+    [InlineData(20, 20, 20, 20, "ExactMatch", 0)]
+    [InlineData(15, 20, 15, 20, "ExceptionHold", -5)]
+    [InlineData(25, 20, 25, 15, "ExceptionHold", 5)]
+    public async Task Multiple_declared_lines_for_one_po_line_are_quantity_aggregated(
+        decimal firstDeclared,
+        decimal secondDeclared,
+        decimal firstAllocation,
+        decimal secondAllocation,
+        string expectedResult,
+        decimal expectedVariance)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipt = await fixture.RecordedReceiptWithQuantityAsync(100m, $"pih-split-{expectedResult}-{firstDeclared}");
+        var handoff = await CreateSplitEvidenceHandoffAsync(
+            fixture,
+            [receipt],
+            40m,
+            [firstDeclared, secondDeclared],
+            [firstAllocation, secondAllocation],
+            [0, 0],
+            $"pih-split-{expectedResult}-{firstDeclared}");
+
+        var evaluation = await fixture.MatchService.EvaluateAsync(
+            fixture.Context(Requester, "tenant.procurement.matching.evaluate"),
+            handoff.Id,
+            handoff.Version,
+            new PurchaseInvoiceMatchEvaluateRequest(),
+            $"pih-split-{expectedResult}-{firstDeclared}-evaluate",
+            $"fp-pih-split-{expectedResult}-{firstDeclared}-evaluate");
+
+        Assert.True(evaluation.Succeeded, evaluation.Code);
+        Assert.Equal(expectedResult, evaluation.Value!.Result.ToString());
+        if (expectedVariance == 0m)
+        {
+            Assert.DoesNotContain(evaluation.Value.Variances, item => item.Classification == "QuantityVariance");
+        }
+        else
+        {
+            var variance = Assert.Single(evaluation.Value.Variances, item => item.Classification == "QuantityVariance");
+            Assert.Equal(expectedVariance, variance.Variance);
+            Assert.Equal(40m, variance.ExpectedValue);
+            Assert.Equal(firstDeclared + secondDeclared, variance.ActualValue);
+        }
+    }
+
+    [Fact]
+    public async Task Split_quantity_exactly_on_configured_tolerance_boundary_is_within_tolerance()
+    {
+        var configured = new ConfigurationPurchaseInvoiceMatchingTolerancePolicyProvider(
+            new StaticOptionsMonitor<PurchaseInvoiceMatchingPolicyOptions>(new()
+            {
+                TolerancePolicies =
+                [
+                    new PurchaseInvoiceMatchingTolerancePolicyOptions
+                    {
+                        TenantId = TenantA,
+                        CompanyId = CompanyA,
+                        BranchId = BranchA,
+                        PolicyId = "split-boundary",
+                        Version = 1,
+                        QuantityPercentageTolerance = 2.5m,
+                        EffectiveFrom = DateTimeOffset.MinValue
+                    }
+                ]
+            }));
+        await using var fixture = await Fixture.CreateAsync(configured);
+        var receipt = await fixture.RecordedReceiptWithQuantityAsync(100m, "pih-split-boundary");
+        var handoff = await CreateSplitEvidenceHandoffAsync(fixture, [receipt], 40m, [21m, 20m], [20m, 20m], [0, 0], "pih-split-boundary");
+
+        var evaluation = await fixture.MatchService.EvaluateAsync(
+            fixture.Context(Requester, "tenant.procurement.matching.evaluate"),
+            handoff.Id,
+            handoff.Version,
+            new PurchaseInvoiceMatchEvaluateRequest(),
+            "pih-split-boundary-evaluate",
+            "fp-pih-split-boundary-evaluate");
+
+        Assert.True(evaluation.Succeeded, evaluation.Code);
+        Assert.Equal(PurchaseInvoiceMatchResult.WithinTolerance, evaluation.Value!.Result);
+        Assert.Equal(1m, evaluation.Value.Variances.Single(item => item.Classification == "QuantityVariance").AllowedTolerance);
+    }
+
+    [Fact]
+    public async Task Duplicate_allocations_to_one_receipt_line_are_aggregated_and_blocked()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipt = await fixture.RecordedReceiptWithQuantityAsync(100m, "pih-duplicate-receipt-allocation");
+        var handoff = await CreateSplitEvidenceHandoffAsync(fixture, [receipt], 20m, [20m, 20m], [20m, 20m], [0, 0], "pih-duplicate-receipt-allocation");
+
+        var evaluation = await fixture.MatchService.EvaluateAsync(
+            fixture.Context(Requester, "tenant.procurement.matching.evaluate"),
+            handoff.Id,
+            handoff.Version,
+            new PurchaseInvoiceMatchEvaluateRequest(),
+            "pih-duplicate-receipt-allocation-evaluate",
+            "fp-pih-duplicate-receipt-allocation-evaluate");
+
+        Assert.True(evaluation.Succeeded, evaluation.Code);
+        Assert.Equal(PurchaseInvoiceMatchResult.ExceptionHold, evaluation.Value!.Result);
+        var variance = Assert.Single(evaluation.Value.Variances, item => item.Classification == "InvoiceAllocationExceedsSupportedQuantity");
+        Assert.Equal(20m, variance.ExpectedValue);
+        Assert.Equal(40m, variance.ActualValue);
+    }
+
+    [Fact]
+    public async Task Valid_allocations_to_multiple_receipt_lines_are_aggregated_without_double_consumption()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipts = await fixture.RecordedReceiptPairAsync("pih-multiple-valid-receipt-lines");
+        var handoff = await CreateSplitEvidenceHandoffAsync(
+            fixture,
+            [receipts.First, receipts.Second],
+            1m,
+            [1m, 1m],
+            [1m, 1m],
+            [0, 1],
+            "pih-multiple-valid-receipt-lines");
+
+        var evaluation = await fixture.MatchService.EvaluateAsync(
+            fixture.Context(Requester, "tenant.procurement.matching.evaluate"),
+            handoff.Id,
+            handoff.Version,
+            new PurchaseInvoiceMatchEvaluateRequest(),
+            "pih-multiple-valid-receipt-lines-evaluate",
+            "fp-pih-multiple-valid-receipt-lines-evaluate");
+
+        Assert.True(evaluation.Succeeded, evaluation.Code);
+        Assert.True(evaluation.Value!.Result == PurchaseInvoiceMatchResult.ExactMatch, string.Join(" | ", evaluation.Value.Variances.Select(item => $"{item.Classification}:{item.ExpectedValue}->{item.ActualValue}:{item.Variance}")));
+        Assert.DoesNotContain(evaluation.Value.Variances, item => item.Classification == "InvoiceAllocationExceedsSupportedQuantity");
+    }
+
+    [Theory]
     [InlineData(39, "under")]
     [InlineData(41, "over")]
     public async Task Zero_quantity_tolerance_holds_both_supplier_under_and_over_declarations(decimal declaredQuantity, string direction)
@@ -628,7 +760,7 @@ public sealed class PurchaseInvoiceHandoffTests
             handoff.Id,
             handoff.Version,
             new PurchaseInvoiceMatchEvaluateRequest(
-                new PurchaseInvoiceExchangeRateReferenceRequest(exchangeRateId, effectiveOn)),
+                new PurchaseInvoiceExchangeRateReferenceRequest(exchangeRateId)),
             "pih-currency-server-owned-evaluate",
             "fp-pih-currency-server-owned-evaluate");
 
@@ -1102,6 +1234,69 @@ public sealed class PurchaseInvoiceHandoffTests
         return handoff.Value!;
     }
 
+    private static async Task<PurchaseInvoiceHandoffRecord> CreateSplitEvidenceHandoffAsync(
+        Fixture fixture,
+        IReadOnlyList<GoodsReceiptRecord> receipts,
+        decimal handoffQuantityPerReceipt,
+        IReadOnlyList<decimal> declaredQuantities,
+        IReadOnlyList<decimal> allocationQuantities,
+        IReadOnlyList<int> allocationReceiptIndexes,
+        string keyPrefix,
+        decimal declaredUnitPrice = 12.5m,
+        string currencyCode = "USD")
+    {
+        Assert.NotEmpty(receipts);
+        Assert.Equal(declaredQuantities.Count, allocationQuantities.Count);
+        Assert.Equal(declaredQuantities.Count, allocationReceiptIndexes.Count);
+        var purchaseOrderId = receipts[0].PurchaseOrderId;
+        var purchaseOrderLineId = receipts[0].Lines.Single().PurchaseOrderLineId;
+        var purchaseOrder = await fixture.PurchaseOrderService.GetAsync(
+            fixture.Context(Requester, "tenant.procurement.purchase-order.view"),
+            purchaseOrderId);
+        Assert.True(purchaseOrder.Succeeded, purchaseOrder.Code);
+        var purchaseOrderLine = Assert.Single(purchaseOrder.Value!.Lines, item => item.Id == purchaseOrderLineId);
+        var taxRate = purchaseOrderLine.TaxRatePercentage;
+        var invoiceDate = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var subtotal = declaredQuantities.Sum(quantity => quantity * declaredUnitPrice);
+        var taxTotal = taxRate is { } rate ? declaredQuantities.Sum(quantity => Math.Round(quantity * declaredUnitPrice * rate / 100m, 2, MidpointRounding.AwayFromZero)) : 0m;
+        var evidenceLines = declaredQuantities.Select((quantity, index) =>
+        {
+            var receipt = receipts[allocationReceiptIndexes[index]];
+            var net = quantity * declaredUnitPrice;
+            var tax = taxRate is { } rate ? Math.Round(net * rate / 100m, 2, MidpointRounding.AwayFromZero) : 0m;
+            return new PurchaseInvoiceDeclaredEvidenceLineRequest(
+                purchaseOrderLineId,
+                quantity,
+                declaredUnitPrice,
+                null,
+                taxRate,
+                purchaseOrderLine.TaxCode,
+                tax,
+                net,
+                net + tax,
+                $"Supplier split line {index + 1}",
+                [new PurchaseInvoiceDeclaredEvidenceAllocationRequest(receipt.Id, receipt.Lines.Single().Id, allocationQuantities[index])]);
+        }).ToArray();
+        var evidence = new PurchaseInvoiceDeclaredEvidenceRequest(
+            $"INV-{keyPrefix}",
+            invoiceDate,
+            currencyCode,
+            subtotal,
+            null,
+            taxTotal,
+            subtotal + taxTotal,
+            evidenceLines);
+        var sources = receipts.Select(receipt =>
+            new PurchaseInvoiceHandoffSourceRequest(receipt.Id, receipt.Lines.Single().Id, handoffQuantityPerReceipt)).ToArray();
+        var handoff = await fixture.InvoiceHandoffService.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.invoice-handoff.create"),
+            new PurchaseInvoiceHandoffCreateRequest(purchaseOrderId, $"INV-{keyPrefix}", invoiceDate, null, sources, evidence),
+            $"{keyPrefix}-create",
+            $"fp-{keyPrefix}-create");
+        Assert.True(handoff.Succeeded, handoff.Code);
+        return handoff.Value!;
+    }
+
     private sealed class StaticOptionsMonitor<T>(T value) : IOptionsMonitor<T>
     {
         public T CurrentValue => value;
@@ -1124,8 +1319,7 @@ public sealed class PurchaseInvoiceHandoffTests
             Guid exchangeRateId,
             string sourceCurrencyCode,
             string targetCurrencyCode,
-            DateOnly? requestedEffectiveOn,
-            DateOnly? invoiceEffectiveOn,
+            DateOnly? supplierInvoiceDate,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(
             Snapshot.ExchangeRateId == exchangeRateId

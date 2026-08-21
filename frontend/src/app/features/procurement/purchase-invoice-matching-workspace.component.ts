@@ -11,6 +11,8 @@ import { GoodsReceiptResponse, GoodsReceiptWarehouseOptionResponse } from './goo
 import { GoodsReceiptService } from './goods-receipt.service';
 import { PurchaseOrderResponse } from './purchase-order.model';
 import { PurchaseOrderService } from './purchase-order.service';
+import { ExchangeRateRecord, MasterDataRecord } from '../master-data/master-data.models';
+import { MasterDataService } from '../master-data/master-data.service';
 import {
   PurchaseInvoiceMatchAuditResponse,
   PurchaseInvoiceMatchEvaluateRequest,
@@ -71,6 +73,21 @@ type WorkspaceMode = 'list' | 'detail';
                @if (currentHandoff.declaredEvidence?.lines?.length) {<div class="ui-grid-shell"><table class="ui-grid"><caption class="sr-only">{{ text('declaredLines') }}</caption><thead><tr><th scope="col">{{ text('product') }}</th><th scope="col">{{ text('uom') }}</th><th scope="col" class="numeric">{{ text('quantity') }}</th><th scope="col" class="numeric">{{ text('unitPrice') }}</th><th scope="col">{{ text('warehouse') }}</th></tr></thead><tbody>@for (line of currentHandoff.declaredEvidence?.lines ?? []; track line.id) {<tr><td><strong>{{ productLabel(line.purchaseOrderLineId) }}</strong></td><td>{{ uomLabel(line.purchaseOrderLineId) }}</td><td class="numeric">{{ formatNumber(line.quantity) }}</td><td class="numeric">{{ formatNumber(line.unitPrice) }} {{ currencyLabel() }}</td><td>{{ warehouseLabel() }}</td></tr>}</tbody></table></div>} @else {<p class="empty-inline">{{ text('evidenceMissing') }}</p>}
              </section>
            }
+          @if (isCrossCurrency()) {
+            <section class="ui-surface detail-card fx-card" data-testid="matching-exchange-rate-selector" aria-labelledby="matching-fx-title">
+              <div class="card-heading"><div><p class="section-kicker">{{ text('crossCurrency') }}</p><h2 id="matching-fx-title">{{ text('exchangeRateReference') }}</h2></div><span class="source-meta">{{ declaredCurrencyCode() }} → {{ purchaseOrderCurrencyCode() }}</span></div>
+              <p class="detail-copy">{{ text('crossCurrencyLead') }}</p>
+              @if (exchangeRateLoading()) { <p class="state-note" role="status">{{ text('exchangeRateLoading') }}</p> }
+              @else if (eligibleExchangeRates().length === 0) { <p class="inline-alert" role="alert" data-testid="matching-exchange-rate-missing">{{ text('noExchangeRate') }}</p><p class="detail-copy">{{ invoiceDate() ? text('noExchangeRateLead') : text('invoiceDateMissing') }}</p> }
+              @else {
+                <label class="form-field fx-selector"><span>{{ text('selectExchangeRate') }} <em>*</em></span><select [value]="selectedExchangeRateId" (change)="selectExchangeRate($any($event.target).value)" aria-describedby="matching-fx-help"><option value="">{{ text('chooseExchangeRate') }}</option>@for (rate of eligibleExchangeRates(); track rate.id) {<option [value]="rate.id">{{ exchangeRateLabel(rate) }}</option>}</select></label>
+                <p id="matching-fx-help" class="term-hint">{{ text('serverOwnedSnapshot') }}</p>
+                <div class="fx-candidate-list" aria-label="{{ text('exchangeRateCandidates') }}">@for (rate of eligibleExchangeRates(); track rate.id) {<div class="fx-candidate"><strong>{{ exchangeRateLabel(rate) }}</strong><span>{{ exchangeRateWindows(rate) }}</span></div>}</div>
+                @if (!selectedExchangeRateId) { <p class="inline-alert" role="status">{{ text('selectionRequiredForComparableCurrency') }}</p> }
+              }
+              @if (currentMatch.appliedExchangeRate; as appliedRate) { <div class="fx-applied" data-testid="matching-applied-exchange-rate"><strong>{{ text('appliedExchangeRate') }}</strong><span>{{ appliedRate.sourceCurrencyCode }} → {{ appliedRate.targetCurrencyCode }} · v{{ appliedRate.versionNumber }} · {{ appliedRate.effectiveOn }}</span><small>{{ appliedRate.provenance || text('missing') }} · {{ appliedRate.source || text('missing') }}</small></div> }
+            </section>
+          }
           <section class="match-layout">
              <section class="ui-surface detail-card policy-card"><p class="section-kicker">{{ text('policy') }}</p><h2>{{ currentMatch.policy.policyId }}</h2><div class="policy-grid"><span>{{ text('policyVersion') }} <strong>{{ currentMatch.policy.version }}</strong></span><span>{{ text('amountTolerance') }} <strong>{{ currentMatch.policy.amountAbsoluteTolerance }}</strong></span><span>{{ text('quantityTolerance') }} <strong>{{ currentMatch.policy.quantityAbsoluteTolerance }}</strong></span></div><p class="detail-copy">{{ text('policyNote') }}</p>@if (currentMatch.resolutionPolicy; as resolutionPolicy) {<p class="policy-evidence">{{ text('resolutionPolicy') }} · <strong>{{ resolutionPolicy.policyId }} v{{ resolutionPolicy.version }}</strong></p>}</section>
             <section class="ui-surface detail-card resolution-card"><p class="section-kicker">{{ text('resolution') }}</p><h2>{{ currentMatch.result === 'ExceptionHold' ? text('exceptionTitle') : text('decisionTitle') }}</h2><p class="detail-copy">{{ currentMatch.resolutionReason || text('resolutionNote') }}</p>@if (currentMatch.result === 'ExceptionHold') {<label class="field"><span class="field__label">{{ text('resolutionReason') }}</span><textarea rows="3" maxlength="2000" [(ngModel)]="resolutionReason" [placeholder]="text('resolutionPlaceholder')"></textarea></label><button class="button button--primary" type="button" [disabled]="resolving() || !resolutionReason.trim()" (click)="resolveException()">{{ resolving() ? text('resolving') : text('resolve') }}</button>} @else if (currentMatch.result === 'ResolvedException') {<p class="resolved-stamp">✓ {{ text('resolved') }}</p>}</section>
@@ -121,6 +138,13 @@ type WorkspaceMode = 'list' | 'detail';
     .audit-strip strong { font-size: 1.15rem; color: var(--match-ink); }
     .source-facts { margin: 1rem 0; }
     .source-meta { color: var(--match-muted); font-size: .82rem; }
+    .fx-card { margin: 1rem 0; border-top: 3px solid var(--match-accent); }
+    .fx-selector { max-width: 42rem; margin: 1rem 0 .35rem; }
+    .fx-candidate-list { display: grid; gap: .55rem; margin-top: .9rem; }
+    .fx-candidate { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: .7rem .85rem; border: 1px solid var(--match-line); background: #fffdf8; color: var(--match-muted); font-size: .82rem; }
+    .fx-candidate strong { color: var(--match-ink); }
+    .fx-applied { display: grid; gap: .2rem; margin-top: 1rem; padding: .8rem .95rem; border-inline-start: 3px solid var(--match-cool); background: #f3f8f7; color: var(--match-ink); }
+    .fx-applied span, .fx-applied small { color: var(--match-muted); }
     @media (max-width: 860px) { .evidence-spine { grid-template-columns: 1fr; } .evidence-connector { transform: rotate(90deg); justify-self: center; } .match-layout { grid-template-columns: 1fr; } .control-mark { display: none; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
   `],
@@ -133,6 +157,7 @@ export class PurchaseInvoiceMatchingWorkspaceComponent implements OnInit {
   private readonly handoffService = inject(PurchaseInvoiceHandoffService);
   private readonly purchaseOrderService = inject(PurchaseOrderService);
   private readonly goodsReceiptService = inject(GoodsReceiptService);
+  private readonly masterDataService = inject(MasterDataService);
 
   readonly mode = signal<WorkspaceMode>('list');
   readonly records = signal<PurchaseInvoiceMatchListItemResponse[]>([]);
@@ -143,6 +168,9 @@ export class PurchaseInvoiceMatchingWorkspaceComponent implements OnInit {
   readonly purchaseOrder = signal<PurchaseOrderResponse | null>(null);
   readonly receipts = signal<GoodsReceiptResponse[]>([]);
   readonly warehouses = signal<GoodsReceiptWarehouseOptionResponse[]>([]);
+  readonly exchangeRates = signal<ExchangeRateRecord[]>([]);
+  readonly exchangeRateLoading = signal(false);
+  readonly exchangeRateError = signal(false);
   readonly loading = signal(false);
   readonly evaluating = signal(false);
   readonly resolving = signal(false);
@@ -150,6 +178,7 @@ export class PurchaseInvoiceMatchingWorkspaceComponent implements OnInit {
   readonly resultFilter = signal('');
   resolutionReason = '';
   readonly results: PurchaseInvoiceMatchResult[] = ['NotMatchReady', 'ExactMatch', 'WithinTolerance', 'ExceptionHold', 'ResolvedException'];
+  selectedExchangeRateId = '';
 
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -164,6 +193,20 @@ export class PurchaseInvoiceMatchingWorkspaceComponent implements OnInit {
       sourceFacts: ['Source facts', 'حقائق المصدر'], declaredLines: ['Supplier-declared invoice lines', 'بنود فاتورة المورد المعلنة'], product: ['Product', 'المنتج'], uom: ['UOM', 'وحدة القياس'], quantity: ['Quantity', 'الكمية'], unitPrice: ['Unit price', 'سعر الوحدة'], warehouse: ['Warehouse', 'المستودع'], supplier: ['Supplier', 'المورد'], goodsReceipt: ['Goods receipt', 'إيصال استلام'], authorizedWarehouse: ['Authorized warehouse', 'المستودع المصرح به'], resolutionPolicy: ['Resolution policy', 'سياسة الحل'],
       kicker: ['CONTROLLED RECONCILIATION', 'مطابقة مضبوطة'], title: ['Three-way matching', 'المطابقة الثلاثية'], lead: ['A source-bound control room for purchase order, accepted receipt, and supplier invoice evidence.', 'مساحة رقابية تربط أمر الشراء والاستلام المقبول ودليل فاتورة المورد.'], boundary: ['Evaluation is evidence-only. It does not post AP, GL, stock, tax, payment, or external submissions.', 'التقييم أدلة فقط ولا ينشئ قيوداً أو حركات مخزون أو ضرائب أو مدفوعات أو إرسالاً خارجياً.'], resultFilter: ['Decision', 'القرار'], allResults: ['All decisions', 'كل القرارات'], filterNote: ['Only current and superseded evaluations visible to this Tenant are listed.', 'تظهر فقط تقييمات هذا العميل، الحالية والسابقة.'], loading: ['Loading matching ledger', 'جار تحميل سجل المطابقة'], loadFailed: ['Matching ledger unavailable', 'تعذر تحميل سجل المطابقة'], emptyTitle: ['No evaluations yet', 'لا توجد تقييمات بعد'], emptyLead: ['Evaluate an invoice handoff once declared supplier invoice evidence is captured.', 'قيّم تسليم الفاتورة بعد تسجيل دليل فاتورة المورد.'], po: ['Purchase order', 'أمر الشراء'], handoff: ['Handoff', 'التسليم'], result: ['Decision', 'القرار'], variances: ['Variances', 'الفروقات'], evaluated: ['Evaluated', 'وقت التقييم'], back: ['Back to matching', 'العودة للمطابقة'], detailLead: ['Immutable source lineage', 'سلسلة مصادر غير قابلة للتغيير'], actions: ['Matching actions', 'إجراءات المطابقة'], evaluating: ['Evaluating…', 'جار التقييم…'], reevaluate: ['Evaluate current sources', 'تقييم المصادر الحالية'], purchaseOrder: ['Purchase order', 'أمر الشراء'], acceptedReceipt: ['Accepted goods receipt', 'الاستلام المقبول'], supplierInvoice: ['Supplier invoice evidence', 'دليل فاتورة المورد'], versionCaptured: ['Captured version', 'الإصدار المسجل'], receiptBasis: ['Accepted quantities', 'الكميات المقبولة'], handoffVersion: ['Handoff version', 'إصدار التسليم'], evidenceVersion: ['Evidence version', 'إصدار الدليل'], evidenceMissing: ['Evidence not captured', 'لم يسجل الدليل'], missing: ['Missing', 'مفقود'], policy: ['Tolerance policy', 'سياسة السماح'], policyVersion: ['Version', 'الإصدار'], amountTolerance: ['Amount tolerance', 'سماح المبلغ'], quantityTolerance: ['Quantity tolerance', 'سماح الكمية'], policyNote: ['The effective policy is stored with this evaluation. A later policy change cannot rewrite this decision.', 'تحفظ السياسة الفعالة مع التقييم ولا تغير السياسة اللاحقة القرار السابق.'], resolution: ['Exception resolution', 'حل الاستثناء'], exceptionTitle: ['Controlled exception hold', 'حجز استثناء مضبوط'], decisionTitle: ['Decision record', 'سجل القرار'], resolutionNote: ['A resolution never changes source documents; it records a separately authorized decision.', 'الحل لا يغير مستندات المصدر بل يسجل قراراً مصرحاً به بشكل منفصل.'], resolutionReason: ['Resolution reason', 'سبب الحل'], resolutionPlaceholder: ['Explain the controlled exception and supporting evidence…', 'اشرح الاستثناء المضبوط والدليل الداعم…'], resolving: ['Resolving…', 'جار الحل…'], resolve: ['Resolve exception', 'حل الاستثناء'], resolved: ['Resolved by authorized review', 'تم الحل بمراجعة مصرح بها'], varianceLedger: ['Variance ledger', 'سجل الفروقات'], varianceTitle: ['Line-by-line decision evidence', 'أدلة القرار بنداً بنداً'], noVariances: ['No variance recorded. The sources were exactly comparable.', 'لا توجد فروقات مسجلة. المصادر قابلة للمقارنة بدقة.'], classification: ['Check', 'الفحص'], details: ['Detail', 'التفصيل'], expected: ['Expected', 'المتوقع'], actual: ['Actual', 'الفعلي'], variance: ['Variance', 'الفرق'], history: ['History events', 'أحداث السجل'], audit: ['Audit events', 'أحداث التدقيق'], fingerprint: ['Source fingerprint', 'بصمة المصدر'], resolvedException: ['Resolved exception', 'استثناء محلول'], exceptionHold: ['Exception hold', 'حجز استثناء'], notMatchReady: ['Not match-ready', 'غير جاهز للمطابقة'], exactMatch: ['Exact match', 'مطابقة تامة'], withinTolerance: ['Within tolerance', 'ضمن السماح'], superseded: ['Superseded', 'مستبدل'], current: ['Current', 'حالي']
     };
+    Object.assign(copy, {
+      crossCurrency: ['CROSS-CURRENCY CONTROL', '\u062a\u062d\u0643\u0645 \u0627\u0644\u0639\u0645\u0644\u0627\u062a \u0627\u0644\u0645\u062a\u0639\u062f\u062f\u0629'],
+      exchangeRateReference: ['Exchange Rate reference', '\u0645\u0631\u062c\u0639 \u0633\u0639\u0631 \u0627\u0644\u0635\u0631\u0641'],
+      crossCurrencyLead: ['Select a compatible MESP-120 identity. The server selects the effective version from the immutable supplier invoice date.', '\u0627\u062e\u062a\u0631 \u0647\u0648\u064a\u0629 MESP-120 \u0627\u0644\u0645\u062a\u0648\u0627\u0641\u0642\u0629. \u064a\u062d\u062f\u062f \u0627\u0644\u062e\u0627\u062f\u0645 \u0627\u0644\u0646\u0633\u062e\u0629 \u0627\u0644\u0641\u0639\u0627\u0644\u0629 \u0645\u0646 \u062a\u0627\u0631\u064a\u062e \u0641\u0627\u062a\u0648\u0631\u0629 \u0627\u0644\u0645\u0648\u0631\u062f \u0627\u0644\u062b\u0627\u0628\u062a.'],
+      exchangeRateLoading: ['Loading Exchange Rate identities', '\u062c\u0627\u0631\u064d \u062a\u062d\u0645\u064a\u0644 \u0647\u0648\u064a\u0627\u062a \u0623\u0633\u0639\u0627\u0631 \u0627\u0644\u0635\u0631\u0641'],
+      chooseExchangeRate: ['Choose an Exchange Rate identity', '\u0627\u062e\u062a\u0631 \u0647\u0648\u064a\u0629 \u0633\u0639\u0631 \u0635\u0631\u0641'],
+      noExchangeRate: ['Currency not comparable / missing Exchange Rate', '\u0627\u0644\u0639\u0645\u0644\u0629 \u063a\u064a\u0631 \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u0645\u0642\u0627\u0631\u0646\u0629 / \u0633\u0639\u0631 \u0635\u0631\u0641 \u0645\u0641\u0642\u0648\u062f'],
+      noExchangeRateLead: ['No active MESP-120 identity has a valid version for this invoice date. Evaluation remains fail-closed.', '\u0644\u0627 \u062a\u0648\u062c\u062f \u0647\u0648\u064a\u0629 MESP-120 \u0645\u0641\u0639\u0644\u0629 \u0628\u0646\u0633\u062e\u0629 \u0635\u0627\u0644\u062d\u0629 \u0644\u062a\u0627\u0631\u064a\u062e \u0647\u0630\u0647 \u0627\u0644\u0641\u0627\u062a\u0648\u0631\u0629. \u064a\u0638\u0644 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u0645\u0648\u0642\u0648\u0641\u0627\u064b \u0628\u0634\u0643\u0644 \u0622\u0645\u0646.'],
+      invoiceDateMissing: ['The immutable invoice date is missing; cross-currency evaluation will remain Not match-ready.', '\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0641\u0627\u062a\u0648\u0631\u0629 \u0627\u0644\u062b\u0627\u0628\u062a \u0645\u0641\u0642\u0648\u062f؛ \u0633\u064a\u0628\u0642\u0649 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u063a\u064a\u0631 \u062c\u0627\u0647\u0632 \u0644\u0644\u0645\u0637\u0627\u0628\u0642\u0629.'],
+      serverOwnedSnapshot: ['Rate, scale, version, effective date, and provenance are read-only server evidence.', '\u0627\u0644\u0633\u0639\u0631 \u0648\u0627\u0644\u0645\u0642\u064a\u0627\u0633 \u0648\u0627\u0644\u0646\u0633\u062e\u0629 \u0648\u0627\u0644\u062a\u0627\u0631\u064a\u062e \u0648\u0627\u0644\u0645\u0635\u062f\u0631 \u0623\u062f\u0644\u0629 \u0645\u0646 \u0627\u0644\u062e\u0627\u062f\u0645 \u0641\u0642\u0637.'],
+      exchangeRateCandidates: ['Eligible MESP-120 identities', '\u0647\u0648\u064a\u0627\u062a MESP-120 \u0627\u0644\u0645\u0624\u0647\u0644\u0629'],
+      appliedExchangeRate: ['Applied server FX snapshot', '\u0644\u0642\u0637\u0629 FX \u0627\u0644\u0645\u0637\u0628\u0642\u0629 \u0645\u0646 \u0627\u0644\u062e\u0627\u062f\u0645'],
+      selectionRequiredForComparableCurrency: ['Choose a compatible identity or evaluate to record Not match-ready.', '\u0627\u062e\u062a\u0631 \u0647\u0648\u064a\u0629 \u0645\u062a\u0648\u0627\u0641\u0642\u0629 \u0623\u0648 \u0642\u064a\u0651\u0645 \u0644\u062a\u0633\u062c\u064a\u0644 \u062d\u0627\u0644\u0629 \u063a\u064a\u0631 \u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0645\u0637\u0627\u0628\u0642\u0629.'],
+    });
     const value = copy[key];
     if (!value) return key;
     return this.language.language() === 'ar' ? value[1] : value[0];
@@ -191,6 +234,25 @@ export class PurchaseInvoiceMatchingWorkspaceComponent implements OnInit {
   currencyLabel(): string {
     return this.handoff()?.declaredEvidence?.currencyCode || this.handoff()?.currencyCode || '—';
   }
+  declaredCurrencyCode(): string { return this.handoff()?.declaredEvidence?.currencyCode || this.handoff()?.currencyCode || ''; }
+  purchaseOrderCurrencyCode(): string { return this.purchaseOrder()?.source.currency.code || ''; }
+  invoiceDate(): string | null { return this.handoff()?.declaredEvidence?.supplierInvoiceDate || this.handoff()?.supplierInvoiceDate || null; }
+  isCrossCurrency(): boolean {
+    const declared = this.declaredCurrencyCode();
+    const purchaseOrder = this.purchaseOrderCurrencyCode();
+    return Boolean(declared && purchaseOrder && declared.toUpperCase() !== purchaseOrder.toUpperCase());
+  }
+  eligibleExchangeRates(): ExchangeRateRecord[] { return this.exchangeRates(); }
+  selectExchangeRate(exchangeRateId: string): void {
+    this.selectedExchangeRateId = this.eligibleExchangeRates().some(rate => rate.id === exchangeRateId) ? exchangeRateId : '';
+  }
+  exchangeRateLabel(rate: ExchangeRateRecord): string { return `${rate.sourceCurrencyCode} → ${rate.targetCurrencyCode} · ${rate.lifecycleState}`; }
+  exchangeRateWindows(rate: ExchangeRateRecord): string {
+    return rate.versions
+      .map(version => `v${version.versionNumber} · ${version.effectiveFrom}–${version.effectiveTo || 'current'} · ${version.provenance}${version.sourceNotes ? ` · ${version.sourceNotes}` : ''}`)
+      .join(' | ');
+  }
+
   receiptReferences(): string {
     const receipts = this.receipts();
     return receipts.length
@@ -226,6 +288,8 @@ export class PurchaseInvoiceMatchingWorkspaceComponent implements OnInit {
       const handoff = await this.tryLoad(this.handoffService.get(match.purchaseInvoiceHandoffId));
       this.handoff.set(handoff);
       this.purchaseOrder.set(await this.tryLoad(this.purchaseOrderService.get(match.purchaseOrderId)));
+      this.selectedExchangeRateId = match.appliedExchangeRate?.exchangeRateId || '';
+      await this.refreshExchangeRateChoices();
       if (handoff) {
         const receiptIds = [...new Set(handoff.sources.map(source => source.goodsReceiptId))];
         const receipts = await Promise.all(receiptIds.map(receiptId => this.tryLoad(this.goodsReceiptService.get(receiptId))));
@@ -238,6 +302,49 @@ export class PurchaseInvoiceMatchingWorkspaceComponent implements OnInit {
     } catch (error) { this.error.set(toSafeUiError(error)); } finally { this.loading.set(false); }
   }
 
+  private async refreshExchangeRateChoices(): Promise<void> {
+    this.exchangeRates.set([]);
+    this.exchangeRateError.set(false);
+    if (!this.isCrossCurrency()) {
+      this.selectedExchangeRateId = '';
+      return;
+    }
+
+    this.exchangeRateLoading.set(true);
+    try {
+      const records = await firstValueFrom(this.masterDataService.list('exchange-rates'));
+      const source = this.declaredCurrencyCode().toUpperCase();
+      const target = this.purchaseOrderCurrencyCode().toUpperCase();
+      const effectiveOn = this.invoiceDate();
+      const eligible = records
+        .filter((record): record is ExchangeRateRecord => this.isExchangeRateRecord(record))
+        .filter(record => record.lifecycleState === 'Active'
+          && record.sourceCurrencyCode.toUpperCase() === source
+          && record.targetCurrencyCode.toUpperCase() === target
+          && Boolean(effectiveOn)
+          && record.versions.some(version => {
+            return version.rate > 0
+              && version.rateScale > 0
+              && version.sourceCurrencyCode.toUpperCase() === source
+              && version.targetCurrencyCode.toUpperCase() === target
+              && version.effectiveFrom <= effectiveOn!
+              && (!version.effectiveTo || effectiveOn! <= version.effectiveTo);
+          }));
+      this.exchangeRates.set(eligible);
+      if (this.selectedExchangeRateId && !eligible.some(rate => rate.id === this.selectedExchangeRateId)) {
+        this.selectedExchangeRateId = '';
+      }
+    } catch {
+      this.exchangeRateError.set(true);
+    } finally {
+      this.exchangeRateLoading.set(false);
+    }
+  }
+
+  private isExchangeRateRecord(record: MasterDataRecord): record is ExchangeRateRecord {
+    return 'sourceCurrencyCode' in record && 'targetCurrencyCode' in record && 'versions' in record;
+  }
+
   private async tryLoad<T>(request: import('rxjs').Observable<T>): Promise<T | null> {
     try { return await firstValueFrom(request); } catch { return null; }
   }
@@ -247,7 +354,12 @@ export class PurchaseInvoiceMatchingWorkspaceComponent implements OnInit {
     this.evaluating.set(true); this.error.set(null);
     try {
       const handoff = await firstValueFrom(this.handoffService.get(current.purchaseInvoiceHandoffId));
-      const updated = await this.matchingService.evaluate(current.purchaseInvoiceHandoffId, handoff.version, {} as PurchaseInvoiceMatchEvaluateRequest);
+      this.handoff.set(handoff);
+      await this.refreshExchangeRateChoices();
+      const payload: PurchaseInvoiceMatchEvaluateRequest = this.isCrossCurrency() && this.selectedExchangeRateId
+        ? { exchangeRateReference: { exchangeRateId: this.selectedExchangeRateId } }
+        : {};
+      const updated = await this.matchingService.evaluate(current.purchaseInvoiceHandoffId, handoff.version, payload);
       this.match.set(updated); this.history.set(await this.matchingService.history(updated.id)); this.audit.set(await this.matchingService.audit(updated.id));
     } catch (error) { this.error.set(toSafeUiError(error)); } finally { this.evaluating.set(false); }
   }

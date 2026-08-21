@@ -3,7 +3,6 @@ export type PurchaseInvoiceMatchLifecycle = 'Current' | 'Superseded' | string;
 
 export interface PurchaseInvoiceExchangeRateReferenceRequest {
   exchangeRateId: string;
-  effectiveOn?: string | null;
 }
 
 export interface PurchaseInvoiceMatchEvaluateRequest {

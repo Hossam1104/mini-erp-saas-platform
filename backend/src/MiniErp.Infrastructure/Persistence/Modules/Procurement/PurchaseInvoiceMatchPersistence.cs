@@ -402,6 +402,9 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
                 .SingleOrDefault(version => version.IsCurrent)?.Lines ?? [])
             .GroupBy(item => item.PurchaseOrderLineId)
             .ToDictionary(group => group.Key, group => group.Sum(item => item.Quantity));
+        var declaredQuantitiesByPurchaseOrderLine = declared.Lines
+            .GroupBy(item => item.PurchaseOrderLineId)
+            .ToDictionary(group => group.Key, group => group.Sum(item => item.Quantity));
         var comparableCurrency = string.Equals(declared.CurrencyCode, order.CurrencyCode, StringComparison.OrdinalIgnoreCase);
         var validExchangeRate = IsValidExchangeRate(exchangeRate, declared.CurrencyCode, order.CurrencyCode);
         var convert = comparableCurrency ? (Func<decimal, decimal>)(value => value) : value => validExchangeRate ? value * exchangeRate!.Rate / exchangeRate.Scale : value;
@@ -428,6 +431,14 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
                     null,
                     "Cumulative active supplier-declared invoice quantity exceeds the active accepted or confirmed source quantity."));
             }
+        }
+
+        foreach (var (purchaseOrderLineId, declaredQuantity) in declaredQuantitiesByPurchaseOrderLine)
+        {
+            if (!orderLines.ContainsKey(purchaseOrderLineId)) continue;
+
+            var expectedQuantity = handoffQuantitiesByPurchaseOrderLine.GetValueOrDefault(purchaseOrderLineId);
+            Compare(variances, "QuantityVariance", purchaseOrderLineId, null, expectedQuantity, declaredQuantity, policy.QuantityAbsoluteTolerance, policy.QuantityPercentageTolerance, null, "Aggregated supplier-declared invoice quantity differs from the current handoff/source quantity.");
         }
 
         foreach (var line in declared.Lines)
@@ -460,9 +471,6 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
                 // allocation is intentionally not an intake failure.
                 variances.Add(new("InvoiceAllocationExceedsDeclaredQuantity", line.PurchaseOrderLineId, null, line.Quantity, allocationTotal, allocationTotal - line.Quantity, 0m, null, "Receipt allocation cannot exceed the supplier-declared invoice quantity."));
             }
-
-            var expectedQuantity = handoffQuantitiesByPurchaseOrderLine.GetValueOrDefault(line.PurchaseOrderLineId);
-            Compare(variances, "QuantityVariance", line.PurchaseOrderLineId, null, expectedQuantity, line.Quantity, policy.QuantityAbsoluteTolerance, policy.QuantityPercentageTolerance, null, "Supplier-declared invoice quantity differs from the current handoff/source quantity.");
 
             Compare(variances, "PriceVariance", line.PurchaseOrderLineId, null, poLine.UnitPrice, convert(line.UnitPrice), policy.PriceAbsoluteTolerance, policy.PricePercentageTolerance, order.CurrencyCode, "Supplier unit price differs from the Purchase Order.");
             if (line.TaxRatePercentage is not null || poLine.TaxRatePercentage is not null)
@@ -507,6 +515,36 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
             }
         }
 
+        var declaredAllocationsByGoodsReceiptLine = declared.Lines
+            .SelectMany(line => line.Allocations.Select(allocation => new
+            {
+                line.PurchaseOrderLineId,
+                Allocation = allocation
+            }))
+            .GroupBy(item => item.Allocation.GoodsReceiptLineId)
+            .ToDictionary(group => group.Key, group => group.Sum(item => item.Allocation.Quantity));
+
+        foreach (var (goodsReceiptLineId, totalDeclaredAllocation) in declaredAllocationsByGoodsReceiptLine)
+        {
+            if (!receiptLines.TryGetValue(goodsReceiptLineId, out var receiptLine)) continue;
+
+            var handoffQuantity = handoffSources.GetValueOrDefault(goodsReceiptLineId);
+            var supportedQuantity = Math.Min(handoffQuantity, receiptLine.Line.AcceptedQuantity);
+            if (totalDeclaredAllocation > supportedQuantity)
+            {
+                variances.Add(new(
+                    "InvoiceAllocationExceedsSupportedQuantity",
+                    receiptLine.Line.PurchaseOrderLineId,
+                    goodsReceiptLineId,
+                    supportedQuantity,
+                    totalDeclaredAllocation,
+                    totalDeclaredAllocation - supportedQuantity,
+                    0m,
+                    order.CurrencyCode,
+                    "Aggregated invoice allocations exceed the active accepted quantity represented by this handoff receipt line."));
+            }
+        }
+
         var expectedSubtotal = declared.Lines.Sum(line =>
         {
             if (!orderLines.TryGetValue(line.PurchaseOrderLineId, out var poLine)) return 0m;
@@ -547,7 +585,7 @@ public sealed class PurchaseInvoiceMatchPersistence : IPurchaseInvoiceMatchPersi
             Compare(variances, "HeaderGrossVariance", null, null, expectedSubtotal + expectedTaxTotal, convert(grossTotal), policy.AmountAbsoluteTolerance, policy.AmountPercentageTolerance, order.CurrencyCode, "Supplier gross total differs from line-derived total.");
         }
 
-        var blocking = variances.Any(item => item.Classification is "InvoiceEvidenceMissing" or "CurrencyNotComparable" or "InvoiceLineNotOnPurchaseOrder" or "InvoiceAllocationNotEligible" or "InvoiceAllocationExceedsDeclaredQuantity" or "CumulativeQuantityLimitExceeded" || item.Variance is { } variance && Math.Abs(variance) > item.AllowedTolerance);
+        var blocking = variances.Any(item => item.Classification is "InvoiceEvidenceMissing" or "CurrencyNotComparable" or "InvoiceLineNotOnPurchaseOrder" or "InvoiceAllocationNotEligible" or "InvoiceAllocationExceedsDeclaredQuantity" or "InvoiceAllocationExceedsSupportedQuantity" or "CumulativeQuantityLimitExceeded" || item.Variance is { } variance && Math.Abs(variance) > item.AllowedTolerance);
         var result = blocking
             ? (variances.Any(item => item.Classification is "InvoiceEvidenceMissing" or "CurrencyNotComparable") ? PurchaseInvoiceMatchResult.NotMatchReady : PurchaseInvoiceMatchResult.ExceptionHold)
             : variances.Count == 0 ? PurchaseInvoiceMatchResult.ExactMatch : PurchaseInvoiceMatchResult.WithinTolerance;

@@ -28,8 +28,7 @@ public sealed class PurchaseInvoiceMatchingRemediationTests
             ExchangeRateId,
             "EUR",
             "USD",
-            new DateOnly(2026, 8, 20),
-            null);
+            new DateOnly(2026, 8, 15));
 
         Assert.True(result.Succeeded, result.Code);
         Assert.Equal(ExchangeRateId, result.Value!.ExchangeRateId);
@@ -39,7 +38,19 @@ public sealed class PurchaseInvoiceMatchingRemediationTests
         Assert.Equal(100, result.Value.Scale);
         Assert.Equal("Configured", result.Value.Provenance);
         Assert.Equal("MESP-120-master-data", result.Value.Source);
-        Assert.Equal(new DateOnly(2026, 8, 20), result.Value.EffectiveOn);
+        Assert.Equal(new DateOnly(2026, 8, 15), result.Value.EffectiveOn);
+    }
+
+    [Fact]
+    public async Task Mesp120_provider_fails_closed_when_immutable_supplier_invoice_date_is_missing()
+    {
+        var provider = new MasterDataPurchaseInvoiceMatchingExchangeRateReferenceProvider(
+            new StubExchangeRatePersistence(ExchangeRate(TenantA, MasterDataLifecycleState.Active)));
+
+        var result = await provider.ResolveAsync(Context(TenantA), ExchangeRateId, "EUR", "USD", null);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("currency_not_comparable", result.Code);
     }
 
     [Fact]
@@ -48,7 +59,7 @@ public sealed class PurchaseInvoiceMatchingRemediationTests
         var provider = new MasterDataPurchaseInvoiceMatchingExchangeRateReferenceProvider(
             new StubExchangeRatePersistence(ExchangeRate(TenantB, MasterDataLifecycleState.Active)));
 
-        var result = await provider.ResolveAsync(Context(TenantA), ExchangeRateId, "EUR", "USD", new DateOnly(2026, 8, 20), null);
+        var result = await provider.ResolveAsync(Context(TenantA), ExchangeRateId, "EUR", "USD", new DateOnly(2026, 8, 20));
 
         Assert.False(result.Succeeded);
         Assert.Equal("currency_not_comparable", result.Code);
@@ -64,9 +75,9 @@ public sealed class PurchaseInvoiceMatchingRemediationTests
         var missingDate = new MasterDataPurchaseInvoiceMatchingExchangeRateReferenceProvider(
             new StubExchangeRatePersistence(ExchangeRate(TenantA, MasterDataLifecycleState.Active, onlyHistorical: true)));
 
-        Assert.False((await wrongPair.ResolveAsync(Context(TenantA), ExchangeRateId, "EUR", "USD", new DateOnly(2026, 8, 20), null)).Succeeded);
-        Assert.False((await inactive.ResolveAsync(Context(TenantA), ExchangeRateId, "EUR", "USD", new DateOnly(2026, 8, 20), null)).Succeeded);
-        Assert.False((await missingDate.ResolveAsync(Context(TenantA), ExchangeRateId, "EUR", "USD", new DateOnly(2026, 8, 20), null)).Succeeded);
+        Assert.False((await wrongPair.ResolveAsync(Context(TenantA), ExchangeRateId, "EUR", "USD", new DateOnly(2026, 8, 20))).Succeeded);
+        Assert.False((await inactive.ResolveAsync(Context(TenantA), ExchangeRateId, "EUR", "USD", new DateOnly(2026, 8, 20))).Succeeded);
+        Assert.False((await missingDate.ResolveAsync(Context(TenantA), ExchangeRateId, "EUR", "USD", new DateOnly(2026, 8, 20))).Succeeded);
     }
 
     [Fact]
@@ -94,8 +105,7 @@ public sealed class PurchaseInvoiceMatchingRemediationTests
             .Select(property => property.Name)
             .ToArray();
 
-        Assert.Contains(nameof(PurchaseInvoiceExchangeRateReferenceRequest.ExchangeRateId), propertyNames);
-        Assert.Contains(nameof(PurchaseInvoiceExchangeRateReferenceRequest.EffectiveOn), propertyNames);
+        Assert.Equal([nameof(PurchaseInvoiceExchangeRateReferenceRequest.ExchangeRateId)], propertyNames);
         Assert.DoesNotContain("Rate", propertyNames);
         Assert.DoesNotContain("Scale", propertyNames);
         Assert.DoesNotContain("Source", propertyNames);

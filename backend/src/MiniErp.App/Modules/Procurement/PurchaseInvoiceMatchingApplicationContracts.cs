@@ -291,8 +291,7 @@ public interface IPurchaseInvoiceMatchingExchangeRateReferenceProvider
         Guid exchangeRateId,
         string sourceCurrencyCode,
         string targetCurrencyCode,
-        DateOnly? requestedEffectiveOn,
-        DateOnly? invoiceEffectiveOn,
+        DateOnly? supplierInvoiceDate,
         CancellationToken cancellationToken = default);
 }
 
@@ -313,8 +312,7 @@ public sealed class MasterDataPurchaseInvoiceMatchingExchangeRateReferenceProvid
         Guid exchangeRateId,
         string sourceCurrencyCode,
         string targetCurrencyCode,
-        DateOnly? requestedEffectiveOn,
-        DateOnly? invoiceEffectiveOn,
+        DateOnly? supplierInvoiceDate,
         CancellationToken cancellationToken = default)
     {
         if (tenantContext is null || exchangeRateId == Guid.Empty
@@ -324,8 +322,7 @@ public sealed class MasterDataPurchaseInvoiceMatchingExchangeRateReferenceProvid
             return PurchaseInvoiceMatchExchangeRateResolution.Failure("currency_not_comparable");
         }
 
-        var effectiveOn = requestedEffectiveOn ?? invoiceEffectiveOn;
-        if (effectiveOn is null) return PurchaseInvoiceMatchExchangeRateResolution.Failure("currency_not_comparable");
+        if (supplierInvoiceDate is null) return PurchaseInvoiceMatchExchangeRateResolution.Failure("currency_not_comparable");
 
         MasterDataExchangeRateRecord? record;
         try
@@ -347,8 +344,8 @@ public sealed class MasterDataPurchaseInvoiceMatchingExchangeRateReferenceProvid
         }
 
         var version = record.Versions
-            .Where(item => item.EffectiveFrom <= effectiveOn.Value
-                && (item.EffectiveTo is null || effectiveOn.Value <= item.EffectiveTo.Value))
+            .Where(item => item.EffectiveFrom <= supplierInvoiceDate.Value
+                && (item.EffectiveTo is null || supplierInvoiceDate.Value <= item.EffectiveTo.Value))
             .OrderByDescending(item => item.VersionNumber)
             .FirstOrDefault();
         if (version is null
@@ -370,7 +367,7 @@ public sealed class MasterDataPurchaseInvoiceMatchingExchangeRateReferenceProvid
             version.RateScale,
             version.Provenance.ToString(),
             version.SourceNotes,
-            effectiveOn.Value,
+            supplierInvoiceDate.Value,
             version.EffectiveFrom,
             version.EffectiveTo));
     }
@@ -378,7 +375,7 @@ public sealed class MasterDataPurchaseInvoiceMatchingExchangeRateReferenceProvid
 
 public sealed class UnavailablePurchaseInvoiceMatchingExchangeRateReferenceProvider : IPurchaseInvoiceMatchingExchangeRateReferenceProvider
 {
-    public Task<PurchaseInvoiceMatchExchangeRateResolution> ResolveAsync(TenantContext tenantContext, Guid exchangeRateId, string sourceCurrencyCode, string targetCurrencyCode, DateOnly? requestedEffectiveOn, DateOnly? invoiceEffectiveOn, CancellationToken cancellationToken = default) =>
+    public Task<PurchaseInvoiceMatchExchangeRateResolution> ResolveAsync(TenantContext tenantContext, Guid exchangeRateId, string sourceCurrencyCode, string targetCurrencyCode, DateOnly? supplierInvoiceDate, CancellationToken cancellationToken = default) =>
         Task.FromResult(PurchaseInvoiceMatchExchangeRateResolution.Failure("currency_not_comparable"));
 }
 

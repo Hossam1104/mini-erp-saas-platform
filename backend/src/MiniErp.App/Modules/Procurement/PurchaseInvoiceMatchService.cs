@@ -101,7 +101,6 @@ public sealed class PurchaseInvoiceMatchService
                 exchangeRateReference.ExchangeRateId,
                 declaredEvidence.CurrencyCode,
                 handoff.Value.CurrencyCode,
-                exchangeRateReference.EffectiveOn,
                 declaredEvidence.SupplierInvoiceDate ?? handoff.Value.SupplierInvoiceDate,
                 cancellationToken);
             // An unresolved reference deliberately remains null so persistence

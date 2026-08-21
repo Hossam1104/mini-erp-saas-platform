@@ -640,14 +640,12 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
             .ToListAsync(cancellationToken);
         if (poLineSet.Count != poLineIds.Length) return false;
 
-        var totalsByReceiptLine = new Dictionary<Guid, decimal>();
         foreach (var line in request.Lines)
         {
             var allocationTotal = 0m;
             foreach (var allocation in line.Allocations ?? [])
             {
                 allocationTotal += allocation.Quantity;
-                totalsByReceiptLine[allocation.GoodsReceiptLineId] = totalsByReceiptLine.GetValueOrDefault(allocation.GoodsReceiptLineId) + allocation.Quantity;
                 if (!receiptLines.TryGetValue(allocation.GoodsReceiptLineId, out var receiptLine)
                     || receiptLine.Receipt.Id != allocation.GoodsReceiptId
                     || receiptLine.Line.PurchaseOrderLineId != line.PurchaseOrderLineId
@@ -667,7 +665,11 @@ public sealed class PurchaseInvoiceHandoffPersistence : IPurchaseInvoiceHandoffP
             if (allocationTotal > line.Quantity) return false;
         }
 
-        return totalsByReceiptLine.All(item => receiptLines.TryGetValue(item.Key, out var receiptLine) && item.Value <= receiptLine.Line.AcceptedQuantity && handoffQuantitiesByReceiptLine.GetValueOrDefault(item.Key) >= item.Value);
+        // A supplier may declare the same physical receipt quantity from more
+        // than one invoice line. Preserve that independent evidence so the
+        // matching evaluator can aggregate it and record a blocking mismatch;
+        // intake must not silently discard the supplier declaration.
+        return true;
     }
 
     // A Purchase Order line's stored `TaxAmount` is the total tax for its full ordered quantity, so it

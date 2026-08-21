@@ -18,8 +18,7 @@ public enum PurchaseInvoiceMatchLifecycle
 }
 
 public sealed record PurchaseInvoiceExchangeRateReferenceRequest(
-    Guid ExchangeRateId,
-    DateOnly? EffectiveOn = null);
+    Guid ExchangeRateId);
 
 public sealed record PurchaseInvoiceMatchEvaluateRequest(
     PurchaseInvoiceExchangeRateReferenceRequest? ExchangeRateReference = null);
