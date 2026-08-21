@@ -1551,6 +1551,7 @@ When asked:
 Do not answer from percentages alone. Check the 100% Production Ready Definition and critical gates.
 
 ---
+---
 
 # 21. Current Management Snapshot
 
