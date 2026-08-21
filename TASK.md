@@ -14,8 +14,8 @@ Implementation SHA: `f8f6dd1d850a00a94955d69c8ebb1c2b4c6697a5`
 Final branch handoff SHA (implementation plus tracker baseline):
 `ce39ce82121dd9484f06ce65ac3451b259854491`
 
-Draft PR: Create or reuse exactly one Draft PR against `main`; keep it open,
-Draft, and unmerged. Record its number here after creation. Do not merge.
+Draft PR: `#71` — https://github.com/Hossam1104/mini-erp-saas-platform/pull/71
+against `main`; keep it open, Draft, and unmerged. Do not merge.
 
 Jira: MESP-127 remains **IN PROGRESS** under activation comment `11684`. No
 Jira, Confluence, or other tracker writes are permitted in this acceptance
