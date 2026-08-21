@@ -40,7 +40,7 @@ Final implementation evidence: focused Inventory **15/15**; full backend
 Release build **0 warnings / 0 errors**; Angular **241/241 across 32 spec
 files**; production initial **499.97 kB** and Inventory lazy chunk **25.83
 kB**; focused Chromium **2/2**; full Chromium **26/26**; both npm audits **0
-vulnerabilities**; formal migration apply/drop passed; and `git diff --check`
+vulnerabilities**; formal migration apply/rollback/reapply/drop passed; and `git diff --check`
 is clean. The migration history includes
 `20260821132738_MESP128StockIntegrityRemediation` after the original
 `20260821113311_MESP128InventoryLedgerFoundation` migration.
@@ -286,7 +286,7 @@ The completing implementation evidence is: Release build 0 warnings/0
 errors; focused Inventory 15/15; full backend 865/865 passed, 0 skipped;
 Angular 241/241 across 32 spec files; 499.97 kB initial bundle with 25.83 kB
 Inventory lazy chunk; focused Chromium 2/2; full Chromium 26/26; both npm
-audits 0 vulnerabilities; formal disposable migration apply/drop passed; and
+audits 0 vulnerabilities; formal disposable migration apply/rollback/reapply/drop passed; and
 git diff --check clean.
 
 ## Sol decision and delivery rules

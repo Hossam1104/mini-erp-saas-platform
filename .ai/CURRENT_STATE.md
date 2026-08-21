@@ -38,9 +38,9 @@ coverage 15/15; canonical full backend 865/865 passed, 0 skipped with
 disposable LocalDB safety execution and unchanged persistent connection;
 Angular 241/241 across 32 spec files; production initial bundle 499.97 kB
 with Inventory lazy chunk 25.83 kB; focused Chromium 2/2; full Chromium
-26/26; both npm audits 0 vulnerabilities; disposable SQL migration apply and
-drop succeeded; and git diff --check is clean. Protected `frontend/assets`
-remains untouched.
+26/26; both npm audits 0 vulnerabilities; disposable SQL migration apply,
+rollback, reapply, and drop all succeeded; and git diff --check is clean.
+Protected `frontend/assets` remains untouched.
 
 Headline production percentages remain unchanged at approximately 47% overall
 and 41% Procurement/P2P because this session is correctness remediation, not

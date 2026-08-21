@@ -17,8 +17,8 @@
 > **499.97 kB initial** with a **25.83 kB Inventory lazy chunk**; focused
 > Chromium is **2/2**, full Chromium is **26/26**, and both npm audits report
 > **0 vulnerabilities**. The persistent runtime connection is unchanged,
-> the disposable migration apply/drop passed, protected frontend/assets remain
-> untouched, and no Jira writes were performed.
+> disposable migration apply/rollback/reapply/drop passed, protected
+> frontend/assets remain untouched, and no Jira writes were performed.
 
 > **Current MESP-127 runtime overlay - 21 August 2026.** The backend now
 > carries Procurement-owned Supplier Returns from accepted Goods Receipt
