@@ -1,22 +1,24 @@
 # Mini ERP backend foundation
 
-> **Current MESP-128 runtime overlay - 21 August 2026.** The backend now
-> carries the Inventory-owned append-only stock ledger foundation, controlled
-> opening-balance provenance with validation/quarantine/post/correction,
-> server-derived OnHand/Reserved/Available and truthful zero
-> Expected/Damaged/InTransit projections, plus Tenant/Warehouse/Product/UOM
-> scope and tracking-aware reservation seams. Reservations support partial
-> allocation, reduce/release, mandatory history/audit, durable replay/conflict
-> handling, and stock-identity concurrency anchors. The formal migration is
-> 20260821113311_MESP128InventoryLedgerFoundation. No Goods Receipt stock
-> posting, transfer, Stock Adjustment/Count/Issue, MWA, Finance/AP/GL,
-> payment, external/statutory, or Wafra-specific behavior is included.
+> **Current MESP-128 runtime overlay - 21 August 2026.** The backend carries
+> the bounded Inventory-owned append-only stock ledger foundation plus the SOL
+> P1 remediation: deterministic Tenant-safe opening-source fingerprints
+> independent of request idempotency, filtered unique consumed-source race
+> protection, fail-closed quarantine posting, reservation-safe cumulative
+> correction using shared stock-identity anchors, and authoritative active
+> Master Data UOM-code snapshots. No Goods Receipt stock posting, transfer,
+> Stock Adjustment/Count/Issue, MWA, Finance/AP/GL, payment,
+> external/statutory, or Wafra-specific behavior is included.
 
 > **MESP-128 validation.** Release build is **0 warnings / 0 errors**;
-> focused Inventory module/persistence/architecture coverage is **5/5**; the
-> canonical disposable-LocalDB backend runner passes **855/855, 0 skipped**;
-> the persistent runtime connection is unchanged and MESP data is intact.
-> frontend/assets remains untouched and no Jira writes were performed.
+> focused Inventory module/persistence/architecture coverage is **15/15**; the
+> canonical disposable-LocalDB backend runner passes **865/865, 0 skipped**;
+> Angular passes **241/241 across 32 spec files**; production build is
+> **499.97 kB initial** with a **25.83 kB Inventory lazy chunk**; focused
+> Chromium is **2/2**, full Chromium is **26/26**, and both npm audits report
+> **0 vulnerabilities**. The persistent runtime connection is unchanged,
+> the disposable migration apply/drop passed, protected frontend/assets remain
+> untouched, and no Jira writes were performed.
 
 > **Current MESP-127 runtime overlay - 21 August 2026.** The backend now
 > carries Procurement-owned Supplier Returns from accepted Goods Receipt

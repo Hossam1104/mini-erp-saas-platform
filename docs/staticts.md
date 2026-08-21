@@ -2,46 +2,45 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-21 15:40 +03:00
+**Last Updated:** 2026-08-21 16:48 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
 
-## Current authoritative fast-track snapshot - 21 August 2026 (MESP-128 Inventory Ledger Foundation implementation complete; Sol acceptance handoff)
+## Current authoritative fast-track snapshot - 21 August 2026 (MESP-128 SOL P1 stock-integrity remediation complete; FULL reacceptance handoff)
 
-This snapshot records the bounded MESP-128 Inventory foundation on branch
-feat/MESP-128-inventory-ledger-foundation, created from the exact synchronized
-main base f54b6abe383edd304911eb0a53db43fafdcb3066. The implementation commit
-is 9893b41. This is a genuine bounded Inventory capability increase, so the
-overall headline moves conservatively from ~45% to ~47%; Procurement/P2P
-remains ~41%. No Jira statistics or completion credit were inferred from
-ticket activity.
+This snapshot records the bounded MESP-128 SOL P1 stock-integrity remediation
+on branch feat/MESP-128-inventory-ledger-foundation, created from the exact
+synchronized main base f54b6abe383edd304911eb0a53db43fafdcb3066. The required
+remediation starting head was cec9fee911a4d4ba14867a358f852ebd36a89fba and the
+implementation commit is 0cd5defd109dceffead9bf4781c7f271275bffed. This is correctness remediation within the
+already delivered MESP-128 capability, so the overall ~47% and Procurement/P2P
+~41% headlines remain unchanged. No Jira statistics or completion credit were
+inferred from ticket activity.
 
-Inventory now owns the append-only Tenant-safe stock ledger, immutable opening
-balance provenance and correction/reversal lineage, server-derived
-OnHand/Reserved/Available, truthful zero Expected/Damaged/InTransit facts,
-tracking-aware Product/UOM validation, configured Warehouse provider scope,
-partial reservations with reduce/release, stock-identity concurrency anchors,
-durable replay/conflict handling, mandatory audit/history, REST/OpenAPI
-metadata, a formal EF migration, and bilingual EN/AR RTL Angular workspace
-journeys. No Goods Receipt authoritative Inventory posting, transfer,
-InTransit, Stock Adjustment, Count, Issue, MWA valuation, Finance/AP/AR/GL,
-tax/payment, external/statutory, production cutover, or Wafra-specific core
-behavior was added. MESP-129, MESP-130, and MESP-131 remain downstream.
+The remediation adds durable provenance fingerprints independent of request
+idempotency, a filtered unique consumed-source index, fail-closed partial-batch
+posting, reservation-safe cumulative correction with shared stock-identity
+anchors, authoritative active Master Data UOM-code resolution, and executable
+cross-Tenant/source, race, replay/conflict, and tracking-boundary coverage.
+No Goods Receipt authoritative Inventory posting, transfer, InTransit, Stock
+Adjustment, Count, Issue, MWA valuation, Finance/AP/AR/GL, tax/payment,
+external/statutory, production cutover, or Wafra-specific core behavior was
+added. MESP-129, MESP-130, and MESP-131 remain downstream.
 
 | Current control | Verified position |
 |---|---|
-| MESP-128 code | Implementation commit 9893b41 on feat/MESP-128-inventory-ledger-foundation; one Draft PR against main is required and remains unmerged. |
-| Production capability | ~47% overall; Procurement/P2P conservatively ~41%. Inventory foundation is additive; no Jira/test-count credit is used. |
-| Validation | Release build 0 warnings/0 errors; focused Inventory 5/5; canonical backend 855/855 passed, 0 skipped with disposable LocalDB SQL safety and unchanged persistent connection; Angular 241/241 across 32 spec files; production build 499.97 kB initial / 25.82 kB Inventory lazy; focused Chromium 2/2; full Chromium 26/26; both npm audits 0 vulnerabilities; git diff --check clean. |
-| Delivery boundaries | Formal migration 20260821113311_MESP128InventoryLedgerFoundation; frontend/assets untouched; no Jira writes; no MESP-129 or downstream implementation. |
-| Next exact session | Sol acceptance of the complete MESP-128 branch and Draft PR. Reverify ledger immutability, opening provenance/post/correction, all six projection facts, reservation partial/reduce/release semantics, concurrency, durable replay/conflict, Tenant/scope authorization, Product tracking/UOM limitations, REST/OpenAPI/audit/migration integrity, and full validation. Do not merge or start downstream work. |
+| MESP-128 code | Remediation commit 0cd5defd109dceffead9bf4781c7f271275bffed on feat/MESP-128-inventory-ledger-foundation; required starting head cec9fee911a4d4ba14867a358f852ebd36a89fba; Draft PR #72 remains open/Draft/unmerged. |
+| Production capability | ~47% overall; Procurement/P2P conservatively ~41%. Headline unchanged because this is correctness remediation; no Jira/test-count credit is used. |
+| Validation | Release build 0/0; focused Inventory 15/15; canonical backend 865/865 passed, 0 skipped with disposable LocalDB SQL safety; Angular 241/241 across 32 spec files; production build 499.97 kB initial / 25.83 kB Inventory lazy; focused Chromium 2/2; full Chromium 26/26; both npm audits 0 vulnerabilities; disposable migration apply/drop passed; git diff --check clean. |
+| Delivery boundaries | Formal migrations 20260821113311_MESP128InventoryLedgerFoundation and 20260821132738_MESP128StockIntegrityRemediation; frontend/assets untouched; no Jira writes; no MESP-129/130/131 implementation. |
+| Next exact session | Independent Sol reacceptance of the complete MESP-128 branch and Draft PR. Reverify the remediation matrix, final branch SHA, migration/index integrity, and all validation evidence. Do not merge or start downstream work. |
 
 ## Progress history - 21 August 2026
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
-| 2026-08-21 | MESP-128 bounded Inventory Ledger Foundation complete: immutable opening/correction movements, server projections, partial reservations, tracking-aware validation, Tenant/scope authorization, durable replay, concurrency anchors, audit/history, REST/OpenAPI, EF migration, and bilingual Angular workspace. | ~47% | ~41% | Release build 0/0; focused Inventory 5/5; canonical backend 855/855 including disposable LocalDB SQL safety; Angular 241/241; production bundle 499.97 kB initial / 25.82 kB Inventory lazy; focused Chromium 2/2; full Chromium 26/26; both npm audits 0 vulnerabilities. Draft PR remains unmerged; no Jira writes. |
+| 2026-08-21 | MESP-128 SOL P1 stock-integrity remediation complete: durable source fingerprints and DB race constraint, fail-closed quarantine, reservation-safe cumulative correction, shared anchors, authoritative UOM code, tracking-boundary and cross-Tenant/race/replay coverage. | ~47% | ~41% | Correctness remediation; headlines unchanged. Release build 0/0; focused Inventory 15/15; canonical backend 865/865 including disposable LocalDB SQL safety; Angular 241/241; production bundle 499.97 kB initial / 25.83 kB Inventory lazy; focused Chromium 2/2; full Chromium 26/26; both npm audits 0 vulnerabilities. Draft PR #72 remains open/Draft/unmerged; no Jira writes. |
 
 ## Current authoritative fast-track snapshot - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
 

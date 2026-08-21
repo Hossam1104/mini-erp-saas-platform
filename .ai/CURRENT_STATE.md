@@ -1,57 +1,56 @@
 # Current State
 
-## Current authoritative position - 21 August 2026 (MESP-128 Inventory Ledger Foundation implementation complete; Sol acceptance handoff)
+## Current authoritative position - 21 August 2026 (MESP-128 SOL P1 stock-integrity remediation complete; FULL reacceptance handoff)
 
-MESP-128 is implementation-complete at its bounded Inventory-owned
-foundation scope on branch feat/MESP-128-inventory-ledger-foundation, based
-exactly on f54b6abe383edd304911eb0a53db43fafdcb3066. The implementation commit
-is 9893b41. The branch remains unmerged; the required delivery is one Draft PR
-against main; Jira remains read-only and no Jira writes were performed.
+MESP-128 remains bounded to the Inventory-owned physical-stock foundation on
+branch `feat/MESP-128-inventory-ledger-foundation`, based exactly on main
+`f54b6abe383edd304911eb0a53db43fafdcb3066`. The required remediation starting
+head was `cec9fee911a4d4ba14867a358f852ebd36a89fba`; implementation commit
+`0cd5defd109dceffead9bf4781c7f271275bffed` applies the SOL P1 findings. Draft PR #72 remains open, Draft, and
+unmerged. Jira remains read-only; no Jira writes were performed.
 
-Inventory now owns an append-only, Tenant-safe stock ledger with immutable
-opening-balance provenance, validation/quarantine, post and linked correction
-movements, server-derived OnHand/Reserved/Available projections, truthful zero
-Expected/Damaged/InTransit projections, and explicit Warehouse/Product/UOM
-provider seams. Reservations are Tenant/Warehouse/Product/UOM scoped,
-tracking-aware where the existing Product boolean configuration enables it,
-partial-allocation capable, reducible/releasable, history/audit-backed,
-idempotent, and serialized through stock-identity concurrency anchors so
-over-allocation cannot be accepted. Posted movements are never edited;
-correction/reversal effects remain linked to their originals.
+The remediation separates durable opening-source identity from request
+idempotency. A deterministic Tenant/scope/source-owner/source-system/
+extracted-at/source-reference/as-of-date/source-line fingerprint now protects
+same-batch and later-batch repeats, while a filtered unique database index
+enforces the consumed-source race boundary. Any unresolved row quarantine
+blocks the entire opening post and preserves failed history/audit evidence.
+Opening correction acquires the existing stock-identity concurrency anchors in
+deterministic order, checks cumulative reversals against active Reserved, and
+keeps the check and linked outbound movements in one transaction. Reservation
+creation and release/reduction use the same anchor seam. The authoritative
+active Master Data UOM code is now required for new Inventory transactions and
+is snapshotted into movements/reservations.
 
-The formal module-owned EF migration is
-20260821113311_MESP128InventoryLedgerFoundation. REST/OpenAPI/Foundation
-operation metadata, antiforgery, mandatory audit, durable idempotency replay/
-conflict handling, optimistic If-Match/ETag, Tenant query filters, SQLite
-compatibility, and a bilingual EN/AR RTL responsive Inventory workspace are
-included. The workspace exposes all six stock facts, opening validation/
-posting/correction, reservation partial allocation/reduction/release, human
-Warehouse/Product/UOM labels, and deterministic browser journeys.
+The formal Inventory migration history now includes
+`20260821113311_MESP128InventoryLedgerFoundation` and additive
+`20260821132738_MESP128StockIntegrityRemediation`. REST/OpenAPI/Foundation
+metadata, Tenant query filters, audit/history, durable replay/conflict,
+SQLite compatibility, and the bilingual EN/AR RTL workspace remain intact.
+The existing Product `TrackingEnabled` boolean remains the complete tracking
+rule: enabled requires identity and disabled rejects identity. Batch/lot/
+serial/manufacturing/expiry mode enforcement remains an upstream Product-model
+limitation; no tracking-kind or barcode/statutory subsystem was invented.
 
-Repository facts preserved from inspection: Product currently exposes
-configuration-led TrackingEnabled as a boolean, not a tracking-kind enum; the
-Product provider does not expose a base-UOM code, so alternate-UOM use fails
-closed and no tracking-kind or barcode standard was invented; Warehouse is
-still a configured provider seam rather than a persisted Warehouse module. No
-direct cross-module persistence was introduced.
+Final validation is clean: Release build 0 warnings/0 errors; focused Inventory
+coverage 15/15; canonical full backend 865/865 passed, 0 skipped with
+disposable LocalDB safety execution and unchanged persistent connection;
+Angular 241/241 across 32 spec files; production initial bundle 499.97 kB
+with Inventory lazy chunk 25.83 kB; focused Chromium 2/2; full Chromium
+26/26; both npm audits 0 vulnerabilities; disposable SQL migration apply and
+drop succeeded; and git diff --check is clean. Protected `frontend/assets`
+remains untouched.
 
-Validation is clean: Release build 0 warnings/0 errors; focused Inventory
-module/persistence/architecture coverage 5/5; canonical full backend 855/855
-passed, 0 skipped with disposable LocalDB safety execution and unchanged
-persistent MESP_SQLSERVER_CONNECTION_STRING; Angular 241/241 across 32 spec
-files; production initial bundle 499.97 kB with Inventory lazy chunk 25.82 kB;
-focused Inventory Chromium 2/2; full Chromium 26/26; production-only and
-full npm audits 0 vulnerabilities; and git diff --check is clean.
-frontend/assets remains untouched.
-
-No Goods Receipt authoritative Inventory posting, Warehouse Transfer,
-InTransit lifecycle, Supplier/Customer Return physical posting, Stock
-Adjustment, Inventory Count, Stock Issue, MWA valuation, AP/AR/GL, tax
-accounting, payment, external integration, statutory/ZATCA/FATOORA,
-production cutover, DNS/TLS, supplier portal, or Wafra-specific core behavior
-was added. MESP-129, MESP-130, and MESP-131 remain downstream. The next exact
-session is Sol acceptance of this branch and Draft PR; do not merge or start
-the downstream capability from this handoff.
+Headline production percentages remain unchanged at approximately 47% overall
+and 41% Procurement/P2P because this session is correctness remediation, not
+new headline scope. No Goods Receipt authoritative Inventory posting,
+Warehouse Transfer, InTransit lifecycle, Supplier/Customer Return physical
+posting, Stock Adjustment, Inventory Count, Stock Issue, MWA valuation,
+AP/AR/GL, tax accounting, payment, external/statutory, production cutover,
+DNS/TLS, supplier portal, or Wafra-specific core behavior was added. MESP-129,
+MESP-130, and MESP-131 remain downstream. The next action is independent Sol
+reacceptance of this complete branch and Draft PR; do not merge or start
+downstream implementation from this handoff.
 
 ## Current authoritative position - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
 

@@ -10,7 +10,9 @@ Branch: feat/MESP-128-inventory-ledger-foundation
 
 Exact main base SHA: f54b6abe383edd304911eb0a53db43fafdcb3066
 
-Implementation commit: 9893b41
+Initial implementation commit: 9893b41
+
+SOL P1 remediation commit: 0cd5defd109dceffead9bf4781c7f271275bffed
 
 Jira: MESP-128 is IN PROGRESS under activation comment 11745. Jira,
 Confluence, and other Jira tracker writes are prohibited in this acceptance
@@ -19,6 +21,36 @@ session. Sol owns the read-only acceptance decision.
 Delivery state: the branch must remain open, Draft, and unmerged. Exactly one
 Draft PR against main is permitted. Do not merge, rebase, force-push, create a
 second PR, or start MESP-129/MESP-130/MESP-131.
+
+## SOL P1 remediation completion / FULL re-acceptance handoff
+
+The required stock-integrity remediation was implemented from the exact
+starting head `cec9fee911a4d4ba14867a358f852ebd36a89fba` without rebase, merge,
+force-push, Jira writes, or downstream capability work. The remediation adds
+durable provenance fingerprints independent of request idempotency, a filtered
+unique consumed-source database boundary, fail-closed posting for any
+quarantined opening row, cumulative reservation-safe correction serialized by
+the existing stock-identity anchors, authoritative active Master Data UOM
+codes, and executable coverage for the required duplicate/replay/conflict,
+Tenant/source, UOM, tracking, correction, and real independent-context race
+cases.
+
+Final implementation evidence: focused Inventory **15/15**; full backend
+**865/865 passed, 0 skipped** including disposable LocalDB SQL safety;
+Release build **0 warnings / 0 errors**; Angular **241/241 across 32 spec
+files**; production initial **499.97 kB** and Inventory lazy chunk **25.83
+kB**; focused Chromium **2/2**; full Chromium **26/26**; both npm audits **0
+vulnerabilities**; formal migration apply/drop passed; and `git diff --check`
+is clean. The migration history includes
+`20260821132738_MESP128StockIntegrityRemediation` after the original
+`20260821113311_MESP128InventoryLedgerFoundation` migration.
+
+The current Product contract still provides only boolean `TrackingEnabled`, so
+enabled identity-required and disabled identity-rejected semantics are
+enforced; complete batch/lot/serial/manufacturing/expiry mode enforcement
+remains an upstream Product-model limitation. Production percentages remain
+unchanged because this is correctness remediation. This file is the FULL Sol
+re-acceptance handoff; do not create an Opus prompt yet.
 
 ## Acceptance boundary
 
@@ -251,10 +283,11 @@ do not raise the budget. Also run git diff --check and git status. Verify
 frontend/assets has no changes.
 
 The completing implementation evidence is: Release build 0 warnings/0
-errors; focused Inventory 5/5; full backend 855/855 passed, 0 skipped;
-Angular 241/241 across 32 spec files; 499.97 kB initial bundle with 25.82 kB
+errors; focused Inventory 15/15; full backend 865/865 passed, 0 skipped;
+Angular 241/241 across 32 spec files; 499.97 kB initial bundle with 25.83 kB
 Inventory lazy chunk; focused Chromium 2/2; full Chromium 26/26; both npm
-audits 0 vulnerabilities; and git diff --check clean.
+audits 0 vulnerabilities; formal disposable migration apply/drop passed; and
+git diff --check clean.
 
 ## Sol decision and delivery rules
 
