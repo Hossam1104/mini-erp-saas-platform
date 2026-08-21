@@ -401,6 +401,34 @@ public sealed class InventoryLedgerTests
         Assert.Contains(await persistence.ReadOpeningHistoryAsync(context, posted.Id), item => item.Action == "correction-blocked");
         Assert.Contains(await persistence.ReadAuditAsync(context, "opening-balance", posted.Id), item => item.Decision == "Failed");
         Assert.Equal(InventoryReservationStatus.Active, reservation.Status);
+
+        var released = Assert.IsType<InventoryReservationRecord>(await persistence.ReleaseReservationAsync(
+            context,
+            reservation.Id,
+            reservation.Version,
+            Actor,
+            "release before correction retry",
+            "reserved-release",
+            "reserved-release-key",
+            "reserved-release-fingerprint"));
+        Assert.Equal(InventoryReservationStatus.Released, released.Status);
+
+        var corrected = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.CorrectOpeningBalanceAsync(
+            context,
+            posted.Id,
+            posted.Version,
+            Actor,
+            "retry after reservation release",
+            "reserved-correction-retry",
+            "reserved-correction-retry-key",
+            "reserved-correction-retry-fingerprint"));
+        Assert.Equal(InventoryOpeningBalanceStatus.Corrected, corrected.Status);
+        var restored = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(
+            context, scope, ProductA, UnitA, null, Product(), Warehouse()));
+        Assert.Equal(0m, restored.OnHandQuantity);
+        Assert.Equal(0m, restored.ReservedQuantity);
+        Assert.Equal(0m, restored.AvailableQuantity);
+        Assert.Equal(2, (await persistence.ListMovementsAsync(context, scope)).Count);
     }
 
     [Fact]
