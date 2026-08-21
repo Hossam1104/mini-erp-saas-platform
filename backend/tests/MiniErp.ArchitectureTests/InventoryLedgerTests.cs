@@ -337,6 +337,64 @@ public sealed class InventoryLedgerTests
     }
 
     [Fact]
+    public async Task Opening_batches_with_identical_business_provenance_and_different_extraction_times_are_duplicates()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureInventoryCreatedAsync(options, context);
+
+        var first = await CreateAndPostOpeningAsync(
+            persistence,
+            context,
+            OpeningCommand(
+                "opening-stable-source",
+                [OpeningRow(100m, "OPEN-2026-08-LINE-0042")],
+                idempotencyKey: "opening-stable-source-a",
+                extractedAt: new DateTimeOffset(2026, 8, 21, 10, 0, 0, TimeSpan.Zero)));
+
+        var duplicate = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.CreateOpeningBalanceAsync(
+            context,
+            OpeningCommand(
+                "opening-stable-source",
+                [OpeningRow(100m, "OPEN-2026-08-LINE-0042")],
+                idempotencyKey: "opening-stable-source-b",
+                extractedAt: new DateTimeOffset(2026, 8, 21, 10, 0, 1, TimeSpan.Zero))));
+
+        Assert.Equal(first.Rows[0].SourceFingerprint, duplicate.Rows[0].SourceFingerprint);
+        Assert.Equal(InventoryOpeningRowStatus.Quarantined, duplicate.Rows[0].Status);
+        Assert.Equal("duplicate_source_row", duplicate.Rows[0].ValidationCode);
+
+        var validated = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.ValidateOpeningBalanceAsync(
+            context,
+            duplicate.Id,
+            duplicate.Version,
+            Actor,
+            "validate duplicate extraction replay",
+            "opening-stable-source-b-validate",
+            "opening-stable-source-b-validate-key",
+            "opening-stable-source-b-validate-fingerprint"));
+        Assert.Equal(InventoryOpeningBalanceStatus.Draft, validated.Status);
+        Assert.Null(await persistence.PostOpeningBalanceAsync(
+            context,
+            duplicate.Id,
+            validated.Version,
+            Actor,
+            "block duplicate extraction replay",
+            "opening-stable-source-b-post",
+            "opening-stable-source-b-post-key",
+            "opening-stable-source-b-post-fingerprint"));
+
+        var availability = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(
+            context, scope, ProductA, UnitA, null, Product(), Warehouse()));
+        Assert.Equal(100m, availability.OnHandQuantity);
+        Assert.Single(await persistence.ListMovementsAsync(context, scope));
+    }
+
+    [Fact]
     public async Task Opening_distinct_source_lines_for_same_stock_identity_post_independently()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -570,6 +628,49 @@ public sealed class InventoryLedgerTests
         }
 
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+    }
+
+    [Fact]
+    public async Task Existing_concurrency_anchor_touch_persists_a_real_mutable_field_on_sqlite()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        await EnsureInventoryCreatedAsync(options, context);
+
+        var anchorId = Guid.NewGuid();
+        await using (var createDb = new InventoryDbContext(options, context.TenantContext))
+        {
+            var anchor = new InventoryConcurrencyAnchorEntity(
+                new TenantId(TenantA),
+                anchorId,
+                CompanyA,
+                null,
+                WarehouseA,
+                ProductA,
+                UnitA,
+                string.Empty);
+            anchor.Touch();
+            createDb.ConcurrencyAnchors.Add(anchor);
+            await createDb.SaveChangesAsync();
+        }
+
+        long beforeSequence;
+        byte[] beforeVersion;
+        await using (var readDb = new InventoryDbContext(options, context.TenantContext))
+        {
+            var anchor = await readDb.ConcurrencyAnchors.SingleAsync(item => item.Id == anchorId);
+            beforeSequence = anchor.TouchSequence;
+            beforeVersion = anchor.Version.ToArray();
+            anchor.Touch();
+            await readDb.SaveChangesAsync();
+        }
+
+        await using var verifyDb = new InventoryDbContext(options, context.TenantContext);
+        var persisted = await verifyDb.ConcurrencyAnchors.AsNoTracking().SingleAsync(item => item.Id == anchorId);
+        Assert.Equal(beforeSequence + 1, persisted.TouchSequence);
+        Assert.NotEqual(beforeVersion, persisted.Version);
     }
 
     [Fact]

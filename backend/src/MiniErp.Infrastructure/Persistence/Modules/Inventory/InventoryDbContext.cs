@@ -71,7 +71,7 @@ internal sealed class InventoryDbContext(DbContextOptions options, TenantContext
 
         var anchor = modelBuilder.Entity<InventoryConcurrencyAnchorEntity>();
         ConfigureBase(anchor, "ConcurrencyAnchors");
-        anchor.Property(item => item.CompanyId).IsRequired(); anchor.Property(item => item.BranchId).IsRequired(false); anchor.Property(item => item.WarehouseId).IsRequired(); anchor.Property(item => item.ProductId).IsRequired(); anchor.Property(item => item.UnitOfMeasureId).IsRequired(); anchor.Property(item => item.TrackingKey).HasMaxLength(256).IsRequired(); anchor.HasIndex(item => new { item.TenantId, item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingKey }).IsUnique(); anchor.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        anchor.Property(item => item.CompanyId).IsRequired(); anchor.Property(item => item.BranchId).IsRequired(false); anchor.Property(item => item.WarehouseId).IsRequired(); anchor.Property(item => item.ProductId).IsRequired(); anchor.Property(item => item.UnitOfMeasureId).IsRequired(); anchor.Property(item => item.TrackingKey).HasMaxLength(256).IsRequired(); anchor.Property(item => item.TouchSequence).IsRequired(); anchor.HasIndex(item => new { item.TenantId, item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingKey }).IsUnique().HasFilter(null); anchor.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
     }
 
     private void ConfigureBase<TEntity>(EntityTypeBuilder<TEntity> entity, string tableName) where TEntity : class, ITenantOwned

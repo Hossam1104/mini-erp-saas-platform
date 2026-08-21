@@ -2,6 +2,7 @@
 
 using System.Data;
 using System.Text.Json;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Inventory;
@@ -92,8 +93,10 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
             await transaction.CommitAsync(cancellationToken);
             return result;
         }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
         catch (DbUpdateConcurrencyException) { return null; }
-        catch (DbUpdateException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
     }
 
     public Task<InventoryOpeningBalanceRecord?> ValidateOpeningBalanceAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) =>
@@ -148,8 +151,10 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
             await transaction.CommitAsync(cancellationToken);
             return result;
         }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
         catch (DbUpdateConcurrencyException) { return null; }
-        catch (DbUpdateException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
     }
 
     private async Task<InventoryOpeningBalanceRecord?> ActOpeningAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, string operationId, Func<InventoryOpeningBalanceEntity, DateTimeOffset, InventoryOpeningBalanceStatus> transition, CancellationToken cancellationToken)
@@ -176,8 +181,10 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
             await transaction.CommitAsync(cancellationToken);
             return result;
         }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
         catch (DbUpdateConcurrencyException) { return null; }
-        catch (DbUpdateException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
     }
 
     private async Task<InventoryOpeningBalanceRecord?> PostOpeningAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken)
@@ -228,8 +235,10 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
             await transaction.CommitAsync(cancellationToken);
             return result;
         }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
         catch (DbUpdateConcurrencyException) { return null; }
-        catch (DbUpdateException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
     }
 
     private async Task<InventoryOpeningBalanceRecord?> CorrectOpeningAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken)
@@ -289,8 +298,10 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
             AddReplay(db, context, "inventory.opening.correct", idempotencyKey, fingerprint, "opening-balance", id, result, now);
             await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
         }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
         catch (DbUpdateConcurrencyException) { return null; }
-        catch (DbUpdateException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
     }
 
     public async Task<IReadOnlyList<InventoryOpeningBalanceHistoryRecord>> ReadOpeningHistoryAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken = default)
@@ -332,8 +343,10 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
             var result = await db.Reservations.AsNoTracking().Where(item => item.Id == reservation.Id).Select(ToReservation).SingleAsync(cancellationToken);
             AddReplay(db, context, "inventory.reservation.create", command.IdempotencyKey, command.RequestFingerprint, "reservation", result.Id, result, now); await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
         }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
         catch (DbUpdateConcurrencyException) { return null; }
-        catch (DbUpdateException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
     }
 
     public Task<InventoryReservationRecord?> ReduceReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, decimal quantity, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) =>
@@ -359,8 +372,10 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
             await db.SaveChangesAsync(cancellationToken); var result = await db.Reservations.AsNoTracking().Where(item => item.Id == id).Select(ToReservation).SingleAsync(cancellationToken);
             AddReplay(db, context, operationId, idempotencyKey, fingerprint, "reservation", result.Id, result, now); await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
         }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
         catch (DbUpdateConcurrencyException) { return null; }
-        catch (DbUpdateException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
     }
 
     public async Task<IReadOnlyList<InventoryReservationHistoryRecord>> ReadReservationHistoryAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken = default)
@@ -436,12 +451,12 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
                     identity.ProductId,
                     identity.UnitOfMeasureId,
                     identity.TrackingKey);
-                anchor.TouchVersion();
+                anchor.Touch();
                 db.ConcurrencyAnchors.Add(anchor);
             }
             else
             {
-                anchor.TouchVersion();
+                anchor.Touch();
             }
         }
 

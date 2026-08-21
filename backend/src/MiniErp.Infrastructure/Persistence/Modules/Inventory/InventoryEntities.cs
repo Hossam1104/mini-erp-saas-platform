@@ -232,8 +232,16 @@ internal sealed class InventoryConcurrencyAnchorEntity : ITenantOwned
     internal Guid ProductId { get; private set; }
     internal Guid UnitOfMeasureId { get; private set; }
     internal string TrackingKey { get; private set; } = string.Empty;
+    internal long TouchSequence { get; private set; }
     internal byte[] Version { get; private set; } = [];
-    internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
+    internal void Touch()
+    {
+        // TouchSequence is the provider-independent mutable write. SQL Server
+        // advances Version naturally from the resulting UPDATE; SQLite keeps
+        // the application-owned concurrency token in step for local tests.
+        TouchSequence++;
+        Version = Guid.NewGuid().ToByteArray();
+    }
 }
 
 #pragma warning restore CS1591

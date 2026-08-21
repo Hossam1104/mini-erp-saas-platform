@@ -335,7 +335,6 @@ public static class InventorySourceIdentity
             command.AsOfDate,
             SourceOwner = Normalize(command.SourceOwner),
             SourceSystem = Normalize(command.SourceSystem),
-            command.ExtractedAt,
             SourceReference = Normalize(command.SourceReference),
             SourceLineReference = Normalize(sourceLineReference)
         };

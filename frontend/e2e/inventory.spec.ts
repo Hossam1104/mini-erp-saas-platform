@@ -50,6 +50,7 @@ test('Inventory workspace renders server-provided scope and availability', async
 test('Inventory opening posts to the ledger and reservation release restores availability', async ({ page }) => {
   let openingStatus = 'Draft';
   let openingVersion = 'AQ==';
+  let openingRequestBody: { sourceReference?: string; rows?: Array<{ sourceLineReference?: string }> } | undefined;
   let posted = false;
   let reservationStatus = 'Active';
   let reservationVersion = 'BA==';
@@ -65,6 +66,7 @@ test('Inventory opening posts to the ledger and reservation release restores ava
   await page.route('**/api/v1/master-data/units-of-measure', (route) => route.fulfill({ json: [{ id: 'unit-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', code: 'EA', englishName: 'Each', arabicName: null }] }));
   await page.route('**/api/v1/inventory/opening-balances**', async (route) => {
     if (route.request().method() === 'POST') {
+      openingRequestBody = route.request().postDataJSON() as { sourceReference?: string; rows?: Array<{ sourceLineReference?: string }> };
       openingStatus = 'Draft';
       openingVersion = 'AQ==';
       return route.fulfill({ json: { id: 'opening-a', status: openingStatus, version: openingVersion, warehouseCode: 'WH-A', sourceSystem: 'Opening import', asOfDate: '2026-08-21', validQuantityTotal: 5, rows: [] } });
@@ -107,6 +109,8 @@ test('Inventory opening posts to the ledger and reservation release restores ava
   await openingForm.locator('input[name="quantity"]').fill('5');
   await openingForm.locator('input[name="sourceReference"]').fill('OPENING-1');
   await openingForm.getByRole('button').click();
+  await expect.poll(() => openingRequestBody).toMatchObject({ sourceReference: 'OPENING-1', rows: [{ sourceLineReference: 'OPENING-1' }] });
+  expect(JSON.stringify(openingRequestBody)).not.toContain('line-1');
   await expect(page.getByRole('button', { name: 'Validate' })).toBeVisible();
   await page.getByRole('button', { name: 'Validate' }).click();
   await expect(page.getByRole('button', { name: 'Post movement' })).toBeVisible();
