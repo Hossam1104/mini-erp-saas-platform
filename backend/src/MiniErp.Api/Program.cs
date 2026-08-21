@@ -13,15 +13,18 @@ using MiniErp.App.Modules.Identity;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Platform;
 using MiniErp.App.Modules.Procurement;
+using MiniErp.App.Modules.Inventory;
 using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.BusinessParties;
 using MiniErp.Contracts.Modules.Foundation;
+using MiniErp.Contracts.Modules.Inventory;
 using MiniErp.Contracts.Modules.Platform;
 using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
+using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 using MiniErp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -85,21 +88,26 @@ builder.Services.AddSupplierIdentity();
 builder.Services.AddCustomerIdentity();
 builder.Services.AddMasterDataImport();
 builder.Services.AddPurchaseRequestApprovalFoundation(builder.Configuration);
+builder.Services.AddInventoryApplication();
+builder.Services.AddSingleton<IInventoryProductProvider, MasterDataInventoryProductProvider>();
 string? developmentMasterDataSqliteConnectionString = null;
 string? developmentBusinessPartiesSqliteConnectionString = null;
 string? developmentProcurementSqliteConnectionString = null;
+string? developmentInventorySqliteConnectionString = null;
 var sqlServerConnectionString = builder.Configuration["MESP_SQLSERVER_CONNECTION_STRING"];
 if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
 {
     builder.Services.AddMasterDataSqlServerPersistence(sqlServerConnectionString);
     builder.Services.AddBusinessPartiesSqlServerPersistence(sqlServerConnectionString);
     builder.Services.AddProcurementSqlServerPersistence(sqlServerConnectionString);
+    builder.Services.AddInventorySqlServerPersistence(sqlServerConnectionString);
 }
 else if (builder.Environment.IsDevelopment())
 {
     var configuredMasterDataConnectionString = builder.Configuration["MESP_DEV_MASTERDATA_SQLITE_CONNECTION_STRING"];
     var configuredBusinessPartiesConnectionString = builder.Configuration["MESP_DEV_BUSINESS_PARTIES_SQLITE_CONNECTION_STRING"];
     var configuredProcurementConnectionString = builder.Configuration["MESP_DEV_PROCUREMENT_SQLITE_CONNECTION_STRING"];
+    var configuredInventoryConnectionString = builder.Configuration["MESP_DEV_INVENTORY_SQLITE_CONNECTION_STRING"];
     var configuredSqliteDirectory = builder.Configuration["MESP_DEV_SQLITE_DIRECTORY"];
     var localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     var defaultSqliteDirectory = string.IsNullOrWhiteSpace(configuredSqliteDirectory)
@@ -111,7 +119,8 @@ else if (builder.Environment.IsDevelopment())
 
     if (string.IsNullOrWhiteSpace(configuredMasterDataConnectionString)
         || string.IsNullOrWhiteSpace(configuredBusinessPartiesConnectionString)
-        || string.IsNullOrWhiteSpace(configuredProcurementConnectionString))
+        || string.IsNullOrWhiteSpace(configuredProcurementConnectionString)
+        || string.IsNullOrWhiteSpace(configuredInventoryConnectionString))
     {
         Directory.CreateDirectory(defaultSqliteDirectory);
     }
@@ -125,10 +134,14 @@ else if (builder.Environment.IsDevelopment())
     developmentProcurementSqliteConnectionString = string.IsNullOrWhiteSpace(configuredProcurementConnectionString)
         ? $"Data Source={Path.Combine(defaultSqliteDirectory, "procurement.db")}"
         : configuredProcurementConnectionString;
+    developmentInventorySqliteConnectionString = string.IsNullOrWhiteSpace(configuredInventoryConnectionString)
+        ? $"Data Source={Path.Combine(defaultSqliteDirectory, "inventory.db")}"
+        : configuredInventoryConnectionString;
 
     builder.Services.AddMasterDataSqlitePersistence(developmentMasterDataSqliteConnectionString);
     builder.Services.AddBusinessPartiesSqlitePersistence(developmentBusinessPartiesSqliteConnectionString);
     builder.Services.AddProcurementSqlitePersistence(developmentProcurementSqliteConnectionString);
+    builder.Services.AddInventorySqlitePersistence(developmentInventorySqliteConnectionString);
 }
 
 if (builder.Environment.IsDevelopment()
@@ -177,6 +190,19 @@ if (builder.Environment.IsDevelopment()
         new ConfiguredProcurementWarehouseProvider(
         [
             new ProcurementWarehouseOption(
+                developmentOrgScopeTenantId,
+                developmentOrgScopeCompanyId,
+                developmentOrgScopeBranchId,
+                defaultWarehouseId,
+                "WH-MAIN",
+                "Main Central Warehouse",
+                IsActive: true)
+        ]));
+
+    builder.Services.AddSingleton<IInventoryWarehouseProvider>(_ =>
+        new ConfiguredInventoryWarehouseProvider(
+        [
+            new InventoryWarehouseOption(
                 developmentOrgScopeTenantId,
                 developmentOrgScopeCompanyId,
                 developmentOrgScopeBranchId,
@@ -283,7 +309,8 @@ if (app.Environment.IsDevelopment()
 
 if (developmentMasterDataSqliteConnectionString is not null
     && developmentBusinessPartiesSqliteConnectionString is not null
-    && developmentProcurementSqliteConnectionString is not null)
+    && developmentProcurementSqliteConnectionString is not null
+    && developmentInventorySqliteConnectionString is not null)
 {
     MasterDataPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
         developmentMasterDataSqliteConnectionString);
@@ -291,6 +318,8 @@ if (developmentMasterDataSqliteConnectionString is not null
         developmentBusinessPartiesSqliteConnectionString);
     ProcurementPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
         developmentProcurementSqliteConnectionString);
+    InventoryPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+        developmentInventorySqliteConnectionString);
 }
 
 app.SeedDevelopmentBootstrap();
@@ -841,6 +870,7 @@ app.MapGoodsReceiptEndpoints();
 app.MapSupplierReturnEndpoints();
 app.MapPurchaseInvoiceHandoffEndpoints();
 app.MapPurchaseInvoiceMatchingEndpoints();
+app.MapInventoryEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

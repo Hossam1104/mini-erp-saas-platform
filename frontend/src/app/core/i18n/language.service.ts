@@ -346,6 +346,31 @@ const translations = {
     priceListDetail: 'Price List detail',
     priceListCode: 'Price List code',
     importNavLabel: 'Import',
+    inventoryNavLabel: 'Inventory',
+    inventoryTitle: 'Stock',
+    inventoryLead: 'Tenant stock.',
+    inventoryBoundary: 'Opening.',
+    inventoryErrorTitle: 'Error',
+    selectWarehouse: 'Select a warehouse',
+    onHand: 'On hand',
+    reserved: 'Reserved',
+    available: 'Available',
+    expected: 'Expected',
+    damaged: 'Damaged',
+    inTransit: 'In transit',
+    dateColumn: 'Effective date',
+    sourceSystem: 'Source system',
+    unitCost: 'Unit cost evidence',
+    validate: 'Validate',
+    post: 'Post movement',
+    correct: 'Correct',
+    doesNotReduceStock: 'Does not reduce stock',
+    sourceType: 'Source type',
+    allowPartial: 'Allow partial allocation',
+    trackingIdentity: 'Tracking identity',
+    unallocated: 'unallocated',
+    reduce: 'Reduce',
+    release: 'Release',
     importWorkspaceTitle: 'Master Data Import',
     importWorkspaceLead: 'Import Master Data records from CSV or JSON files with server-authoritative validation, dry-run simulation, and quarantine correction.',
     newImport: 'New import',
@@ -1125,6 +1150,15 @@ const translations = {
     priceListDetail: '\u062a\u0641\u0627\u0635\u064a\u0644 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0633\u0639\u0627\u0631',
     priceListCode: '\u0631\u0645\u0632 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0633\u0639\u0627\u0631',
     importNavLabel: '\u0627\u0644\u0627\u0633\u062a\u064a\u0631\u0627\u062f',
+    inventoryNavLabel: '\u0627\u0644\u0645\u062e\u0632\u0648\u0646',
+    inventoryTitle: '\u0627\u0644\u0645\u062e\u0632\u0648\u0646',
+    inventoryLead: '\u062d\u0631\u0643\u0629 \u0648\u062d\u062c\u0632 \u062f\u0627\u062e\u0644 \u0627\u0644\u0646\u0637\u0627\u0642.',
+    inventoryBoundary: '\u0631\u0635\u064a\u062f \u0627\u0641\u062a\u062a\u0627\u062d\u064a \u0641\u0642\u0637.',
+    inventoryErrorTitle: '\u062e\u0637\u0623',
+    expected: '\u0645\u062a\u0648\u0642\u0639',
+    damaged: '\u062a\u0627\u0644\u0641',
+    inTransit: '\u0642\u064a\u062f \u0627\u0644\u0646\u0642\u0644',
+    reduce: 'خفض',
     importWorkspaceTitle: '\u0627\u0633\u062a\u064a\u0631\u0627\u062f \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629',
     importWorkspaceLead: '\u0627\u0633\u062a\u0648\u0631\u062f \u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629 \u0645\u0646 \u0645\u0644\u0641\u0627\u062a CSV \u0623\u0648 JSON \u0645\u0639 \u062a\u062d\u0642\u0642 \u062e\u0627\u062f\u0645\u064a \u0645\u0648\u062b\u0648\u0642\u060c \u0648\u0645\u062d\u0627\u0643\u0627\u0629 \u062a\u062c\u0631\u064a\u0628\u064a\u0629\u060c \u0648\u062a\u0635\u062d\u064a\u062d \u0644\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0645\u0639\u0632\u0648\u0644\u0629.',
     newImport: '\u0627\u0633\u062a\u064a\u0631\u0627\u062f \u062c\u062f\u064a\u062f',
@@ -1575,7 +1609,8 @@ export class LanguageService {
   }
 
   text(key: TranslationKey): string {
-    return translations[this.language()][key];
+    const current = translations[this.language()] as Partial<Record<TranslationKey, string>>;
+    return current[key] ?? translations.en[key];
   }
 
   setLanguage(language: Language): void {

@@ -4,6 +4,7 @@ using MiniErp.App.Modules.Identity;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
+using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
 namespace MiniErp.Infrastructure.Persistence;
 
@@ -76,6 +77,18 @@ public sealed class ProcurementDbContextFactory
             SqlServerMigrationConfiguration.Configure(
                 SqlServerDesignTimeDbContextConfiguration.RequireConnectionString(),
                 SqlServerMigrationConfiguration.ProcurementHistoryTable),
+            SqlServerDesignTimeDbContextConfiguration.CreateTenantContext());
+}
+
+/// <summary>EF Core design-time factory for the Inventory context.</summary>
+public sealed class InventoryDbContextFactory
+    : IDesignTimeDbContextFactory<InventoryDbContext>
+{
+    InventoryDbContext IDesignTimeDbContextFactory<InventoryDbContext>.CreateDbContext(string[] args) =>
+        new(
+            SqlServerMigrationConfiguration.Configure(
+                SqlServerDesignTimeDbContextConfiguration.RequireConnectionString(),
+                SqlServerMigrationConfiguration.InventoryHistoryTable),
             SqlServerDesignTimeDbContextConfiguration.CreateTenantContext());
 }
 
