@@ -164,7 +164,12 @@ internal sealed class TenantOwnershipVerifierRegistry
             ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceDeclaredEvidenceAllocationEntity>(),
             ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceMatchEvaluationEntity>(),
             ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceMatchHistoryEntity>(),
-            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceMatchAuditEntity>()
+            ProcurementTenantOwnershipVerifier.For<PurchaseInvoiceMatchAuditEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierReturnEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierReturnLineEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierReturnEvidenceEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierReturnHistoryEntity>(),
+            ProcurementTenantOwnershipVerifier.For<SupplierReturnAuditEntity>()
         ]);
     }
 

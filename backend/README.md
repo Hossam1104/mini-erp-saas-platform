@@ -1,5 +1,29 @@
 # Mini ERP backend foundation
 
+> **Current MESP-127 runtime overlay - 21 August 2026.** The backend now
+> carries Procurement-owned Supplier Returns from accepted Goods Receipt
+> evidence through Draft, Submitted, Approved, rejection/cancellation,
+> Inventory-facing handoff evidence, Finance-facing correction/credit
+> references, completion, reversal, and forward-linked correction. Eligibility
+> is derived from accepted receipt quantity less active non-reversed returns;
+> rejected receipt quantity and the MESP-125 non-additive damage overlay never
+> become return quantity. Source PO/GR/supplier/product/UOM/warehouse snapshots,
+> private-file evidence references, immutable history/audit, durable replay,
+> optimistic concurrency, Tenant/Company/Branch/Warehouse authorization, and
+> operational report rows are persisted in Procurement. No stock ledger,
+> on-hand, Inventory valuation, AP, GL, tax posting, payment, or authoritative
+> Finance/Inventory event is fabricated. The formal migration is
+> `20260821025312_MESP127SupplierReturnEvidence`.
+
+> **MESP-127 validation baseline.** Release build is **0 warnings / 0
+> errors**; the canonical disposable-LocalDB backend runner passes **844/844,
+> 0 skipped**; focused Supplier Return architecture coverage passes **3/3**;
+> Angular passes **239/239 across 31 spec files**; production build is
+> **494.71 kB initial** with a **57.40 kB Supplier Return lazy chunk**;
+> focused Supplier Return Chromium coverage is **2/2** and the full Chromium
+> suite is **24/24**; both production-only and full npm audits report **0
+> vulnerabilities**. Protected `frontend/assets` remain untouched.
+
 > **Current MESP-126 runtime overlay - 21 August 2026.** The backend now
 > carries deterministic three-way matching as Procurement evidence
 > orchestration: independent supplier-declared invoice evidence is stored

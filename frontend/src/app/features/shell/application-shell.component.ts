@@ -51,6 +51,9 @@ import { OperationalContextSwitcherComponent } from '../../shared/ui/operational
           <a routerLink="/app/procurement/goods-receipts" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">◫</span>{{ language.text('goodsReceiptsNavLabel') }}
           </a>
+          <a routerLink="/app/procurement/supplier-returns" routerLinkActive="is-active">
+            <span class="nav-icon" aria-hidden="true">↶</span>{{ language.text('supplierReturnsNavLabel') }}
+          </a>
           <a routerLink="/app/procurement/invoice-handoffs" routerLinkActive="is-active">
             <span class="nav-icon" aria-hidden="true">▤</span>{{ language.text('invoiceHandoffsNavLabel') }}
           </a>

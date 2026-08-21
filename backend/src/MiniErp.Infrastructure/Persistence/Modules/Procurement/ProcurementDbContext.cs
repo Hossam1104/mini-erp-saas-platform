@@ -62,6 +62,16 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
 
     internal DbSet<GoodsReceiptAuditEntity> GoodsReceiptAudit => Set<GoodsReceiptAuditEntity>();
 
+    internal DbSet<SupplierReturnEntity> SupplierReturns => Set<SupplierReturnEntity>();
+
+    internal DbSet<SupplierReturnLineEntity> SupplierReturnLines => Set<SupplierReturnLineEntity>();
+
+    internal DbSet<SupplierReturnEvidenceEntity> SupplierReturnEvidence => Set<SupplierReturnEvidenceEntity>();
+
+    internal DbSet<SupplierReturnHistoryEntity> SupplierReturnHistory => Set<SupplierReturnHistoryEntity>();
+
+    internal DbSet<SupplierReturnAuditEntity> SupplierReturnAudit => Set<SupplierReturnAuditEntity>();
+
     internal DbSet<PurchaseInvoiceHandoffEntity> PurchaseInvoiceHandoffs => Set<PurchaseInvoiceHandoffEntity>();
 
     internal DbSet<PurchaseInvoiceHandoffLineEntity> PurchaseInvoiceHandoffLines => Set<PurchaseInvoiceHandoffLineEntity>();
@@ -823,6 +833,175 @@ internal sealed class ProcurementDbContext : TenantPersistenceDbContext
             .HasPrincipalKey(item => new { item.TenantId, item.Id })
             .OnDelete(DeleteBehavior.Restrict);
         goodsReceiptAudit.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var supplierReturn = modelBuilder.Entity<SupplierReturnEntity>();
+        ConfigureTable(supplierReturn, "SupplierReturns");
+        supplierReturn.HasKey(item => item.Id);
+        supplierReturn.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(supplierReturn.Property(item => item.TenantId));
+        supplierReturn.Property(item => item.GoodsReceiptId).IsRequired();
+        supplierReturn.Property(item => item.PurchaseOrderId).IsRequired();
+        supplierReturn.Property(item => item.SupplierConfirmationId).IsRequired(false);
+        supplierReturn.Property(item => item.CompanyId).IsRequired();
+        supplierReturn.Property(item => item.BranchId).IsRequired(false);
+        supplierReturn.Property(item => item.WarehouseId).IsRequired();
+        supplierReturn.Property(item => item.SupplierId).IsRequired();
+        supplierReturn.Property(item => item.SupplierCode).HasMaxLength(128).IsRequired();
+        supplierReturn.Property(item => item.SupplierName).HasMaxLength(256).IsRequired();
+        supplierReturn.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired();
+        supplierReturn.Property(item => item.Status).IsRequired();
+        supplierReturn.Property(item => item.ReasonCode).IsRequired();
+        supplierReturn.Property(item => item.Condition).IsRequired();
+        supplierReturn.Property(item => item.CommercialOutcome).IsRequired();
+        supplierReturn.Property(item => item.ReasonDetail).HasMaxLength(4096).IsRequired(false);
+        supplierReturn.Property(item => item.Notes).HasMaxLength(4096).IsRequired(false);
+        supplierReturn.Property(item => item.ReturnDate).IsRequired();
+        supplierReturn.Property(item => item.CreatedByActorId).IsRequired();
+        supplierReturn.Property(item => item.CreatedAt).IsRequired();
+        supplierReturn.Property(item => item.UpdatedAt).IsRequired();
+        supplierReturn.Property(item => item.CancelledAt).IsRequired(false);
+        supplierReturn.Property(item => item.ReversedAt).IsRequired(false);
+        supplierReturn.Property(item => item.CorrectionOfId).IsRequired(false);
+        supplierReturn.Property(item => item.InventoryHandoffEvidenceId).IsRequired(false);
+        supplierReturn.Property(item => item.InventoryHandoffReference).HasMaxLength(256).IsRequired(false);
+        supplierReturn.Property(item => item.InventoryHandoffRecordedAt).IsRequired(false);
+        supplierReturn.Property(item => item.FinanceReference).HasMaxLength(256).IsRequired(false);
+        supplierReturn.Property(item => item.FinanceCurrencyCode).HasMaxLength(16).IsRequired(false);
+        supplierReturn.Property(item => item.FinanceAmount).HasPrecision(28, 8).IsRequired(false);
+        supplierReturn.Property(item => item.FinanceReferenceRecordedAt).IsRequired(false);
+        ConfigureVersion(supplierReturn.Property(item => item.Version));
+        supplierReturn.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        supplierReturn.HasIndex(item => new { item.TenantId, item.GoodsReceiptId, item.Status });
+        supplierReturn.HasIndex(item => new { item.TenantId, item.SupplierId, item.CreatedAt });
+        supplierReturn.HasIndex(item => new { item.TenantId, item.Status, item.UpdatedAt });
+        supplierReturn.HasOne<GoodsReceiptEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.GoodsReceiptId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        supplierReturn.HasOne<PurchaseOrderEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        supplierReturn.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var supplierReturnLine = modelBuilder.Entity<SupplierReturnLineEntity>();
+        ConfigureTable(supplierReturnLine, "SupplierReturnLines");
+        supplierReturnLine.HasKey(item => item.Id);
+        supplierReturnLine.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(supplierReturnLine.Property(item => item.TenantId));
+        supplierReturnLine.Property(item => item.SupplierReturnId).IsRequired();
+        supplierReturnLine.Property(item => item.GoodsReceiptLineId).IsRequired();
+        supplierReturnLine.Property(item => item.PurchaseOrderLineId).IsRequired();
+        supplierReturnLine.Property(item => item.ProductId).IsRequired();
+        supplierReturnLine.Property(item => item.ProductSku).HasMaxLength(128).IsRequired();
+        supplierReturnLine.Property(item => item.ProductName).HasMaxLength(256).IsRequired();
+        supplierReturnLine.Property(item => item.UnitOfMeasureCode).HasMaxLength(128).IsRequired();
+        supplierReturnLine.Property(item => item.AcceptedQuantityAtReturn).HasPrecision(28, 8).IsRequired();
+        supplierReturnLine.Property(item => item.ReturnQuantity).HasPrecision(28, 8).IsRequired();
+        supplierReturnLine.Property(item => item.EligibleQuantityAfter).HasPrecision(28, 8).IsRequired(false);
+        supplierReturnLine.Property(item => item.Notes).HasMaxLength(2048).IsRequired(false);
+        ConfigureVersion(supplierReturnLine.Property(item => item.Version));
+        supplierReturnLine.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        supplierReturnLine.HasIndex(item => new { item.TenantId, item.GoodsReceiptLineId });
+        supplierReturnLine.HasIndex(item => new { item.TenantId, item.SupplierReturnId });
+        supplierReturnLine.HasOne<SupplierReturnEntity>()
+            .WithMany(item => item.Lines)
+            .HasForeignKey(item => new { item.TenantId, item.SupplierReturnId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Cascade);
+        supplierReturnLine.HasOne<GoodsReceiptLineEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.GoodsReceiptLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        supplierReturnLine.HasOne<PurchaseOrderLineEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.PurchaseOrderLineId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        supplierReturnLine.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var supplierReturnEvidence = modelBuilder.Entity<SupplierReturnEvidenceEntity>();
+        ConfigureTable(supplierReturnEvidence, "SupplierReturnEvidence");
+        supplierReturnEvidence.HasKey(item => item.Id);
+        supplierReturnEvidence.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(supplierReturnEvidence.Property(item => item.TenantId));
+        supplierReturnEvidence.Property(item => item.SupplierReturnId).IsRequired();
+        supplierReturnEvidence.Property(item => item.ReferenceId).HasMaxLength(256).IsRequired();
+        supplierReturnEvidence.Property(item => item.FileName).HasMaxLength(255).IsRequired(false);
+        supplierReturnEvidence.Property(item => item.ContentType).HasMaxLength(128).IsRequired(false);
+        supplierReturnEvidence.Property(item => item.Description).HasMaxLength(1024).IsRequired(false);
+        supplierReturnEvidence.Property(item => item.Source).HasMaxLength(256).IsRequired();
+        supplierReturnEvidence.Property(item => item.RecordedAt).IsRequired();
+        ConfigureVersion(supplierReturnEvidence.Property(item => item.Version));
+        supplierReturnEvidence.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        supplierReturnEvidence.HasIndex(item => new { item.TenantId, item.SupplierReturnId, item.RecordedAt });
+        supplierReturnEvidence.HasOne<SupplierReturnEntity>()
+            .WithMany(item => item.Evidence)
+            .HasForeignKey(item => new { item.TenantId, item.SupplierReturnId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        supplierReturnEvidence.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var supplierReturnHistory = modelBuilder.Entity<SupplierReturnHistoryEntity>();
+        ConfigureTable(supplierReturnHistory, "SupplierReturnHistory");
+        supplierReturnHistory.HasKey(item => item.Id);
+        supplierReturnHistory.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(supplierReturnHistory.Property(item => item.TenantId));
+        supplierReturnHistory.Property(item => item.SupplierReturnId).IsRequired();
+        supplierReturnHistory.Property(item => item.FromStatus).IsRequired();
+        supplierReturnHistory.Property(item => item.ToStatus).IsRequired();
+        supplierReturnHistory.Property(item => item.Action).IsRequired();
+        supplierReturnHistory.Property(item => item.ActorId).IsRequired();
+        supplierReturnHistory.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        supplierReturnHistory.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        supplierReturnHistory.Property(item => item.OccurredAt).IsRequired();
+        ConfigureVersion(supplierReturnHistory.Property(item => item.Version));
+        supplierReturnHistory.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        supplierReturnHistory.HasIndex(item => new { item.TenantId, item.SupplierReturnId, item.OccurredAt });
+        supplierReturnHistory.HasOne<SupplierReturnEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.SupplierReturnId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        supplierReturnHistory.HasQueryFilter(item => item.TenantId == TrustedTenantId);
+
+        var supplierReturnAudit = modelBuilder.Entity<SupplierReturnAuditEntity>();
+        ConfigureTable(supplierReturnAudit, "SupplierReturnAudit");
+        supplierReturnAudit.HasKey(item => item.Id);
+        supplierReturnAudit.Property(item => item.Id).ValueGeneratedNever();
+        ConfigureTenant(supplierReturnAudit.Property(item => item.TenantId));
+        supplierReturnAudit.Property(item => item.SupplierReturnId).IsRequired();
+        supplierReturnAudit.Property(item => item.OccurredAt).IsRequired();
+        supplierReturnAudit.Property(item => item.OperationId).HasMaxLength(128).IsRequired();
+        supplierReturnAudit.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+        supplierReturnAudit.Property(item => item.ActorId).IsRequired();
+        supplierReturnAudit.Property(item => item.SessionId).IsRequired();
+        supplierReturnAudit.Property(item => item.AuthorizationPath).HasMaxLength(64).IsRequired();
+        supplierReturnAudit.Property(item => item.Decision).HasMaxLength(64).IsRequired();
+        supplierReturnAudit.Property(item => item.Reason).HasMaxLength(4096).IsRequired(false);
+        supplierReturnAudit.Property(item => item.BeforeStatus).IsRequired(false);
+        supplierReturnAudit.Property(item => item.AfterStatus).IsRequired(false);
+        supplierReturnAudit.Property(item => item.CompanyId).IsRequired();
+        supplierReturnAudit.Property(item => item.BranchId).IsRequired(false);
+        supplierReturnAudit.Property(item => item.BeforeSummary).HasMaxLength(4096).IsRequired(false);
+        supplierReturnAudit.Property(item => item.AfterSummary).HasMaxLength(4096).IsRequired(false);
+        supplierReturnAudit.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false);
+        supplierReturnAudit.Property(item => item.RequestFingerprint).HasMaxLength(64).IsRequired(false);
+        supplierReturnAudit.Property(item => item.ReplayResponseSchemaVersion).IsRequired(false);
+        supplierReturnAudit.Property(item => item.ReplayResponseSnapshotJson).IsRequired(false);
+        ConfigureVersion(supplierReturnAudit.Property(item => item.Version));
+        supplierReturnAudit.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+        supplierReturnAudit.HasIndex(item => new { item.TenantId, item.SupplierReturnId, item.OccurredAt });
+        supplierReturnAudit.HasIndex(item => new { item.TenantId, item.ActorId, item.OperationId, item.IdempotencyKey });
+        supplierReturnAudit.HasOne<SupplierReturnEntity>()
+            .WithMany()
+            .HasForeignKey(item => new { item.TenantId, item.SupplierReturnId })
+            .HasPrincipalKey(item => new { item.TenantId, item.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        supplierReturnAudit.HasQueryFilter(item => item.TenantId == TrustedTenantId);
 
         var invoiceHandoff = modelBuilder.Entity<PurchaseInvoiceHandoffEntity>();
         ConfigureTable(invoiceHandoff, "PurchaseInvoiceHandoffs");

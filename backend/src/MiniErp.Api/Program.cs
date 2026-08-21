@@ -838,6 +838,7 @@ app.MapPurchaseRequestEndpoints();
 app.MapSupplierQuotationEndpoints();
 app.MapPurchaseOrderEndpoints();
 app.MapGoodsReceiptEndpoints();
+app.MapSupplierReturnEndpoints();
 app.MapPurchaseInvoiceHandoffEndpoints();
 app.MapPurchaseInvoiceMatchingEndpoints();
 
