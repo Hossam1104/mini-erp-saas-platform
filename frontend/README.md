@@ -19,8 +19,15 @@ Cross-currency matching exposes only a server-owned Exchange Rate identity in
 the request model. The server derives the effective version exclusively from
 immutable supplier-invoice-date evidence. Rate, scale, version, pair, effective
 window, effective date, and provenance are returned as the immutable
-MESP-120-backed evaluation snapshot; the browser cannot author FX facts.
-Same-currency matching continues to evaluate without an FX reference.
+MESP-120-backed evaluation snapshot; the browser cannot author FX facts. The
+workspace shows a human-readable selector only for active, pair-compatible
+identities with a valid invoice-date version; it shows no raw GUID or editable
+rate/scale/version/effective-date controls. Same-currency matching continues
+to evaluate without an FX reference.
+
+Matching keeps the existing exact server-derived Company/Branch scope. It does
+not invent Company-to-Branch policy inheritance or allow a browser-selected
+scope to widen the evidence boundary.
 
 The browser never stores an authentication token or establishes Tenant authority.
 
@@ -49,12 +56,12 @@ npm run test:e2e -- --project=chromium
 npm audit --omit=dev
 ```
 
-The current bounded evidence is Angular **235/235 across 30 spec files**;
+The current bounded evidence is Angular **238/238 across 31 spec files**;
 the production build is **494.00 kB initial total** (under the 500 kB budget)
 with a **51.75 kB Goods Receipt lazy chunk**, a **52.09 kB Invoice Handoff lazy chunk**,
 a **74.78 kB Purchase Order lazy chunk**, a **91.94 kB Supplier Quotation lazy chunk**,
-and a **29.75 kB Three-way Matching lazy chunk**; Chromium coverage is
-**21/21 passed** across the full e2e suite. Both
+and a **38.05 kB Three-way Matching lazy chunk**; Chromium coverage is
+**22/22 passed** across the full e2e suite. Both
 `npm audit --omit=dev` and full `npm audit` report **0 vulnerabilities**. The
 Playwright checks are automated API-fixture/browser evidence, not a manual
 interactive browser sign-off.

@@ -1,5 +1,48 @@
 # Current State
 
+## Current authoritative position - 21 August 2026 (MESP-126 Opus P1 remediation complete; delta review handoff)
+
+MESP-126 P1 remediation is committed at
+`d2a107e427df335a0067c77c30d07562608ab743` on
+`feat/MESP-126-three-way-matching-tolerances`, continuing Draft PR #70 against
+`main`. The public `PurchaseInvoiceExchangeRateReferenceRequest` now accepts
+only `ExchangeRateId`; the MESP-120 provider derives the effective version
+from immutable supplier invoice-date evidence and uses only the existing
+immutable handoff date field as its fallback. A missing date fails closed.
+Provider, service, DTO-shape, snapshot, and missing-date tests cover the
+authority boundary.
+
+Supplier-declared lines are quantity-aggregated by `PurchaseOrderLineId` so
+each PO line gets one quantity variance. Declared allocations are aggregated by
+`GoodsReceiptLineId` and compared against the handoff-supported and active
+AcceptedQuantity bound; duplicate supplier evidence is preserved and
+classified rather than rejected or double-consumed. Individual price, tax,
+discount, line amount, and header total comparisons remain in place. Exact
+Tenant/Company/Branch scope remains server-derived and explicit; no
+Company-to-Branch policy inheritance was invented.
+
+The Angular matching detail now provides an accessible EN/AR RTL
+human-readable Exchange Rate selector only for active pair-compatible
+identities with a valid immutable invoice-date version. The browser sends only
+the selected identity and displays the applied server-owned rate/version/date/
+provenance snapshot; no raw GUID or editable rate/scale/version/effective-date
+input is exposed. Same-currency evaluation remains reference-free, and missing
+cross-currency choices remain fail-closed. Focused and full Playwright cover
+the selector and payload behavior.
+
+Validation after this remediation: Release build 0 warnings/0 errors; focused
+handoff/matching remediation 37/37; full backend 841/841 passed, 0 skipped,
+including 22 disposable LocalDB SQL safety cases with zero orphan databases;
+Angular 238/238 across 31 spec files; production bundle 494.00 kB initial with
+38.05 kB matching lazy chunk; focused matching Chromium 3/3 and full Chromium
+22/22; production-only and full npm audits 0 vulnerabilities; `git diff --check`
+clean. Headline production percentages remain ~44% overall and ~39%
+Procurement/P2P because this session is correctness remediation and UX
+completion, not additive business scope. No Jira writes were performed. Draft
+PR #70 remains open, Draft, and unmerged. Independent Claude Opus 5
+read-only delta re-review is the next exact session; no MESP-127/AP/GL/payment/
+stock/FX override or merge is authorized.
+
 ## Current authoritative position - 20 August 2026 (MESP-126 SOL acceptance remediation complete; independent review handoff)
 
 MESP-125 (Goods Receipt and Purchase Invoice Handoff) is **Done** and

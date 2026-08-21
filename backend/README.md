@@ -1,6 +1,6 @@
 # Mini ERP backend foundation
 
-> **Current MESP-126 runtime overlay - 20 August 2026.** The backend now
+> **Current MESP-126 runtime overlay - 21 August 2026.** The backend now
 > carries deterministic three-way matching as Procurement evidence
 > orchestration: independent supplier-declared invoice evidence is stored
 > separately from the MESP-125 PO-derived handoff preview, exact-safe and
@@ -47,17 +47,21 @@
 > governance, backup/restore, capacity, and specialist gates remain open.
 
 The accepted MESP-126 validation baseline is Release build **0 warnings / 0
-errors**; focused Invoice Handoff/matching remediation tests pass **30/30** and
-the canonical backend runner passes **834/834 tests, 0 skipped**, including all
+errors**; focused Invoice Handoff/matching remediation tests pass **37/37** and
+the canonical backend runner passes **841/841 tests, 0 skipped**, including all
 **22 SQL safety tests** against a disposable LocalDB `MiniErpFoundation_*`
-database. The previous
-repository baseline was **812/812** ArchitectureTests passed with **0 skipped**,
-including
-the disposable SQL Server safety harness. Focused Goods Receipt tests pass
-**11/11**, focused Purchase Invoice Handoff tests pass **8/8**, focused Purchase
-Order tests pass **14/14**, and the full suite directly covers physical receipt
-quantity invariants A through I, concurrent race prevention (10 -> 7/7), warehouse
-scoping, and durable replay.
+database. The P1 remediation also verifies the public FX request is identity-
+only, server version selection uses immutable supplier-invoice-date evidence,
+missing dates fail closed, repeated declared lines aggregate by Purchase Order
+line, and repeated allocations aggregate by Goods Receipt line without
+double-consuming valid receipt evidence. Exact Company/Branch scope remains
+server-derived and explicit; no broader Company-to-Branch inheritance policy
+is introduced. The previous repository baseline was **812/812** ArchitectureTests
+passed with **0 skipped**, including the disposable SQL Server safety harness.
+Focused Goods Receipt tests pass **11/11**, focused Purchase Invoice Handoff
+tests pass **8/8**, focused Purchase Order tests pass **14/14**, and the full
+suite directly covers physical receipt quantity invariants A through I,
+concurrent race prevention (10 -> 7/7), warehouse scoping, and durable replay.
 
 This directory contains the Foundation backend. It began as the MESP-57
 Modular Monolith seam and now also carries the merged MESP-58/MESP-87 Tenant

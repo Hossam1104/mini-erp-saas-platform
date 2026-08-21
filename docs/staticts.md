@@ -2,10 +2,42 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-20 14:30 +03:00
+**Last Updated:** 2026-08-21 04:10 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~44%**
+
+## Current authoritative fast-track snapshot - 21 August 2026 (MESP-126 Opus P1 remediation complete; delta review handoff)
+
+This snapshot records the bounded P1 remediation commit
+`d2a107e427df335a0067c77c30d07562608ab743` on branch
+`feat/MESP-126-three-way-matching-tolerances`. The public cross-currency
+request is now identity-only (`ExchangeRateId`); MESP-120 version selection is
+server-authoritative from immutable supplier-invoice-date evidence, with the
+existing immutable handoff date as the only fallback and missing-date failure
+closed. Supplier-declared quantities aggregate by Purchase Order line, receipt
+allocations aggregate by Goods Receipt line, duplicate evidence remains
+truthful and is classified against active accepted/handoff-supported quantity,
+and the existing individual price/tax/amount and header comparisons remain
+intact. The Angular workspace now provides an EN/AR RTL-accessible,
+human-readable compatible Exchange Rate selector and displays the applied
+server snapshot without exposing raw GUID or editable FX facts. Exact
+Tenant/Company/Branch scope is preserved; no Company-to-Branch inheritance
+policy is introduced.
+
+| Current control | Verified position |
+|---|---|
+| MESP-126 code | **P1 remediation committed at `d2a107e427df335a0067c77c30d07562608ab743`; Draft PR #70 remains open, Draft, and unmerged.** |
+| Production capability | **~44% overall; Procurement/P2P conservatively ~39%** — unchanged because this session is correctness remediation and UX completion, not new headline scope. |
+| Validation | Release build **0 warnings/0 errors**; focused handoff/matching remediation **37/37**; full backend **841/841 passed, 0 skipped**, including **22 disposable LocalDB SQL safety tests**; Angular **238/238 across 31 spec files**; production build **494.00 kB initial / 38.05 kB matching lazy chunk**; focused matching Playwright **3/3**; full Chromium **22/22**; production-only and full npm audits **0 vulnerabilities**; `git diff --check` clean. |
+| Boundaries | No AP liability/posting, GL journals, payment, stock/on-hand mutation, Inventory valuation, realized/unrealized FX, revaluation, VAT accounting, ZATCA/FATOORA, supplier portal, external invoice/FX integration, MESP-127+, DNS/TLS, or Wafra-specific core behavior. No Jira writes. |
+| Next exact session | **Independent Claude Opus 5 read-only delta re-review of the P1 remediation and cross-currency UX** against base `42e51b673de5d076b56426180d914f7e3d07c54c`, implementation anchor `d2a107e427df335a0067c77c30d07562608ab743`, and the final branch handoff SHA recorded by the completing commit. No merge or Jira writes. |
+
+## Progress history - 21 August 2026
+
+| Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
+|---|---|---:|---:|---|
+| 2026-08-21 | MESP-126 Opus P1 remediation and cross-currency UX complete: identity-only FX request, immutable invoice-date authority, fail-closed missing date, aggregate quantity/allocation semantics, duplicate evidence classification, and compatible human-readable Exchange Rate selector. | ~44% | ~39% | Correctness remediation and UX completion; headline percentages unchanged. Release build 0/0; focused 37/37; full backend 841/841 including 22 disposable LocalDB SQL safety tests; Angular 238/238; focused matching Playwright 3/3; full Chromium 22/22; both npm audits 0 vulnerabilities. Draft PR #70 remains open/Draft/unmerged; independent read-only Opus delta review is next; no Jira writes. |
 
 ## Current authoritative fast-track snapshot - 20 August 2026 (MESP-126 SOL acceptance remediation complete; independent review handoff)
 
