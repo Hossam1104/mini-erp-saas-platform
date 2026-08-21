@@ -15,7 +15,14 @@ public sealed class SupplierReturnPersistence : ISupplierReturnPersistence
     private const string CreateOperationId = "procurement.supplier-return.create";
     private const int ReplayResponseSchemaVersion = 1;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly SupplierReturnStatus[] ActiveStatuses =
+    // A Supplier Return still consumes its accepted Goods Receipt quantity in every status where the
+    // commercial return has not been undone. Completed permanently consumes quantity: the return has
+    // concluded (via Finance reference or a NoCreditExpected inventory handoff) and nothing restores it
+    // short of a linked reversal/correction. Rejected never became an effective return. Cancelled and
+    // Reversed restore quantity only for their currently supported pre-downstream-consequence paths.
+    // CorrectionLinked is superseded by its correction successor, which alone owns the current
+    // consumption, so the original must be excluded to avoid double counting.
+    private static readonly SupplierReturnStatus[] QuantityConsumingStatuses =
     [
         SupplierReturnStatus.Draft,
         SupplierReturnStatus.Submitted,
@@ -23,7 +30,8 @@ public sealed class SupplierReturnPersistence : ISupplierReturnPersistence
         SupplierReturnStatus.AwaitingInventory,
         SupplierReturnStatus.InventoryHandoffRecorded,
         SupplierReturnStatus.AwaitingFinance,
-        SupplierReturnStatus.FinanceReferenceRecorded
+        SupplierReturnStatus.FinanceReferenceRecorded,
+        SupplierReturnStatus.Completed
     ];
     private readonly DbContextOptions options;
 
@@ -517,7 +525,7 @@ public sealed class SupplierReturnPersistence : ISupplierReturnPersistence
         var returned = await (
             from line in db.SupplierReturnLines
             join parent in db.SupplierReturns on new { line.TenantId, SupplierReturnId = line.SupplierReturnId } equals new { parent.TenantId, SupplierReturnId = parent.Id }
-            where receiptIds.Contains(parent.GoodsReceiptId) && ActiveStatuses.Contains(parent.Status)
+            where receiptIds.Contains(parent.GoodsReceiptId) && QuantityConsumingStatuses.Contains(parent.Status)
             group line.ReturnQuantity by new { parent.GoodsReceiptId, line.GoodsReceiptLineId } into g
             select new { g.Key.GoodsReceiptId, g.Key.GoodsReceiptLineId, Quantity = g.Sum() }).ToListAsync(cancellationToken);
         var returnedLookup = returned.ToDictionary(item => (item.GoodsReceiptId, item.GoodsReceiptLineId), item => item.Quantity);
@@ -548,7 +556,7 @@ public sealed class SupplierReturnPersistence : ISupplierReturnPersistence
     {
         var query = from line in db.SupplierReturnLines
                     join parent in db.SupplierReturns on new { line.TenantId, SupplierReturnId = line.SupplierReturnId } equals new { parent.TenantId, SupplierReturnId = parent.Id }
-                    where parent.GoodsReceiptId == goodsReceiptId && ActiveStatuses.Contains(parent.Status)
+                    where parent.GoodsReceiptId == goodsReceiptId && QuantityConsumingStatuses.Contains(parent.Status)
                     select new { line.GoodsReceiptLineId, line.ReturnQuantity, parent.Id };
         if (excludedReturnId is { } excluded)
         {

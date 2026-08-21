@@ -123,8 +123,10 @@ credit/correction reference -> commercial history/reporting`.
 Run and report actual results, without hiding warnings or skips:
 
 - `dotnet build backend/MiniErp.sln -c Release`: 0 warnings / 0 errors.
-- Focused Supplier Return backend/architecture tests: 3/3 passed.
-- `scripts/Test-MiniErpBackend.ps1`: 844/844 passed, 0 skipped, including all
+- Focused Supplier Return backend/architecture tests: 9/9 passed (3 original
+  contract tests plus 6 new MESP-127 P1 persistence regression tests added
+  during Sol acceptance remediation for quantity-consumption semantics).
+- `scripts/Test-MiniErpBackend.ps1`: 850/850 passed, 0 skipped, including all
   22 disposable LocalDB safety cases; verify the persistent runtime connection
   was unchanged and no `MiniErpFoundation_*` database remains.
 - `npm test -- --watch=false --no-progress`: 239/239 across 31 spec files.
