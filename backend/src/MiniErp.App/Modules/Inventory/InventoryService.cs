@@ -334,6 +334,7 @@ public sealed class InventoryService(
         if (row.Quantity <= 0) return "invalid_quantity";
         if (row.UnitCost < 0) return "invalid_unit_cost";
         if (string.IsNullOrWhiteSpace(row.CurrencyCode)) return "currency_required";
+        if (string.IsNullOrWhiteSpace(row.SourceLineReference)) return "source_provenance_required";
         return null;
     }
 

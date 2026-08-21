@@ -120,7 +120,8 @@ public sealed record InventoryOpeningBalanceRowRecord(
     InventoryOpeningRowStatus Status,
     string? ValidationCode,
     DateTimeOffset? PostedAt,
-    byte[] Version);
+    byte[] Version,
+    string SourceFingerprint = "");
 
 public sealed record InventoryOpeningBalanceRecord(
     Guid Id,

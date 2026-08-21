@@ -45,9 +45,9 @@ internal sealed class InventoryOpeningBalanceRowEntity : ITenantOwned
 {
     private InventoryOpeningBalanceRowEntity() { }
 
-    internal InventoryOpeningBalanceRowEntity(TenantId tenantId, Guid id, Guid batchId, Guid productId, string sku, string productName, Guid uomId, string uomCode, decimal quantity, decimal unitCost, string currencyCode, string? trackingIdentity, string? sourceLineReference, InventoryOpeningRowStatus status, string? validationCode)
+    internal InventoryOpeningBalanceRowEntity(TenantId tenantId, Guid id, Guid batchId, Guid productId, string sku, string productName, Guid uomId, string uomCode, decimal quantity, decimal unitCost, string currencyCode, string? trackingIdentity, string? sourceLineReference, string sourceFingerprint, InventoryOpeningRowStatus status, string? validationCode)
     {
-        Id = id; TenantId = tenantId; OpeningBalanceId = batchId; ProductId = productId; ProductSku = sku; ProductName = productName; UnitOfMeasureId = uomId; UnitOfMeasureCode = uomCode; Quantity = quantity; UnitCost = unitCost; CurrencyCode = currencyCode; TrackingIdentity = trackingIdentity; SourceLineReference = sourceLineReference; Status = status; ValidationCode = validationCode;
+        Id = id; TenantId = tenantId; OpeningBalanceId = batchId; ProductId = productId; ProductSku = sku; ProductName = productName; UnitOfMeasureId = uomId; UnitOfMeasureCode = uomCode; Quantity = quantity; UnitCost = unitCost; CurrencyCode = currencyCode; TrackingIdentity = trackingIdentity; SourceLineReference = sourceLineReference; SourceFingerprint = sourceFingerprint; Status = status; ValidationCode = validationCode;
     }
 
     internal Guid Id { get; private set; }
@@ -63,12 +63,14 @@ internal sealed class InventoryOpeningBalanceRowEntity : ITenantOwned
     internal string CurrencyCode { get; private set; } = string.Empty;
     internal string? TrackingIdentity { get; private set; }
     internal string? SourceLineReference { get; private set; }
+    internal string SourceFingerprint { get; private set; } = string.Empty;
+    internal bool SourceIdentityConsumed { get; private set; }
     internal InventoryOpeningRowStatus Status { get; private set; }
     internal string? ValidationCode { get; private set; }
     internal DateTimeOffset? PostedAt { get; private set; }
     internal byte[] Version { get; private set; } = [];
     internal void Validate(InventoryOpeningRowStatus status, string? code) { Status = status; ValidationCode = code; }
-    internal void MarkPosted(DateTimeOffset at) { Status = InventoryOpeningRowStatus.Posted; PostedAt = at; ValidationCode = null; }
+    internal void MarkPosted(DateTimeOffset at) { Status = InventoryOpeningRowStatus.Posted; PostedAt = at; ValidationCode = null; SourceIdentityConsumed = true; }
     internal void MarkCorrected() => Status = InventoryOpeningRowStatus.Corrected;
 }
 

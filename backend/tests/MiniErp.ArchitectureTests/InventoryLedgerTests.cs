@@ -2,10 +2,13 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Inventory;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
+using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
+using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using Xunit;
 
 namespace MiniErp.ArchitectureTests;
@@ -142,6 +145,7 @@ public sealed class InventoryLedgerTests
         var openingMovement = Assert.Single(afterPosting);
         Assert.Equal(InventoryMovementSourceType.OpeningBalance, openingMovement.SourceType);
         Assert.Equal(5m, openingMovement.Quantity);
+        Assert.Equal("EA", openingMovement.UnitOfMeasureCode);
         Assert.Null(openingMovement.CorrectionOfMovementId);
 
         var availability = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(context, scope, ProductA, UnitA, null, product, warehouse));
@@ -196,7 +200,14 @@ public sealed class InventoryLedgerTests
 
         var replay = Assert.IsType<InventoryReservationRecord>(await persistence.CreateReservationAsync(context, command with { Id = Guid.NewGuid() }, 5m));
         Assert.Equal(created.Id, replay.Id);
+        Assert.Equal("EA", replay.UnitOfMeasureCode);
         Assert.Single(await persistence.ListReservationsAsync(context, scope));
+
+        var conflictingReplay = await new InventoryPersistence(options).CreateReservationAsync(
+            context,
+            command with { Id = Guid.NewGuid(), RequestFingerprint = "different-request" },
+            5m);
+        Assert.Null(conflictingReplay);
 
         var reservedAvailability = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(context, scope, ProductA, UnitA, null, product, warehouse));
         Assert.Equal(5m, reservedAvailability.OnHandQuantity);
@@ -211,15 +222,533 @@ public sealed class InventoryLedgerTests
         Assert.Equal(5m, restoredAvailability.AvailableQuantity);
     }
 
-    private static InventoryProductReference Product() => new(TenantA, ProductA, "SKU-A", "Product A", UnitA, "EA", true, true, false);
+    [Fact]
+    public async Task Opening_duplicate_source_rows_are_quarantined_and_posting_is_atomic()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        await EnsureInventoryCreatedAsync(options, context);
 
-    private static InventoryWarehouseOption Warehouse() => new(TenantA, CompanyA, null, WarehouseA, "WH-A", "Warehouse A");
+        var command = OpeningCommand(
+            "opening-duplicate",
+            [OpeningRow(5m, "same-line"), OpeningRow(3m, "same-line")],
+            idempotencyKey: "opening-duplicate-key");
 
-    private static InventoryRequestContext Context(Guid tenantId, ScopeReference? scope) =>
+        var created = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.CreateOpeningBalanceAsync(context, command));
+        Assert.Single(created.Rows.Select(item => item.SourceFingerprint).Distinct(StringComparer.Ordinal));
+        Assert.Single(created.Rows, item => item.Status == InventoryOpeningRowStatus.Valid);
+        var quarantined = Assert.Single(created.Rows, item => item.Status == InventoryOpeningRowStatus.Quarantined);
+        Assert.Equal("duplicate_source_row", quarantined.ValidationCode);
+
+        var validated = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.ValidateOpeningBalanceAsync(
+            context, created.Id, created.Version, Actor, "validate duplicate", "duplicate-validate", "duplicate-validate-key", "duplicate-validate-fingerprint"));
+        Assert.Equal(InventoryOpeningBalanceStatus.Validated, validated.Status);
+
+        var posted = await persistence.PostOpeningBalanceAsync(
+            context, validated.Id, validated.Version, Actor, "post duplicate", "duplicate-post", "duplicate-post-key", "duplicate-post-fingerprint");
+        Assert.Null(posted);
+        Assert.Empty(await persistence.ListMovementsAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseA)));
+
+        var history = await persistence.ReadOpeningHistoryAsync(context, created.Id);
+        Assert.Contains(history, item => item.Action == "post-blocked" && item.Reason == "opening_quarantined_rows");
+        var audit = await persistence.ReadAuditAsync(context, "opening-balance", created.Id);
+        Assert.Contains(audit, item => item.OperationId == "inventory.opening.post" && item.Decision == "Failed");
+    }
+
+    [Fact]
+    public async Task Opening_partial_quarantine_fails_closed_without_partial_movement()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        await EnsureInventoryCreatedAsync(options, context);
+
+        var created = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.CreateOpeningBalanceAsync(
+            context,
+            OpeningCommand(
+                "opening-partial",
+                [OpeningRow(5m, "valid-line"), OpeningRow(3m, "invalid-line", validationCode: "invalid_quantity")],
+                idempotencyKey: "opening-partial-key")));
+        Assert.Equal(1, created.ValidRowCount);
+        Assert.Equal(1, created.QuarantinedRowCount);
+
+        var validated = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.ValidateOpeningBalanceAsync(
+            context, created.Id, created.Version, Actor, "validate partial", "partial-validate", "partial-validate-key", "partial-validate-fingerprint"));
+        Assert.Equal(InventoryOpeningBalanceStatus.Validated, validated.Status);
+        Assert.Contains(validated.Rows, item => item.ValidationCode == "invalid_quantity");
+
+        Assert.Null(await persistence.PostOpeningBalanceAsync(
+            context, validated.Id, validated.Version, Actor, "post partial", "partial-post", "partial-post-key", "partial-post-fingerprint"));
+        var availability = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(
+            context,
+            new InventoryScope(TenantA, CompanyA, null, WarehouseA),
+            ProductA,
+            UnitA,
+            null,
+            Product(),
+            Warehouse()));
+        Assert.Equal(0m, availability.OnHandQuantity);
+        Assert.Empty(await persistence.ListMovementsAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseA)));
+    }
+
+    [Fact]
+    public async Task Opening_source_identity_is_durable_per_Tenant_and_distinct_rows_remain_valid()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var tenantAContext = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var tenantBContext = Context(TenantB, new ScopeReference($"Warehouse:{WarehouseB:D}"));
+        var persistence = new InventoryPersistence(options);
+        await EnsureInventoryCreatedAsync(options, tenantAContext);
+
+        var first = await CreateAndPostOpeningAsync(
+            persistence,
+            tenantAContext,
+            OpeningCommand("same-source", [OpeningRow(5m, "line-1")], idempotencyKey: "source-a-1"));
+        var secondTenant = await CreateAndPostOpeningAsync(
+            persistence,
+            tenantBContext,
+            OpeningCommand("same-source", [OpeningRow(5m, "line-1", product: Product(TenantB), tenantId: TenantB)], tenantId: TenantB, warehouseId: WarehouseB, idempotencyKey: "source-b-1"));
+
+        Assert.NotEqual(first.Id, secondTenant.Id);
+        Assert.Single(await persistence.ListMovementsAsync(tenantAContext, new InventoryScope(TenantA, CompanyA, null, WarehouseA)));
+        Assert.Single(await persistence.ListMovementsAsync(tenantBContext, new InventoryScope(TenantB, CompanyA, null, WarehouseB)));
+
+        var duplicateLater = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.CreateOpeningBalanceAsync(
+            tenantAContext,
+            OpeningCommand("same-source", [OpeningRow(7m, "line-1")], idempotencyKey: "source-a-2")));
+        Assert.Equal(InventoryOpeningRowStatus.Quarantined, Assert.Single(duplicateLater.Rows).Status);
+        Assert.Equal("duplicate_source_row", duplicateLater.Rows[0].ValidationCode);
+        Assert.Null(await persistence.PostOpeningBalanceAsync(
+            tenantAContext,
+            duplicateLater.Id,
+            duplicateLater.Version,
+            Actor,
+            "duplicate later post",
+            "source-a-2-post",
+            "source-a-2-post-key",
+            "source-a-2-post-fingerprint"));
+    }
+
+    [Fact]
+    public async Task Opening_distinct_source_lines_for_same_stock_identity_post_independently()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        await EnsureInventoryCreatedAsync(options, context);
+
+        var posted = await CreateAndPostOpeningAsync(
+            persistence,
+            context,
+            OpeningCommand(
+                "opening-distinct-lines",
+                [OpeningRow(4m, "line-1"), OpeningRow(6m, "line-2")],
+                idempotencyKey: "opening-distinct-lines-key"));
+
+        Assert.Equal(InventoryOpeningBalanceStatus.Posted, posted.Status);
+        Assert.All(posted.Rows, item => Assert.Equal(InventoryOpeningRowStatus.Posted, item.Status));
+        Assert.All(posted.Rows, item => Assert.Equal("EA", item.UnitOfMeasureCode));
+        var movements = await persistence.ListMovementsAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseA));
+        Assert.Equal(2, movements.Count);
+        Assert.Equal(10m, movements.Sum(item => item.Quantity));
+    }
+
+    [Fact]
+    public async Task Opening_correction_blocks_when_active_reservations_would_become_unsupported()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureInventoryCreatedAsync(options, context);
+
+        var posted = await CreateAndPostOpeningAsync(
+            persistence,
+            context,
+            OpeningCommand("opening-reserved-correction", [OpeningRow(10m, "line-1")], idempotencyKey: "reserved-opening-key"));
+        var reservation = Assert.IsType<InventoryReservationRecord>(await persistence.CreateReservationAsync(
+            context,
+            ReservationCommand(scope, 7m, "reserved-correction", "reserved-correction-key"),
+            10m));
+
+        var correction = await persistence.CorrectOpeningBalanceAsync(
+            context,
+            posted.Id,
+            posted.Version,
+            Actor,
+            "must preserve reservation",
+            "reserved-correction-action",
+            "reserved-correction-action-key",
+            "reserved-correction-action-fingerprint");
+        Assert.Null(correction);
+        var availability = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(
+            context, scope, ProductA, UnitA, null, Product(), Warehouse()));
+        Assert.Equal(10m, availability.OnHandQuantity);
+        Assert.Equal(7m, availability.ReservedQuantity);
+        Assert.Equal(3m, availability.AvailableQuantity);
+        Assert.Single(await persistence.ListMovementsAsync(context, scope));
+        Assert.Contains(await persistence.ReadOpeningHistoryAsync(context, posted.Id), item => item.Action == "correction-blocked");
+        Assert.Contains(await persistence.ReadAuditAsync(context, "opening-balance", posted.Id), item => item.Decision == "Failed");
+        Assert.Equal(InventoryReservationStatus.Active, reservation.Status);
+    }
+
+    [Fact]
+    public async Task Opening_correction_reverses_all_rows_cumulatively_for_one_stock_identity()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureInventoryCreatedAsync(options, context);
+
+        var posted = await CreateAndPostOpeningAsync(
+            persistence,
+            context,
+            OpeningCommand(
+                "opening-cumulative-correction",
+                [OpeningRow(4m, "line-1"), OpeningRow(6m, "line-2")],
+                idempotencyKey: "cumulative-opening-key"));
+        var corrected = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.CorrectOpeningBalanceAsync(
+            context,
+            posted.Id,
+            posted.Version,
+            Actor,
+            "reverse cumulative opening",
+            "cumulative-correction",
+            "cumulative-correction-key",
+            "cumulative-correction-fingerprint"));
+
+        Assert.Equal(InventoryOpeningBalanceStatus.Corrected, corrected.Status);
+        var movements = await persistence.ListMovementsAsync(context, scope);
+        Assert.Equal(4, movements.Count);
+        Assert.Equal(10m, movements.Where(item => item.Direction == InventoryMovementDirection.Inbound).Sum(item => item.Quantity));
+        Assert.Equal(10m, movements.Where(item => item.Direction == InventoryMovementDirection.Outbound).Sum(item => item.Quantity));
+        Assert.Equal(2, movements.Count(item => item.SourceType == InventoryMovementSourceType.Correction && item.CorrectionOfMovementId.HasValue));
+        var availability = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(
+            context, scope, ProductA, UnitA, null, Product(), Warehouse()));
+        Assert.Equal(0m, availability.OnHandQuantity);
+        Assert.Equal(0m, availability.ReservedQuantity);
+        Assert.Equal(0m, availability.AvailableQuantity);
+    }
+
+    [Fact]
+    public async Task Concurrent_reservations_use_independent_contexts_without_over_allocation()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"mesp-inventory-{Guid.NewGuid():N}.db");
+        try
+        {
+            var connectionString = $"Data Source={databasePath};Cache=Shared;Pooling=False;Default Timeout=30";
+            var options = new DbContextOptionsBuilder().UseSqlite(connectionString).Options;
+            var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+            var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+            await EnsureInventoryCreatedAsync(options, context);
+            await using (var db = new InventoryDbContext(options, context.TenantContext))
+            {
+                db.StockMovements.Add(new InventoryStockMovementEntity(
+                    new TenantId(TenantA), Guid.NewGuid(), CompanyA, null, WarehouseA, "WH-A", "Warehouse A",
+                    ProductA, "SKU-A", "Product A", UnitA, "EA", InventoryMovementDirection.Inbound, 10m, 1m, "SAR", null,
+                    InventoryMovementSourceType.OpeningBalance, Guid.NewGuid(), Guid.NewGuid(), null,
+                    DateOnly.FromDateTime(DateTime.UtcNow), Actor, "concurrent-seed", DateTimeOffset.UtcNow));
+                await db.SaveChangesAsync();
+            }
+
+            using var barrier = new Barrier(2);
+            var firstPersistence = new InventoryPersistence(options);
+            var secondPersistence = new InventoryPersistence(options);
+            var firstTask = Task.Run(async () =>
+            {
+                barrier.SignalAndWait();
+                return await firstPersistence.CreateReservationAsync(
+                    context,
+                    ReservationCommand(scope, 7m, "concurrent-1", "concurrent-key-1"),
+                    10m);
+            });
+            var secondTask = Task.Run(async () =>
+            {
+                barrier.SignalAndWait();
+                return await secondPersistence.CreateReservationAsync(
+                    context,
+                    ReservationCommand(scope, 7m, "concurrent-2", "concurrent-key-2"),
+                    10m);
+            });
+
+            InventoryReservationRecord?[] results;
+            try
+            {
+                results = await Task.WhenAll(firstTask, secondTask);
+            }
+            catch (Exception exception)
+            {
+                Assert.Fail($"Concurrent reservation persistence must fail closed, not throw: {exception}");
+                return;
+            }
+
+            Assert.Contains(results, item => item is not null);
+            var reservations = await firstPersistence.ListReservationsAsync(context, scope);
+            Assert.True(reservations.Sum(item => item.ReservedQuantity) <= 10m);
+            var availability = Assert.IsType<InventoryAvailabilityRecord>(await firstPersistence.GetAvailabilityAsync(
+                context, scope, ProductA, UnitA, null, Product(), Warehouse()));
+            Assert.True(availability.ReservedQuantity <= availability.OnHandQuantity);
+            Assert.True(availability.AvailableQuantity >= 0m);
+        }
+        finally
+        {
+            if (File.Exists(databasePath))
+            {
+                File.Delete(databasePath);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Opening_source_fingerprint_index_rejects_two_consumed_rows_in_one_database_write()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        await EnsureInventoryCreatedAsync(options, context);
+
+        var first = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.CreateOpeningBalanceAsync(
+            context,
+            OpeningCommand("race-source", [OpeningRow(2m, "line-1")], idempotencyKey: "race-source-1")));
+        var second = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.CreateOpeningBalanceAsync(
+            context,
+            OpeningCommand("race-source", [OpeningRow(3m, "line-1")], idempotencyKey: "race-source-2")));
+        Assert.Equal(first.Rows[0].SourceFingerprint, second.Rows[0].SourceFingerprint);
+
+        await using var db = new InventoryDbContext(options, context.TenantContext);
+        var rows = await db.OpeningBalanceRows
+            .Where(item => item.SourceFingerprint == first.Rows[0].SourceFingerprint)
+            .ToListAsync();
+        Assert.Equal(2, rows.Count);
+        foreach (var row in rows)
+        {
+            row.MarkPosted(DateTimeOffset.UtcNow);
+        }
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+    }
+
+    [Fact]
+    public async Task Master_data_product_provider_persists_authoritative_active_uom_code()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var tenantContext = TenantContext.ForOrdinaryMembership(new TenantId(TenantA), new MembershipReference(Guid.NewGuid()), actorId: Actor);
+        var categoryId = Guid.NewGuid();
+        await using (var db = new MasterDataDbContext(options, tenantContext))
+        {
+            await db.Database.EnsureCreatedAsync();
+            db.Categories.Add(new MasterDataCategoryEntity(categoryId, new TenantId(TenantA), "GENERAL", new LocalizedName("General", null), null));
+            db.UnitsOfMeasure.Add(new MasterDataUnitOfMeasureEntity(UnitA, new TenantId(TenantA), "EA", new LocalizedName("Each", null)));
+            db.Products.Add(new MasterDataProductEntity(
+                ProductA,
+                new TenantId(TenantA),
+                "SKU-A",
+                new LocalizedName("Product A", null),
+                null,
+                categoryId,
+                UnitA,
+                null,
+                true,
+                true,
+                true));
+            await db.SaveChangesAsync();
+        }
+
+        var provider = new MasterDataInventoryProductProvider(
+            new MasterDataCatalogPersistence(options),
+            new MasterDataCatalogPersistence(options));
+        var context = Context(TenantA, null);
+        var product = await provider.FindAsync(context, ProductA);
+
+        Assert.NotNull(product);
+        Assert.Equal("EA", product.BaseUnitOfMeasureCode);
+        Assert.Equal(UnitA, product.BaseUnitOfMeasureId);
+        Assert.True(product.IsInventoryRelevant);
+    }
+
+    [Fact]
+    public async Task Inventory_service_tracking_boolean_fails_closed_for_both_modes()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var warehouseProvider = new ConfiguredInventoryWarehouseProvider([Warehouse()]);
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"), "tenant.inventory.reservation.create");
+        var request = new InventoryReservationCreateRequest(
+            CompanyA,
+            null,
+            WarehouseA,
+            ProductA,
+            UnitA,
+            1m,
+            "Demand",
+            "TRACKING-TEST",
+            true);
+
+        var trackingEnabledService = new InventoryService(
+            new InventoryPersistence(options),
+            new InventoryResourceAuthorizationService(),
+            warehouseProvider,
+            new StaticInventoryProductProvider(Product() with { TrackingEnabled = true }));
+        var required = await trackingEnabledService.CreateReservationAsync(context, request, "tracking-required-key");
+        Assert.False(required.Succeeded);
+        Assert.Equal("tracking_identity_required", required.Code);
+
+        var trackingDisabledService = new InventoryService(
+            new InventoryPersistence(options),
+            new InventoryResourceAuthorizationService(),
+            warehouseProvider,
+            new StaticInventoryProductProvider(Product() with { TrackingEnabled = false }));
+        var rejected = await trackingDisabledService.CreateReservationAsync(
+            context,
+            request with { TrackingIdentity = "SERIAL-1" },
+            "tracking-disabled-key");
+        Assert.False(rejected.Succeeded);
+        Assert.Equal("tracking_not_enabled", rejected.Code);
+    }
+
+    private static async Task EnsureInventoryCreatedAsync(DbContextOptions options, InventoryRequestContext context)
+    {
+        await using var db = new InventoryDbContext(options, context.TenantContext);
+        await db.Database.EnsureCreatedAsync();
+    }
+
+    private static async Task<InventoryOpeningBalanceRecord> CreateAndPostOpeningAsync(
+        InventoryPersistence persistence,
+        InventoryRequestContext context,
+        InventoryOpeningBalanceCommand command)
+    {
+        var created = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.CreateOpeningBalanceAsync(context, command));
+        var validated = Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.ValidateOpeningBalanceAsync(
+            context, created.Id, created.Version, Actor, "validate", $"validate-{command.Id:N}", $"validate-{command.Id:N}", $"validate-{command.Id:N}"));
+        return Assert.IsType<InventoryOpeningBalanceRecord>(await persistence.PostOpeningBalanceAsync(
+            context, validated.Id, validated.Version, Actor, "post", $"post-{command.Id:N}", $"post-{command.Id:N}", $"post-{command.Id:N}"));
+    }
+
+    private static InventoryOpeningBalanceCommand OpeningCommand(
+        string sourceReference,
+        IReadOnlyList<InventoryOpeningBalanceRowCommand> rows,
+        Guid tenantId = default,
+        Guid warehouseId = default,
+        Guid? id = null,
+        string? idempotencyKey = null,
+        DateTimeOffset? extractedAt = null)
+    {
+        tenantId = tenantId == Guid.Empty ? TenantA : tenantId;
+        warehouseId = warehouseId == Guid.Empty ? WarehouseA : warehouseId;
+        var warehouse = Warehouse(tenantId, warehouseId);
+        return new InventoryOpeningBalanceCommand(
+            id ?? Guid.NewGuid(),
+            new InventoryScope(tenantId, CompanyA, null, warehouseId),
+            warehouse.Code,
+            warehouse.Name,
+            new DateOnly(2026, 8, 21),
+            "Inventory Operations",
+            "Inventory Import",
+            extractedAt ?? new DateTimeOffset(2026, 8, 21, 8, 0, 0, TimeSpan.Zero),
+            sourceReference,
+            rows,
+            Actor,
+            new DateTimeOffset(2026, 8, 21, 8, 5, 0, TimeSpan.Zero),
+            $"opening-{Guid.NewGuid():N}",
+            idempotencyKey,
+            $"request-{Guid.NewGuid():N}");
+    }
+
+    private static InventoryOpeningBalanceRowCommand OpeningRow(
+        decimal quantity,
+        string? sourceLineReference,
+        Guid tenantId = default,
+        Guid productId = default,
+        Guid unitOfMeasureId = default,
+        InventoryProductReference? product = null,
+        string? validationCode = null) => new(
+        Guid.NewGuid(),
+        productId == Guid.Empty ? ProductA : productId,
+        unitOfMeasureId == Guid.Empty ? UnitA : unitOfMeasureId,
+        quantity,
+        10m,
+        "SAR",
+        null,
+        sourceLineReference,
+        product ?? Product(tenantId == Guid.Empty ? TenantA : tenantId, productId == Guid.Empty ? ProductA : productId, unitOfMeasureId == Guid.Empty ? UnitA : unitOfMeasureId),
+        validationCode);
+
+    private static InventoryReservationCommand ReservationCommand(
+        InventoryScope scope,
+        decimal requestedQuantity,
+        string sourceReference,
+        string idempotencyKey,
+        string? trackingIdentity = null) => new(
+        Guid.NewGuid(),
+        scope,
+        ProductA,
+        UnitA,
+        requestedQuantity,
+        "Demand",
+        sourceReference,
+        true,
+        trackingIdentity,
+        Product(scope.TenantId),
+        Warehouse(scope.TenantId, scope.WarehouseId).Code,
+        Warehouse(scope.TenantId, scope.WarehouseId).Name,
+        Actor,
+        DateTimeOffset.UtcNow,
+        $"reservation-{Guid.NewGuid():N}",
+        idempotencyKey,
+        $"fingerprint-{idempotencyKey}");
+
+    private static InventoryProductReference Product(
+        Guid tenantId = default,
+        Guid productId = default,
+        Guid unitOfMeasureId = default) => new(
+        tenantId == Guid.Empty ? TenantA : tenantId,
+        productId == Guid.Empty ? ProductA : productId,
+        "SKU-A",
+        "Product A",
+        unitOfMeasureId == Guid.Empty ? UnitA : unitOfMeasureId,
+        "EA",
+        true,
+        true,
+        false);
+
+    private static InventoryWarehouseOption Warehouse(Guid tenantId = default, Guid warehouseId = default) => new(
+        tenantId == Guid.Empty ? TenantA : tenantId,
+        CompanyA,
+        null,
+        warehouseId == Guid.Empty ? WarehouseA : warehouseId,
+        warehouseId == WarehouseB ? "WH-B" : "WH-A",
+        warehouseId == WarehouseB ? "Warehouse B" : "Warehouse A");
+
+    private static InventoryRequestContext Context(Guid tenantId, ScopeReference? scope, string permission = "tenant.inventory.ledger.view") =>
         new InventoryTenantContextResolver().Resolve(
             FoundationRequestContext.ForTenant(
                 Actor,
                 Guid.Parse("55555555-5555-5555-5555-555555555555"),
                 TenantContext.ForOrdinaryMembership(new TenantId(tenantId), new MembershipReference(Guid.NewGuid()), scope, actorId: Actor),
-                "tenant.inventory.ledger.view")).Context!;
+                permission)).Context!;
+
+    private sealed class StaticInventoryProductProvider(InventoryProductReference product) : IInventoryProductProvider
+    {
+        public Task<InventoryProductReference?> FindAsync(InventoryRequestContext context, Guid productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<InventoryProductReference?>(product.TenantId == context.TenantId.Value && product.ProductId == productId ? product : null);
+    }
 }

@@ -78,6 +78,7 @@ export interface InventoryOpeningRow {
   validationCode: string | null;
   postedAt: string | null;
   version: string;
+  sourceFingerprint: string;
 }
 
 export interface InventoryOpeningBalance {

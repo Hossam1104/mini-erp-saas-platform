@@ -251,12 +251,26 @@ public sealed class NoInventoryProductProvider : IInventoryProductProvider
         Task.FromResult<InventoryProductReference?>(null);
 }
 
-public sealed class MasterDataInventoryProductProvider(IProductIdentityPersistence products) : IInventoryProductProvider
+public sealed class MasterDataInventoryProductProvider(
+    IProductIdentityPersistence products,
+    IMasterDataCatalogPersistence catalog) : IInventoryProductProvider
 {
     public async Task<InventoryProductReference?> FindAsync(InventoryRequestContext context, Guid productId, CancellationToken cancellationToken = default)
     {
         var product = await products.FindProductAsync(context.TenantContext, productId, cancellationToken);
         if (product is null)
+        {
+            return null;
+        }
+
+        var baseUnit = await catalog.FindUnitOfMeasureAsync(
+            context.TenantContext,
+            product.BaseUnitOfMeasureId,
+            cancellationToken);
+        if (baseUnit is null
+            || baseUnit.TenantId != context.TenantId
+            || baseUnit.LifecycleState != Contracts.Modules.MasterData.MasterDataLifecycleState.Active
+            || string.IsNullOrWhiteSpace(baseUnit.Code))
         {
             return null;
         }
@@ -267,7 +281,7 @@ public sealed class MasterDataInventoryProductProvider(IProductIdentityPersisten
             product.Sku,
             product.Name.English ?? product.Name.Arabic ?? product.Sku,
             product.BaseUnitOfMeasureId,
-            string.Empty,
+            baseUnit.Code,
             product.LifecycleState == Contracts.Modules.MasterData.MasterDataLifecycleState.Active,
             product.IsInventoryRelevant,
             product.TrackingEnabled);
@@ -302,6 +316,38 @@ public sealed record InventoryOpeningBalanceRowCommand(
     string? SourceLineReference,
     InventoryProductReference? Product,
     string? ValidationCode);
+
+public static class InventorySourceIdentity
+{
+    public static string Create(
+        TenantId tenantId,
+        InventoryOpeningBalanceCommand command,
+        string? sourceLineReference)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var canonical = new
+        {
+            TenantId = tenantId.Value,
+            command.Scope.CompanyId,
+            command.Scope.BranchId,
+            command.Scope.WarehouseId,
+            command.AsOfDate,
+            SourceOwner = Normalize(command.SourceOwner),
+            SourceSystem = Normalize(command.SourceSystem),
+            command.ExtractedAt,
+            SourceReference = Normalize(command.SourceReference),
+            SourceLineReference = Normalize(sourceLineReference)
+        };
+
+        return Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(canonical))))
+            .ToLowerInvariant();
+    }
+
+    private static string? Normalize(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
 
 public sealed record InventoryReservationCommand(
     Guid Id,
