@@ -1,57 +1,62 @@
 # Current State
 
-## Current authoritative position - 21 August 2026 (MESP-128 SOL P1 stock-integrity remediation complete; FULL reacceptance handoff)
+## Current authoritative position - 22 August 2026 (MESP-128 Opus stock-integrity delta remediation complete; delta-only review handoff)
 
 MESP-128 remains bounded to the Inventory-owned physical-stock foundation on
 branch `feat/MESP-128-inventory-ledger-foundation`, based exactly on main
-`f54b6abe383edd304911eb0a53db43fafdcb3066`. The required remediation starting
-head was `cec9fee911a4d4ba14867a358f852ebd36a89fba`; implementation commit
-`5247733511dce791cf99031b421589d2e83865b1` is the final remediation/test
-commit sequence applying the SOL P1 findings. Draft PR #72 remains open, Draft, and
-unmerged. Jira remains read-only; no Jira writes were performed.
+`f54b6abe383edd304911eb0a53db43fafdcb3066`. This bounded delta session started
+from the synchronized branch head
+`7e1df0f9a4f27f9f7e0dad91170accd8247c8236`; implementation commit
+`3a419377bfa09047f5b849020f8a6dc793bc868c` contains the bounded source,
+migration, and regression changes. Draft PR #72 remains open,
+Draft, and unmerged. Jira remains read-only; no Jira writes were performed.
 
-The remediation separates durable opening-source identity from request
-idempotency. A deterministic Tenant/scope/source-owner/source-system/
-extracted-at/source-reference/as-of-date/source-line fingerprint now protects
-same-batch and later-batch repeats, while a filtered unique database index
-enforces the consumed-source race boundary. Any unresolved row quarantine
-blocks the entire opening post and preserves failed history/audit evidence.
-Opening correction acquires the existing stock-identity concurrency anchors in
-deterministic order, checks cumulative reversals against active Reserved, and
-keeps the check and linked outbound movements in one transaction. Reservation
-creation and release/reduction use the same anchor seam. The authoritative
-active Master Data UOM code is now required for new Inventory transactions and
-is snapshotted into movements/reservations.
+The business opening-source fingerprint now excludes `ExtractedAt`, while
+retaining extraction time as immutable evidence. Therefore identical business
+provenance with different extraction timestamps is still one duplicate and
+cannot post twice; distinct stable `SourceLineReference` values remain
+distinct. The bounded single-row Angular workspace requires the user source
+reference and sends that same value as the row source-line reference, with no
+invented `line-1`. Future multi-row import UI must carry stable source-line
+references from its source context.
 
-The formal Inventory migration history now includes
-`20260821113311_MESP128InventoryLedgerFoundation` and additive
-`20260821132738_MESP128StockIntegrityRemediation`. REST/OpenAPI/Foundation
+SQL Server contention classification is narrow: only errors 1205 and 1222,
+including nested provider exceptions, become the existing conflict/HTTP 409
+outcome. Genuine persistence failures remain unavailable/HTTP 503. Shared
+stock-identity anchors retain Serializable locking and now perform a real
+provider-independent mutable `TouchSequence` write; SQL Server receives an
+actual UPDATE and SQLite exercises the same seam. The nullable-Branch unique
+stock-identity index is explicitly unfiltered, so SQL Server enforces repeated
+`BranchId IS NULL` identities.
+
+The formal additive Inventory migration history now includes
+`20260821113311_MESP128InventoryLedgerFoundation`,
+`20260821132738_MESP128StockIntegrityRemediation`, and
+`20260821213832_MESP128OpusStockIntegrityRemediation`. REST/OpenAPI/Foundation
 metadata, Tenant query filters, audit/history, durable replay/conflict,
 SQLite compatibility, and the bilingual EN/AR RTL workspace remain intact.
 The existing Product `TrackingEnabled` boolean remains the complete tracking
-rule: enabled requires identity and disabled rejects identity. Batch/lot/
-serial/manufacturing/expiry mode enforcement remains an upstream Product-model
-limitation; no tracking-kind or barcode/statutory subsystem was invented.
+rule; batch/lot/serial/manufacturing/expiry mode enforcement remains an
+upstream Product-model limitation.
 
-Final validation is clean: Release build 0 warnings/0 errors; focused Inventory
-coverage 15/15; canonical full backend 865/865 passed, 0 skipped with
-disposable LocalDB safety execution and unchanged persistent connection;
-Angular 241/241 across 32 spec files; production initial bundle 499.97 kB
-with Inventory lazy chunk 25.83 kB; focused Chromium 2/2; full Chromium
-26/26; both npm audits 0 vulnerabilities; disposable SQL migration apply,
-rollback, reapply, and drop all succeeded; and git diff --check is clean.
+Validation is clean: Release build 0 warnings/0 errors; focused Inventory
+coverage 17/17; SQL Server safety coverage 26/26; canonical full backend
+871/871 passed, 0 skipped with disposable LocalDB safety execution; Angular
+241/241 across 32 spec files; production initial bundle 499.97 kB with
+Inventory lazy chunk 25.82 kB; focused Chromium 2/2; full Chromium 26/26;
+both npm audits 0 vulnerabilities; disposable SQL migration apply, rollback,
+reapply, and drop all succeeded; and final git diff --check is clean.
 Protected `frontend/assets` remains untouched.
 
 Headline production percentages remain unchanged at approximately 47% overall
-and 41% Procurement/P2P because this session is correctness remediation, not
-new headline scope. No Goods Receipt authoritative Inventory posting,
-Warehouse Transfer, InTransit lifecycle, Supplier/Customer Return physical
-posting, Stock Adjustment, Inventory Count, Stock Issue, MWA valuation,
-AP/AR/GL, tax accounting, payment, external/statutory, production cutover,
-DNS/TLS, supplier portal, or Wafra-specific core behavior was added. MESP-129,
-MESP-130, and MESP-131 remain downstream. The next action is independent Sol
-reacceptance of this complete branch and Draft PR; do not merge or start
-downstream implementation from this handoff.
+and 41% Procurement/P2P because this is correctness remediation, not new
+headline scope. No Goods Receipt authoritative Inventory posting, Warehouse
+Transfer, InTransit lifecycle, Supplier/Customer Return physical posting,
+Stock Adjustment, Inventory Count, Stock Issue, MWA valuation, AP/AR/GL, tax
+accounting, payment, external/statutory, production cutover, DNS/TLS, supplier
+portal, or Wafra-specific core behavior was added. MESP-129 and all downstream
+implementation remain unstarted. The next independent review is delta-only;
+do not merge or start downstream implementation from this handoff.
 
 ## Current authoritative position - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
 

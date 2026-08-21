@@ -1,20 +1,23 @@
 # Mini ERP backend foundation
 
-> **Current MESP-128 runtime overlay - 21 August 2026.** The backend carries
+> **Current MESP-128 runtime overlay - 22 August 2026.** The backend carries
 > the bounded Inventory-owned append-only stock ledger foundation plus the SOL
-> P1 remediation: deterministic Tenant-safe opening-source fingerprints
-> independent of request idempotency, filtered unique consumed-source race
-> protection, fail-closed quarantine posting, reservation-safe cumulative
-> correction using shared stock-identity anchors, and authoritative active
+> P1 remediation and Opus delta remediation: deterministic Tenant-safe
+> opening-source fingerprints independent of extraction time and request
+> idempotency, filtered unique consumed-source race protection, fail-closed
+> quarantine posting, reservation-safe cumulative correction using shared
+> stock-identity anchors, provider-independent mutable anchor touches, narrow
+> SQL Server 1205/1222 contention classification, and authoritative active
 > Master Data UOM-code snapshots. No Goods Receipt stock posting, transfer,
 > Stock Adjustment/Count/Issue, MWA, Finance/AP/GL, payment,
 > external/statutory, or Wafra-specific behavior is included.
 
 > **MESP-128 validation.** Release build is **0 warnings / 0 errors**;
-> focused Inventory module/persistence/architecture coverage is **15/15**; the
-> canonical disposable-LocalDB backend runner passes **865/865, 0 skipped**;
-> Angular passes **241/241 across 32 spec files**; production build is
-> **499.97 kB initial** with a **25.83 kB Inventory lazy chunk**; focused
+> focused Inventory module/persistence/architecture coverage is **17/17**;
+> SQL Server safety coverage is **26/26**; the canonical disposable-LocalDB
+> backend runner passes **871/871, 0 skipped**; Angular passes **241/241 across
+> 32 spec files**; production build is **499.97 kB initial** with a **25.82 kB
+> Inventory lazy chunk**; focused
 > Chromium is **2/2**, full Chromium is **26/26**, and both npm audits report
 > **0 vulnerabilities**. The persistent runtime connection is unchanged,
 > disposable migration apply/rollback/reapply/drop passed, protected

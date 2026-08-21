@@ -1,4 +1,4 @@
-# MESP-128 — Sol Acceptance Prompt: Inventory Ledger Foundation
+# MESP-128 — Sol Delta Acceptance Handoff: Opus Stock-Integrity Remediation
 
 Reviewer: GPT-5.6 Sol
 
@@ -12,7 +12,9 @@ Exact main base SHA: f54b6abe383edd304911eb0a53db43fafdcb3066
 
 Initial implementation commit: 9893b41
 
-SOL P1 remediation/test commit: 5247733511dce791cf99031b421589d2e83865b1
+Required remediation starting head: 7e1df0f9a4f27f9f7e0dad91170accd8247c8236
+
+SOL delta remediation implementation commit: `3a41937` (`3a419377bfa09047f5b849020f8a6dc793bc868c`)
 
 Jira: MESP-128 is IN PROGRESS under activation comment 11745. Jira,
 Confluence, and other Jira tracker writes are prohibited in this acceptance
@@ -22,35 +24,76 @@ Delivery state: the branch must remain open, Draft, and unmerged. Exactly one
 Draft PR against main is permitted. Do not merge, rebase, force-push, create a
 second PR, or start MESP-129/MESP-130/MESP-131.
 
-## SOL P1 remediation completion / FULL re-acceptance handoff
+## SOL delta remediation completion / DELTA-ONLY reacceptance handoff
 
-The required stock-integrity remediation was implemented from the exact
-starting head `cec9fee911a4d4ba14867a358f852ebd36a89fba` without rebase, merge,
-force-push, Jira writes, or downstream capability work. The remediation adds
-durable provenance fingerprints independent of request idempotency, a filtered
-unique consumed-source database boundary, fail-closed posting for any
-quarantined opening row, cumulative reservation-safe correction serialized by
-the existing stock-identity anchors, authoritative active Master Data UOM
-codes, and executable coverage for the required duplicate/replay/conflict,
-Tenant/source, UOM, tracking, correction, and real independent-context race
-cases.
+This bounded session applies only the accepted Opus stock-integrity deltas to
+the synchronized MESP-128 branch. It started at
+`7e1df0f9a4f27f9f7e0dad91170accd8247c8236`, without rebase, merge,
+force-push, Jira writes, or downstream capability work. The branch remains
+open, Draft, and unmerged; no second PR is permitted.
 
-Final implementation evidence: focused Inventory **15/15**; full backend
-**865/865 passed, 0 skipped** including disposable LocalDB SQL safety;
-Release build **0 warnings / 0 errors**; Angular **241/241 across 32 spec
-files**; production initial **499.97 kB** and Inventory lazy chunk **25.83
-kB**; focused Chromium **2/2**; full Chromium **26/26**; both npm audits **0
-vulnerabilities**; formal migration apply/rollback/reapply/drop passed; and `git diff --check`
-is clean. The migration history includes
-`20260821132738_MESP128StockIntegrityRemediation` after the original
-`20260821113311_MESP128InventoryLedgerFoundation` migration.
+Accepted delta A — opening-source identity and frontend truthfulness:
 
-The current Product contract still provides only boolean `TrackingEnabled`, so
-enabled identity-required and disabled identity-rejected semantics are
-enforced; complete batch/lot/serial/manufacturing/expiry mode enforcement
-remains an upstream Product-model limitation. Production percentages remain
-unchanged because this is correctness remediation. This file is the FULL Sol
-re-acceptance handoff; do not create an Opus prompt yet.
+- `ExtractedAt` remains immutable evidence on the opening batch/row but is no
+  longer part of the business provenance fingerprint.
+- Same Tenant/scope/source-owner/source-system/source-reference/as-of-date/
+  source-line business provenance with different extraction timestamps is a
+  duplicate and cannot post twice.
+- Distinct stable `SourceLineReference` values remain distinct business rows.
+- The bounded single-row Angular workspace requires one user source
+  reference and sends that same value as the batch source reference and row
+  source-line reference. It no longer invents `line-1`; a future multi-row
+  import UI must carry a stable source-line reference from its source context
+  for every row.
+
+Accepted delta B — SQL Server contention and persistence classification:
+
+- Only SQL Server errors 1205 and 1222, including nested provider exceptions,
+  are classified as deterministic contention and surfaced as the existing
+  conflict/HTTP 409 outcome.
+- Genuine persistence failures remain unavailable/HTTP 503; arbitrary
+  exceptions are not converted to conflicts.
+- Shared stock-identity anchors still use Serializable transactions, and each
+  anchor acquisition performs a provider-independent mutable `TouchSequence`
+  write. SQL Server therefore receives a real UPDATE rather than relying on
+  application assignment to a rowversion value; SQLite exercises the same
+  mutable-write seam.
+
+Accepted delta C — database/index and executable regression evidence:
+
+- The nullable-Branch stock-identity unique index is explicitly unfiltered;
+  SQL Server enforces uniqueness for repeated `BranchId IS NULL` identities.
+- The additive migration is
+  `20260821213832_MESP128OpusStockIntegrityRemediation`, after
+  `20260821113311_MESP128InventoryLedgerFoundation` and
+  `20260821132738_MESP128StockIntegrityRemediation`.
+- Focused Inventory coverage is **17/17**; SQL Server safety coverage is
+  **26/26**, including SQLite and LocalDB anchor-touch persistence, database
+  enforcement of the nullable-Branch uniqueness rule, actual SQL contention,
+  and overlapping reservation non-overallocation.
+- Full backend coverage is **871/871 passed, 0 skipped**; Release build is
+  **0 warnings / 0 errors**; Angular is **241/241 across 32 spec files**;
+  production bundle is **499.97 kB initial / 25.82 kB Inventory lazy**;
+  focused Chromium is **2/2** and full Chromium is **26/26**; both npm audits
+  report **0 vulnerabilities**; migration apply/rollback/reapply/drop passed;
+  and the final `git diff --check` must remain clean.
+
+This is correctness remediation within the already delivered MESP-128
+capability, so headline production percentages remain approximately **47%
+overall / 41% Procurement-P2P**. No Goods Receipt authoritative Inventory
+posting, transfer, InTransit, Stock Adjustment, Count, Issue, valuation,
+Finance/AP/AR/GL, tax/payment, external/statutory, production cutover, or
+Wafra-specific core behavior was added. No Jira writes were performed. No
+MESP-129 or downstream implementation was started.
+
+The next independent review is **delta-only**: verify the accepted findings
+above against the final branch tip, additive migration/index semantics,
+provider-independent anchor writes, contention classification, stable source
+references, and the stated regression evidence. Do not recreate the former
+full MESP-128 Opus review prompt, merge the branch, or start downstream work.
+
+The earlier full Sol acceptance checklist below is historical context for the
+already-delivered foundation; this section is the current bounded handoff.
 
 ## Acceptance boundary
 
@@ -255,13 +298,14 @@ Do not accept or start any of the following as part of MESP-128:
 - ZATCA/FATOORA, external providers, supplier portal, advanced WMS,
   production cutover, DNS/TLS, or Wafra-specific core behavior.
 
-## Required validation
+## Required delta validation
 
 Run from the repository root:
 
     dotnet build backend/MiniErp.sln -c Release
 
     dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj -c Release --filter FullyQualifiedName~InventoryLedgerTests
+    dotnet test backend/tests/MiniErp.ArchitectureTests/MiniErp.ArchitectureTests.csproj -c Release --filter FullyQualifiedName~SqlServerSafetyTests
 
     scripts/Test-MiniErpBackend.ps1 -NoBuild:$false
 
@@ -280,14 +324,19 @@ Run from frontend:
 
 The initial production bundle must remain below the existing 500 kB budget;
 do not raise the budget. Also run git diff --check and git status. Verify
-frontend/assets has no changes.
+frontend/assets has no changes. Add focused regressions for identical business
+provenance with different extraction timestamps, distinct stable source-line
+references, SQLite and LocalDB anchor touches, nullable-Branch database
+uniqueness, actual SQL contention classification, and overlapping reservation
+non-overallocation. Validate the additive migration through apply,
+rollback, reapply, and drop.
 
-The completing implementation evidence is: Release build 0 warnings/0
-errors; focused Inventory 15/15; full backend 865/865 passed, 0 skipped;
-Angular 241/241 across 32 spec files; 499.97 kB initial bundle with 25.83 kB
-Inventory lazy chunk; focused Chromium 2/2; full Chromium 26/26; both npm
-audits 0 vulnerabilities; formal disposable migration apply/rollback/reapply/drop passed; and
-git diff --check clean.
+The completing delta evidence is: Release build 0 warnings/0 errors; focused
+Inventory 17/17; SQL Server safety 26/26; full backend 871/871 passed, 0
+skipped; Angular 241/241 across 32 spec files; 499.97 kB initial bundle with
+25.82 kB Inventory lazy chunk; focused Chromium 2/2; full Chromium 26/26; both
+npm audits 0 vulnerabilities; formal disposable migration
+apply/rollback/reapply/drop passed; and git diff --check clean.
 
 ## Sol decision and delivery rules
 
@@ -299,7 +348,10 @@ do not force-push, and do not start the next capability. Do not automatically
 request Opus from this handoff; any later independent stock-integrity review
 is a separate Owner/Sol routing decision after acceptance.
 
-Final acceptance report must state the base SHA, branch, implementation SHA,
-final SHA, single Draft PR number, migration identity, exact validation
-counts, any accepted limitation, and explicit confirmation that the branch
-remains unmerged with no Jira writes and no downstream implementation.
+Final delta acceptance report must state the base SHA, required remediation
+starting SHA, branch, implementation SHA, final SHA, single Draft PR number,
+the additive migration identity, exact delta validation counts, the accepted
+Product tracking limitation, and explicit confirmation that the branch
+remains unmerged with no Jira writes and no downstream implementation. The
+next independent review is delta-only; do not recreate the full MESP-128 Opus
+review prompt.
