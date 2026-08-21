@@ -2,10 +2,47 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-21 04:10 +03:00
+**Last Updated:** 2026-08-21 06:40 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
-**Overall Production-Ready Completion:** **~44%**
+**Overall Production-Ready Completion:** **~45%**
+
+## Current authoritative fast-track snapshot - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
+
+This snapshot records the bounded MESP-127 Supplier Return, correction,
+evidence, audit, and Procurement reporting implementation on branch
+`feat/MESP-127-supplier-return-corrections`, created from the exact synchronized
+main base `e5568c1ea186995dcc4f0cb0075b2f6b20a15064`. This is a genuine bounded
+Procurement capability increase, so the headline moves conservatively from
+~44% to ~45% overall and from ~39% to ~41% for Procurement/P2P. No Jira
+statistics or completion credit were inferred from ticket activity.
+
+Supplier Returns now preserve PO/PO-line, Supplier Confirmation, Goods Receipt/
+receipt-line, Supplier, Warehouse, Product/UOM, quantity, reason/condition,
+commercial outcome, private evidence-reference, correction/reversal lineage,
+authorization, and immutable Tenant/Company/Branch snapshots. Eligibility is
+server-derived from accepted receipt quantity less active non-reversed return
+quantity; rejected quantity and the non-additive MESP-125 damage overlay never
+become return quantity. Lifecycle actions, source-version touching,
+optimistic concurrency, durable idempotency, history/audit, Inventory handoff
+evidence, Finance correction-reference evidence, and operational report rows
+are included. No Inventory stock ledger/on-hand/valuation, Finance AP/GL/tax/
+payment posting, supplier balance, statutory, external, or downstream MESP-128+
+behavior was added.
+
+| Current control | Verified position |
+|---|---|
+| MESP-127 code | **Implementation commit `f8f6dd1d850a00a94955d69c8ebb1c2b4c6697a5`; tracker handoff baseline `ce39ce82121dd9484f06ce65ac3451b259854491`; Draft PR remains open/Draft/unmerged.** |
+| Production capability | **~45% overall; Procurement/P2P conservatively ~41%** after this additive bounded Supplier Return capability. |
+| Validation | Release build **0 warnings/0 errors**; focused Supplier Return architecture tests **3/3**; canonical backend **844/844 passed, 0 skipped** including the disposable LocalDB safety harness; Angular **239/239 across 31 spec files**; production build **494.71 kB initial / 57.40 kB Supplier Return lazy chunk**; focused Supplier Return Chromium **2/2**; full Chromium **24/24**; production-only and full npm audits **0 vulnerabilities**; `git diff --check` clean. |
+| Delivery boundaries | Formal additive migration `20260821031935_MESP127SupplierReturnEvidence`; protected `frontend/assets` untouched; no Jira writes; no MESP-128 or downstream implementation. |
+| Next exact session | **Sol acceptance of the complete MESP-127 branch and Draft PR.** Reverify the exact base, final SHA, accepted-only eligibility, concurrency/idempotency, Tenant/scope authorization, immutable correction/reversal lineage, private evidence references, downstream evidence-only boundaries, reporting truthfulness, REST/OpenAPI/migration integrity, and full validation evidence. Do not merge or start MESP-128. |
+
+## Progress history - 21 August 2026
+
+| Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
+|---|---|---:|---:|---|
+| 2026-08-21 | MESP-127 bounded Supplier Return capability complete: accepted-Goods-Receipt eligibility, return lifecycle, Inventory/Finance evidence-only handoffs, immutable source/correction lineage, private evidence references, durable audit/replay/concurrency, operational reporting, REST/OpenAPI/EF migration, and bilingual Angular workspace. | ~45% | ~41% | Release build 0/0; focused 3/3; canonical backend 844/844 including 22 disposable LocalDB SQL safety tests; Angular 239/239; production bundle 494.71 kB initial / 57.40 kB Supplier Return lazy; focused Chromium 2/2; full Chromium 24/24; both npm audits 0 vulnerabilities. Sol acceptance is next; branch/Draft PR remains unmerged; no Jira writes. |
 
 ## Current authoritative fast-track snapshot - 21 August 2026 (MESP-126 Opus P1 remediation complete; delta review handoff)
 
@@ -317,17 +354,17 @@ Every future execution prompt should include:
 |---|---:|
 | Product / Requirements Definition | **~45%** |
 | Architecture & Technical Foundation | **~90%** |
-| Backend Overall | **~67%** |
-| Database / Persistence Overall | **~60%** |
-| Frontend Overall | **~40%** |
+| Backend Overall | **~69%** |
+| Database / Persistence Overall | **~62%** |
+| Frontend Overall | **~42%** |
 | Automated Technical Safety Foundation | **~65%** |
-| Full End-to-End Business System | **~40%** |
+| Full End-to-End Business System | **~42%** |
 | Production Readiness | **~31%** |
 | **Remaining to Real Production** | **~58%** |
 
 ## Current management headline
 
-> **Mini ERP SaaS Platform Release 1 is approximately 42% complete toward a genuinely production-ready system.**
+> **Mini ERP SaaS Platform Release 1 is approximately 45% complete toward a genuinely production-ready system.**
 
 This percentage is intentionally lower than the raw Jira completion percentage because many completed Jira items represent architecture, governance, BRD, authorization, and technical-foundation work rather than completed business capabilities.
 
@@ -1556,12 +1593,12 @@ Do not answer from percentages alone. Check the 100% Production Ready Definition
 
 > ## Mini ERP SaaS Platform — Release 1
 >
-> **Overall Production-Ready Completion:** ~40%
+> **Overall Production-Ready Completion:** ~45%
 > **Architecture/Foundation:** ~90%
-> **Backend:** ~64%
-> **Database:** ~58%
-> **Frontend:** ~37%
-> **End-to-End Business System:** ~36%
+> **Backend:** ~69%
+> **Database:** ~62%
+> **Frontend:** ~42%
+> **End-to-End Business System:** ~42%
 >
 > **Backend + DB Feature Complete Forecast:** Mid–Late September 2026  
 > **Full Feature Complete Forecast:** Late September–Mid October 2026  

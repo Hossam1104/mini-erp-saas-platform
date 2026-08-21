@@ -1,147 +1,151 @@
-# MESP-126 — Independent Claude Opus 5 Delta Re-Review Prompt
+# MESP-127 — Sol Acceptance Prompt: Supplier Return Corrections
 
-Reviewer: Claude Opus 5 (independent, read-only)
+Reviewer: GPT-5.6 Sol (bounded acceptance; read-only unless acceptance requires
+an explicitly authorized correction)
 
 Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 
-Branch: `feat/MESP-126-three-way-matching-tolerances`
+Branch: `feat/MESP-127-supplier-return-corrections`
 
-Base SHA: `42e51b673de5d076b56426180d914f7e3d07c54c`
+Exact main base SHA: `e5568c1ea186995dcc4f0cb0075b2f6b20a15064`
 
-Previous SOL review anchor: `178a49fca9dab6ba55f71871bf3bfcc0e709606a`
+Implementation SHA: `f8f6dd1d850a00a94955d69c8ebb1c2b4c6697a5`
 
-New code remediation SHA: `d2a107e427df335a0067c77c30d07562608ab743`
+Final branch handoff SHA (implementation plus tracker baseline):
+`ce39ce82121dd9484f06ce65ac3451b259854491`
 
-Final branch handoff SHA for this bounded implementation state:
-`d2a107e427df335a0067c77c30d07562608ab743`
+Draft PR: `#71` — https://github.com/Hossam1104/mini-erp-saas-platform/pull/71
+against `main`; keep it open, Draft, and unmerged. Do not merge.
 
-Draft PR: `#70` — must remain open, Draft, and unmerged.
+Jira: MESP-127 remains **IN PROGRESS** under activation comment `11684`. No
+Jira, Confluence, or other tracker writes are permitted in this acceptance
+session.
 
-Jira: MESP-126 remains **IN PROGRESS**. No Jira writes are permitted.
+## Acceptance boundary
 
-## Review rules
+Accept only the bounded MESP-127 Procurement-owned commercial Supplier Return
+capability. Do not start MESP-128/MESP-129 Inventory, Finance/AP, payment,
+external integration, statutory/ZATCA/FATOORA, DNS/TLS, supplier portal, or
+Wafra-specific work. `frontend/assets` is Owner-managed source and must remain
+untouched.
 
-This is a bounded independent delta review of the P1 remediation and completed
-cross-currency UX. It is read-only. Do not edit files, commit, push, merge,
-close, retarget, or comment on PR #70. Do not write Jira, Confluence, or any
-other external tracker. Do not start MESP-127 or Finance, AP, GL, Inventory,
-payment, external integration, production, or FX-override work.
+The delivered chain is:
 
-First verify the branch, clean/dirty state, base ancestry, previous review
-anchor, new code remediation SHA, and final branch handoff SHA. Read
-`AGENTS.md`, `CLAUDE.md`, `.ai/CURRENT_STATE.md`, this prompt, the attached
-MESP-126 brief, and the relevant Procurement, currency, tax, authorization,
-audit, REST, and ADR documents. Inspect the complete branch diff against the
-base, then concentrate the re-review on the delta below while checking for
-regressions in the already accepted MESP-126 capability.
+`Accepted Goods Receipt -> Supplier Return commercial record -> authorized
+decision -> Inventory-facing handoff evidence -> Finance-facing
+credit/correction reference -> commercial history/reporting`.
 
-## P1 remediation delta to verify
+## Delivered implementation to verify
 
-### 1. FX authority and request contract
+- Public Procurement contracts cover Supplier Return status, reason,
+  condition, commercial outcome, create/action/handoff/finance/correction,
+  eligible-source, list/detail, history, audit, and report responses.
+- Supplier Return persistence owns immutable Tenant-scoped source snapshots for
+  PO/PO line, Supplier Confirmation where available, Goods Receipt/receipt
+  line, Supplier, Warehouse, Product/UOM, accepted quantity, return quantity,
+  reason/condition, commercial outcome, private evidence-reference metadata,
+  downstream references, timestamps, actor/correlation, version, history, and
+  replay/audit evidence.
+- The additive formal migration is
+  `20260821031935_MESP127SupplierReturnEvidence`; it must contain the actual
+  Supplier Return tables, indexes, constraints, and relationships, not an empty
+  placeholder. Procurement must not own Inventory ledger, on-hand, valuation,
+  AP, GL, tax-posting, payment, or supplier-balance tables.
+- Server-derived eligible quantity is recorded Goods Receipt accepted quantity
+  less active non-reversed Supplier Return quantities for that receipt line.
+  Rejected quantity is never eligible. MESP-125 remains truthful:
+  `Received = Accepted + Rejected`, and damaged quantity is a non-additive
+  condition overlay bounded by `Damaged <= Received`.
+- Creation validates the recorded receipt, exact Tenant and Company/Branch
+  scope, source PO/line, Supplier, Warehouse, accepted line, and remaining
+  quantity. Source version touching/optimistic concurrency prevents overlapping
+  requests from double-consuming the same remainder.
+- Lifecycle behavior is truthful: Draft, Submitted, Approved,
+  AwaitingInventory, InventoryHandoffRecorded/AwaitingFinance,
+  FinanceReferenceRecorded/Completed, Rejected, Cancelled, Reversed, and
+  CorrectionLinked only where the state permits. Downstream evidence never
+  claims Stock Posted or Credit Posted without an authoritative downstream
+  record.
+- Corrections are forward-linked successor records. Original posted/source
+  facts remain queryable and immutable; correction/reversal retains actor,
+  timestamp, reason, affected source, prior/new linkage, scope, correlation,
+  idempotency, authorization, history, and audit. Cancellation/reversal cannot
+  silently restore quantity after downstream evidence exists.
+- All mutations use the existing antiforgery, mandatory audit, ETag/If-Match,
+  server authorization, durable idempotency replay/conflict, and
+  Tenant/Company/Branch/Warehouse boundary patterns. Same key and fingerprint
+  replays; same key with different fingerprint conflicts.
+- Attachment support is intentionally reference-only because the existing
+  platform seam does not authorize a new blob provider. Evidence references
+  are Tenant-scoped, linked to the return, immutable metadata, and audited;
+  no secret/private binary is placed in `frontend/assets`.
+- REST routes are Foundation-catalogued and OpenAPI/Scalar discoverable for
+  eligible sources, list/detail, create, lifecycle, Inventory handoff,
+  Finance reference, correction, history, audit, and operational report.
+- Reporting is Procurement operational evidence only: open returns, quantity,
+  reason/status, source lineage, Supplier/Warehouse/Product lineage, pending
+  handoffs/corrections, and correction/reversal state. It must not expose AP
+  aging, supplier balances, GL/tax figures, stock balances, or valuation.
+- Angular routes are lazy-loaded at `/app/procurement/supplier-returns`,
+  `/new`, and `/:id`. Verify the accepted-only source selector, remaining
+  quantity, human-readable PO/GR/SR lineage, evidence reference, actions,
+  handoff/reference status, history/audit, visible safe errors, EN/AR copy,
+  RTL/LTR direction, labelled keyboard controls, responsive layout, and
+  reduced-motion behavior.
 
-Verify the public `PurchaseInvoiceExchangeRateReferenceRequest` exposes exactly
-one property: `ExchangeRateId`. `EffectiveOn` and any other caller-supplied
-historical date must not be accepted. Raw rate, scale, currency-pair, version,
-effective-date, provenance, or source facts must not be matching inputs.
+## Required acceptance checks
 
-Verify the narrow MESP-120 provider selects the effective version only from the
-immutable supplier invoice date captured in supplier-declared invoice evidence.
-The only allowed fallback is the existing immutable handoff date field because
-the current contract calls it `SupplierInvoiceDate`. A missing date fails
-closed. The provider must continue to enforce Tenant ownership, active identity,
-source/target currency pair, effective-dated version, positive rate and scale,
-and server-owned snapshot metadata. Later master-data edits must not rewrite an
-immutable match evaluation.
+1. Verify branch, clean state after delivery, exact base ancestry, and that no
+   source under `frontend/assets` changed.
+2. Inspect the complete diff against
+   `e5568c1ea186995dcc4f0cb0075b2f6b20a15064`, especially the persistence
+   mappings, ownership-verifier registry, migration Up/Down, operation
+   catalogue, authorization, idempotency ordering, and endpoint bindings.
+3. Verify the migration contains non-empty create/drop operations and the
+   snapshot contains all five Supplier Return entity types.
+4. Verify accepted-only eligibility, rejected exclusion, partial return
+   remainder, zero remainder, over-return conflict, cancellation/reversal
+   restoration only before downstream evidence, and cross-Tenant/
+   Company/Branch/Warehouse denial.
+5. Verify lifecycle reason requirements, immutable original plus linked
+   correction, downstream-consequence blocking, Inventory/Finance evidence-only
+   references, history/audit snapshots, and no stock/AP/GL mutation.
+6. Verify stale If-Match, racing overlapping returns, exact replay after state
+   advancement/cache expiry, and idempotency fingerprint conflict.
+7. Verify Foundation catalog and REST structural protection cover every unsafe
+   endpoint with antiforgery, mandatory audit, idempotency, and concurrency;
+   verify report permission filtering and server scope.
+8. Verify the Angular workspace and deterministic Playwright flow do not expose
+   raw developer IDs as the primary business labels or invent downstream facts.
 
-Required evidence includes provider/service tests for date authority and
-missing-date failure, DTO-shape/reflection or equivalent contract coverage, and
-snapshot assertions for version ID/number, pair, rate, scale, effective date
-and window, provenance, and source notes.
+## Required validation evidence
 
-### 2. Aggregate quantity and allocation semantics
+Run and report actual results, without hiding warnings or skips:
 
-Verify repeated supplier-declared lines for one `PurchaseOrderLineId` are
-aggregated before quantity comparison so exactly one quantity variance is
-recorded per PO line. The comparison remains against the current partial
-Handoff/source quantity, not the original PO quantity. Under- and
-over-declarations remain truthful evidence and use the configured absolute plus
-percentage tolerance formula, including exact-boundary behavior.
-
-Verify allocations are aggregated by `GoodsReceiptLineId`. The total declared
-allocation must not exceed the handoff-represented quantity or active accepted
-quantity for that receipt line. Duplicate allocations must be preserved as
-supplier evidence and classified as an aggregate mismatch; they must not be
-silently double-consumed or rejected at evidence intake merely because two
-invoice lines refer to one physical receipt. Invalid foreign Tenant, wrong PO,
-wrong line/receipt, negative, malformed, cancelled, rejected, and cross-scope
-data must still fail closed. Valid allocations across multiple receipt lines
-must remain valid without double-consumption.
-
-Verify individual price, discount, tax code/rate/amount, net/gross/line amount,
-and header subtotal/discount/tax/gross comparisons remain intact and are not
-replaced by the aggregation logic.
-
-### 3. Scope and policy boundary
-
-Verify exact Tenant and Company/Branch scope remains server-derived and
-explicit. Do not infer or invent Company-to-Branch policy inheritance. Verify
-the existing tolerance, resolution, SoD, authorization, audit, concurrency,
-idempotency, source snapshot, and legacy no-evidence `NotMatchReady` behavior
-remain unchanged except for the bounded remediation above.
-
-### 4. Cross-currency Angular UX
-
-Verify same-currency matching renders no Exchange Rate selector and submits no
-FX reference. For different currencies, verify the workspace loads the existing
-MESP-120 Exchange Rate list and shows a human-readable selector only for active
-identities whose source/target pair matches supplier invoice currency to PO
-currency and whose version window covers the immutable supplier invoice date.
-
-The browser must expose no raw GUID text and no editable rate, scale, version,
-effective date, pair, provenance, or source fields. The request must send only
-`ExchangeRateId`. No eligible identity or missing invoice date must remain
-fail-closed and visibly Not match-ready. After evaluation, the UI must display
-the applied server snapshot including pair, version, effective date, and
-provenance/source metadata. Verify English/Arabic copy, RTL/LTR direction,
-keyboard operation, label/description relationships, alert/status semantics,
-responsive layout, and reduced-motion behavior. Verify focused and full
-Chromium Playwright coverage, including request-body inspection.
-
-## Required regression review
-
-Recheck independent invoice evidence remains separate from the MESP-125
-PO-derived handoff preview and preserves reference/date/currency/totals, line
-quantity/unit price/discount/tax/amount/net/gross/description, Purchase Order
-lineage, legitimate receipt allocations, immutable evidence versioning,
-history/audit/replay, supersession/current evaluation, optimistic concurrency,
-Tenant and Company/Branch scope, migrations, provider portability, REST/
-OpenAPI/Foundation registration, antiforgery, `If-Match`, and idempotency.
-
-This capability remains Procurement evidence orchestration only. It must not
-post AP, GL, tax accounting, stock/on-hand, Inventory valuation, payment,
-realized/unrealized FX, revaluation, statutory data, supplier portal data,
-external invoice/FX integration, or Wafra-specific core behavior.
-
-## Validation evidence to verify
-
-- `dotnet build backend/MiniErp.sln -c Release`: 0 warnings, 0 errors.
-- Focused Invoice Handoff/matching remediation tests: 37/37 passed.
-- Full backend runner: 841/841 passed, 0 skipped, including 22 SQL safety
-  tests against a disposable LocalDB `MiniErpFoundation_*` database; verify the
-  persistent runtime connection was unchanged and zero disposable databases
-  remained.
-- Angular unit tests: 238/238 across 31 spec files.
-- Angular production build: 494.00 kB initial and 38.05 kB matching lazy
-  chunk, below the 500 kB initial budget.
-- Focused matching Playwright: 3/3; full Chromium suite: 22/22.
+- `dotnet build backend/MiniErp.sln -c Release`: 0 warnings / 0 errors.
+- Focused Supplier Return backend/architecture tests: 9/9 passed (3 original
+  contract tests plus 6 new MESP-127 P1 persistence regression tests added
+  during Sol acceptance remediation for quantity-consumption semantics).
+- `scripts/Test-MiniErpBackend.ps1`: 850/850 passed, 0 skipped, including all
+  22 disposable LocalDB safety cases; verify the persistent runtime connection
+  was unchanged and no `MiniErpFoundation_*` database remains.
+- `npm test -- --watch=false --no-progress`: 239/239 across 31 spec files.
+- `npm run build`: 494.71 kB initial, under the 500 kB budget, with a 57.40 kB
+  Supplier Return lazy chunk.
+- Focused Supplier Return Chromium Playwright: 2/2 passed.
+- Full Chromium Playwright: 24/24 passed.
 - `npm audit --omit=dev` and full `npm audit`: 0 vulnerabilities.
-- `git diff --check` and complete branch diff review.
+- `git diff --check`: clean.
 
-## Required result
+## Sol decision and handoff rules
 
-Return exactly one of `APPROVE FOR MERGE`, `REQUEST CHANGES`, or `BLOCK`, with
-P0/P1/P2/P3 findings, exact file/line evidence, reproduction commands,
-regression evidence, remaining production/provider/legal/specialist/cutover
-gates, and explicit confirmation that the review was read-only. Preserve
-branch `feat/MESP-126-three-way-matching-tolerances` and Draft PR #70 for
-Owner/Sol decision. Do not merge MESP-126. Do not write Jira.
+Return exactly one acceptance disposition: `ACCEPT FOR OWNER REVIEW`,
+`REQUEST CHANGES`, or `BLOCK`, with P0/P1/P2/P3 findings, exact
+file/line evidence, reproduction commands, regression evidence, and remaining
+production/provider/legal/specialist/cutover gates. Acceptance is read-only;
+do not merge, close MESP-127, write Jira, or start MESP-128. If a correction is
+required, stop and describe the bounded authorization before editing.
+
+The repository tracker and current state were updated for this implementation;
+Hossam/ChatGPT should inspect the tracked GitHub versions directly. The
+implementation branch and Draft PR remain unmerged pending this acceptance.

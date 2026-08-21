@@ -19,6 +19,7 @@ public static class PurchaseRequestServiceCollectionExtensions
         services.AddSingleton<ISupplierQuotationPersistence, UnavailableSupplierQuotationPersistence>();
         services.AddSingleton<IPurchaseOrderPersistence, UnavailablePurchaseOrderPersistence>();
         services.AddSingleton<IGoodsReceiptPersistence, UnavailableGoodsReceiptPersistence>();
+        services.AddSingleton<ISupplierReturnPersistence, UnavailableSupplierReturnPersistence>();
         services.AddSingleton<IPurchaseInvoiceHandoffPersistence, UnavailablePurchaseInvoiceHandoffPersistence>();
         services.AddSingleton<IPurchaseInvoiceMatchPersistence, UnavailablePurchaseInvoiceMatchPersistence>();
         services.AddSingleton<IPurchaseRequestApprovalPolicyProvider, DefaultPurchaseRequestApprovalPolicyProvider>();
@@ -39,6 +40,7 @@ public static class PurchaseRequestServiceCollectionExtensions
         services.AddSingleton<SupplierQuotationService>();
         services.AddSingleton<PurchaseOrderService>();
         services.AddSingleton<GoodsReceiptService>();
+        services.AddSingleton<SupplierReturnService>();
         services.AddSingleton<PurchaseInvoiceHandoffService>();
         services.AddSingleton<PurchaseInvoiceMatchService>();
         return services;
