@@ -9,9 +9,10 @@ Branch: `feat/MESP-127-supplier-return-corrections`
 
 Exact main base SHA: `e5568c1ea186995dcc4f0cb0075b2f6b20a15064`
 
-Implementation SHA: `IMPLEMENTATION_SHA_PENDING_FINAL_AMEND`
+Implementation SHA: `f8f6dd1d850a00a94955d69c8ebb1c2b4c6697a5`
 
-Final branch SHA: `FINAL_BRANCH_SHA_PENDING_FINAL_AMEND`
+Final branch handoff SHA (implementation plus tracker baseline):
+`ce39ce82121dd9484f06ce65ac3451b259854491`
 
 Draft PR: Create or reuse exactly one Draft PR against `main`; keep it open,
 Draft, and unmerged. Record its number here after creation. Do not merge.

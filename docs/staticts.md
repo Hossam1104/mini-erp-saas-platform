@@ -32,7 +32,7 @@ behavior was added.
 
 | Current control | Verified position |
 |---|---|
-| MESP-127 code | **Implementation complete on `feat/MESP-127-supplier-return-corrections`; final SHA is recorded by the completing commit and must remain the branch tip. Draft PR remains open/Draft/unmerged.** |
+| MESP-127 code | **Implementation commit `f8f6dd1d850a00a94955d69c8ebb1c2b4c6697a5`; tracker handoff baseline `ce39ce82121dd9484f06ce65ac3451b259854491`; Draft PR remains open/Draft/unmerged.** |
 | Production capability | **~45% overall; Procurement/P2P conservatively ~41%** after this additive bounded Supplier Return capability. |
 | Validation | Release build **0 warnings/0 errors**; focused Supplier Return architecture tests **3/3**; canonical backend **844/844 passed, 0 skipped** including the disposable LocalDB safety harness; Angular **239/239 across 31 spec files**; production build **494.71 kB initial / 57.40 kB Supplier Return lazy chunk**; focused Supplier Return Chromium **2/2**; full Chromium **24/24**; production-only and full npm audits **0 vulnerabilities**; `git diff --check` clean. |
 | Delivery boundaries | Formal additive migration `20260821031935_MESP127SupplierReturnEvidence`; protected `frontend/assets` untouched; no Jira writes; no MESP-128 or downstream implementation. |
