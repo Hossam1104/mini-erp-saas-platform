@@ -728,7 +728,7 @@ public sealed record InventoryReplayProbe<T>(InventoryReplayOutcome Outcome, T? 
     public static InventoryReplayProbe<T> ForReplay(T value) => new(InventoryReplayOutcome.Replay, value);
 }
 
-public interface IInventoryPersistence
+public partial interface IInventoryPersistence
 {
     Task<IReadOnlyList<InventoryMovementRecord>> ListMovementsAsync(InventoryRequestContext context, InventoryScope? scope = null, Guid? productId = null, CancellationToken cancellationToken = default);
     Task<InventoryMovementRecord?> FindMovementAsync(InventoryRequestContext context, Guid movementId, CancellationToken cancellationToken = default);
@@ -797,7 +797,7 @@ public sealed class InventoryPersistenceSupplierReturnEffectReader(IInventoryPer
     }
 }
 
-public sealed class UnavailableInventoryPersistence : IInventoryPersistence
+public sealed partial class UnavailableInventoryPersistence : IInventoryPersistence
 {
     private static Task<T> Unavailable<T>() => Task.FromException<T>(new InvalidOperationException("Inventory persistence is unavailable."));
     public Task<IReadOnlyList<InventoryMovementRecord>> ListMovementsAsync(InventoryRequestContext context, InventoryScope? scope = null, Guid? productId = null, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryMovementRecord>>();

@@ -7,6 +7,7 @@ import { LanguageService } from '../../core/i18n/language.service';
 import { MasterDataService } from '../master-data/master-data.service';
 import { ProductRecord, UnitOfMeasureRecord } from '../master-data/master-data.models';
 import { InventoryService } from './inventory.service';
+import { InventoryStockControlComponent } from './inventory-stock-control.component';
 import { InventoryAvailability, InventoryCustomerReturnBoundary, InventoryMovement, InventoryOpeningBalance, InventoryOpeningCreateRequest, InventoryReservation, InventoryReservationCreateRequest, InventoryTransfer, InventoryTransferCreateRequest, InventoryWarehouseOption } from './inventory.model';
 
 const movementLabels = {
@@ -16,7 +17,7 @@ const movementLabels = {
 @Component({
   selector: 'app-inventory-workspace',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, InventoryStockControlComponent],
   template: `
     <section class="ui-page inventory-page" data-testid="inventory-workspace">
       <header class="ui-page-header ui-page-header--compact page-header">
@@ -24,6 +25,7 @@ const movementLabels = {
         <a class="button button--secondary" routerLink="/app">{{ language.text('overview') }}</a>
       </header>
       <div class="boundary-note" role="note">{{ text('inventoryBoundary') }}</div>
+      <app-inventory-stock-control></app-inventory-stock-control>
       @if (error()) { <section class="ui-surface state-card state-card--error" role="alert"><strong>{{ text('inventoryErrorTitle') }}</strong><p>{{ error() }}</p></section> }
       <section class="ui-surface inventory-controls">
         <div class="section-heading"><div><p class="eyebrow">{{ text('scope') }}</p><h2>{{ text('operationalContext') }}</h2></div><span class="status-badge status-badge--active">{{ text('serverAuthority') }}</span></div>

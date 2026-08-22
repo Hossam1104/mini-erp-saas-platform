@@ -77,4 +77,39 @@ describe('InventoryService', () => {
 
     await expect(saving).resolves.toMatchObject({ id: 'opening-1', version: 'Ag==' });
   });
+
+  it('exposes stock-control reads and sends mutation evidence for reason catalogue updates and movement corrections', async () => {
+    service.reasonCodes('Adjustment').subscribe();
+    const reasons = http.expectOne('/api/v1/inventory/reason-codes?category=Adjustment');
+    expect(reasons.request.method).toBe('GET');
+    reasons.flush([]);
+
+    const updating = service.updateReasonCode('reason-1', 'AQ==', {
+      englishName: 'Damage',
+      arabicName: 'تلف',
+      category: 'Adjustment',
+      isActive: true,
+    });
+    http.expectOne('/api/v1/auth/antiforgery').flush(
+      { status: 'issued' },
+      { headers: new HttpHeaders({ 'X-CSRF-TOKEN': 'memory-token' }) },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const update = http.expectOne('/api/v1/inventory/reason-codes/reason-1/update');
+    expect(update.request.method).toBe('POST');
+    expect(update.request.headers.get('If-Match')).toBe('"AQ=="');
+    expect(update.request.headers.get('Idempotency-Key')).toBeTruthy();
+    update.flush({ id: 'reason-1', version: 'Ag==' });
+    await expect(updating).resolves.toMatchObject({ id: 'reason-1' });
+
+    const correcting = service.correctMovement('movement-1', 'Ag==', 'DAMAGE', 'reviewed');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const correction = http.expectOne('/api/v1/inventory/ledger/movement-1/correct');
+    expect(correction.request.method).toBe('POST');
+    expect(correction.request.body).toEqual({ reasonCode: 'DAMAGE', reason: 'reviewed' });
+    expect(correction.request.headers.get('If-Match')).toBe('"Ag=="');
+    expect(correction.request.headers.get('Idempotency-Key')).toBeTruthy();
+    correction.flush({ id: 'correction-1' });
+    await expect(correcting).resolves.toMatchObject({ id: 'correction-1' });
+  });
 });

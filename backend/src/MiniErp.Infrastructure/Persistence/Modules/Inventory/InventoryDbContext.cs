@@ -21,6 +21,14 @@ internal sealed class InventoryDbContext(DbContextOptions options, TenantContext
     internal DbSet<InventoryAuditEntity> Audit => Set<InventoryAuditEntity>();
     internal DbSet<InventoryIdempotencyEntity> Idempotency => Set<InventoryIdempotencyEntity>();
     internal DbSet<InventoryConcurrencyAnchorEntity> ConcurrencyAnchors => Set<InventoryConcurrencyAnchorEntity>();
+    internal DbSet<InventoryReasonCodeEntity> ReasonCodes => Set<InventoryReasonCodeEntity>();
+    internal DbSet<InventoryAdjustmentEntity> Adjustments => Set<InventoryAdjustmentEntity>();
+    internal DbSet<InventoryAdjustmentLineEntity> AdjustmentLines => Set<InventoryAdjustmentLineEntity>();
+    internal DbSet<InventoryCountEntity> Counts => Set<InventoryCountEntity>();
+    internal DbSet<InventoryCountLineEntity> CountLines => Set<InventoryCountLineEntity>();
+    internal DbSet<InventoryStockIssueEntity> StockIssues => Set<InventoryStockIssueEntity>();
+    internal DbSet<InventoryStockIssueLineEntity> StockIssueLines => Set<InventoryStockIssueLineEntity>();
+    internal DbSet<InventoryControlHistoryEntity> ControlHistory => Set<InventoryControlHistoryEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,6 +105,16 @@ internal sealed class InventoryDbContext(DbContextOptions options, TenantContext
         var anchor = modelBuilder.Entity<InventoryConcurrencyAnchorEntity>();
         ConfigureBase(anchor, "ConcurrencyAnchors");
         anchor.Property(item => item.CompanyId).IsRequired(); anchor.Property(item => item.BranchId).IsRequired(false); anchor.Property(item => item.WarehouseId).IsRequired(); anchor.Property(item => item.ProductId).IsRequired(); anchor.Property(item => item.UnitOfMeasureId).IsRequired(); anchor.Property(item => item.TrackingKey).HasMaxLength(256).IsRequired(); anchor.Property(item => item.TouchSequence).IsRequired(); anchor.HasIndex(item => new { item.TenantId, item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingKey }).IsUnique().HasFilter(null); anchor.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+
+        InventoryStockControlModelBuilder.Configure(modelBuilder, Database.ProviderName);
+        modelBuilder.Entity<InventoryReasonCodeEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryAdjustmentEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryAdjustmentLineEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryCountEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryCountLineEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryStockIssueEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryStockIssueLineEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryControlHistoryEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
     }
 
     private void ConfigureBase<TEntity>(EntityTypeBuilder<TEntity> entity, string tableName) where TEntity : class, ITenantOwned
