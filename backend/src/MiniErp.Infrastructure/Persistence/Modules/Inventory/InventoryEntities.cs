@@ -95,8 +95,11 @@ internal sealed class InventoryOpeningBalanceHistoryEntity : ITenantOwned
 internal sealed class InventoryStockMovementEntity : ITenantOwned
 {
     private InventoryStockMovementEntity() { }
-    internal InventoryStockMovementEntity(TenantId tenantId, Guid id, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, Guid productId, string sku, string productName, Guid uomId, string uomCode, InventoryMovementDirection direction, decimal quantity, decimal unitCost, string currencyCode, string? trackingIdentity, InventoryMovementSourceType sourceType, Guid sourceDocumentId, Guid sourceLineId, Guid? correctionOfMovementId, DateOnly effectiveDate, Guid actorId, string correlationId, DateTimeOffset postedAt)
-    { Id = id; TenantId = tenantId; CompanyId = companyId; BranchId = branchId; WarehouseId = warehouseId; WarehouseCode = warehouseCode; WarehouseName = warehouseName; ProductId = productId; ProductSku = sku; ProductName = productName; UnitOfMeasureId = uomId; UnitOfMeasureCode = uomCode; Direction = direction; Quantity = quantity; UnitCost = unitCost; CurrencyCode = currencyCode; TrackingIdentity = trackingIdentity; SourceType = sourceType; SourceDocumentId = sourceDocumentId; SourceLineId = sourceLineId; CorrectionOfMovementId = correctionOfMovementId; EffectiveDate = effectiveDate; ActorId = actorId; CorrelationId = correlationId; PostedAt = postedAt; }
+    internal InventoryStockMovementEntity(TenantId tenantId, Guid id, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, Guid productId, string sku, string productName, Guid uomId, string uomCode, InventoryMovementDirection direction, decimal quantity, decimal? unitCost, string? currencyCode, string? trackingIdentity, InventoryMovementSourceType sourceType, Guid sourceDocumentId, Guid sourceLineId, Guid? correctionOfMovementId, DateOnly effectiveDate, Guid actorId, string correlationId, DateTimeOffset postedAt)
+    { Id = id; TenantId = tenantId; CompanyId = companyId; BranchId = branchId; WarehouseId = warehouseId; WarehouseCode = warehouseCode; WarehouseName = warehouseName; ProductId = productId; ProductSku = sku; ProductName = productName; UnitOfMeasureId = uomId; UnitOfMeasureCode = uomCode; Direction = direction; Quantity = quantity; UnitCost = unitCost; CurrencyCode = currencyCode; ValuationStatus = unitCost.HasValue && !string.IsNullOrWhiteSpace(currencyCode) ? InventoryValuationStatus.Known : InventoryValuationStatus.Pending; TrackingIdentity = trackingIdentity; SourceType = sourceType; SourceDocumentId = sourceDocumentId; SourceLineId = sourceLineId; CorrectionOfMovementId = correctionOfMovementId; EffectiveDate = effectiveDate; ActorId = actorId; CorrelationId = correlationId; PostedAt = postedAt; }
+    internal InventoryStockMovementEntity(TenantId tenantId, Guid id, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, Guid productId, string sku, string productName, Guid uomId, string uomCode, InventoryMovementDirection direction, decimal quantity, decimal? unitCost, string? currencyCode, InventoryValuationStatus valuationStatus, string? trackingIdentity, InventoryMovementSourceType sourceType, Guid sourceDocumentId, Guid sourceLineId, Guid? correctionOfMovementId, DateOnly effectiveDate, Guid actorId, string correlationId, DateTimeOffset postedAt, Guid? goodsReceiptId = null, Guid? goodsReceiptLineId = null, Guid? supplierReturnId = null, Guid? supplierReturnLineId = null, Guid? purchaseOrderId = null, Guid? purchaseOrderLineId = null, Guid? transferId = null, Guid? transferLineId = null, string? sourceReference = null)
+        : this(tenantId, id, companyId, branchId, warehouseId, warehouseCode, warehouseName, productId, sku, productName, uomId, uomCode, direction, quantity, unitCost, currencyCode, trackingIdentity, sourceType, sourceDocumentId, sourceLineId, correctionOfMovementId, effectiveDate, actorId, correlationId, postedAt)
+    { ValuationStatus = valuationStatus; GoodsReceiptId = goodsReceiptId; GoodsReceiptLineId = goodsReceiptLineId; SupplierReturnId = supplierReturnId; SupplierReturnLineId = supplierReturnLineId; PurchaseOrderId = purchaseOrderId; PurchaseOrderLineId = purchaseOrderLineId; TransferId = transferId; TransferLineId = transferLineId; SourceReference = sourceReference; }
     internal Guid Id { get; private set; }
     public TenantId TenantId { get; private set; }
     internal Guid CompanyId { get; private set; }
@@ -111,18 +114,111 @@ internal sealed class InventoryStockMovementEntity : ITenantOwned
     internal string UnitOfMeasureCode { get; private set; } = string.Empty;
     internal InventoryMovementDirection Direction { get; private set; }
     internal decimal Quantity { get; private set; }
-    internal decimal UnitCost { get; private set; }
-    internal string CurrencyCode { get; private set; } = string.Empty;
+    internal decimal? UnitCost { get; private set; }
+    internal string? CurrencyCode { get; private set; }
+    internal InventoryValuationStatus ValuationStatus { get; private set; }
     internal string? TrackingIdentity { get; private set; }
     internal InventoryMovementSourceType SourceType { get; private set; }
     internal Guid SourceDocumentId { get; private set; }
     internal Guid SourceLineId { get; private set; }
     internal Guid? CorrectionOfMovementId { get; private set; }
+    internal Guid? GoodsReceiptId { get; private set; }
+    internal Guid? GoodsReceiptLineId { get; private set; }
+    internal Guid? SupplierReturnId { get; private set; }
+    internal Guid? SupplierReturnLineId { get; private set; }
+    internal Guid? PurchaseOrderId { get; private set; }
+    internal Guid? PurchaseOrderLineId { get; private set; }
+    internal Guid? TransferId { get; private set; }
+    internal Guid? TransferLineId { get; private set; }
+    internal string? SourceReference { get; private set; }
     internal DateOnly EffectiveDate { get; private set; }
     internal Guid ActorId { get; private set; }
     internal string CorrelationId { get; private set; } = string.Empty;
     internal DateTimeOffset PostedAt { get; private set; }
     internal byte[] Version { get; private set; } = [];
+}
+
+internal sealed class InventoryTransferEntity : ITenantOwned
+{
+    private InventoryTransferEntity() { }
+
+    internal InventoryTransferEntity(
+        TenantId tenantId, Guid id, Guid companyId, Guid? branchId,
+        Guid sourceWarehouseId, string sourceWarehouseCode, string sourceWarehouseName,
+        Guid destinationWarehouseId, string destinationWarehouseCode, string destinationWarehouseName,
+        Guid productId, string productSku, string productName, Guid unitOfMeasureId, string unitOfMeasureCode,
+        decimal quantity, InventoryTransferMode mode, string? trackingIdentity, string? reason, Guid actorId, DateTimeOffset at)
+    {
+        Id = id; TenantId = tenantId; CompanyId = companyId; BranchId = branchId;
+        SourceWarehouseId = sourceWarehouseId; SourceWarehouseCode = sourceWarehouseCode; SourceWarehouseName = sourceWarehouseName;
+        DestinationWarehouseId = destinationWarehouseId; DestinationWarehouseCode = destinationWarehouseCode; DestinationWarehouseName = destinationWarehouseName;
+        ProductId = productId; ProductSku = productSku; ProductName = productName; UnitOfMeasureId = unitOfMeasureId; UnitOfMeasureCode = unitOfMeasureCode;
+        Quantity = quantity; Mode = mode; Status = InventoryTransferStatus.Draft; TrackingIdentity = trackingIdentity; Reason = reason;
+        ActorId = actorId; CreatedAt = at; UpdatedAt = at; TouchVersion();
+    }
+
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid CompanyId { get; private set; }
+    internal Guid? BranchId { get; private set; }
+    internal Guid SourceWarehouseId { get; private set; }
+    internal string SourceWarehouseCode { get; private set; } = string.Empty;
+    internal string SourceWarehouseName { get; private set; } = string.Empty;
+    internal Guid DestinationWarehouseId { get; private set; }
+    internal string DestinationWarehouseCode { get; private set; } = string.Empty;
+    internal string DestinationWarehouseName { get; private set; } = string.Empty;
+    internal Guid ProductId { get; private set; }
+    internal string ProductSku { get; private set; } = string.Empty;
+    internal string ProductName { get; private set; } = string.Empty;
+    internal Guid UnitOfMeasureId { get; private set; }
+    internal string UnitOfMeasureCode { get; private set; } = string.Empty;
+    internal decimal Quantity { get; private set; }
+    internal InventoryTransferMode Mode { get; private set; }
+    internal InventoryTransferStatus Status { get; private set; }
+    internal string? TrackingIdentity { get; private set; }
+    internal string? Reason { get; private set; }
+    internal Guid ActorId { get; private set; }
+    internal DateTimeOffset CreatedAt { get; private set; }
+    internal DateTimeOffset UpdatedAt { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal List<InventoryTransferLineEntity> Lines { get; } = [];
+    internal void SetStatus(InventoryTransferStatus status, DateTimeOffset at) { Status = status; UpdatedAt = at; TouchVersion(); }
+    internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
+}
+
+internal sealed class InventoryTransferLineEntity : ITenantOwned
+{
+    private InventoryTransferLineEntity() { }
+    internal InventoryTransferLineEntity(TenantId tenantId, Guid id, Guid transferId, decimal quantity)
+    { Id = id; TenantId = tenantId; TransferId = transferId; Quantity = quantity; TouchVersion(); }
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid TransferId { get; private set; }
+    internal decimal Quantity { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
+}
+
+internal sealed class InventoryTransferEventEntity : ITenantOwned
+{
+    private InventoryTransferEventEntity() { }
+    internal InventoryTransferEventEntity(TenantId tenantId, Guid id, Guid transferId, Guid transferLineId, InventoryTransferEventType eventType, decimal quantity, string? reference, string? reason, Guid actorId, string correlationId, DateTimeOffset at, Guid? sourceMovementId = null, Guid? destinationMovementId = null)
+    { Id = id; TenantId = tenantId; TransferId = transferId; TransferLineId = transferLineId; EventType = eventType; Quantity = quantity; Reference = reference; Reason = reason; ActorId = actorId; CorrelationId = correlationId; OccurredAt = at; SourceMovementId = sourceMovementId; DestinationMovementId = destinationMovementId; TouchVersion(); }
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid TransferId { get; private set; }
+    internal Guid TransferLineId { get; private set; }
+    internal InventoryTransferEventType EventType { get; private set; }
+    internal decimal Quantity { get; private set; }
+    internal string? Reference { get; private set; }
+    internal string? Reason { get; private set; }
+    internal Guid ActorId { get; private set; }
+    internal string CorrelationId { get; private set; } = string.Empty;
+    internal DateTimeOffset OccurredAt { get; private set; }
+    internal Guid? SourceMovementId { get; private set; }
+    internal Guid? DestinationMovementId { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
 }
 
 internal sealed class InventoryReservationEntity : ITenantOwned

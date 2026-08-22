@@ -17,13 +17,19 @@ public sealed class SupplierReturnService
     private const string CreateOperationId = "procurement.supplier-return.create";
     private readonly PurchaseRequestAuthorizationService authorization;
     private readonly ISupplierReturnPersistence persistence;
+    private readonly ISupplierReturnInventoryEffectReader inventoryEffectReader;
+    private readonly ISupplierReturnPhysicalEffectGate physicalEffectGate;
 
     public SupplierReturnService(
         PurchaseRequestAuthorizationService authorization,
-        ISupplierReturnPersistence persistence)
+        ISupplierReturnPersistence persistence,
+        ISupplierReturnInventoryEffectReader? inventoryEffectReader = null,
+        ISupplierReturnPhysicalEffectGate? physicalEffectGate = null)
     {
         this.authorization = authorization ?? throw new ArgumentNullException(nameof(authorization));
         this.persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
+        this.inventoryEffectReader = inventoryEffectReader ?? new UnavailableSupplierReturnInventoryEffectReader();
+        this.physicalEffectGate = physicalEffectGate ?? new SupplierReturnPhysicalEffectGate();
     }
 
     public async Task<SupplierReturnOperationResult<IReadOnlyList<SupplierReturnListRecord>>> ListAsync(
@@ -272,6 +278,18 @@ public sealed class SupplierReturnService
             key,
             id);
         var audit = CreateEvidence(context, id, current.Value.Scope, "procurement.supplier-return.correct", current.Value.Status, SupplierReturnStatus.CorrectionLinked, "Correction linked", key, fingerprint, current.Value.Status.ToString(), "CorrectionLinked");
+        if (RequiresInventoryEffectVerification(current.Value.Status))
+        {
+            using var lease = await physicalEffectGate.AcquireAsync(id, cancellationToken);
+            var verification = await VerifyInventoryEffectAsync(context, id, cancellationToken);
+            if (verification is not null)
+            {
+                return verification;
+            }
+
+            return ToOperationResult(await persistence.CorrectAsync(context.TenantContext, command, expectedVersion, audit, cancellationToken));
+        }
+
         return ToOperationResult(await persistence.CorrectAsync(context.TenantContext, command, expectedVersion, audit, cancellationToken));
     }
 
@@ -367,8 +385,50 @@ public sealed class SupplierReturnService
         };
         var command = new SupplierReturnActionCommand(id, expectedVersion, action, context.ActorId, reason, DateTimeOffset.UtcNow, idempotencyKey, handoffReference, financeReference, financeCurrency, financeAmount, notes);
         var audit = CreateEvidence(context, id, current.Value.Scope, operationId, current.Value.Status, afterStatus, reason, idempotencyKey, requestFingerprint, current.Value.Status.ToString(), afterStatus.ToString());
+        if (RequiresInventoryEffectVerification(action, current.Value.Status))
+        {
+            using var lease = await physicalEffectGate.AcquireAsync(id, cancellationToken);
+            var verification = await VerifyInventoryEffectAsync(context, id, cancellationToken);
+            if (verification is not null)
+            {
+                return verification;
+            }
+
+            return ToOperationResult(await persistence.ActionAsync(context.TenantContext, command, audit, cancellationToken));
+        }
+
         return ToOperationResult(await persistence.ActionAsync(context.TenantContext, command, audit, cancellationToken));
     }
+
+    private async Task<SupplierReturnOperationResult<SupplierReturnRecord>?> VerifyInventoryEffectAsync(
+        ProcurementRequestContext context,
+        Guid supplierReturnId,
+        CancellationToken cancellationToken)
+    {
+        SupplierReturnInventoryEffectVerification verification;
+        try
+        {
+            verification = await inventoryEffectReader.VerifyAsync(context.TenantContext, supplierReturnId, cancellationToken);
+        }
+        catch
+        {
+            return SupplierReturnOperationResult<SupplierReturnRecord>.Failure("inventory_effect_verification_unavailable");
+        }
+
+        return verification switch
+        {
+            SupplierReturnInventoryEffectVerification.ActiveEffectExists => SupplierReturnOperationResult<SupplierReturnRecord>.Failure("inventory_effect_exists"),
+            SupplierReturnInventoryEffectVerification.NoActiveEffect => null,
+            _ => SupplierReturnOperationResult<SupplierReturnRecord>.Failure("inventory_effect_verification_unavailable")
+        };
+    }
+
+    private static bool RequiresInventoryEffectVerification(SupplierReturnMutationAction action, SupplierReturnStatus status) =>
+        action is SupplierReturnMutationAction.Cancel or SupplierReturnMutationAction.Reverse
+        && RequiresInventoryEffectVerification(status);
+
+    private static bool RequiresInventoryEffectVerification(SupplierReturnStatus status) =>
+        status is SupplierReturnStatus.Approved or SupplierReturnStatus.AwaitingInventory;
 
     private async Task<SupplierReturnOperationResult<SupplierReturnRecord>> GetAuthorizedAsync(ProcurementRequestContext context, Guid id, string operationId, CancellationToken cancellationToken)
     {

@@ -20,6 +20,8 @@ public static class PurchaseRequestServiceCollectionExtensions
         services.AddSingleton<IPurchaseOrderPersistence, UnavailablePurchaseOrderPersistence>();
         services.AddSingleton<IGoodsReceiptPersistence, UnavailableGoodsReceiptPersistence>();
         services.AddSingleton<ISupplierReturnPersistence, UnavailableSupplierReturnPersistence>();
+        services.AddSingleton<ISupplierReturnInventoryEffectReader, UnavailableSupplierReturnInventoryEffectReader>();
+        services.AddSingleton<ISupplierReturnPhysicalEffectGate, SupplierReturnPhysicalEffectGate>();
         services.AddSingleton<IPurchaseInvoiceHandoffPersistence, UnavailablePurchaseInvoiceHandoffPersistence>();
         services.AddSingleton<IPurchaseInvoiceMatchPersistence, UnavailablePurchaseInvoiceMatchPersistence>();
         services.AddSingleton<IPurchaseRequestApprovalPolicyProvider, DefaultPurchaseRequestApprovalPolicyProvider>();

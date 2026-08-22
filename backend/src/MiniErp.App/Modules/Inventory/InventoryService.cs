@@ -1,6 +1,8 @@
 #pragma warning disable CS1591
 
 using MiniErp.Contracts.Modules.Inventory;
+using MiniErp.Contracts.Modules.Procurement;
+using MiniErp.App.Modules.Procurement;
 
 namespace MiniErp.App.Modules.Inventory;
 
@@ -8,8 +10,16 @@ public sealed class InventoryService(
     IInventoryPersistence persistence,
     InventoryResourceAuthorizationService authorization,
     IInventoryWarehouseProvider warehouses,
-    IInventoryProductProvider products)
+    IInventoryProductProvider products,
+    IInventoryGoodsReceiptSourceProvider? goodsReceiptSources = null,
+    IInventorySupplierReturnSourceProvider? supplierReturnSources = null,
+    IInventorySupplierReturnHandoffWriter? supplierReturnHandoff = null,
+    ISupplierReturnPhysicalEffectGate? physicalEffectGate = null,
+    IInventorySupplierReturnStateProvider? supplierReturnState = null)
 {
+    private readonly ISupplierReturnPhysicalEffectGate supplierReturnPhysicalEffectGate = physicalEffectGate ?? new SupplierReturnPhysicalEffectGate();
+    private readonly IInventorySupplierReturnStateProvider supplierReturnStateProvider = supplierReturnState ?? new NoInventorySupplierReturnStateProvider();
+
     public async Task<InventoryOperationResult<IReadOnlyList<InventoryWarehouseOption>>> ListWarehousesAsync(
         InventoryRequestContext context,
         Guid? companyId,
@@ -291,11 +301,259 @@ public sealed class InventoryService(
                 if (reservation is null) return InventoryOperationResult<IReadOnlyList<InventoryAuditRecord>>.Failure("not_found");
                 if (!authorization.IsAllowed(context, "inventory.reservation.audit.read", new InventoryScope(context.TenantId.Value, reservation.CompanyId, reservation.BranchId, reservation.WarehouseId))) return InventoryOperationResult<IReadOnlyList<InventoryAuditRecord>>.Failure("forbidden");
             }
+            else if (resourceType.Equals("transfer", StringComparison.OrdinalIgnoreCase))
+            {
+                var transfer = await persistence.FindTransferAsync(context, resourceId, cancellationToken);
+                if (transfer is null) return InventoryOperationResult<IReadOnlyList<InventoryAuditRecord>>.Failure("not_found");
+                if (!authorization.IsAllowed(context, "inventory.transfer.audit.read", new InventoryScope(context.TenantId.Value, transfer.CompanyId, transfer.BranchId, transfer.SourceWarehouseId))
+                    || !authorization.IsAllowed(context, "inventory.transfer.audit.read", new InventoryScope(context.TenantId.Value, transfer.CompanyId, transfer.BranchId, transfer.DestinationWarehouseId))) return InventoryOperationResult<IReadOnlyList<InventoryAuditRecord>>.Failure("forbidden");
+            }
             else return InventoryOperationResult<IReadOnlyList<InventoryAuditRecord>>.Failure("invalid_resource");
 
             return InventoryOperationResult<IReadOnlyList<InventoryAuditRecord>>.Success(await persistence.ReadAuditAsync(context, resourceType, resourceId, cancellationToken));
         }
         catch (InvalidOperationException) { return InventoryOperationResult<IReadOnlyList<InventoryAuditRecord>>.Failure("persistence_unavailable"); }
+    }
+
+    public async Task<InventoryOperationResult<InventoryGoodsReceiptPostingRecord>> PostGoodsReceiptAsync(InventoryRequestContext context, InventoryGoodsReceiptPostRequest request, string? idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        if (request.GoodsReceiptId == Guid.Empty || request.GoodsReceiptLineId == Guid.Empty) return InventoryOperationResult<InventoryGoodsReceiptPostingRecord>.Failure("validation_failed");
+        var sourceProvider = goodsReceiptSources ?? new NoInventoryGoodsReceiptSourceProvider();
+        if (request.ExpectedVersion is null || request.ExpectedVersion.Length == 0) return InventoryOperationResult<InventoryGoodsReceiptPostingRecord>.Failure("validation_failed");
+        var source = await sourceProvider.FindAsync(context, request.GoodsReceiptId, request.GoodsReceiptLineId, cancellationToken);
+        if (source is null) return InventoryOperationResult<InventoryGoodsReceiptPostingRecord>.Failure("goods_receipt_source_not_eligible");
+        if (source.Product.TrackingEnabled) return InventoryOperationResult<InventoryGoodsReceiptPostingRecord>.Failure("tracking_identity_required");
+        if (!source.Receipt.Version.SequenceEqual(request.ExpectedVersion)) return InventoryOperationResult<InventoryGoodsReceiptPostingRecord>.Failure("conflict");
+        var scope = new InventoryScope(context.TenantId.Value, source.Receipt.Scope.CompanyId, source.Receipt.Scope.BranchId, source.Warehouse.WarehouseId);
+        if (!authorization.IsAllowed(context, "inventory.goods-receipt.post", scope)) return InventoryOperationResult<InventoryGoodsReceiptPostingRecord>.Failure("forbidden");
+        var command = new InventoryGoodsReceiptPostCommand(Guid.NewGuid(), source, context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(request));
+        try
+        {
+            var value = await persistence.PostGoodsReceiptAsync(context, command, cancellationToken);
+            return value is null ? InventoryOperationResult<InventoryGoodsReceiptPostingRecord>.Failure("conflict") : InventoryOperationResult<InventoryGoodsReceiptPostingRecord>.Success(value);
+        }
+        catch (InvalidOperationException) { return InventoryOperationResult<InventoryGoodsReceiptPostingRecord>.Failure("persistence_unavailable"); }
+    }
+
+    public async Task<InventoryOperationResult<InventorySupplierReturnPostingRecord>> PostSupplierReturnAsync(InventoryRequestContext context, InventorySupplierReturnPostRequest request, string? idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        if (request.SupplierReturnId == Guid.Empty || request.ExpectedVersion is null || request.ExpectedVersion.Length == 0) return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("validation_failed");
+        var sourceProvider = supplierReturnSources ?? new NoInventorySupplierReturnSourceProvider();
+        var normalizedKey = Normalize(idempotencyKey, 256);
+        var requestFingerprint = InventoryFingerprints.Create(request);
+        InventorySupplierReturnPostingRecord? replayedPosting = null;
+        if (!string.IsNullOrWhiteSpace(normalizedKey))
+        {
+            InventoryReplayProbe<InventorySupplierReturnPostingRecord> replay;
+            try
+            {
+                replay = await persistence.ProbeSupplierReturnReplayAsync(context, normalizedKey, requestFingerprint, cancellationToken);
+            }
+            catch (InvalidOperationException)
+            {
+                return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("persistence_unavailable");
+            }
+
+            if (replay.Outcome == InventoryReplayOutcome.Conflict)
+            {
+                return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("idempotency_conflict");
+            }
+
+            if (replay.Outcome == InventoryReplayOutcome.Replay)
+            {
+                if (replay.Value is null)
+                {
+                    return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("persistence_unavailable");
+                }
+
+                if (!replay.Value.CompanyId.HasValue || !replay.Value.WarehouseId.HasValue)
+                {
+                    return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("persistence_unavailable");
+                }
+
+                var replayScope = new InventoryScope(context.TenantId.Value, replay.Value.CompanyId.Value, replay.Value.BranchId, replay.Value.WarehouseId.Value);
+                if (!authorization.IsAllowed(context, "inventory.supplier-return.post", replayScope))
+                {
+                    return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("forbidden");
+                }
+
+                if (replay.Value.HandoffRecorded)
+                {
+                    return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Success(replay.Value);
+                }
+
+                InventorySupplierReturnStateLookup state;
+                try
+                {
+                    state = await supplierReturnStateProvider.FindAsync(context, request.SupplierReturnId, cancellationToken);
+                }
+                catch (InvalidOperationException)
+                {
+                    return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("persistence_unavailable");
+                }
+
+                if (state.Outcome is InventorySupplierReturnStateLookupOutcome.Unavailable or InventorySupplierReturnStateLookupOutcome.NotFound || state.Record is null)
+                {
+                    return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("persistence_unavailable");
+                }
+
+                if (state.Record.Status is SupplierReturnStatus.InventoryHandoffRecorded or SupplierReturnStatus.AwaitingFinance or SupplierReturnStatus.Completed)
+                {
+                    return state.Record.InventoryHandoffId is not null
+                        ? InventoryOperationResult<InventorySupplierReturnPostingRecord>.Success(replay.Value with { HandoffRecorded = true })
+                        : InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("inventory_handoff_reconciliation_conflict");
+                }
+
+                if (state.Record.Status is not SupplierReturnStatus.AwaitingInventory)
+                {
+                    return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("inventory_handoff_reconciliation_conflict");
+                }
+
+                // The physical effect is durable, but the first caller may have lost the response
+                // while the Procurement handoff was still being converged. Keep the source lookup
+                // for that narrow pending case; the persistence replay is never posted again.
+                replayedPosting = replay.Value;
+            }
+        }
+
+        InventorySupplierReturnSourceRecord? source;
+        InventorySupplierReturnPostingRecord? value;
+        using (await supplierReturnPhysicalEffectGate.AcquireAsync(request.SupplierReturnId, cancellationToken))
+        {
+            source = await sourceProvider.FindAsync(context, request.SupplierReturnId, cancellationToken);
+            if (source is null)
+            {
+                return replayedPosting is null
+                    ? InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("supplier_return_source_not_eligible")
+                    : InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("inventory_handoff_pending");
+            }
+
+            if (source.Lines.Any(line => line.Product.TrackingEnabled)) return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("tracking_identity_required");
+            if (!source.SupplierReturn.Version.SequenceEqual(request.ExpectedVersion)) return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("conflict");
+            var scope = new InventoryScope(context.TenantId.Value, source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId);
+            if (!authorization.IsAllowed(context, "inventory.supplier-return.post", scope)) return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("forbidden");
+
+            if (replayedPosting is not null)
+            {
+                // The writer takes the same gate around the Procurement state transition. Do not
+                // invoke it while the physical-post gate is held, otherwise a retry can deadlock
+                // itself. This branch is handled below after the source read is released.
+                value = replayedPosting;
+            }
+            else
+            {
+                var command = new InventorySupplierReturnPostCommand(Guid.NewGuid(), source, context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), normalizedKey, requestFingerprint);
+                try
+                {
+                    value = await persistence.PostSupplierReturnAsync(context, command, cancellationToken);
+                }
+                catch (InvalidOperationException)
+                {
+                    return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("persistence_unavailable");
+                }
+
+                if (value is null) return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("conflict");
+                if (value.HandoffRecorded) return InventoryOperationResult<InventorySupplierReturnPostingRecord>.Success(value);
+            }
+        }
+
+        if (replayedPosting is not null)
+        {
+            var handoffWriter = supplierReturnHandoff ?? new NoInventorySupplierReturnHandoffWriter();
+            var replayHandoff = await handoffWriter.RecordAsync(context, source!, replayedPosting.HandoffReference, cancellationToken);
+            return replayHandoff.Succeeded
+                ? InventoryOperationResult<InventorySupplierReturnPostingRecord>.Success(replayedPosting with { HandoffRecorded = true })
+                : InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("inventory_handoff_pending");
+        }
+
+        var handoffWriterAfterPost = supplierReturnHandoff ?? new NoInventorySupplierReturnHandoffWriter();
+        var handoff = await handoffWriterAfterPost.RecordAsync(context, source!, value!.HandoffReference, cancellationToken);
+        return handoff.Succeeded
+            ? InventoryOperationResult<InventorySupplierReturnPostingRecord>.Success(value with { HandoffRecorded = true })
+            : InventoryOperationResult<InventorySupplierReturnPostingRecord>.Failure("inventory_handoff_pending");
+    }
+
+    public async Task<InventoryOperationResult<IReadOnlyList<InventoryTransferRecord>>> ListTransfersAsync(InventoryRequestContext context, Guid? companyId, Guid? branchId, CancellationToken cancellationToken = default)
+    {
+        if (context.TrustedScope is not null && !companyId.HasValue) return InventoryOperationResult<IReadOnlyList<InventoryTransferRecord>>.Failure("scope_required");
+        try
+        {
+            var values = await persistence.ListTransfersAsync(context, companyId.HasValue ? new InventoryScope(context.TenantId.Value, companyId.Value, branchId, Guid.Empty) : null, cancellationToken);
+            var permitted = values.Where(item =>
+                authorization.IsAllowed(context, "inventory.transfer.read", new InventoryScope(context.TenantId.Value, item.CompanyId, item.BranchId, item.SourceWarehouseId))
+                && authorization.IsAllowed(context, "inventory.transfer.read", new InventoryScope(context.TenantId.Value, item.CompanyId, item.BranchId, item.DestinationWarehouseId))).ToArray();
+            return InventoryOperationResult<IReadOnlyList<InventoryTransferRecord>>.Success(permitted);
+        }
+        catch (InvalidOperationException) { return InventoryOperationResult<IReadOnlyList<InventoryTransferRecord>>.Failure("persistence_unavailable"); }
+    }
+
+    public async Task<InventoryOperationResult<InventoryTransferRecord>> FindTransferAsync(InventoryRequestContext context, Guid transferId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var value = await persistence.FindTransferAsync(context, transferId, cancellationToken);
+            if (value is null) return InventoryOperationResult<InventoryTransferRecord>.Failure("not_found");
+            var sourceScope = new InventoryScope(context.TenantId.Value, value.CompanyId, value.BranchId, value.SourceWarehouseId);
+            var destinationScope = new InventoryScope(context.TenantId.Value, value.CompanyId, value.BranchId, value.DestinationWarehouseId);
+            return authorization.IsAllowed(context, "inventory.transfer.read", sourceScope)
+                && authorization.IsAllowed(context, "inventory.transfer.read", destinationScope)
+                ? InventoryOperationResult<InventoryTransferRecord>.Success(value)
+                : InventoryOperationResult<InventoryTransferRecord>.Failure("forbidden");
+        }
+        catch (InvalidOperationException) { return InventoryOperationResult<InventoryTransferRecord>.Failure("persistence_unavailable"); }
+    }
+
+    public async Task<InventoryOperationResult<InventoryTransferRecord>> CreateTransferAsync(InventoryRequestContext context, InventoryTransferCreateRequest request, string? idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        if (request.CompanyId == Guid.Empty || request.SourceWarehouseId == Guid.Empty || request.DestinationWarehouseId == Guid.Empty || request.SourceWarehouseId == request.DestinationWarehouseId || request.ProductId == Guid.Empty || request.Quantity <= 0m) return InventoryOperationResult<InventoryTransferRecord>.Failure("validation_failed");
+        var sourceResolution = await ResolveScopeAsync(context, "inventory.transfer.create", request.SourceWarehouseId, request.CompanyId, request.BranchId, cancellationToken);
+        if (!sourceResolution.Succeeded) return InventoryOperationResult<InventoryTransferRecord>.Failure(sourceResolution.Code);
+        var destination = await warehouses.FindAsync(context, request.DestinationWarehouseId, cancellationToken);
+        if (destination is null || !destination.IsActive || destination.CompanyId != request.CompanyId || destination.BranchId != request.BranchId) return InventoryOperationResult<InventoryTransferRecord>.Failure("warehouse_not_available");
+        if (!authorization.IsAllowed(context, "inventory.transfer.create", new InventoryScope(context.TenantId.Value, request.CompanyId, request.BranchId, destination.WarehouseId))) return InventoryOperationResult<InventoryTransferRecord>.Failure("forbidden");
+        var product = await products.FindAsync(context, request.ProductId, cancellationToken); var validation = ValidateProduct(product, request.UnitOfMeasureId, request.TrackingIdentity);
+        if (!validation.Succeeded) return InventoryOperationResult<InventoryTransferRecord>.Failure(validation.Code);
+        var command = new InventoryTransferCreateCommand(Guid.NewGuid(), sourceResolution.Value!, sourceResolution.Warehouse!, destination, request.ProductId, request.UnitOfMeasureId, product!, request.Quantity, request.Mode, NormalizeTracking(request.TrackingIdentity), Normalize(request.Reason, 2048), context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(request));
+        try { var value = await persistence.CreateTransferAsync(context, command, cancellationToken); return value is null ? InventoryOperationResult<InventoryTransferRecord>.Failure("conflict") : InventoryOperationResult<InventoryTransferRecord>.Success(value); }
+        catch (InvalidOperationException) { return InventoryOperationResult<InventoryTransferRecord>.Failure("persistence_unavailable"); }
+    }
+
+    public Task<InventoryOperationResult<InventoryTransferRecord>> PostDirectTransferAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, InventoryTransferActionRequest? request, string? idempotencyKey, CancellationToken cancellationToken = default) => ActTransferAsync(context, id, expectedVersion, request, idempotencyKey, "inventory.transfer.direct", persistence.PostDirectTransferAsync, cancellationToken);
+    public Task<InventoryOperationResult<InventoryTransferRecord>> ShipTransferAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, InventoryTransferActionRequest? request, string? idempotencyKey, CancellationToken cancellationToken = default) => ActTransferAsync(context, id, expectedVersion, request, idempotencyKey, "inventory.transfer.ship", persistence.ShipTransferAsync, cancellationToken);
+    public Task<InventoryOperationResult<InventoryTransferRecord>> ReceiveTransferAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, InventoryTransferActionRequest? request, string? idempotencyKey, CancellationToken cancellationToken = default) => ActTransferAsync(context, id, expectedVersion, request, idempotencyKey, "inventory.transfer.receive", persistence.ReceiveTransferAsync, cancellationToken);
+    public Task<InventoryOperationResult<InventoryTransferRecord>> ResolveTransferShortageAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, InventoryTransferActionRequest? request, string? idempotencyKey, CancellationToken cancellationToken = default) => ActTransferAsync(context, id, expectedVersion, request, idempotencyKey, "inventory.transfer.shortage-resolve", persistence.ResolveTransferShortageAsync, cancellationToken);
+    public Task<InventoryOperationResult<InventoryTransferRecord>> CancelTransferAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, InventoryTransferActionRequest? request, string? idempotencyKey, CancellationToken cancellationToken = default) => ActTransferAsync(context, id, expectedVersion, request, idempotencyKey, "inventory.transfer.cancel", persistence.CancelTransferAsync, cancellationToken);
+
+    public Task<InventoryOperationResult<IReadOnlyList<InventoryTransferEventRecord>>> ReadTransferHistoryAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken = default) => ReadTransferHistoryAuthorizedAsync(context, id, cancellationToken);
+
+    public InventoryOperationResult<InventoryCustomerReturnBoundaryRecord> GetCustomerReturnBoundary(InventoryRequestContext context) =>
+        InventoryOperationResult<InventoryCustomerReturnBoundaryRecord>.Success(new InventoryCustomerReturnBoundaryRecord(false, "unavailable", "sales_customer_return_handoff_required", "Sales integration boundary"));
+
+    private async Task<InventoryOperationResult<InventoryTransferRecord>> ActTransferAsync(
+        InventoryRequestContext context, Guid id, byte[] expectedVersion, InventoryTransferActionRequest? request, string? idempotencyKey, string operationId,
+        Func<InventoryRequestContext, InventoryTransferActionCommand, CancellationToken, Task<InventoryTransferRecord?>> action, CancellationToken cancellationToken)
+    {
+        var current = await persistence.FindTransferAsync(context, id, cancellationToken);
+        if (current is null) return InventoryOperationResult<InventoryTransferRecord>.Failure("not_found");
+        var sourceScope = new InventoryScope(context.TenantId.Value, current.CompanyId, current.BranchId, current.SourceWarehouseId);
+        var destinationScope = new InventoryScope(context.TenantId.Value, current.CompanyId, current.BranchId, current.DestinationWarehouseId);
+        if (!authorization.IsAllowed(context, operationId, sourceScope) || !authorization.IsAllowed(context, operationId, destinationScope)) return InventoryOperationResult<InventoryTransferRecord>.Failure("forbidden");
+        if (expectedVersion is null || expectedVersion.Length == 0) return InventoryOperationResult<InventoryTransferRecord>.Failure("validation_failed");
+        if (request?.Quantity is <= 0) return InventoryOperationResult<InventoryTransferRecord>.Failure("invalid_quantity");
+        var canonicalRequest = request is null
+            ? null
+            : request with { Reference = InventoryTransferReferencePolicy.Normalize(request.Reference) };
+        var command = new InventoryTransferActionCommand(id, expectedVersion, canonicalRequest?.Quantity, canonicalRequest?.Reference, Normalize(canonicalRequest?.Reason, 2048), context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(new { id, request = canonicalRequest, expectedVersion }));
+        try { var value = await action(context, command, cancellationToken); return value is null ? InventoryOperationResult<InventoryTransferRecord>.Failure("conflict") : InventoryOperationResult<InventoryTransferRecord>.Success(value); }
+        catch (InvalidOperationException) { return InventoryOperationResult<InventoryTransferRecord>.Failure("persistence_unavailable"); }
+    }
+
+    private async Task<InventoryOperationResult<IReadOnlyList<InventoryTransferEventRecord>>> ReadTransferHistoryAuthorizedAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken)
+    {
+        var current = await persistence.FindTransferAsync(context, id, cancellationToken); if (current is null) return InventoryOperationResult<IReadOnlyList<InventoryTransferEventRecord>>.Failure("not_found");
+        if (!authorization.IsAllowed(context, "inventory.transfer.history.read", new InventoryScope(context.TenantId.Value, current.CompanyId, current.BranchId, current.SourceWarehouseId))
+            || !authorization.IsAllowed(context, "inventory.transfer.history.read", new InventoryScope(context.TenantId.Value, current.CompanyId, current.BranchId, current.DestinationWarehouseId))) return InventoryOperationResult<IReadOnlyList<InventoryTransferEventRecord>>.Failure("forbidden");
+        return InventoryOperationResult<IReadOnlyList<InventoryTransferEventRecord>>.Success(await persistence.ReadTransferHistoryAsync(context, id, cancellationToken));
     }
 
     private async Task<ScopeResolution> ResolveScopeAsync(InventoryRequestContext context, string operationId, Guid warehouseId, Guid companyId, Guid? branchId, CancellationToken cancellationToken)

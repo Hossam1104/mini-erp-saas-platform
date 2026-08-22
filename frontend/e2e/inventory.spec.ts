@@ -32,6 +32,8 @@ test('Inventory workspace renders server-provided scope and availability', async
   }));
   await page.route('**/api/v1/auth/contexts', (route) => route.fulfill({ json: { contexts: [] } }));
   await page.route('**/api/v1/inventory/warehouses**', (route) => route.fulfill({ json: [{ tenantId: 'tenant-a', companyId: 'company-a', branchId: null, warehouseId: 'warehouse-a', code: 'WH-A', name: 'Main warehouse', displayName: 'WH-A · Main warehouse', isActive: true }] }));
+  await page.route('**/api/v1/inventory/transfers**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/inventory/customer-returns/boundary', (route) => route.fulfill({ json: { available: false, code: 'unavailable', message: 'Sales handoff required', sourceType: 'CustomerReturn' } }));
   await page.route('**/api/v1/master-data/products', (route) => route.fulfill({ json: [{ id: 'product-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', sku: 'SKU-A', englishName: 'Product A', arabicName: null, description: null, categoryId: 'category-a', baseUnitOfMeasureId: 'unit-a', trackingDefaultEnabled: false, trackingEnabledOverride: false, trackingEnabled: false, isSellable: true, isPurchasable: true, isInventoryRelevant: true, barcodes: [] }] }));
   await page.route('**/api/v1/master-data/units-of-measure', (route) => route.fulfill({ json: [{ id: 'unit-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', code: 'EA', englishName: 'Each', arabicName: null }] }));
   await page.route('**/api/v1/inventory/ledger**', (route) => route.fulfill({ json: [] }));
@@ -62,6 +64,8 @@ test('Inventory opening posts to the ledger and reservation release restores ava
   await page.route('**/api/v1/auth/contexts', (route) => route.fulfill({ json: { contexts: [] } }));
   await page.route('**/api/v1/auth/antiforgery', (route) => route.fulfill({ status: 204, headers: { 'X-CSRF-TOKEN': 'inventory-e2e-token' } }));
   await page.route('**/api/v1/inventory/warehouses**', (route) => route.fulfill({ json: [{ tenantId: 'tenant-a', companyId: 'company-a', branchId: null, warehouseId: 'warehouse-a', code: 'WH-A', name: 'Main warehouse', displayName: 'WH-A · Main warehouse', isActive: true }] }));
+  await page.route('**/api/v1/inventory/transfers**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/inventory/customer-returns/boundary', (route) => route.fulfill({ json: { available: false, code: 'unavailable', message: 'Sales handoff required', sourceType: 'CustomerReturn' } }));
   await page.route('**/api/v1/master-data/products', (route) => route.fulfill({ json: [{ id: 'product-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', sku: 'SKU-A', englishName: 'Product A', arabicName: null, description: null, categoryId: 'category-a', baseUnitOfMeasureId: 'unit-a', trackingDefaultEnabled: false, trackingEnabledOverride: false, trackingEnabled: false, isSellable: true, isPurchasable: true, isInventoryRelevant: true, barcodes: [] }] }));
   await page.route('**/api/v1/master-data/units-of-measure', (route) => route.fulfill({ json: [{ id: 'unit-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', code: 'EA', englishName: 'Each', arabicName: null }] }));
   await page.route('**/api/v1/inventory/opening-balances**', async (route) => {

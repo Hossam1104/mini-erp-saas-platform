@@ -1,5 +1,24 @@
 # Mini ERP Tenant-Aware Shell
 
+> **Current MESP-129 workspace overlay - 22 August 2026.** The Inventory
+> workspace now exposes server-authorized Warehouse Transfers with direct and
+> two-step/InTransit flows, partial receipt, shortage/loss and overage-safe
+> states, immutable history evidence, and human-readable Warehouse/Product/UOM
+> facts. Goods Receipt lines expose the authoritative Inventory post action;
+> Supplier Return exposes a real physical-post action only in the
+> `AwaitingInventory` state; and Customer Return remains a truthful blocked
+> state awaiting an authoritative Sales handoff. The UI preserves EN/AR,
+> RTL/LTR, keyboard labels, responsive safe errors, and no client Tenant
+> authority. No arbitrary customer-return form or MESP-130/MESP-131,
+> commercial Sales, Finance, or Wafra-specific behavior is included.
+
+> **MESP-129 validation.** Angular passes **241/241 across 32 spec files**;
+> production build is **499.97 kB initial total** with a **33.12 kB Inventory
+> lazy chunk**; full Chromium is **26/26**; both npm audit --omit=dev and full
+> npm audit report **0 vulnerabilities**; and `frontend/assets` is untouched.
+> Code-complete commit is `01ea8f7369d173c15cf55a723d6bd95006208282`; Draft PR
+> **#73** remains open/Draft/unmerged.
+
 > **Current MESP-128 workspace overlay - 21 August 2026.** The shell now
 > includes a lazy Inventory workspace at /app/inventory with server-provided
 > Warehouse scope, human-readable Product/UOM selection, six distinct stock

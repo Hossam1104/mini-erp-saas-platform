@@ -805,6 +805,19 @@ Deferral means "not required now," not "forbidden forever." Introduction require
 | Version or licensing mismatch | Unsupported or unexpectedly costly production environment | Validate vendor support, images, licensing, hosting, and upgrade plan before design freeze |
 | Saudi compliance assumption | Incorrect tax, privacy, or e-invoice behavior | Qualified Saudi review, versioned country pack, certification evidence, adapter isolation |
 
+## MESP-129 Supplier Return lifecycle coordination constraint
+
+The current MESP-129 Supplier Return physical/commercial lifecycle exclusion
+uses a process-local `ConcurrentDictionary<Guid, SemaphoreSlim>` gate and is
+valid only while exactly one API process is active. Horizontal API scale-out is
+not approved while this process-local gate is the only cross-module lifecycle
+coordinator. Before multiple API instances are enabled, the gate must be
+replaced or supplemented by durable cross-instance coordination. This
+deployment constraint is specific to the current MESP-129 Supplier Return
+physical/commercial coordination implementation; it does not state that the
+whole ERP can never scale out, and it does not change the existing MESP-128
+stock concurrency anchors.
+
 # 21. Architecture decision records required
 
 The following ADRs must exist in docs/Decisions.md or linked files before the affected implementation begins:

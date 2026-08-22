@@ -5,7 +5,20 @@ namespace MiniErp.Contracts.Modules.Inventory;
 public enum InventoryMovementSourceType
 {
     OpeningBalance = 1,
-    Correction = 2
+    Correction = 2,
+    GoodsReceipt = 3,
+    WarehouseTransferShipment = 4,
+    WarehouseTransferReceipt = 5,
+    SupplierReturn = 6,
+    CustomerReturn = 7,
+    WarehouseTransferLoss = 8,
+    WarehouseTransferReturn = 9
+}
+
+public enum InventoryValuationStatus
+{
+    Known = 1,
+    Pending = 2
 }
 
 public enum InventoryMovementDirection
@@ -42,6 +55,32 @@ public enum InventoryReservationAction
     Created = 1,
     Reduced = 2,
     Released = 3
+}
+
+public enum InventoryTransferMode
+{
+    Direct = 1,
+    InTransit = 2
+}
+
+public enum InventoryTransferStatus
+{
+    Draft = 1,
+    Shipped = 2,
+    PartiallyReceived = 3,
+    Completed = 4,
+    LossResolved = 5,
+    Cancelled = 6
+}
+
+public enum InventoryTransferEventType
+{
+    Created = 1,
+    DirectCompleted = 2,
+    Shipped = 3,
+    Received = 4,
+    ShortageResolved = 5,
+    Cancelled = 6
 }
 
 public sealed record InventoryWarehouseOption(
@@ -173,8 +212,8 @@ public sealed record InventoryMovementRecord(
     string UnitOfMeasureCode,
     InventoryMovementDirection Direction,
     decimal Quantity,
-    decimal UnitCost,
-    string CurrencyCode,
+    decimal? UnitCost,
+    string? CurrencyCode,
     string? TrackingIdentity,
     InventoryMovementSourceType SourceType,
     Guid SourceDocumentId,
@@ -184,7 +223,17 @@ public sealed record InventoryMovementRecord(
     Guid ActorId,
     string CorrelationId,
     DateTimeOffset PostedAt,
-    byte[] Version);
+    byte[] Version,
+    InventoryValuationStatus ValuationStatus = InventoryValuationStatus.Pending,
+    Guid? GoodsReceiptId = null,
+    Guid? GoodsReceiptLineId = null,
+    Guid? SupplierReturnId = null,
+    Guid? SupplierReturnLineId = null,
+    Guid? PurchaseOrderId = null,
+    Guid? PurchaseOrderLineId = null,
+    Guid? TransferId = null,
+    Guid? TransferLineId = null,
+    string? SourceReference = null);
 
 public sealed record InventoryAvailabilityRecord(
     Guid TenantId,
@@ -265,5 +314,126 @@ public sealed record InventoryAuditRecord(
     string? AfterSummary,
     DateTimeOffset OccurredAt,
     byte[] Version);
+
+public sealed record InventoryGoodsReceiptPostRequest(Guid GoodsReceiptId, Guid GoodsReceiptLineId, byte[]? ExpectedVersion = null);
+
+public sealed record InventorySupplierReturnPostRequest(Guid SupplierReturnId, byte[]? ExpectedVersion = null);
+
+public sealed record InventoryTransferCreateRequest(
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid SourceWarehouseId,
+    Guid DestinationWarehouseId,
+    Guid ProductId,
+    Guid UnitOfMeasureId,
+    decimal Quantity,
+    InventoryTransferMode Mode,
+    string? TrackingIdentity = null,
+    string? Reason = null);
+
+public sealed record InventoryTransferActionRequest(
+    decimal? Quantity = null,
+    string? Reference = null,
+    string? Reason = null);
+
+public static class InventoryTransferReferencePolicy
+{
+    public static string? Normalize(string? reference)
+    {
+        if (string.IsNullOrWhiteSpace(reference))
+        {
+            return null;
+        }
+
+        var trimmed = reference.Trim();
+        return trimmed[..Math.Min(trimmed.Length, 512)].ToUpperInvariant();
+    }
+}
+
+public sealed record InventoryGoodsReceiptPostingRecord(
+    Guid MovementId,
+    Guid TenantId,
+    Guid GoodsReceiptId,
+    Guid GoodsReceiptLineId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid WarehouseId,
+    string WarehouseCode,
+    string WarehouseName,
+    Guid ProductId,
+    string ProductSku,
+    string ProductName,
+    Guid UnitOfMeasureId,
+    string UnitOfMeasureCode,
+    decimal Quantity,
+    InventoryValuationStatus ValuationStatus,
+    DateTimeOffset PostedAt,
+    bool WasExisting = false);
+
+public sealed record InventorySupplierReturnPostingRecord(
+    Guid SupplierReturnId,
+    IReadOnlyList<Guid> MovementIds,
+    decimal Quantity,
+    string HandoffReference,
+    InventoryValuationStatus ValuationStatus,
+    DateTimeOffset PostedAt,
+    bool WasExisting = false,
+    bool HandoffRecorded = false,
+    Guid? CompanyId = null,
+    Guid? BranchId = null,
+    Guid? WarehouseId = null);
+
+public sealed record InventoryTransferEventRecord(
+    Guid Id,
+    Guid TransferId,
+    Guid TransferLineId,
+    InventoryTransferEventType EventType,
+    decimal Quantity,
+    string? Reference,
+    string? Reason,
+    Guid ActorId,
+    string CorrelationId,
+    DateTimeOffset OccurredAt,
+    Guid? SourceMovementId,
+    Guid? DestinationMovementId,
+    byte[] Version);
+
+public sealed record InventoryTransferRecord(
+    Guid Id,
+    Guid TenantId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid SourceWarehouseId,
+    string SourceWarehouseCode,
+    string SourceWarehouseName,
+    Guid DestinationWarehouseId,
+    string DestinationWarehouseCode,
+    string DestinationWarehouseName,
+    Guid ProductId,
+    string ProductSku,
+    string ProductName,
+    Guid UnitOfMeasureId,
+    string UnitOfMeasureCode,
+    decimal Quantity,
+    InventoryTransferMode Mode,
+    InventoryTransferStatus Status,
+    string? TrackingIdentity,
+    decimal ShippedQuantity,
+    decimal ReceivedQuantity,
+    decimal LostQuantity,
+    decimal InTransitQuantity,
+    decimal RemainingToShipQuantity,
+    string? Reason,
+    Guid ActorId,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    IReadOnlyList<InventoryTransferEventRecord> Events,
+    byte[] Version);
+
+public sealed record InventoryCustomerReturnBoundaryRecord(
+    bool Available,
+    string Status,
+    string MessageKey,
+    string? AuthoritativeSource);
 
 #pragma warning restore CS1591

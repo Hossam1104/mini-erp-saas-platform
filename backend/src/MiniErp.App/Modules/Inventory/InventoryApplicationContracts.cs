@@ -6,8 +6,10 @@ using System.Text.Json;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.MasterData;
+using MiniErp.App.Modules.Procurement;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
+using MiniErp.Contracts.Modules.Procurement;
 
 namespace MiniErp.App.Modules.Inventory;
 
@@ -288,6 +290,301 @@ public sealed class MasterDataInventoryProductProvider(
     }
 }
 
+public sealed record InventoryGoodsReceiptSourceRecord(
+    GoodsReceiptRecord Receipt,
+    GoodsReceiptLineRecord Line,
+    InventoryProductReference Product,
+    InventoryWarehouseOption Warehouse,
+    Guid UnitOfMeasureId);
+
+public interface IInventoryGoodsReceiptSourceProvider
+{
+    Task<InventoryGoodsReceiptSourceRecord?> FindAsync(
+        InventoryRequestContext context,
+        Guid goodsReceiptId,
+        Guid goodsReceiptLineId,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class NoInventoryGoodsReceiptSourceProvider : IInventoryGoodsReceiptSourceProvider
+{
+    public Task<InventoryGoodsReceiptSourceRecord?> FindAsync(InventoryRequestContext context, Guid goodsReceiptId, Guid goodsReceiptLineId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<InventoryGoodsReceiptSourceRecord?>(null);
+}
+
+public sealed class ProcurementInventoryGoodsReceiptSourceProvider(
+    IGoodsReceiptPersistence goodsReceipts,
+    IInventoryProductProvider products,
+    IInventoryWarehouseProvider warehouses) : IInventoryGoodsReceiptSourceProvider
+{
+    public async Task<InventoryGoodsReceiptSourceRecord?> FindAsync(
+        InventoryRequestContext context,
+        Guid goodsReceiptId,
+        Guid goodsReceiptLineId,
+        CancellationToken cancellationToken = default)
+    {
+        var receipt = await goodsReceipts.FindAsync(context.TenantContext, goodsReceiptId, cancellationToken);
+        if (receipt is null || receipt.TenantId != context.TenantId.Value || receipt.Status != GoodsReceiptStatus.Recorded)
+        {
+            return null;
+        }
+
+        var line = receipt.Lines.SingleOrDefault(item => item.Id == goodsReceiptLineId);
+        if (line is null || line.AcceptedQuantity <= 0m)
+        {
+            return null;
+        }
+
+        var product = await products.FindAsync(context, line.ProductId, cancellationToken);
+        if (product is null
+            || !product.IsActive
+            || !product.IsInventoryRelevant
+            || !string.Equals(product.BaseUnitOfMeasureCode, line.UnitOfMeasureCode, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var warehouse = await warehouses.FindAsync(context, receipt.WarehouseId, cancellationToken);
+        if (warehouse is null
+            || !warehouse.IsActive
+            || warehouse.CompanyId != receipt.Scope.CompanyId
+            || warehouse.BranchId != receipt.Scope.BranchId)
+        {
+            return null;
+        }
+
+        return new InventoryGoodsReceiptSourceRecord(receipt, line, product, warehouse, product.BaseUnitOfMeasureId);
+    }
+}
+
+public sealed record InventorySupplierReturnLineSourceRecord(
+    SupplierReturnLineRecord ReturnLine,
+    GoodsReceiptLineRecord ReceiptLine,
+    InventoryProductReference Product,
+    Guid UnitOfMeasureId);
+
+public sealed record InventorySupplierReturnSourceRecord(
+    SupplierReturnRecord SupplierReturn,
+    GoodsReceiptRecord GoodsReceipt,
+    InventoryWarehouseOption Warehouse,
+    IReadOnlyList<InventorySupplierReturnLineSourceRecord> Lines);
+
+public interface IInventorySupplierReturnSourceProvider
+{
+    Task<InventorySupplierReturnSourceRecord?> FindAsync(
+        InventoryRequestContext context,
+        Guid supplierReturnId,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class NoInventorySupplierReturnSourceProvider : IInventorySupplierReturnSourceProvider
+{
+    public Task<InventorySupplierReturnSourceRecord?> FindAsync(InventoryRequestContext context, Guid supplierReturnId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<InventorySupplierReturnSourceRecord?>(null);
+}
+
+public enum InventorySupplierReturnStateLookupOutcome
+{
+    Found = 1,
+    NotFound = 2,
+    Unavailable = 3
+}
+
+public sealed record InventorySupplierReturnStateLookup(
+    InventorySupplierReturnStateLookupOutcome Outcome,
+    SupplierReturnRecord? Record)
+{
+    public static InventorySupplierReturnStateLookup Found(SupplierReturnRecord record) => new(InventorySupplierReturnStateLookupOutcome.Found, record);
+    public static readonly InventorySupplierReturnStateLookup NotFound = new(InventorySupplierReturnStateLookupOutcome.NotFound, null);
+    public static readonly InventorySupplierReturnStateLookup Unavailable = new(InventorySupplierReturnStateLookupOutcome.Unavailable, null);
+}
+
+public interface IInventorySupplierReturnStateProvider
+{
+    Task<InventorySupplierReturnStateLookup> FindAsync(
+        InventoryRequestContext context,
+        Guid supplierReturnId,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class NoInventorySupplierReturnStateProvider : IInventorySupplierReturnStateProvider
+{
+    public Task<InventorySupplierReturnStateLookup> FindAsync(InventoryRequestContext context, Guid supplierReturnId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(InventorySupplierReturnStateLookup.Unavailable);
+}
+
+public sealed class ProcurementInventorySupplierReturnStateProvider(ISupplierReturnPersistence supplierReturns) : IInventorySupplierReturnStateProvider
+{
+    public async Task<InventorySupplierReturnStateLookup> FindAsync(
+        InventoryRequestContext context,
+        Guid supplierReturnId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var record = await supplierReturns.FindAsync(context.TenantContext, supplierReturnId, cancellationToken);
+            return record is null
+                ? InventorySupplierReturnStateLookup.NotFound
+                : InventorySupplierReturnStateLookup.Found(record);
+        }
+        catch
+        {
+            return InventorySupplierReturnStateLookup.Unavailable;
+        }
+    }
+}
+
+public sealed class ProcurementInventorySupplierReturnSourceProvider(
+    ISupplierReturnPersistence supplierReturns,
+    IGoodsReceiptPersistence goodsReceipts,
+    IInventoryProductProvider products,
+    IInventoryWarehouseProvider warehouses) : IInventorySupplierReturnSourceProvider
+{
+    public async Task<InventorySupplierReturnSourceRecord?> FindAsync(
+        InventoryRequestContext context,
+        Guid supplierReturnId,
+        CancellationToken cancellationToken = default)
+    {
+        var supplierReturn = await supplierReturns.FindAsync(context.TenantContext, supplierReturnId, cancellationToken);
+        if (supplierReturn is null
+            || supplierReturn.TenantId != context.TenantId.Value
+            || supplierReturn.Status != SupplierReturnStatus.AwaitingInventory)
+        {
+            return null;
+        }
+
+        var receipt = await goodsReceipts.FindAsync(context.TenantContext, supplierReturn.GoodsReceiptId, cancellationToken);
+        if (receipt is null
+            || receipt.Status != GoodsReceiptStatus.Recorded
+            || receipt.Scope.CompanyId != supplierReturn.Scope.CompanyId
+            || receipt.Scope.BranchId != supplierReturn.Scope.BranchId)
+        {
+            return null;
+        }
+
+        var warehouse = await warehouses.FindAsync(context, supplierReturn.WarehouseId, cancellationToken);
+        if (warehouse is null
+            || !warehouse.IsActive
+            || warehouse.CompanyId != supplierReturn.Scope.CompanyId
+            || warehouse.BranchId != supplierReturn.Scope.BranchId)
+        {
+            return null;
+        }
+
+        var receiptLines = receipt.Lines.ToDictionary(item => item.Id);
+        var lines = new List<InventorySupplierReturnLineSourceRecord>(supplierReturn.Lines.Count);
+        foreach (var returnLine in supplierReturn.Lines)
+        {
+            if (!receiptLines.TryGetValue(returnLine.GoodsReceiptLineId, out var receiptLine)
+                || returnLine.ReturnQuantity <= 0m
+                || returnLine.ReturnQuantity > receiptLine.AcceptedQuantity)
+            {
+                return null;
+            }
+
+            var product = await products.FindAsync(context, returnLine.ProductId, cancellationToken);
+            if (product is null
+                || !product.IsActive
+                || !product.IsInventoryRelevant
+                || product.ProductId != receiptLine.ProductId
+                || !string.Equals(product.BaseUnitOfMeasureCode, receiptLine.UnitOfMeasureCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            lines.Add(new InventorySupplierReturnLineSourceRecord(returnLine, receiptLine, product, product.BaseUnitOfMeasureId));
+        }
+
+        return lines.Count == 0 ? null : new InventorySupplierReturnSourceRecord(supplierReturn, receipt, warehouse, lines);
+    }
+}
+
+public sealed record InventorySupplierReturnHandoffResult(bool Succeeded, string Code, Guid? HandoffEvidenceId)
+{
+    public static InventorySupplierReturnHandoffResult Recorded(Guid id) => new(true, "recorded", id);
+    public static InventorySupplierReturnHandoffResult Pending(string code) => new(false, code, null);
+}
+
+public interface IInventorySupplierReturnHandoffWriter
+{
+    Task<InventorySupplierReturnHandoffResult> RecordAsync(
+        InventoryRequestContext context,
+        InventorySupplierReturnSourceRecord source,
+        string handoffReference,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class NoInventorySupplierReturnHandoffWriter : IInventorySupplierReturnHandoffWriter
+{
+    public Task<InventorySupplierReturnHandoffResult> RecordAsync(InventoryRequestContext context, InventorySupplierReturnSourceRecord source, string handoffReference, CancellationToken cancellationToken = default) =>
+        Task.FromResult(InventorySupplierReturnHandoffResult.Pending("handoff_unavailable"));
+}
+
+public sealed class ProcurementInventorySupplierReturnHandoffWriter(
+    ISupplierReturnPersistence supplierReturns,
+    ISupplierReturnPhysicalEffectGate? physicalEffectGate = null) : IInventorySupplierReturnHandoffWriter
+{
+    public async Task<InventorySupplierReturnHandoffResult> RecordAsync(
+        InventoryRequestContext context,
+        InventorySupplierReturnSourceRecord source,
+        string handoffReference,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(handoffReference) || handoffReference.Length > 256)
+        {
+            return InventorySupplierReturnHandoffResult.Pending("handoff_reference_invalid");
+        }
+
+        try
+        {
+            using var lease = await (physicalEffectGate ?? new SupplierReturnPhysicalEffectGate()).AcquireAsync(source.SupplierReturn.Id, cancellationToken);
+            var evidenceId = Guid.NewGuid();
+            var now = DateTimeOffset.UtcNow;
+            var evidence = new SupplierReturnAuditEvidence(
+                evidenceId,
+                source.SupplierReturn.Id,
+                now,
+                "procurement.supplier-return.inventory-handoff.record",
+                context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"),
+                context.TenantId.Value,
+                context.ActorId,
+                context.SessionId,
+                context.AuthorizationPath.ToString(),
+                "Allowed",
+                "Inventory physical posting",
+                source.SupplierReturn.Status,
+                SupplierReturnStatus.AwaitingFinance,
+                source.SupplierReturn.Scope.CompanyId,
+                source.SupplierReturn.Scope.BranchId,
+                source.SupplierReturn.Status.ToString(),
+                SupplierReturnStatus.AwaitingFinance.ToString(),
+                null,
+                null);
+            var command = new SupplierReturnActionCommand(
+                source.SupplierReturn.Id,
+                source.SupplierReturn.Version,
+                SupplierReturnMutationAction.RecordInventoryHandoff,
+                context.ActorId,
+                "Inventory physical posting",
+                now,
+                null,
+                handoffReference,
+                null,
+                null,
+                null,
+                null);
+            var result = await supplierReturns.ActionAsync(context.TenantContext, command, evidence, cancellationToken);
+            return result.Succeeded && result.Value is not null
+                ? InventorySupplierReturnHandoffResult.Recorded(evidenceId)
+                : InventorySupplierReturnHandoffResult.Pending(result.Code);
+        }
+        catch
+        {
+            return InventorySupplierReturnHandoffResult.Pending("handoff_unavailable");
+        }
+    }
+}
+
 public sealed record InventoryOpeningBalanceCommand(
     Guid Id,
     InventoryScope Scope,
@@ -367,7 +664,69 @@ public sealed record InventoryReservationCommand(
     string? IdempotencyKey,
     string RequestFingerprint);
 
+public sealed record InventoryGoodsReceiptPostCommand(
+    Guid PostingId,
+    InventoryGoodsReceiptSourceRecord Source,
+    Guid ActorId,
+    DateTimeOffset OccurredAt,
+    string CorrelationId,
+    string? IdempotencyKey,
+    string RequestFingerprint);
+
+public sealed record InventorySupplierReturnPostCommand(
+    Guid PostingId,
+    InventorySupplierReturnSourceRecord Source,
+    Guid ActorId,
+    DateTimeOffset OccurredAt,
+    string CorrelationId,
+    string? IdempotencyKey,
+    string RequestFingerprint);
+
+public sealed record InventoryTransferCreateCommand(
+    Guid Id,
+    InventoryScope Scope,
+    InventoryWarehouseOption SourceWarehouse,
+    InventoryWarehouseOption DestinationWarehouse,
+    Guid ProductId,
+    Guid UnitOfMeasureId,
+    InventoryProductReference Product,
+    decimal Quantity,
+    InventoryTransferMode Mode,
+    string? TrackingIdentity,
+    string? Reason,
+    Guid ActorId,
+    DateTimeOffset OccurredAt,
+    string CorrelationId,
+    string? IdempotencyKey,
+    string RequestFingerprint);
+
+public sealed record InventoryTransferActionCommand(
+    Guid TransferId,
+    byte[] ExpectedVersion,
+    decimal? Quantity,
+    string? Reference,
+    string? Reason,
+    Guid ActorId,
+    DateTimeOffset OccurredAt,
+    string CorrelationId,
+    string? IdempotencyKey,
+    string RequestFingerprint);
+
 public sealed record InventoryReplayRecord(string ResourceType, Guid ResourceId, string Fingerprint, string SnapshotJson);
+
+public enum InventoryReplayOutcome
+{
+    NotFound = 1,
+    Replay = 2,
+    Conflict = 3
+}
+
+public sealed record InventoryReplayProbe<T>(InventoryReplayOutcome Outcome, T? Value)
+{
+    public static InventoryReplayProbe<T> NotFound => new(InventoryReplayOutcome.NotFound, default);
+    public static InventoryReplayProbe<T> Conflict => new(InventoryReplayOutcome.Conflict, default);
+    public static InventoryReplayProbe<T> ForReplay(T value) => new(InventoryReplayOutcome.Replay, value);
+}
 
 public interface IInventoryPersistence
 {
@@ -387,7 +746,55 @@ public interface IInventoryPersistence
     Task<InventoryReservationRecord?> ReleaseReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<InventoryReservationHistoryRecord>> ReadReservationHistoryAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken = default);
     Task<InventoryAvailabilityRecord?> GetAvailabilityAsync(InventoryRequestContext context, InventoryScope scope, Guid productId, Guid unitOfMeasureId, string? trackingIdentity, InventoryProductReference product, InventoryWarehouseOption warehouse, CancellationToken cancellationToken = default);
+    Task<InventoryGoodsReceiptPostingRecord?> PostGoodsReceiptAsync(InventoryRequestContext context, InventoryGoodsReceiptPostCommand command, CancellationToken cancellationToken = default);
+    Task<InventoryReplayProbe<InventorySupplierReturnPostingRecord>> ProbeSupplierReturnReplayAsync(InventoryRequestContext context, string? idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default);
+    Task<InventorySupplierReturnPostingRecord?> PostSupplierReturnAsync(InventoryRequestContext context, InventorySupplierReturnPostCommand command, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<InventoryTransferRecord>> ListTransfersAsync(InventoryRequestContext context, InventoryScope? scope = null, CancellationToken cancellationToken = default);
+    Task<InventoryTransferRecord?> FindTransferAsync(InventoryRequestContext context, Guid transferId, CancellationToken cancellationToken = default);
+    Task<InventoryTransferRecord?> CreateTransferAsync(InventoryRequestContext context, InventoryTransferCreateCommand command, CancellationToken cancellationToken = default);
+    Task<InventoryTransferRecord?> PostDirectTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default);
+    Task<InventoryTransferRecord?> ShipTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default);
+    Task<InventoryTransferRecord?> ReceiveTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default);
+    Task<InventoryTransferRecord?> ResolveTransferShortageAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default);
+    Task<InventoryTransferRecord?> CancelTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<InventoryTransferEventRecord>> ReadTransferHistoryAsync(InventoryRequestContext context, Guid transferId, CancellationToken cancellationToken = default);
+    Task<bool> HasActiveGoodsReceiptEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default);
+    Task<bool> HasActiveSupplierReturnEffectAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<InventoryAuditRecord>> ReadAuditAsync(InventoryRequestContext context, string resourceType, Guid resourceId, CancellationToken cancellationToken = default);
+}
+
+public sealed class InventoryPersistenceGoodsReceiptEffectReader(IInventoryPersistence persistence) : IGoodsReceiptInventoryEffectReader
+{
+    public async Task<GoodsReceiptInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await persistence.HasActiveGoodsReceiptEffectAsync(tenantContext, goodsReceiptId, cancellationToken)
+                ? GoodsReceiptInventoryEffectVerification.ActiveEffectExists
+                : GoodsReceiptInventoryEffectVerification.NoActiveEffect;
+        }
+        catch
+        {
+            return GoodsReceiptInventoryEffectVerification.Unavailable;
+        }
+    }
+}
+
+public sealed class InventoryPersistenceSupplierReturnEffectReader(IInventoryPersistence persistence) : ISupplierReturnInventoryEffectReader
+{
+    public async Task<SupplierReturnInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await persistence.HasActiveSupplierReturnEffectAsync(tenantContext, supplierReturnId, cancellationToken)
+                ? SupplierReturnInventoryEffectVerification.ActiveEffectExists
+                : SupplierReturnInventoryEffectVerification.NoActiveEffect;
+        }
+        catch
+        {
+            return SupplierReturnInventoryEffectVerification.Unavailable;
+        }
+    }
 }
 
 public sealed class UnavailableInventoryPersistence : IInventoryPersistence
@@ -409,6 +816,20 @@ public sealed class UnavailableInventoryPersistence : IInventoryPersistence
     public Task<InventoryReservationRecord?> ReleaseReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) => Unavailable<InventoryReservationRecord?>();
     public Task<IReadOnlyList<InventoryReservationHistoryRecord>> ReadReservationHistoryAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryReservationHistoryRecord>>();
     public Task<InventoryAvailabilityRecord?> GetAvailabilityAsync(InventoryRequestContext context, InventoryScope scope, Guid productId, Guid unitOfMeasureId, string? trackingIdentity, InventoryProductReference product, InventoryWarehouseOption warehouse, CancellationToken cancellationToken = default) => Unavailable<InventoryAvailabilityRecord?>();
+    public Task<InventoryGoodsReceiptPostingRecord?> PostGoodsReceiptAsync(InventoryRequestContext context, InventoryGoodsReceiptPostCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryGoodsReceiptPostingRecord?>();
+    public Task<InventoryReplayProbe<InventorySupplierReturnPostingRecord>> ProbeSupplierReturnReplayAsync(InventoryRequestContext context, string? idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default) => Task.FromException<InventoryReplayProbe<InventorySupplierReturnPostingRecord>>(new InvalidOperationException("Inventory persistence is unavailable."));
+    public Task<InventorySupplierReturnPostingRecord?> PostSupplierReturnAsync(InventoryRequestContext context, InventorySupplierReturnPostCommand command, CancellationToken cancellationToken = default) => Unavailable<InventorySupplierReturnPostingRecord?>();
+    public Task<IReadOnlyList<InventoryTransferRecord>> ListTransfersAsync(InventoryRequestContext context, InventoryScope? scope = null, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryTransferRecord>>();
+    public Task<InventoryTransferRecord?> FindTransferAsync(InventoryRequestContext context, Guid transferId, CancellationToken cancellationToken = default) => Unavailable<InventoryTransferRecord?>();
+    public Task<InventoryTransferRecord?> CreateTransferAsync(InventoryRequestContext context, InventoryTransferCreateCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryTransferRecord?>();
+    public Task<InventoryTransferRecord?> PostDirectTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryTransferRecord?>();
+    public Task<InventoryTransferRecord?> ShipTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryTransferRecord?>();
+    public Task<InventoryTransferRecord?> ReceiveTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryTransferRecord?>();
+    public Task<InventoryTransferRecord?> ResolveTransferShortageAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryTransferRecord?>();
+    public Task<InventoryTransferRecord?> CancelTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryTransferRecord?>();
+    public Task<IReadOnlyList<InventoryTransferEventRecord>> ReadTransferHistoryAsync(InventoryRequestContext context, Guid transferId, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryTransferEventRecord>>();
+    public Task<bool> HasActiveGoodsReceiptEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default) => Unavailable<bool>();
+    public Task<bool> HasActiveSupplierReturnEffectAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default) => Unavailable<bool>();
     public Task<IReadOnlyList<InventoryAuditRecord>> ReadAuditAsync(InventoryRequestContext context, string resourceType, Guid resourceId, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryAuditRecord>>();
 }
 
