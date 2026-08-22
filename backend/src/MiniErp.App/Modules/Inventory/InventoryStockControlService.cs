@@ -178,10 +178,13 @@ public sealed partial class InventoryService
         {
             var movements = await persistence.ListMovementsAsync(context, scope.Value, null, cancellationToken);
             selected = movements
-                .GroupBy(item => new { item.ProductId, item.UnitOfMeasureId, Tracking = item.TrackingIdentity ?? string.Empty })
+                .Select(item => new InventoryCountLineRequest(item.ProductId, item.UnitOfMeasureId, item.TrackingIdentity))
+                .Concat(lineRequests)
+                .GroupBy(item => new { item.ProductId, item.UnitOfMeasureId, Tracking = NormalizeTracking(item.TrackingIdentity) ?? string.Empty })
                 .Select(group => new InventoryCountLineRequest(group.Key.ProductId, group.Key.UnitOfMeasureId, string.IsNullOrEmpty(group.Key.Tracking) ? null : group.Key.Tracking))
                 .ToList();
         }
+        if (selected.Count > 5000) return InventoryOperationResult<InventoryCountRecord>.Failure("too_many_lines");
         if (selected.Count == 0) return InventoryOperationResult<InventoryCountRecord>.Failure("lines_required");
         var lines = new List<InventoryCountLineCommand>(selected.Count);
         var seen = new HashSet<string>(StringComparer.Ordinal);
