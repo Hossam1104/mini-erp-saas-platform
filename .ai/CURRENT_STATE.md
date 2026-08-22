@@ -1,6 +1,56 @@
 # Current State
 
-## Current authoritative position - 22 August 2026 (MESP-129 Sol acceptance remediation complete; delta handoff)
+## Current authoritative position - 22 August 2026 (MESP-129 OPUS P1 remediation complete; Sol delta handoff)
+
+MESP-129 remains bounded to its Inventory physical-movement capability on
+branch `feat/MESP-129-physical-stock-movements`, based exactly on synchronized
+main `2cf6b315c69c87f26ca4bbfc774e3e0eb451c5e3`. This remediation started from
+the exact synchronized local/remote branch SHA
+`b5a0aaca856d571089c65d341de4b8e19205793d`; the bounded P1 implementation and
+regression commit is `a824e8a`. Draft PR #73 is open, Draft, and unmerged.
+Jira remains read-only; no Jira writes were performed.
+
+The P1 defect was cumulative Supplier Return outbound-capacity validation when
+multiple commercial return lines resolve to one identical Company/Branch/
+Warehouse/Product/UOM/TrackingIdentity stock key. The correction resolves
+OnHand and active Reserved once per distinct stock identity, stages cumulative
+outbound quantity by identity, validates every aggregate before creating any
+movement, and preserves one immutable movement per Supplier Return line with
+full Supplier Return/Goods Receipt/Purchase Order lineage. Serializable
+transactions and the existing MESP-128 anchors remain unchanged.
+
+Executable regressions cover two-line same-identity over-capacity rejection,
+reservation protection, and exact-boundary success. Failure cases prove no
+Supplier Return movement, success replay, success audit, or Procurement
+handoff effect; the success case proves two separate line-level movements and
+`OnHand = Reserved = 5` after a 15-unit outbound from 20 units.
+
+The current Supplier Return physical/commercial lifecycle gate is a
+process-local `ConcurrentDictionary<Guid, SemaphoreSlim>` and is valid only
+with exactly one active API process. Horizontal API scale-out is not approved
+while it is the only cross-module lifecycle coordinator; before multiple API
+instances are enabled, durable cross-instance coordination must replace or
+supplement it. This is specific to the current MESP-129 Supplier Return
+coordination and does not change MESP-128 stock concurrency anchors or state
+that the whole ERP can never scale out.
+
+Validation is Release build 0 warnings/0 errors; focused Inventory 33/33;
+focused Goods Receipt/Supplier Return 23/23; SQL safety 29/29 through the
+canonical disposable LocalDB runner; canonical backend 896/896 passed, 0
+skipped; Angular 241/241 across 32 spec files; production bundle 499.97 kB
+initial with Inventory lazy 33.12 kB and Supplier Quotation lazy 91.94 kB;
+Chromium 26/26; both npm audits 0 vulnerabilities; official launcher runtime
+API `http://localhost:5300` PID 26432 and frontend `http://localhost:4300` PID
+22280 are alive, with `/health`, `/`, and `/main.js` returning HTTP 200; and
+`git diff --check` is clean. Protected `frontend/assets` remains untouched.
+
+The production headline remains approximately 47% overall and 41%
+Procurement/P2P because this is a bounded correctness remediation. The next
+exact step is Sol targeted delta acceptance of the final branch SHA; do not
+merge or start MESP-130, MESP-131, commercial Sales, Finance, or downstream
+implementation.
+
+## Historical MESP-129 Sol acceptance remediation position - 22 August 2026
 
 MESP-129 is code-complete at its bounded Inventory physical-movement scope on
 branch `feat/MESP-129-physical-stock-movements`, based exactly on synchronized
