@@ -468,17 +468,46 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
                 await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return existingResult;
             }
 
-            var identities = source.Lines.Select(line => new StockIdentityKey(source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId, line.ReturnLine.ProductId, line.UnitOfMeasureId, string.Empty));
-            await AcquireConcurrencyAnchorsAsync(db, context.TenantId, identities, cancellationToken);
-            var movements = new List<InventoryStockMovementEntity>(source.Lines.Count);
-            foreach (var line in source.Lines)
+            var lines = source.Lines
+                .Select(line =>
+                {
+                    var identity = new StockIdentityKey(
+                        source.SupplierReturn.Scope.CompanyId,
+                        source.SupplierReturn.Scope.BranchId,
+                        source.Warehouse.WarehouseId,
+                        line.ReturnLine.ProductId,
+                        line.UnitOfMeasureId,
+                        string.Empty);
+                    return (Line: line, Identity: identity);
+                })
+                .ToArray();
+            await AcquireConcurrencyAnchorsAsync(db, context.TenantId, lines.Select(item => item.Identity), cancellationToken);
+
+            var availabilityByIdentity = new Dictionary<StockIdentityKey, (decimal OnHand, decimal Reserved)>();
+            foreach (var identity in lines.Select(item => item.Identity).Distinct())
             {
-                var identity = new StockIdentityKey(source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId, line.ReturnLine.ProductId, line.UnitOfMeasureId, string.Empty);
-                var onHand = await SignedQuantityAsync(db, identity, cancellationToken);
-                var reserved = await ActiveReservedQuantityAsync(db, identity, cancellationToken);
-                if (onHand - line.ReturnLine.ReturnQuantity < reserved) return null;
+                availabilityByIdentity[identity] = (
+                    await SignedQuantityAsync(db, identity, cancellationToken),
+                    await ActiveReservedQuantityAsync(db, identity, cancellationToken));
+            }
+
+            var stagedOutboundByIdentity = new Dictionary<StockIdentityKey, decimal>();
+            foreach (var item in lines)
+            {
+                var staged = stagedOutboundByIdentity.GetValueOrDefault(item.Identity);
+                var cumulativeOutbound = staged + item.Line.ReturnLine.ReturnQuantity;
+                var availability = availabilityByIdentity[item.Identity];
+                if (availability.OnHand - cumulativeOutbound < availability.Reserved) return null;
+                stagedOutboundByIdentity[item.Identity] = cumulativeOutbound;
+            }
+
+            var movements = new List<InventoryStockMovementEntity>(lines.Length);
+            foreach (var item in lines)
+            {
+                var line = item.Line;
                 var movement = new InventoryStockMovementEntity(context.TenantId, Guid.NewGuid(), source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId, source.Warehouse.Code, source.Warehouse.Name, line.ReturnLine.ProductId, line.Product.Sku, line.Product.Name, line.UnitOfMeasureId, line.ReceiptLine.UnitOfMeasureCode, InventoryMovementDirection.Outbound, line.ReturnLine.ReturnQuantity, null, null, InventoryValuationStatus.Pending, null, InventoryMovementSourceType.SupplierReturn, source.SupplierReturn.Id, line.ReturnLine.Id, null, source.SupplierReturn.ReturnDate, command.ActorId, command.CorrelationId, command.OccurredAt, source.GoodsReceipt.Id, line.ReceiptLine.Id, source.SupplierReturn.Id, line.ReturnLine.Id, source.SupplierReturn.PurchaseOrderId, line.ReturnLine.PurchaseOrderLineId, null, null, null);
-                movements.Add(movement); db.StockMovements.Add(movement);
+                movements.Add(movement);
+                db.StockMovements.Add(movement);
             }
             await db.SaveChangesAsync(cancellationToken);
             var result = new InventorySupplierReturnPostingRecord(source.SupplierReturn.Id, movements.Select(item => item.Id).ToArray(), movements.Sum(item => item.Quantity), $"inventory-movement:{movements[0].Id:N}", InventoryValuationStatus.Pending, command.OccurredAt, false, false, source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId);
