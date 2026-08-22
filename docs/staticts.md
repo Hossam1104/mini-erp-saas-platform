@@ -2,10 +2,51 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-22 21:13 +03:00
+**Last Updated:** 2026-08-22 23:14 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
+
+## Current authoritative fast-track snapshot - 22 August 2026 (MESP-130 implementation complete; Sol acceptance handoff)
+
+MESP-130 is implemented at its bounded Stock Adjustment, Inventory Count,
+Stock Issue, and eligible correction scope on branch
+`feat/MESP-130-stock-control-corrections`, created from exact synchronized main
+SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`. The implementation commit is
+`329c34ca3ac1e23ed32b98c91e02aa6a820a3230`; one Draft PR is required and
+remains Open, Draft, and unmerged. This implementation is pending Sol
+acceptance; no Jira writes or completion credit were inferred.
+
+The capability adds a Tenant-scoped bilingual reason/purpose catalogue,
+adjustment lifecycle and correction, full/cycle count snapshots with blind
+counter view, cutoff and post-cutoff resnapshot protection, recount/resnapshot,
+variance authorization/posting, and reservation-safe stock issues and
+corrections. It preserves immutable MESP-128/MESP-129 physical history,
+deterministic anchors, server-derived Tenant and operational-context authority,
+durable idempotency/source uniqueness, audit/history, REST/OpenAPI, formal
+Inventory migration, and EN/AR RTL Angular workflow. MESP-131 owns MWA
+valuation; new effects remain Pending valuation and create no Finance or
+accounting effect. `frontend/assets` remains untouched.
+
+The overall Production-Ready Completion headline remains **~47%** and
+Procurement/P2P remains **~41%** pending acceptance and merge. The fast-track
+completed ratio before MESP-130 acceptance is **13/26 = 50.0%**; that ratio is
+not production readiness.
+
+| Current control | Verified position |
+|---|---|
+| MESP-130 code | Starting main SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`; implementation commit `329c34ca3ac1e23ed32b98c91e02aa6a820a3230`; branch `feat/MESP-130-stock-control-corrections`; one Draft PR, Open/Draft/unmerged. |
+| Production capability | ~47% overall; Procurement/P2P ~41%; unchanged pending Sol acceptance/merge. Completed fast-track ratio 13/26 = 50.0%, not production readiness. |
+| Validation | Focused Inventory 3/3; REST/OpenAPI 33/33; backend 899/899; Angular 242/242 across 32 spec files; production build successful with 500.06 kB initial / 54.98 kB Inventory lazy / 91.94 kB Supplier Quotation lazy; 65-byte initial-budget warning; source Release builds clean. |
+| Delivery boundaries | Formal migration `20260822194250_MESP130StockControlAndCorrections`; Pending valuation only; no Finance/MWA/Sales/Reporting/downstream implementation; no Jira writes; `frontend/assets` untouched. |
+| Runtime | Backend `http://localhost:5300` PID 26432 and frontend `http://localhost:4300` PID 22280; health/root/main.js HTTP 200; processes left running for Owner inspection. |
+| Next exact session | Sol acceptance of the exact final branch SHA and bounded MESP-130 evidence. MESP-130 remains In Progress until acceptance. Do not start MESP-131 or downstream implementation. |
+
+## Progress history - 22 August 2026
+
+| Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
+|---|---|---:|---:|---|
+| 2026-08-22 | MESP-130 bounded stock control implementation: Tenant reason catalogue, Stock Adjustment, full/cycle blind Inventory Count, cutoff/resnapshot/recount/variance flow, Stock Issue, eligible corrections, immutable ledger integration, approval/delegation seams, idempotency, audit/history, formal migration, REST/OpenAPI, Angular EN/AR RTL, and regression coverage. | ~47% | ~41% | Headline unchanged pending Sol acceptance/merge; starting SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`; implementation `329c34ca3ac1e23ed32b98c91e02aa6a820a3230`; focused Inventory 3/3; REST/OpenAPI 33/33; backend 899/899; Angular 242/242; production initial 500.06 kB with 65-byte warning; no Jira writes; no MESP-131 or downstream implementation. |
 
 ## Current authoritative fast-track snapshot - 22 August 2026 (MESP-129 OPUS P1 remediation complete; Sol delta handoff)
 

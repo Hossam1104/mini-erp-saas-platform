@@ -1,5 +1,53 @@
 # Current State
 
+## Current authoritative position - 22 August 2026 (MESP-130 implementation complete; Sol acceptance handoff)
+
+MESP-129 is Done. MESP-130 is implemented at its bounded Stock Adjustment,
+Inventory Count, Stock Issue, and eligible correction scope on branch
+`feat/MESP-130-stock-control-corrections`, created from exact synchronized main
+SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`. The implementation commit is
+`329c34ca3ac1e23ed32b98c91e02aa6a820a3230`. One Draft PR is required and
+remains Open, Draft, and unmerged; the final handoff tip is reported in the
+completion response. Jira remains read-only; no Jira writes were performed.
+
+The bounded capability adds a Tenant-scoped bilingual reason/purpose catalogue;
+Stock Adjustment lifecycle and correction; Full/Cycle Inventory Count with
+server-authoritative snapshot, cutoff, blind counter view, post-cutoff
+ResnapshotRequired handling, recount/resnapshot, variance reason, approval, and
+variance posting; and Stock Issue lifecycle with destination/use evidence,
+reservation-safe posting, and correction. It preserves the immutable MESP-128
+ledger, MESP-128 deterministic concurrency anchors, MESP-129 physical movement
+history, exact server-derived Tenant/company/branch/warehouse/product/UOM/
+tracking authority, durable idempotency/source uniqueness, audit/history, REST/
+OpenAPI metadata, formal Inventory migration, and bilingual EN/AR RTL Angular
+workflow.
+
+New MESP-130 movements are `Pending` valuation. MESP-131 owns authoritative MWA
+valuation; no Finance, GL, AP, AR, tax, payment, Sales, Reporting, external,
+statutory, migration/cutover, or Wafra-specific core behavior was added. Posted
+Goods Receipt, Supplier Return, Warehouse Transfer, opening, and other
+non-MESP-130 movement sources cannot be corrected. Owner-managed
+`frontend/assets` remains untouched.
+
+Validation is MESP-130 focused Inventory 3/3; REST/OpenAPI 33/33; full backend
+ArchitectureTests 899/899 passed, 0 failed, 0 skipped; Angular 242/242 across
+32 spec files; production build successful with initial bundle 500.06 kB (65
+bytes over the warning budget), Inventory lazy chunk 54.98 kB, and Supplier
+Quotation lazy chunk 91.94 kB. Contracts/App/Infrastructure/test Release
+builds are clean; the current API source also compiled through an alternate
+Release output because the normal API output is held by the running process.
+The official runtime remains `http://localhost:5300` backend PID 26432 and
+`http://localhost:4300` frontend PID 22280, with backend `/health`, frontend `/`,
+and `/main.js` returning HTTP 200; both are left running for Owner inspection
+and will be restarted after the final repository update.
+
+The production-readiness headline remains approximately 47% overall and 41%
+Procurement/P2P pending Sol acceptance and merge. The fast-track completed
+ratio before MESP-130 acceptance is 13/26 = 50.0%; this is not production
+readiness. MESP-130 remains In Progress. The next exact action is Sol
+acceptance of the exact final branch SHA; do not start MESP-131 or downstream
+implementation.
+
 ## Current authoritative position - 22 August 2026 (MESP-129 OPUS P1 remediation complete; Sol delta handoff)
 
 MESP-129 remains bounded to its Inventory physical-movement capability on
