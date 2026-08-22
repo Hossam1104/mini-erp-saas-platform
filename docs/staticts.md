@@ -13,7 +13,7 @@ MESP-130 is implemented at its bounded Stock Adjustment, Inventory Count,
 Stock Issue, and eligible correction scope on branch
 `feat/MESP-130-stock-control-corrections`, created from exact synchronized main
 SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`. The implementation commit is
-`dc8ea88b035a2b05b7ab560bf00bf87165ff35fb`; Draft PR #74 is Open, Draft, and
+`1529cb29d1005cb2f2ff11a13b536815cb5a3b25`; Draft PR #74 is Open, Draft, and
 unmerged. This implementation is pending Sol acceptance; no Jira writes or
 completion credit were inferred.
 
@@ -35,18 +35,18 @@ not production readiness.
 
 | Current control | Verified position |
 |---|---|
-| MESP-130 code | Starting main SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`; implementation commit `dc8ea88b035a2b05b7ab560bf00bf87165ff35fb` (including the final form-ordering regression correction); branch `feat/MESP-130-stock-control-corrections`; Draft PR #74 Open/Draft/unmerged. |
+| MESP-130 code | Starting main SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`; implementation commit `1529cb29d1005cb2f2ff11a13b536815cb5a3b25` (including final form-ordering and unexpected-full-count corrections); branch `feat/MESP-130-stock-control-corrections`; Draft PR #74 Open/Draft/unmerged. |
 | Production capability | ~47% overall; Procurement/P2P ~41%; unchanged pending Sol acceptance/merge. Completed fast-track ratio 13/26 = 50.0%, not production readiness. |
 | Validation | Focused Inventory 3/3; REST/OpenAPI 33/33; SQL safety 29/29 through disposable LocalDB; backend 899/899; Angular 242/242 across 32 spec files; focused Playwright 2/2; full Chromium Playwright 26/26; both npm audits 0 vulnerabilities; production build successful with 500.06 kB initial / 54.98 kB Inventory lazy / 91.94 kB Supplier Quotation lazy; 65-byte initial-budget warning; source Release builds clean. |
 | Delivery boundaries | Formal migration `20260822194250_MESP130StockControlAndCorrections`; Pending valuation only; no Finance/MWA/Sales/Reporting/downstream implementation; no Jira writes; `frontend/assets` untouched. |
-| Runtime | Backend `http://localhost:5300` PID 43244 and frontend `http://localhost:4300` PID 3728; health/root/main.js HTTP 200; processes restarted after the final source build and left running for Owner inspection. |
+| Runtime | Backend `http://localhost:5300` PID 14768 and frontend `http://localhost:4300` PID 40592; health/root/main.js HTTP 200; processes restarted after the final source build and left running for Owner inspection. |
 | Next exact session | Sol acceptance of the exact final branch SHA and bounded MESP-130 evidence. MESP-130 remains In Progress until acceptance. Do not start MESP-131 or downstream implementation. |
 
 ## Progress history - 22 August 2026
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
-| 2026-08-22 | MESP-130 bounded stock control implementation: Tenant reason catalogue, Stock Adjustment, full/cycle blind Inventory Count, cutoff/resnapshot/recount/variance flow, Stock Issue, eligible corrections, immutable ledger integration, approval/delegation seams, idempotency, audit/history, formal migration, REST/OpenAPI, Angular EN/AR RTL, and regression coverage. | ~47% | ~41% | Headline unchanged pending Sol acceptance/merge; starting SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`; final implementation `dc8ea88b035a2b05b7ab560bf00bf87165ff35fb`; focused Inventory 3/3; REST/OpenAPI 33/33; backend 899/899; Angular 242/242; focused Playwright 2/2; full Playwright 26/26; production initial 500.06 kB with 65-byte warning; both npm audits 0 vulnerabilities; no Jira writes; no MESP-131 or downstream implementation. |
+| 2026-08-22 | MESP-130 bounded stock control implementation: Tenant reason catalogue, Stock Adjustment, full/cycle blind Inventory Count, cutoff/resnapshot/recount/variance flow, controlled unexpected full-count identities, Stock Issue, eligible corrections, immutable ledger integration, approval/delegation seams, idempotency, audit/history, formal migration, REST/OpenAPI, Angular EN/AR RTL, and regression coverage. | ~47% | ~41% | Headline unchanged pending Sol acceptance/merge; starting SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`; final implementation `1529cb29d1005cb2f2ff11a13b536815cb5a3b25`; focused Inventory 3/3; REST/OpenAPI 33/33; SQL safety 29/29; backend 899/899; Angular 242/242; focused Playwright 2/2; full Playwright 26/26; production initial 500.06 kB with 65-byte warning; both npm audits 0 vulnerabilities; no Jira writes; no MESP-131 or downstream implementation. |
 
 ## Current authoritative fast-track snapshot - 22 August 2026 (MESP-129 OPUS P1 remediation complete; Sol delta handoff)
 

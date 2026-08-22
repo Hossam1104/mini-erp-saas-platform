@@ -6,7 +6,7 @@ MESP-129 is Done. MESP-130 is implemented at its bounded Stock Adjustment,
 Inventory Count, Stock Issue, and eligible correction scope on branch
 `feat/MESP-130-stock-control-corrections`, created from exact synchronized main
 SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`. The implementation commit is
-`dc8ea88b035a2b05b7ab560bf00bf87165ff35fb`. Draft PR #74 is Open, Draft, and
+`1529cb29d1005cb2f2ff11a13b536815cb5a3b25`. Draft PR #74 is Open, Draft, and
 unmerged; the final handoff tip is reported in the completion response. Jira
 remains read-only; no Jira writes were performed.
 
@@ -39,8 +39,8 @@ Inventory lazy chunk 54.98 kB, and Supplier Quotation lazy chunk 91.94 kB.
 Contracts/App/Infrastructure/test Release
 builds are clean; the current API source also compiled through an alternate
 Release output because the normal API output is held by the running process.
-The official runtime remains `http://localhost:5300` backend PID 43244 and
-`http://localhost:4300` frontend PID 3728, with backend `/health`, frontend `/`,
+The official runtime remains `http://localhost:5300` backend PID 14768 and
+`http://localhost:4300` frontend PID 40592, with backend `/health`, frontend `/`,
 and `/main.js` returning HTTP 200; both were restarted after the final source
 build and are left running for Owner inspection.
 

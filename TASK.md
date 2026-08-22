@@ -11,7 +11,7 @@ Branch: `feat/MESP-130-stock-control-corrections`
 
 Exact starting main SHA: `6f6d204726cc4baf9979961ea6936c0d03e93e32`
 
-Implementation SHA: `dc8ea88b035a2b05b7ab560bf00bf87165ff35fb`
+Implementation SHA: `1529cb29d1005cb2f2ff11a13b536815cb5a3b25`
 
 Final branch SHA: the final documentation/runtime handoff tip is reported in
 the completion response because Git cannot embed a commit's own SHA in that
@@ -286,8 +286,8 @@ Inventory topology.
 
 - Backend URL: `http://localhost:5300`.
 - Frontend URL: `http://localhost:4300`.
-- Backend PID: `43244` (`MiniErp.Api`, committed Release output).
-- Frontend PID: `3728` (Node/Angular development server).
+- Backend PID: `14768` (`MiniErp.Api`, committed Release output).
+- Frontend PID: `40592` (Node/Angular development server).
 - Backend health: `GET /health` returned HTTP 200.
 - Frontend status: `/` and `/main.js` returned HTTP 200.
 - Both processes were restarted after the final source build and remain running
