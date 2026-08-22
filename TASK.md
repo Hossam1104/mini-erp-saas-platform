@@ -11,7 +11,7 @@ Branch: `feat/MESP-130-stock-control-corrections`
 
 Exact starting main SHA: `6f6d204726cc4baf9979961ea6936c0d03e93e32`
 
-Implementation SHA: `329c34ca3ac1e23ed32b98c91e02aa6a820a3230`
+Implementation SHA: `dc8ea88b035a2b05b7ab560bf00bf87165ff35fb`
 
 Final branch SHA: the final documentation/runtime handoff tip is reported in
 the completion response because Git cannot embed a commit's own SHA in that
@@ -268,6 +268,9 @@ Inventory topology.
 - REST/OpenAPI structural tests: 33/33 passed.
 - Full ArchitectureTests backend suite: 899/899 passed, 0 failed, 0 skipped.
 - Angular unit tests: 242/242 passed across 32 spec files.
+- Focused Inventory Playwright: 2/2 passed; full Chromium Playwright: 26/26
+  passed.
+- `npm audit --omit=dev`: 0 vulnerabilities; `npm audit`: 0 vulnerabilities.
 - Angular production build: succeeded; initial bundle 500.06 kB, which is
   65 bytes over the 500.00 kB warning budget; Inventory lazy chunk 54.98 kB
   and Supplier Quotation lazy chunk 91.94 kB.

@@ -6,7 +6,7 @@ MESP-129 is Done. MESP-130 is implemented at its bounded Stock Adjustment,
 Inventory Count, Stock Issue, and eligible correction scope on branch
 `feat/MESP-130-stock-control-corrections`, created from exact synchronized main
 SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`. The implementation commit is
-`329c34ca3ac1e23ed32b98c91e02aa6a820a3230`. Draft PR #74 is Open, Draft, and
+`dc8ea88b035a2b05b7ab560bf00bf87165ff35fb`. Draft PR #74 is Open, Draft, and
 unmerged; the final handoff tip is reported in the completion response. Jira
 remains read-only; no Jira writes were performed.
 
@@ -31,9 +31,11 @@ non-MESP-130 movement sources cannot be corrected. Owner-managed
 
 Validation is MESP-130 focused Inventory 3/3; REST/OpenAPI 33/33; full backend
 ArchitectureTests 899/899 passed, 0 failed, 0 skipped; Angular 242/242 across
-32 spec files; production build successful with initial bundle 500.06 kB (65
-bytes over the warning budget), Inventory lazy chunk 54.98 kB, and Supplier
-Quotation lazy chunk 91.94 kB. Contracts/App/Infrastructure/test Release
+32 spec files; focused Inventory Playwright 2/2 and full Chromium Playwright
+26/26; both npm audits report zero vulnerabilities; production build
+successful with initial bundle 500.06 kB (65 bytes over the warning budget),
+Inventory lazy chunk 54.98 kB, and Supplier Quotation lazy chunk 91.94 kB.
+Contracts/App/Infrastructure/test Release
 builds are clean; the current API source also compiled through an alternate
 Release output because the normal API output is held by the running process.
 The official runtime remains `http://localhost:5300` backend PID 43244 and
