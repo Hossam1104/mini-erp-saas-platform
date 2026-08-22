@@ -208,12 +208,24 @@ public sealed record InventoryCountCreateCommand(
     DateTimeOffset OccurredAt,
     string CorrelationId,
     string? IdempotencyKey,
-    string RequestFingerprint);
+    string RequestFingerprint,
+    string? ApprovalPolicyJson = null);
 
 public sealed record InventoryCountSubmitCommand(
     Guid Id,
     byte[] ExpectedVersion,
     IReadOnlyList<InventoryCountObservationRequest> Observations,
+    Guid ActorId,
+    string? IdempotencyKey,
+    string RequestFingerprint,
+    string CorrelationId,
+    DateTimeOffset OccurredAt);
+
+public sealed record InventoryCountVarianceReasonCommand(
+    Guid Id,
+    byte[] ExpectedVersion,
+    Guid CountLineId,
+    string ReasonCode,
     Guid ActorId,
     string? IdempotencyKey,
     string RequestFingerprint,
@@ -274,6 +286,7 @@ public partial interface IInventoryPersistence
     Task<IReadOnlyList<InventoryCountRecord>> ListCountsAsync(InventoryRequestContext context, InventoryScope? scope = null, CancellationToken cancellationToken = default);
     Task<InventoryCountRecord?> FindCountAsync(InventoryRequestContext context, Guid id, bool includeExpected, CancellationToken cancellationToken = default);
     Task<InventoryCountRecord?> SubmitCountAsync(InventoryRequestContext context, InventoryCountSubmitCommand command, CancellationToken cancellationToken = default);
+    Task<InventoryCountRecord?> RecordCountVarianceReasonAsync(InventoryRequestContext context, InventoryCountVarianceReasonCommand command, CancellationToken cancellationToken = default);
     Task<InventoryCountRecord?> ApproveCountAsync(InventoryRequestContext context, InventoryControlActionCommand command, CancellationToken cancellationToken = default);
     Task<InventoryCountRecord?> RejectCountAsync(InventoryRequestContext context, InventoryControlActionCommand command, bool returnForChange, CancellationToken cancellationToken = default);
     Task<InventoryCountRecord?> RequestCountRecountAsync(InventoryRequestContext context, InventoryControlActionCommand command, CancellationToken cancellationToken = default);
@@ -308,6 +321,7 @@ public sealed partial class UnavailableInventoryPersistence
     public Task<IReadOnlyList<InventoryCountRecord>> ListCountsAsync(InventoryRequestContext context, InventoryScope? scope = null, CancellationToken cancellationToken = default) => ControlUnavailable<IReadOnlyList<InventoryCountRecord>>();
     public Task<InventoryCountRecord?> FindCountAsync(InventoryRequestContext context, Guid id, bool includeExpected, CancellationToken cancellationToken = default) => ControlUnavailable<InventoryCountRecord?>();
     public Task<InventoryCountRecord?> SubmitCountAsync(InventoryRequestContext context, InventoryCountSubmitCommand command, CancellationToken cancellationToken = default) => ControlUnavailable<InventoryCountRecord?>();
+    public Task<InventoryCountRecord?> RecordCountVarianceReasonAsync(InventoryRequestContext context, InventoryCountVarianceReasonCommand command, CancellationToken cancellationToken = default) => ControlUnavailable<InventoryCountRecord?>();
     public Task<InventoryCountRecord?> ApproveCountAsync(InventoryRequestContext context, InventoryControlActionCommand command, CancellationToken cancellationToken = default) => ControlUnavailable<InventoryCountRecord?>();
     public Task<InventoryCountRecord?> RejectCountAsync(InventoryRequestContext context, InventoryControlActionCommand command, bool returnForChange, CancellationToken cancellationToken = default) => ControlUnavailable<InventoryCountRecord?>();
     public Task<InventoryCountRecord?> RequestCountRecountAsync(InventoryRequestContext context, InventoryControlActionCommand command, CancellationToken cancellationToken = default) => ControlUnavailable<InventoryCountRecord?>();

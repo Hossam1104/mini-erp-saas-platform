@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, Observable } from 'rxjs';
 import { ApiClientService } from '../../core/api/api-client.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { InventoryAdjustment, InventoryAdjustmentCreate, InventoryAvailability, InventoryControlAction, InventoryCount, InventoryCountCreate, InventoryCountSubmit, InventoryCustomerReturnBoundary, InventoryMovement, InventoryOpeningBalance, InventoryOpeningCreateRequest, InventoryReasonCategory, InventoryReasonCode, InventoryReasonCodeCreate, InventoryReasonCodeUpdate, InventoryReservation, InventoryReservationCreateRequest, InventoryStockIssue, InventoryStockIssueCreate, InventoryTransfer, InventoryTransferActionRequest, InventoryTransferCreateRequest, InventoryWarehouseOption } from './inventory.model';
+import { InventoryAdjustment, InventoryAdjustmentCreate, InventoryAvailability, InventoryControlAction, InventoryControlHistory, InventoryCount, InventoryCountCreate, InventoryCountSubmit, InventoryCountVarianceReason, InventoryCustomerReturnBoundary, InventoryMovement, InventoryOpeningBalance, InventoryOpeningCreateRequest, InventoryReasonCategory, InventoryReasonCode, InventoryReasonCodeCreate, InventoryReasonCodeUpdate, InventoryReservation, InventoryReservationCreateRequest, InventoryStockIssue, InventoryStockIssueCreate, InventoryTransfer, InventoryTransferActionRequest, InventoryTransferCreateRequest, InventoryWarehouseOption } from './inventory.model';
 
 @Injectable({ providedIn: 'root' })
 export class InventoryService {
@@ -20,6 +20,9 @@ export class InventoryService {
   transfers(filters: { companyId?: string; branchId?: string } = {}): Observable<InventoryTransfer[]> { return this.api.get<InventoryTransfer[]>(`/inventory/transfers${this.query(filters)}`); }
   customerReturnBoundary(): Observable<InventoryCustomerReturnBoundary> { return this.api.get<InventoryCustomerReturnBoundary>('/inventory/customer-returns/boundary'); }
   reasonCodes(category?: InventoryReasonCategory, includeInactive = false): Observable<InventoryReasonCode[]> { return this.api.get<InventoryReasonCode[]>(`/inventory/reason-codes${this.query({ category, includeInactive: includeInactive ? 'true' : undefined })}`); }
+  adjustmentHistory(id: string): Observable<InventoryControlHistory[]> { return this.api.get<InventoryControlHistory[]>(`/inventory/adjustments/${id}/history`); }
+  countHistory(id: string): Observable<InventoryControlHistory[]> { return this.api.get<InventoryControlHistory[]>(`/inventory/counts/${id}/history`); }
+  stockIssueHistory(id: string): Observable<InventoryControlHistory[]> { return this.api.get<InventoryControlHistory[]>(`/inventory/stock-issues/${id}/history`); }
   adjustments(filters: { warehouseId?: string; companyId?: string; branchId?: string } = {}): Observable<InventoryAdjustment[]> { return this.api.get<InventoryAdjustment[]>(`/inventory/adjustments${this.query(filters)}`); }
   counts(filters: { warehouseId?: string; companyId?: string; branchId?: string } = {}): Observable<InventoryCount[]> { return this.api.get<InventoryCount[]>(`/inventory/counts${this.query(filters)}`); }
   counterView(id: string): Observable<InventoryCount> { return this.api.get<InventoryCount>(`/inventory/counts/${id}/counter-view`); }
@@ -44,15 +47,20 @@ export class InventoryService {
   async createAdjustment(payload: InventoryAdjustmentCreate): Promise<InventoryAdjustment> { return this.mutate('/inventory/adjustments', payload); }
   async submitAdjustment(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryAdjustment> { return this.action(`/inventory/adjustments/${id}/submit`, version, action); }
   async approveAdjustment(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryAdjustment> { return this.action(`/inventory/adjustments/${id}/approve`, version, action); }
+  async rejectAdjustment(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryAdjustment> { return this.action(`/inventory/adjustments/${id}/reject`, version, action); }
   async postAdjustment(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryAdjustment> { return this.action(`/inventory/adjustments/${id}/post`, version, action); }
   async createCount(payload: InventoryCountCreate): Promise<InventoryCount> { return this.mutate('/inventory/counts', payload); }
   async submitCount(id: string, version: string, payload: InventoryCountSubmit): Promise<InventoryCount> { return this.action(`/inventory/counts/${id}/submit`, version, payload); }
   async approveCount(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryCount> { return this.action(`/inventory/counts/${id}/approve`, version, action); }
+  async rejectCount(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryCount> { return this.action(`/inventory/counts/${id}/reject`, version, action); }
+  async recordCountVarianceReason(id: string, version: string, countLineId: string, reasonCode: string): Promise<InventoryCount> { const payload: InventoryCountVarianceReason = { countLineId, reasonCode }; return this.action(`/inventory/counts/${id}/variance-reason`, version, payload); }
   async postCount(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryCount> { return this.action(`/inventory/counts/${id}/post`, version, action); }
+  async recountCount(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryCount> { return this.action(`/inventory/counts/${id}/recount`, version, action); }
   async resnapshotCount(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryCount> { return this.action(`/inventory/counts/${id}/resnapshot`, version, action); }
   async createStockIssue(payload: InventoryStockIssueCreate): Promise<InventoryStockIssue> { return this.mutate('/inventory/stock-issues', payload); }
   async submitStockIssue(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryStockIssue> { return this.action(`/inventory/stock-issues/${id}/submit`, version, action); }
   async approveStockIssue(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryStockIssue> { return this.action(`/inventory/stock-issues/${id}/approve`, version, action); }
+  async rejectStockIssue(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryStockIssue> { return this.action(`/inventory/stock-issues/${id}/reject`, version, action); }
   async postStockIssue(id: string, version: string, action: InventoryControlAction = {}): Promise<InventoryStockIssue> { return this.action(`/inventory/stock-issues/${id}/post`, version, action); }
   async correctMovement(id: string, version: string, reasonCode: string, reason?: string): Promise<InventoryMovement> { return this.action(`/inventory/ledger/${id}/correct`, version, { reasonCode, reason }); }
   async completeDirectTransfer(id: string, version: string, action: InventoryTransferActionRequest = {}): Promise<InventoryTransfer> { return this.action(`/inventory/transfers/${id}/complete-direct`, version, action); }

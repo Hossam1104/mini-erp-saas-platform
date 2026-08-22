@@ -112,4 +112,24 @@ describe('InventoryService', () => {
     correction.flush({ id: 'correction-1' });
     await expect(correcting).resolves.toMatchObject({ id: 'correction-1' });
   });
+
+  it('submits physical count observations and records a reviewer variance reason separately', async () => {
+    const submitting = service.submitCount('count-1', 'AQ==', { observations: [{ countLineId: 'line-1', countedQuantity: 7 }] });
+    http.expectOne('/api/v1/auth/antiforgery').flush({ status: 'issued' }, { headers: new HttpHeaders({ 'X-CSRF-TOKEN': 'memory-token' }) });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const submit = http.expectOne('/api/v1/inventory/counts/count-1/submit');
+    expect(submit.request.body).toEqual({ observations: [{ countLineId: 'line-1', countedQuantity: 7 }] });
+    expect(submit.request.body.observations[0]).not.toHaveProperty('varianceReasonCode');
+    submit.flush({ id: 'count-1', status: 'PendingApproval', version: 'Ag==' });
+    await expect(submitting).resolves.toMatchObject({ id: 'count-1' });
+
+    const recording = service.recordCountVarianceReason('count-1', 'Ag==', 'line-1', 'DAMAGE');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const reason = http.expectOne('/api/v1/inventory/counts/count-1/variance-reason');
+    expect(reason.request.method).toBe('POST');
+    expect(reason.request.body).toEqual({ countLineId: 'line-1', reasonCode: 'DAMAGE' });
+    expect(reason.request.headers.get('If-Match')).toBe('"Ag=="');
+    reason.flush({ id: 'count-1', status: 'PendingApproval', version: 'Aw==' });
+    await expect(recording).resolves.toMatchObject({ id: 'count-1' });
+  });
 });

@@ -70,6 +70,7 @@ public sealed partial class InventoryService
         if (catalogue is null || !authorization.IsAllowed(context, "inventory.reason.update", catalogue))
             return InventoryOperationResult<InventoryReasonCodeRecord>.Failure("forbidden");
         if (expectedVersion is null or { Length: 0 }) return InventoryOperationResult<InventoryReasonCodeRecord>.Failure("validation_failed");
+        if (string.IsNullOrWhiteSpace(request.EnglishName) || string.IsNullOrWhiteSpace(request.ArabicName) || !Enum.IsDefined(request.Category)) return InventoryOperationResult<InventoryReasonCodeRecord>.Failure("validation_failed");
         var command = new InventoryReasonCodeUpdateCommand(id, expectedVersion, NormalizeRequired(request.EnglishName, 256), NormalizeRequired(request.ArabicName, 256), request.Category, request.IsActive, context.ActorId, DateTimeOffset.UtcNow,
             context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(new { id, expectedVersion, request }));
         try
@@ -149,7 +150,7 @@ public sealed partial class InventoryService
     {
         var scope = await ResolveOptionalScopeAsync(context, "inventory.count.list", warehouseId, companyId, branchId, cancellationToken);
         if (!scope.Succeeded) return InventoryOperationResult<IReadOnlyList<InventoryCountRecord>>.Failure(scope.Code);
-        try { return InventoryOperationResult<IReadOnlyList<InventoryCountRecord>>.Success(await persistence.ListCountsAsync(context, scope.Value, cancellationToken)); }
+        try { var values = await persistence.ListCountsAsync(context, scope.Value, cancellationToken); return InventoryOperationResult<IReadOnlyList<InventoryCountRecord>>.Success(values.Select(item => RedactCounterCount(item, context.ActorId)).ToArray()); }
         catch (InvalidOperationException) { return InventoryOperationResult<IReadOnlyList<InventoryCountRecord>>.Failure("persistence_unavailable"); }
     }
 
@@ -160,7 +161,7 @@ public sealed partial class InventoryService
             var value = await persistence.FindCountAsync(context, id, !counterView, cancellationToken);
             if (value is null) return InventoryOperationResult<InventoryCountRecord>.Failure("not_found");
             var allowed = authorization.IsAllowed(context, counterView ? "inventory.count.counter.read" : "inventory.count.read", ControlScope(context, value.CompanyId, value.BranchId, value.WarehouseId));
-            return allowed ? InventoryOperationResult<InventoryCountRecord>.Success(value) : InventoryOperationResult<InventoryCountRecord>.Failure("forbidden");
+            return allowed ? InventoryOperationResult<InventoryCountRecord>.Success(RedactCounterCount(value, context.ActorId)) : InventoryOperationResult<InventoryCountRecord>.Failure("forbidden");
         }
         catch (InvalidOperationException) { return InventoryOperationResult<InventoryCountRecord>.Failure("persistence_unavailable"); }
     }
@@ -186,6 +187,8 @@ public sealed partial class InventoryService
         }
         if (selected.Count > 5000) return InventoryOperationResult<InventoryCountRecord>.Failure("too_many_lines");
         if (selected.Count == 0) return InventoryOperationResult<InventoryCountRecord>.Failure("lines_required");
+        var countApprovalPolicy = await approvalPolicyProvider.ResolveAsync(context, scope.Value!, "count-variance", DateTimeOffset.UtcNow, cancellationToken);
+        if (countApprovalPolicy is not null && !PurchaseRequestValuePolicy.IsValidPolicy(countApprovalPolicy)) return InventoryOperationResult<InventoryCountRecord>.Failure("approval_policy_invalid");
         var lines = new List<InventoryCountLineCommand>(selected.Count);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in selected)
@@ -200,7 +203,7 @@ public sealed partial class InventoryService
             lines.Add(new InventoryCountLineCommand(Guid.NewGuid(), null, 1, item.ProductId, item.UnitOfMeasureId, tracking ?? string.Empty, 0m, product!));
         }
         var command = new InventoryCountCreateCommand(Guid.NewGuid(), scope.Value!, scope.Warehouse!.Code, scope.Warehouse.Name, request.CountType, request.AssignedCounterId, request.ReviewerId, lines, DateTimeOffset.UtcNow,
-            context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(request));
+            context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(request), countApprovalPolicy is null ? null : JsonSerializer.Serialize(countApprovalPolicy));
         try
         {
             var value = await persistence.CreateCountAsync(context, command, cancellationToken);
@@ -229,6 +232,11 @@ public sealed partial class InventoryService
 
     public Task<InventoryOperationResult<InventoryCountRecord>> ApproveCountAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, string? reason, string? idempotencyKey, CancellationToken cancellationToken = default) =>
         ActCountApprovalAsync(context, id, expectedVersion, reason, idempotencyKey, cancellationToken);
+
+    public async Task<InventoryOperationResult<InventoryCountRecord>> RecordCountVarianceReasonAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, InventoryCountVarianceReasonRequest request, string? idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        var current = await persistence.FindCountAsync(context, id, true, cancellationToken); if (current is null) return InventoryOperationResult<InventoryCountRecord>.Failure("not_found"); var scope = ControlScope(context, current.CompanyId, current.BranchId, current.WarehouseId); if (!authorization.IsAllowed(context, "inventory.count.approve", scope)) return InventoryOperationResult<InventoryCountRecord>.Failure("forbidden"); if (context.ActorId == current.AssignedCounterId) return InventoryOperationResult<InventoryCountRecord>.Failure("separation_of_duties_required"); if (expectedVersion is null or { Length: 0 } || request.CountLineId == Guid.Empty || string.IsNullOrWhiteSpace(request.ReasonCode)) return InventoryOperationResult<InventoryCountRecord>.Failure("validation_failed"); var reasons = await LoadReasonsAsync(context, InventoryReasonCategory.CountVariance, cancellationToken); var reason = reasons.FirstOrDefault(item => string.Equals(item.Code, NormalizeRequired(request.ReasonCode, 128).ToUpperInvariant(), StringComparison.Ordinal)); if (reason is null) return InventoryOperationResult<InventoryCountRecord>.Failure("reason_code_invalid"); var command = new InventoryCountVarianceReasonCommand(id, expectedVersion, request.CountLineId, reason.Code, context.ActorId, Normalize(idempotencyKey, 256), InventoryFingerprints.Create(new { id, expectedVersion, request }), context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), DateTimeOffset.UtcNow); try { var value = await persistence.RecordCountVarianceReasonAsync(context, command, cancellationToken); return value is null ? InventoryOperationResult<InventoryCountRecord>.Failure("conflict") : InventoryOperationResult<InventoryCountRecord>.Success(value); } catch (InvalidOperationException) { return InventoryOperationResult<InventoryCountRecord>.Failure("persistence_unavailable"); }
+    }
 
     public Task<InventoryOperationResult<InventoryCountRecord>> RejectCountAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, string? reason, bool returnForChange, string? idempotencyKey, CancellationToken cancellationToken = default) =>
         ActCountAsync(context, id, expectedVersion, reason, idempotencyKey, returnForChange ? "inventory.count.return" : "inventory.count.reject", (command, _) => persistence.RejectCountAsync(context, command, returnForChange, cancellationToken), cancellationToken);
@@ -347,7 +355,8 @@ public sealed partial class InventoryService
         if (movement.SourceType is not (InventoryMovementSourceType.StockAdjustment or InventoryMovementSourceType.InventoryCountVariance or InventoryMovementSourceType.StockIssue)) return InventoryOperationResult<InventoryMovementRecord>.Failure("correction_not_allowed");
         var scope = ControlScope(context, movement.CompanyId, movement.BranchId, movement.WarehouseId);
         if (!authorization.IsAllowed(context, "inventory.movement.correct", scope)) return InventoryOperationResult<InventoryMovementRecord>.Failure("forbidden");
-        var reasons = await LoadReasonsAsync(context, InventoryReasonCategory.Adjustment, cancellationToken);
+        var category = movement.SourceType == InventoryMovementSourceType.InventoryCountVariance ? InventoryReasonCategory.CountVariance : movement.SourceType == InventoryMovementSourceType.StockIssue ? InventoryReasonCategory.StockIssue : InventoryReasonCategory.Adjustment;
+        var reasons = await LoadReasonsAsync(context, category, cancellationToken);
         var reason = reasons.FirstOrDefault(value => string.Equals(value.Code, NormalizeRequired(request.ReasonCode, 128).ToUpperInvariant(), StringComparison.Ordinal));
         if (reason is null || expectedVersion is null or { Length: 0 }) return InventoryOperationResult<InventoryMovementRecord>.Failure("reason_code_invalid");
         var command = new InventoryMovementCorrectionCommand(id, expectedVersion, context.ActorId, reason.Id, reason.Code, reason.EnglishName, reason.ArabicName, Normalize(request.Reason, 2048), context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(new { id, expectedVersion, request }), DateTimeOffset.UtcNow);
@@ -413,7 +422,16 @@ public sealed partial class InventoryService
         var scope = ControlScope(context, current.CompanyId, current.BranchId, current.WarehouseId);
         if (!authorization.IsAllowed(context, "inventory.count.approve", scope)) return InventoryOperationResult<InventoryCountRecord>.Failure("forbidden");
         if (context.ActorId == current.AssignedCounterId || context.ActorId == current.ReviewerId) return InventoryOperationResult<InventoryCountRecord>.Failure("separation_of_duties_required");
-        var command = ActionCommand(context, id, expectedVersion, reason, idempotencyKey, new { id, expectedVersion, reason });
+        var policy = await approvalPolicyProvider.ResolveAsync(context, scope, "count-variance", DateTimeOffset.UtcNow, cancellationToken);
+        Guid? delegatedFrom = null;
+        if (policy is not null)
+        {
+            if (!PurchaseRequestValuePolicy.IsValidPolicy(policy)) return InventoryOperationResult<InventoryCountRecord>.Failure("approval_policy_invalid");
+            var approval = await ResolveApprovalActorAsync(context, scope, "count-variance", current.AssignedCounterId, current.Approval, cancellationToken);
+            if (!approval.Succeeded) return InventoryOperationResult<InventoryCountRecord>.Failure(approval.Code);
+            delegatedFrom = approval.DelegatedFromActorId;
+        }
+        var command = ActionCommand(context, id, expectedVersion, reason, idempotencyKey, new { id, expectedVersion, reason }) with { DelegatedFromActorId = delegatedFrom };
         try { var value = await persistence.ApproveCountAsync(context, command, cancellationToken); return value is null ? InventoryOperationResult<InventoryCountRecord>.Failure("conflict") : InventoryOperationResult<InventoryCountRecord>.Success(value); }
         catch (InvalidOperationException) { return InventoryOperationResult<InventoryCountRecord>.Failure("persistence_unavailable"); }
     }
@@ -460,6 +478,12 @@ public sealed partial class InventoryService
         new(id, expectedVersion, context.ActorId, Normalize(reason, 2048), null, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(fingerprint), DateTimeOffset.UtcNow);
 
     private static InventoryScope ControlScope(InventoryRequestContext context, Guid companyId, Guid? branchId, Guid warehouseId) => new(context.TenantId.Value, companyId, branchId, warehouseId);
+
+    private static InventoryCountRecord RedactCounterCount(InventoryCountRecord value, Guid actorId)
+    {
+        if (value.AssignedCounterId != actorId || value.Status != InventoryControlDocumentStatus.Draft) return value;
+        return value with { Lines = value.Lines.Select(line => line with { ExpectedQuantity = null, Variance = null, VarianceReasonCodeId = null, VarianceReasonCode = null, VarianceReasonEnglishName = null, VarianceReasonArabicName = null }).ToArray() };
+    }
 
     private static InventoryScope? ResolveCatalogueScope(InventoryRequestContext context, Guid? warehouseId, Guid? companyId, Guid? branchId)
     {

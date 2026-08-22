@@ -325,7 +325,9 @@ public sealed class SqlServerSafetyTests
                     "20260821132738_MESP128StockIntegrityRemediation",
                     "20260821213832_MESP128OpusStockIntegrityRemediation",
                     "20260822092802_MESP129PhysicalStockMovements",
-                    "20260822194250_MESP130StockControlAndCorrections"
+                    "20260822194250_MESP130StockControlAndCorrections",
+                    "20260822220126_MESP130SolAcceptanceRemediation",
+                    "20260822220521_MESP130SolAcceptanceCountApproval"
                 ],
                 (await inventory.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await inventory.Database.GetPendingMigrationsAsync());
@@ -1156,6 +1158,69 @@ public sealed class SqlServerSafetyTests
 
             return Task.CompletedTask;
         }
+    }
+
+    [Fact]
+    public async Task MESP130_sql_server_correction_index_allows_one_direct_correction_only()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = new DbContextOptionsBuilder().UseSqlServer(connectionString).Options;
+        var originalId = Guid.NewGuid();
+        var tenantId = _fixture.TenantA.TenantId;
+        var companyId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        await using (var createDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            createDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId, originalId, companyId, null, warehouseId, "WH-SQL", "SQL warehouse", productId,
+                "SKU-SQL", "SQL product", unitId, "EA", InventoryMovementDirection.Inbound, 1m, null, null,
+                InventoryValuationStatus.Pending, null, InventoryMovementSourceType.StockAdjustment, Guid.NewGuid(), Guid.NewGuid(), null,
+                DateOnly.FromDateTime(DateTime.UtcNow), actorId, "sql-mesp130-original", DateTimeOffset.UtcNow));
+            await createDb.SaveChangesAsync();
+        }
+
+        var correction = new InventoryStockMovementEntity(
+            tenantId, Guid.NewGuid(), companyId, null, warehouseId, "WH-SQL", "SQL warehouse", productId,
+            "SKU-SQL", "SQL product", unitId, "EA", InventoryMovementDirection.Outbound, 1m, null, null,
+            InventoryValuationStatus.Pending, null, InventoryMovementSourceType.Correction, Guid.NewGuid(), Guid.NewGuid(), originalId,
+            DateOnly.FromDateTime(DateTime.UtcNow), actorId, "sql-mesp130-correction-a", DateTimeOffset.UtcNow);
+        await using (var firstCorrectionDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            firstCorrectionDb.StockMovements.Add(correction);
+            await firstCorrectionDb.SaveChangesAsync();
+        }
+
+        await using (var duplicateCorrectionDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            duplicateCorrectionDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId, Guid.NewGuid(), companyId, null, warehouseId, "WH-SQL", "SQL warehouse", productId,
+                "SKU-SQL", "SQL product", unitId, "EA", InventoryMovementDirection.Outbound, 1m, null, null,
+                InventoryValuationStatus.Pending, null, InventoryMovementSourceType.Correction, Guid.NewGuid(), Guid.NewGuid(), originalId,
+                DateOnly.FromDateTime(DateTime.UtcNow), actorId, "sql-mesp130-correction-b", DateTimeOffset.UtcNow));
+            await Assert.ThrowsAsync<DbUpdateException>(() => duplicateCorrectionDb.SaveChangesAsync());
+        }
+
+        await using var verifyDb = new InventoryDbContext(options, _fixture.TenantA);
+        Assert.Equal(1, await verifyDb.StockMovements.CountAsync(item => item.CorrectionOfMovementId == originalId));
+        await using var indexConnection = new SqlConnection(connectionString);
+        await indexConnection.OpenAsync();
+        await using var indexCommand = indexConnection.CreateCommand();
+        indexCommand.CommandText = """
+            SELECT COUNT(*)
+            FROM sys.indexes AS indexes
+            INNER JOIN sys.tables AS tables ON tables.object_id = indexes.object_id
+            INNER JOIN sys.schemas AS schemas ON schemas.schema_id = tables.schema_id
+            WHERE schemas.name = N'inventory'
+              AND tables.name = N'StockLedgerMovements'
+              AND indexes.name = N'IX_StockLedgerMovements_TenantId_CorrectionOfMovementId'
+              AND indexes.is_unique = 1
+              AND indexes.has_filter = 1
+              AND indexes.filter_definition LIKE N'%CorrectionOfMovementId%IS NOT NULL%';
+            """;
+        Assert.Equal(1, Convert.ToInt32(await indexCommand.ExecuteScalarAsync()));
     }
 
     private static async Task ExecuteProbeInsertAsync(

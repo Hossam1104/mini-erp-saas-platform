@@ -49,6 +49,7 @@ internal sealed class InventoryAdjustmentEntity : ITenantOwned
     internal InventoryControlDocumentStatus Status { get; private set; }
     internal string? EvidenceReference { get; private set; }
     internal string? ApprovalPolicySnapshotJson { get; private set; }
+    internal string? CurrentStageApproverIdsJson { get; private set; }
     internal int CurrentApprovalStageIndex { get; private set; }
     internal int CurrentStageApprovalCount { get; private set; }
     internal Guid? LastApproverId { get; private set; }
@@ -61,8 +62,8 @@ internal sealed class InventoryAdjustmentEntity : ITenantOwned
     internal byte[] Version { get; private set; } = [];
     internal List<InventoryAdjustmentLineEntity> Lines { get; } = [];
     internal void SetStatus(InventoryControlDocumentStatus status, DateTimeOffset at) { Status = status; UpdatedAt = at; TouchVersion(); }
-    internal void Submit(bool requiresApproval, string? policyJson, DateTimeOffset at) { ApprovalPolicySnapshotJson = policyJson; Status = requiresApproval ? InventoryControlDocumentStatus.PendingApproval : InventoryControlDocumentStatus.Approved; SubmittedAt = at; UpdatedAt = at; TouchVersion(); }
-    internal void RecordApproval(Guid actorId, Guid? delegatedFrom, int stageIndex, int count, DateTimeOffset at) { LastApproverId = actorId; LastDelegatedFromActorId = delegatedFrom; CurrentApprovalStageIndex = stageIndex; CurrentStageApprovalCount = count; ApprovedAt = at; UpdatedAt = at; TouchVersion(); }
+    internal void Submit(bool requiresApproval, string? policyJson, DateTimeOffset at) { ApprovalPolicySnapshotJson = policyJson; CurrentStageApproverIdsJson = "[]"; CurrentApprovalStageIndex = 0; CurrentStageApprovalCount = 0; Status = requiresApproval ? InventoryControlDocumentStatus.PendingApproval : InventoryControlDocumentStatus.Approved; SubmittedAt = at; UpdatedAt = at; TouchVersion(); }
+    internal void RecordApproval(Guid actorId, Guid? delegatedFrom, int stageIndex, IReadOnlyCollection<Guid> approvers, bool finalStage, DateTimeOffset at) { LastApproverId = actorId; LastDelegatedFromActorId = delegatedFrom; CurrentApprovalStageIndex = stageIndex; CurrentStageApprovalCount = approvers.Count; CurrentStageApproverIdsJson = finalStage ? "[]" : System.Text.Json.JsonSerializer.Serialize(approvers); if (finalStage) ApprovedAt = at; UpdatedAt = at; TouchVersion(); }
     internal void MarkPosted(DateTimeOffset at) { Status = InventoryControlDocumentStatus.Posted; PostedAt = at; UpdatedAt = at; TouchVersion(); }
     internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
 }
@@ -100,9 +101,9 @@ internal sealed class InventoryAdjustmentLineEntity : ITenantOwned
 internal sealed class InventoryCountEntity : ITenantOwned
 {
     private InventoryCountEntity() { }
-    internal InventoryCountEntity(TenantId tenantId, Guid id, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, InventoryCountType countType, Guid assignedCounterId, Guid? reviewerId, DateTimeOffset cutoff, Guid actorId, DateTimeOffset at)
+    internal InventoryCountEntity(TenantId tenantId, Guid id, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, InventoryCountType countType, Guid assignedCounterId, Guid? reviewerId, DateTimeOffset cutoff, Guid actorId, DateTimeOffset at, string? approvalPolicyJson = null)
     {
-        Id = id; TenantId = tenantId; CompanyId = companyId; BranchId = branchId; WarehouseId = warehouseId; WarehouseCode = warehouseCode; WarehouseName = warehouseName; CountType = countType; AssignedCounterId = assignedCounterId; ReviewerId = reviewerId; CurrentRoundGeneration = 1; SnapshotCutoff = cutoff; Status = InventoryControlDocumentStatus.Draft; CreatedByActorId = actorId; CreatedAt = at; UpdatedAt = at; TouchVersion();
+        Id = id; TenantId = tenantId; CompanyId = companyId; BranchId = branchId; WarehouseId = warehouseId; WarehouseCode = warehouseCode; WarehouseName = warehouseName; CountType = countType; AssignedCounterId = assignedCounterId; ReviewerId = reviewerId; CurrentRoundGeneration = 1; SnapshotCutoff = cutoff; Status = InventoryControlDocumentStatus.Draft; ApprovalPolicySnapshotJson = approvalPolicyJson; CurrentStageApproverIdsJson = "[]"; CreatedByActorId = actorId; CreatedAt = at; UpdatedAt = at; TouchVersion();
     }
     internal Guid Id { get; private set; }
     public TenantId TenantId { get; private set; }
@@ -117,6 +118,12 @@ internal sealed class InventoryCountEntity : ITenantOwned
     internal Guid? ApproverId { get; private set; }
     internal Guid? PosterId { get; private set; }
     internal InventoryControlDocumentStatus Status { get; private set; }
+    internal string? ApprovalPolicySnapshotJson { get; private set; }
+    internal string? CurrentStageApproverIdsJson { get; private set; }
+    internal int CurrentApprovalStageIndex { get; private set; }
+    internal int CurrentStageApprovalCount { get; private set; }
+    internal Guid? LastApproverId { get; private set; }
+    internal Guid? LastDelegatedFromActorId { get; private set; }
     internal int CurrentRoundGeneration { get; private set; }
     internal DateTimeOffset SnapshotCutoff { get; private set; }
     internal Guid CreatedByActorId { get; private set; }
@@ -129,9 +136,10 @@ internal sealed class InventoryCountEntity : ITenantOwned
     internal List<InventoryCountLineEntity> Lines { get; } = [];
     internal void SetStatus(InventoryControlDocumentStatus status, DateTimeOffset at) { Status = status; UpdatedAt = at; TouchVersion(); }
     internal void MarkSubmitted(InventoryControlDocumentStatus status, DateTimeOffset at) { Status = status; SubmittedAt = at; UpdatedAt = at; TouchVersion(); }
-    internal void MarkApproved(Guid actorId, DateTimeOffset at) { ApproverId = actorId; ApprovedAt = at; Status = InventoryControlDocumentStatus.Approved; UpdatedAt = at; TouchVersion(); }
+    internal void MarkApproved(Guid actorId, DateTimeOffset at) { ApproverId = actorId; LastApproverId = actorId; ApprovedAt = at; Status = InventoryControlDocumentStatus.Approved; UpdatedAt = at; TouchVersion(); }
     internal void MarkPosted(Guid actorId, DateTimeOffset at) { PosterId = actorId; PostedAt = at; Status = InventoryControlDocumentStatus.Posted; UpdatedAt = at; TouchVersion(); }
-    internal void BeginNewRound(DateTimeOffset cutoff, DateTimeOffset at) { CurrentRoundGeneration++; SnapshotCutoff = cutoff; Status = InventoryControlDocumentStatus.Draft; UpdatedAt = at; TouchVersion(); }
+    internal void RecordApproval(Guid actorId, Guid? delegatedFrom, int stageIndex, IReadOnlyCollection<Guid> approvers, bool finalStage, DateTimeOffset at) { LastApproverId = actorId; LastDelegatedFromActorId = delegatedFrom; CurrentApprovalStageIndex = stageIndex; CurrentStageApprovalCount = approvers.Count; CurrentStageApproverIdsJson = finalStage ? "[]" : System.Text.Json.JsonSerializer.Serialize(approvers); if (finalStage) { ApproverId = actorId; ApprovedAt = at; Status = InventoryControlDocumentStatus.Approved; } UpdatedAt = at; TouchVersion(); }
+    internal void BeginNewRound(DateTimeOffset cutoff, DateTimeOffset at) { CurrentRoundGeneration++; SnapshotCutoff = cutoff; Status = InventoryControlDocumentStatus.Draft; ApproverId = null; ApprovedAt = null; LastApproverId = null; LastDelegatedFromActorId = null; CurrentApprovalStageIndex = 0; CurrentStageApprovalCount = 0; CurrentStageApproverIdsJson = "[]"; UpdatedAt = at; TouchVersion(); }
     internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
 }
 
@@ -164,8 +172,9 @@ internal sealed class InventoryCountLineEntity : ITenantOwned
     internal DateTimeOffset? CountedAt { get; private set; }
     internal Guid? MovementId { get; private set; }
     internal byte[] Version { get; private set; } = [];
-    internal void SetObservation(decimal counted, InventoryReasonCodeRecord? reason, DateTimeOffset at)
-    { CountedQuantity = counted; Variance = counted - ExpectedQuantity; VarianceReasonCodeId = reason?.Id; VarianceReasonCode = reason?.Code; VarianceReasonEnglishName = reason?.EnglishName; VarianceReasonArabicName = reason?.ArabicName; CountedAt = at; TouchVersion(); }
+    internal void SetObservation(decimal counted, DateTimeOffset at)
+    { CountedQuantity = counted; Variance = counted - ExpectedQuantity; VarianceReasonCodeId = null; VarianceReasonCode = null; VarianceReasonEnglishName = null; VarianceReasonArabicName = null; CountedAt = at; TouchVersion(); }
+    internal void SetVarianceReason(InventoryReasonCodeRecord reason) { VarianceReasonCodeId = reason.Id; VarianceReasonCode = reason.Code; VarianceReasonEnglishName = reason.EnglishName; VarianceReasonArabicName = reason.ArabicName; TouchVersion(); }
     internal void MarkPosted(Guid movementId) { MovementId = movementId; TouchVersion(); }
     internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
 }
@@ -188,6 +197,7 @@ internal sealed class InventoryStockIssueEntity : ITenantOwned
     internal Guid RequesterId { get; private set; }
     internal InventoryControlDocumentStatus Status { get; private set; }
     internal string? ApprovalPolicySnapshotJson { get; private set; }
+    internal string? CurrentStageApproverIdsJson { get; private set; }
     internal int CurrentApprovalStageIndex { get; private set; }
     internal int CurrentStageApprovalCount { get; private set; }
     internal Guid? LastApproverId { get; private set; }
@@ -199,8 +209,8 @@ internal sealed class InventoryStockIssueEntity : ITenantOwned
     internal DateTimeOffset? PostedAt { get; private set; }
     internal byte[] Version { get; private set; } = [];
     internal List<InventoryStockIssueLineEntity> Lines { get; } = [];
-    internal void Submit(bool requiresApproval, string? policyJson, DateTimeOffset at) { ApprovalPolicySnapshotJson = policyJson; Status = requiresApproval ? InventoryControlDocumentStatus.PendingApproval : InventoryControlDocumentStatus.Approved; SubmittedAt = at; UpdatedAt = at; TouchVersion(); }
-    internal void RecordApproval(Guid actorId, Guid? delegatedFrom, int stageIndex, int count, DateTimeOffset at) { LastApproverId = actorId; LastDelegatedFromActorId = delegatedFrom; CurrentApprovalStageIndex = stageIndex; CurrentStageApprovalCount = count; ApprovedAt = at; UpdatedAt = at; TouchVersion(); }
+    internal void Submit(bool requiresApproval, string? policyJson, DateTimeOffset at) { ApprovalPolicySnapshotJson = policyJson; CurrentStageApproverIdsJson = "[]"; CurrentApprovalStageIndex = 0; CurrentStageApprovalCount = 0; Status = requiresApproval ? InventoryControlDocumentStatus.PendingApproval : InventoryControlDocumentStatus.Approved; SubmittedAt = at; UpdatedAt = at; TouchVersion(); }
+    internal void RecordApproval(Guid actorId, Guid? delegatedFrom, int stageIndex, IReadOnlyCollection<Guid> approvers, bool finalStage, DateTimeOffset at) { LastApproverId = actorId; LastDelegatedFromActorId = delegatedFrom; CurrentApprovalStageIndex = stageIndex; CurrentStageApprovalCount = approvers.Count; CurrentStageApproverIdsJson = finalStage ? "[]" : System.Text.Json.JsonSerializer.Serialize(approvers); if (finalStage) ApprovedAt = at; UpdatedAt = at; TouchVersion(); }
     internal void SetStatus(InventoryControlDocumentStatus status, DateTimeOffset at) { Status = status; UpdatedAt = at; TouchVersion(); }
     internal void MarkPosted(DateTimeOffset at) { Status = InventoryControlDocumentStatus.Posted; PostedAt = at; UpdatedAt = at; TouchVersion(); }
     internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();

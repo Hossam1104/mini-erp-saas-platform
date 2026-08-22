@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Rest;
@@ -5,6 +6,7 @@ using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Inventory;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
+using MiniErp.Contracts.Modules.Procurement;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 using Xunit;
 
@@ -18,7 +20,10 @@ public sealed class InventoryStockControlTests
     private static readonly Guid WarehouseA = Guid.Parse("cccccccc-1111-1111-1111-111111111111");
     private static readonly Guid ProductA = Guid.Parse("77777777-7777-7777-7777-777777777777");
     private static readonly Guid UnitA = Guid.Parse("88888888-8888-8888-8888-888888888888");
+    private static readonly Guid ProductB = Guid.Parse("77777777-7777-7777-7777-777777777778");
+    private static readonly Guid UnitB = Guid.Parse("88888888-8888-8888-8888-888888888889");
     private static readonly Guid Actor = Guid.Parse("44444444-4444-4444-4444-444444444444");
+    private static readonly Guid Actor2 = Guid.Parse("44444444-4444-4444-4444-444444444445");
 
     [Fact]
     public async Task Adjustment_posting_is_tenant_scoped_immutable_and_durablely_replayable()
@@ -119,6 +124,12 @@ public sealed class InventoryStockControlTests
         Assert.Null(await persistence.CorrectMovementAsync(
             context,
             new InventoryMovementCorrectionCommand(
+                issueMovement.Id, issueMovement.Version, Actor2, reason.Id, reason.Code, reason.EnglishName, reason.ArabicName,
+                "different request must not create a second correction", "correction-race-correlation", "correction-race-key", "correction-race-fp", at)));
+        Assert.Equal(3, (await persistence.ListMovementsAsync(context, scope)).Count);
+        Assert.Null(await persistence.CorrectMovementAsync(
+            context,
+            new InventoryMovementCorrectionCommand(
                 (await persistence.ListMovementsAsync(context, scope)).Single(item => item.SourceType == InventoryMovementSourceType.OpeningBalance).Id,
                 (await persistence.ListMovementsAsync(context, scope)).Single(item => item.SourceType == InventoryMovementSourceType.OpeningBalance).Version,
                 Actor, reason.Id, reason.Code, reason.EnglishName, reason.ArabicName, "opening must remain immutable",
@@ -157,10 +168,13 @@ public sealed class InventoryStockControlTests
             context,
             new InventoryCountSubmitCommand(
                 created.Id, created.Version,
-                [new InventoryCountObservationRequest(line.Id, 4m, reason.Code)], Actor, "count-submit-key", "count-submit-fp", "count-submit-correlation", at)));
+                [new InventoryCountObservationRequest(line.Id, 4m)], Actor, "count-submit-key", "count-submit-fp", "count-submit-correlation", at)));
         Assert.Equal(InventoryControlDocumentStatus.PendingApproval, submitted.Status);
+        var reasoned = Assert.IsType<InventoryCountRecord>(await persistence.RecordCountVarianceReasonAsync(
+            context,
+            new InventoryCountVarianceReasonCommand(submitted.Id, submitted.Version, line.Id, reason.Code, reviewer, "count-reason-key-2", "count-reason-fp-2", "count-reason-correlation-2", at)));
         var approved = Assert.IsType<InventoryCountRecord>(await persistence.ApproveCountAsync(
-            context, Action(submitted.Id, submitted.Version, "count-approve-key", "count-approve-fp", at, reviewer)));
+            context, Action(reasoned.Id, reasoned.Version, "count-approve-key", "count-approve-fp", at, reviewer)));
         var posted = Assert.IsType<InventoryCountRecord>(await persistence.PostCountAsync(
             context, Action(approved.Id, approved.Version, "count-post-key", "count-post-fp", at)));
         var movement = Assert.Single(await persistence.ListMovementsAsync(context, scope), item => item.SourceType == InventoryMovementSourceType.InventoryCountVariance);
@@ -169,6 +183,94 @@ public sealed class InventoryStockControlTests
         Assert.Equal(InventoryMovementDirection.Outbound, movement.Direction);
         Assert.Equal(InventoryValuationStatus.Pending, movement.ValuationStatus);
         Assert.Equal(1m, movement.Quantity);
+    }
+
+    [Fact]
+    public async Task Adjustment_and_issue_approval_persist_distinct_multi_stage_state()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureCreatedAsync(options, context);
+        var persistence = new InventoryPersistence(options);
+        var at = DateTimeOffset.UtcNow;
+        var reason = Assert.IsType<InventoryReasonCodeRecord>(await persistence.CreateReasonCodeAsync(context,
+            new InventoryReasonCodeCommand(Guid.NewGuid(), "DAMAGE", "Damage", "Ù„Ù„", InventoryReasonCategory.Adjustment, Actor, at, "approval-reason", "approval-reason-key", "approval-reason-fp")));
+        var policy = JsonSerializer.Serialize(new PurchaseRequestApprovalPolicyDefinition(
+            "inventory-two-stage", 1,
+            [new PurchaseRequestApprovalStageDefinition("stage-1", 1, 1), new PurchaseRequestApprovalStageDefinition("stage-2", 2, 1)],
+            false, at));
+
+        var adjustment = Assert.IsType<InventoryAdjustmentRecord>(await persistence.CreateAdjustmentAsync(context,
+            new InventoryAdjustmentCreateCommand(Guid.NewGuid(), scope, "WH-A", "Warehouse A", "two-stage",
+                [new InventoryAdjustmentLineCommand(Guid.NewGuid(), ProductA, UnitA, InventoryAdjustmentDirection.Increase, 1m, "", null, Product(), reason)], Actor, at, "approval-adjustment", "approval-adjustment-key", "approval-adjustment-fp")));
+        var pending = Assert.IsType<InventoryAdjustmentRecord>(await persistence.SubmitAdjustmentAsync(context, Action(adjustment.Id, adjustment.Version, "approval-submit", "approval-submit-fp", at), true, policy));
+        var stageOne = Assert.IsType<InventoryAdjustmentRecord>(await persistence.ApproveAdjustmentAsync(context, Action(pending.Id, pending.Version, "approval-stage-one", "approval-stage-one-fp", at, Actor2)));
+        Assert.Equal(InventoryControlDocumentStatus.PendingApproval, stageOne.Status);
+        Assert.Equal(1, stageOne.Approval!.StageIndex);
+        var approved = Assert.IsType<InventoryAdjustmentRecord>(await persistence.ApproveAdjustmentAsync(context, Action(stageOne.Id, stageOne.Version, "approval-stage-two", "approval-stage-two-fp", at, Guid.NewGuid())));
+        Assert.Equal(InventoryControlDocumentStatus.Approved, approved.Status);
+
+        var issueReason = Assert.IsType<InventoryReasonCodeRecord>(await persistence.CreateReasonCodeAsync(context,
+            new InventoryReasonCodeCommand(Guid.NewGuid(), "USE", "Use", "Ø§Ø³ØªØ®Ø¯Ø§Ù…", InventoryReasonCategory.StockIssue, Actor, at, "issue-approval-reason", "issue-approval-reason-key", "issue-approval-reason-fp")));
+        var issue = Assert.IsType<InventoryStockIssueRecord>(await persistence.CreateStockIssueAsync(context, IssueCreate(Guid.NewGuid(), 1m, issueReason, at, "two-stage issue")));
+        var issuePending = Assert.IsType<InventoryStockIssueRecord>(await persistence.SubmitStockIssueAsync(context, Action(issue.Id, issue.Version, "issue-approval-submit", "issue-approval-submit-fp", at), true, policy));
+        var issueStageOne = Assert.IsType<InventoryStockIssueRecord>(await persistence.ApproveStockIssueAsync(context, Action(issuePending.Id, issuePending.Version, "issue-stage-one", "issue-stage-one-fp", at, Actor2)));
+        Assert.Equal(InventoryControlDocumentStatus.PendingApproval, issueStageOne.Status);
+        var issueApproved = Assert.IsType<InventoryStockIssueRecord>(await persistence.ApproveStockIssueAsync(context, Action(issueStageOne.Id, issueStageOne.Version, "issue-stage-two", "issue-stage-two-fp", at, Guid.NewGuid())));
+        Assert.Equal(InventoryControlDocumentStatus.Approved, issueApproved.Status);
+    }
+
+    [Fact]
+    public async Task Count_zero_variance_requires_a_clean_cutoff_before_posting()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureCreatedAsync(options, context);
+        await SeedStockAsync(options, context, 5m);
+        var persistence = new InventoryPersistence(options);
+        var at = DateTimeOffset.UtcNow;
+        var created = Assert.IsType<InventoryCountRecord>(await persistence.CreateCountAsync(context,
+            new InventoryCountCreateCommand(Guid.NewGuid(), scope, "WH-A", "Warehouse A", InventoryCountType.Cycle, Actor, null,
+                [new InventoryCountLineCommand(Guid.NewGuid(), null, 1, ProductA, UnitA, "", 0m, Product())], at, Actor, at, "zero-count", "zero-count-key", "zero-count-fp")));
+        var line = Assert.Single(created.Lines);
+        var submitted = Assert.IsType<InventoryCountRecord>(await persistence.SubmitCountAsync(context,
+            new InventoryCountSubmitCommand(created.Id, created.Version, [new InventoryCountObservationRequest(line.Id, 5m)], Actor, "zero-submit", "zero-submit-fp", "zero-submit-correlation", at)));
+        Assert.Equal(InventoryControlDocumentStatus.Submitted, submitted.Status);
+        var posted = Assert.IsType<InventoryCountRecord>(await persistence.PostCountAsync(context, Action(submitted.Id, submitted.Version, "zero-post", "zero-post-fp", DateTimeOffset.UtcNow)));
+        Assert.Equal(InventoryControlDocumentStatus.Posted, posted.Status);
+        Assert.DoesNotContain(await persistence.ListMovementsAsync(context, scope), item => item.SourceType == InventoryMovementSourceType.InventoryCountVariance);
+    }
+
+    [Fact]
+    public async Task Full_count_resnapshot_adds_new_warehouse_identity_and_preserves_prior_round()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureCreatedAsync(options, context);
+        await SeedStockAsync(options, context, 5m);
+        var persistence = new InventoryPersistence(options);
+        var at = DateTimeOffset.UtcNow;
+        var created = Assert.IsType<InventoryCountRecord>(await persistence.CreateCountAsync(context,
+            new InventoryCountCreateCommand(Guid.NewGuid(), scope, "WH-A", "Warehouse A", InventoryCountType.Full, Actor, null,
+                [new InventoryCountLineCommand(Guid.NewGuid(), null, 1, ProductA, UnitA, "", 0m, Product())], at, Actor, at, "full-count", "full-count-key", "full-count-fp")));
+        await SeedMovementAsync(options, context, ProductB, UnitB, "SKU-B", "Product B", 2m, "full-new-identity");
+        var submitted = Assert.IsType<InventoryCountRecord>(await persistence.SubmitCountAsync(context,
+            new InventoryCountSubmitCommand(created.Id, created.Version, [new InventoryCountObservationRequest(created.Lines.Single().Id, 5m)], Actor, "full-submit", "full-submit-fp", "full-submit-correlation", DateTimeOffset.UtcNow)));
+        var stale = Assert.IsType<InventoryCountRecord>(await persistence.PostCountAsync(context, Action(submitted.Id, submitted.Version, "full-post", "full-post-fp", DateTimeOffset.UtcNow)));
+        Assert.Equal(InventoryControlDocumentStatus.ResnapshotRequired, stale.Status);
+        var resnapshot = Assert.IsType<InventoryCountRecord>(await persistence.ResnapshotCountAsync(context, Action(stale.Id, stale.Version, "full-resnapshot", "full-resnapshot-fp", DateTimeOffset.UtcNow)));
+        Assert.True(resnapshot.CurrentRoundGeneration > created.CurrentRoundGeneration);
+        Assert.Contains(resnapshot.Lines, item => item.IsCurrentRound && item.ProductId == ProductB && item.ExpectedQuantity == 2m);
+        Assert.Contains(resnapshot.Lines, item => !item.IsCurrentRound && item.ProductId == ProductA && item.CountedQuantity == 5m);
     }
 
     private static InventoryControlActionCommand Action(Guid id, byte[] version, string key, string fingerprint, DateTimeOffset at, Guid actorId = default) =>
@@ -193,6 +295,17 @@ public sealed class InventoryStockControlTests
             "SKU-A", "Product A", UnitA, "EA", InventoryMovementDirection.Inbound, quantity, 10m, "SAR", null,
             InventoryMovementSourceType.OpeningBalance, Guid.NewGuid(), Guid.NewGuid(), null,
             DateOnly.FromDateTime(DateTime.UtcNow), Actor, "seed-stock", DateTimeOffset.UtcNow));
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedMovementAsync(DbContextOptions options, InventoryRequestContext context, Guid productId, Guid unitId, string sku, string name, decimal quantity, string correlationId)
+    {
+        await using var db = new InventoryDbContext(options, context.TenantContext);
+        db.StockMovements.Add(new InventoryStockMovementEntity(
+            new TenantId(TenantA), Guid.NewGuid(), CompanyA, null, WarehouseA, "WH-A", "Warehouse A", productId,
+            sku, name, unitId, "EA", InventoryMovementDirection.Inbound, quantity, null, null, InventoryValuationStatus.Pending, null,
+            InventoryMovementSourceType.StockAdjustment, Guid.NewGuid(), Guid.NewGuid(), null,
+            DateOnly.FromDateTime(DateTime.UtcNow), Actor, correlationId, DateTimeOffset.UtcNow));
         await db.SaveChangesAsync();
     }
 

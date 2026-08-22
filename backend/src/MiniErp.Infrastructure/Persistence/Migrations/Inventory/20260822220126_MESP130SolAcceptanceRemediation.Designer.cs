@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
 {
     [DbContext(typeof(InventoryDbContext))]
-    partial class InventoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260822220126_MESP130SolAcceptanceRemediation")]
+    partial class MESP130SolAcceptanceRemediation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -430,10 +433,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ApprovalPolicySnapshotJson")
-                        .HasMaxLength(32768)
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTimeOffset?>("ApprovedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -458,24 +457,8 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<Guid>("CreatedByActorId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("CurrentApprovalStageIndex")
-                        .HasColumnType("int");
-
                     b.Property<int>("CurrentRoundGeneration")
                         .HasColumnType("int");
-
-                    b.Property<int>("CurrentStageApprovalCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CurrentStageApproverIdsJson")
-                        .HasMaxLength(32768)
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("LastApproverId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("LastDelegatedFromActorId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset?>("PostedAt")
                         .HasColumnType("datetimeoffset");

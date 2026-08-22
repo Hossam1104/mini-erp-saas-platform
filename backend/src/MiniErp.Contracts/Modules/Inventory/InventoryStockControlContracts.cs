@@ -163,8 +163,7 @@ public sealed record InventoryCountCreateRequest(
 
 public sealed record InventoryCountObservationRequest(
     Guid CountLineId,
-    decimal CountedQuantity,
-    string? VarianceReasonCode = null);
+    decimal CountedQuantity);
 
 public sealed record InventoryCountSubmitRequest(
     IReadOnlyList<InventoryCountObservationRequest> Observations);
@@ -172,6 +171,8 @@ public sealed record InventoryCountSubmitRequest(
 public sealed record InventoryCountActionRequest(
     string? Reason = null,
     Guid? NewCounterId = null);
+
+public sealed record InventoryCountVarianceReasonRequest(Guid CountLineId, string ReasonCode);
 
 public sealed record InventoryControlActionRequest(string? Reason = null);
 
@@ -213,6 +214,7 @@ public sealed record InventoryCountRecord(
     int CurrentRoundGeneration,
     DateTimeOffset SnapshotCutoff,
     IReadOnlyList<InventoryCountLineRecord> Lines,
+    InventoryApprovalRecord? Approval,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     DateTimeOffset? SubmittedAt,

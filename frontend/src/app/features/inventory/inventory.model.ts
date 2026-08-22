@@ -280,7 +280,7 @@ export interface InventoryCountLine {
 export interface InventoryCount {
   id: string; tenantId: string; companyId: string; branchId: string | null; warehouseId: string; warehouseCode: string; warehouseName: string;
   countType: 'Full' | 'Cycle'; assignedCounterId: string; reviewerId: string | null; approverId: string | null; posterId: string | null;
-  status: InventoryControlStatus; currentRoundGeneration: number; snapshotCutoff: string; lines: InventoryCountLine[]; createdAt: string;
+  status: InventoryControlStatus; currentRoundGeneration: number; snapshotCutoff: string; lines: InventoryCountLine[]; approval: InventoryApproval | null; createdAt: string;
   updatedAt: string; submittedAt: string | null; approvedAt: string | null; postedAt: string | null; version: string;
 }
 
@@ -297,7 +297,24 @@ export interface InventoryStockIssue {
 }
 
 export interface InventoryControlAction { reason?: string; }
+export interface InventoryControlHistory {
+  id: string;
+  resourceType: string;
+  resourceId: string;
+  lineId: string | null;
+  action: string;
+  fromStatus: string;
+  toStatus: string;
+  actorId: string;
+  delegatedFromActorId: string | null;
+  reason: string | null;
+  correlationId: string;
+  roundGeneration: number;
+  occurredAt: string;
+  version: string;
+}
 export interface InventoryAdjustmentCreate { companyId: string; branchId: string | null; warehouseId: string; evidenceReference: string | null; lines: Array<{ productId: string; unitOfMeasureId: string; direction: InventoryAdjustmentDirection; quantity: number; reasonCode: string; trackingIdentity: string | null; evidenceReference: string | null }>; }
 export interface InventoryCountCreate { companyId: string; branchId: string | null; warehouseId: string; countType: 'Full' | 'Cycle'; assignedCounterId: string; reviewerId: string | null; lines: Array<{ productId: string; unitOfMeasureId: string; trackingIdentity: string | null }>; }
-export interface InventoryCountSubmit { observations: Array<{ countLineId: string; countedQuantity: number; varianceReasonCode?: string }>; }
+export interface InventoryCountSubmit { observations: Array<{ countLineId: string; countedQuantity: number }>; }
+export interface InventoryCountVarianceReason { countLineId: string; reasonCode: string; }
 export interface InventoryStockIssueCreate { companyId: string; branchId: string | null; warehouseId: string; destinationUseDescription: string; lines: Array<{ productId: string; unitOfMeasureId: string; quantity: number; reasonCode: string; trackingIdentity: string | null; evidenceReference: string | null }>; }
