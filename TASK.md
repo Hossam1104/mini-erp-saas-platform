@@ -15,8 +15,9 @@ Code-complete implementation SHA: `01ea8f7369d173c15cf55a723d6bd95006208282`
 Exact remediation starting SHA (local and `origin`):
 `d8d852f4e93602ce66583157163e652e57795f2e`
 
-Remediation source and final handoff SHAs are recorded below after the bounded
-correction commits are pushed.
+Remediation source commit: `c2dad5b` (`c2dad5bd536169c473abc893341984a7b1b1397d`)
+is pushed to the focused branch. The final handoff/tracker commit is the final
+branch tip reported in the completion report after this document is pushed.
 
 Draft PR: `#73` - https://github.com/Hossam1104/mini-erp-saas-platform/pull/73
 
@@ -290,5 +291,6 @@ against the six remediation findings. Keep PR #73 Draft and unmerged. Do not
 write Jira and do not start MESP-130, MESP-131, Sales commercial returns,
 Finance, or downstream work.
 
-Remediation source commit: recorded after commit/push.
-Final handoff/tracker commit: recorded after commit/push.
+Remediation source commit: `c2dad5b` (pushed).
+Final handoff/tracker commit: final branch tip reported in the completion
+report; PR #73 remains Draft and unmerged.

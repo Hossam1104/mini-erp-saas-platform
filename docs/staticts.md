@@ -48,7 +48,7 @@ order without `EnsureCreated`.
 
 | Current control | Verified position |
 |---|---|
-| MESP-129 code | Code-complete implementation commit `01ea8f7369d173c15cf55a723d6bd95006208282` on `feat/MESP-129-physical-stock-movements`; Draft PR #73 remains open/Draft/unmerged. |
+| MESP-129 code | Code-complete implementation commit `01ea8f7369d173c15cf55a723d6bd95006208282`; Sol remediation source commit `c2dad5b` on `feat/MESP-129-physical-stock-movements`; Draft PR #73 remains open/Draft/unmerged. |
 | Production capability | ~47% overall; Procurement/P2P conservatively ~41%. Headline intentionally unchanged pending Sol acceptance and merge. |
 | Validation | Release build 0 warnings/0 errors; focused Inventory 26/26; focused Goods Receipt/Supplier Return 19/19; SQL safety 28/28; canonical backend 884/884 passed, 0 skipped with disposable LocalDB; Angular 241/241 across 32 spec files; production build 499.97 kB initial / 33.12 kB Inventory lazy; Chromium 26/26; both npm audits 0 vulnerabilities; `git diff --check` clean. |
 | Delivery boundaries | Formal Inventory migration `20260822092802_MESP129PhysicalStockMovements`; migration-order regression uses disposable LocalDB; `frontend/assets` untouched; no Jira writes; no MESP-130/MESP-131 or downstream commercial/Finance implementation. |

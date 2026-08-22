@@ -9,7 +9,8 @@ implementation commit is `01ea8f7369d173c15cf55a723d6bd95006208282`; Draft PR
 #73 is open, Draft, and unmerged. Jira remains read-only; no Jira writes were
 performed. Sol remediation started from the exact synchronized local/remote
 branch head `d8d852f4e93602ce66583157163e652e57795f2e`; the remediation source
-and final handoff commit SHAs are recorded in the final session handoff.
+commit `c2dad5b` is pushed; the final handoff/tracker tip is recorded in the
+completion report.
 
 The implementation consumes the authoritative Procurement Goods Receipt source
 through an application/provider contract. Only accepted quantity creates one
