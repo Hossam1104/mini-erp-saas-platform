@@ -281,12 +281,12 @@ Inventory topology.
 
 - Backend URL: `http://localhost:5300`.
 - Frontend URL: `http://localhost:4300`.
-- Backend PID: `26432` (`MiniErp.Api`).
-- Frontend PID: `22280` (Node/Angular development server).
+- Backend PID: `43244` (`MiniErp.Api`, committed Release output).
+- Frontend PID: `3728` (Node/Angular development server).
 - Backend health: `GET /health` returned HTTP 200.
 - Frontend status: `/` and `/main.js` returned HTTP 200.
-- Both processes remain running for Owner inspection. They will be restarted
-  from the official development launcher after the final repository update.
+- Both processes were restarted after the final source build and remain running
+  for Owner inspection.
 
 ## Review and delivery controls
 

@@ -36,10 +36,10 @@ bytes over the warning budget), Inventory lazy chunk 54.98 kB, and Supplier
 Quotation lazy chunk 91.94 kB. Contracts/App/Infrastructure/test Release
 builds are clean; the current API source also compiled through an alternate
 Release output because the normal API output is held by the running process.
-The official runtime remains `http://localhost:5300` backend PID 26432 and
-`http://localhost:4300` frontend PID 22280, with backend `/health`, frontend `/`,
-and `/main.js` returning HTTP 200; both are left running for Owner inspection
-and will be restarted after the final repository update.
+The official runtime remains `http://localhost:5300` backend PID 43244 and
+`http://localhost:4300` frontend PID 3728, with backend `/health`, frontend `/`,
+and `/main.js` returning HTTP 200; both were restarted after the final source
+build and are left running for Owner inspection.
 
 The production-readiness headline remains approximately 47% overall and 41%
 Procurement/P2P pending Sol acceptance and merge. The fast-track completed

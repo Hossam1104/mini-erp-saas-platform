@@ -39,7 +39,7 @@ not production readiness.
 | Production capability | ~47% overall; Procurement/P2P ~41%; unchanged pending Sol acceptance/merge. Completed fast-track ratio 13/26 = 50.0%, not production readiness. |
 | Validation | Focused Inventory 3/3; REST/OpenAPI 33/33; backend 899/899; Angular 242/242 across 32 spec files; production build successful with 500.06 kB initial / 54.98 kB Inventory lazy / 91.94 kB Supplier Quotation lazy; 65-byte initial-budget warning; source Release builds clean. |
 | Delivery boundaries | Formal migration `20260822194250_MESP130StockControlAndCorrections`; Pending valuation only; no Finance/MWA/Sales/Reporting/downstream implementation; no Jira writes; `frontend/assets` untouched. |
-| Runtime | Backend `http://localhost:5300` PID 26432 and frontend `http://localhost:4300` PID 22280; health/root/main.js HTTP 200; processes left running for Owner inspection. |
+| Runtime | Backend `http://localhost:5300` PID 43244 and frontend `http://localhost:4300` PID 3728; health/root/main.js HTTP 200; processes restarted after the final source build and left running for Owner inspection. |
 | Next exact session | Sol acceptance of the exact final branch SHA and bounded MESP-130 evidence. MESP-130 remains In Progress until acceptance. Do not start MESP-131 or downstream implementation. |
 
 ## Progress history - 22 August 2026
