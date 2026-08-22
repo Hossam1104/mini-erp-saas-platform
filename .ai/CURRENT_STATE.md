@@ -1,5 +1,83 @@
 # Current State
 
+## Current authoritative position - 22 August 2026 (MESP-129 Sol acceptance remediation complete; delta handoff)
+
+MESP-129 is code-complete at its bounded Inventory physical-movement scope on
+branch `feat/MESP-129-physical-stock-movements`, based exactly on synchronized
+main `2cf6b315c69c87f26ca4bbfc774e3e0eb451c5e3`. The code-complete
+implementation commit is `01ea8f7369d173c15cf55a723d6bd95006208282`; Draft PR
+#73 is open, Draft, and unmerged. Jira remains read-only; no Jira writes were
+performed. The final Sol blocker remediation started from the exact
+synchronized local/remote branch head
+`380e104292523fe7930493263ed043d6d354d685`; the verified remediation source
+commit `cf40f97c70603bd90996dc4567e2a3215f317c7b` is pushed; the final
+handoff/tracker tip is recorded in the completion report.
+
+The implementation consumes the authoritative Procurement Goods Receipt source
+through an application/provider contract. Only accepted quantity creates one
+immutable inbound Inventory movement per Goods Receipt line; rejected quantity
+never enters stock, duplicate source posts converge, and Goods Receipt
+cancellation is blocked while an active Inventory effect exists. Supplier
+Return physical posting is restricted to the real `AwaitingInventory` source,
+preserves Supplier Return/line, Goods Receipt/line, and Purchase Order/line
+lineage, respects `OnHand >= Reserved`, uses durable source uniqueness and
+idempotent replay, emits duplicate audit evidence, and converges a retry after
+physical commit with the Procurement handoff seam. A commercial reversal after
+physical posting remains blocked by the upstream state contract; no silent
+physical disagreement is allowed.
+
+Inventory owns Warehouse Transfer. Direct transfers commit balanced source
+outbound and destination inbound effects atomically. Two-step transfers commit
+source shipment first, derive InTransit from immutable transfer events, support
+partial receipt, reject overage, resolve explicit shortage/loss without a
+second outbound movement, and permit cancellation only before physical
+shipment. Source and destination warehouses are resolved and authorized
+server-side, must be active, distinct, same-Tenant, and same-Company; both
+warehouse authorities are required for reads and mutations. Existing
+MESP-128 concurrency anchors and Serializable transactions are retained with
+deterministic multi-identity lock ordering.
+
+New physical movements carry `Pending` valuation and nullable cost/currency
+when no authoritative Inventory valuation exists; MESP-131 owns later MWA
+valuation. No AP, AR, GL, tax, payment, commercial Sales Customer Return,
+MESP-130 Count/Adjustment/Stock Issue, external/statutory, or Wafra-specific
+behavior was added. Customer Return is only a truthful unavailable Inventory
+integration boundary awaiting an authoritative Sales handoff; no arbitrary
+client-supplied posting exists.
+
+The formal Inventory migration is
+`20260822092802_MESP129PhysicalStockMovements`; it adds only MESP-129 Inventory
+physical tables/columns and preserves Tenancy migration ownership. The SQL
+safety fixture applies real committed Tenancy, Master Data, Business
+Parties, Procurement, and Inventory migrations in order to one disposable
+LocalDB catalog with separate history tables, and checks the shared
+Tenant-owned table/index topology plus expected Inventory tables.
+
+The six prior Sol acceptance remediations plus the final P1/P2 blocker delta are
+complete: tracked Procurement sources
+fail closed without tracking identity fabrication; Goods Receipt cancellation
+has active/no-effect/unavailable verification and preserves state on
+unavailability; Supplier Return replay probes durable Inventory before source
+eligibility and converges after Procurement handoff; duplicate transfer receipt
+references converge with audit evidence and no second movement; receipt
+mutations acquire the MESP-128 destination anchor; and the migration-order test
+uses one real disposable catalog without `EnsureCreated`. REST/OpenAPI/
+Foundation metadata, antiforgery, ETags/If- นmatch, idempotency, audit/history,
+and EN/AR RTL Angular workflow support remain included. Validation is Release
+build 0 warnings/0 errors; focused Inventory 30/30; focused Goods Receipt /
+Supplier Return 23/23; SQL safety 29/29; canonical backend 893/893 passed, 0
+skipped with disposable LocalDB; Angular 241/241 across 32 spec files;
+production bundle 499.97 kB initial with Inventory lazy 33.12 kB and Supplier
+Quotation lazy 91.94 kB; Chromium 26/26; both npm audits 0 vulnerabilities;
+official runtime API 5300/frontend 4300 health, root, and main.js checks
+returned 200; and `git diff --check` is clean.
+Protected `frontend/assets` remains untouched.
+
+The production headline remains approximately 47% overall and 41%
+Procurement/P2P pending Sol acceptance and merge. The next exact session is
+Sol acceptance of the source commit and Draft PR #73; do not merge or start
+MESP-130, MESP-131, commercial Sales, Finance, or downstream implementation.
+
 ## Current authoritative position - 22 August 2026 (MESP-128 Opus stock-integrity delta remediation complete; delta-only review handoff)
 
 MESP-128 remains bounded to the Inventory-owned physical-stock foundation on

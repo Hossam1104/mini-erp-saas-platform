@@ -386,9 +386,304 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
     public async Task<InventoryAvailabilityRecord?> GetAvailabilityAsync(InventoryRequestContext context, InventoryScope scope, Guid productId, Guid unitOfMeasureId, string? trackingIdentity, InventoryProductReference product, InventoryWarehouseOption warehouse, CancellationToken cancellationToken = default)
     {
         await using var db = CreateContext(context); var onHand = await SignedQuantityAsync(db, scope.CompanyId, scope.BranchId, scope.WarehouseId, productId, unitOfMeasureId, trackingIdentity, cancellationToken); var reserved = await db.Reservations.Where(item => item.CompanyId == scope.CompanyId && item.BranchId == scope.BranchId && item.WarehouseId == scope.WarehouseId && item.ProductId == productId && item.UnitOfMeasureId == unitOfMeasureId && item.TrackingIdentity == trackingIdentity && item.Status == InventoryReservationStatus.Active).SumAsync(item => (decimal?)item.ReservedQuantity, cancellationToken) ?? 0;
+        var transitTransferIds = await db.Transfers.AsNoTracking()
+            .Where(item => item.Mode == InventoryTransferMode.InTransit && item.CompanyId == scope.CompanyId && item.BranchId == scope.BranchId && item.DestinationWarehouseId == scope.WarehouseId && item.ProductId == productId && item.UnitOfMeasureId == unitOfMeasureId && item.TrackingIdentity == trackingIdentity)
+            .Select(item => item.Id).ToArrayAsync(cancellationToken);
+        var transitEvents = await db.TransferEvents.AsNoTracking().Where(item => transitTransferIds.Contains(item.TransferId)).ToListAsync(cancellationToken);
+        var inTransit = transitEvents.Where(item => item.EventType == InventoryTransferEventType.Shipped).Sum(item => item.Quantity);
+        var received = transitEvents.Where(item => item.EventType == InventoryTransferEventType.Received).Sum(item => item.Quantity);
+        var lost = transitEvents.Where(item => item.EventType == InventoryTransferEventType.ShortageResolved).Sum(item => item.Quantity);
+        inTransit = Math.Max(0, inTransit - received - lost);
         var anchor = await db.ConcurrencyAnchors.AsNoTracking().FirstOrDefaultAsync(item => item.CompanyId == scope.CompanyId && item.BranchId == scope.BranchId && item.WarehouseId == scope.WarehouseId && item.ProductId == productId && item.UnitOfMeasureId == unitOfMeasureId && item.TrackingKey == (trackingIdentity ?? string.Empty), cancellationToken);
-        return new InventoryAvailabilityRecord(context.TenantId.Value, scope.CompanyId, scope.BranchId, scope.WarehouseId, warehouse.Code, warehouse.Name, productId, product.Sku, product.Name, unitOfMeasureId, product.BaseUnitOfMeasureCode, trackingIdentity, product.TrackingEnabled, onHand, reserved, Math.Max(0, onHand - reserved), 0, 0, 0, DateTimeOffset.UtcNow, anchor?.Version ?? []);
+        return new InventoryAvailabilityRecord(context.TenantId.Value, scope.CompanyId, scope.BranchId, scope.WarehouseId, warehouse.Code, warehouse.Name, productId, product.Sku, product.Name, unitOfMeasureId, product.BaseUnitOfMeasureCode, trackingIdentity, product.TrackingEnabled, onHand, reserved, Math.Max(0, onHand - reserved), 0, 0, inTransit, DateTimeOffset.UtcNow, anchor?.Version ?? []);
     }
+
+    public async Task<InventoryGoodsReceiptPostingRecord?> PostGoodsReceiptAsync(InventoryRequestContext context, InventoryGoodsReceiptPostCommand command, CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        try
+        {
+            var replay = await ReadReplayAsync<InventoryGoodsReceiptPostingRecord>(db, context, "inventory.goods-receipt.post", command.IdempotencyKey, command.RequestFingerprint, cancellationToken);
+            if (replay.Handled) return replay.Value;
+            var source = command.Source;
+            if (source.Product.TrackingEnabled) return null;
+            var existing = await db.StockMovements.AsNoTracking().SingleOrDefaultAsync(item => item.SourceType == InventoryMovementSourceType.GoodsReceipt && item.SourceDocumentId == source.Receipt.Id && item.SourceLineId == source.Line.Id, cancellationToken);
+            if (existing is not null)
+            {
+                var existingResult = ToGoodsReceiptPosting(existing, true);
+                AddAudit(db, context, "goods-receipt", source.Receipt.Id, "inventory.goods-receipt.post", command.ActorId, "Duplicate", "physical source line already posted", command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, $"movement:{existing.Id}", $"movement:{existing.Id}", command.OccurredAt);
+                AddReplay(db, context, "inventory.goods-receipt.post", command.IdempotencyKey, command.RequestFingerprint, "goods-receipt", source.Receipt.Id, existingResult, command.OccurredAt);
+                await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return existingResult;
+            }
+
+            var identity = new StockIdentityKey(source.Receipt.Scope.CompanyId, source.Receipt.Scope.BranchId, source.Warehouse.WarehouseId, source.Line.ProductId, source.UnitOfMeasureId, source.Product.TrackingEnabled ? string.Empty : string.Empty);
+            await AcquireConcurrencyAnchorsAsync(db, context.TenantId, [identity], cancellationToken);
+            var movement = new InventoryStockMovementEntity(context.TenantId, command.PostingId, source.Receipt.Scope.CompanyId, source.Receipt.Scope.BranchId, source.Warehouse.WarehouseId, source.Warehouse.Code, source.Warehouse.Name, source.Line.ProductId, source.Product.Sku, source.Product.Name, source.UnitOfMeasureId, source.Line.UnitOfMeasureCode, InventoryMovementDirection.Inbound, source.Line.AcceptedQuantity, null, null, InventoryValuationStatus.Pending, null, InventoryMovementSourceType.GoodsReceipt, source.Receipt.Id, source.Line.Id, null, source.Receipt.ReceivedDate, command.ActorId, command.CorrelationId, command.OccurredAt, source.Receipt.Id, source.Line.Id, null, null, source.Receipt.PurchaseOrderId, source.Line.PurchaseOrderLineId, null, null, null);
+            db.StockMovements.Add(movement);
+            AddAudit(db, context, "goods-receipt", source.Receipt.Id, "inventory.goods-receipt.post", command.ActorId, "Succeeded", "physical quantity posted", command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, $"accepted:{source.Line.AcceptedQuantity}", command.OccurredAt);
+            await db.SaveChangesAsync(cancellationToken);
+            var result = ToGoodsReceiptPosting(movement, false);
+            AddReplay(db, context, "inventory.goods-receipt.post", command.IdempotencyKey, command.RequestFingerprint, "goods-receipt", source.Receipt.Id, result, command.OccurredAt);
+            await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
+        }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
+        catch (DbUpdateConcurrencyException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+    }
+
+    public async Task<InventoryReplayProbe<InventorySupplierReturnPostingRecord>> ProbeSupplierReturnReplayAsync(
+        InventoryRequestContext context,
+        string? idempotencyKey,
+        string requestFingerprint,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context);
+        return await ProbeReplayAsync<InventorySupplierReturnPostingRecord>(
+            db,
+            context,
+            "inventory.supplier-return.post",
+            idempotencyKey,
+            requestFingerprint,
+            cancellationToken);
+    }
+
+    public async Task<InventorySupplierReturnPostingRecord?> PostSupplierReturnAsync(InventoryRequestContext context, InventorySupplierReturnPostCommand command, CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        try
+        {
+            var replay = await ReadReplayAsync<InventorySupplierReturnPostingRecord>(db, context, "inventory.supplier-return.post", command.IdempotencyKey, command.RequestFingerprint, cancellationToken);
+            if (replay.Handled) return replay.Value;
+            var source = command.Source;
+            if (source.Lines.Any(line => line.Product.TrackingEnabled)) return null;
+            var existing = await db.StockMovements.AsNoTracking().Where(item => item.SourceType == InventoryMovementSourceType.SupplierReturn && item.SourceDocumentId == source.SupplierReturn.Id).ToListAsync(cancellationToken);
+            if (existing.Count > 0)
+            {
+                var existingResult = new InventorySupplierReturnPostingRecord(source.SupplierReturn.Id, existing.Select(item => item.Id).ToArray(), existing.Sum(item => item.Quantity), $"inventory-movement:{existing[0].Id:N}", InventoryValuationStatus.Pending, existing.Min(item => item.PostedAt), true, false, source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId);
+                AddAudit(db, context, "supplier-return", source.SupplierReturn.Id, "inventory.supplier-return.post", command.ActorId, "Duplicate", "physical source document already posted", command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, $"movement:{existing[0].Id}", $"movement:{existing[0].Id}", command.OccurredAt);
+                AddReplay(db, context, "inventory.supplier-return.post", command.IdempotencyKey, command.RequestFingerprint, "supplier-return", source.SupplierReturn.Id, existingResult, command.OccurredAt);
+                await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return existingResult;
+            }
+
+            var identities = source.Lines.Select(line => new StockIdentityKey(source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId, line.ReturnLine.ProductId, line.UnitOfMeasureId, string.Empty));
+            await AcquireConcurrencyAnchorsAsync(db, context.TenantId, identities, cancellationToken);
+            var movements = new List<InventoryStockMovementEntity>(source.Lines.Count);
+            foreach (var line in source.Lines)
+            {
+                var identity = new StockIdentityKey(source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId, line.ReturnLine.ProductId, line.UnitOfMeasureId, string.Empty);
+                var onHand = await SignedQuantityAsync(db, identity, cancellationToken);
+                var reserved = await ActiveReservedQuantityAsync(db, identity, cancellationToken);
+                if (onHand - line.ReturnLine.ReturnQuantity < reserved) return null;
+                var movement = new InventoryStockMovementEntity(context.TenantId, Guid.NewGuid(), source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId, source.Warehouse.Code, source.Warehouse.Name, line.ReturnLine.ProductId, line.Product.Sku, line.Product.Name, line.UnitOfMeasureId, line.ReceiptLine.UnitOfMeasureCode, InventoryMovementDirection.Outbound, line.ReturnLine.ReturnQuantity, null, null, InventoryValuationStatus.Pending, null, InventoryMovementSourceType.SupplierReturn, source.SupplierReturn.Id, line.ReturnLine.Id, null, source.SupplierReturn.ReturnDate, command.ActorId, command.CorrelationId, command.OccurredAt, source.GoodsReceipt.Id, line.ReceiptLine.Id, source.SupplierReturn.Id, line.ReturnLine.Id, source.SupplierReturn.PurchaseOrderId, line.ReturnLine.PurchaseOrderLineId, null, null, null);
+                movements.Add(movement); db.StockMovements.Add(movement);
+            }
+            await db.SaveChangesAsync(cancellationToken);
+            var result = new InventorySupplierReturnPostingRecord(source.SupplierReturn.Id, movements.Select(item => item.Id).ToArray(), movements.Sum(item => item.Quantity), $"inventory-movement:{movements[0].Id:N}", InventoryValuationStatus.Pending, command.OccurredAt, false, false, source.SupplierReturn.Scope.CompanyId, source.SupplierReturn.Scope.BranchId, source.Warehouse.WarehouseId);
+            AddAudit(db, context, "supplier-return", source.SupplierReturn.Id, "inventory.supplier-return.post", command.ActorId, "Succeeded", "physical quantity posted", command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, $"outbound:{result.Quantity}", command.OccurredAt);
+            AddReplay(db, context, "inventory.supplier-return.post", command.IdempotencyKey, command.RequestFingerprint, "supplier-return", source.SupplierReturn.Id, result, command.OccurredAt);
+            await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
+        }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
+        catch (DbUpdateConcurrencyException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+    }
+
+    public async Task<IReadOnlyList<InventoryTransferRecord>> ListTransfersAsync(InventoryRequestContext context, InventoryScope? scope = null, CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context);
+        var query = db.Transfers.AsNoTracking().Include(item => item.Lines).AsQueryable();
+        if (scope is not null) query = query.Where(item => item.CompanyId == scope.CompanyId && item.BranchId == scope.BranchId);
+        var transfers = (await query.ToListAsync(cancellationToken)).OrderByDescending(item => item.CreatedAt).ToArray();
+        var ids = transfers.Select(item => item.Id).ToArray();
+        var events = (await db.TransferEvents.AsNoTracking().Where(item => ids.Contains(item.TransferId)).ToListAsync(cancellationToken)).OrderBy(item => item.OccurredAt).ToArray();
+        return transfers.Select(item => ToTransfer(item, events.Where(eventItem => eventItem.TransferId == item.Id).ToArray())).ToArray();
+    }
+
+    public async Task<InventoryTransferRecord?> FindTransferAsync(InventoryRequestContext context, Guid transferId, CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context);
+        var transfer = await db.Transfers.AsNoTracking().Include(item => item.Lines).SingleOrDefaultAsync(item => item.Id == transferId, cancellationToken);
+        if (transfer is null) return null;
+        var events = (await db.TransferEvents.AsNoTracking().Where(item => item.TransferId == transferId).ToListAsync(cancellationToken)).OrderBy(item => item.OccurredAt).ToArray();
+        return ToTransfer(transfer, events);
+    }
+
+    public async Task<InventoryTransferRecord?> CreateTransferAsync(InventoryRequestContext context, InventoryTransferCreateCommand command, CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context); await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        try
+        {
+            var replay = await ReadReplayAsync<InventoryTransferRecord>(db, context, "inventory.transfer.create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay.Handled) return replay.Value;
+            if (command.SourceWarehouse.WarehouseId == command.DestinationWarehouse.WarehouseId) return null;
+            var transfer = new InventoryTransferEntity(context.TenantId, command.Id, command.Scope.CompanyId, command.Scope.BranchId, command.SourceWarehouse.WarehouseId, command.SourceWarehouse.Code, command.SourceWarehouse.Name, command.DestinationWarehouse.WarehouseId, command.DestinationWarehouse.Code, command.DestinationWarehouse.Name, command.ProductId, command.Product.Sku, command.Product.Name, command.UnitOfMeasureId, command.Product.BaseUnitOfMeasureCode, command.Quantity, command.Mode, command.TrackingIdentity, command.Reason, command.ActorId, command.OccurredAt);
+            var line = new InventoryTransferLineEntity(context.TenantId, Guid.NewGuid(), transfer.Id, command.Quantity); transfer.Lines.Add(line); db.Transfers.Add(transfer);
+            db.TransferEvents.Add(new InventoryTransferEventEntity(context.TenantId, Guid.NewGuid(), transfer.Id, line.Id, InventoryTransferEventType.Created, command.Quantity, null, command.Reason, command.ActorId, command.CorrelationId, command.OccurredAt));
+            AddAudit(db, context, "transfer", transfer.Id, "inventory.transfer.create", command.ActorId, "Succeeded", command.Reason, command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, "Draft", command.OccurredAt);
+            await db.SaveChangesAsync(cancellationToken); var result = ToTransfer(transfer, await db.TransferEvents.AsNoTracking().Where(item => item.TransferId == transfer.Id).ToListAsync(cancellationToken));
+            AddReplay(db, context, "inventory.transfer.create", command.IdempotencyKey, command.RequestFingerprint, "transfer", transfer.Id, result, command.OccurredAt); await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
+        }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
+        catch (DbUpdateConcurrencyException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+    }
+
+    public Task<InventoryTransferRecord?> PostDirectTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => MutateTransferAsync(context, command, "inventory.transfer.direct", InventoryTransferEventType.DirectCompleted, async (db, transfer, line, now) =>
+    {
+        if (transfer.Mode != InventoryTransferMode.Direct || transfer.Status != InventoryTransferStatus.Draft) return null;
+        var sourceKey = new StockIdentityKey(transfer.CompanyId, transfer.BranchId, transfer.SourceWarehouseId, transfer.ProductId, transfer.UnitOfMeasureId, transfer.TrackingIdentity ?? string.Empty);
+        var destinationKey = new StockIdentityKey(transfer.CompanyId, transfer.BranchId, transfer.DestinationWarehouseId, transfer.ProductId, transfer.UnitOfMeasureId, transfer.TrackingIdentity ?? string.Empty);
+        await AcquireConcurrencyAnchorsAsync(db, context.TenantId, [sourceKey, destinationKey], cancellationToken);
+        if (!await HasOutboundCapacityAsync(db, sourceKey, transfer.Quantity, cancellationToken)) return null;
+        var sourceMovement = NewTransferMovement(context, transfer, InventoryMovementDirection.Outbound, InventoryMovementSourceType.WarehouseTransferShipment, Guid.NewGuid(), line.Id, transfer.SourceWarehouseId, transfer.SourceWarehouseCode, transfer.SourceWarehouseName, transfer.Quantity, now);
+        var destinationMovement = NewTransferMovement(context, transfer, InventoryMovementDirection.Inbound, InventoryMovementSourceType.WarehouseTransferReceipt, Guid.NewGuid(), line.Id, transfer.DestinationWarehouseId, transfer.DestinationWarehouseCode, transfer.DestinationWarehouseName, transfer.Quantity, now);
+        db.StockMovements.AddRange(sourceMovement, destinationMovement); transfer.SetStatus(InventoryTransferStatus.Completed, now); return new TransferMutationOutcome(transfer, line, sourceMovement, destinationMovement, transfer.Quantity);
+    }, cancellationToken);
+
+    public Task<InventoryTransferRecord?> ShipTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => MutateTransferAsync(context, command, "inventory.transfer.ship", InventoryTransferEventType.Shipped, async (db, transfer, line, now) =>
+    {
+        if (transfer.Mode != InventoryTransferMode.InTransit || transfer.Status != InventoryTransferStatus.Draft || command.Quantity is not null && command.Quantity != transfer.Quantity) return null;
+        var sourceKey = new StockIdentityKey(transfer.CompanyId, transfer.BranchId, transfer.SourceWarehouseId, transfer.ProductId, transfer.UnitOfMeasureId, transfer.TrackingIdentity ?? string.Empty);
+        await AcquireConcurrencyAnchorsAsync(db, context.TenantId, [sourceKey], cancellationToken);
+        if (!await HasOutboundCapacityAsync(db, sourceKey, transfer.Quantity, cancellationToken)) return null;
+        var sourceMovement = NewTransferMovement(context, transfer, InventoryMovementDirection.Outbound, InventoryMovementSourceType.WarehouseTransferShipment, Guid.NewGuid(), line.Id, transfer.SourceWarehouseId, transfer.SourceWarehouseCode, transfer.SourceWarehouseName, transfer.Quantity, now);
+        db.StockMovements.Add(sourceMovement); transfer.SetStatus(InventoryTransferStatus.Shipped, now); return new TransferMutationOutcome(transfer, line, sourceMovement, null, transfer.Quantity);
+    }, cancellationToken);
+
+    public Task<InventoryTransferRecord?> ReceiveTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default)
+    {
+        var canonicalCommand = command with { Reference = InventoryTransferReferencePolicy.Normalize(command.Reference) };
+        return MutateTransferAsync(context, canonicalCommand, "inventory.transfer.receive", InventoryTransferEventType.Received, async (db, transfer, line, now) =>
+    {
+        if (transfer.Mode != InventoryTransferMode.InTransit || transfer.Status is not (InventoryTransferStatus.Shipped or InventoryTransferStatus.PartiallyReceived) || canonicalCommand.Quantity is not > 0 || string.IsNullOrWhiteSpace(canonicalCommand.Reference)) return null;
+        var destinationKey = new StockIdentityKey(transfer.CompanyId, transfer.BranchId, transfer.DestinationWarehouseId, transfer.ProductId, transfer.UnitOfMeasureId, transfer.TrackingIdentity ?? string.Empty);
+        await AcquireConcurrencyAnchorsAsync(db, context.TenantId, [destinationKey], cancellationToken);
+        var prior = await db.TransferEvents.Where(item => item.TransferId == transfer.Id).ToListAsync(cancellationToken);
+        if (prior.Any(item => item.EventType == InventoryTransferEventType.Received
+            && InventoryTransferReferencePolicy.Normalize(item.Reference) == canonicalCommand.Reference))
+        {
+            return new TransferMutationOutcome(transfer, line, null, null, 0m, false);
+        }
+
+        var shipped = prior.Where(item => item.EventType == InventoryTransferEventType.Shipped).Sum(item => item.Quantity); var received = prior.Where(item => item.EventType == InventoryTransferEventType.Received).Sum(item => item.Quantity); var lost = prior.Where(item => item.EventType == InventoryTransferEventType.ShortageResolved).Sum(item => item.Quantity);
+        if (canonicalCommand.Quantity.Value > shipped - received - lost) return null;
+        var destinationMovement = NewTransferMovement(context, transfer, InventoryMovementDirection.Inbound, InventoryMovementSourceType.WarehouseTransferReceipt, Guid.NewGuid(), Guid.NewGuid(), transfer.DestinationWarehouseId, transfer.DestinationWarehouseCode, transfer.DestinationWarehouseName, canonicalCommand.Quantity.Value, now, line.Id);
+        db.StockMovements.Add(destinationMovement); var newReceived = received + canonicalCommand.Quantity.Value; transfer.SetStatus(newReceived == transfer.Quantity ? InventoryTransferStatus.Completed : InventoryTransferStatus.PartiallyReceived, now); return new TransferMutationOutcome(transfer, line, null, destinationMovement, canonicalCommand.Quantity.Value);
+    }, cancellationToken);
+    }
+
+    public Task<InventoryTransferRecord?> ResolveTransferShortageAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => MutateTransferAsync(context, command, "inventory.transfer.shortage-resolve", InventoryTransferEventType.ShortageResolved, async (db, transfer, line, now) =>
+    {
+        if (transfer.Mode != InventoryTransferMode.InTransit || transfer.Status is not (InventoryTransferStatus.Shipped or InventoryTransferStatus.PartiallyReceived) || string.IsNullOrWhiteSpace(command.Reference)) return null;
+        var prior = await db.TransferEvents.Where(item => item.TransferId == transfer.Id).ToListAsync(cancellationToken); var shipped = prior.Where(item => item.EventType == InventoryTransferEventType.Shipped).Sum(item => item.Quantity); var received = prior.Where(item => item.EventType == InventoryTransferEventType.Received).Sum(item => item.Quantity); var lost = prior.Where(item => item.EventType == InventoryTransferEventType.ShortageResolved).Sum(item => item.Quantity); var remaining = shipped - received - lost;
+        if (remaining <= 0) return null;
+        transfer.SetStatus(InventoryTransferStatus.LossResolved, now); return new TransferMutationOutcome(transfer, line, null, null, remaining);
+    }, cancellationToken);
+
+    public Task<InventoryTransferRecord?> CancelTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => MutateTransferAsync(context, command, "inventory.transfer.cancel", InventoryTransferEventType.Cancelled, (db, transfer, line, now) =>
+    {
+        if (transfer.Status != InventoryTransferStatus.Draft) return Task.FromResult<TransferMutationOutcome?>(null);
+        transfer.SetStatus(InventoryTransferStatus.Cancelled, now); return Task.FromResult<TransferMutationOutcome?>(new TransferMutationOutcome(transfer, line, null, null, 0m));
+    }, cancellationToken);
+
+    public async Task<IReadOnlyList<InventoryTransferEventRecord>> ReadTransferHistoryAsync(InventoryRequestContext context, Guid transferId, CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context); return (await db.TransferEvents.AsNoTracking().Where(item => item.TransferId == transferId).ToListAsync(cancellationToken)).OrderBy(item => item.OccurredAt).Select(ToTransferEvent).ToArray();
+    }
+
+    private async Task<InventoryTransferRecord?> MutateTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, string operationId, InventoryTransferEventType eventType, Func<InventoryDbContext, InventoryTransferEntity, InventoryTransferLineEntity, DateTimeOffset, Task<TransferMutationOutcome?>> mutate, CancellationToken cancellationToken)
+    {
+        await using var db = CreateContext(context); await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        try
+        {
+            var replay = await ReadReplayAsync<InventoryTransferRecord>(db, context, operationId, command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay.Handled) return replay.Value;
+            var transfer = await db.Transfers.Include(item => item.Lines).SingleOrDefaultAsync(item => item.Id == command.TransferId, cancellationToken); if (transfer is null || !transfer.Version.SequenceEqual(command.ExpectedVersion)) return null;
+            var line = transfer.Lines.Single(); var outcome = await mutate(db, transfer, line, command.OccurredAt); if (outcome is null) return null;
+            if (!outcome.RecordEvent)
+            {
+                AddAudit(db, context, "transfer", transfer.Id, operationId, command.ActorId, "Duplicate", "physical receipt reference already recorded", command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, "duplicate-receipt-reference", command.OccurredAt);
+                await db.SaveChangesAsync(cancellationToken);
+                var existingEvents = (await db.TransferEvents.AsNoTracking().Where(item => item.TransferId == transfer.Id).ToListAsync(cancellationToken)).OrderBy(item => item.OccurredAt).ToArray();
+                var existingResult = ToTransfer(transfer, existingEvents);
+                AddReplay(db, context, operationId, command.IdempotencyKey, command.RequestFingerprint, "transfer", transfer.Id, existingResult, command.OccurredAt);
+                await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return existingResult;
+            }
+
+            var value = outcome; var eventEntity = new InventoryTransferEventEntity(context.TenantId, Guid.NewGuid(), transfer.Id, line.Id, eventType, value.Quantity, command.Reference, command.Reason, command.ActorId, command.CorrelationId, command.OccurredAt, value.SourceMovement?.Id, value.DestinationMovement?.Id); db.TransferEvents.Add(eventEntity);
+            AddAudit(db, context, "transfer", transfer.Id, operationId, command.ActorId, "Succeeded", command.Reason, command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, transfer.Status.ToString(), command.OccurredAt);
+            await db.SaveChangesAsync(cancellationToken); var events = (await db.TransferEvents.AsNoTracking().Where(item => item.TransferId == transfer.Id).ToListAsync(cancellationToken)).OrderBy(item => item.OccurredAt).ToArray(); var result = ToTransfer(transfer, events); AddReplay(db, context, operationId, command.IdempotencyKey, command.RequestFingerprint, "transfer", transfer.Id, result, command.OccurredAt); await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
+        }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
+        catch (DbUpdateConcurrencyException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+    }
+
+    public async Task<bool> HasActiveGoodsReceiptEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default)
+    {
+        await using var db = new InventoryDbContext(options, tenantContext); return await db.StockMovements.AsNoTracking().AnyAsync(item => item.GoodsReceiptId == goodsReceiptId && item.Direction == InventoryMovementDirection.Inbound && item.SourceType == InventoryMovementSourceType.GoodsReceipt, cancellationToken);
+    }
+
+    public async Task<bool> HasActiveSupplierReturnEffectAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default)
+    {
+        await using var db = new InventoryDbContext(options, tenantContext);
+        return await db.StockMovements.AsNoTracking().AnyAsync(
+            item => item.SupplierReturnId == supplierReturnId
+                && item.Direction == InventoryMovementDirection.Outbound
+                && item.SourceType == InventoryMovementSourceType.SupplierReturn,
+            cancellationToken);
+    }
+
+    private static InventoryGoodsReceiptPostingRecord ToGoodsReceiptPosting(InventoryStockMovementEntity movement, bool wasExisting) =>
+        new(movement.Id, movement.TenantId.Value, movement.GoodsReceiptId ?? movement.SourceDocumentId, movement.GoodsReceiptLineId ?? movement.SourceLineId, movement.CompanyId, movement.BranchId, movement.WarehouseId, movement.WarehouseCode, movement.WarehouseName, movement.ProductId, movement.ProductSku, movement.ProductName, movement.UnitOfMeasureId, movement.UnitOfMeasureCode, movement.Quantity, movement.ValuationStatus, movement.PostedAt, wasExisting);
+
+    private static InventoryStockMovementEntity NewTransferMovement(
+        InventoryRequestContext context,
+        InventoryTransferEntity transfer,
+        InventoryMovementDirection direction,
+        InventoryMovementSourceType sourceType,
+        Guid movementId,
+        Guid sourceLineId,
+        Guid warehouseId,
+        string warehouseCode,
+        string warehouseName,
+        decimal quantity,
+        DateTimeOffset at,
+        Guid? transferLineId = null) =>
+        new(context.TenantId, movementId, transfer.CompanyId, transfer.BranchId, warehouseId, warehouseCode, warehouseName, transfer.ProductId, transfer.ProductSku, transfer.ProductName, transfer.UnitOfMeasureId, transfer.UnitOfMeasureCode, direction, quantity, null, null, InventoryValuationStatus.Pending, transfer.TrackingIdentity, sourceType, transfer.Id, sourceLineId, null, DateOnly.FromDateTime(at.UtcDateTime), context.ActorId, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), at, null, null, null, null, null, null, transfer.Id, transferLineId ?? sourceLineId, null);
+
+    private static async Task<bool> HasOutboundCapacityAsync(InventoryDbContext db, StockIdentityKey identity, decimal quantity, CancellationToken cancellationToken)
+    {
+        var onHand = await SignedQuantityAsync(db, identity, cancellationToken);
+        var reserved = await ActiveReservedQuantityAsync(db, identity, cancellationToken);
+        return quantity > 0m && onHand - quantity >= reserved;
+    }
+
+    private static InventoryTransferRecord ToTransfer(InventoryTransferEntity transfer, IReadOnlyList<InventoryTransferEventEntity> events)
+    {
+        var shipped = events.Where(item => item.EventType == InventoryTransferEventType.Shipped).Sum(item => item.Quantity);
+        var received = events.Where(item => item.EventType == InventoryTransferEventType.Received).Sum(item => item.Quantity);
+        var lost = events.Where(item => item.EventType == InventoryTransferEventType.ShortageResolved).Sum(item => item.Quantity);
+        if (events.Any(item => item.EventType == InventoryTransferEventType.DirectCompleted)) { shipped = transfer.Quantity; received = transfer.Quantity; }
+        var inTransit = Math.Max(0m, shipped - received - lost);
+        var remainingToShip = Math.Max(0m, transfer.Quantity - shipped);
+        return new InventoryTransferRecord(transfer.Id, transfer.TenantId.Value, transfer.CompanyId, transfer.BranchId, transfer.SourceWarehouseId, transfer.SourceWarehouseCode, transfer.SourceWarehouseName, transfer.DestinationWarehouseId, transfer.DestinationWarehouseCode, transfer.DestinationWarehouseName, transfer.ProductId, transfer.ProductSku, transfer.ProductName, transfer.UnitOfMeasureId, transfer.UnitOfMeasureCode, transfer.Quantity, transfer.Mode, transfer.Status, transfer.TrackingIdentity, shipped, received, lost, inTransit, remainingToShip, transfer.Reason, transfer.ActorId, transfer.CreatedAt, transfer.UpdatedAt, events.Select(ToTransferEvent).ToArray(), transfer.Version);
+    }
+
+    private static InventoryTransferEventRecord ToTransferEvent(InventoryTransferEventEntity item) =>
+        new(item.Id, item.TransferId, item.TransferLineId, item.EventType, item.Quantity, item.Reference, item.Reason, item.ActorId, item.CorrelationId, item.OccurredAt, item.SourceMovementId, item.DestinationMovementId, item.Version);
+
+    private sealed record TransferMutationOutcome(
+        InventoryTransferEntity Transfer,
+        InventoryTransferLineEntity Line,
+        InventoryStockMovementEntity? SourceMovement,
+        InventoryStockMovementEntity? DestinationMovement,
+        decimal Quantity,
+        bool RecordEvent = true);
 
     public async Task<IReadOnlyList<InventoryAuditRecord>> ReadAuditAsync(InventoryRequestContext context, string resourceType, Guid resourceId, CancellationToken cancellationToken = default)
     {
@@ -481,8 +776,9 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
 
     private static async Task<decimal> SignedQuantityAsync(InventoryDbContext db, Guid companyId, Guid? branchId, Guid warehouseId, Guid productId, Guid uomId, string? trackingIdentity, CancellationToken cancellationToken)
     {
-        var inbound = await db.StockMovements.Where(item => item.CompanyId == companyId && item.BranchId == branchId && item.WarehouseId == warehouseId && item.ProductId == productId && item.UnitOfMeasureId == uomId && item.TrackingIdentity == trackingIdentity && item.Direction == InventoryMovementDirection.Inbound).SumAsync(item => (decimal?)item.Quantity, cancellationToken) ?? 0;
-        var outbound = await db.StockMovements.Where(item => item.CompanyId == companyId && item.BranchId == branchId && item.WarehouseId == warehouseId && item.ProductId == productId && item.UnitOfMeasureId == uomId && item.TrackingIdentity == trackingIdentity && item.Direction == InventoryMovementDirection.Outbound).SumAsync(item => (decimal?)item.Quantity, cancellationToken) ?? 0;
+        var normalizedTracking = trackingIdentity == string.Empty ? null : trackingIdentity;
+        var inbound = await db.StockMovements.Where(item => item.CompanyId == companyId && item.BranchId == branchId && item.WarehouseId == warehouseId && item.ProductId == productId && item.UnitOfMeasureId == uomId && item.TrackingIdentity == normalizedTracking && item.Direction == InventoryMovementDirection.Inbound).SumAsync(item => (decimal?)item.Quantity, cancellationToken) ?? 0;
+        var outbound = await db.StockMovements.Where(item => item.CompanyId == companyId && item.BranchId == branchId && item.WarehouseId == warehouseId && item.ProductId == productId && item.UnitOfMeasureId == uomId && item.TrackingIdentity == normalizedTracking && item.Direction == InventoryMovementDirection.Outbound).SumAsync(item => (decimal?)item.Quantity, cancellationToken) ?? 0;
         return inbound - outbound;
     }
 
@@ -522,7 +818,34 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
         return entry.Fingerprint == fingerprint ? (true, JsonSerializer.Deserialize<T>(entry.SnapshotJson)) : (true, default);
     }
 
-    private static readonly System.Linq.Expressions.Expression<Func<InventoryStockMovementEntity, InventoryMovementRecord>> ToMovement = item => new InventoryMovementRecord(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.Direction, item.Quantity, item.UnitCost, item.CurrencyCode, item.TrackingIdentity, item.SourceType, item.SourceDocumentId, item.SourceLineId, item.CorrectionOfMovementId, item.EffectiveDate, item.ActorId, item.CorrelationId, item.PostedAt, item.Version);
+    private static async Task<InventoryReplayProbe<T>> ProbeReplayAsync<T>(InventoryDbContext db, InventoryRequestContext context, string operationId, string? key, string fingerprint, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return InventoryReplayProbe<T>.NotFound;
+        }
+
+        var entry = await db.Idempotency.AsNoTracking().SingleOrDefaultAsync(
+            item => item.TenantId == context.TenantId
+                && item.ActorId == context.ActorId
+                && item.OperationId == operationId
+                && item.Key == key,
+            cancellationToken);
+        if (entry is null)
+        {
+            return InventoryReplayProbe<T>.NotFound;
+        }
+
+        if (!string.Equals(entry.Fingerprint, fingerprint, StringComparison.Ordinal))
+        {
+            return InventoryReplayProbe<T>.Conflict;
+        }
+
+        var value = JsonSerializer.Deserialize<T>(entry.SnapshotJson);
+        return value is null ? InventoryReplayProbe<T>.Conflict : InventoryReplayProbe<T>.ForReplay(value);
+    }
+
+    private static readonly System.Linq.Expressions.Expression<Func<InventoryStockMovementEntity, InventoryMovementRecord>> ToMovement = item => new InventoryMovementRecord(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.Direction, item.Quantity, item.UnitCost, item.CurrencyCode, item.TrackingIdentity, item.SourceType, item.SourceDocumentId, item.SourceLineId, item.CorrectionOfMovementId, item.EffectiveDate, item.ActorId, item.CorrelationId, item.PostedAt, item.Version, item.ValuationStatus, item.GoodsReceiptId, item.GoodsReceiptLineId, item.SupplierReturnId, item.SupplierReturnLineId, item.PurchaseOrderId, item.PurchaseOrderLineId, item.TransferId, item.TransferLineId, item.SourceReference);
     private static readonly System.Linq.Expressions.Expression<Func<InventoryReservationEntity, InventoryReservationRecord>> ToReservation = item => new InventoryReservationRecord(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.TrackingIdentity, item.SourceType, item.SourceReference, item.RequestedQuantity, item.ReservedQuantity, item.UnallocatedQuantity, item.Status, item.ActorId, item.CreatedAt, item.UpdatedAt, item.Version);
 
     private static InventoryOpeningBalanceRecord ToOpening(InventoryOpeningBalanceEntity item) => new(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.AsOfDate, item.SourceOwner, item.SourceSystem, item.ExtractedAt, item.SourceReference, item.Status, item.Rows.Count, item.Rows.Count(row => row.Status is InventoryOpeningRowStatus.Valid or InventoryOpeningRowStatus.Posted), item.Rows.Count(row => row.Status == InventoryOpeningRowStatus.Quarantined), item.Rows.Where(row => row.Status is InventoryOpeningRowStatus.Valid or InventoryOpeningRowStatus.Posted).Sum(row => row.Quantity), item.CreatedAt, item.UpdatedAt, item.Rows.OrderBy(row => row.Id).Select(row => new InventoryOpeningBalanceRowRecord(row.Id, row.ProductId, row.ProductSku, row.ProductName, row.UnitOfMeasureId, row.UnitOfMeasureCode, row.Quantity, row.UnitCost, row.CurrencyCode, row.TrackingIdentity, row.SourceLineReference, row.Status, row.ValidationCode, row.PostedAt, row.Version, row.SourceFingerprint)).ToArray(), item.Version);

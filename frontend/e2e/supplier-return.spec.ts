@@ -130,6 +130,12 @@ function procurementHarness() {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;
+    if (request.method() === 'POST' && path.endsWith(`/api/v1/inventory/supplier-returns/${supplierReturnId}/post`)) {
+      inventoryHandoffReference = 'inventory-evidence-001';
+      status = 'AwaitingFinance';
+      versionNumber += 1;
+      return route.fulfill({ headers: { ETag: `"${version()}"` }, json: { supplierReturnId, movementIds: ['movement-sr-001'], handoffReference: inventoryHandoffReference } });
+    }
     if (!path.includes('/api/v1/procurement/')) return route.fallback();
 
     if (request.method() === 'GET' && path.endsWith('/supplier-return-sources')) return route.fulfill({ json: [source] });
@@ -182,7 +188,7 @@ test.describe('Supplier Return workspace', () => {
   test.beforeEach(async ({ page }) => installAuth(page));
 
   test('creates, approves, and records downstream evidence without claiming stock or accounting posting', async ({ page }) => {
-    await page.route('**/api/v1/procurement/**', procurementHarness());
+    await page.route('**/api/v1/**', procurementHarness());
 
     await page.goto('/app/procurement/supplier-returns/new');
     await page.getByTestId('supplier-return-source').selectOption(goodsReceiptId);
@@ -198,10 +204,9 @@ test.describe('Supplier Return workspace', () => {
     await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible();
     await page.getByRole('button', { name: 'Approve' }).click();
 
-    await expect(page.getByPlaceholder('Inventory-owned movement or handoff reference')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Post physical return' })).toBeVisible();
     await expect(page.getByText('No accounting posting claimed here.')).toBeVisible();
-    await page.getByPlaceholder('Inventory-owned movement or handoff reference').fill('INV-HANDOFF-001');
-    await page.getByRole('button', { name: 'Record handoff' }).click();
+    await page.getByRole('button', { name: 'Post physical return' }).click();
     await expect(page.getByText('Reference recorded; downstream module remains authoritative.')).toBeVisible();
 
     await page.getByPlaceholder('Finance-owned credit or correction reference').fill('FIN-CREDIT-001');

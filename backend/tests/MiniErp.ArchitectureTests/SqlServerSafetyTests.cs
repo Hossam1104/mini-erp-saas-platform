@@ -10,7 +10,10 @@ using MiniErp.App.Modules.Inventory;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
 using MiniErp.Infrastructure.Persistence;
+using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
+using MiniErp.Infrastructure.Persistence.Modules.MasterData;
+using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using Xunit;
 
 namespace MiniErp.ArchitectureTests;
@@ -108,27 +111,45 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
             new SupportGrantReference(Guid.NewGuid(), Guid.NewGuid()),
             correlationId: new CorrelationId("sql-b"));
 
-        _options = new DbContextOptionsBuilder()
-            .UseSqlServer(_connectionString, sql => sql.EnableRetryOnFailure(3))
-            .Options;
+        _inventoryConnectionString = _connectionString;
+        _options = SqlServerMigrationConfiguration.Configure(
+            _connectionString,
+            SqlServerMigrationConfiguration.TenancyHistoryTable);
 
-        await using (var context = CreateDbContext(TenantA))
+        // This is intentionally the same disposable catalog for every module.
+        // It proves the committed Development migration order and shared-table
+        // ownership instead of validating isolated module databases.
+        await using (var tenancy = new TenantPersistenceDbContext(_options, TenantA))
         {
-            await context.Database.EnsureCreatedAsync();
+            await tenancy.Database.MigrateAsync();
         }
 
-        var inventoryBuilder = new SqlConnectionStringBuilder(_connectionString)
+        await using (var masterData = new MasterDataDbContext(
+                         SqlServerMigrationConfiguration.Configure(_connectionString, SqlServerMigrationConfiguration.MasterDataHistoryTable),
+                         TenantA))
         {
-            InitialCatalog = $"{builder.InitialCatalog}_Inventory"
-        };
-        _inventoryConnectionString = inventoryBuilder.ConnectionString;
-        await EnsureDatabaseExistsAsync(inventoryBuilder);
-        var inventoryOptions = new DbContextOptionsBuilder()
-            .UseSqlServer(_inventoryConnectionString)
-            .Options;
-        await using (var inventory = new InventoryDbContext(inventoryOptions, TenantA))
+            await masterData.Database.MigrateAsync();
+        }
+
+        await using (var businessParties = new BusinessPartiesDbContext(
+                         SqlServerMigrationConfiguration.Configure(_connectionString, SqlServerMigrationConfiguration.BusinessPartiesHistoryTable),
+                         TenantA))
         {
-            await inventory.Database.EnsureCreatedAsync();
+            await businessParties.Database.MigrateAsync();
+        }
+
+        await using (var procurement = new ProcurementDbContext(
+                         SqlServerMigrationConfiguration.Configure(_connectionString, SqlServerMigrationConfiguration.ProcurementHistoryTable),
+                         TenantA))
+        {
+            await procurement.Database.MigrateAsync();
+        }
+
+        await using (var inventory = new InventoryDbContext(
+                         SqlServerMigrationConfiguration.Configure(_connectionString, SqlServerMigrationConfiguration.InventoryHistoryTable),
+                         TenantA))
+        {
+            await inventory.Database.MigrateAsync();
         }
 
         await CreateProbeTablesAsync();
@@ -142,8 +163,8 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
             return;
         }
 
-        await DropDatabaseAsync(_inventoryConnectionString);
         await DropDatabaseAsync(_connectionString);
+        _inventoryConnectionString = string.Empty;
     }
 
     internal TenantPersistenceDbContext CreateDbContext(TenantContext tenantContext)
@@ -248,6 +269,130 @@ public sealed class SqlServerSafetyTests
     public SqlServerSafetyTests(SqlServerSafetyFixture fixture)
     {
         _fixture = fixture;
+    }
+
+    [Fact]
+    public async Task All_module_sql_server_migrations_apply_in_development_order_to_one_disposable_database()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var tenancyOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.TenancyHistoryTable);
+        var masterDataOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.MasterDataHistoryTable);
+        var businessPartiesOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.BusinessPartiesHistoryTable);
+        var procurementOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.ProcurementHistoryTable);
+        var inventoryOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.InventoryHistoryTable);
+
+        await using (var tenancy = new TenantPersistenceDbContext(tenancyOptions, _fixture.TenantA))
+        {
+            Assert.Equal(["20260815225855_InitialTenancy"], (await tenancy.Database.GetAppliedMigrationsAsync()).ToArray());
+            Assert.Empty(await tenancy.Database.GetPendingMigrationsAsync());
+        }
+
+        await using (var masterData = new MasterDataDbContext(masterDataOptions, _fixture.TenantA))
+        {
+            Assert.Equal(["20260815225908_InitialMasterData", "20260816073832_SharedTenantRuntimeModel"], (await masterData.Database.GetAppliedMigrationsAsync()).ToArray());
+            Assert.Empty(await masterData.Database.GetPendingMigrationsAsync());
+        }
+
+        await using (var businessParties = new BusinessPartiesDbContext(businessPartiesOptions, _fixture.TenantA))
+        {
+            Assert.Equal(["20260815225921_InitialBusinessParties", "20260816073853_SharedTenantRuntimeModel"], (await businessParties.Database.GetAppliedMigrationsAsync()).ToArray());
+            Assert.Empty(await businessParties.Database.GetPendingMigrationsAsync());
+        }
+
+        await using (var procurement = new ProcurementDbContext(procurementOptions, _fixture.TenantA))
+        {
+            Assert.Equal(
+                [
+                    "20260815225933_InitialProcurement",
+                    "20260816073856_SharedTenantRuntimeModel",
+                    "20260817143432_PurchaseOrderAndSupplierConfirmation",
+                    "20260817211222_AddPurchaseOrderAuditRequestFingerprint",
+                    "20260818103736_PurchaseOrderCommercialIntegrityAndDurableReplay",
+                    "20260819102200_GoodsReceiptAndPurchaseInvoiceHandoff",
+                    "20260820094805_ThreeWayMatchingAndDeclaredInvoiceEvidence",
+                    "20260820102459_MESP126ResolutionPolicyEvidence",
+                    "20260821031935_MESP127SupplierReturnEvidence"
+                ],
+                (await procurement.Database.GetAppliedMigrationsAsync()).ToArray());
+            Assert.Empty(await procurement.Database.GetPendingMigrationsAsync());
+        }
+
+        await using (var inventory = new InventoryDbContext(inventoryOptions, _fixture.TenantA))
+        {
+            Assert.Equal(
+                [
+                    "20260821113311_MESP128InventoryLedgerFoundation",
+                    "20260821132738_MESP128StockIntegrityRemediation",
+                    "20260821213832_MESP128OpusStockIntegrityRemediation",
+                    "20260822092802_MESP129PhysicalStockMovements"
+                ],
+                (await inventory.Database.GetAppliedMigrationsAsync()).ToArray());
+            Assert.Empty(await inventory.Database.GetPendingMigrationsAsync());
+        }
+
+        await using var connection = await _fixture.OpenConnectionAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = N'inventory'
+              AND TABLE_NAME IN (N'OpeningBalances', N'OpeningBalanceRows', N'OpeningBalanceHistory', N'StockLedgerMovements', N'Transfers', N'TransferLines', N'TransferEvents', N'Reservations', N'ReservationHistory', N'AuditEvents', N'IdempotencyEntries', N'ConcurrencyAnchors');
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = N'tenancy'
+              AND TABLE_NAME = N'TenantOwnedRecords';
+            SELECT COUNT(*)
+            FROM sys.indexes AS indexes
+            INNER JOIN sys.tables AS tables ON tables.object_id = indexes.object_id
+            INNER JOIN sys.schemas AS schemas ON schemas.schema_id = tables.schema_id
+            WHERE schemas.name = N'tenancy'
+              AND tables.name = N'TenantOwnedRecords'
+              AND indexes.name = N'IX_TenantOwnedRecords_TenantId_BusinessKey';
+            """;
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(12, reader.GetInt32(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
+    }
+
+    [Fact]
+    public async Task Shared_catalog_has_one_tenancy_owner_and_no_competing_inventory_tenant_table()
+    {
+        await using var connection = await _fixture.OpenConnectionAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT DB_NAME();
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = N'tenancy'
+              AND TABLE_NAME = N'TenantOwnedRecords';
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = N'inventory'
+              AND TABLE_NAME = N'TenantOwnedRecords';
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = N'inventory'
+              AND TABLE_NAME = N'StockLedgerMovements';
+            """;
+
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Matches("^MiniErpFoundation_[A-Za-z0-9_]+$", reader.GetString(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(0, reader.GetInt32(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
     }
 
     [Fact]
@@ -427,7 +572,99 @@ public sealed class SqlServerSafetyTests
             WHERE object_id = OBJECT_ID(N'[inventory].[ConcurrencyAnchors]')
               AND name = N'IX_ConcurrencyAnchors_TenantId_CompanyId_BranchId_WarehouseId_ProductId_UnitOfMeasureId_TrackingKey';
             """;
-        Assert.Null(await indexCommand.ExecuteScalarAsync());
+        var filterDefinition = await indexCommand.ExecuteScalarAsync();
+        Assert.True(
+            filterDefinition is null
+            || filterDefinition is DBNull
+            || string.IsNullOrEmpty(filterDefinition.ToString()),
+            $"The shared-catalog anchor uniqueness index must be unfiltered; actual filter: {filterDefinition ?? "<null>"}.");
+    }
+
+    [Fact]
+    public async Task Inventory_sql_server_transfer_receipt_reference_case_variants_converge_without_second_movement()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = new DbContextOptionsBuilder().UseSqlServer(connectionString, sql => sql.CommandTimeout(15)).Options;
+        var tenantId = _fixture.TenantA.TenantId;
+        var companyId = Guid.NewGuid();
+        var sourceWarehouseId = Guid.NewGuid();
+        var destinationWarehouseId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        var source = new InventoryWarehouseOption(tenantId.Value, companyId, null, sourceWarehouseId, "SQL-SOURCE", "SQL source");
+        var destination = new InventoryWarehouseOption(tenantId.Value, companyId, null, destinationWarehouseId, "SQL-DEST", "SQL destination");
+        var product = new InventoryProductReference(tenantId.Value, productId, "SQL-RECEIPT", "SQL receipt product", unitId, "EA", true, true, false);
+        var context = InventoryContext(_fixture.TenantA, "tenant.inventory.transfer.receive");
+
+        await using (var seedDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            seedDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId,
+                Guid.NewGuid(),
+                companyId,
+                null,
+                sourceWarehouseId,
+                source.Code,
+                source.Name,
+                productId,
+                product.Sku,
+                product.Name,
+                unitId,
+                product.BaseUnitOfMeasureCode,
+                InventoryMovementDirection.Inbound,
+                10m,
+                1m,
+                "SAR",
+                null,
+                InventoryMovementSourceType.OpeningBalance,
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                new DateOnly(2026, 8, 22),
+                Guid.NewGuid(),
+                "sql-transfer-receipt-seed",
+                DateTimeOffset.UtcNow));
+            await seedDb.SaveChangesAsync();
+        }
+
+        var persistence = new InventoryPersistence(options);
+        var created = Assert.IsType<InventoryTransferRecord>(await persistence.CreateTransferAsync(
+            context,
+            new InventoryTransferCreateCommand(
+                Guid.NewGuid(),
+                new InventoryScope(tenantId.Value, companyId, null, sourceWarehouseId),
+                source,
+                destination,
+                productId,
+                unitId,
+                product,
+                10m,
+                InventoryTransferMode.InTransit,
+                null,
+                "SQL case-variant receipt",
+                context.ActorId,
+                DateTimeOffset.UtcNow,
+                "sql-transfer-create",
+                "sql-transfer-create-key",
+                "sql-transfer-create-fingerprint")));
+        var shipped = Assert.IsType<InventoryTransferRecord>(await persistence.ShipTransferAsync(
+            context,
+            new InventoryTransferActionCommand(created.Id, created.Version, null, null, "ship", context.ActorId, DateTimeOffset.UtcNow, "sql-transfer-ship", "sql-transfer-ship-key", "sql-transfer-ship-fingerprint")));
+        var firstReceipt = Assert.IsType<InventoryTransferRecord>(await persistence.ReceiveTransferAsync(
+            context,
+            new InventoryTransferActionCommand(shipped.Id, shipped.Version, 4m, "RECEIVE-001", "receive", context.ActorId, DateTimeOffset.UtcNow, "sql-transfer-receive-a", "sql-transfer-receive-a-key", "sql-transfer-receive-a-fingerprint")));
+        var duplicateReceipt = Assert.IsType<InventoryTransferRecord>(await persistence.ReceiveTransferAsync(
+            context,
+            new InventoryTransferActionCommand(firstReceipt.Id, firstReceipt.Version, 4m, "receive-001", "duplicate receive", context.ActorId, DateTimeOffset.UtcNow, "sql-transfer-receive-b", "sql-transfer-receive-b-key", "sql-transfer-receive-b-fingerprint")));
+
+        Assert.Equal(4m, duplicateReceipt.ReceivedQuantity);
+        Assert.Equal(6m, duplicateReceipt.InTransitQuantity);
+        var movements = await persistence.ListMovementsAsync(context, null);
+        Assert.Single(movements, item => item.SourceType == InventoryMovementSourceType.WarehouseTransferReceipt);
+        var history = await persistence.ReadTransferHistoryAsync(context, created.Id);
+        Assert.Equal("RECEIVE-001", Assert.Single(history, item => item.EventType == InventoryTransferEventType.Received).Reference);
+        var audit = await persistence.ReadAuditAsync(context, "transfer", created.Id);
+        Assert.Contains(audit, item => item.Decision == "Duplicate" && item.AfterSummary == "duplicate-receipt-reference");
     }
 
     [Fact]

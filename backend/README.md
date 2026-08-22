@@ -1,5 +1,31 @@
 # Mini ERP backend foundation
 
+> **Current MESP-129 runtime overlay - 22 August 2026.** The backend now
+> consumes authoritative Procurement Goods Receipt lines for one-time accepted
+> quantity posting, blocks Goods Receipt cancellation while an active physical
+> effect exists, and consumes only the real `AwaitingInventory` Supplier Return
+> source for reservation-safe outbound physical movement with complete
+> Supplier Return/Goods Receipt/Purchase Order lineage. Inventory-owned
+> Warehouse Transfers support server-authorized same-Company direct and
+> two-step flows, derived InTransit, partial receipt, explicit shortage/loss,
+> overage rejection, and safe pre-shipment cancellation. Physical MESP-129
+> movements are explicitly Pending valuation with nullable cost/currency. The
+> customer-return surface is an unavailable authoritative Sales integration
+> seam. No MESP-130 Count/Adjustment/Stock Issue, MESP-131 MWA, AP/AR/GL,
+> tax/payment, commercial Sales, external/statutory, or Wafra-specific behavior
+> is included.
+
+> **MESP-129 validation.** Release build is **0 warnings / 0 errors**;
+> focused Inventory coverage is **22/22**; SQL Server safety coverage is
+> **27/27**; the canonical disposable-LocalDB backend runner passes
+> **877/877, 0 skipped**; Angular passes **241/241 across 32 spec files**;
+> production build is **499.97 kB initial** with a **33.12 kB Inventory lazy
+> chunk**; Chromium is **26/26**; both npm audits report **0 vulnerabilities**;
+> `git diff --check` is clean; protected `frontend/assets` are untouched; and
+> no Jira writes were performed. Code-complete commit is
+> `01ea8f7369d173c15cf55a723d6bd95006208282`; Draft PR **#73** remains open,
+> Draft, and unmerged.
+
 > **Current MESP-128 runtime overlay - 22 August 2026.** The backend carries
 > the bounded Inventory-owned append-only stock ledger foundation plus the SOL
 > P1 remediation and Opus delta remediation: deterministic Tenant-safe

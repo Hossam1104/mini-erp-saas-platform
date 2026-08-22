@@ -144,6 +144,14 @@ else if (builder.Environment.IsDevelopment())
     builder.Services.AddInventorySqlitePersistence(developmentInventorySqliteConnectionString);
 }
 
+// Inventory consumes Procurement source contracts through application seams. The registrations
+// are intentionally lazy so the same wiring remains valid for SQL Server and disposable SQLite
+// development stores without allowing Inventory to open a Procurement DbContext.
+builder.Services.AddSingleton<IInventoryGoodsReceiptSourceProvider, ProcurementInventoryGoodsReceiptSourceProvider>();
+builder.Services.AddSingleton<IInventorySupplierReturnSourceProvider, ProcurementInventorySupplierReturnSourceProvider>();
+builder.Services.AddSingleton<IInventorySupplierReturnStateProvider, ProcurementInventorySupplierReturnStateProvider>();
+builder.Services.AddSingleton<IInventorySupplierReturnHandoffWriter, ProcurementInventorySupplierReturnHandoffWriter>();
+
 if (builder.Environment.IsDevelopment()
     && string.Equals(builder.Configuration["MESP_DEV_BOOTSTRAP_ENABLED"], "true", StringComparison.OrdinalIgnoreCase))
 {

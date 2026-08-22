@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { SafeUiError, toSafeUiError } from '../../core/api/safe-error';
 import { LanguageService } from '../../core/i18n/language.service';
+import { InventoryService } from '../inventory/inventory.service';
 import {
   GoodsReceiptAuditResponse,
   GoodsReceiptCreateRequest,
@@ -272,6 +273,7 @@ interface CreateReceiptLineDraft {
                     <th scope="col" class="numeric">{{ grText('damagedQty') }}</th>
                     <th scope="col" class="numeric">{{ grText('remainingReceivableAfter') }}</th>
                     <th scope="col">{{ grText('damageNotes') }}</th>
+                    <th scope="col">{{ grText('inventoryMovement') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -288,6 +290,13 @@ interface CreateReceiptLineDraft {
                       <td class="numeric" [class.damaged-highlight]="(line.damagedQuantity ?? 0) > 0">{{ line.damagedQuantity ? formatQuantity(line.damagedQuantity) : '0' }}</td>
                       <td class="numeric">{{ formatQuantity(line.remainingReceivableQuantityAfter) }}</td>
                       <td>{{ line.damageNotes || grText('notAvailable') }}</td>
+                      <td>
+                        @if (currentReceipt.status === 'Recorded' && line.acceptedQuantity > 0) {
+                          <button class="button button--secondary" type="button" [disabled]="saving()" (click)="postAcceptedLine(currentReceipt, line)">{{ grText('postToInventory') }}</button>
+                        } @else {
+                          <span class="muted">{{ grText('notAvailable') }}</span>
+                        }
+                      </td>
                     </tr>
                   }
                 </tbody>
@@ -440,6 +449,7 @@ interface CreateReceiptLineDraft {
 export class GoodsReceiptWorkspaceComponent implements OnInit {
   readonly language = inject(LanguageService);
   private readonly service = inject(GoodsReceiptService);
+  private readonly inventory = inject(InventoryService, { optional: true });
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -547,6 +557,8 @@ export class GoodsReceiptWorkspaceComponent implements OnInit {
       damagedQty: 'Damaged',
       remainingReceivableAfter: 'Remainder After',
       damageNotes: 'Damage Notes',
+      inventoryMovement: 'Inventory Movement',
+      postToInventory: 'Post accepted quantity',
       lifecycleHistory: 'Lifecycle History',
       auditEvidence: 'Audit Evidence',
       noHistory: 'No lifecycle history recorded.',
@@ -639,6 +651,8 @@ export class GoodsReceiptWorkspaceComponent implements OnInit {
       damagedQty: 'التالف',
       remainingReceivableAfter: 'المتبقي بعد الاستلام',
       damageNotes: 'ملاحظات التلف',
+      inventoryMovement: 'حركة المخزون',
+      postToInventory: 'ترحيل الكمية المقبولة',
       lifecycleHistory: 'سجل دورة الحياة',
       auditEvidence: 'دليل التدقيق',
       noHistory: 'لا يوجد سجل دورة حياة.',
@@ -873,6 +887,20 @@ export class GoodsReceiptWorkspaceComponent implements OnInit {
       this.error.set(toSafeUiError(err));
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async postAcceptedLine(receipt: GoodsReceiptResponse, line: GoodsReceiptResponse['lines'][number]): Promise<void> {
+    if (!this.inventory || receipt.status !== 'Recorded' || line.acceptedQuantity <= 0) return;
+    this.saving.set(true);
+    this.error.set(null);
+    try {
+      await this.inventory.postGoodsReceipt(receipt.id, line.id, receipt.version);
+      await this.loadDetail(receipt.id);
+    } catch (err) {
+      this.error.set(toSafeUiError(err));
+    } finally {
+      this.saving.set(false);
     }
   }
 

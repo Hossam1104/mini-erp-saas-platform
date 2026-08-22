@@ -12,11 +12,11 @@
 
 The bounded B2 implementation makes the shared SQL Server shape executable for
 local Development without changing the production gate. When the explicit
-`MESP_SQLSERVER_CONNECTION_STRING` is configured, the four module contexts
+`MESP_SQLSERVER_CONNECTION_STRING` is configured, the five module contexts
 use server `.` / database `MESP` and apply formal migrations in this order:
-Tenancy, Master Data, Business Parties, then Procurement. Each context has a
-distinct `dbo.__EFMigrationsHistory_*` table. `tenancy.TenantOwnedRecords` is a
-shared runtime table but has one physical owner: the Tenancy context. The
+Tenancy, Master Data, Business Parties, Procurement, then Inventory. Each
+context has a distinct `dbo.__EFMigrationsHistory_*` table. `tenancy.TenantOwnedRecords`
+is a shared runtime table but has one physical owner: the Tenancy context. The
 other module alignment migrations are no-op database migrations whose model
 snapshots reflect that shared ownership; they do not create duplicate tables.
 

@@ -1381,7 +1381,7 @@ public sealed class PurchaseInvoiceHandoffTests
             [
                 new ProcurementWarehouseOption(TenantA, CompanyA, BranchA, WarehouseA, "WH-A", "Warehouse A", IsActive: true)
             ]);
-            var goodsReceiptService = new GoodsReceiptService(authorization, new GoodsReceiptPersistence(options), warehouseProvider);
+            var goodsReceiptService = new GoodsReceiptService(authorization, new GoodsReceiptPersistence(options), warehouseProvider, new NoActiveGoodsReceiptInventoryEffectReader());
             var invoiceHandoffService = new PurchaseInvoiceHandoffService(authorization, new PurchaseInvoiceHandoffPersistence(options));
             var matchService = new PurchaseInvoiceMatchService(
                 authorization,

@@ -24,8 +24,8 @@ export interface InventoryMovement {
   unitOfMeasureCode: string;
   direction: string;
   quantity: number;
-  unitCost: number;
-  currencyCode: string;
+  unitCost: number | null;
+  currencyCode: string | null;
   trackingIdentity: string | null;
   sourceType: string;
   sourceDocumentId: string;
@@ -36,6 +36,14 @@ export interface InventoryMovement {
   correlationId: string;
   postedAt: string;
   version: string;
+  valuationStatus: string;
+  goodsReceiptId: string | null;
+  goodsReceiptLineId: string | null;
+  supplierReturnId: string | null;
+  supplierReturnLineId: string | null;
+  transferId: string | null;
+  transferLineId: string | null;
+  sourceReference: string | null;
 }
 
 export interface InventoryAvailability {
@@ -154,4 +162,81 @@ export interface InventoryReservationCreateRequest {
   sourceReference: string;
   allowPartialAllocation: boolean;
   trackingIdentity: string | null;
+}
+
+export type InventoryTransferMode = 'Direct' | 'InTransit';
+
+export interface InventoryTransfer {
+  id: string;
+  tenantId: string;
+  companyId: string;
+  branchId: string | null;
+  sourceWarehouseId: string;
+  sourceWarehouseCode: string;
+  sourceWarehouseName: string;
+  destinationWarehouseId: string;
+  destinationWarehouseCode: string;
+  destinationWarehouseName: string;
+  productId: string;
+  productSku: string;
+  productName: string;
+  unitOfMeasureId: string;
+  unitOfMeasureCode: string;
+  quantity: number;
+  mode: InventoryTransferMode;
+  status: string;
+  trackingIdentity: string | null;
+  shippedQuantity: number;
+  receivedQuantity: number;
+  lostQuantity: number;
+  inTransitQuantity: number;
+  remainingToShipQuantity: number;
+  reason: string | null;
+  actorId: string;
+  createdAt: string;
+  updatedAt: string;
+  events: InventoryTransferEvent[];
+  version: string;
+}
+
+export interface InventoryTransferEvent {
+  id: string;
+  transferId: string;
+  transferLineId: string;
+  eventType: string;
+  quantity: number;
+  reference: string | null;
+  reason: string | null;
+  actorId: string;
+  correlationId: string;
+  occurredAt: string;
+  sourceMovementId: string | null;
+  destinationMovementId: string | null;
+  version: string;
+}
+
+export interface InventoryTransferCreateRequest {
+  companyId: string;
+  branchId: string | null;
+  sourceWarehouseId: string;
+  destinationWarehouseId: string;
+  productId: string;
+  unitOfMeasureId: string;
+  quantity: number;
+  mode: InventoryTransferMode;
+  trackingIdentity: string | null;
+  reason: string | null;
+}
+
+export interface InventoryTransferActionRequest {
+  quantity?: number;
+  reference?: string;
+  reason?: string;
+}
+
+export interface InventoryCustomerReturnBoundary {
+  available: boolean;
+  status: string;
+  messageKey: string;
+  authoritativeSource: string | null;
 }
