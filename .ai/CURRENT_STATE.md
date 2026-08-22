@@ -6,9 +6,9 @@ MESP-129 is Done. MESP-130 is implemented at its bounded Stock Adjustment,
 Inventory Count, Stock Issue, and eligible correction scope on branch
 `feat/MESP-130-stock-control-corrections`, created from exact synchronized main
 SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`. The implementation commit is
-`329c34ca3ac1e23ed32b98c91e02aa6a820a3230`. One Draft PR is required and
-remains Open, Draft, and unmerged; the final handoff tip is reported in the
-completion response. Jira remains read-only; no Jira writes were performed.
+`329c34ca3ac1e23ed32b98c91e02aa6a820a3230`. Draft PR #74 is Open, Draft, and
+unmerged; the final handoff tip is reported in the completion response. Jira
+remains read-only; no Jira writes were performed.
 
 The bounded capability adds a Tenant-scoped bilingual reason/purpose catalogue;
 Stock Adjustment lifecycle and correction; Full/Cycle Inventory Count with

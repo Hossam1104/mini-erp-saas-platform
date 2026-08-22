@@ -13,9 +13,9 @@ MESP-130 is implemented at its bounded Stock Adjustment, Inventory Count,
 Stock Issue, and eligible correction scope on branch
 `feat/MESP-130-stock-control-corrections`, created from exact synchronized main
 SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`. The implementation commit is
-`329c34ca3ac1e23ed32b98c91e02aa6a820a3230`; one Draft PR is required and
-remains Open, Draft, and unmerged. This implementation is pending Sol
-acceptance; no Jira writes or completion credit were inferred.
+`329c34ca3ac1e23ed32b98c91e02aa6a820a3230`; Draft PR #74 is Open, Draft, and
+unmerged. This implementation is pending Sol acceptance; no Jira writes or
+completion credit were inferred.
 
 The capability adds a Tenant-scoped bilingual reason/purpose catalogue,
 adjustment lifecycle and correction, full/cycle count snapshots with blind
@@ -35,7 +35,7 @@ not production readiness.
 
 | Current control | Verified position |
 |---|---|
-| MESP-130 code | Starting main SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`; implementation commit `329c34ca3ac1e23ed32b98c91e02aa6a820a3230`; branch `feat/MESP-130-stock-control-corrections`; one Draft PR, Open/Draft/unmerged. |
+| MESP-130 code | Starting main SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`; implementation commit `329c34ca3ac1e23ed32b98c91e02aa6a820a3230`; branch `feat/MESP-130-stock-control-corrections`; Draft PR #74 Open/Draft/unmerged. |
 | Production capability | ~47% overall; Procurement/P2P ~41%; unchanged pending Sol acceptance/merge. Completed fast-track ratio 13/26 = 50.0%, not production readiness. |
 | Validation | Focused Inventory 3/3; REST/OpenAPI 33/33; backend 899/899; Angular 242/242 across 32 spec files; production build successful with 500.06 kB initial / 54.98 kB Inventory lazy / 91.94 kB Supplier Quotation lazy; 65-byte initial-budget warning; source Release builds clean. |
 | Delivery boundaries | Formal migration `20260822194250_MESP130StockControlAndCorrections`; Pending valuation only; no Finance/MWA/Sales/Reporting/downstream implementation; no Jira writes; `frontend/assets` untouched. |

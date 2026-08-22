@@ -17,8 +17,9 @@ Final branch SHA: the final documentation/runtime handoff tip is reported in
 the completion response because Git cannot embed a commit's own SHA in that
 commit's content.
 
-Draft PR: one Draft PR titled `MESP-130: Stock Control, Counts, Issues, and Corrections`,
-base `main`; it remains Open, Draft, and unmerged.
+Draft PR: `#74` — https://github.com/Hossam1104/mini-erp-saas-platform/pull/74
+(`MESP-130: Stock Control, Counts, Issues, and Corrections`), base `main`;
+it remains Open, Draft, and unmerged.
 
 Jira: read-only. No Jira writes were performed.
 
