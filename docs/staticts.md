@@ -2,12 +2,50 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-22 23:14 +03:00
+**Last Updated:** 2026-08-23 01:53 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
 
-## Current authoritative fast-track snapshot - 22 August 2026 (MESP-130 implementation complete; Sol acceptance handoff)
+## Current authoritative fast-track snapshot - 23 August 2026 (MESP-130 Sol remediation complete; delta acceptance handoff)
+
+MESP-130 Sol acceptance remediation is implemented on branch
+`feat/MESP-130-stock-control-corrections`, starting from exact required SHA
+`88eac382213c86e9d816fee0232b9e917c5d104d` and main base
+`6f6d204726cc4baf9979961ea6936c0d03e93e32`. The remediation commit is
+`3320cf284d64a58be7fb0f00ac654ee7a11d7b00`; Draft PR #74 remains Open, Draft,
+and unmerged. No Jira writes or completion credit were inferred.
+
+P1 approval-stage state, blind count reads/submission, count cutoff/full-count
+resnapshot, and durable correction uniqueness are remediated. P2 high-risk
+regressions, bounded Stock Control reason catalogue/history/correction/recount/
+rejection UI, reason update validation, and the initial bundle budget are also
+complete. MESP-128/MESP-129 physical invariants remain authoritative; new
+MESP-130 effects remain Pending valuation and create no Finance/accounting
+effect. Return-for-change is not exposed without an edit/resubmit contract.
+`frontend/assets` remains untouched.
+
+The overall Production-Ready Completion headline remains **~47%** and
+Procurement/P2P remains **~41%** pending Sol acceptance and merge. The
+fast-track completed ratio before MESP-130 acceptance remains **13/26 = 50.0%**;
+that ratio is not production readiness.
+
+| Current control | Verified position |
+|---|---|
+| MESP-130 code | Required start SHA `88eac382213c86e9d816fee0232b9e917c5d104d`; remediation `3320cf284d64a58be7fb0f00ac654ee7a11d7b00`; branch `feat/MESP-130-stock-control-corrections`; Draft PR #74 Open/Draft/unmerged. |
+| Production capability | ~47% overall; Procurement/P2P ~41%; unchanged pending Sol acceptance/merge. Completed fast-track ratio 13/26 = 50.0%, not production readiness. |
+| Validation | Focused Inventory/MESP-130 6/6; REST/OpenAPI 33/33; SQL safety 30/30 through disposable LocalDB; backend 903/903; Angular 245/245 across 33 spec files; focused Chromium 1/1; full Chromium 27/27; both npm audits 0 vulnerabilities; production build 499.97 kB initial / 69.05 kB Inventory lazy / 91.94 kB Supplier Quotation lazy; Release build 0 warnings/errors. |
+| Delivery boundaries | Formal migrations `20260822220126_MESP130SolAcceptanceRemediation` and `20260822220521_MESP130SolAcceptanceCountApproval`; Pending valuation only; no MWA/Finance/Sales/Reporting/downstream implementation; no Jira writes; `frontend/assets` untouched. |
+| Runtime | Backend `http://localhost:5300` PID 23588 and frontend `http://localhost:4300` PID 39252; health/root/main.js HTTP 200; both processes alive and left running for Owner inspection using supported loopback Development bypass without printed credentials. |
+| Next exact session | Sol delta acceptance of the exact final branch SHA and bounded MESP-130 evidence. MESP-130 remains In Progress until acceptance. Do not start MESP-131 or downstream implementation. |
+
+## Progress history - 23 August 2026
+
+| Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
+|---|---|---:|---:|---|
+| 2026-08-23 | MESP-130 Sol acceptance remediation: approval-stage persistence, true blind count contract and variance-reason review, transaction-safe cutoff/full-count resnapshot, durable correction uniqueness, high-risk regressions, completed bounded Stock Control UI, reason update validation, and bundle-budget repair. | ~47% | ~41% | Headline unchanged pending Sol acceptance/merge; required start `88eac382213c86e9d816fee0232b9e917c5d104d`; remediation `3320cf284d64a58be7fb0f00ac654ee7a11d7b00`; focused 6/6; SQL 30/30; backend 903/903; Angular 245/245; focused Chromium 1/1; full Chromium 27/27; bundle 499.97 kB; audits clean; runtime 5300/4300 HTTP 200; no Jira writes or downstream implementation. |
+
+## Historical fast-track snapshot - 22 August 2026 (MESP-130 implementation complete; Sol acceptance handoff)
 
 MESP-130 is implemented at its bounded Stock Adjustment, Inventory Count,
 Stock Issue, and eligible correction scope on branch

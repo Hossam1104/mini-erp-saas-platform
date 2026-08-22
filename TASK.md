@@ -1,4 +1,4 @@
-# MESP-130 — Sol Acceptance Handoff: Stock Control, Counts, Issues, and Corrections
+# MESP-130 — Sol Delta Acceptance Handoff: Stock Control Remediation
 
 Reviewer: GPT-5.6 Sol
 
@@ -9,299 +9,110 @@ eligible stock-movement corrections.
 
 Branch: `feat/MESP-130-stock-control-corrections`
 
-Exact starting main SHA: `6f6d204726cc4baf9979961ea6936c0d03e93e32`
+Exact required starting SHA: `88eac382213c86e9d816fee0232b9e917c5d104d`
 
-Implementation SHA: `1529cb29d1005cb2f2ff11a13b536815cb5a3b25`
+Exact main base: `6f6d204726cc4baf9979961ea6936c0d03e93e32`
+
+Remediation implementation SHA: `3320cf284d64a58be7fb0f00ac654ee7a11d7b00`
 
 Final branch SHA: the final documentation/runtime handoff tip is reported in
 the completion response because Git cannot embed a commit's own SHA in that
 commit's content.
 
-Draft PR: `#74` — https://github.com/Hossam1104/mini-erp-saas-platform/pull/74
-(`MESP-130: Stock Control, Counts, Issues, and Corrections`), base `main`;
-it remains Open, Draft, and unmerged.
-
-Jira: read-only. No Jira writes were performed.
-
-MESP-129 is Done. MESP-130 remains In Progress until Sol acceptance. Do not
-claim MESP-130 Done from implementation or test activity alone.
-
-## Scope delivered
-
-- Tenant-scoped Inventory reason/purpose catalogue with bilingual names,
-  category, active state, durable uniqueness, and lifecycle history.
-- Stock Adjustment draft, submit, configurable approval stages with
-  delegation seam, reject/return-for-change, post, and correction workflow.
-- Full and cycle Inventory Counts with authoritative server snapshots,
-  reviewer/counter separation, blind counter view, cutoff, post-cutoff
-  movement detection, recount, resnapshot, variance reason, approval, and
-  variance posting.
-- Stock Issue draft, submit, configurable approval/delegation seam,
-  rejection/return-for-change, reservation-safe posting, and correction.
-- Corrections limited to MESP-130 Stock Adjustment, Inventory Count Variance,
-  and Stock Issue movement sources, with original-movement linkage and durable
-  double-correction protection.
-- Formal Inventory EF Core migration, REST/OpenAPI metadata, antiforgery,
-  ETag/If-Match, idempotency, audit/history, Tenant and operational-context
-  authorization, and bilingual Angular EN/AR RTL workflow.
-
-## Non-scope and explicit boundaries
-
-- MESP-128 immutable movement and concurrency-anchor rules remain authoritative.
-- MESP-129 physical movements remain authoritative; no rewrite or replacement
-  of existing physical history was made.
-- MESP-131 owns authoritative Moving Weighted Average valuation. New MESP-130
-  movements remain `Pending` valuation and do not create Finance, GL, AP, AR,
-  tax, payment, or accounting effects.
-- No MESP-131, Finance, Sales, Reporting, MESP-139, MESP-141, migration/cutover,
-  external integration, statutory/ZATCA/FATOORA, production DNS/TLS, supplier
-  portal, or Wafra-specific core implementation was started.
-- Owner-managed source assets under `frontend/assets` were not changed.
-
-## Reason / Purpose catalogue
-
-`InventoryReasonCodeEntity` is Tenant-owned and category-bound to Adjustment,
-Count Variance, or Stock Issue. Codes are normalized, unique within their
-Tenant/category scope, bilingual, active/inactive, server-validated on every
-mutation, and snapshotted onto source lines and correction evidence. An
-inactive or cross-Tenant code cannot be used.
-
-## Stock Adjustment
-
-### Lifecycle
-
-Draft → Submitted → PendingApproval or Approved → Posted. Reject and
-ReturnForChange are explicit terminal/return transitions with optimistic
-concurrency, immutable posted movement evidence, and lifecycle history.
-
-### Positive Adjustment
-
-Creates an immutable inbound `StockAdjustment` movement only after all lines,
-reason codes, product/UOM, Tenant/company/branch/warehouse scope, and approval
-requirements pass.
-
-### Negative Adjustment
-
-Creates an immutable outbound `StockAdjustment` movement only when resulting
-OnHand remains at or above active Reserved quantity. It fails closed on
-negative stock or reservation over-consumption and leaves no partial movement.
-
-### Approval / SoD
-
-The application resolves a server-configured approval policy and stage,
-rejects self-approval, enforces eligible approver/delegation rules, and
-persists approval snapshots/evidence. The default provider is an explicit
-no-policy seam for this bounded capability; configured multi-stage providers
-are supported without inventing a second authorization hierarchy.
-
-### Reservation / Negative Stock
-
-Outbound capacity is validated from authoritative ledger OnHand and active
-reservations under the existing Serializable transaction and deterministic
-MESP-128 anchors. A failed line blocks the complete posting transaction.
-
-## Inventory Count
-
-### Full Count
-
-Full counts derive the server-side set of stock identities represented by the
-warehouse's immutable movement history. Client-supplied expected quantities are
-never authoritative.
-
-### Cycle Count
-
-Cycle counts accept an explicitly selected, deduplicated set of server-validated
-product/UOM/tracking identities and require at least one line.
-
-### Blind Count
-
-The dedicated counter view suppresses expected quantities and is authorized
-separately from reviewer count reads.
-
-### Snapshot / Cutoff
-
-Creation acquires the relevant MESP-128 anchors and stores authoritative
-expected quantities, a cutoff timestamp, warehouse/context snapshots, and
-round generation. SQL Server computes the cutoff server-side; SQLite test
-execution uses an equivalent materialized cutoff filter for provider-safe
-regression coverage.
-
-### Post-Cutoff Movement Handling
-
-Posting detects movements after the count cutoff. It returns an explicit
-ResnapshotRequired state when the count can no longer be safely posted against
-its snapshot; it does not silently merge later movement into counted values.
-
-### Recount
-
-The reviewer can request a new immutable count round for a variance line. The
-recount links to the prior line and increments round generation, preserving
-the original observation and snapshot evidence.
-
-### Resnapshot
-
-The reviewer can resnapshot a stale count under the same server-authorized
-scope. The new expected quantity is derived from the ledger, not from client
-input, and the prior snapshot remains in history.
-
-### Variance
-
-Submitted observed quantities are normalized and validated against the
-authoritative snapshot. Non-zero variance requires a Tenant-scoped active
-Count Variance reason code. Variance lines preserve product/UOM/tracking,
-expected, observed, and variance quantities.
-
-### Approval / SoD
-
-The assigned counter cannot approve their own count, and the designated
-reviewer is also excluded from the approval actor. Approval is version-checked
-and stage-aware.
-
-### Variance Posting
-
-Approved variance creates immutable inbound or outbound
-`InventoryCountVariance` movements. Outbound variance remains reservation-safe;
-the physical effect is `Pending` valuation and has no accounting effect.
-
-## Stock Issue
-
-### Purpose
-
-Stock Issue is the controlled outbound physical effect for an authorized
-operational issue, separate from Sales, AP, AR, and payment workflows.
-
-### Destination / Use
-
-Every issue requires a server-persisted destination/use description and
-Tenant-scoped reason/purpose evidence. No arbitrary external destination
-authority or commercial Sales document is fabricated.
-
-### Posting
-
-Draft → Submitted → PendingApproval or Approved → Posted, with one immutable
-outbound `StockIssue` movement per line and durable source uniqueness/replay.
-
-### Approval / Authority
-
-Submit, approve, reject/return, and post operations require exact server-derived
-Tenant/company/branch/warehouse authorization. Approval and delegation use the
-shared configurable policy seam and separation-of-duties checks.
-
-### Capacity / Reservations
-
-Posting validates OnHand minus cumulative issue quantity remains at or above
-active Reserved quantity for every affected identity, under Serializable
-transaction/anchor protection. Negative stock and reservation consumption fail
-closed atomically.
-
-## Tracking / UOM
-
-Product identity, base UOM, allowed tracking configuration, and warehouse
-scope are resolved server-side through existing Master Data providers. Count,
-adjustment, issue, and correction lines preserve tracking identity and reject
-missing/invalid tracking where the product requires it. No variant, SKU, EAN,
-or unrelated Item behavior was invented.
-
-## Corrections
-
-### Adjustment Correction
-
-Only a posted `StockAdjustment` movement can be corrected. The correction
-creates the exact reversal movement with immutable linkage to the original.
-
-### Count Correction
-
-Only a posted `InventoryCountVariance` movement can be corrected. The reversal
-preserves the count source lineage and remains Pending valuation.
-
-### Stock Issue Correction
-
-Only a posted `StockIssue` movement can be corrected. Reservation-safe capacity
-is checked for the reversal direction and the original issue linkage remains
-auditable.
-
-### Unsupported Source Protection
-
-Goods Receipt, Supplier Return, Warehouse Transfer, opening balance, and every
-other non-MESP-130 source type are rejected by the correction service and
-persistence layer. A movement can have at most one durable correction through
-the unique original-movement correction constraint.
-
-## Valuation Boundary
-
-MESP-130 records physical quantity and immutable source evidence only. MWA,
-cost, currency, Finance mapping, balanced journals, Inventory valuation
-handoff, reconciliation, reversals, and controlled accounting corrections are
-deferred to the approved MESP-131/Finance contract. MESP-130 does not ask for
-or infer arbitrary user cost.
-
-## Concurrency
-
-Mutations use optimistic document versions, Serializable transactions, durable
-Tenant-scoped uniqueness, and deterministic MESP-128 stock-identity anchor
-acquisition before balance/capacity validation and movement creation.
-
-## Idempotency / Source Uniqueness
-
-Public mutations carry bounded idempotency keys and request fingerprints.
-Durable replay returns the original effect for the same request and rejects a
-same-key different-payload conflict. Source/document and correction linkage
-constraints prevent duplicate physical effects.
-
-## Audit / History
-
-Created, submitted, approved, rejected, returned, posted, blocked, corrected,
-snapshot, recount, resnapshot, variance, authorization, idempotency, and
-concurrency decisions are recorded with actor, correlation, reason, and
-before/after status or source evidence. Posted movements remain immutable.
-
-## Migration / SQL safety
-
-Formal migration: `20260822194250_MESP130StockControlAndCorrections`. It adds
-eight Inventory control tables and preserves Tenant-owned schema/table/index
-ownership. SQL safety coverage was updated for the new migration and expected
-Inventory topology.
+Draft PR: `#74` — Open, Draft, Unmerged; base `main`.
+
+Jira: read-only. No Jira writes were performed. MESP-130 remains In Progress
+until Sol acceptance. Do not mark the PR Ready, merge, rebase, force-push,
+create another PR, or start downstream work.
+
+## Remediation delivered
+
+### P1 corrections
+
+- Approval state: Adjustment and Stock Issue approvals now persist distinct
+  current-stage approver identities, reject duplicate same-stage approval,
+  advance only after the configured distinct-approval count is met, preserve
+  delegation evidence, and fail closed for invalid or missing configured
+  policy. Count variance approval uses the same configured policy seam while
+  every non-zero variance remains approval-required; no threshold was invented.
+- Blind count: counter submission carries only `CountLineId` and physical
+  `CountedQuantity`; normal assigned-counter list/detail reads redact expected,
+  variance, and derived values before submission. Reviewer reads expose
+  Expected/Counted/Variance only after observation submission.
+- Cutoff/full count: snapshot cutoff is established after anchors and the
+  authoritative expected read; cycle staleness remains identity-scoped;
+  full-count staleness is warehouse-scoped and detects new identities; zero
+  variance passes final stale validation; full resnapshot preserves old rounds
+  and adds the current warehouse identity universe.
+- Correction uniqueness: formal SQL/SQLite-compatible migration adds a
+  Tenant-scoped unique filtered index on non-null
+  `CorrectionOfMovementId`; duplicate races classify deterministically rather
+  than becoming generic persistence-unavailable failures.
+
+### P2 corrections
+
+- Tests: added executable multi-stage Adjustment/Issue approval, distinct
+  approver, blind count, cutoff, full-count new-identity/resnapshot, and SQL
+  correction-index regressions; expanded Angular and browser coverage.
+- UI: completed the existing Stock Control workspace with reason catalogue
+  list/create/edit/activate/deactivate, physical blind count entry, reviewer
+  variance reason, approve/reject, recount, resnapshot, lifecycle history,
+  eligible correction reason/linkage, and Adjustment/Issue create-submit-
+  approve/reject-post controls. Return-for-change is not exposed because the
+  bounded UI has no edit/resubmit contract; this avoids a dead-end action.
+- Bundle: removed the unused `ApiClientService.put()` seam; final initial
+  production bundle is `499.97 kB`, within the `<= 500.00 kB` warning budget.
+- Reason validation: UpdateReasonCode now rejects blank English/Arabic names,
+  undefined categories, invalid versions, and preserves immutable code and
+  historical snapshots through the existing server contract.
 
 ## Validation evidence
 
-- MESP-130 focused Inventory tests: 3/3 passed.
-- REST/OpenAPI structural tests: 33/33 passed.
-- SQL Server safety tests: 29/29 passed through the disposable LocalDB
-  connection configured for this session.
-- Full ArchitectureTests backend suite: 899/899 passed, 0 failed, 0 skipped.
-- Angular unit tests: 242/242 passed across 32 spec files.
-- Focused Inventory Playwright: 2/2 passed; full Chromium Playwright: 26/26
-  passed.
-- `npm audit --omit=dev`: 0 vulnerabilities; `npm audit`: 0 vulnerabilities.
-- Angular production build: succeeded; initial bundle 500.06 kB, which is
-  65 bytes over the 500.00 kB warning budget; Inventory lazy chunk 54.98 kB
-  and Supplier Quotation lazy chunk 91.94 kB.
-- Release Contracts/App/Infrastructure/test builds: 0 warnings/errors in the
-  validated project builds. The normal API output was locked by the running
-  API process; an equivalent API Release compilation with current project
-  references succeeded with 0 errors.
-- `git diff --check`: clean before documentation changes.
+- Focused Inventory/MESP-130 tests: `6/6` passed.
+- REST/OpenAPI structural tests: `33/33` passed within the backend suite.
+- SQL Server safety: `30/30` passed through the disposable LocalDB runner;
+  the new correction test proves one direct correction, deterministic duplicate
+  rejection, one persisted correction row, and the unique filtered index.
+- Full backend suite: `903/903` passed, `0` failed, `0` skipped.
+- Release build: `dotnet build .\backend\MiniErp.sln --configuration Release`
+  passed with `0` warnings and `0` errors.
+- Angular unit tests: `245/245` passed across `33` spec files.
+- Focused MESP-130 Chromium: `1/1` passed.
+- Full Chromium: `27/27` passed.
+- Production bundle: initial `499.97 kB`; Inventory lazy chunk `69.05 kB`;
+  Supplier Quotation lazy chunk `91.94 kB`.
+- `npm audit --omit=dev`: `0` vulnerabilities.
+- `npm audit`: `0` vulnerabilities.
+- `git diff --check`: clean before the documentation-only handoff commit.
 
 ## Runtime verification
 
 - Backend URL: `http://localhost:5300`.
 - Frontend URL: `http://localhost:4300`.
-- Backend PID: `14768` (`MiniErp.Api`, committed Release output).
-- Frontend PID: `40592` (Node/Angular development server).
-- Backend health: `GET /health` returned HTTP 200.
-- Frontend status: `/` and `/main.js` returned HTTP 200.
-- Both processes were restarted after the final source build and remain running
-  for Owner inspection.
+- Backend PID: `23588`.
+- Frontend PID: `39252`.
+- Backend health: `GET /health` returned HTTP `200`.
+- Frontend status: `GET /` and `GET /main.js` returned HTTP `200`.
+- Both processes were verified alive after the probes and remain running for
+  Owner inspection. The supported loopback Development bypass was used by the
+  launcher; no credentials were printed or persisted.
 
-## Review and delivery controls
+## Migration and boundaries
 
-- Do not mark the Draft PR Ready.
-- Do not merge, rebase, or force-push after validation.
-- Do not create another PR or write Jira.
-- Sol controls acceptance/review routing; no Opus prompt is placed in this
-  handoff.
-- Do not start MESP-131, Finance, Sales, Reporting, MESP-139, MESP-141, or
-  downstream implementation from this task.
+- Formal additive migrations:
+  `20260822220126_MESP130SolAcceptanceRemediation` and
+  `20260822220521_MESP130SolAcceptanceCountApproval`.
+- MESP-128 immutable ledger, deterministic anchors, Serializable posting,
+  reservation protection, MESP-129 physical movement history, Tenant and
+  operational-context authorization, Pending valuation, idempotency, audit,
+  and history remain authoritative.
+- No MWA, Finance, GL, AP, AR, tax, payment, Sales, Reporting, external,
+  statutory/ZATCA/FATOORA, DNS/TLS, migration/cutover, supplier portal, or
+  Wafra-specific core implementation was added.
+- `frontend/assets` has zero changes. Owner-managed source assets remain
+  protected.
 
-The next exact action is Sol acceptance of the exact final branch SHA and
-bounded MESP-130 evidence. MESP-130 remains In Progress until that acceptance.
+## Next exact step
+
+Sol performs delta acceptance against the exact final branch tip and Draft PR
+#74. Do not start MESP-131 or any downstream implementation automatically.

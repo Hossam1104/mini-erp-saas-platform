@@ -1,55 +1,53 @@
 # Current State
 
-## Current authoritative position - 22 August 2026 (MESP-130 implementation complete; Sol acceptance handoff)
+## Current authoritative position - 23 August 2026 (MESP-130 Sol remediation complete; delta acceptance handoff)
 
-MESP-129 is Done. MESP-130 is implemented at its bounded Stock Adjustment,
-Inventory Count, Stock Issue, and eligible correction scope on branch
-`feat/MESP-130-stock-control-corrections`, created from exact synchronized main
-SHA `6f6d204726cc4baf9979961ea6936c0d03e93e32`. The implementation commit is
-`1529cb29d1005cb2f2ff11a13b536815cb5a3b25`. Draft PR #74 is Open, Draft, and
-unmerged; the final handoff tip is reported in the completion response. Jira
-remains read-only; no Jira writes were performed.
+MESP-129 is Done. MESP-130 Sol acceptance remediation is implemented at its
+bounded Stock Adjustment, Inventory Count, Stock Issue, and eligible correction
+scope on branch `feat/MESP-130-stock-control-corrections`, from the exact
+required start SHA `88eac382213c86e9d816fee0232b9e917c5d104d` and main base
+`6f6d204726cc4baf9979961ea6936c0d03e93e32`. The remediation implementation
+commit is `3320cf284d64a58be7fb0f00ac654ee7a11d7b00`. Draft PR #74 remains Open,
+Draft, and unmerged. Jira is read-only; no Jira writes were performed.
 
-The bounded capability adds a Tenant-scoped bilingual reason/purpose catalogue;
-Stock Adjustment lifecycle and correction; Full/Cycle Inventory Count with
-server-authoritative snapshot, cutoff, blind counter view, post-cutoff
-ResnapshotRequired handling, recount/resnapshot, variance reason, approval, and
-variance posting; and Stock Issue lifecycle with destination/use evidence,
-reservation-safe posting, and correction. It preserves the immutable MESP-128
-ledger, MESP-128 deterministic concurrency anchors, MESP-129 physical movement
-history, exact server-derived Tenant/company/branch/warehouse/product/UOM/
-tracking authority, durable idempotency/source uniqueness, audit/history, REST/
-OpenAPI metadata, formal Inventory migration, and bilingual EN/AR RTL Angular
-workflow.
+P1 remediation now persists correct distinct current-stage approval state for
+Adjustment and Stock Issue, applies configured count-variance approval without
+inventing a threshold, enforces a true blind counter contract and post-observation
+variance reason, establishes count cutoffs after anchored expected resolution,
+invalidates Full Count on any same-warehouse post-cutoff identity, preserves
+prior rounds during full resnapshot, and provides a durable one-correction-per-
+original-movement database backstop. P2 remediation adds the high-risk
+regressions, completes the bounded existing Stock Control workspace with reason
+catalogue/history/correction/recount/rejection controls, restores the bundle
+budget, and aligns reason update validation with create invariants.
 
-New MESP-130 movements are `Pending` valuation. MESP-131 owns authoritative MWA
-valuation; no Finance, GL, AP, AR, tax, payment, Sales, Reporting, external,
-statutory, migration/cutover, or Wafra-specific core behavior was added. Posted
-Goods Receipt, Supplier Return, Warehouse Transfer, opening, and other
-non-MESP-130 movement sources cannot be corrected. Owner-managed
-`frontend/assets` remains untouched.
+The immutable MESP-128 ledger, deterministic anchors, Serializable posting,
+reservation protection, MESP-129 physical history, Tenant and operational-context
+authorization, idempotency, audit/history, REST/OpenAPI, and formal Inventory
+migrations remain authoritative. New MESP-130 movements remain `Pending`
+valuation. MESP-131 owns MWA; no Finance, GL, AP, AR, tax, payment, Sales,
+Reporting, external, statutory, migration/cutover, or Wafra-specific core
+behavior was added. Return-for-change is not exposed in the bounded UI because
+there is no edit/resubmit contract; unsupported physical sources remain
+uncorrectable. Owner-managed `frontend/assets` remains untouched.
 
-Validation is MESP-130 focused Inventory 3/3; REST/OpenAPI 33/33; SQL Server
-safety 29/29 through disposable LocalDB; full backend ArchitectureTests
-899/899 passed, 0 failed, 0 skipped; Angular 242/242 across
-32 spec files; focused Inventory Playwright 2/2 and full Chromium Playwright
-26/26; both npm audits report zero vulnerabilities; production build
-successful with initial bundle 500.06 kB (65 bytes over the warning budget),
-Inventory lazy chunk 54.98 kB, and Supplier Quotation lazy chunk 91.94 kB.
-Contracts/App/Infrastructure/test Release
-builds are clean; the current API source also compiled through an alternate
-Release output because the normal API output is held by the running process.
-The official runtime remains `http://localhost:5300` backend PID 14768 and
-`http://localhost:4300` frontend PID 40592, with backend `/health`, frontend `/`,
-and `/main.js` returning HTTP 200; both were restarted after the final source
-build and are left running for Owner inspection.
+Validation: focused Inventory/MESP-130 `6/6`; REST/OpenAPI `33/33`; SQL Server
+safety `30/30` through disposable LocalDB; full backend `903/903` passed with
+0 failed and 0 skipped; Angular `245/245` across 33 spec files; focused
+MESP-130 Chromium `1/1`; full Chromium `27/27`; both npm audits report 0
+vulnerabilities; production initial bundle `499.97 kB`, Inventory lazy chunk
+`69.05 kB`, Supplier Quotation lazy chunk `91.94 kB`; final Release build
+`0` warnings/`0` errors. `git diff --check` is clean before the documentation
+handoff commit.
 
-The production-readiness headline remains approximately 47% overall and 41%
-Procurement/P2P pending Sol acceptance and merge. The fast-track completed
-ratio before MESP-130 acceptance is 13/26 = 50.0%; this is not production
-readiness. MESP-130 remains In Progress. The next exact action is Sol
-acceptance of the exact final branch SHA; do not start MESP-131 or downstream
-implementation.
+The mandatory runtime is `http://localhost:5300` backend PID `23588` and
+`http://localhost:4300` frontend PID `39252`; `/health`, `/`, and `/main.js`
+returned HTTP 200 and both processes remain alive. The supported loopback-only
+Development bypass was used without printing credentials. Production-readiness
+remains approximately 47% overall and 41% Procurement/P2P pending Sol
+acceptance and merge. MESP-130 remains In Progress. The next exact action is
+Sol delta acceptance of the final branch tip; do not start MESP-131 or
+downstream implementation.
 
 ## Current authoritative position - 22 August 2026 (MESP-129 OPUS P1 remediation complete; Sol delta handoff)
 
