@@ -29,8 +29,9 @@ Goods Receipt, Supplier Return, Warehouse Transfer, opening, and other
 non-MESP-130 movement sources cannot be corrected. Owner-managed
 `frontend/assets` remains untouched.
 
-Validation is MESP-130 focused Inventory 3/3; REST/OpenAPI 33/33; full backend
-ArchitectureTests 899/899 passed, 0 failed, 0 skipped; Angular 242/242 across
+Validation is MESP-130 focused Inventory 3/3; REST/OpenAPI 33/33; SQL Server
+safety 29/29 through disposable LocalDB; full backend ArchitectureTests
+899/899 passed, 0 failed, 0 skipped; Angular 242/242 across
 32 spec files; focused Inventory Playwright 2/2 and full Chromium Playwright
 26/26; both npm audits report zero vulnerabilities; production build
 successful with initial bundle 500.06 kB (65 bytes over the warning budget),

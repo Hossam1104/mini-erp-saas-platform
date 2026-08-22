@@ -266,6 +266,8 @@ Inventory topology.
 
 - MESP-130 focused Inventory tests: 3/3 passed.
 - REST/OpenAPI structural tests: 33/33 passed.
+- SQL Server safety tests: 29/29 passed through the disposable LocalDB
+  connection configured for this session.
 - Full ArchitectureTests backend suite: 899/899 passed, 0 failed, 0 skipped.
 - Angular unit tests: 242/242 passed across 32 spec files.
 - Focused Inventory Playwright: 2/2 passed; full Chromium Playwright: 26/26
