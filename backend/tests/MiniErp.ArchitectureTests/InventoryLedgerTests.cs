@@ -4,9 +4,11 @@ using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Inventory;
+using MiniErp.App.Modules.Procurement;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
 using MiniErp.Contracts.Modules.MasterData;
+using MiniErp.Contracts.Modules.Procurement;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using Xunit;
@@ -754,11 +756,277 @@ public sealed class InventoryLedgerTests
         Assert.Equal("tracking_not_enabled", rejected.Code);
     }
 
+    [Fact]
+    public async Task Goods_receipt_posts_accepted_quantity_once_with_pending_valuation()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        var scope = new PurchaseRequestScope(TenantA, CompanyA, null);
+        var receiptId = Guid.NewGuid();
+        var receiptLineId = Guid.NewGuid();
+        var purchaseOrderId = Guid.NewGuid();
+        var purchaseOrderLineId = Guid.NewGuid();
+        var line = new GoodsReceiptLineRecord(receiptLineId, purchaseOrderLineId, ProductA, "SKU-A", "Product A", "EA", 10m, 10m, 8m, 2m, null, null, 0m, null);
+        var receipt = new GoodsReceiptRecord(receiptId, TenantA, scope, purchaseOrderId, WarehouseA, Actor, GoodsReceiptStatus.Recorded, Guid.NewGuid(), "SUP-001", "Supplier One", new DateOnly(2026, 8, 22), "GR-129", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, null, null, [line], [1]);
+        var source = new InventoryGoodsReceiptSourceRecord(receipt, line, Product(), Warehouse(), UnitA);
+        await EnsureInventoryCreatedAsync(options, context);
+
+        var first = Assert.IsType<InventoryGoodsReceiptPostingRecord>(await persistence.PostGoodsReceiptAsync(
+            context,
+            new InventoryGoodsReceiptPostCommand(Guid.NewGuid(), source, Actor, DateTimeOffset.UtcNow, "goods-receipt-post", "goods-receipt-key-1", "goods-receipt-fingerprint-1")));
+        var replay = Assert.IsType<InventoryGoodsReceiptPostingRecord>(await persistence.PostGoodsReceiptAsync(
+            context,
+            new InventoryGoodsReceiptPostCommand(Guid.NewGuid(), source, Actor, DateTimeOffset.UtcNow, "goods-receipt-replay", "goods-receipt-key-2", "goods-receipt-fingerprint-2")));
+
+        Assert.Equal(8m, first.Quantity);
+        Assert.Equal(InventoryValuationStatus.Pending, first.ValuationStatus);
+        Assert.True(replay.WasExisting);
+        Assert.Equal(first.MovementId, replay.MovementId);
+        Assert.True(await persistence.HasActiveGoodsReceiptEffectAsync(context.TenantContext, receiptId));
+        var movements = await persistence.ListMovementsAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseA));
+        var movement = Assert.Single(movements);
+        Assert.Equal(8m, movement.Quantity);
+        Assert.Equal(InventoryMovementSourceType.GoodsReceipt, movement.SourceType);
+        Assert.Null(movement.UnitCost);
+        Assert.Null(movement.CurrencyCode);
+    }
+
+    [Fact]
+    public async Task Supplier_return_posts_outbound_once_with_full_source_lineage()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        var scope = new PurchaseRequestScope(TenantA, CompanyA, null);
+        var receiptId = Guid.NewGuid();
+        var receiptLineId = Guid.NewGuid();
+        var purchaseOrderId = Guid.NewGuid();
+        var purchaseOrderLineId = Guid.NewGuid();
+        var receiptLine = new GoodsReceiptLineRecord(receiptLineId, purchaseOrderLineId, ProductA, "SKU-A", "Product A", "EA", 10m, 10m, 10m, 0m, null, null, 0m, null);
+        var receipt = new GoodsReceiptRecord(receiptId, TenantA, scope, purchaseOrderId, WarehouseA, Actor, GoodsReceiptStatus.Recorded, Guid.NewGuid(), "SUP-001", "Supplier One", new DateOnly(2026, 8, 22), "GR-129-SR", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, null, null, [receiptLine], [1]);
+        var receiptSource = new InventoryGoodsReceiptSourceRecord(receipt, receiptLine, Product(), Warehouse(), UnitA);
+        await EnsureInventoryCreatedAsync(options, context);
+        await persistence.PostGoodsReceiptAsync(context, new InventoryGoodsReceiptPostCommand(Guid.NewGuid(), receiptSource, Actor, DateTimeOffset.UtcNow, "supplier-return-seed", "supplier-return-seed-key", "supplier-return-seed-fingerprint"));
+
+        var supplierReturnId = Guid.NewGuid();
+        var supplierReturnLineId = Guid.NewGuid();
+        var returnLine = new SupplierReturnLineRecord(supplierReturnLineId, receiptLineId, purchaseOrderLineId, ProductA, "SKU-A", "Product A", "EA", 4m, 4m, 0m, null);
+        var supplierReturn = new SupplierReturnRecord(supplierReturnId, TenantA, scope, receiptId, purchaseOrderId, null, WarehouseA, Guid.NewGuid(), "SUP-001", "Supplier One", "SAR", SupplierReturnStatus.AwaitingInventory, SupplierReturnReasonCode.Damaged, SupplierReturnCondition.Unusable, SupplierReturnCommercialOutcome.CreditExpected, "Damaged", null, new DateOnly(2026, 8, 22), DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, null, null, null, null, null, null, null, null, [returnLine], [], [1]);
+        var source = new InventorySupplierReturnSourceRecord(supplierReturn, receipt, Warehouse(), [new InventorySupplierReturnLineSourceRecord(returnLine, receiptLine, Product(), UnitA)]);
+
+        var first = Assert.IsType<InventorySupplierReturnPostingRecord>(await persistence.PostSupplierReturnAsync(
+            context,
+            new InventorySupplierReturnPostCommand(Guid.NewGuid(), source, Actor, DateTimeOffset.UtcNow, "supplier-return-post", "supplier-return-key-1", "supplier-return-fingerprint-1")));
+        var replay = Assert.IsType<InventorySupplierReturnPostingRecord>(await persistence.PostSupplierReturnAsync(
+            context,
+            new InventorySupplierReturnPostCommand(Guid.NewGuid(), source, Actor, DateTimeOffset.UtcNow, "supplier-return-replay", "supplier-return-key-2", "supplier-return-fingerprint-2")));
+
+        Assert.Equal(4m, first.Quantity);
+        Assert.Equal(InventoryValuationStatus.Pending, first.ValuationStatus);
+        Assert.False(first.WasExisting);
+        Assert.True(replay.WasExisting);
+        Assert.Equal(first.MovementIds, replay.MovementIds);
+        var movements = await persistence.ListMovementsAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseA));
+        var outbound = Assert.Single(movements, item => item.SourceType == InventoryMovementSourceType.SupplierReturn);
+        Assert.Equal(4m, outbound.Quantity);
+        Assert.Equal(supplierReturnId, outbound.SupplierReturnId);
+        Assert.Equal(supplierReturnLineId, outbound.SupplierReturnLineId);
+        Assert.Equal(receiptId, outbound.GoodsReceiptId);
+        Assert.Equal(receiptLineId, outbound.GoodsReceiptLineId);
+        Assert.Equal(purchaseOrderId, outbound.PurchaseOrderId);
+        Assert.Equal(purchaseOrderLineId, outbound.PurchaseOrderLineId);
+        Assert.Null(outbound.UnitCost);
+        Assert.Null(outbound.CurrencyCode);
+    }
+
+    [Fact]
+    public async Task Direct_transfer_posts_two_balanced_immutable_movements_with_pending_valuation()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        await EnsureInventoryCreatedAsync(options, context);
+        await SeedStockAsync(options, context, WarehouseA, 10m);
+
+        var source = Warehouse(TenantA, WarehouseA);
+        var destination = Warehouse(TenantA, WarehouseB);
+        var created = Assert.IsType<InventoryTransferRecord>(await persistence.CreateTransferAsync(
+            context,
+            TransferCreateCommand(Guid.NewGuid(), source, destination, InventoryTransferMode.Direct, 10m, "direct-key")));
+
+        var completed = Assert.IsType<InventoryTransferRecord>(await persistence.PostDirectTransferAsync(
+            context,
+            TransferActionCommand(created.Id, created.Version, "direct-action-key")));
+        Assert.Equal(InventoryTransferStatus.Completed, completed.Status);
+        Assert.Equal(10m, completed.ShippedQuantity);
+        Assert.Equal(10m, completed.ReceivedQuantity);
+        Assert.Equal(0m, completed.InTransitQuantity);
+
+        var movements = await persistence.ListMovementsAsync(context, null);
+        Assert.Equal(3, movements.Count);
+        var outbound = Assert.Single(movements, item => item.SourceType == InventoryMovementSourceType.WarehouseTransferShipment);
+        var inbound = Assert.Single(movements, item => item.SourceType == InventoryMovementSourceType.WarehouseTransferReceipt);
+        Assert.Equal(10m, outbound.Quantity);
+        Assert.Equal(10m, inbound.Quantity);
+        Assert.Equal(InventoryValuationStatus.Pending, outbound.ValuationStatus);
+        Assert.Equal(InventoryValuationStatus.Pending, inbound.ValuationStatus);
+        Assert.Null(outbound.UnitCost);
+        Assert.Equal(completed.Id, outbound.TransferId);
+        Assert.Equal(completed.Id, inbound.TransferId);
+
+        var sourceAvailability = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseA), ProductA, UnitA, null, Product(), source));
+        var destinationAvailability = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseB), ProductA, UnitA, null, Product(), destination));
+        Assert.Equal(0m, sourceAvailability.OnHandQuantity);
+        Assert.Equal(10m, destinationAvailability.OnHandQuantity);
+    }
+
+    [Fact]
+    public async Task In_transit_transfer_supports_partial_receipt_shortage_and_rejects_overage()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        await EnsureInventoryCreatedAsync(options, context);
+        await SeedStockAsync(options, context, WarehouseA, 10m);
+
+        var created = Assert.IsType<InventoryTransferRecord>(await persistence.CreateTransferAsync(
+            context,
+            TransferCreateCommand(Guid.NewGuid(), Warehouse(TenantA, WarehouseA), Warehouse(TenantA, WarehouseB), InventoryTransferMode.InTransit, 10m, "transit-key")));
+        var shipped = Assert.IsType<InventoryTransferRecord>(await persistence.ShipTransferAsync(
+            context,
+            TransferActionCommand(created.Id, created.Version, "ship-key")));
+        Assert.Equal(InventoryTransferStatus.Shipped, shipped.Status);
+
+        var received = Assert.IsType<InventoryTransferRecord>(await persistence.ReceiveTransferAsync(
+            context,
+            TransferActionCommand(shipped.Id, shipped.Version, "receive-key", 4m, "receipt-1")));
+        Assert.Equal(InventoryTransferStatus.PartiallyReceived, received.Status);
+        Assert.Equal(6m, received.InTransitQuantity);
+        Assert.Null(await persistence.ReceiveTransferAsync(
+            context,
+            TransferActionCommand(received.Id, received.Version, "overage-key", 7m, "receipt-over")));
+
+        var secondReceipt = Assert.IsType<InventoryTransferRecord>(await persistence.ReceiveTransferAsync(
+            context,
+            TransferActionCommand(received.Id, received.Version, "receive-key-2", 3m, "receipt-2")));
+        Assert.Equal(InventoryTransferStatus.PartiallyReceived, secondReceipt.Status);
+        Assert.Equal(3m, secondReceipt.InTransitQuantity);
+
+        var destination = Assert.IsType<InventoryAvailabilityRecord>(await persistence.GetAvailabilityAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseB), ProductA, UnitA, null, Product(), Warehouse(TenantA, WarehouseB)));
+        Assert.Equal(7m, destination.OnHandQuantity);
+        Assert.Equal(3m, destination.InTransitQuantity);
+
+        var lossResolved = Assert.IsType<InventoryTransferRecord>(await persistence.ResolveTransferShortageAsync(
+            context,
+            TransferActionCommand(secondReceipt.Id, secondReceipt.Version, "loss-key", null, "loss-1")));
+        Assert.Equal(InventoryTransferStatus.LossResolved, lossResolved.Status);
+        Assert.Equal(3m, lossResolved.LostQuantity);
+        Assert.Equal(0m, lossResolved.InTransitQuantity);
+
+        var movements = await persistence.ListMovementsAsync(context, null);
+        Assert.Equal(4, movements.Count);
+        Assert.Single(movements, item => item.Direction == InventoryMovementDirection.Outbound && item.Quantity == 10m);
+        Assert.Equal(2, movements.Count(item => item.SourceType == InventoryMovementSourceType.WarehouseTransferReceipt));
+        Assert.Equal(7m, movements.Where(item => item.SourceType == InventoryMovementSourceType.WarehouseTransferReceipt).Sum(item => item.Quantity));
+        var history = await persistence.ReadTransferHistoryAsync(context, created.Id);
+        Assert.Contains(history, item => item.EventType == InventoryTransferEventType.Shipped);
+        Assert.Contains(history, item => item.EventType == InventoryTransferEventType.Received && item.Quantity == 4m);
+        Assert.Contains(history, item => item.EventType == InventoryTransferEventType.Received && item.Quantity == 3m);
+        Assert.Contains(history, item => item.EventType == InventoryTransferEventType.ShortageResolved && item.Quantity == 3m);
+    }
+
+    [Fact]
+    public async Task Draft_transfer_can_be_cancelled_but_shipped_transfer_cannot()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var persistence = new InventoryPersistence(options);
+        await EnsureInventoryCreatedAsync(options, context);
+        await SeedStockAsync(options, context, WarehouseA, 5m);
+
+        var draft = Assert.IsType<InventoryTransferRecord>(await persistence.CreateTransferAsync(
+            context,
+            TransferCreateCommand(Guid.NewGuid(), Warehouse(TenantA, WarehouseA), Warehouse(TenantA, WarehouseB), InventoryTransferMode.InTransit, 5m, "cancel-key")));
+        var cancelled = Assert.IsType<InventoryTransferRecord>(await persistence.CancelTransferAsync(
+            context,
+            TransferActionCommand(draft.Id, draft.Version, "cancel-action-key", null, "cancel-before-shipment")));
+        Assert.Equal(InventoryTransferStatus.Cancelled, cancelled.Status);
+        Assert.Null(await persistence.ShipTransferAsync(context, TransferActionCommand(cancelled.Id, cancelled.Version, "ship-cancelled-key")));
+
+        var movements = await persistence.ListMovementsAsync(context, null);
+        Assert.Single(movements);
+        Assert.Equal(5m, movements[0].Quantity);
+    }
+
     private static async Task EnsureInventoryCreatedAsync(DbContextOptions options, InventoryRequestContext context)
     {
         await using var db = new InventoryDbContext(options, context.TenantContext);
         await db.Database.EnsureCreatedAsync();
     }
+
+    private static async Task SeedStockAsync(DbContextOptions options, InventoryRequestContext context, Guid warehouseId, decimal quantity)
+    {
+        var warehouse = Warehouse(TenantA, warehouseId);
+        await using var db = new InventoryDbContext(options, context.TenantContext);
+        db.StockMovements.Add(new InventoryStockMovementEntity(
+            new TenantId(TenantA), Guid.NewGuid(), CompanyA, null, warehouseId, warehouse.Code, warehouse.Name,
+            ProductA, Product().Sku, Product().Name, UnitA, "EA", InventoryMovementDirection.Inbound,
+            quantity, 10m, "SAR", null, InventoryMovementSourceType.OpeningBalance, Guid.NewGuid(), Guid.NewGuid(), null,
+            new DateOnly(2026, 8, 21), Actor, "seed-stock", DateTimeOffset.UtcNow));
+        await db.SaveChangesAsync();
+    }
+
+    private static InventoryTransferCreateCommand TransferCreateCommand(
+        Guid id,
+        InventoryWarehouseOption source,
+        InventoryWarehouseOption destination,
+        InventoryTransferMode mode,
+        decimal quantity,
+        string key) => new(
+        id,
+        new InventoryScope(TenantA, CompanyA, null, source.WarehouseId),
+        source,
+        destination,
+        ProductA,
+        UnitA,
+        Product(),
+        quantity,
+        mode,
+        null,
+        "test transfer",
+        Actor,
+        DateTimeOffset.UtcNow,
+        $"transfer-{key}",
+        key,
+        $"fingerprint-{key}");
+
+    private static InventoryTransferActionCommand TransferActionCommand(
+        Guid transferId,
+        byte[] expectedVersion,
+        string key,
+        decimal? quantity = null,
+        string? reference = null) => new(
+        transferId,
+        expectedVersion,
+        quantity,
+        reference,
+        "test action",
+        Actor,
+        DateTimeOffset.UtcNow,
+        $"transfer-action-{key}",
+        key,
+        $"fingerprint-{key}");
 
     private static async Task<InventoryOpeningBalanceRecord> CreateAndPostOpeningAsync(
         InventoryPersistence persistence,

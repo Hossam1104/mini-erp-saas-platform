@@ -220,6 +220,17 @@ public interface IGoodsReceiptPersistence
     Task<IReadOnlyList<GoodsReceiptAuditRecord>> ReadAuditAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default);
 }
 
+public interface IGoodsReceiptInventoryEffectReader
+{
+    Task<bool> HasActiveEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default);
+}
+
+public sealed class UnavailableGoodsReceiptInventoryEffectReader : IGoodsReceiptInventoryEffectReader
+{
+    public Task<bool> HasActiveEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+}
+
 public sealed class UnavailableGoodsReceiptPersistence : IGoodsReceiptPersistence
 {
     private static Task<GoodsReceiptPersistenceResult<T>> Unavailable<T>() =>

@@ -22,15 +22,18 @@ public sealed class GoodsReceiptService
     private readonly PurchaseRequestAuthorizationService authorization;
     private readonly IGoodsReceiptPersistence persistence;
     private readonly IProcurementWarehouseProvider warehouseProvider;
+    private readonly IGoodsReceiptInventoryEffectReader? inventoryEffectReader;
 
     public GoodsReceiptService(
         PurchaseRequestAuthorizationService authorization,
         IGoodsReceiptPersistence persistence,
-        IProcurementWarehouseProvider warehouseProvider)
+        IProcurementWarehouseProvider warehouseProvider,
+        IGoodsReceiptInventoryEffectReader? inventoryEffectReader = null)
     {
         this.authorization = authorization ?? throw new ArgumentNullException(nameof(authorization));
         this.persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
         this.warehouseProvider = warehouseProvider ?? throw new ArgumentNullException(nameof(warehouseProvider));
+        this.inventoryEffectReader = inventoryEffectReader;
     }
 
     public async Task<GoodsReceiptOperationResult<IReadOnlyList<ProcurementWarehouseOption>>> ListWarehousesAsync(
@@ -255,6 +258,11 @@ public sealed class GoodsReceiptService
         if (current.Value.Status != GoodsReceiptStatus.Recorded)
         {
             return GoodsReceiptOperationResult<GoodsReceiptRecord>.Failure("cancel_not_allowed");
+        }
+
+        if (inventoryEffectReader is not null && await inventoryEffectReader.HasActiveEffectAsync(context.TenantContext, goodsReceiptId, cancellationToken))
+        {
+            return GoodsReceiptOperationResult<GoodsReceiptRecord>.Failure("inventory_effect_exists");
         }
 
         var command = new GoodsReceiptActionCommand(goodsReceiptId, expectedVersion, context.ActorId, normalizedReason, DateTimeOffset.UtcNow, idempotencyKey);

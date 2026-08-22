@@ -124,11 +124,15 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
         _inventoryConnectionString = inventoryBuilder.ConnectionString;
         await EnsureDatabaseExistsAsync(inventoryBuilder);
         var inventoryOptions = new DbContextOptionsBuilder()
-            .UseSqlServer(_inventoryConnectionString)
+            .UseSqlServer(
+                _inventoryConnectionString,
+                sql => sql.MigrationsHistoryTable(
+                    SqlServerMigrationConfiguration.InventoryHistoryTable,
+                    SqlServerMigrationConfiguration.HistorySchema))
             .Options;
         await using (var inventory = new InventoryDbContext(inventoryOptions, TenantA))
         {
-            await inventory.Database.EnsureCreatedAsync();
+            await inventory.Database.MigrateAsync();
         }
 
         await CreateProbeTablesAsync();
@@ -248,6 +252,41 @@ public sealed class SqlServerSafetyTests
     public SqlServerSafetyTests(SqlServerSafetyFixture fixture)
     {
         _fixture = fixture;
+    }
+
+    [Fact]
+    public async Task Inventory_sql_server_migrations_apply_in_order_to_the_disposable_database()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = new DbContextOptionsBuilder()
+            .UseSqlServer(
+                connectionString,
+                sql => sql.MigrationsHistoryTable(
+                    SqlServerMigrationConfiguration.InventoryHistoryTable,
+                    SqlServerMigrationConfiguration.HistorySchema))
+            .Options;
+
+        await using var db = new InventoryDbContext(options, _fixture.TenantA);
+        var applied = (await db.Database.GetAppliedMigrationsAsync()).ToArray();
+        Assert.Equal(
+            [
+                "20260821113311_MESP128InventoryLedgerFoundation",
+                "20260821132738_MESP128StockIntegrityRemediation",
+                "20260821213832_MESP128OpusStockIntegrityRemediation",
+                "20260822092802_MESP129PhysicalStockMovements"
+            ],
+            applied);
+        Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+
+        await using var connection = await _fixture.OpenInventoryConnectionAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = N'inventory'
+              AND TABLE_NAME IN (N'StockLedgerMovements', N'Transfers', N'TransferLines', N'TransferEvents');
+            """;
+        Assert.Equal(4, Convert.ToInt32(await command.ExecuteScalarAsync()));
     }
 
     [Fact]
