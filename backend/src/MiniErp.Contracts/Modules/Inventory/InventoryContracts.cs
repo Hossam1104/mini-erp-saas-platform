@@ -336,6 +336,20 @@ public sealed record InventoryTransferActionRequest(
     string? Reference = null,
     string? Reason = null);
 
+public static class InventoryTransferReferencePolicy
+{
+    public static string? Normalize(string? reference)
+    {
+        if (string.IsNullOrWhiteSpace(reference))
+        {
+            return null;
+        }
+
+        var trimmed = reference.Trim();
+        return trimmed[..Math.Min(trimmed.Length, 512)].ToUpperInvariant();
+    }
+}
+
 public sealed record InventoryGoodsReceiptPostingRecord(
     Guid MovementId,
     Guid TenantId,

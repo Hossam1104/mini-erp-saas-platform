@@ -17,9 +17,11 @@ public static class InventoryModuleRegistration
         services.AddSingleton<IInventoryProductProvider, NoInventoryProductProvider>();
         services.AddSingleton<IInventoryGoodsReceiptSourceProvider, NoInventoryGoodsReceiptSourceProvider>();
         services.AddSingleton<IInventorySupplierReturnSourceProvider, NoInventorySupplierReturnSourceProvider>();
+        services.AddSingleton<IInventorySupplierReturnStateProvider, NoInventorySupplierReturnStateProvider>();
         services.AddSingleton<IInventorySupplierReturnHandoffWriter, NoInventorySupplierReturnHandoffWriter>();
         services.AddSingleton<IInventoryPersistence, UnavailableInventoryPersistence>();
         services.AddSingleton<IGoodsReceiptInventoryEffectReader, InventoryPersistenceGoodsReceiptEffectReader>();
+        services.AddSingleton<ISupplierReturnInventoryEffectReader, InventoryPersistenceSupplierReturnEffectReader>();
         return services;
     }
 }

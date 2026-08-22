@@ -196,7 +196,7 @@ public static class InventoryEndpoints
             if (setEtag && result.Value is InventoryTransferRecord transfer) http.Response.Headers.ETag = $"\"{Convert.ToBase64String(transfer.Version)}\"";
             return Results.Json(result.Value);
         }
-        var status = result.Code is "forbidden" or "tenant_context_failed" or "warehouse_not_available" ? 403 : result.Code is "not_found" ? 404 : result.Code is "persistence_unavailable" or "inventory_handoff_pending" ? 503 : result.Code is "conflict" or "duplicate_or_conflict" or "insufficient_available" or "idempotency_conflict" ? 409 : 400;
+        var status = result.Code is "forbidden" or "tenant_context_failed" or "warehouse_not_available" ? 403 : result.Code is "not_found" ? 404 : result.Code is "persistence_unavailable" or "inventory_handoff_pending" ? 503 : result.Code is "conflict" or "duplicate_or_conflict" or "insufficient_available" or "idempotency_conflict" or "inventory_handoff_reconciliation_conflict" ? 409 : 400;
         return Results.Problem(statusCode: status, title: status == 403 ? "Access denied" : "Inventory operation failed", detail: "The Inventory operation could not be completed.", type: $"https://api.minierp.local/problems/{result.Code}", extensions: new Dictionary<string, object?> { ["code"] = result.Code, ["correlationId"] = Correlation(http), ["operationId"] = operationId });
     }
 

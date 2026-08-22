@@ -822,6 +822,7 @@ public sealed class InventoryLedgerTests
             await SeedStockAsync(options, context, WarehouseA, 10m);
 
             var sourceProvider = new HandoffAdvancingSupplierReturnSourceProvider(CreateSupplierReturnSource(Product()));
+            var stateProvider = new HandoffAdvancingSupplierReturnStateProvider(sourceProvider.Source.SupplierReturn);
             var persistence = new InventoryPersistence(options);
             var service = new InventoryService(
                 persistence,
@@ -829,7 +830,8 @@ public sealed class InventoryLedgerTests
                 new ConfiguredInventoryWarehouseProvider([Warehouse()]),
                 new StaticInventoryProductProvider(Product()),
                 supplierReturnSources: sourceProvider,
-                supplierReturnHandoff: new HandoffAdvancingWriter(sourceProvider));
+                supplierReturnHandoff: new HandoffAdvancingWriter(sourceProvider, stateProvider),
+                supplierReturnState: stateProvider);
             var request = new InventorySupplierReturnPostRequest(sourceProvider.Source.SupplierReturn.Id, sourceProvider.Source.SupplierReturn.Version);
 
             var first = await service.PostSupplierReturnAsync(context, request, "supplier-return-durable-key");
@@ -861,6 +863,84 @@ public sealed class InventoryLedgerTests
     }
 
     [Fact]
+    public async Task Supplier_return_replay_retries_only_the_handoff_after_a_transient_handoff_failure()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"), "tenant.inventory.supplier-return.post");
+        await EnsureInventoryCreatedAsync(options, context);
+        await SeedStockAsync(options, context, WarehouseA, 10m);
+
+        var sourceProvider = new HandoffAdvancingSupplierReturnSourceProvider(CreateSupplierReturnSource(Product()));
+        var stateProvider = new HandoffAdvancingSupplierReturnStateProvider(sourceProvider.Source.SupplierReturn);
+        var handoffWriter = new FailOnceHandoffWriter(sourceProvider, stateProvider);
+        var persistence = new InventoryPersistence(options);
+        var service = new InventoryService(
+            persistence,
+            new InventoryResourceAuthorizationService(),
+            new ConfiguredInventoryWarehouseProvider([Warehouse()]),
+            new StaticInventoryProductProvider(Product()),
+            supplierReturnSources: sourceProvider,
+            supplierReturnHandoff: handoffWriter,
+            supplierReturnState: stateProvider);
+        var request = new InventorySupplierReturnPostRequest(sourceProvider.Source.SupplierReturn.Id, sourceProvider.Source.SupplierReturn.Version);
+
+        var first = await service.PostSupplierReturnAsync(context, request, "supplier-return-pending-key");
+        Assert.False(first.Succeeded);
+        Assert.Equal("inventory_handoff_pending", first.Code);
+        Assert.Equal(SupplierReturnStatus.AwaitingInventory, stateProvider.Current.Status);
+
+        var retry = await service.PostSupplierReturnAsync(context, request, "supplier-return-pending-key");
+        Assert.True(retry.Succeeded, retry.Code);
+        Assert.True(retry.Value!.HandoffRecorded);
+        Assert.Equal(SupplierReturnStatus.AwaitingFinance, stateProvider.Current.Status);
+
+        var movements = await persistence.ListMovementsAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseA));
+        Assert.Single(movements, item => item.SourceType == InventoryMovementSourceType.SupplierReturn);
+    }
+
+    [Theory]
+    [InlineData(SupplierReturnStatus.Cancelled)]
+    [InlineData(SupplierReturnStatus.Reversed)]
+    [InlineData(SupplierReturnStatus.CorrectionLinked)]
+    public async Task Supplier_return_replay_never_reports_handoff_recorded_after_authoritative_terminal_state(SupplierReturnStatus terminalStatus)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"), "tenant.inventory.supplier-return.post");
+        await EnsureInventoryCreatedAsync(options, context);
+        await SeedStockAsync(options, context, WarehouseA, 10m);
+
+        var sourceProvider = new HandoffAdvancingSupplierReturnSourceProvider(CreateSupplierReturnSource(Product()));
+        var stateProvider = new HandoffAdvancingSupplierReturnStateProvider(sourceProvider.Source.SupplierReturn);
+        var persistence = new InventoryPersistence(options);
+        var service = new InventoryService(
+            persistence,
+            new InventoryResourceAuthorizationService(),
+            new ConfiguredInventoryWarehouseProvider([Warehouse()]),
+            new StaticInventoryProductProvider(Product()),
+            supplierReturnSources: sourceProvider,
+            supplierReturnHandoff: new FailOnceHandoffWriter(sourceProvider, stateProvider),
+            supplierReturnState: stateProvider);
+        var request = new InventorySupplierReturnPostRequest(sourceProvider.Source.SupplierReturn.Id, sourceProvider.Source.SupplierReturn.Version);
+
+        var first = await service.PostSupplierReturnAsync(context, request, "supplier-return-terminal-key");
+        Assert.False(first.Succeeded);
+        Assert.Equal("inventory_handoff_pending", first.Code);
+        stateProvider.SetStatus(terminalStatus);
+
+        var retry = await service.PostSupplierReturnAsync(context, request, "supplier-return-terminal-key");
+        Assert.False(retry.Succeeded);
+        Assert.Equal("inventory_handoff_reconciliation_conflict", retry.Code);
+        Assert.False(retry.Value?.HandoffRecorded ?? false);
+
+        var movements = await persistence.ListMovementsAsync(context, new InventoryScope(TenantA, CompanyA, null, WarehouseA));
+        Assert.Single(movements, item => item.SourceType == InventoryMovementSourceType.SupplierReturn);
+    }
+
+    [Fact]
     public async Task Duplicate_transfer_receipt_reference_converges_without_a_second_destination_movement_or_503_classification()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -876,7 +956,9 @@ public sealed class InventoryLedgerTests
             TransferCreateCommand(Guid.NewGuid(), Warehouse(TenantA, WarehouseA), Warehouse(TenantA, WarehouseB), InventoryTransferMode.InTransit, 10m, "duplicate-receipt")));
         var shipped = Assert.IsType<InventoryTransferRecord>(await persistence.ShipTransferAsync(context, TransferActionCommand(created.Id, created.Version, "duplicate-receipt-ship")));
         var received = Assert.IsType<InventoryTransferRecord>(await persistence.ReceiveTransferAsync(context, TransferActionCommand(shipped.Id, shipped.Version, "duplicate-receipt-a", 4m, "RECEIVE-001")));
-        var duplicate = Assert.IsType<InventoryTransferRecord>(await persistence.ReceiveTransferAsync(context, TransferActionCommand(received.Id, received.Version, "duplicate-receipt-b", 4m, "RECEIVE-001")));
+        var firstHistory = await persistence.ReadTransferHistoryAsync(context, created.Id);
+        Assert.Equal("RECEIVE-001", Assert.Single(firstHistory, item => item.EventType == InventoryTransferEventType.Received).Reference);
+        var duplicate = Assert.IsType<InventoryTransferRecord>(await persistence.ReceiveTransferAsync(context, TransferActionCommand(received.Id, received.Version, "duplicate-receipt-b", 4m, "receive-001")));
 
         Assert.Equal(4m, duplicate.ReceivedQuantity);
         Assert.Equal(6m, duplicate.InTransitQuantity);
@@ -884,6 +966,8 @@ public sealed class InventoryLedgerTests
         var receiptMovements = movements.Where(item => item.SourceType == InventoryMovementSourceType.WarehouseTransferReceipt).ToArray();
         Assert.Single(receiptMovements);
         Assert.Equal(4m, receiptMovements[0].Quantity);
+        var history = await persistence.ReadTransferHistoryAsync(context, created.Id);
+        Assert.Equal("RECEIVE-001", Assert.Single(history, item => item.EventType == InventoryTransferEventType.Received).Reference);
         var audit = await persistence.ReadAuditAsync(context, "transfer", created.Id);
         Assert.Contains(audit, item => item.Decision == "Duplicate" && item.AfterSummary == "duplicate-receipt-reference");
     }
@@ -1041,6 +1125,11 @@ public sealed class InventoryLedgerTests
         Assert.Equal(purchaseOrderLineId, outbound.PurchaseOrderLineId);
         Assert.Null(outbound.UnitCost);
         Assert.Null(outbound.CurrencyCode);
+
+        var effectReader = new InventoryPersistenceSupplierReturnEffectReader(persistence);
+        Assert.Equal(
+            SupplierReturnInventoryEffectVerification.ActiveEffectExists,
+            await effectReader.VerifyAsync(context.TenantContext, supplierReturnId));
     }
 
     [Fact]
@@ -1395,11 +1484,57 @@ public sealed class InventoryLedgerTests
             Task.FromResult<InventorySupplierReturnSourceRecord?>(!HandoffCompleted && Source.SupplierReturn.Id == supplierReturnId ? Source : null);
     }
 
-    private sealed class HandoffAdvancingWriter(HandoffAdvancingSupplierReturnSourceProvider sourceProvider) : IInventorySupplierReturnHandoffWriter
+    private sealed class HandoffAdvancingSupplierReturnStateProvider(SupplierReturnRecord current) : IInventorySupplierReturnStateProvider
+    {
+        public SupplierReturnRecord Current { get; private set; } = current;
+
+        public void MarkHandoffRecorded() => Current = Current with
+        {
+            Status = SupplierReturnStatus.AwaitingFinance,
+            InventoryHandoffId = Guid.NewGuid(),
+            InventoryHandoffReference = "inventory-movement:test"
+        };
+
+        public void SetStatus(SupplierReturnStatus status) => Current = Current with
+        {
+            Status = status,
+            InventoryHandoffId = null,
+            InventoryHandoffReference = null
+        };
+
+        public Task<InventorySupplierReturnStateLookup> FindAsync(InventoryRequestContext context, Guid supplierReturnId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Current.Id == supplierReturnId
+                ? InventorySupplierReturnStateLookup.Found(Current)
+                : InventorySupplierReturnStateLookup.NotFound);
+    }
+
+    private sealed class HandoffAdvancingWriter(
+        HandoffAdvancingSupplierReturnSourceProvider sourceProvider,
+        HandoffAdvancingSupplierReturnStateProvider stateProvider) : IInventorySupplierReturnHandoffWriter
     {
         public Task<InventorySupplierReturnHandoffResult> RecordAsync(InventoryRequestContext context, InventorySupplierReturnSourceRecord source, string handoffReference, CancellationToken cancellationToken = default)
         {
             sourceProvider.HandoffCompleted = true;
+            stateProvider.MarkHandoffRecorded();
+            return Task.FromResult(InventorySupplierReturnHandoffResult.Recorded(Guid.NewGuid()));
+        }
+    }
+
+    private sealed class FailOnceHandoffWriter(
+        HandoffAdvancingSupplierReturnSourceProvider sourceProvider,
+        HandoffAdvancingSupplierReturnStateProvider stateProvider) : IInventorySupplierReturnHandoffWriter
+    {
+        private int attempts;
+
+        public Task<InventorySupplierReturnHandoffResult> RecordAsync(InventoryRequestContext context, InventorySupplierReturnSourceRecord source, string handoffReference, CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref attempts) == 1)
+            {
+                return Task.FromResult(InventorySupplierReturnHandoffResult.Pending("simulated_handoff_failure"));
+            }
+
+            sourceProvider.HandoffCompleted = true;
+            stateProvider.MarkHandoffRecorded();
             return Task.FromResult(InventorySupplierReturnHandoffResult.Recorded(Guid.NewGuid()));
         }
     }

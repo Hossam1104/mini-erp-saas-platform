@@ -20,3 +20,21 @@ internal sealed class ThrowingGoodsReceiptInventoryEffectReader : IGoodsReceiptI
     public Task<GoodsReceiptInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default) =>
         Task.FromException<GoodsReceiptInventoryEffectVerification>(new InvalidOperationException("test provider unavailable"));
 }
+
+internal sealed class ActiveSupplierReturnInventoryEffectReader : ISupplierReturnInventoryEffectReader
+{
+    public Task<SupplierReturnInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(SupplierReturnInventoryEffectVerification.ActiveEffectExists);
+}
+
+internal sealed class NoActiveSupplierReturnInventoryEffectReader : ISupplierReturnInventoryEffectReader
+{
+    public Task<SupplierReturnInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(SupplierReturnInventoryEffectVerification.NoActiveEffect);
+}
+
+internal sealed class ThrowingSupplierReturnInventoryEffectReader : ISupplierReturnInventoryEffectReader
+{
+    public Task<SupplierReturnInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default) =>
+        Task.FromException<SupplierReturnInventoryEffectVerification>(new InvalidOperationException("test provider unavailable"));
+}

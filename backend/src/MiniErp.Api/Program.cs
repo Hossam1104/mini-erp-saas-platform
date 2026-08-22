@@ -149,6 +149,7 @@ else if (builder.Environment.IsDevelopment())
 // development stores without allowing Inventory to open a Procurement DbContext.
 builder.Services.AddSingleton<IInventoryGoodsReceiptSourceProvider, ProcurementInventoryGoodsReceiptSourceProvider>();
 builder.Services.AddSingleton<IInventorySupplierReturnSourceProvider, ProcurementInventorySupplierReturnSourceProvider>();
+builder.Services.AddSingleton<IInventorySupplierReturnStateProvider, ProcurementInventorySupplierReturnStateProvider>();
 builder.Services.AddSingleton<IInventorySupplierReturnHandoffWriter, ProcurementInventorySupplierReturnHandoffWriter>();
 
 if (builder.Environment.IsDevelopment()

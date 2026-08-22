@@ -250,6 +250,53 @@ public interface ISupplierReturnPersistence
     Task<IReadOnlyList<SupplierReturnAuditEvidence>> ReadAuditAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default);
 }
 
+public enum SupplierReturnInventoryEffectVerification
+{
+    ActiveEffectExists = 1,
+    NoActiveEffect = 2,
+    Unavailable = 3
+}
+
+public interface ISupplierReturnInventoryEffectReader
+{
+    Task<SupplierReturnInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default);
+}
+
+public sealed class UnavailableSupplierReturnInventoryEffectReader : ISupplierReturnInventoryEffectReader
+{
+    public Task<SupplierReturnInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(SupplierReturnInventoryEffectVerification.Unavailable);
+}
+
+public interface ISupplierReturnPhysicalEffectGate
+{
+    Task<IDisposable> AcquireAsync(Guid supplierReturnId, CancellationToken cancellationToken = default);
+}
+
+public sealed class SupplierReturnPhysicalEffectGate : ISupplierReturnPhysicalEffectGate
+{
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, System.Threading.SemaphoreSlim> locks = new();
+
+    public async Task<IDisposable> AcquireAsync(Guid supplierReturnId, CancellationToken cancellationToken = default)
+    {
+        if (supplierReturnId == Guid.Empty)
+        {
+            throw new ArgumentException("A Supplier Return identifier is required.", nameof(supplierReturnId));
+        }
+
+        var gate = locks.GetOrAdd(supplierReturnId, static _ => new System.Threading.SemaphoreSlim(1, 1));
+        await gate.WaitAsync(cancellationToken);
+        return new Lease(gate);
+    }
+
+    private sealed class Lease(System.Threading.SemaphoreSlim gate) : IDisposable
+    {
+        private System.Threading.SemaphoreSlim? heldGate = gate;
+
+        public void Dispose() => Interlocked.Exchange(ref heldGate, null)?.Release();
+    }
+}
+
 public sealed class UnavailableSupplierReturnPersistence : ISupplierReturnPersistence
 {
     private static Task<SupplierReturnPersistenceResult<T>> Unavailable<T>() =>

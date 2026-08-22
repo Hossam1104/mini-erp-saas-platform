@@ -119,6 +119,107 @@ public sealed class SupplierReturnPersistenceTests
         Assert.Equal(10m, restored.EligibleReturnQuantity);
     }
 
+    [Theory]
+    [InlineData("cancel")]
+    [InlineData("reverse")]
+    [InlineData("correct")]
+    public async Task Supplier_return_lifecycle_mutations_are_blocked_by_an_active_inventory_effect_without_history(string mutation)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipt = await fixture.RecordedReceiptAsync(10m, $"sr-effect-{mutation}");
+        var line = receipt.Lines.Single();
+        var created = await fixture.CreateReturnAsync(receipt.Id, line.Id, 4m, SupplierReturnCommercialOutcome.CreditExpected, $"sr-effect-{mutation}");
+        var submitted = await fixture.SubmitAsync(created, $"sr-effect-{mutation}-submit");
+        var awaitingInventory = await fixture.ApproveAsync(submitted, $"sr-effect-{mutation}-approve");
+        var service = fixture.SupplierReturnServiceWith(new ActiveSupplierReturnInventoryEffectReader());
+
+        SupplierReturnOperationResult<SupplierReturnRecord> result;
+        if (mutation == "cancel")
+        {
+            result = await service.CancelAsync(
+                fixture.Context(Requester, "tenant.procurement.supplier-return.cancel"),
+                awaitingInventory.Id,
+                awaitingInventory.Version,
+                "Attempt cancel after physical post",
+                $"sr-effect-{mutation}-action",
+                $"fp-sr-effect-{mutation}-action");
+        }
+        else if (mutation == "reverse")
+        {
+            result = await service.ReverseAsync(
+                fixture.Context(Requester, "tenant.procurement.supplier-return.reverse"),
+                awaitingInventory.Id,
+                awaitingInventory.Version,
+                "Attempt reverse after physical post",
+                $"sr-effect-{mutation}-action",
+                $"fp-sr-effect-{mutation}-action");
+        }
+        else
+        {
+            result = await service.CorrectAsync(
+                fixture.Context(Requester, "tenant.procurement.supplier-return.correct"),
+                awaitingInventory.Id,
+                awaitingInventory.Version,
+                new SupplierReturnCreateRequest(
+                    receipt.Id,
+                    DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                    SupplierReturnReasonCode.Damaged,
+                    SupplierReturnCondition.Unusable,
+                    SupplierReturnCommercialOutcome.CreditExpected,
+                    "Attempt correction after physical post",
+                    null,
+                    [new SupplierReturnLineCreateRequest(line.Id, 3m, null)],
+                    []),
+                $"sr-effect-{mutation}-action",
+                $"fp-sr-effect-{mutation}-action");
+        }
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("inventory_effect_exists", result.Code);
+
+        var current = await fixture.SupplierReturnService.GetAsync(fixture.Context(Requester, "tenant.procurement.supplier-return.view"), awaitingInventory.Id);
+        Assert.True(current.Succeeded, current.Code);
+        Assert.Equal(SupplierReturnStatus.AwaitingInventory, current.Value!.Status);
+        var history = await fixture.SupplierReturnService.ReadHistoryAsync(fixture.Context(Requester, "tenant.procurement.supplier-return.history"), awaitingInventory.Id);
+        Assert.True(history.Succeeded, history.Code);
+        Assert.DoesNotContain(history.Value!, item => item.Action is SupplierReturnHistoryAction.Cancelled or SupplierReturnHistoryAction.Reversed or SupplierReturnHistoryAction.CorrectionLinked);
+    }
+
+    [Fact]
+    public async Task Supplier_return_lifecycle_mutation_fails_closed_when_inventory_effect_verification_is_unavailable_or_throws()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var receipt = await fixture.RecordedReceiptAsync(10m, "sr-effect-unavailable");
+        var line = receipt.Lines.Single();
+        var created = await fixture.CreateReturnAsync(receipt.Id, line.Id, 4m, SupplierReturnCommercialOutcome.CreditExpected, "sr-effect-unavailable");
+        var submitted = await fixture.SubmitAsync(created, "sr-effect-unavailable-submit");
+        var awaitingInventory = await fixture.ApproveAsync(submitted, "sr-effect-unavailable-approve");
+
+        var unavailable = await fixture.SupplierReturnServiceWith(new UnavailableSupplierReturnInventoryEffectReader()).CancelAsync(
+            fixture.Context(Requester, "tenant.procurement.supplier-return.cancel"),
+            awaitingInventory.Id,
+            awaitingInventory.Version,
+            "Inventory verification unavailable",
+            "sr-effect-unavailable-cancel",
+            "fp-sr-effect-unavailable-cancel");
+        Assert.False(unavailable.Succeeded);
+        Assert.Equal("inventory_effect_verification_unavailable", unavailable.Code);
+
+        var throwing = await fixture.SupplierReturnServiceWith(new ThrowingSupplierReturnInventoryEffectReader()).ReverseAsync(
+            fixture.Context(Requester, "tenant.procurement.supplier-return.reverse"),
+            awaitingInventory.Id,
+            awaitingInventory.Version,
+            "Inventory verification failed",
+            "sr-effect-throwing-reverse",
+            "fp-sr-effect-throwing-reverse");
+        Assert.False(throwing.Succeeded);
+        Assert.Equal("inventory_effect_verification_unavailable", throwing.Code);
+
+        var current = await fixture.SupplierReturnService.GetAsync(fixture.Context(Requester, "tenant.procurement.supplier-return.view"), awaitingInventory.Id);
+        Assert.True(current.Succeeded, current.Code);
+        Assert.Equal(SupplierReturnStatus.AwaitingInventory, current.Value!.Status);
+    }
+
     [Fact]
     public async Task Correction_successor_replaces_original_consumption_without_double_counting()
     {
@@ -214,6 +315,12 @@ public sealed class SupplierReturnPersistenceTests
         public GoodsReceiptService GoodsReceiptService { get; }
         public SupplierReturnService SupplierReturnService { get; }
 
+        public SupplierReturnService SupplierReturnServiceWith(ISupplierReturnInventoryEffectReader effectReader) =>
+            new(
+                new PurchaseRequestAuthorizationService(),
+                new SupplierReturnPersistence(options),
+                effectReader);
+
         public static async Task<Fixture> CreateAsync()
         {
             var connection = new SqliteConnection("Data Source=:memory:");
@@ -237,7 +344,7 @@ public sealed class SupplierReturnPersistenceTests
                 new ProcurementWarehouseOption(TenantA, CompanyA, BranchA, WarehouseA, "WH-A", "Warehouse A", IsActive: true)
             ]);
             var goodsReceiptService = new GoodsReceiptService(authorization, new GoodsReceiptPersistence(options), warehouseProvider, new NoActiveGoodsReceiptInventoryEffectReader());
-            var supplierReturnService = new SupplierReturnService(authorization, new SupplierReturnPersistence(options));
+            var supplierReturnService = new SupplierReturnService(authorization, new SupplierReturnPersistence(options), new NoActiveSupplierReturnInventoryEffectReader());
             return new Fixture(connection, options, purchaseOrderService, goodsReceiptService, supplierReturnService);
         }
 

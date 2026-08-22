@@ -554,22 +554,27 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
         db.StockMovements.Add(sourceMovement); transfer.SetStatus(InventoryTransferStatus.Shipped, now); return new TransferMutationOutcome(transfer, line, sourceMovement, null, transfer.Quantity);
     }, cancellationToken);
 
-    public Task<InventoryTransferRecord?> ReceiveTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => MutateTransferAsync(context, command, "inventory.transfer.receive", InventoryTransferEventType.Received, async (db, transfer, line, now) =>
+    public Task<InventoryTransferRecord?> ReceiveTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default)
     {
-        if (transfer.Mode != InventoryTransferMode.InTransit || transfer.Status is not (InventoryTransferStatus.Shipped or InventoryTransferStatus.PartiallyReceived) || command.Quantity is not > 0 || string.IsNullOrWhiteSpace(command.Reference)) return null;
+        var canonicalCommand = command with { Reference = InventoryTransferReferencePolicy.Normalize(command.Reference) };
+        return MutateTransferAsync(context, canonicalCommand, "inventory.transfer.receive", InventoryTransferEventType.Received, async (db, transfer, line, now) =>
+    {
+        if (transfer.Mode != InventoryTransferMode.InTransit || transfer.Status is not (InventoryTransferStatus.Shipped or InventoryTransferStatus.PartiallyReceived) || canonicalCommand.Quantity is not > 0 || string.IsNullOrWhiteSpace(canonicalCommand.Reference)) return null;
         var destinationKey = new StockIdentityKey(transfer.CompanyId, transfer.BranchId, transfer.DestinationWarehouseId, transfer.ProductId, transfer.UnitOfMeasureId, transfer.TrackingIdentity ?? string.Empty);
         await AcquireConcurrencyAnchorsAsync(db, context.TenantId, [destinationKey], cancellationToken);
         var prior = await db.TransferEvents.Where(item => item.TransferId == transfer.Id).ToListAsync(cancellationToken);
-        if (prior.Any(item => item.EventType == InventoryTransferEventType.Received && string.Equals(item.Reference, command.Reference, StringComparison.Ordinal)))
+        if (prior.Any(item => item.EventType == InventoryTransferEventType.Received
+            && InventoryTransferReferencePolicy.Normalize(item.Reference) == canonicalCommand.Reference))
         {
             return new TransferMutationOutcome(transfer, line, null, null, 0m, false);
         }
 
         var shipped = prior.Where(item => item.EventType == InventoryTransferEventType.Shipped).Sum(item => item.Quantity); var received = prior.Where(item => item.EventType == InventoryTransferEventType.Received).Sum(item => item.Quantity); var lost = prior.Where(item => item.EventType == InventoryTransferEventType.ShortageResolved).Sum(item => item.Quantity);
-        if (command.Quantity.Value > shipped - received - lost) return null;
-        var destinationMovement = NewTransferMovement(context, transfer, InventoryMovementDirection.Inbound, InventoryMovementSourceType.WarehouseTransferReceipt, Guid.NewGuid(), Guid.NewGuid(), transfer.DestinationWarehouseId, transfer.DestinationWarehouseCode, transfer.DestinationWarehouseName, command.Quantity.Value, now, line.Id);
-        db.StockMovements.Add(destinationMovement); var newReceived = received + command.Quantity.Value; transfer.SetStatus(newReceived == transfer.Quantity ? InventoryTransferStatus.Completed : InventoryTransferStatus.PartiallyReceived, now); return new TransferMutationOutcome(transfer, line, null, destinationMovement, command.Quantity.Value);
+        if (canonicalCommand.Quantity.Value > shipped - received - lost) return null;
+        var destinationMovement = NewTransferMovement(context, transfer, InventoryMovementDirection.Inbound, InventoryMovementSourceType.WarehouseTransferReceipt, Guid.NewGuid(), Guid.NewGuid(), transfer.DestinationWarehouseId, transfer.DestinationWarehouseCode, transfer.DestinationWarehouseName, canonicalCommand.Quantity.Value, now, line.Id);
+        db.StockMovements.Add(destinationMovement); var newReceived = received + canonicalCommand.Quantity.Value; transfer.SetStatus(newReceived == transfer.Quantity ? InventoryTransferStatus.Completed : InventoryTransferStatus.PartiallyReceived, now); return new TransferMutationOutcome(transfer, line, null, destinationMovement, canonicalCommand.Quantity.Value);
     }, cancellationToken);
+    }
 
     public Task<InventoryTransferRecord?> ResolveTransferShortageAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => MutateTransferAsync(context, command, "inventory.transfer.shortage-resolve", InventoryTransferEventType.ShortageResolved, async (db, transfer, line, now) =>
     {
@@ -621,6 +626,16 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
     public async Task<bool> HasActiveGoodsReceiptEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default)
     {
         await using var db = new InventoryDbContext(options, tenantContext); return await db.StockMovements.AsNoTracking().AnyAsync(item => item.GoodsReceiptId == goodsReceiptId && item.Direction == InventoryMovementDirection.Inbound && item.SourceType == InventoryMovementSourceType.GoodsReceipt, cancellationToken);
+    }
+
+    public async Task<bool> HasActiveSupplierReturnEffectAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default)
+    {
+        await using var db = new InventoryDbContext(options, tenantContext);
+        return await db.StockMovements.AsNoTracking().AnyAsync(
+            item => item.SupplierReturnId == supplierReturnId
+                && item.Direction == InventoryMovementDirection.Outbound
+                && item.SourceType == InventoryMovementSourceType.SupplierReturn,
+            cancellationToken);
     }
 
     private static InventoryGoodsReceiptPostingRecord ToGoodsReceiptPosting(InventoryStockMovementEntity movement, bool wasExisting) =>

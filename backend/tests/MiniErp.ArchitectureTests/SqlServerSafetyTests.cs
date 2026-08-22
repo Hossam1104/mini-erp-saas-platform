@@ -581,6 +581,93 @@ public sealed class SqlServerSafetyTests
     }
 
     [Fact]
+    public async Task Inventory_sql_server_transfer_receipt_reference_case_variants_converge_without_second_movement()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = new DbContextOptionsBuilder().UseSqlServer(connectionString, sql => sql.CommandTimeout(15)).Options;
+        var tenantId = _fixture.TenantA.TenantId;
+        var companyId = Guid.NewGuid();
+        var sourceWarehouseId = Guid.NewGuid();
+        var destinationWarehouseId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        var source = new InventoryWarehouseOption(tenantId.Value, companyId, null, sourceWarehouseId, "SQL-SOURCE", "SQL source");
+        var destination = new InventoryWarehouseOption(tenantId.Value, companyId, null, destinationWarehouseId, "SQL-DEST", "SQL destination");
+        var product = new InventoryProductReference(tenantId.Value, productId, "SQL-RECEIPT", "SQL receipt product", unitId, "EA", true, true, false);
+        var context = InventoryContext(_fixture.TenantA, "tenant.inventory.transfer.receive");
+
+        await using (var seedDb = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            seedDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId,
+                Guid.NewGuid(),
+                companyId,
+                null,
+                sourceWarehouseId,
+                source.Code,
+                source.Name,
+                productId,
+                product.Sku,
+                product.Name,
+                unitId,
+                product.BaseUnitOfMeasureCode,
+                InventoryMovementDirection.Inbound,
+                10m,
+                1m,
+                "SAR",
+                null,
+                InventoryMovementSourceType.OpeningBalance,
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                new DateOnly(2026, 8, 22),
+                Guid.NewGuid(),
+                "sql-transfer-receipt-seed",
+                DateTimeOffset.UtcNow));
+            await seedDb.SaveChangesAsync();
+        }
+
+        var persistence = new InventoryPersistence(options);
+        var created = Assert.IsType<InventoryTransferRecord>(await persistence.CreateTransferAsync(
+            context,
+            new InventoryTransferCreateCommand(
+                Guid.NewGuid(),
+                new InventoryScope(tenantId.Value, companyId, null, sourceWarehouseId),
+                source,
+                destination,
+                productId,
+                unitId,
+                product,
+                10m,
+                InventoryTransferMode.InTransit,
+                null,
+                "SQL case-variant receipt",
+                context.ActorId,
+                DateTimeOffset.UtcNow,
+                "sql-transfer-create",
+                "sql-transfer-create-key",
+                "sql-transfer-create-fingerprint")));
+        var shipped = Assert.IsType<InventoryTransferRecord>(await persistence.ShipTransferAsync(
+            context,
+            new InventoryTransferActionCommand(created.Id, created.Version, null, null, "ship", context.ActorId, DateTimeOffset.UtcNow, "sql-transfer-ship", "sql-transfer-ship-key", "sql-transfer-ship-fingerprint")));
+        var firstReceipt = Assert.IsType<InventoryTransferRecord>(await persistence.ReceiveTransferAsync(
+            context,
+            new InventoryTransferActionCommand(shipped.Id, shipped.Version, 4m, "RECEIVE-001", "receive", context.ActorId, DateTimeOffset.UtcNow, "sql-transfer-receive-a", "sql-transfer-receive-a-key", "sql-transfer-receive-a-fingerprint")));
+        var duplicateReceipt = Assert.IsType<InventoryTransferRecord>(await persistence.ReceiveTransferAsync(
+            context,
+            new InventoryTransferActionCommand(firstReceipt.Id, firstReceipt.Version, 4m, "receive-001", "duplicate receive", context.ActorId, DateTimeOffset.UtcNow, "sql-transfer-receive-b", "sql-transfer-receive-b-key", "sql-transfer-receive-b-fingerprint")));
+
+        Assert.Equal(4m, duplicateReceipt.ReceivedQuantity);
+        Assert.Equal(6m, duplicateReceipt.InTransitQuantity);
+        var movements = await persistence.ListMovementsAsync(context, null);
+        Assert.Single(movements, item => item.SourceType == InventoryMovementSourceType.WarehouseTransferReceipt);
+        var history = await persistence.ReadTransferHistoryAsync(context, created.Id);
+        Assert.Equal("RECEIVE-001", Assert.Single(history, item => item.EventType == InventoryTransferEventType.Received).Reference);
+        var audit = await persistence.ReadAuditAsync(context, "transfer", created.Id);
+        Assert.Contains(audit, item => item.Decision == "Duplicate" && item.AfterSummary == "duplicate-receipt-reference");
+    }
+
+    [Fact]
     public async Task Inventory_sql_server_contention_is_classified_as_conflict_without_reservation_effect()
     {
         var connectionString = await GetConnectionStringAsync();

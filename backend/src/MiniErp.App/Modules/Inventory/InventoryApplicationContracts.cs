@@ -383,6 +383,57 @@ public sealed class NoInventorySupplierReturnSourceProvider : IInventorySupplier
         Task.FromResult<InventorySupplierReturnSourceRecord?>(null);
 }
 
+public enum InventorySupplierReturnStateLookupOutcome
+{
+    Found = 1,
+    NotFound = 2,
+    Unavailable = 3
+}
+
+public sealed record InventorySupplierReturnStateLookup(
+    InventorySupplierReturnStateLookupOutcome Outcome,
+    SupplierReturnRecord? Record)
+{
+    public static InventorySupplierReturnStateLookup Found(SupplierReturnRecord record) => new(InventorySupplierReturnStateLookupOutcome.Found, record);
+    public static readonly InventorySupplierReturnStateLookup NotFound = new(InventorySupplierReturnStateLookupOutcome.NotFound, null);
+    public static readonly InventorySupplierReturnStateLookup Unavailable = new(InventorySupplierReturnStateLookupOutcome.Unavailable, null);
+}
+
+public interface IInventorySupplierReturnStateProvider
+{
+    Task<InventorySupplierReturnStateLookup> FindAsync(
+        InventoryRequestContext context,
+        Guid supplierReturnId,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class NoInventorySupplierReturnStateProvider : IInventorySupplierReturnStateProvider
+{
+    public Task<InventorySupplierReturnStateLookup> FindAsync(InventoryRequestContext context, Guid supplierReturnId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(InventorySupplierReturnStateLookup.Unavailable);
+}
+
+public sealed class ProcurementInventorySupplierReturnStateProvider(ISupplierReturnPersistence supplierReturns) : IInventorySupplierReturnStateProvider
+{
+    public async Task<InventorySupplierReturnStateLookup> FindAsync(
+        InventoryRequestContext context,
+        Guid supplierReturnId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var record = await supplierReturns.FindAsync(context.TenantContext, supplierReturnId, cancellationToken);
+            return record is null
+                ? InventorySupplierReturnStateLookup.NotFound
+                : InventorySupplierReturnStateLookup.Found(record);
+        }
+        catch
+        {
+            return InventorySupplierReturnStateLookup.Unavailable;
+        }
+    }
+}
+
 public sealed class ProcurementInventorySupplierReturnSourceProvider(
     ISupplierReturnPersistence supplierReturns,
     IGoodsReceiptPersistence goodsReceipts,
@@ -469,7 +520,9 @@ public sealed class NoInventorySupplierReturnHandoffWriter : IInventorySupplierR
         Task.FromResult(InventorySupplierReturnHandoffResult.Pending("handoff_unavailable"));
 }
 
-public sealed class ProcurementInventorySupplierReturnHandoffWriter(ISupplierReturnPersistence supplierReturns) : IInventorySupplierReturnHandoffWriter
+public sealed class ProcurementInventorySupplierReturnHandoffWriter(
+    ISupplierReturnPersistence supplierReturns,
+    ISupplierReturnPhysicalEffectGate? physicalEffectGate = null) : IInventorySupplierReturnHandoffWriter
 {
     public async Task<InventorySupplierReturnHandoffResult> RecordAsync(
         InventoryRequestContext context,
@@ -482,45 +535,53 @@ public sealed class ProcurementInventorySupplierReturnHandoffWriter(ISupplierRet
             return InventorySupplierReturnHandoffResult.Pending("handoff_reference_invalid");
         }
 
-        var evidenceId = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
-        var evidence = new SupplierReturnAuditEvidence(
-            evidenceId,
-            source.SupplierReturn.Id,
-            now,
-            "procurement.supplier-return.inventory-handoff.record",
-            context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"),
-            context.TenantId.Value,
-            context.ActorId,
-            context.SessionId,
-            context.AuthorizationPath.ToString(),
-            "Allowed",
-            "Inventory physical posting",
-            source.SupplierReturn.Status,
-            SupplierReturnStatus.AwaitingFinance,
-            source.SupplierReturn.Scope.CompanyId,
-            source.SupplierReturn.Scope.BranchId,
-            source.SupplierReturn.Status.ToString(),
-            SupplierReturnStatus.AwaitingFinance.ToString(),
-            null,
-            null);
-        var command = new SupplierReturnActionCommand(
-            source.SupplierReturn.Id,
-            source.SupplierReturn.Version,
-            SupplierReturnMutationAction.RecordInventoryHandoff,
-            context.ActorId,
-            "Inventory physical posting",
-            now,
-            null,
-            handoffReference,
-            null,
-            null,
-            null,
-            null);
-        var result = await supplierReturns.ActionAsync(context.TenantContext, command, evidence, cancellationToken);
-        return result.Succeeded && result.Value is not null
-            ? InventorySupplierReturnHandoffResult.Recorded(evidenceId)
-            : InventorySupplierReturnHandoffResult.Pending(result.Code);
+        try
+        {
+            using var lease = await (physicalEffectGate ?? new SupplierReturnPhysicalEffectGate()).AcquireAsync(source.SupplierReturn.Id, cancellationToken);
+            var evidenceId = Guid.NewGuid();
+            var now = DateTimeOffset.UtcNow;
+            var evidence = new SupplierReturnAuditEvidence(
+                evidenceId,
+                source.SupplierReturn.Id,
+                now,
+                "procurement.supplier-return.inventory-handoff.record",
+                context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"),
+                context.TenantId.Value,
+                context.ActorId,
+                context.SessionId,
+                context.AuthorizationPath.ToString(),
+                "Allowed",
+                "Inventory physical posting",
+                source.SupplierReturn.Status,
+                SupplierReturnStatus.AwaitingFinance,
+                source.SupplierReturn.Scope.CompanyId,
+                source.SupplierReturn.Scope.BranchId,
+                source.SupplierReturn.Status.ToString(),
+                SupplierReturnStatus.AwaitingFinance.ToString(),
+                null,
+                null);
+            var command = new SupplierReturnActionCommand(
+                source.SupplierReturn.Id,
+                source.SupplierReturn.Version,
+                SupplierReturnMutationAction.RecordInventoryHandoff,
+                context.ActorId,
+                "Inventory physical posting",
+                now,
+                null,
+                handoffReference,
+                null,
+                null,
+                null,
+                null);
+            var result = await supplierReturns.ActionAsync(context.TenantContext, command, evidence, cancellationToken);
+            return result.Succeeded && result.Value is not null
+                ? InventorySupplierReturnHandoffResult.Recorded(evidenceId)
+                : InventorySupplierReturnHandoffResult.Pending(result.Code);
+        }
+        catch
+        {
+            return InventorySupplierReturnHandoffResult.Pending("handoff_unavailable");
+        }
     }
 }
 
@@ -698,6 +759,7 @@ public interface IInventoryPersistence
     Task<InventoryTransferRecord?> CancelTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<InventoryTransferEventRecord>> ReadTransferHistoryAsync(InventoryRequestContext context, Guid transferId, CancellationToken cancellationToken = default);
     Task<bool> HasActiveGoodsReceiptEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default);
+    Task<bool> HasActiveSupplierReturnEffectAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<InventoryAuditRecord>> ReadAuditAsync(InventoryRequestContext context, string resourceType, Guid resourceId, CancellationToken cancellationToken = default);
 }
 
@@ -714,6 +776,23 @@ public sealed class InventoryPersistenceGoodsReceiptEffectReader(IInventoryPersi
         catch
         {
             return GoodsReceiptInventoryEffectVerification.Unavailable;
+        }
+    }
+}
+
+public sealed class InventoryPersistenceSupplierReturnEffectReader(IInventoryPersistence persistence) : ISupplierReturnInventoryEffectReader
+{
+    public async Task<SupplierReturnInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await persistence.HasActiveSupplierReturnEffectAsync(tenantContext, supplierReturnId, cancellationToken)
+                ? SupplierReturnInventoryEffectVerification.ActiveEffectExists
+                : SupplierReturnInventoryEffectVerification.NoActiveEffect;
+        }
+        catch
+        {
+            return SupplierReturnInventoryEffectVerification.Unavailable;
         }
     }
 }
@@ -750,6 +829,7 @@ public sealed class UnavailableInventoryPersistence : IInventoryPersistence
     public Task<InventoryTransferRecord?> CancelTransferAsync(InventoryRequestContext context, InventoryTransferActionCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryTransferRecord?>();
     public Task<IReadOnlyList<InventoryTransferEventRecord>> ReadTransferHistoryAsync(InventoryRequestContext context, Guid transferId, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryTransferEventRecord>>();
     public Task<bool> HasActiveGoodsReceiptEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default) => Unavailable<bool>();
+    public Task<bool> HasActiveSupplierReturnEffectAsync(TenantContext tenantContext, Guid supplierReturnId, CancellationToken cancellationToken = default) => Unavailable<bool>();
     public Task<IReadOnlyList<InventoryAuditRecord>> ReadAuditAsync(InventoryRequestContext context, string resourceType, Guid resourceId, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryAuditRecord>>();
 }
 
