@@ -7,10 +7,11 @@ branch `feat/MESP-129-physical-stock-movements`, based exactly on synchronized
 main `2cf6b315c69c87f26ca4bbfc774e3e0eb451c5e3`. The code-complete
 implementation commit is `01ea8f7369d173c15cf55a723d6bd95006208282`; Draft PR
 #73 is open, Draft, and unmerged. Jira remains read-only; no Jira writes were
-performed. Sol remediation started from the exact synchronized local/remote
-branch head `d8d852f4e93602ce66583157163e652e57795f2e`; the remediation source
-commit `c2dad5b` is pushed; the final handoff/tracker tip is recorded in the
-completion report.
+performed. The final Sol blocker remediation started from the exact
+synchronized local/remote branch head
+`380e104292523fe7930493263ed043d6d354d685`; the verified remediation source
+commit `cf40f97c70603bd90996dc4567e2a3215f317c7b` is pushed; the final
+handoff/tracker tip is recorded in the completion report.
 
 The implementation consumes the authoritative Procurement Goods Receipt source
 through an application/provider contract. Only accepted quantity creates one
@@ -52,7 +53,8 @@ Parties, Procurement, and Inventory migrations in order to one disposable
 LocalDB catalog with separate history tables, and checks the shared
 Tenant-owned table/index topology plus expected Inventory tables.
 
-The six Sol acceptance remediations are complete: tracked Procurement sources
+The six prior Sol acceptance remediations plus the final P1/P2 blocker delta are
+complete: tracked Procurement sources
 fail closed without tracking identity fabrication; Goods Receipt cancellation
 has active/no-effect/unavailable verification and preserves state on
 unavailability; Supplier Return replay probes durable Inventory before source
@@ -62,11 +64,13 @@ mutations acquire the MESP-128 destination anchor; and the migration-order test
 uses one real disposable catalog without `EnsureCreated`. REST/OpenAPI/
 Foundation metadata, antiforgery, ETags/If- นmatch, idempotency, audit/history,
 and EN/AR RTL Angular workflow support remain included. Validation is Release
-build 0 warnings/0 errors; focused Inventory 26/26; focused Goods Receipt /
-Supplier Return 19/19; SQL safety 28/28; canonical backend 884/884 passed, 0
+build 0 warnings/0 errors; focused Inventory 30/30; focused Goods Receipt /
+Supplier Return 23/23; SQL safety 29/29; canonical backend 893/893 passed, 0
 skipped with disposable LocalDB; Angular 241/241 across 32 spec files;
-production bundle 499.97 kB initial with Inventory lazy 33.12 kB; Chromium
-26/26; both npm audits 0 vulnerabilities; and `git diff --check` clean.
+production bundle 499.97 kB initial with Inventory lazy 33.12 kB and Supplier
+Quotation lazy 91.94 kB; Chromium 26/26; both npm audits 0 vulnerabilities;
+official runtime API 5300/frontend 4300 health, root, and main.js checks
+returned 200; and `git diff --check` is clean.
 Protected `frontend/assets` remains untouched.
 
 The production headline remains approximately 47% overall and 41%

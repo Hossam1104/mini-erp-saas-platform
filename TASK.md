@@ -13,21 +13,23 @@ Exact main base SHA: `2cf6b315c69c87f26ca4bbfc774e3e0eb451c5e3`
 Code-complete implementation SHA: `01ea8f7369d173c15cf55a723d6bd95006208282`
 
 Exact remediation starting SHA (local and `origin`):
-`d8d852f4e93602ce66583157163e652e57795f2e`
+`380e104292523fe7930493263ed043d6d354d685`
 
-Remediation source commit: `c2dad5b` (`c2dad5bd536169c473abc893341984a7b1b1397d`)
-is pushed to the focused branch. The final handoff/tracker commit is the final
-branch tip reported in the completion report after this document is pushed.
+Remediation source commit: `cf40f97c70603bd90996dc4567e2a3215f317c7b` is pushed
+to the focused branch. This is the final verified source SHA before the
+documentation/tracker handoff commit; the final branch tip is reported in the
+completion report after this document is pushed.
 
 Draft PR: `#73` - https://github.com/Hossam1104/mini-erp-saas-platform/pull/73
 
 Jira: MESP-129 is IN PROGRESS / ACTIVATED. Jira writes are prohibited in this
 handoff; Sol owns the acceptance decision.
 
-Delivery state: the six Sol acceptance remediations are implemented and
-validated from the exact starting SHA above. The branch and PR must remain
-open, Draft, and unmerged. Do not merge, rebase, force-push, create a second
-PR, or start MESP-130/MESP-131 or downstream implementation.
+Delivery state: the six prior Sol acceptance remediations plus the final P1/P2
+blocker remediation are implemented and validated from the exact starting SHA
+above. The branch and PR must remain open, Draft, and unmerged. Do not merge,
+rebase, force-push, create a second PR, or start MESP-130/MESP-131 or downstream
+implementation.
 
 ## Exact bounded scope delivered
 
@@ -47,6 +49,38 @@ implemented only the MESP-129 physical Inventory capability:
   audit/history, REST/OpenAPI metadata, and bilingual Angular workflow; and
 - a reusable but currently unavailable authoritative Sales Customer Return
   Inventory integration boundary.
+
+## Final Sol blocker remediation applied
+
+The final bounded source commit `cf40f97c70603bd90996dc4567e2a3215f317c7b`
+addresses the two remaining blocker families without redesigning MESP-129:
+
+- Supplier Return lifecycle mutations (`Cancel`, `Reverse`, and `Correct`) now
+  use a narrow application/provider physical-effect reader. An active
+  Supplier Return outbound movement blocks the commercial mutation with
+  `inventory_effect_exists`; definitive absence preserves the existing
+  eligibility rules; unavailable, unknown, or throwing verification fails
+  closed with `inventory_effect_verification_unavailable`, without status or
+  history mutation. Procurement never queries Inventory tables directly.
+- A singleton per-Supplier-Return physical-effect gate serializes the Inventory
+  physical post/handoff write with the Procurement lifecycle check. The
+  Inventory-backed reader treats the existing Supplier Return outbound movement
+  as active because no approved physical reversal exists.
+- Supplier Return replay now resolves the authoritative current Procurement
+  state after an exact durable physical replay. A failed handoff remains
+  `AwaitingInventory` and retries the handoff only; successful handoff state
+  replays truthfully; `Cancelled`, `Reversed`, and `CorrectionLinked` state
+  returns a deterministic reconciliation conflict and never fabricates
+  `HandoffRecorded = true`.
+- Warehouse Transfer receipt references are canonicalized before both the
+  duplicate lookup and event persistence using the SQL uniqueness-compatible
+  policy (trim, bounded length, invariant uppercase). The database unique index
+  remains in place, and case variants converge to one receipt movement with
+  Duplicate audit evidence.
+- Executable regressions cover the three blocked Supplier Return lifecycle
+  actions, unavailable/throwing fail-closed verification, transient handoff
+  retry without a second movement, exact replay, defensive terminal-state
+  replay, and actual LocalDB/SQL Server case-variant receipt behavior.
 
 ## Sol acceptance remediations applied
 
@@ -243,29 +277,33 @@ changed.
 
 - `dotnet build backend/MiniErp.sln -c Release --no-restore`: 0 warnings / 0
   errors.
-- Focused Inventory architecture/persistence tests: 26/26 passed, including
-  tracked-source, durable replay, duplicate receipt, and destination-anchor
-  regressions.
-- Focused Goods Receipt/Supplier Return cancellation and handoff tests: 19/19
-  passed.
-- SQL Server LocalDB safety tests: 28/28 passed using one disposable catalog.
-- Canonical `scripts/Test-MiniErpBackend.ps1 -NoBuild:$false`: 884/884 passed,
+- Focused Inventory architecture/persistence tests: 30/30 passed, including
+  tracked-source, durable replay, duplicate receipt, destination-anchor, and
+  terminal Supplier Return replay regressions.
+- Focused Goods Receipt/Supplier Return cancellation and handoff tests: 23/23
+  passed, including active-effect and fail-closed lifecycle protection.
+- SQL Server LocalDB safety tests: 29/29 passed using one disposable catalog,
+  including the actual `RECEIVE-001` / `receive-001` case-variant regression.
+- Canonical `scripts/Test-MiniErpBackend.ps1 -NoBuild:$false`: 893/893 passed,
   0 skipped, with disposable LocalDB safety execution.
 - Angular unit tests: 241/241 across 32 spec files.
-- Angular production build: 499.97 kB initial; Inventory lazy chunk 33.12 kB.
+- Angular production build: 499.97 kB initial; Inventory lazy chunk 33.12 kB;
+  Supplier Quotation lazy chunk 91.94 kB.
 - Playwright Chromium: 26/26.
 - `npm audit --omit=dev` and full `npm audit`: 0 vulnerabilities.
 - `git diff --check`: clean.
 - `frontend/assets`: unchanged.
 - Official Development launcher restart and authenticated HTTP health/frontend
-  verification: required before handoff; the final URLs and PIDs are recorded
-  in the completion report, and both processes remain running.
+  verification: API `http://localhost:5300` (PID 11272) and Angular
+  `http://localhost:4300` (PID 18060); `/health`, `/`, and `/main.js` returned
+  HTTP 200 and both processes remain running.
 
 ## Exact Sol review checklist
 
 Review the code-complete commit
-`01ea8f7369d173c15cf55a723d6bd95006208282`, the six-remediation source commit
-recorded below, and Draft PR #73, especially:
+`01ea8f7369d173c15cf55a723d6bd95006208282`, the final remediation source
+commit `cf40f97c70603bd90996dc4567e2a3215f317c7b`, and Draft PR #73,
+especially:
 
 1. Procurement source/provider contracts and Goods Receipt cancellation seam.
 2. Supplier Return `AwaitingInventory` eligibility, lineage, reservation guard,
@@ -280,17 +318,29 @@ recorded below, and Draft PR #73, especially:
    disposable LocalDB migration-order regression.
 7. REST/OpenAPI metadata, anti-forgery, If-Match/ETag, permissions, EN/AR RTL
    UI behavior, and the exact validation counts above.
-8. The remediation-specific fail-closed results, replay-before-source order,
-   duplicate receipt convergence, destination anchor acquisition, and truthful
-   five-context migration-order SQL proof.
+8. The prior remediation-specific fail-closed results, replay-before-source
+   order, duplicate receipt convergence, destination anchor acquisition, and
+   truthful five-context migration-order SQL proof.
+9. Supplier Return physical-effect verification before `Cancel`, `Reverse`,
+   and `Correct`, the shared physical-effect gate, and no-history mutation on
+   active/unavailable verification.
+10. Authoritative current-state replay reconciliation, handoff-only retry,
+    exact successful replay, and deterministic conflict for
+    `Cancelled`/`Reversed`/`CorrectionLinked` Procurement state.
+11. Canonical transfer receipt reference use in request fingerprinting,
+    duplicate lookup, event persistence, durable unique-index retention, and
+    the actual LocalDB/SQL Server case-variant proof.
 
 ## Required next action
 
-Sol should perform delta acceptance of the exact final branch SHA recorded below
-against the six remediation findings. Keep PR #73 Draft and unmerged. Do not
-write Jira and do not start MESP-130, MESP-131, Sales commercial returns,
-Finance, or downstream work.
+Sol should perform final delta acceptance of the exact final branch SHA recorded
+below against the P1/P2 blocker model and all prior remediation findings. Keep
+PR #73 Draft and unmerged. Do not write Jira and do not start MESP-130,
+MESP-131, Sales commercial returns, Finance, or downstream work.
 
-Remediation source commit: `c2dad5b` (pushed).
+Starting SHA: `380e104292523fe7930493263ed043d6d354d685`.
+Remediation source/final verified source SHA:
+`cf40f97c70603bd90996dc4567e2a3215f317c7b` (pushed).
 Final handoff/tracker commit: final branch tip reported in the completion
-report; PR #73 remains Draft and unmerged.
+report after this TASK/statistics/state update; PR #73 remains Draft and
+unmerged.
