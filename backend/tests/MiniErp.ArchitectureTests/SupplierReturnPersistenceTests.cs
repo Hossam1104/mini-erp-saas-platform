@@ -236,7 +236,7 @@ public sealed class SupplierReturnPersistenceTests
             [
                 new ProcurementWarehouseOption(TenantA, CompanyA, BranchA, WarehouseA, "WH-A", "Warehouse A", IsActive: true)
             ]);
-            var goodsReceiptService = new GoodsReceiptService(authorization, new GoodsReceiptPersistence(options), warehouseProvider);
+            var goodsReceiptService = new GoodsReceiptService(authorization, new GoodsReceiptPersistence(options), warehouseProvider, new NoActiveGoodsReceiptInventoryEffectReader());
             var supplierReturnService = new SupplierReturnService(authorization, new SupplierReturnPersistence(options));
             return new Fixture(connection, options, purchaseOrderService, goodsReceiptService, supplierReturnService);
         }

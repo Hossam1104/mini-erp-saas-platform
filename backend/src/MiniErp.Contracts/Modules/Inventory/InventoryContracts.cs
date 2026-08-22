@@ -364,7 +364,10 @@ public sealed record InventorySupplierReturnPostingRecord(
     InventoryValuationStatus ValuationStatus,
     DateTimeOffset PostedAt,
     bool WasExisting = false,
-    bool HandoffRecorded = false);
+    bool HandoffRecorded = false,
+    Guid? CompanyId = null,
+    Guid? BranchId = null,
+    Guid? WarehouseId = null);
 
 public sealed record InventoryTransferEventRecord(
     Guid Id,

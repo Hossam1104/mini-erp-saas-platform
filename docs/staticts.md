@@ -2,19 +2,22 @@
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-22 13:20 +03:00
+**Last Updated:** 2026-08-22 14:45 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
 
-## Current authoritative fast-track snapshot - 22 August 2026 (MESP-129 implementation complete; Sol acceptance handoff)
+## Current authoritative fast-track snapshot - 22 August 2026 (MESP-129 Sol acceptance remediation complete; delta handoff)
 
 This snapshot records the bounded MESP-129 physical Inventory implementation on
 branch `feat/MESP-129-physical-stock-movements`, created from the exact
 synchronized main base `2cf6b315c69c87f26ca4bbfc774e3e0eb451c5e3`. The
 code-complete implementation commit is
 `01ea8f7369d173c15cf55a723d6bd95006208282`; Draft PR #73 is open and remains
-unmerged. This is a genuine bounded physical-stock capability increase, but the
+unmerged. The Sol remediation started from the exact synchronized local/remote
+branch SHA `d8d852f4e93602ce66583157163e652e57795f2e`. This bounded delta
+strengthens fail-closed physical posting, replay, cancellation, receipt
+convergence, destination concurrency, and cross-module migration safety; the
 production headline remains conservatively unchanged until Sol acceptance and
 merge; no Jira completion credit is inferred from implementation or test
 activity.
@@ -34,19 +37,29 @@ remain downstream. Customer Return is only an unavailable authoritative Sales
 integration seam. No MESP-130, MESP-131, commercial Sales, Finance, external,
 statutory, or Wafra-specific behavior was added.
 
+Tracked Procurement physical sources without authoritative tracking identity
+now fail closed without a fabricated bucket; Goods Receipt cancellation has
+active/no-effect/unavailable verification with no mutation on unavailable;
+Supplier Return replay probes durable Inventory before Procurement eligibility;
+duplicate transfer receipt references converge with audit evidence and no extra
+movement; receipt acquires the MESP-128 destination anchor; and SQL safety
+migrates one disposable catalog through all five committed module contexts in
+order without `EnsureCreated`.
+
 | Current control | Verified position |
 |---|---|
 | MESP-129 code | Code-complete implementation commit `01ea8f7369d173c15cf55a723d6bd95006208282` on `feat/MESP-129-physical-stock-movements`; Draft PR #73 remains open/Draft/unmerged. |
 | Production capability | ~47% overall; Procurement/P2P conservatively ~41%. Headline intentionally unchanged pending Sol acceptance and merge. |
-| Validation | Release build 0 warnings/0 errors; focused Inventory 22/22; SQL safety 27/27; canonical backend 877/877 passed, 0 skipped with disposable LocalDB; Angular 241/241 across 32 spec files; production build 499.97 kB initial / 33.12 kB Inventory lazy; Chromium 26/26; both npm audits 0 vulnerabilities; `git diff --check` clean. |
+| Validation | Release build 0 warnings/0 errors; focused Inventory 26/26; focused Goods Receipt/Supplier Return 19/19; SQL safety 28/28; canonical backend 884/884 passed, 0 skipped with disposable LocalDB; Angular 241/241 across 32 spec files; production build 499.97 kB initial / 33.12 kB Inventory lazy; Chromium 26/26; both npm audits 0 vulnerabilities; `git diff --check` clean. |
 | Delivery boundaries | Formal Inventory migration `20260822092802_MESP129PhysicalStockMovements`; migration-order regression uses disposable LocalDB; `frontend/assets` untouched; no Jira writes; no MESP-130/MESP-131 or downstream commercial/Finance implementation. |
-| Next exact session | Sol acceptance of the exact MESP-129 source commit, Draft PR #73, source/provider boundaries, transfer invariants, valuation boundary, migration ownership, and validation evidence. Do not merge or start downstream implementation. |
+| Next exact session | Sol delta acceptance of the final remediation branch SHA, Draft PR #73, fail-closed source/provider boundaries, replay/receipt invariants, destination anchor, five-context migration ownership, and validation evidence. Do not merge or start downstream implementation. |
 
 ## Progress history - 22 August 2026
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
 | 2026-08-22 | MESP-129 bounded physical Inventory implementation: accepted Goods Receipt posting, Supplier Return physical effect, direct and InTransit Warehouse Transfers, partial receipt, shortage/loss, overage rejection, safe cancellation, customer-return seam, pending valuation, audit/history, idempotency, concurrency, formal migration, SQL order regression, and bilingual workflow. | ~47% | ~41% | Headline unchanged pending acceptance/merge. Code-complete commit `01ea8f7369d173c15cf55a723d6bd95006208282`; Draft PR #73 open/Draft/unmerged; backend 877/877; focused Inventory 22/22; SQL 27/27; Angular 241/241; bundle 499.97 kB initial / 33.12 kB Inventory lazy; Chromium 26/26; audits clean; no Jira writes. |
+| 2026-08-22 | MESP-129 Sol acceptance remediation: tracked-source fail-closed posting, truthful cancellation verification, replay-before-source Supplier Return convergence, duplicate receipt convergence/audit, destination anchor acquisition, and one-catalog five-context migration-order safety proof. | ~47% | ~41% | Correctness remediation; headlines unchanged pending acceptance/merge. Starting SHA `d8d852f4e93602ce66583157163e652e57795f2e`; backend 884/884; focused Inventory 26/26; focused Goods Receipt/Supplier Return 19/19; SQL 28/28; Angular 241/241; bundle 499.97 kB initial / 33.12 kB Inventory lazy; Chromium 26/26; audits clean; no Jira writes. |
 
 ## Current authoritative fast-track snapshot - 22 August 2026 (MESP-128 Opus stock-integrity delta remediation complete; delta-only review handoff)
 

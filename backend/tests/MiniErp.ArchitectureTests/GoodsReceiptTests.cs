@@ -303,6 +303,71 @@ public sealed class GoodsReceiptTests
     }
 
     [Fact]
+    public async Task Goods_receipt_cancellation_fails_closed_when_inventory_effect_verification_is_unavailable_or_throws()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var confirmed = await fixture.ConfirmedOrderAsync("gr-inventory-verification");
+        var created = await fixture.GoodsReceiptService.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.goods-receipt.create"),
+            new GoodsReceiptCreateRequest(confirmed.Id, WarehouseA, DateOnly.FromDateTime(DateTime.UtcNow.Date), null, null, [new GoodsReceiptLineCreateRequest(confirmed.Lines.Single().Id, 2m, 2m, 0m, null, null, null)]),
+            "gr-inventory-verification-create",
+            "fp-gr-inventory-verification-create");
+        Assert.True(created.Succeeded, created.Code);
+
+        var unavailableService = fixture.GoodsReceiptServiceWith(new UnavailableGoodsReceiptInventoryEffectReader());
+        var unavailable = await unavailableService.CancelAsync(
+            fixture.Context(Requester, "tenant.procurement.goods-receipt.cancel"),
+            created.Value!.Id,
+            created.Value.Version,
+            "Inventory verification unavailable",
+            "gr-inventory-verification-unavailable",
+            "fp-gr-inventory-verification-unavailable");
+        Assert.False(unavailable.Succeeded);
+        Assert.Equal("inventory_effect_verification_unavailable", unavailable.Code);
+
+        var throwingService = fixture.GoodsReceiptServiceWith(new ThrowingGoodsReceiptInventoryEffectReader());
+        var throwing = await throwingService.CancelAsync(
+            fixture.Context(Requester, "tenant.procurement.goods-receipt.cancel"),
+            created.Value.Id,
+            created.Value.Version,
+            "Inventory verification provider failed",
+            "gr-inventory-verification-throwing",
+            "fp-gr-inventory-verification-throwing");
+        Assert.False(throwing.Succeeded);
+        Assert.Equal("inventory_effect_verification_unavailable", throwing.Code);
+
+        var current = await fixture.GoodsReceiptService.GetAsync(fixture.Context(Requester, "tenant.procurement.goods-receipt.view"), created.Value.Id);
+        Assert.True(current.Succeeded, current.Code);
+        Assert.Equal(GoodsReceiptStatus.Recorded, current.Value!.Status);
+        var history = await fixture.GoodsReceiptService.ReadHistoryAsync(fixture.Context(Requester, "tenant.procurement.goods-receipt.history"), created.Value.Id);
+        Assert.True(history.Succeeded, history.Code);
+        Assert.DoesNotContain(history.Value!, item => item.Action == GoodsReceiptHistoryAction.Cancelled);
+    }
+
+    [Fact]
+    public async Task Goods_receipt_cancellation_blocks_when_inventory_proves_an_active_effect_exists()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var confirmed = await fixture.ConfirmedOrderAsync("gr-inventory-effect");
+        var created = await fixture.GoodsReceiptService.CreateAsync(
+            fixture.Context(Requester, "tenant.procurement.goods-receipt.create"),
+            new GoodsReceiptCreateRequest(confirmed.Id, WarehouseA, DateOnly.FromDateTime(DateTime.UtcNow.Date), null, null, [new GoodsReceiptLineCreateRequest(confirmed.Lines.Single().Id, 2m, 2m, 0m, null, null, null)]),
+            "gr-inventory-effect-create",
+            "fp-gr-inventory-effect-create");
+        Assert.True(created.Succeeded, created.Code);
+
+        var blocked = await fixture.GoodsReceiptServiceWith(new ActiveGoodsReceiptInventoryEffectReader()).CancelAsync(
+            fixture.Context(Requester, "tenant.procurement.goods-receipt.cancel"),
+            created.Value!.Id,
+            created.Value.Version,
+            "Inventory effect exists",
+            "gr-inventory-effect-cancel",
+            "fp-gr-inventory-effect-cancel");
+        Assert.False(blocked.Succeeded);
+        Assert.Equal("inventory_effect_exists", blocked.Code);
+    }
+
+    [Fact]
     public async Task Denies_receipt_with_unauthorized_inactive_or_mismatched_warehouse()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -590,7 +655,7 @@ public sealed class GoodsReceiptTests
                 new ProcurementWarehouseOption(TenantA, CompanyA, BranchA, WarehouseInactive, "WH-INACTIVE", "Inactive Warehouse", IsActive: false),
                 new ProcurementWarehouseOption(TenantA, Guid.Parse("99999999-0000-0000-0000-000000000000"), null, WarehouseForeignScope, "WH-OTHER", "Other Company Warehouse", IsActive: true)
             ]);
-            var goodsReceiptService = new GoodsReceiptService(authorization, new GoodsReceiptPersistence(options), warehouseProvider);
+            var goodsReceiptService = new GoodsReceiptService(authorization, new GoodsReceiptPersistence(options), warehouseProvider, new NoActiveGoodsReceiptInventoryEffectReader());
             var invoiceHandoffService = new PurchaseInvoiceHandoffService(authorization, new PurchaseInvoiceHandoffPersistence(options));
             return new Fixture(connection, options, purchaseOrderService, goodsReceiptService, invoiceHandoffService);
         }
@@ -602,6 +667,16 @@ public sealed class GoodsReceiptTests
             var resolved = new ProcurementTenantContextResolver().Resolve(foundation);
             return Assert.IsType<ProcurementRequestContext>(resolved.Context);
         }
+
+        public GoodsReceiptService GoodsReceiptServiceWith(IGoodsReceiptInventoryEffectReader inventoryEffectReader) =>
+            new(
+                new PurchaseRequestAuthorizationService(),
+                new GoodsReceiptPersistence(options),
+                new ConfiguredProcurementWarehouseProvider(
+                [
+                    new ProcurementWarehouseOption(TenantA, CompanyA, BranchA, WarehouseA, "WH-A", "Warehouse A", IsActive: true)
+                ]),
+                inventoryEffectReader);
 
         /// <summary>
         /// Creates a dynamic Purchase Order confirmed with the exact specified line quantity.

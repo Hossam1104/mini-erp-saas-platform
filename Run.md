@@ -118,7 +118,7 @@ absent, the existing module-owned SQLite fallback remains available for local
 development and tests.
 
 Development startup applies the formal EF migrations sequentially for the
-four persistence contexts. Production startup does not auto-migrate:
+five persistence contexts. Production startup does not auto-migrate:
 
 | Context | Schema / owner | History table |
 |---|---|---|
@@ -126,6 +126,7 @@ four persistence contexts. Production startup does not auto-migrate:
 | `MasterDataDbContext` | `masterdata` / Master Data | `dbo.__EFMigrationsHistory_MasterData` |
 | `BusinessPartiesDbContext` | `businessparties` / Business Parties | `dbo.__EFMigrationsHistory_BusinessParties` |
 | `ProcurementDbContext` | `procurement` / Procurement and Phase-C quotation data | `dbo.__EFMigrationsHistory_Procurement` |
+| `InventoryDbContext` | `inventory` / Inventory physical stock and ledger data | `dbo.__EFMigrationsHistory_Inventory` |
 
 `tenancy.TenantOwnedRecords` is created and upgraded only by the Tenancy
 context. The later module alignment migrations are intentionally no-op

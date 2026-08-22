@@ -12,14 +12,21 @@ Exact main base SHA: `2cf6b315c69c87f26ca4bbfc774e3e0eb451c5e3`
 
 Code-complete implementation SHA: `01ea8f7369d173c15cf55a723d6bd95006208282`
 
+Exact remediation starting SHA (local and `origin`):
+`d8d852f4e93602ce66583157163e652e57795f2e`
+
+Remediation source and final handoff SHAs are recorded below after the bounded
+correction commits are pushed.
+
 Draft PR: `#73` - https://github.com/Hossam1104/mini-erp-saas-platform/pull/73
 
 Jira: MESP-129 is IN PROGRESS / ACTIVATED. Jira writes are prohibited in this
 handoff; Sol owns the acceptance decision.
 
-Delivery state: the branch and PR must remain open, Draft, and unmerged. Do not
-merge, rebase, force-push, create a second PR, or start MESP-130/MESP-131 or
-downstream implementation.
+Delivery state: the six Sol acceptance remediations are implemented and
+validated from the exact starting SHA above. The branch and PR must remain
+open, Draft, and unmerged. Do not merge, rebase, force-push, create a second
+PR, or start MESP-130/MESP-131 or downstream implementation.
 
 ## Exact bounded scope delivered
 
@@ -39,6 +46,35 @@ implemented only the MESP-129 physical Inventory capability:
   audit/history, REST/OpenAPI metadata, and bilingual Angular workflow; and
 - a reusable but currently unavailable authoritative Sales Customer Return
   Inventory integration boundary.
+
+## Sol acceptance remediations applied
+
+The bounded remediation addresses exactly the six findings in the attached
+MESP-129 acceptance model:
+
+1. Tracked Goods Receipt and Supplier Return physical posting now fails closed
+   with `tracking_identity_required` when the authoritative Procurement source
+   says `Product.TrackingEnabled`; no tracking identity or tracked bucket is
+   fabricated, while untracked posting remains unchanged.
+2. Goods Receipt cancellation now has truthful `ActiveEffectExists`,
+   `NoActiveEffect`, and `Unavailable` verification outcomes. Unavailable,
+   unknown, or throwing verification returns
+   `inventory_effect_verification_unavailable` without changing status/history.
+3. Supplier Return replay probes durable Inventory idempotency before
+   Procurement source eligibility. Exact Tenant/actor/operation/key/fingerprint
+   replay converges after the Procurement handoff advances; fingerprint changes
+   conflict and cannot create another movement.
+4. Duplicate Warehouse Transfer receipt references are detected after
+   normalization for the same transfer and received event, converge with
+   explicit Duplicate audit evidence, and never surface as a persistence 503 or
+   create another destination movement. The unique database index remains.
+5. Receipt mutations acquire the existing MESP-128 destination stock-identity
+   anchor (Tenant, Company, Branch, destination Warehouse, Product, UOM,
+   TrackingIdentity) under Serializable isolation before receipt effects.
+6. The SQL safety regression now migrates one disposable LocalDB catalog through
+   Tenancy, Master Data, Business Parties, Procurement, and Inventory in order,
+   with separate history tables and shared Tenancy ownership; it uses committed
+   migrations, not `EnsureCreated`.
 
 The production headline remains approximately 47% overall and 41%
 Procurement/P2P pending acceptance and merge. No Jira completion credit is
@@ -77,8 +113,11 @@ provider contract; Inventory does not duplicate Goods Receipt creation.
   existing evidence and creates no second movement. The duplicate attempt has
   explicit durable Duplicate audit evidence.
 - Goods Receipt cancellation is blocked through an application/provider effect
-  reader while an active Inventory physical effect exists. Procurement does
-  not query Inventory tables directly and no movement is silently deleted.
+  reader while an active Inventory physical effect exists; verification
+  unavailability fails closed without mutating Procurement. Tracked sources
+  without an authoritative tracking identity are rejected before persistence.
+  Procurement does not query Inventory tables directly and no movement is
+  silently deleted.
 
 ## Supplier Return physical effect
 
@@ -95,8 +134,9 @@ seam.
   The resulting OnHand is always at least active Reserved.
 - Durable source uniqueness prevents duplicate Supplier Return physical effects
   across different request keys, actors, retries, and process restarts. Replay
-  is exact for the same idempotency key/fingerprint; fingerprint conflict is a
-  deterministic conflict.
+  is probed in Inventory before source eligibility, is exact for the same
+  Tenant/actor/operation/key/fingerprint, and converges after the Procurement
+  handoff advances; fingerprint conflict is deterministic.
 - After the physical commit, Inventory writes a handoff reference that names
   actual Inventory movement evidence through the existing Procurement seam.
   If the handoff update is unavailable, the API exposes `inventory_handoff_pending`;
@@ -123,6 +163,9 @@ Warehouse Transfer is Inventory-owned.
   remaining InTransit from immutable transfer events. Partial receipt is valid.
 - Receipt above remaining shipped quantity is rejected; the excess is not
   fabricated as a transfer, opening balance, or generic adjustment.
+- A repeated normalized receipt reference for the same transfer converges to
+  the existing transfer state with Duplicate audit evidence and no second
+  destination movement or persistence-unavailable classification.
 - Shortage/loss resolution records transfer/line, quantity, reason, actor,
   time, scopes, reference, and audit/history. It closes outstanding InTransit
   without another source outbound movement or a Finance loss journal.
@@ -142,7 +185,9 @@ Warehouse Transfer is Inventory-owned.
   reduce a reservation.
 - Existing MESP-128 `InventoryConcurrencyAnchor` is retained. Multi-identity
   operations acquire anchors in deterministic global order under Serializable
-  isolation; ordering never follows caller input order.
+  isolation; ordering never follows caller input order. Receipt operations
+  acquire the destination identity anchor explicitly before destination stock
+  mutation.
 - The only current Product tracking rule remains `TrackingEnabled`. Enabled
   products require tracking identity; disabled products reject it. No batch,
   lot, serial, expiry, GS1, EAN, or scanner engine was invented.
@@ -187,18 +232,23 @@ It adds the MESP-129 Inventory transfer tables and physical-movement lineage /
 valuation columns, without recreating or dropping the shared
 `tenancy.TenantOwnedRecords` table or taking ownership of its Tenancy migration.
 The SQL safety fixture applies the committed Tenancy, Master Data, Business
-Parties, Procurement, and Inventory migrations to a disposable LocalDB catalog,
-verifies migration completion and the single shared Tenant-owned table/index,
-and safely disposes the disposable catalog. No persistent MESP database was
-used or changed.
+Parties, Procurement, and Inventory migrations in that order to one disposable
+LocalDB catalog, verifies each separate history table is complete, checks the
+single shared Tenant-owned table/index and expected Inventory tables, and
+safely disposes the disposable catalog. No persistent MESP database was used or
+changed.
 
 ## Validation evidence
 
 - `dotnet build backend/MiniErp.sln -c Release --no-restore`: 0 warnings / 0
   errors.
-- Focused Inventory architecture/persistence tests: 22/22 passed.
-- SQL Server LocalDB safety tests: 27/27 passed using a disposable catalog.
-- Canonical `scripts/Test-MiniErpBackend.ps1 -NoBuild:$false`: 877/877 passed,
+- Focused Inventory architecture/persistence tests: 26/26 passed, including
+  tracked-source, durable replay, duplicate receipt, and destination-anchor
+  regressions.
+- Focused Goods Receipt/Supplier Return cancellation and handoff tests: 19/19
+  passed.
+- SQL Server LocalDB safety tests: 28/28 passed using one disposable catalog.
+- Canonical `scripts/Test-MiniErpBackend.ps1 -NoBuild:$false`: 884/884 passed,
   0 skipped, with disposable LocalDB safety execution.
 - Angular unit tests: 241/241 across 32 spec files.
 - Angular production build: 499.97 kB initial; Inventory lazy chunk 33.12 kB.
@@ -206,11 +256,15 @@ used or changed.
 - `npm audit --omit=dev` and full `npm audit`: 0 vulnerabilities.
 - `git diff --check`: clean.
 - `frontend/assets`: unchanged.
+- Official Development launcher restart and authenticated HTTP health/frontend
+  verification: required before handoff; the final URLs and PIDs are recorded
+  in the completion report, and both processes remain running.
 
 ## Exact Sol review checklist
 
-Review the code-complete commit `01ea8f7369d173c15cf55a723d6bd95006208282`
-and Draft PR #73, especially:
+Review the code-complete commit
+`01ea8f7369d173c15cf55a723d6bd95006208282`, the six-remediation source commit
+recorded below, and Draft PR #73, especially:
 
 1. Procurement source/provider contracts and Goods Receipt cancellation seam.
 2. Supplier Return `AwaitingInventory` eligibility, lineage, reservation guard,
@@ -225,9 +279,16 @@ and Draft PR #73, especially:
    disposable LocalDB migration-order regression.
 7. REST/OpenAPI metadata, anti-forgery, If-Match/ETag, permissions, EN/AR RTL
    UI behavior, and the exact validation counts above.
+8. The remediation-specific fail-closed results, replay-before-source order,
+   duplicate receipt convergence, destination anchor acquisition, and truthful
+   five-context migration-order SQL proof.
 
 ## Required next action
 
-Sol should accept or return the exact bounded MESP-129 implementation for
-correction. Keep PR #73 Draft and unmerged. Do not write Jira and do not start
-MESP-130, MESP-131, Sales commercial returns, Finance, or downstream work.
+Sol should perform delta acceptance of the exact final branch SHA recorded below
+against the six remediation findings. Keep PR #73 Draft and unmerged. Do not
+write Jira and do not start MESP-130, MESP-131, Sales commercial returns,
+Finance, or downstream work.
+
+Remediation source commit: recorded after commit/push.
+Final handoff/tracker commit: recorded after commit/push.

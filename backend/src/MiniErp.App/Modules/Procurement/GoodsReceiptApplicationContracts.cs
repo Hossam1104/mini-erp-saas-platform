@@ -220,15 +220,22 @@ public interface IGoodsReceiptPersistence
     Task<IReadOnlyList<GoodsReceiptAuditRecord>> ReadAuditAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default);
 }
 
+public enum GoodsReceiptInventoryEffectVerification
+{
+    ActiveEffectExists = 1,
+    NoActiveEffect = 2,
+    Unavailable = 3
+}
+
 public interface IGoodsReceiptInventoryEffectReader
 {
-    Task<bool> HasActiveEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default);
+    Task<GoodsReceiptInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default);
 }
 
 public sealed class UnavailableGoodsReceiptInventoryEffectReader : IGoodsReceiptInventoryEffectReader
 {
-    public Task<bool> HasActiveEffectAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(false);
+    public Task<GoodsReceiptInventoryEffectVerification> VerifyAsync(TenantContext tenantContext, Guid goodsReceiptId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(GoodsReceiptInventoryEffectVerification.Unavailable);
 }
 
 public sealed class UnavailableGoodsReceiptPersistence : IGoodsReceiptPersistence

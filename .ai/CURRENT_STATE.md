@@ -1,13 +1,15 @@
 # Current State
 
-## Current authoritative position - 22 August 2026 (MESP-129 implementation complete; Sol acceptance handoff)
+## Current authoritative position - 22 August 2026 (MESP-129 Sol acceptance remediation complete; delta handoff)
 
 MESP-129 is code-complete at its bounded Inventory physical-movement scope on
 branch `feat/MESP-129-physical-stock-movements`, based exactly on synchronized
 main `2cf6b315c69c87f26ca4bbfc774e3e0eb451c5e3`. The code-complete
 implementation commit is `01ea8f7369d173c15cf55a723d6bd95006208282`; Draft PR
 #73 is open, Draft, and unmerged. Jira remains read-only; no Jira writes were
-performed.
+performed. Sol remediation started from the exact synchronized local/remote
+branch head `d8d852f4e93602ce66583157163e652e57795f2e`; the remediation source
+and final handoff commit SHAs are recorded in the final session handoff.
 
 The implementation consumes the authoritative Procurement Goods Receipt source
 through an application/provider contract. Only accepted quantity creates one
@@ -44,15 +46,27 @@ client-supplied posting exists.
 The formal Inventory migration is
 `20260822092802_MESP129PhysicalStockMovements`; it adds only MESP-129 Inventory
 physical tables/columns and preserves Tenancy migration ownership. The SQL
-safety fixture applies real module migrations to disposable LocalDB and checks
-the shared Tenant-owned table/index topology. REST/OpenAPI/Foundation metadata,
-antiforgery, ETags/If-Match, idempotency, audit/history, and EN/AR RTL Angular
-workflow support are included. Validation is Release build 0 warnings/0
-errors; focused Inventory 22/22; SQL safety 27/27; canonical backend 877/877
-passed, 0 skipped with disposable LocalDB; Angular 241/241 across 32 spec
-files; production bundle 499.97 kB initial with Inventory lazy 33.12 kB;
-Chromium 26/26; both npm audits 0 vulnerabilities; and `git diff --check`
-clean. Protected `frontend/assets` remains untouched.
+safety fixture applies real committed Tenancy, Master Data, Business
+Parties, Procurement, and Inventory migrations in order to one disposable
+LocalDB catalog with separate history tables, and checks the shared
+Tenant-owned table/index topology plus expected Inventory tables.
+
+The six Sol acceptance remediations are complete: tracked Procurement sources
+fail closed without tracking identity fabrication; Goods Receipt cancellation
+has active/no-effect/unavailable verification and preserves state on
+unavailability; Supplier Return replay probes durable Inventory before source
+eligibility and converges after Procurement handoff; duplicate transfer receipt
+references converge with audit evidence and no second movement; receipt
+mutations acquire the MESP-128 destination anchor; and the migration-order test
+uses one real disposable catalog without `EnsureCreated`. REST/OpenAPI/
+Foundation metadata, antiforgery, ETags/If- นmatch, idempotency, audit/history,
+and EN/AR RTL Angular workflow support remain included. Validation is Release
+build 0 warnings/0 errors; focused Inventory 26/26; focused Goods Receipt /
+Supplier Return 19/19; SQL safety 28/28; canonical backend 884/884 passed, 0
+skipped with disposable LocalDB; Angular 241/241 across 32 spec files;
+production bundle 499.97 kB initial with Inventory lazy 33.12 kB; Chromium
+26/26; both npm audits 0 vulnerabilities; and `git diff --check` clean.
+Protected `frontend/assets` remains untouched.
 
 The production headline remains approximately 47% overall and 41%
 Procurement/P2P pending Sol acceptance and merge. The next exact session is
