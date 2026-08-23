@@ -4,8 +4,8 @@
 **Date:** 24 August 2026<br>
 **Capability:** MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting<br>
 **Base main:** `b470179e1d18ef75c0a9247b2340407da6220dc4`<br>
-**Starting SHA:** `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`<br>
-**Remediation implementation commit:** `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`<br>
+**Migration-repair session start SHA:** `48ddf07a645da0130699314243ae8b23907b3bfc`<br>
+**Pre-repair implementation baseline:** `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`<br>
 **Final branch SHA:** final documentation handoff commit is reported in the completion response<br>
 **Draft PR:** #75 — Open, Draft, unmerged
 
@@ -45,15 +45,16 @@ zero-quantity/non-zero-value and negative state as `ValuationMismatch`, and a
 Warehouse summary with any mismatch is incomplete and partial.
 
 The formal additive migration
-`20260823211902_MESP131SolFinalValuationIntegrity` adds nullable
+`20260823225921_MESP131SolFinalValuationIntegrity` adds nullable
 `MovementValuationEvents.FormulaMovementValue`, nullable
 `MovementValuationEvents.RoundingAdjustmentAmount`, and required/default-zero
 `FinanceValuationHandoffs.RoundingAdjustmentAmount`. The preceding MESP-131
 migrations remain unchanged.
 
-Final evidence: focused valuation `34/34`; SQL Server safety `39/39` against
-disposable LocalDB; full backend `952/952` with zero failures/skips; Release
-build 0 warnings/errors; Angular `254/254`; focused/full Chromium `5/5` and
+Final evidence: focused valuation `34/34`; SQL Server safety `40/40` against
+disposable LocalDB; full backend `953/953` with zero failures/skips; model-
+change detection clean; isolated Release build 0 warnings/errors; Angular
+`254/254`; focused/full Chromium `5/5` and
 `32/32`; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; both
 npm audits report 0 vulnerabilities.
 
@@ -206,7 +207,7 @@ Formal additive Inventory migrations:
 
 `20260823180537_MESP131SolFinancialIntegrityRemediation`
 
-`20260823211902_MESP131SolFinalValuationIntegrity`
+`20260823225921_MESP131SolFinalValuationIntegrity`
 
 The remediation migration removes PolicyId from authoritative pool uniqueness,
 adds current-policy metadata and policy lineage/version backstops, makes pending
@@ -218,9 +219,11 @@ rewritten.
 
 - Focused MESP-131 valuation: `34/34`
 - Inventory regression: `52/52`
-- SQL Server safety: `39/39` (previous baseline `38`)
-- Full backend disposable-LocalDB suite: `952/952`, 0 failed, 0 skipped
-- Release build: 0 warnings / 0 errors
+- SQL Server safety: `40/40` (previous baseline `39`)
+- Full backend disposable-LocalDB suite: `953/953`, 0 failed, 0 skipped
+- Model-change detection: clean
+- Release build: 0 warnings / 0 errors using isolated output so the Owner
+  runtime's in-place Release assemblies remained locked and intact
 - Angular: `254/254` across 35 spec files
 - Production initial bundle: `499.94 kB`
 - Valuation lazy chunk: `35.96 kB`

@@ -25,9 +25,10 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ### MESP-131 final valuation-integrity remediation - 24 August 2026
 
-The final bounded remediation is implemented on Draft PR #75 at
-`42794bda13bada7f37dcbf6ef6b8cc8e73eba889`, from exact start
-`fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`. It isolates known-policy
+The final bounded remediation is implemented on Draft PR #75 at the
+pre-repair baseline `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; the bounded
+EF migration repair starts at exact SHA
+`48ddf07a645da0130699314243ae8b23907b3bfc`. It isolates known-policy
 valuation failures by tracking scope, preserves conservative missing-policy
 base-pool blocking, closes full depletion against stored value with explicit
 formula/rounding/actual-value evidence, and reports impossible valuation state
@@ -35,11 +36,12 @@ as `ValuationMismatch` instead of complete reconciliation. MESP-131 remains
 In Progress, Draft, unmerged, and pending Sol acceptance; no downstream
 Finance or MESP-132 implementation was started.
 
-Final evidence is focused valuation `34/34`, SQL safety `39/39`, full backend
-`952/952` with zero failures/skips, Release build `0/0`, Angular `254/254`,
+Final evidence is focused valuation `34/34`, SQL safety `40/40`, full backend
+`953/953` with zero failures/skips, model-change detection clean, isolated
+Release build `0/0`, Angular `254/254`,
 focused/full Chromium `5/5` and `32/32`, initial bundle `499.94 kB`, and both
-npm audits at `0 vulnerabilities`. The additive migration is
-`20260823211902_MESP131SolFinalValuationIntegrity`; `frontend/assets` is
+npm audits at `0 vulnerabilities`. The regenerated additive migration is
+`20260823225921_MESP131SolFinalValuationIntegrity`; `frontend/assets` is
 untouched.
 
 The latest **merged** Inventory capability is **MESP-130 â€” Stock Adjustment, Inventory Count, Stock Issue, and Corrections**, merged in PR #74 at `b470179e1d18ef75c0a9247b2340407da6220dc4`.
@@ -60,8 +62,8 @@ The tracked project-control source of truth is [`docs/staticts.md`](docs/statict
 |---|---:|
 | Focused MESP-131 valuation | 34/34 |
 | Prior Inventory regression | 52/52 |
-| SQL Server safety harness | 39/39 against disposable LocalDB (previous baseline 38) |
-| Full backend disposable-LocalDB suite | 952/952, 0 failed, 0 skipped |
+| SQL Server safety harness | 40/40 against disposable LocalDB (previous baseline 39) |
+| Full backend disposable-LocalDB suite | 953/953, 0 failed, 0 skipped |
 | Release build | 0 warnings / 0 errors |
 | Angular unit tests | 254/254 across 35 spec files |
 | Production initial bundle | 499.94 kB |

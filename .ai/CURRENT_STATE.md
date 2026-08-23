@@ -24,10 +24,10 @@ Draft PR #75 remains unmerged and Sol acceptance is still required.
 
 MESP-131 is implemented on branch
 `feat/MESP-131-mwa-valuation-reconciliation`, created from the exact required
-main base `b470179e1d18ef75c0a9247b2340407da6220dc4` and exact remediation start
-`fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`. The final remediation
-implementation commit is `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; Draft PR
-#75 is Open, Draft, and unmerged. The final documentation-only handoff SHA is
+main base `b470179e1d18ef75c0a9247b2340407da6220dc4` and exact migration-repair
+session start `48ddf07a645da0130699314243ae8b23907b3bfc`. The pre-repair
+implementation baseline is `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; Draft
+PR #75 is Open, Draft, and unmerged. The final migration-repair handoff SHA is
 reported with the completion response after this state update. Jira is
 read-only for this session; no Jira writes were performed.
 
@@ -40,6 +40,19 @@ migration `20260823180537_MESP131SolFinancialIntegrityRemediation` adds the
 pool-identity, policy-lineage/version, pending-evidence, and Finance
 direction/sign corrections. Existing MESP-130 and original MESP-131 migration
 content is unchanged.
+
+The final EF migration Designer artifact was repaired through the actual EF
+tooling. The malformed
+`20260823211902_MESP131SolFinalValuationIntegrity.Designer.cs` had an empty
+`BuildTargetModel`; it was replaced by the regenerated
+`20260823225921_MESP131SolFinalValuationIntegrity` migration and populated
+Designer. Its exact additive delta is nullable `decimal(28,8)`
+`FormulaMovementValue` and `RoundingAdjustmentAmount` on
+`inventory.MovementValuationEvents`, plus required/default-zero
+`decimal(28,8)` `RoundingAdjustmentAmount` on
+`inventory.FinanceValuationHandoffs`. The two preceding migrations are
+byte-for-byte unchanged. One SQL safety regression now proves the final target
+model and snapshot are populated.
 
 The valuation contract is policy-versioned and Tenant-safe: decimal Moving
 Weighted Average with configured quantity/unit-cost/amount scales and
@@ -91,16 +104,18 @@ creation, and first-scope uniqueness races are safe conflicts. The Angular
 valuation area is lazy-loaded, extends the existing Inventory feature, and is
 EN/AR with RTL support; no product source assets were changed.
 
-Validation after final remediation: focused MESP-131 valuation `34/34`, prior
-Inventory regression `52/52`, SQL Server safety `39/39` against disposable
-LocalDB (previous baseline `38`), disposable LocalDB full backend `952/952`
-with zero failures/skips, Release build `0` warnings/`0` errors, Angular
+Validation after final migration repair: focused MESP-131 valuation `34/34`,
+prior Inventory regression `52/52`, SQL Server safety `40/40` against
+disposable LocalDB (previous baseline `39`), disposable LocalDB full backend
+`953/953` with zero failures/skips, model-change detection clean, isolated
+Release solution build `0` warnings/`0` errors, Angular
 `254/254` across 35 spec files, focused Chromium `5/5`, full Chromium `32/32`,
 both npm audits `0` vulnerabilities, production initial bundle `499.94 kB`,
-and valuation lazy chunk `35.96 kB`. The final launcher kept backend
+and valuation lazy chunk `35.96 kB`. The existing Owner launcher kept backend
 `http://localhost:5300` PID `15844` and frontend `http://localhost:4300` PID
 `12120` alive; `/health`, `/`, and `/main.js` each returned HTTP 200 without
-printing credentials.
+printing credentials, and no runtime restart was performed in this
+migration-only session.
 
 The overall Production-Ready Completion headline remains approximately 47%
 overall and 41% Procurement/P2P pending Sol acceptance/merge. The fast-track

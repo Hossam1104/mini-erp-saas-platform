@@ -29,13 +29,13 @@ Branch: `feat/MESP-131-mwa-valuation-reconciliation`
 
 Exact required main base: `b470179e1d18ef75c0a9247b2340407da6220dc4`
 
-Starting SHA: `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`
+Exact bounded migration-repair session start SHA:
+`48ddf07a645da0130699314243ae8b23907b3bfc`
 
-Remediation implementation SHA: `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`
+Pre-repair implementation SHA: `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`
 
-Final branch SHA: the validated implementation tip is
-`42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; the final documentation-only
-handoff commit is reported in the completion response.
+Final branch SHA: the validated migration-repair handoff commit is reported in
+the completion response after this bounded session is committed and pushed.
 
 Draft PR: `#75` - Open, Draft, Unmerged; base `main`.
 
@@ -84,6 +84,38 @@ budget, npm audits, runtime restart/HTTP evidence, and protected asset check
 are the acceptance evidence for the exact final branch tip. Sol owns the next
 independent delta acceptance; do not start downstream implementation.
 
+## MESP-131 Final EF Migration Artifact Repair
+
+This bounded migration-only repair session started from exact SHA
+`48ddf07a645da0130699314243ae8b23907b3bfc`, with required `main` base
+`b470179e1d18ef75c0a9247b2340407da6220dc4`, on the existing feature branch and
+Draft PR #75. It did not write Jira, restart the Owner runtime, modify Angular,
+touch `frontend/assets`, alter the preceding MESP-131 migrations, or start
+MESP-132.
+
+The defect was the final EF Designer artifact
+`20260823211902_MESP131SolFinalValuationIntegrity.Designer.cs` having an empty
+`BuildTargetModel`. The malformed timestamped migration pair was removed and
+the final migration was regenerated through the actual EF tooling as
+`20260823225921_MESP131SolFinalValuationIntegrity`, including a populated
+Designer target model and the exact additive schema delta:
+
+- `inventory.MovementValuationEvents.FormulaMovementValue`, nullable
+  `decimal(28,8)`;
+- `inventory.MovementValuationEvents.RoundingAdjustmentAmount`, nullable
+  `decimal(28,8)`; and
+- `inventory.FinanceValuationHandoffs.RoundingAdjustmentAmount`, required
+  `decimal(28,8)` with default `0`.
+
+The preceding migrations
+`20260823124304_MESP131MovingWeightedAverageValuation` and
+`20260823180537_MESP131SolFinancialIntegrityRemediation` remain unchanged.
+The SQL safety suite gained one metadata regression proving the final target
+model and snapshot are populated. Validation is focused valuation `34/34`,
+the preserved prior Inventory regression `52/52`, SQL Server safety `40/40`,
+full disposable-LocalDB backend `953/953`, model-change detection clean, and
+an isolated-output Release solution build with `0` warnings and `0` errors.
+
 ## Final Valuation-Integrity Remediation Delta
 
 - **Tracking blocker isolation:** `missingPolicyBlockedBasePools` is reserved
@@ -103,23 +135,25 @@ independent delta acceptance; do not start downstream implementation.
   valuation state is reported as `ValuationMismatch`; summary completeness is
   false and partial when any row is mismatched.
 - **Additive persistence:** migration
-  `20260823211902_MESP131SolFinalValuationIntegrity` adds only the immutable
+  `20260823225921_MESP131SolFinalValuationIntegrity` adds only the immutable
   formula/rounding evidence columns; prior MESP-131 migrations are unchanged.
 
 Final evidence: focused valuation `34/34`; prior Inventory regression `52/52`;
-SQL Server safety `39/39` against disposable LocalDB; full disposable-LocalDB
-backend `952/952`, `0` failed, `0` skipped; Release build `0` warnings and
+SQL Server safety `40/40` against disposable LocalDB; full disposable-LocalDB
+backend `953/953`, `0` failed, `0` skipped; model-change detection clean;
+isolated-output Release build `0` warnings and
 `0` errors; Angular `254/254` across 35 spec files; focused Chromium `5/5`,
 full Chromium `32/32`; initial production bundle `499.94 kB`; valuation lazy
 chunk `35.96 kB`; and both npm audits at `0 vulnerabilities`.
 
 ## Final Runtime Verification
 
-- Backend URL: `http://localhost:5300`; `/health`: HTTP 200; API PID `15844`.
+- Backend URL: `http://localhost:5300`; `/health`: HTTP 200; Owner API PID
+  `15844` was preserved and not restarted during this migration-only session.
 - Frontend URL: `http://localhost:4300`; `/`: HTTP 200; Angular PID `12120`.
 - Frontend `/main.js`: HTTP 200.
-- Both repository-owned processes are alive and left running for Owner
-  inspection. No credentials were printed.
+- Both repository-owned processes are alive for Owner inspection. No
+  credentials were printed.
 - `frontend/assets` has zero changes.
 
 ## Ledger Ordering
@@ -321,7 +355,7 @@ export is a file response.
 Formal migrations: `20260823124304_MESP131MovingWeightedAverageValuation`,
 the additive remediation `20260823180537_MESP131SolFinancialIntegrityRemediation`,
 and final additive evidence migration
-`20260823211902_MESP131SolFinalValuationIntegrity`.
+`20260823225921_MESP131SolFinalValuationIntegrity`.
 Legacy sequence bootstrap is deterministic and evidence is preserved. The
 remediation migration is separate and the original MESP-131 migration remains
 unchanged. The disposable SQL Server LocalDB safety harness passed the final
@@ -332,10 +366,11 @@ checks. No production SQL/provider/cutover decision was made.
 
 - Focused MESP-131 valuation: `34/34`.
 - Prior Inventory regression (ledger + stock control + valuation): `52/52`.
-- SQL Server safety harness: `39/39` against disposable LocalDB (previous
-  baseline `38`).
-- Full backend LocalDB harness: `952/952`, `0` failed, `0` skipped.
-- Release solution build: `0` warnings, `0` errors.
+- SQL Server safety harness: `40/40` against disposable LocalDB (previous
+  baseline `39`).
+- Full backend LocalDB harness: `953/953`, `0` failed, `0` skipped.
+- Release solution build: `0` warnings, `0` errors using isolated output so
+  the Owner runtime's in-place Release assemblies remained locked and intact.
 - Angular: `254/254` across 35 spec files.
 - Production bundle: initial `499.94 kB`; valuation lazy `35.96 kB`; no
   initial-budget warning.
@@ -347,10 +382,10 @@ checks. No production SQL/provider/cutover decision was made.
 
 Backend `http://localhost:5300`, PID `15844`; frontend
 `http://localhost:4300`, PID `12120`. Backend health, frontend root, and
-`main.js` each returned HTTP 200 after the official `Start-MiniErpDevelopment.ps1
--Restart` launcher run. Both launcher-owned processes remain running for Owner
-inspection. Loopback-only Development auth bypass was used without printing or
-persisting credentials.
+`main.js` each returned HTTP 200. The existing Owner launcher processes were
+preserved without restart during this migration-only session and remain
+running for Owner inspection. Loopback-only Development auth bypass was used
+without printing or persisting credentials.
 
 ## Known Limitations / Deferred Finance Policy
 

@@ -4,12 +4,14 @@ using System.Reflection;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Migrations;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.Modules.Inventory;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
 using MiniErp.Infrastructure.Persistence;
+using MiniErp.Infrastructure.Persistence.Migrations.Inventory;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
@@ -331,7 +333,7 @@ public sealed class SqlServerSafetyTests
                     "20260823104702_MESP130InventoryCountLedgerFence",
                     "20260823124304_MESP131MovingWeightedAverageValuation",
                     "20260823180537_MESP131SolFinancialIntegrityRemediation",
-                    "20260823211902_MESP131SolFinalValuationIntegrity"
+                    "20260823225921_MESP131SolFinalValuationIntegrity"
                 ],
                 (await inventory.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await inventory.Database.GetPendingMigrationsAsync());
@@ -1696,6 +1698,36 @@ public sealed class SqlServerSafetyTests
         Assert.True(await reader.NextResultAsync());
         Assert.True(await reader.ReadAsync());
         Assert.Equal(1, reader.GetInt32(0));
+    }
+
+    [Fact]
+    public void MESP131_final_migration_has_populated_target_model_metadata()
+    {
+        const string migrationId = "20260823225921_MESP131SolFinalValuationIntegrity";
+        var migrationType = typeof(MESP131SolFinalValuationIntegrity);
+        var migrationAttribute = Assert.Single(migrationType.GetCustomAttributes<MigrationAttribute>());
+        Assert.Equal(migrationId, migrationAttribute.Id);
+
+        var targetModel = new MESP131SolFinalValuationIntegrity().TargetModel;
+        Assert.NotEmpty(targetModel.GetEntityTypes());
+
+        var valuationEvents = targetModel.FindEntityType(typeof(InventoryMovementValuationEventEntity));
+        Assert.NotNull(valuationEvents);
+        Assert.NotNull(valuationEvents.FindProperty(nameof(InventoryMovementValuationEventEntity.FormulaMovementValue)));
+        Assert.NotNull(valuationEvents.FindProperty(nameof(InventoryMovementValuationEventEntity.RoundingAdjustmentAmount)));
+
+        var financeHandoffs = targetModel.FindEntityType(typeof(InventoryFinanceValuationHandoffEntity));
+        Assert.NotNull(financeHandoffs);
+        Assert.NotNull(financeHandoffs.FindProperty(nameof(InventoryFinanceValuationHandoffEntity.RoundingAdjustmentAmount)));
+
+        var snapshotModel = new InventoryDbContextModelSnapshot().Model;
+        Assert.NotEmpty(snapshotModel.GetEntityTypes());
+        Assert.NotNull(snapshotModel.FindEntityType(typeof(InventoryMovementValuationEventEntity))?
+            .FindProperty(nameof(InventoryMovementValuationEventEntity.FormulaMovementValue)));
+        Assert.NotNull(snapshotModel.FindEntityType(typeof(InventoryMovementValuationEventEntity))?
+            .FindProperty(nameof(InventoryMovementValuationEventEntity.RoundingAdjustmentAmount)));
+        Assert.NotNull(snapshotModel.FindEntityType(typeof(InventoryFinanceValuationHandoffEntity))?
+            .FindProperty(nameof(InventoryFinanceValuationHandoffEntity.RoundingAdjustmentAmount)));
     }
 
     [Fact]

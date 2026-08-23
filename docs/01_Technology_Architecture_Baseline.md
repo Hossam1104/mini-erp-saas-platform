@@ -1,7 +1,7 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
 <!-- MESP-131-ARCH-START -->
-## Current MESP-131 valuation architecture overlay — 23 August 2026
+## Current MESP-131 valuation architecture overlay — 24 August 2026
 
 MESP-131 is implemented on Draft PR #75 and is pending Sol acceptance/merge. It extends the existing Inventory module; it does not create a parallel Finance or Reporting domain.
 
@@ -20,7 +20,7 @@ MESP-131 is implemented on Draft PR #75 and is pending Sol acceptance/merge. It 
 - **Finance handoff:** `inventory-valuation-finance.v1` exposes Direction, non-negative BaseAmount, signed inbound/outbound effect, and immutable rounding-adjustment evidence; Inventory creates no journals.
 - **Closeout invariant:** full depletion uses stored prior value as actual movement value, preserves rounded formula value and `RoundingAdjustmentAmount`, and leaves quantity, value, and average at zero. Persistence rejects impossible negative or zero-quantity/non-zero-value state transitions; reconciliation reports legacy impossible state as `ValuationMismatch` and summary becomes partial.
 - **Summary:** `/summary` is a dedicated Warehouse aggregate with explicit IsComplete/IsPartial and Pending/Blocked/InTransit facts; no warehouse-level AverageUnitCost is exposed.
-- **Migration:** additive `20260823124304_MESP131MovingWeightedAverageValuation`, `20260823180537_MESP131SolFinancialIntegrityRemediation`, and final additive `20260823211902_MESP131SolFinalValuationIntegrity`; prior migrations remain unchanged.
+- **Migration:** additive `20260823124304_MESP131MovingWeightedAverageValuation`, `20260823180537_MESP131SolFinancialIntegrityRemediation`, and regenerated final additive `20260823225921_MESP131SolFinalValuationIntegrity`; its populated Designer carries the exact three approved evidence columns, and prior migrations remain unchanged.
 
 See `docs/34_MESP-131_MWA_Valuation_Architecture.md` for the full bounded handoff.
 <!-- MESP-131-ARCH-END -->

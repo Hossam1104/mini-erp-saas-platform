@@ -22,7 +22,7 @@ Draft PR #75 remains unmerged and Sol acceptance is still required.
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-24 00:49 +03:00
+**Last Updated:** 2026-08-24 02:12 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
@@ -31,11 +31,12 @@ Draft PR #75 remains unmerged and Sol acceptance is still required.
 
 MESP-131 is implemented on branch `feat/MESP-131-mwa-valuation-reconciliation`
 from the exact required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`
-and exact remediation start `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`. The
-final remediation implementation commit is `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`
-and Draft PR #75 is Open, Draft, and unmerged. The final documentation handoff
-SHA is reported in the completion response after this tracker update. No Jira
-writes were performed.
+and exact migration-repair session start
+`48ddf07a645da0130699314243ae8b23907b3bfc`. The pre-repair implementation
+baseline is `42794bda13bada7f37dcbf6ef6b8cc8e73eba889` and Draft PR #75 is
+Open, Draft, and unmerged. The final migration-repair handoff SHA is reported
+in the completion response after this tracker update. No Jira writes were
+performed.
 
 The bounded capability adds a Company-scoped durable `LedgerSequence` fence
 for all Inventory movement-producing paths, deterministic legacy movement
@@ -60,11 +61,11 @@ from this unaccepted branch. `frontend/assets` remains untouched.
 
 | Current control | Verified position |
 |---|---|
-| MESP-131 code | Start `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`; remediation `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`; branch `feat/MESP-131-mwa-valuation-reconciliation`; Draft PR #75 Open/Draft/unmerged. |
+| MESP-131 code | Migration-repair start `48ddf07a645da0130699314243ae8b23907b3bfc`; pre-repair baseline `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`; branch `feat/MESP-131-mwa-valuation-reconciliation`; Draft PR #75 Open/Draft/unmerged. |
 | Production capability | ~47% overall; Procurement/P2P ~41%; no production-readiness headline increase pending Sol acceptance/merge. Fast-track 14/26 = 53.8%, not production readiness. |
-| Validation | Focused MESP-131 valuation 34/34; prior Inventory regression 52/52; SQL Server safety 39/39 (previous 38); disposable LocalDB full backend 952/952 with 0 failed/0 skipped; Release build 0 warnings/errors; Angular 254/254 across 35 specs; focused Chromium 5/5; full Chromium 32/32; both npm audits 0 vulnerabilities; production initial 499.94 kB and valuation lazy 35.96 kB. |
-| Delivery boundaries | Original migrations `20260823124304_MESP131MovingWeightedAverageValuation` and `20260823180537_MESP131SolFinancialIntegrityRemediation` remain unchanged; additive final migration `20260823211902_MESP131SolFinalValuationIntegrity`; no Journal/GL/AP/AR/Sales/generic Reporting, migration/cutover, external/statutory, Jira, or Wafra-specific core behavior. Finance handoff is evidence-only. |
-| Runtime | Final official launcher restart: backend `http://localhost:5300` PID 15844 and frontend `http://localhost:4300` PID 12120; `/health`, `/`, and `/main.js` each returned HTTP 200; both launcher-owned processes remain alive for Owner inspection using the loopback Development bypass without printed credentials. |
+| Validation | Focused MESP-131 valuation 34/34; preserved prior Inventory regression 52/52; SQL Server safety 40/40 (previous 39); disposable LocalDB full backend 953/953 with 0 failed/0 skipped; model-change detection clean; isolated-output Release build 0 warnings/errors; Angular 254/254 across 35 specs; focused Chromium 5/5; full Chromium 32/32; both npm audits 0 vulnerabilities; production initial 499.94 kB and valuation lazy 35.96 kB. |
+| Delivery boundaries | Original migrations `20260823124304_MESP131MovingWeightedAverageValuation` and `20260823180537_MESP131SolFinancialIntegrityRemediation` remain unchanged; regenerated final migration `20260823225921_MESP131SolFinalValuationIntegrity` contains only the three approved evidence columns; no Journal/GL/AP/AR/Sales/generic Reporting, migration/cutover, external/statutory, Jira, or Wafra-specific core behavior. Finance handoff is evidence-only. |
+| Runtime | Existing Owner launcher processes were preserved without restart: backend `http://localhost:5300` PID 15844 and frontend `http://localhost:4300` PID 12120; `/health`, `/`, and `/main.js` each returned HTTP 200; no credentials were printed. |
 | Next exact session | Sol delta acceptance of the exact final branch SHA and Draft PR #75. Do not merge or start MESP-132/downstream implementation automatically. |
 
 ## Progress history - 24 August 2026
@@ -72,6 +73,7 @@ from this unaccepted branch. `frontend/assets` remains untouched.
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
 | 2026-08-24 | MESP-131 final valuation-integrity remediation: tracking-scoped known-policy blocker isolation, conservative missing-policy base blocker, full-depletion closeout with formula/rounding/actual-value evidence, zero-state invariant, fail-closed ValuationMismatch reconciliation, additive migration, and executable SQLite/SQL Server regressions. | ~47% | ~41% | Headline held pending Sol acceptance/merge; start `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`; remediation `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; focused 34/34; prior Inventory 52/52; SQL 39/39; backend 952/952; Angular 254/254; Chromium 5/5 and 32/32; bundle 499.94 kB / 35.96 kB valuation lazy; audits clean; final runtime 5300/4300 PIDs 15844/12120 with required HTTP 200 probes; no Jira writes or downstream implementation. |
+| 2026-08-24 | MESP-131 final EF migration artifact repair: regenerated the populated Designer through EF tooling after removing the empty-target artifact; exact three-column additive delta preserved; preceding migrations unchanged; added target-model metadata regression. | ~47% | ~41% | Headline held with no capability increase pending Sol acceptance/merge; migration-repair start `48ddf07a645da0130699314243ae8b23907b3bfc`; final migration `20260823225921_MESP131SolFinalValuationIntegrity`; focused valuation 34/34; prior Inventory 52/52; SQL 40/40; backend 953/953; model-change detection clean; isolated Release build 0 warnings/errors; no Jira writes, runtime restart, frontend, asset, or downstream implementation. |
 
 ## Superseded current snapshot - 23 August 2026 (MESP-130 final ledger-fence remediation; Sol acceptance handoff)
 
