@@ -1,6 +1,61 @@
 # Current State
 
-## Current authoritative position - 23 August 2026 (MESP-130 Sol remediation complete; delta acceptance handoff)
+## Current authoritative position - 23 August 2026 (MESP-130 final ledger-fence remediation complete; Sol acceptance handoff)
+
+MESP-129 is Done. MESP-130 remains In Progress pending Sol acceptance. The
+final ledger-fence remediation is pushed on branch
+`feat/MESP-130-stock-control-corrections`, starting from the exact bounded
+session SHA `9f5950848217bb992df7770baf93a91fa67b24ca`, with main base
+`6f6d204726cc4baf9979961ea6936c0d03e93e32`. The ledger-fence source,
+regression, and formal migration commit is
+`e63bcb3736138d3b3fb57ccd06646b6caf943e75`. Draft PR #74 remains Open,
+Draft, and unmerged. Jira was read-only; no Jira writes were performed.
+
+The Full Count path now establishes a `long` warehouse movement-cardinality
+fence inside the Serializable transaction before authoritative identity
+discovery, so a concurrent movement that would introduce a new identity is
+blocked until the fence and identity snapshot are complete. Cycle Count remains
+selected-identity scoped and records a `long` cardinality for each selected
+identity; unrelated movement remains irrelevant. Durable append-only
+`inventory.CountSnapshots` rows preserve cutoff/cardinality evidence for every
+count generation, while count lines preserve identity cardinality. Recount and
+resnapshot add new generation evidence without overwriting prior rounds.
+Posting now compares durable generation cardinality against live ledger counts
+and fails closed to `ResnapshotRequired`; `PostedAt > SnapshotCutoff` is no
+longer the stale-detection authority. Missing generation evidence also fails
+closed. The additive migration is
+`20260823104702_MESP130InventoryCountLedgerFence`.
+
+The SQL Server regressions execute the actual Full/Cycle reader, pause after
+reader execution, prove the insert attempt is blocked while the count
+transaction holds its range fence, release and commit, and prove the resulting
+older-`PostedAt` movement cannot silently pass posting. Full Count proves a new
+Product B identity is absent from the original snapshot and requires a
+resnapshot; Cycle Count proves selected-identity invalidation and unrelated
+identity irrelevance.
+
+Validation at the pushed source commit: Release build `0` warnings / `0`
+errors; focused Inventory `12/12`; SQL safety `32/32` through disposable
+LocalDB; full backend `911/911` passed with `0` failed and `0` skipped; Angular
+`246/246` across 33 spec files; focused MESP-130 Chromium `1/1`; full Chromium
+`27/27`; both npm audits `0` vulnerabilities; production initial bundle
+`499.81 kB`, Inventory lazy `90.11 kB`, Supplier Quotation lazy `91.94 kB`;
+and `git diff --check` clean for the source delta. Owner-managed
+`frontend/assets` remains untouched.
+
+The official launcher restarted the final runtime on backend
+`http://localhost:5300` PID `31576` and frontend `http://localhost:4300` PID
+`40296`. `/health`, `/`, and `/main.js` each returned HTTP 200, and both
+repository-owned processes were verified alive and left running. The explicit
+loopback-only Development auth bypass was used without printing or persisting
+credentials. Production readiness remains approximately 47% overall and 41%
+Procurement/P2P; this bounded correctness remediation does not increase the
+headline pending Sol acceptance/merge. No MESP-131, Finance, Sales, Reporting,
+migration/cutover, external, statutory, or Wafra-specific core behavior was
+added. The next exact action is Sol acceptance of the final branch tip and
+Draft PR #74; no Opus prompt is created by this handoff.
+
+## Superseded pre-ledger-fence position - 23 August 2026 (MESP-130 Sol remediation complete; delta acceptance handoff)
 
 MESP-129 is Done. MESP-130 Sol acceptance remediation is implemented at its
 bounded Stock Adjustment, Inventory Count, Stock Issue, and eligible correction
