@@ -1,6 +1,12 @@
 # Mini ERP Tenant-Aware Shell
 
-> **Current MESP-129 workspace overlay - 22 August 2026.** The Inventory
+<!-- MESP-131-CURRENT-START -->
+> **Current MESP-131 workspace overlay â€” 23 August 2026; pending Sol acceptance.** The Inventory feature now includes lazy `/app/inventory/valuation` for valuation summary, explainable MWA history, Pending/Blocked states, Inventory reconciliation, In-Transit value, Finance handoff facts, correction history and authorized CSV export. The surface uses server-owned Warehouse context, preserves EN/AR and RTL, never accepts browser-authored cost/FX authority, and keeps `frontend/assets` untouched.
+>
+> **MESP-131 executor-reported frontend evidence.** Angular `248/248` across 34 spec files; production initial total `499.94 kB` with valuation lazy chunk `35.43 kB`; focused MESP-131 Chromium `1/1`; full Chromium `28/28`; both npm audits report 0 vulnerabilities. Draft PR #75 remains open/Draft/unmerged pending Sol acceptance.
+<!-- MESP-131-CURRENT-END -->
+
+> **Historical MESP-129 workspace overlay - 22 August 2026.** The Inventory
 > workspace now exposes server-authorized Warehouse Transfers with direct and
 > two-step/InTransit flows, partial receipt, shortage/loss and overage-safe
 > states, immutable history evidence, and human-readable Warehouse/Product/UOM
@@ -19,7 +25,7 @@
 > Code-complete commit is `01ea8f7369d173c15cf55a723d6bd95006208282`; Draft PR
 > **#73** remains open/Draft/unmerged.
 
-> **Current MESP-128 workspace overlay - 21 August 2026.** The shell now
+> **Historical MESP-128 workspace overlay - 21 August 2026.** The shell now
 > includes a lazy Inventory workspace at /app/inventory with server-provided
 > Warehouse scope, human-readable Product/UOM selection, six distinct stock
 > facts, append-only ledger visibility, opening-balance create/validate/post/
@@ -35,7 +41,7 @@
 > Chromium is **26/26**; both npm audit --omit=dev and full npm audit report
 > **0 vulnerabilities**.
 
-> **Current MESP-127 workspace overlay - 21 August 2026.** The Procurement
+> **Historical MESP-127 workspace overlay - 21 August 2026.** The Procurement
 > shell now includes a lazy Supplier Returns workspace at
 > `/app/procurement/supplier-returns`, `/new`, and `/:id`. It provides a
 > server-derived accepted-Goods-Receipt source selector, remaining-return
@@ -102,19 +108,20 @@ npm test -- --watch=false --no-progress
 npm run build
 npm run test:e2e -- --project=chromium
 npm audit --omit=dev
+npm audit
 ```
 
-The current bounded evidence is Angular **239/239 across 31 spec files**;
-the production build is **494.71 kB initial total** (under the 500 kB budget)
-with a **51.75 kB Goods Receipt lazy chunk**, a **52.09 kB Invoice Handoff lazy chunk**,
-a **74.78 kB Purchase Order lazy chunk**, a **91.94 kB Supplier Quotation lazy chunk**,
-a **38.17 kB Three-way Matching lazy chunk**, and a **57.40 kB Supplier Return
-lazy chunk**; Chromium coverage is
-**24/24 passed** across the full e2e suite, including **2/2 focused Supplier
-Return journeys**. Both
-`npm audit --omit=dev` and full `npm audit` report **0 vulnerabilities**. The
-Playwright checks are automated API-fixture/browser evidence, not a manual
-interactive browser sign-off.
+Current MESP-131 implementation evidence pending Sol acceptance:
+
+- Angular unit tests: **248/248 across 34 spec files**.
+- Production initial bundle: **499.94 kB**, still within the existing 500 kB budget.
+- Valuation lazy chunk: **35.43 kB**.
+- Focused MESP-131 Chromium: **1/1**.
+- Full Chromium suite: **28/28**.
+- Both npm audits: **0 vulnerabilities**.
+- `frontend/assets`: **untouched**.
+
+The Playwright checks are automated API-fixture/browser evidence, not a manual interactive production sign-off.
 
 Terminal Cancelled/Rejected Purchase Order detail communicates the bounded
 recovery rule in English and Arabic: the source decision is consumed and

@@ -23,56 +23,72 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-The latest merged delivery is MESP-124 (Purchase Orders and Supplier Confirmation,
-merged in PR #68 at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` following
-independent Claude Opus 5 review). Purchase Orders consume only server-authorized
-approved source decisions, preserve immutable sourcing and commercial snapshots,
-reuse approval/SoD/delegation, and record manual full, partial, rejected,
-no-response, and supplier-change/reapproval evidence with durable idempotent replay.
-Issue and confirmation remain commercial Procurement evidence only; they create no
-stock, receipt, invoice, AP, payment, or accounting effect.
+The latest **merged** Inventory capability is **MESP-130 â€” Stock Adjustment, Inventory Count, Stock Issue, and Corrections**, merged in PR #74 at `b470179e1d18ef75c0a9247b2340407da6220dc4`.
 
-The active capability is MESP-125 (Goods Receipt and Purchase Invoice handoff),
-which is In Progress / activated under Epic MESP-7 (FIN-OD-01 resolved contract-bound
-under MESP-116 / PD-046).
+The current active capability is **MESP-131 â€” Moving Weighted Average valuation, reconciliation, and inventory reporting**. It is implemented on Draft PR #75 at implementation commit `bf491c867b554b2c1f3b091b5196bf82199e161d`. The implementation handoff tip before this documentation reconciliation is `39fa538d3c6968476927f01c19669715cdc1147f`.
 
-The tracked project-control source of truth is [`docs/staticts.md`](docs/staticts.md).
-Its current conservative band is approximately:
+MESP-131 remains **In Progress, Draft, unmerged, and pending Sol acceptance**.
 
-| Measure | Estimate | Meaning |
-|---|---:|---|
-| Release 1 production-ready capability | **~40%** | Usable capability, not ticket completion |
-| Frontend | **~37%** | Shared shell, Overview-first entry, and bounded ERP journeys |
-| Backend | **~64%** | Foundation and implemented bounded module slices |
-| Database / persistence | **~58%** | Module-owned SQL/SQLite provider seams; production gates remain |
-| Full end-to-end business system | **~36%** | Integrated flows remain incomplete |
-| Production readiness | **~29%** | Deployment, operations, legal, capacity, and specialist gates remain |
+The implementation adds Inventory-owned deterministic MWA valuation evidence over the immutable physical ledger: Company-scoped `LedgerSequence`, versioned valuation policy, functional currency and MESP-120 Exchange Rate snapshots, append-only valuation history, pending/blocked predecessor handling, Warehouse Transfer/In-Transit value lineage, correction/reversal evidence, reconciliation, Finance handoff facts, bounded valuation reporting/export, and a lazy EN/AR RTL valuation workspace.
 
-MESP-143 and MESP-124 are merged to `main`. This repository is an active
-Development system, not a production-readiness or regulatory approval.
+It does **not** implement GL, AP, AR, tax posting, payments, Sales, generic Reporting, migration/cutover, external providers, statutory/ZATCA/FATOORA, or Wafra-specific reusable core behavior.
+
+The tracked project-control source of truth is [`docs/staticts.md`](docs/staticts.md). The conservative production-readiness headline remains approximately **47% overall** and approximately **41% Procurement/P2P** pending Sol acceptance and merge of MESP-131. Fast-track capability completion before accepting MESP-131 is **14/26 = 53.8%**; that is not production readiness.
+
+### MESP-131 implementation evidence pending Sol acceptance
+
+| Check | Executor-reported result |
+|---|---:|
+| Focused MESP-131 valuation | 7/7 |
+| Prior Inventory regression | 52/52 |
+| Full backend disposable-LocalDB suite | 919/919, 0 failed, 0 skipped |
+| Release build | 0 warnings / 0 errors |
+| Angular unit tests | 248/248 across 34 spec files |
+| Production initial bundle | 499.94 kB |
+| Valuation lazy chunk | 35.43 kB |
+| Focused Chromium | 1/1 |
+| Full Chromium | 28/28 |
+| npm audits | 0 vulnerabilities |
+| `frontend/assets` | untouched |
+
+Jira synchronization completed on 23 August 2026:
+- MESP-131 implementation handoff comment `11779`;
+- MESP-8 Inventory Epic moved to In Progress, comment `11780`;
+- MESP-54 FX consumption traceability `11781`;
+- MESP-53 reporting-boundary traceability `11782`;
+- MESP-113 Inventory-policy consumption traceability `11783`;
+- MESP-120 Exchange Rate downstream-consumption traceability `11784`;
+- MESP-132 Finance upstream-handoff traceability `11785`;
+- MESP-139 Reporting source-handoff traceability `11786`.
 
 ## Capability matrix
 
-Legend: ✅ implemented / usable at a bounded scope · 🚧 in progress · 📋 planned
-Release 1 scope · 🔒 gated or validation pending.
+Legend: âœ… merged/usable at a bounded scope Â· ðŸš§ implemented/active but not yet accepted and merged Â· ðŸ“‹ planned Â· ðŸ”’ gated/validation pending.
 
 | Capability | Status | Current boundary |
 |---|:---:|---|
-| Tenant, Company, Branch and organization scoping | ✅ | Server-derived scope, Tenant isolation, and Overview-first entry |
-| Tenant-aware entry routing and operational context | ✅ | Host candidate resolution, server-owned membership, and context switcher (MESP-143) |
-| Authentication, session, authorization and audit seams | ✅ | Production identity/provider hardening remains gated |
-| English / Arabic localization and RTL | ✅ | Coverage continues to expand with each bounded journey |
-| Master Data and Business Parties | ✅ | Category/UOM, Product, Supplier, Customer and reference slices |
-| Tax, Currency, Exchange Rate and Payment Term references | ✅ | Configuration-led internal references; no external FX/statutory claim |
-| Price Lists and Master Data Import | ✅ | Bounded Tenant-owned capabilities with audit/concurrency seams |
-| Purchase Requests and configurable approval foundation | ✅ | Internal demand flow; downstream commitments are excluded |
-| Supplier Quotations, comparison and source decision | ✅ | Sourcing comparison and decision recording (MESP-123) |
-| SQL Server Development database | ✅ | Local `MESP` database and formal module migration path |
-| Purchase Orders and Supplier Confirmation | ✅ | Merged MESP-124 slice: source lineage, approval, issue, manual confirmation, partials, rejection, changes, reapproval, durable replay, EN/AR RTL workspace |
-| Goods Receipt, Purchase Invoice, AP and Payments | 🚧 | MESP-125 activated: Goods Receipt & Purchase Invoice handoff slice (FIN-OD-01 approved contract-bound); AP/Payments remain downstream |
-| Inventory posting, B2B Sales, Accounting and Cash | 📋 | Required Release 1 work; not started |
-| Reporting, migration/onboarding and external integrations | 📋 / 🔒 | Product scope exists, implementation and gates remain |
-| ZATCA/FATOORA, statutory and legal certification | 🔒 | Outside this bounded implementation; requires qualified validation |
+| Tenant, Company, Branch and organization scoping | âœ… | Server-derived scope and Tenant isolation |
+| Tenant-aware entry routing and operational context | âœ… | Host candidate resolution, server membership and context switching |
+| Authentication, session, authorization and audit seams | âœ… | Production provider hardening remains gated |
+| English / Arabic localization and RTL | âœ… | Coverage expands with each bounded journey |
+| Master Data and Business Parties | âœ… | Category/UOM, Product, Supplier, Customer and reusable references |
+| Tax, Currency, Exchange Rate and Payment Term references | âœ… | Internal configuration-led evidence; no external/statutory claim |
+| Price Lists and Master Data Import | âœ… | Tenant-owned bounded capabilities |
+| Purchase Requests / approval foundation | âœ… | Configurable demand and approval flow |
+| Supplier Quotations / source decision | âœ… | Auditable quotation comparison and sourcing choice |
+| Purchase Orders / Supplier Confirmation | âœ… | Source lineage, approval, issue, confirmation/change/reapproval |
+| Goods Receipt / Purchase Invoice handoff / matching | âœ… | Physical/commercial evidence; no AP/GL posting |
+| Supplier Returns | âœ… | Procurement commercial evidence plus Inventory handoff |
+| Inventory ledger/opening/availability/reservation/tracking | âœ… | MESP-128 authoritative physical ledger foundation |
+| Goods Receipt physical effects / Transfers / In Transit / Supplier Return stock | âœ… | MESP-129 immutable movement lineage |
+| Stock Adjustment / Counts / Stock Issue / corrections | âœ… | MESP-130 count fences, SoD, blind counting and correction history |
+| MWA valuation / Inventory reconciliation | ðŸš§ | MESP-131 Draft PR #75; pending Sol acceptance and merge |
+| Core Finance: COA / periods / journals / GL | ðŸ“‹ | MESP-132+ |
+| AP / AR / cash / settlement | ðŸ“‹ | Downstream Finance |
+| B2B Sales / Order-to-Cash | ðŸ“‹ | Required Release 1 work; not started |
+| Generic Reporting and Analytics | ðŸ“‹ / ðŸ”’ | MESP-139; MESP-131 only provides Inventory-owned source views |
+| Migration/onboarding and external integrations | ðŸ“‹ / ðŸ”’ | Production/cutover gates remain |
+| ZATCA/FATOORA/statutory certification | ðŸ”’ | Qualified external validation required |
 
 ## Product direction
 
@@ -269,8 +285,8 @@ or local database process as a production deployment model.
 
 ## Scope discipline
 
-MESP-143 is merged to `main` at `866cb75bb7d0d97c929216b1a449f458a2614097` and
-MESP-124 is complete at its bounded pre-merge implementation scope on the
-focused branch. The repository does not implement Goods Receipt, invoicing, AP,
-accounting, payment, stock mutation, a supplier portal, external providers,
-Jira operations, or changes under `frontend/assets`.
+MESP-130 is merged to `main` at `b470179e1d18ef75c0a9247b2340407da6220dc4`. MESP-131 is implemented on Draft PR #75 and remains unmerged pending Sol acceptance.
+
+Inventory valuation produces operational valuation and Finance handoff facts only. It does not create Finance journals, GL/AP/AR, tax/payment effects, B2B Sales, generic Reporting, migration/cutover, external/statutory integrations, or Wafra-specific core behavior.
+
+See [`docs/34_MESP-131_MWA_Valuation_Architecture.md`](docs/34_MESP-131_MWA_Valuation_Architecture.md) for the current bounded architecture.

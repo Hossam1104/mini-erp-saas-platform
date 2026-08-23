@@ -1,5 +1,22 @@
 # MESP-131 - Sol Acceptance Handoff
 
+<!-- MESP-131-JIRA-SYNC-START -->
+## Jira/documentation synchronization â€” 23 August 2026
+
+Jira traceability has been reconciled without closing MESP-131:
+
+- MESP-131 remains In Progress; implementation handoff comment `11779`.
+- MESP-8 Inventory Epic is In Progress; progress comment `11780`.
+- MESP-54 FX consumption comment `11781`.
+- MESP-53 report-boundary comment `11782`.
+- MESP-113 Inventory-policy consumption comment `11783`.
+- MESP-120 Exchange Rate consumption comment `11784`.
+- MESP-132 downstream Finance handoff comment `11785`; status remains To Do.
+- MESP-139 downstream Reporting source comment `11786`; status remains To Do.
+
+Draft PR #75 remains unmerged and Sol acceptance is still required.
+<!-- MESP-131-JIRA-SYNC-END -->
+
 Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 
 Capability: MESP-131 - Moving Weighted Average valuation, reconciliation, and

@@ -1,5 +1,27 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
+<!-- MESP-131-ARCH-START -->
+## Current MESP-131 valuation architecture overlay â€” 23 August 2026
+
+MESP-131 is implemented on Draft PR #75 and is pending Sol acceptance/merge. It extends the existing Inventory module; it does not create a parallel Finance or Reporting domain.
+
+- **Ordering:** every physical Inventory movement receives a durable Tenant + Company `LedgerSequence`; future valuation does not use `PostedAt` or `EffectiveDate` as commit-order authority.
+- **Bootstrap:** pre-MESP-131 movement sequence is deterministically backfilled by Tenant, Company, `PostedAt`, and movement ID as a one-time pre-production starting order.
+- **Policy:** valuation is Tenant-owned, Company-specific, effective-dated and versioned, with Warehouse/Product/UOM or Warehouse/Product/UOM/Tracking scope, functional currency, precision and explicit rounding.
+- **MWA:** decimal deterministic inbound weighted-cost accumulation and outbound consumption at prior average cost; negative valuation state is blocked.
+- **FX:** exact active effective-dated MESP-120 Exchange Rate version/provenance evidence is snapshotted; no client rate, external feed, inverse guess or silent latest-rate fallback.
+- **History:** current valuation state is a projection; applied valuation events are append-only and preserve source, policy, rate, prior/new state, movement value, actor and correlation.
+- **Pending predecessor:** unresolved cost/policy/FX/link evidence stops later valuation in the same scope; unrelated scopes may continue.
+- **Transfers:** shipment uses source MWA; In-Transit value remains visible; receipt/loss/return inherit linked transfer valuation.
+- **Corrections:** original valuation evidence is never rewritten; physical corrections append linked valuation reversal/delta evidence.
+- **Finance boundary:** Inventory emits versioned valuation handoff facts only. Journals, GL/AP/AR, account mapping, periods and financial posting remain MESP-132+.
+- **Reporting boundary:** MESP-131 owns Inventory valuation/reconciliation views and bounded audited CSV export only; generic Reporting remains MESP-139.
+- **Concurrency:** durable valuation scope serialization, Serializable persistence, rowversion/uniqueness and durable idempotency prevent duplicate/forked applied valuation.
+- **Migration:** `20260823124304_MESP131MovingWeightedAverageValuation`.
+
+See `docs/34_MESP-131_MWA_Valuation_Architecture.md` for the full bounded handoff.
+<!-- MESP-131-ARCH-END -->
+
 > **Current MESP-123 B2 implementation overlay - 16 August 2026.** The
 > approved shared SQL Server direction now has a bounded local Development
 > execution path: an explicit `MESP_SQLSERVER_CONNECTION_STRING` selects the

@@ -1,5 +1,21 @@
 # Release 1 MESP-116 Approved Decision and Dependency Map
 
+<!-- MESP-131-EXECUTION-START -->
+## Execution overlay â€” 23 August 2026
+
+This overlay does not change the approved plan baseline.
+
+Inventory fast-track execution currently stands at:
+
+- MESP-128 â€” Done.
+- MESP-129 â€” Done.
+- MESP-130 â€” Done.
+- MESP-131 â€” implemented on Draft PR #75, In Progress, pending Sol acceptance/merge.
+- MESP-132 â€” To Do / not activated.
+
+Fast-track completion before accepting MESP-131 remains `14/26 = 53.8%`; this is capability completion, not production readiness.
+<!-- MESP-131-EXECUTION-END -->
+
 **Date:** 12 August 2026
 **Status:** Current MESP-116 governance handoff
 **Owner evidence:** MESP-116 Jira comment `10957`

@@ -1,6 +1,12 @@
 # Mini ERP backend foundation
 
-> **Current MESP-129 runtime overlay - 22 August 2026.** The backend now
+<!-- MESP-131-CURRENT-START -->
+> **Current MESP-131 implementation overlay â€” 23 August 2026; pending Sol acceptance.** Inventory now contains a deterministic Company-scoped `LedgerSequence` for movement ordering, versioned decimal Moving Weighted Average valuation policy/state/evidence, exact MESP-120 Exchange Rate snapshots, Pending/Blocked predecessor handling, append-only correction/reversal history, Warehouse Transfer/In-Transit value lineage, Inventory reconciliation, Finance handoff facts, and bounded valuation/report/export REST surfaces. Finance posting remains downstream: no Journal, GL, AP, AR, tax, payment, fiscal-period, Sales, generic Reporting, statutory, migration/cutover, external-provider, or Wafra-specific reusable core behavior is introduced.
+>
+> **MESP-131 executor-reported validation pending Sol acceptance.** Focused valuation `7/7`; prior Inventory regression `52/52`; canonical disposable-LocalDB backend `919/919` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `248/248` across 34 specs; initial bundle `499.94 kB`; valuation lazy chunk `35.43 kB`; full Chromium `28/28`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. Draft PR #75 remains open/Draft/unmerged. Jira implementation handoff: MESP-131 comment `11779`.
+<!-- MESP-131-CURRENT-END -->
+
+> **Historical MESP-129 runtime overlay - 22 August 2026.** The backend now
 > consumes authoritative Procurement Goods Receipt lines for one-time accepted
 > quantity posting, blocks Goods Receipt cancellation while an active physical
 > effect exists, and consumes only the real `AwaitingInventory` Supplier Return
@@ -27,7 +33,7 @@
 > no Jira writes were performed. The bounded P1 source/test commit is
 > `a824e8a`; Draft PR **#73** remains open, Draft, and unmerged.
 
-> **Current MESP-128 runtime overlay - 22 August 2026.** The backend carries
+> **Historical MESP-128 runtime overlay - 22 August 2026.** The backend carries
 > the bounded Inventory-owned append-only stock ledger foundation plus the SOL
 > P1 remediation and Opus delta remediation: deterministic Tenant-safe
 > opening-source fingerprints independent of extraction time and request
@@ -50,7 +56,7 @@
 > disposable migration apply/rollback/reapply/drop passed, protected
 > frontend/assets remain untouched, and no Jira writes were performed.
 
-> **Current MESP-127 runtime overlay - 21 August 2026.** The backend now
+> **Historical MESP-127 runtime overlay - 21 August 2026.** The backend now
 > carries Procurement-owned Supplier Returns from accepted Goods Receipt
 > evidence through Draft, Submitted, Approved, rejection/cancellation,
 > Inventory-facing handoff evidence, Finance-facing correction/credit
@@ -74,7 +80,7 @@
 > suite is **24/24**; both production-only and full npm audits report **0
 > vulnerabilities**. Protected `frontend/assets` remain untouched.
 
-> **Current MESP-126 runtime overlay - 21 August 2026.** The backend now
+> **Historical MESP-126 runtime overlay - 21 August 2026.** The backend now
 > carries deterministic three-way matching as Procurement evidence
 > orchestration: independent supplier-declared invoice evidence is stored
 > separately from the MESP-125 PO-derived handoff preview, exact-safe and
@@ -88,7 +94,7 @@
 > GL, tax accounting, stock, payment, FX revaluation, ZATCA/FATOORA, or
 > external integrations.
 
-> **Current MESP-125 runtime overlay - 19 August 2026.** The backend carries
+> **Historical MESP-125 runtime overlay - 19 August 2026.** The backend carries
 > the complete MESP-125 Goods Receipt and Purchase Invoice Handoff slice alongside
 > the merged MESP-124 Purchase Order and Supplier Confirmation slice, MESP-143
 > Tenant-aware entry routing, candidate host resolution, exact server-side
