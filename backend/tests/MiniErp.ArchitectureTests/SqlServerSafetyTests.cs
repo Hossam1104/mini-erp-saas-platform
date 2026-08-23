@@ -330,7 +330,8 @@ public sealed class SqlServerSafetyTests
                     "20260822220521_MESP130SolAcceptanceCountApproval",
                     "20260823104702_MESP130InventoryCountLedgerFence",
                     "20260823124304_MESP131MovingWeightedAverageValuation",
-                    "20260823180537_MESP131SolFinancialIntegrityRemediation"
+                    "20260823180537_MESP131SolFinancialIntegrityRemediation",
+                    "20260823211902_MESP131SolFinalValuationIntegrity"
                 ],
                 (await inventory.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await inventory.Database.GetPendingMigrationsAsync());
@@ -1744,6 +1745,98 @@ public sealed class SqlServerSafetyTests
         Assert.Equal(1, Convert.ToInt32(await indexCommand.ExecuteScalarAsync()));
     }
 
+    [Fact]
+    public async Task MESP131_sql_server_final_integrity_persists_closeout_evidence_and_isolates_tracking_failure()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = new DbContextOptionsBuilder().UseSqlServer(connectionString).Options;
+        var tenantId = _fixture.TenantA.TenantId;
+        var context = InventoryContext(_fixture.TenantA, "tenant.inventory.valuation.process");
+
+        var closeoutCompanyId = Guid.NewGuid();
+        var closeoutWarehouseId = Guid.NewGuid();
+        var closeoutProductId = Guid.NewGuid();
+        var closeoutUnitId = Guid.NewGuid();
+        await using (var db = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            db.StockMovements.AddRange(
+                SqlMovement(tenantId, closeoutCompanyId, closeoutWarehouseId, closeoutProductId, closeoutUnitId, InventoryMovementDirection.Inbound, 2m, 33.33m, "SAR", "sql-mesp131-final-in-one"),
+                SqlMovement(tenantId, closeoutCompanyId, closeoutWarehouseId, closeoutProductId, closeoutUnitId, InventoryMovementDirection.Inbound, 1m, 33.34m, "SAR", "sql-mesp131-final-in-two"),
+                SqlMovement(tenantId, closeoutCompanyId, closeoutWarehouseId, closeoutProductId, closeoutUnitId, InventoryMovementDirection.Outbound, 3m, null, null, "sql-mesp131-final-out", new DateOnly(2026, 1, 3), InventoryMovementSourceType.StockIssue));
+            await db.SaveChangesAsync();
+        }
+
+        var persistence = new InventoryValuationPersistence(options, null, null, null);
+        var closeoutPolicy = await persistence.CreatePolicyAsync(context, new InventoryValuationPolicyCommand(Guid.NewGuid(), SqlPolicy(closeoutCompanyId, new DateOnly(2026, 1, 1), unitCostScale: 2, amountScale: 4), context.ActorId, DateTimeOffset.UtcNow, "sql-mesp131-final-closeout-policy", "sql-mesp131-final-closeout-policy-key", "sql-mesp131-final-closeout-policy-fingerprint"));
+        Assert.True(closeoutPolicy.Succeeded, closeoutPolicy.Code);
+        var closeoutProcess = await persistence.ProcessAsync(context, new InventoryValuationProcessCommand(closeoutCompanyId, null, closeoutWarehouseId, closeoutProductId, closeoutUnitId, context.ActorId, DateTimeOffset.UtcNow, "sql-mesp131-final-closeout-process", "sql-mesp131-final-closeout-process-key", "sql-mesp131-final-closeout-process-fingerprint"));
+        Assert.True(closeoutProcess.Succeeded, closeoutProcess.Code);
+        var closeoutEvent = Assert.Single(await persistence.ListEventsAsync(context, new InventoryValuationQuery(closeoutCompanyId)), item => item.Direction == InventoryMovementDirection.Outbound);
+        Assert.Equal(99.99m, closeoutEvent.FormulaMovementValue);
+        Assert.Equal(0.01m, closeoutEvent.RoundingAdjustmentAmount);
+        Assert.Equal(100m, closeoutEvent.MovementValue);
+        Assert.Equal(0m, closeoutEvent.NewQuantity);
+        Assert.Equal(0m, closeoutEvent.NewValue);
+        var closeoutHandoff = Assert.Single(
+            await persistence.ListFinanceHandoffsAsync(context, new InventoryValuationQuery(closeoutCompanyId)),
+            item => item.Direction == InventoryMovementDirection.Outbound);
+        Assert.Equal(100m, closeoutHandoff.BaseAmount);
+        Assert.Equal(-100m, closeoutHandoff.SignedBaseAmount);
+        Assert.Equal(0.01m, closeoutHandoff.RoundingAdjustmentAmount);
+
+        var trackingCompanyId = Guid.NewGuid();
+        var trackingWarehouseId = Guid.NewGuid();
+        var trackingProductId = Guid.NewGuid();
+        var trackingUnitId = Guid.NewGuid();
+        await using (var db = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            db.StockMovements.AddRange(
+                SqlMovement(tenantId, trackingCompanyId, trackingWarehouseId, trackingProductId, trackingUnitId, InventoryMovementDirection.Inbound, 1m, 10m, "USD", "sql-mesp131-final-lot-a-failure", trackingIdentity: "LOT-A"),
+                SqlMovement(tenantId, trackingCompanyId, trackingWarehouseId, trackingProductId, trackingUnitId, InventoryMovementDirection.Inbound, 1m, 20m, "SAR", "sql-mesp131-final-lot-b", trackingIdentity: "LOT-B"),
+                SqlMovement(tenantId, trackingCompanyId, trackingWarehouseId, trackingProductId, trackingUnitId, InventoryMovementDirection.Inbound, 1m, 30m, "SAR", "sql-mesp131-final-lot-a-successor", trackingIdentity: "LOT-A"),
+                SqlMovement(tenantId, trackingCompanyId, trackingWarehouseId, trackingProductId, trackingUnitId, InventoryMovementDirection.Inbound, 1m, 40m, "SAR", "sql-mesp131-final-lot-b-successor", trackingIdentity: "LOT-B"));
+            await db.SaveChangesAsync();
+        }
+
+        var trackingPolicy = await persistence.CreatePolicyAsync(context, new InventoryValuationPolicyCommand(Guid.NewGuid(), SqlPolicy(trackingCompanyId, new DateOnly(2026, 1, 1), scopeMode: InventoryValuationScopeMode.WarehouseProductUomTracking), context.ActorId, DateTimeOffset.UtcNow, "sql-mesp131-final-tracking-policy", "sql-mesp131-final-tracking-policy-key", "sql-mesp131-final-tracking-policy-fingerprint"));
+        Assert.True(trackingPolicy.Succeeded, trackingPolicy.Code);
+        var trackingProcess = await persistence.ProcessAsync(context, new InventoryValuationProcessCommand(trackingCompanyId, null, trackingWarehouseId, trackingProductId, trackingUnitId, context.ActorId, DateTimeOffset.UtcNow, "sql-mesp131-final-tracking-process", "sql-mesp131-final-tracking-process-key", "sql-mesp131-final-tracking-process-fingerprint"));
+        Assert.True(trackingProcess.Succeeded, trackingProcess.Code);
+        Assert.Equal(2, trackingProcess.Value!.AppliedCount);
+        Assert.Equal(2, trackingProcess.Value.PendingCount);
+        var trackingEvents = (await persistence.ListEventsAsync(context, new InventoryValuationQuery(trackingCompanyId))).OrderBy(item => item.LedgerSequence).ToArray();
+        Assert.Equal(InventoryValuationEventStatus.Pending, trackingEvents[0].Status);
+        Assert.Equal(InventoryValuationEventStatus.Applied, trackingEvents[1].Status);
+        Assert.Equal("pending_predecessor", trackingEvents[2].StatusCode);
+        Assert.Equal(InventoryValuationEventStatus.Applied, trackingEvents[3].Status);
+
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM sys.columns
+            INNER JOIN sys.tables ON sys.tables.object_id = sys.columns.object_id
+            INNER JOIN sys.schemas ON sys.schemas.schema_id = sys.tables.schema_id
+            WHERE sys.schemas.name = N'inventory'
+              AND sys.tables.name = N'MovementValuationEvents'
+              AND sys.columns.name IN (N'FormulaMovementValue', N'RoundingAdjustmentAmount');
+            SELECT COUNT(*)
+            FROM sys.columns
+            INNER JOIN sys.tables ON sys.tables.object_id = sys.columns.object_id
+            INNER JOIN sys.schemas ON sys.schemas.schema_id = sys.tables.schema_id
+            WHERE sys.schemas.name = N'inventory'
+              AND sys.tables.name = N'FinanceValuationHandoffs'
+              AND sys.columns.name = N'RoundingAdjustmentAmount';
+            """;
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(2, reader.GetInt32(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
+    }
+
     private static InventoryValuationPolicyRequest SqlPolicy(
         Guid companyId,
         DateOnly effectiveFrom,
@@ -1766,8 +1859,9 @@ public sealed class SqlServerSafetyTests
         string? currency,
         string sourceReference,
         DateOnly? effectiveDate = null,
-        InventoryMovementSourceType sourceType = InventoryMovementSourceType.OpeningBalance) =>
-        new(tenantId, Guid.NewGuid(), companyId, null, warehouseId, "WH-SQL-MWA", "SQL MWA warehouse", productId, "SKU-SQL-MWA", "SQL MWA product", unitId, "EA", direction, quantity, unitCost, currency, InventoryValuationStatus.Pending, null, sourceType, Guid.NewGuid(), Guid.NewGuid(), null, effectiveDate ?? new DateOnly(2026, 1, 1), Guid.Parse("44444444-4444-4444-4444-444444444444"), sourceReference, DateTimeOffset.UtcNow);
+        InventoryMovementSourceType sourceType = InventoryMovementSourceType.OpeningBalance,
+        string? trackingIdentity = null) =>
+        new(tenantId, Guid.NewGuid(), companyId, null, warehouseId, "WH-SQL-MWA", "SQL MWA warehouse", productId, "SKU-SQL-MWA", "SQL MWA product", unitId, "EA", direction, quantity, unitCost, currency, InventoryValuationStatus.Pending, trackingIdentity, sourceType, Guid.NewGuid(), Guid.NewGuid(), null, effectiveDate ?? new DateOnly(2026, 1, 1), Guid.Parse("44444444-4444-4444-4444-444444444444"), sourceReference, DateTimeOffset.UtcNow);
 
     private static async Task ExecuteProbeInsertAsync(
         SqlConnection connection,

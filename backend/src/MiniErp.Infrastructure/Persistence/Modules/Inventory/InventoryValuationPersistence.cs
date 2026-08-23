@@ -128,7 +128,8 @@ internal sealed class InventoryValuationPersistence(
             long? latest = movements.Count == 0 ? null : movements.Max(item => item.LedgerSequence);
             string functionalCurrency = string.Empty;
             Guid? lastPolicyId = null;
-            var stoppedPools = new HashSet<PhysicalPoolKey>();
+            var missingPolicyBlockedBasePools = new HashSet<PhysicalPoolKey>();
+            var stoppedValuationScopes = new HashSet<ValuationScopeKey>();
             var stateCache = new Dictionary<ValuationScopeKey, InventoryValuationStateEntity>();
 
             foreach (var movement in movements)
@@ -144,7 +145,7 @@ internal sealed class InventoryValuationPersistence(
                     .FirstOrDefault();
                 if (policy is null)
                 {
-                    stoppedPools.Add(basePool);
+                    missingPolicyBlockedBasePools.Add(basePool);
                     AddPendingEventIfMissing(db, existingEvents, context, movement, null, null, "valuation_policy_not_configured", "valuation_policy_not_configured", command);
                     pending++;
                     continue;
@@ -173,7 +174,14 @@ internal sealed class InventoryValuationPersistence(
                 if (movement.LedgerSequence <= state.LastAppliedLedgerSequence)
                     continue;
 
-                if (stoppedPools.Contains(basePool))
+                if (missingPolicyBlockedBasePools.Contains(basePool))
+                {
+                    AddPendingEventIfMissing(db, existingEvents, context, movement, policy, state, "pending_predecessor", "pending_predecessor", command);
+                    pending++;
+                    continue;
+                }
+
+                if (stoppedValuationScopes.Contains(scopeKey))
                 {
                     AddPendingEventIfMissing(db, existingEvents, context, movement, policy, state, "pending_predecessor", "pending_predecessor", command);
                     pending++;
@@ -185,7 +193,7 @@ internal sealed class InventoryValuationPersistence(
                     var priorPolicy = policies.SingleOrDefault(item => item.Id == state.CurrentPolicyId.Value);
                     if (priorPolicy is not null && !AreCompatible(priorPolicy, policy))
                     {
-                        stoppedPools.Add(basePool);
+                        stoppedValuationScopes.Add(scopeKey);
                         AddPendingEventIfMissing(db, existingEvents, context, movement, policy, state, "valuation_policy_transition_requires_rebaseline", "valuation_policy_transition_requires_rebaseline", command);
                         blocked++;
                         continue;
@@ -199,7 +207,7 @@ internal sealed class InventoryValuationPersistence(
                 {
                     var correctionStatus = correction.IsBlocked ? InventoryValuationEventStatus.Blocked : InventoryValuationEventStatus.Pending;
                     AddPendingEventIfMissing(db, existingEvents, context, movement, policy, state, correction.Code, correction.Reason, command, correctionStatus, correction.Cost?.BaseUnitCost, correction.Cost, correction.OriginalValuationEventId);
-                    stoppedPools.Add(basePool);
+                    stoppedValuationScopes.Add(scopeKey);
                     if (correction.IsBlocked) blocked++; else pending++;
                     continue;
                 }
@@ -208,7 +216,7 @@ internal sealed class InventoryValuationPersistence(
                 if (!cost.Succeeded)
                 {
                     AddPendingEventIfMissing(db, existingEvents, context, movement, policy, state, cost.Code, cost.Reason, command, InventoryValuationEventStatus.Pending, null, cost);
-                    stoppedPools.Add(basePool);
+                    stoppedValuationScopes.Add(scopeKey);
                     pending++;
                     continue;
                 }
@@ -217,24 +225,24 @@ internal sealed class InventoryValuationPersistence(
                 MovingWeightedAverageOutput calculation;
                 string calculationError;
                 var calculationSucceeded = correction is not null
-                    ? MovingWeightedAverageCalculator.TryApplyCorrection(new MovingWeightedAverageCorrectionInput(movement.Direction, movement.Quantity, correction.ReversalValue, state.Quantity, state.Value, policy.UnitCostScale, policy.AmountScale, policy.RoundingMode, correction.IsFullReversal), out calculation, out calculationError)
+                    ? MovingWeightedAverageCalculator.TryApplyCorrection(new MovingWeightedAverageCorrectionInput(movement.Direction, movement.Quantity, correction.ReversalValue, state.Quantity, state.Value, policy.UnitCostScale, policy.AmountScale, policy.RoundingMode, correction.IsFullReversal, correction.FormulaReversalValue, correction.RoundingAdjustmentAmount), out calculation, out calculationError)
                     : MovingWeightedAverageCalculator.TryApply(new MovingWeightedAverageInput(movement.Direction, movement.Quantity, baseCost, state.Quantity, state.Value, policy.UnitCostScale, policy.AmountScale, policy.RoundingMode, state.AverageUnitCost), out calculation, out calculationError);
                 if (!calculationSucceeded)
                 {
                     AddPendingEventIfMissing(db, existingEvents, context, movement, policy, state, calculationError, calculationError, command, InventoryValuationEventStatus.Blocked, baseCost, cost, correction?.OriginalValuationEventId);
-                    stoppedPools.Add(basePool);
+                    stoppedValuationScopes.Add(scopeKey);
                     blocked++;
                     continue;
                 }
 
                 var isBackdated = appliedEventsForCompany.Any(item => item.CompanyId == scopeKey.CompanyId && item.BranchId == scopeKey.BranchId && item.WarehouseId == scopeKey.WarehouseId && item.ProductId == scopeKey.ProductId && item.UnitOfMeasureId == scopeKey.UnitOfMeasureId && item.TrackingIdentity == scopeKey.TrackingIdentity && item.EffectiveOn > movement.EffectiveDate);
-                var eventEntity = new InventoryMovementValuationEventEntity(context.TenantId, Guid.NewGuid(), movement.Id, movement.LedgerSequence, InventoryValuationEventStatus.Applied, isBackdated ? "backdated_applied" : "applied", movement, policy, state.Quantity, state.Value, calculation.NewQuantity, calculation.NewValue, calculation.MovementValue, baseCost, cost.ExchangeRateId, cost.ExchangeRateVersionId, cost.ExchangeRateVersionNumber, cost.ExchangeRate, cost.ExchangeRateScale, cost.ExchangeRateProvenance, correction?.OriginalValuationEventId, null, isBackdated, null, command.ActorId, command.CorrelationId, command.OccurredAt, cost.TransactionUnitCost, cost.TransactionCurrencyCode);
+                var eventEntity = new InventoryMovementValuationEventEntity(context.TenantId, Guid.NewGuid(), movement.Id, movement.LedgerSequence, InventoryValuationEventStatus.Applied, isBackdated ? "backdated_applied" : "applied", movement, policy, state.Quantity, state.Value, calculation.NewQuantity, calculation.NewValue, calculation.MovementValue, calculation.FormulaMovementValue, calculation.RoundingAdjustmentAmount, baseCost, cost.ExchangeRateId, cost.ExchangeRateVersionId, cost.ExchangeRateVersionNumber, cost.ExchangeRate, cost.ExchangeRateScale, cost.ExchangeRateProvenance, correction?.OriginalValuationEventId, null, isBackdated, null, command.ActorId, command.CorrelationId, command.OccurredAt, cost.TransactionUnitCost, cost.TransactionCurrencyCode);
                 db.MovementValuationEvents.Add(eventEntity);
                 existingEvents.Add(eventEntity);
                 appliedEventsForCompany.Add(eventEntity);
                 state.Apply(calculation.NewQuantity, calculation.NewValue, calculation.AverageUnitCost, movement.LedgerSequence, policy, command.OccurredAt);
                 var handoffAmount = Math.Abs(calculation.MovementValue);
-                db.FinanceValuationHandoffs.Add(new InventoryFinanceValuationHandoffEntity(context.TenantId, movement, eventEntity, policy, baseCost, handoffAmount, cost.TransactionUnitCost, cost.TransactionCurrencyCode, cost.ExchangeRateId, cost.ExchangeRateVersionId, cost.ExchangeRateVersionNumber, cost.ExchangeRate, cost.ExchangeRateScale, cost.ExchangeRateProvenance, InventoryFinanceValuationHandoffStatus.ReadyForFinance, command.CorrelationId, command.OccurredAt));
+                db.FinanceValuationHandoffs.Add(new InventoryFinanceValuationHandoffEntity(context.TenantId, movement, eventEntity, policy, baseCost, handoffAmount, calculation.RoundingAdjustmentAmount, cost.TransactionUnitCost, cost.TransactionCurrencyCode, cost.ExchangeRateId, cost.ExchangeRateVersionId, cost.ExchangeRateVersionNumber, cost.ExchangeRate, cost.ExchangeRateScale, cost.ExchangeRateProvenance, InventoryFinanceValuationHandoffStatus.ReadyForFinance, command.CorrelationId, command.OccurredAt));
                 applied++;
             }
 
@@ -313,9 +321,20 @@ internal sealed class InventoryValuationPersistence(
                 : appliedHandoffCount == appliedMovementIds.Count
                     ? InventoryFinanceValuationHandoffStatus.ReadyForFinance
                     : InventoryFinanceValuationHandoffStatus.Pending;
-            var status = blockedMovementStatuses.Length > 0 ? InventoryValuationReconciliationStatus.Blocked : pendingMovementStatuses.Length > 0 || policy is null ? InventoryValuationReconciliationStatus.PendingValuation : quantityDifference != 0m ? InventoryValuationReconciliationStatus.QuantityMismatch : financeHandoffStatus != InventoryFinanceValuationHandoffStatus.ReadyForFinance ? InventoryValuationReconciliationStatus.FinanceHandoffPending : InventoryValuationReconciliationStatus.Reconciled;
+            var valuedAmount = state?.Value ?? 0m;
+            var valuationMismatch = valuedQuantity < 0m || valuedAmount < 0m || valuedQuantity == 0m && valuedAmount != 0m;
+            var status = valuationMismatch ? InventoryValuationReconciliationStatus.ValuationMismatch : blockedMovementStatuses.Length > 0 ? InventoryValuationReconciliationStatus.Blocked : pendingMovementStatuses.Length > 0 || policy is null ? InventoryValuationReconciliationStatus.PendingValuation : quantityDifference != 0m ? InventoryValuationReconciliationStatus.QuantityMismatch : financeHandoffStatus != InventoryFinanceValuationHandoffStatus.ReadyForFinance ? InventoryValuationReconciliationStatus.FinanceHandoffPending : InventoryValuationReconciliationStatus.Reconciled;
             var inTransit = await ReadInTransitAsync(db, group.Key, events, policies, cancellationToken);
-            rows.Add(new InventoryValuationReconciliationRecord(context.TenantId.Value, group.Key.CompanyId, group.Key.BranchId, group.Key.WarehouseId, group.Key.ProductId, group.Key.UnitOfMeasureId, string.IsNullOrEmpty(group.Key.TrackingIdentity) ? null : group.Key.TrackingIdentity, state?.FunctionalCurrencyCode ?? policy?.FunctionalCurrencyCode ?? string.Empty, state?.CurrentPolicyId ?? policy?.Id, status, physicalQuantity, valuedQuantity, quantityDifference, state?.Value ?? 0m, state?.AverageUnitCost ?? 0m, group.Max(item => (long?)item.LedgerSequence), state?.LastAppliedLedgerSequence ?? 0L, group.Count(), appliedMovementIds.Count, pendingMovementStatuses.Length, blockedMovementStatuses.Length, movementStatuses.Where(item => !item.HasApplied).Select(item => (long?)item.OldestPendingSequence).Min(), inTransit.Quantity, inTransit.Value, inTransit.Status, financeHandoffStatus, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, status == InventoryValuationReconciliationStatus.QuantityMismatch ? "physical_quantity_differs_from_valued_state" : status == InventoryValuationReconciliationStatus.FinanceHandoffPending ? "finance_handoff_evidence_pending" : status == InventoryValuationReconciliationStatus.PendingValuation ? "valuation_evidence_pending" : null));
+            var differenceReason = status == InventoryValuationReconciliationStatus.ValuationMismatch
+                ? valuedQuantity == 0m && valuedAmount != 0m
+                    ? "valuation_state_zero_quantity_non_zero_value"
+                    : "valuation_state_negative_quantity_or_value"
+                : status == InventoryValuationReconciliationStatus.QuantityMismatch
+                    ? "physical_quantity_differs_from_valued_state"
+                    : status == InventoryValuationReconciliationStatus.FinanceHandoffPending
+                        ? "finance_handoff_evidence_pending"
+                        : status == InventoryValuationReconciliationStatus.PendingValuation ? "valuation_evidence_pending" : null;
+            rows.Add(new InventoryValuationReconciliationRecord(context.TenantId.Value, group.Key.CompanyId, group.Key.BranchId, group.Key.WarehouseId, group.Key.ProductId, group.Key.UnitOfMeasureId, string.IsNullOrEmpty(group.Key.TrackingIdentity) ? null : group.Key.TrackingIdentity, state?.FunctionalCurrencyCode ?? policy?.FunctionalCurrencyCode ?? string.Empty, state?.CurrentPolicyId ?? policy?.Id, status, physicalQuantity, valuedQuantity, quantityDifference, valuedAmount, state?.AverageUnitCost ?? 0m, group.Max(item => (long?)item.LedgerSequence), state?.LastAppliedLedgerSequence ?? 0L, group.Count(), appliedMovementIds.Count, pendingMovementStatuses.Length, blockedMovementStatuses.Length, movementStatuses.Where(item => !item.HasApplied).Select(item => (long?)item.OldestPendingSequence).Min(), inTransit.Quantity, inTransit.Value, inTransit.Status, financeHandoffStatus, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, differenceReason));
         }
         return rows;
     }
@@ -331,7 +350,8 @@ internal sealed class InventoryValuationPersistence(
             return InventoryPersistenceResult<InventoryValuationSummaryRecord>.Success(new InventoryValuationSummaryRecord(context.TenantId.Value, query.CompanyId, query.BranchId, query.WarehouseId, policy?.FunctionalCurrencyCode ?? string.Empty, 0m, 0m, 0m, 0, 0, 0m, 0m, InventoryInTransitValuationStatus.Ready, InventoryValuationReconciliationStatus.Reconciled, null, null, true, false, asOf, asOf));
         }
 
-        var status = rows.Any(item => item.Status == InventoryValuationReconciliationStatus.Blocked) ? InventoryValuationReconciliationStatus.Blocked
+        var status = rows.Any(item => item.Status == InventoryValuationReconciliationStatus.ValuationMismatch) ? InventoryValuationReconciliationStatus.ValuationMismatch
+            : rows.Any(item => item.Status == InventoryValuationReconciliationStatus.Blocked) ? InventoryValuationReconciliationStatus.Blocked
             : rows.Any(item => item.Status == InventoryValuationReconciliationStatus.PendingValuation) ? InventoryValuationReconciliationStatus.PendingValuation
             : rows.Any(item => item.Status == InventoryValuationReconciliationStatus.QuantityMismatch) ? InventoryValuationReconciliationStatus.QuantityMismatch
             : rows.Any(item => item.Status == InventoryValuationReconciliationStatus.FinanceHandoffPending) ? InventoryValuationReconciliationStatus.FinanceHandoffPending
@@ -394,11 +414,11 @@ internal sealed class InventoryValuationPersistence(
             .AppendLine($"# policyVersion={Csv(policy?.VersionNumber.ToString(CultureInfo.InvariantCulture))}")
             .AppendLine($"# generatedActor={Csv(context.ActorId.ToString("D"))}")
             .AppendLine($"# generatedCorrelation={Csv(context.CorrelationId?.Value)}")
-            .AppendLine("LedgerSequence,MovementId,SourceType,SourceDocumentId,SourceLineId,Status,StatusCode,CompanyId,BranchId,WarehouseId,ProductId,UnitOfMeasureId,TrackingIdentity,PolicyId,PolicyVersion,FunctionalCurrency,Quantity,Direction,TransactionUnitCost,TransactionCurrency,ExchangeRate,BaseUnitCost,PriorQuantity,PriorValue,NewQuantity,NewValue,MovementValue,EffectiveOn,CorrectionOfValuationEventId,SourceRevisionId,PendingReason,CorrelationId,ActorId,OccurredAt");
+            .AppendLine("LedgerSequence,MovementId,SourceType,SourceDocumentId,SourceLineId,Status,StatusCode,CompanyId,BranchId,WarehouseId,ProductId,UnitOfMeasureId,TrackingIdentity,PolicyId,PolicyVersion,FunctionalCurrency,Quantity,Direction,TransactionUnitCost,TransactionCurrency,ExchangeRate,BaseUnitCost,PriorQuantity,PriorValue,NewQuantity,NewValue,MovementValue,FormulaMovementValue,RoundingAdjustmentAmount,EffectiveOn,CorrectionOfValuationEventId,SourceRevisionId,PendingReason,CorrelationId,ActorId,OccurredAt");
         foreach (var item in events)
         {
             content.AppendLine(string.Join(',',
-                Csv(item.LedgerSequence.ToString(CultureInfo.InvariantCulture)), Csv(item.MovementId.ToString("D")), Csv(item.SourceType), Csv(item.SourceDocumentId.ToString("D")), Csv(item.SourceLineId.ToString("D")), Csv(item.Status), Csv(item.StatusCode), Csv(item.CompanyId.ToString("D")), Csv(item.BranchId?.ToString("D")), Csv(item.WarehouseId.ToString("D")), Csv(item.ProductId.ToString("D")), Csv(item.UnitOfMeasureId.ToString("D")), Csv(string.IsNullOrEmpty(item.TrackingIdentity) ? null : item.TrackingIdentity), Csv(item.PolicyId?.ToString("D")), Csv(item.PolicyVersionNumber?.ToString(CultureInfo.InvariantCulture)), Csv(item.FunctionalCurrencyCode), Csv(item.Quantity.ToString(CultureInfo.InvariantCulture)), Csv(item.Direction), Csv(item.TransactionUnitCost?.ToString(CultureInfo.InvariantCulture)), Csv(item.TransactionCurrencyCode), Csv(item.ExchangeRate?.ToString(CultureInfo.InvariantCulture)), Csv(item.BaseUnitCost?.ToString(CultureInfo.InvariantCulture)), Csv(item.PriorQuantity.ToString(CultureInfo.InvariantCulture)), Csv(item.PriorValue.ToString(CultureInfo.InvariantCulture)), Csv(item.NewQuantity.ToString(CultureInfo.InvariantCulture)), Csv(item.NewValue.ToString(CultureInfo.InvariantCulture)), Csv(item.MovementValue?.ToString(CultureInfo.InvariantCulture)), Csv(item.EffectiveOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)), Csv(item.CorrectionOfValuationEventId?.ToString("D")), Csv(item.SourceRevisionId?.ToString("D")), Csv(item.PendingReason), Csv(item.CorrelationId), Csv(item.ActorId.ToString("D")), Csv(item.OccurredAt.ToString("O", CultureInfo.InvariantCulture))));
+                Csv(item.LedgerSequence.ToString(CultureInfo.InvariantCulture)), Csv(item.MovementId.ToString("D")), Csv(item.SourceType), Csv(item.SourceDocumentId.ToString("D")), Csv(item.SourceLineId.ToString("D")), Csv(item.Status), Csv(item.StatusCode), Csv(item.CompanyId.ToString("D")), Csv(item.BranchId?.ToString("D")), Csv(item.WarehouseId.ToString("D")), Csv(item.ProductId.ToString("D")), Csv(item.UnitOfMeasureId.ToString("D")), Csv(string.IsNullOrEmpty(item.TrackingIdentity) ? null : item.TrackingIdentity), Csv(item.PolicyId?.ToString("D")), Csv(item.PolicyVersionNumber?.ToString(CultureInfo.InvariantCulture)), Csv(item.FunctionalCurrencyCode), Csv(item.Quantity.ToString(CultureInfo.InvariantCulture)), Csv(item.Direction), Csv(item.TransactionUnitCost?.ToString(CultureInfo.InvariantCulture)), Csv(item.TransactionCurrencyCode), Csv(item.ExchangeRate?.ToString(CultureInfo.InvariantCulture)), Csv(item.BaseUnitCost?.ToString(CultureInfo.InvariantCulture)), Csv(item.PriorQuantity.ToString(CultureInfo.InvariantCulture)), Csv(item.PriorValue.ToString(CultureInfo.InvariantCulture)), Csv(item.NewQuantity.ToString(CultureInfo.InvariantCulture)), Csv(item.NewValue.ToString(CultureInfo.InvariantCulture)), Csv(item.MovementValue?.ToString(CultureInfo.InvariantCulture)), Csv(item.FormulaMovementValue?.ToString(CultureInfo.InvariantCulture)), Csv(item.RoundingAdjustmentAmount?.ToString(CultureInfo.InvariantCulture)), Csv(item.EffectiveOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)), Csv(item.CorrectionOfValuationEventId?.ToString("D")), Csv(item.SourceRevisionId?.ToString("D")), Csv(item.PendingReason), Csv(item.CorrelationId), Csv(item.ActorId.ToString("D")), Csv(item.OccurredAt.ToString("O", CultureInfo.InvariantCulture))));
         }
 
         var exportId = Guid.NewGuid();
@@ -488,13 +508,21 @@ internal sealed class InventoryValuationPersistence(
             return CorrectionResolution.Blocked("correction_quantity_exceeds_original");
 
         var isFullReversal = movement.Quantity == originalEvent.Quantity;
+        var originalMovementValue = Math.Abs(originalEvent.MovementValue.Value);
+        var originalFormulaMovementValue = Math.Abs(originalEvent.FormulaMovementValue ?? originalEvent.MovementValue.Value);
         var reversalValue = isFullReversal
-            ? originalEvent.MovementValue.Value
-            : MovingWeightedAverageCalculator.Round(originalEvent.MovementValue.Value * movement.Quantity / originalEvent.Quantity, policy.AmountScale, policy.RoundingMode);
+            ? originalMovementValue
+            : MovingWeightedAverageCalculator.Round(originalMovementValue * movement.Quantity / originalEvent.Quantity, policy.AmountScale, policy.RoundingMode);
+        var formulaReversalValue = isFullReversal
+            ? originalFormulaMovementValue
+            : MovingWeightedAverageCalculator.Round(originalFormulaMovementValue * movement.Quantity / originalEvent.Quantity, policy.AmountScale, policy.RoundingMode);
+        var roundingAdjustmentAmount = isFullReversal
+            ? originalEvent.RoundingAdjustmentAmount ?? MovingWeightedAverageCalculator.Round(reversalValue - formulaReversalValue, policy.AmountScale, policy.RoundingMode)
+            : MovingWeightedAverageCalculator.Round(reversalValue - formulaReversalValue, policy.AmountScale, policy.RoundingMode);
         var baseUnitCost = originalEvent.BaseUnitCost
             ?? MovingWeightedAverageCalculator.Round(originalEvent.MovementValue.Value / originalEvent.Quantity, policy.UnitCostScale, policy.RoundingMode);
         var cost = CostResolution.Success(baseUnitCost, originalEvent.ExchangeRateId, originalEvent.ExchangeRateVersionId, originalEvent.ExchangeRateVersionNumber, originalEvent.ExchangeRate, originalEvent.ExchangeRateScale, originalEvent.ExchangeRateProvenance, "correction_reversal", originalEvent.TransactionUnitCost, originalEvent.TransactionCurrencyCode);
-        return CorrectionResolution.Applied(originalEvent.Id, reversalValue, cost, isFullReversal);
+        return CorrectionResolution.Applied(originalEvent.Id, reversalValue, formulaReversalValue, roundingAdjustmentAmount, cost, isFullReversal);
     }
 
     private async Task<CostResolution> ResolveExchangeRateAsync(InventoryRequestContext context, string sourceCurrency, string targetCurrency, DateOnly effectiveOn, CancellationToken cancellationToken)
@@ -542,6 +570,8 @@ internal sealed class InventoryValuationPersistence(
             priorValue,
             priorQuantity,
             priorValue,
+            null,
+            null,
             null,
             baseUnitCost ?? cost?.BaseUnitCost,
             cost?.ExchangeRateId,
@@ -661,8 +691,8 @@ internal sealed class InventoryValuationPersistence(
 
     private static InventoryValuationPolicyRecord ToPolicy(InventoryValuationPolicyEntity item) => new(item.Id, item.TenantId.Value, item.CompanyId, item.FunctionalCurrencyId, item.FunctionalCurrencyCode, item.ScopeMode, item.EffectiveFrom, item.EffectiveTo, item.VersionNumber, item.UnitCostScale, item.AmountScale, item.RoundingMode, item.GoodsReceiptCostBasis, item.PositiveAdjustmentCostBasis, item.SupplierReturnCostBasis, item.IsActive, item.Version, item.SupersedesPolicyId);
     private static InventoryValuationStateRecord ToState(InventoryValuationStateEntity item) => new(item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, string.IsNullOrEmpty(item.TrackingIdentity) ? null : item.TrackingIdentity, item.CurrentPolicyId, item.CurrentPolicyVersionNumber, item.FunctionalCurrencyCode, item.Quantity, item.Value, item.AverageUnitCost, item.LastAppliedLedgerSequence, item.UpdatedAt, item.Version);
-    private static InventoryMovementValuationEventRecord ToEvent(InventoryMovementValuationEventEntity item) => new(item.Id, item.TenantId.Value, item.MovementId, item.SourceType, item.SourceDocumentId, item.SourceLineId, item.CorrectionOfMovementId, item.GoodsReceiptId, item.GoodsReceiptLineId, item.SupplierReturnId, item.SupplierReturnLineId, item.PurchaseOrderId, item.PurchaseOrderLineId, item.TransferId, item.TransferLineId, item.SourceReference, item.LedgerSequence, item.Status, item.StatusCode, item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, string.IsNullOrEmpty(item.TrackingIdentity) ? null : item.TrackingIdentity, item.PolicyId, item.PolicyVersionNumber, item.FunctionalCurrencyCode, item.Quantity, item.Direction, item.TransactionUnitCost, item.TransactionCurrencyCode, item.ExchangeRateId, item.ExchangeRateVersionId, item.ExchangeRateVersionNumber, item.ExchangeRate, item.ExchangeRateScale, item.ExchangeRateProvenance, item.EffectiveOn, item.BaseUnitCost, item.PriorQuantity, item.PriorValue, item.NewQuantity, item.NewValue, item.MovementValue, item.UnitCostScale, item.AmountScale, item.RoundingMode, item.CorrectionOfValuationEventId, item.SourceRevisionId, item.IsBackdated, item.PendingReason, item.CorrelationId, item.ActorId, item.OccurredAt, item.Version);
-    private static InventoryFinanceValuationHandoffRecord ToHandoff(InventoryFinanceValuationHandoffEntity item) => new(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.MovementId, item.LedgerSequence, item.SourceType, item.SourceDocumentId, item.SourceLineId, item.ValuationEvidenceId, item.ValuationEvidenceVersion, item.Quantity, item.Direction, item.BaseUnitCost, item.BaseAmount, item.SignedBaseAmount, item.PolicyId, item.PolicyVersionNumber, item.FunctionalCurrencyCode, item.TransactionUnitCost, item.TransactionCurrencyCode, item.ExchangeRateId, item.ExchangeRateVersionId, item.ExchangeRateVersionNumber, item.ExchangeRate, item.ExchangeRateScale, item.ExchangeRateProvenance, item.ProductId, item.UnitOfMeasureId, string.IsNullOrEmpty(item.TrackingIdentity) ? null : item.TrackingIdentity, item.CorrectionOfMovementId, item.Status, item.ContractVersion, item.CorrelationId, item.AsOf, item.CreatedAt, item.Version);
+    private static InventoryMovementValuationEventRecord ToEvent(InventoryMovementValuationEventEntity item) => new(item.Id, item.TenantId.Value, item.MovementId, item.SourceType, item.SourceDocumentId, item.SourceLineId, item.CorrectionOfMovementId, item.GoodsReceiptId, item.GoodsReceiptLineId, item.SupplierReturnId, item.SupplierReturnLineId, item.PurchaseOrderId, item.PurchaseOrderLineId, item.TransferId, item.TransferLineId, item.SourceReference, item.LedgerSequence, item.Status, item.StatusCode, item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, string.IsNullOrEmpty(item.TrackingIdentity) ? null : item.TrackingIdentity, item.PolicyId, item.PolicyVersionNumber, item.FunctionalCurrencyCode, item.Quantity, item.Direction, item.TransactionUnitCost, item.TransactionCurrencyCode, item.ExchangeRateId, item.ExchangeRateVersionId, item.ExchangeRateVersionNumber, item.ExchangeRate, item.ExchangeRateScale, item.ExchangeRateProvenance, item.EffectiveOn, item.BaseUnitCost, item.PriorQuantity, item.PriorValue, item.NewQuantity, item.NewValue, item.MovementValue, item.FormulaMovementValue, item.RoundingAdjustmentAmount, item.UnitCostScale, item.AmountScale, item.RoundingMode, item.CorrectionOfValuationEventId, item.SourceRevisionId, item.IsBackdated, item.PendingReason, item.CorrelationId, item.ActorId, item.OccurredAt, item.Version);
+    private static InventoryFinanceValuationHandoffRecord ToHandoff(InventoryFinanceValuationHandoffEntity item) => new(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.MovementId, item.LedgerSequence, item.SourceType, item.SourceDocumentId, item.SourceLineId, item.ValuationEvidenceId, item.ValuationEvidenceVersion, item.Quantity, item.Direction, item.BaseUnitCost, item.BaseAmount, item.SignedBaseAmount, item.RoundingAdjustmentAmount, item.PolicyId, item.PolicyVersionNumber, item.FunctionalCurrencyCode, item.TransactionUnitCost, item.TransactionCurrencyCode, item.ExchangeRateId, item.ExchangeRateVersionId, item.ExchangeRateVersionNumber, item.ExchangeRate, item.ExchangeRateScale, item.ExchangeRateProvenance, item.ProductId, item.UnitOfMeasureId, string.IsNullOrEmpty(item.TrackingIdentity) ? null : item.TrackingIdentity, item.CorrectionOfMovementId, item.Status, item.ContractVersion, item.CorrelationId, item.AsOf, item.CreatedAt, item.Version);
 
     private readonly record struct ValuationScopeKey(Guid CompanyId, Guid? BranchId, Guid WarehouseId, Guid ProductId, Guid UnitOfMeasureId, string TrackingIdentity)
     {
@@ -678,11 +708,11 @@ internal sealed class InventoryValuationPersistence(
         internal static CostResolution Pending(string reason, decimal? transactionUnitCost = null, string? transactionCurrencyCode = null) => new(false, "valuation_pending", reason, null, null, null, null, null, null, null, transactionUnitCost, transactionCurrencyCode);
     }
 
-    private sealed record CorrectionResolution(bool Succeeded, bool IsBlocked, string Code, string? Reason, Guid? OriginalValuationEventId, decimal ReversalValue, CostResolution? Cost, bool IsFullReversal)
+    private sealed record CorrectionResolution(bool Succeeded, bool IsBlocked, string Code, string? Reason, Guid? OriginalValuationEventId, decimal ReversalValue, decimal FormulaReversalValue, decimal RoundingAdjustmentAmount, CostResolution? Cost, bool IsFullReversal)
     {
-        internal static CorrectionResolution Pending(string reason) => new(false, false, "correction_pending", reason, null, 0m, null, false);
-        internal static CorrectionResolution Blocked(string reason) => new(false, true, "correction_blocked", reason, null, 0m, null, false);
-        internal static CorrectionResolution Applied(Guid originalValuationEventId, decimal reversalValue, CostResolution cost, bool isFullReversal) => new(true, false, "correction_reversal", null, originalValuationEventId, reversalValue, cost, isFullReversal);
+        internal static CorrectionResolution Pending(string reason) => new(false, false, "correction_pending", reason, null, 0m, 0m, 0m, null, false);
+        internal static CorrectionResolution Blocked(string reason) => new(false, true, "correction_blocked", reason, null, 0m, 0m, 0m, null, false);
+        internal static CorrectionResolution Applied(Guid originalValuationEventId, decimal reversalValue, decimal formulaReversalValue, decimal roundingAdjustmentAmount, CostResolution cost, bool isFullReversal) => new(true, false, "correction_reversal", null, originalValuationEventId, reversalValue, formulaReversalValue, roundingAdjustmentAmount, cost, isFullReversal);
     }
 }
 

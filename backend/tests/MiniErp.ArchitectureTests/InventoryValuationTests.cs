@@ -65,6 +65,114 @@ public sealed class InventoryValuationTests
     }
 
     [Fact]
+    public void Full_depletion_closes_stored_value_and_preserves_rounding_bridge()
+    {
+        Assert.True(MovingWeightedAverageCalculator.TryApply(
+            new MovingWeightedAverageInput(
+                InventoryMovementDirection.Outbound,
+                3m,
+                0m,
+                3m,
+                100m,
+                2,
+                4,
+                InventoryValuationRoundingMode.ToEven,
+                33.33m),
+            out var output,
+            out var error), error);
+
+        Assert.Equal(99.99m, output.FormulaMovementValue);
+        Assert.Equal(0.01m, output.RoundingAdjustmentAmount);
+        Assert.Equal(100m, output.MovementValue);
+        Assert.Equal(0m, output.NewQuantity);
+        Assert.Equal(0m, output.NewValue);
+        Assert.Equal(0m, output.AverageUnitCost);
+    }
+
+    [Fact]
+    public void Partial_outbound_keeps_normal_formula_without_closeout_adjustment()
+    {
+        Assert.True(MovingWeightedAverageCalculator.TryApply(
+            new MovingWeightedAverageInput(
+                InventoryMovementDirection.Outbound,
+                1m,
+                0m,
+                3m,
+                100m,
+                2,
+                4,
+                InventoryValuationRoundingMode.ToEven,
+                33.33m),
+            out var output,
+            out var error), error);
+
+        Assert.Equal(33.33m, output.FormulaMovementValue);
+        Assert.Equal(33.33m, output.MovementValue);
+        Assert.Equal(0m, output.RoundingAdjustmentAmount);
+        Assert.Equal(2m, output.NewQuantity);
+        Assert.Equal(66.67m, output.NewValue);
+    }
+
+    [Fact]
+    public async Task Tracking_scopes_isolate_known_policy_failure_and_successors()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<InventoryDbContext>().UseSqlite(connection).Options;
+        var context = Context();
+        await AddMovementsAsync(options, context,
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 10m, "USD", new DateOnly(2026, 1, 1), DateTimeOffset.UtcNow, "LOT-A"),
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 20m, "SAR", new DateOnly(2026, 1, 2), DateTimeOffset.UtcNow.AddSeconds(1), "LOT-B"),
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 30m, "SAR", new DateOnly(2026, 1, 3), DateTimeOffset.UtcNow.AddSeconds(2), "LOT-A"),
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 40m, "SAR", new DateOnly(2026, 1, 4), DateTimeOffset.UtcNow.AddSeconds(3), "LOT-B"));
+        var persistence = new InventoryValuationPersistence(options, null, null, new TestExchangeRatePersistence());
+        await CreatePolicyAsync(persistence, context, Policy(new DateOnly(2026, 1, 1), scope: InventoryValuationScopeMode.WarehouseProductUomTracking), "tracking-isolation-policy");
+
+        var result = await persistence.ProcessAsync(context, ProcessCommand("tracking-isolation-process"));
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Equal(2, result.Value!.AppliedCount);
+        Assert.Equal(2, result.Value.PendingCount);
+        var events = (await persistence.ListEventsAsync(context, new InventoryValuationQuery(CompanyId))).OrderBy(item => item.LedgerSequence).ToArray();
+        Assert.Equal(InventoryValuationEventStatus.Pending, events[0].Status);
+        Assert.Equal("exchange_rate_missing", events[0].PendingReason);
+        Assert.Equal(InventoryValuationEventStatus.Applied, events[1].Status);
+        Assert.Equal(InventoryValuationEventStatus.Pending, events[2].Status);
+        Assert.Equal("pending_predecessor", events[2].StatusCode);
+        Assert.Equal(InventoryValuationEventStatus.Applied, events[3].Status);
+        var lotB = Assert.Single(await persistence.ListStatesAsync(context, new InventoryValuationQuery(CompanyId, TrackingIdentity: "LOT-B")));
+        Assert.Equal(2m, lotB.Quantity);
+        Assert.Equal(60m, lotB.Value);
+    }
+
+    [Fact]
+    public async Task Non_tracking_known_policy_failure_stops_the_combined_cost_pool()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<InventoryDbContext>().UseSqlite(connection).Options;
+        var context = Context();
+        await AddMovementsAsync(options, context,
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 10m, "USD", new DateOnly(2026, 1, 1), DateTimeOffset.UtcNow, "LOT-A"),
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 20m, "SAR", new DateOnly(2026, 1, 2), DateTimeOffset.UtcNow.AddSeconds(1), "LOT-B"));
+        var persistence = new InventoryValuationPersistence(options, null, null, new TestExchangeRatePersistence());
+        await CreatePolicyAsync(persistence, context, Policy(new DateOnly(2026, 1, 1), scope: InventoryValuationScopeMode.WarehouseProductUom), "nontracking-failure-policy");
+
+        var result = await persistence.ProcessAsync(context, ProcessCommand("nontracking-failure-process"));
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Equal(0, result.Value!.AppliedCount);
+        Assert.Equal(2, result.Value.PendingCount);
+        var events = (await persistence.ListEventsAsync(context, new InventoryValuationQuery(CompanyId))).OrderBy(item => item.LedgerSequence).ToArray();
+        Assert.Equal("exchange_rate_missing", events[0].PendingReason);
+        Assert.Equal("pending_predecessor", events[1].StatusCode);
+        var state = Assert.Single(await persistence.ListStatesAsync(context, new InventoryValuationQuery(CompanyId)));
+        Assert.Null(state.TrackingIdentity);
+        Assert.Equal(0m, state.Quantity);
+        Assert.Equal(0m, state.Value);
+    }
+
+    [Fact]
     public async Task Valuation_correction_reverses_original_evidence_append_only()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -393,8 +501,8 @@ public sealed class InventoryValuationTests
         var options = new DbContextOptionsBuilder<InventoryDbContext>().UseSqlite(connection).Options;
         var context = Context();
         await AddMovementsAsync(options, context,
-            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 10m, "SAR", new DateOnly(2026, 1, 1), DateTimeOffset.UtcNow),
-            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 20m, "SAR", new DateOnly(2026, 1, 3), DateTimeOffset.UtcNow.AddSeconds(1)));
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 10m, "SAR", new DateOnly(2026, 1, 1), DateTimeOffset.UtcNow, "LOT-A"),
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 20m, "SAR", new DateOnly(2026, 1, 3), DateTimeOffset.UtcNow.AddSeconds(1), "LOT-B"));
         var persistence = new InventoryValuationPersistence(options, null, null, null);
         await CreatePolicyAsync(persistence, context, Policy(new DateOnly(2026, 1, 2)), "future-policy");
 
@@ -547,6 +655,112 @@ public sealed class InventoryValuationTests
         Assert.Equal(33.33m, outbound.BaseUnitCost);
         Assert.Equal(33.33m, outbound.MovementValue);
         Assert.Equal(33.33m, outbound.UnitCostScale is null ? 0m : outbound.BaseUnitCost);
+    }
+
+    [Fact]
+    public async Task Full_depletion_persists_actual_closeout_and_correction_restores_exact_value()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<InventoryDbContext>().UseSqlite(connection).Options;
+        var context = Context();
+        var firstInboundId = Guid.NewGuid();
+        var secondInboundId = Guid.NewGuid();
+        var outboundId = Guid.NewGuid();
+        var correctionId = Guid.NewGuid();
+        await AddMovementsAsync(options, context,
+            CustomMovement(firstInboundId, CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 2m, 33.33m, "SAR", new DateOnly(2026, 1, 1), DateTimeOffset.UtcNow),
+            CustomMovement(secondInboundId, CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 33.34m, "SAR", new DateOnly(2026, 1, 2), DateTimeOffset.UtcNow.AddSeconds(1)),
+            CustomMovement(outboundId, CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Outbound, 3m, null, null, new DateOnly(2026, 1, 3), DateTimeOffset.UtcNow.AddSeconds(2), sourceType: InventoryMovementSourceType.StockIssue),
+            CustomMovement(correctionId, CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 3m, null, null, new DateOnly(2026, 1, 4), DateTimeOffset.UtcNow.AddSeconds(3), sourceType: InventoryMovementSourceType.Correction, correctionOfMovementId: outboundId));
+        var persistence = new InventoryValuationPersistence(options, null, null, null);
+        await CreatePolicyAsync(persistence, context, Policy(new DateOnly(2026, 1, 1), unitCostScale: 2, amountScale: 4), "full-closeout-policy");
+
+        var result = await persistence.ProcessAsync(context, ProcessCommand("full-closeout-process"));
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Equal(4, result.Value!.AppliedCount);
+        var events = (await persistence.ListEventsAsync(context, new InventoryValuationQuery(CompanyId))).OrderBy(item => item.LedgerSequence).ToArray();
+        var outbound = Assert.Single(events, item => item.MovementId == outboundId);
+        Assert.Equal(100m, outbound.PriorValue);
+        Assert.Equal(33.33m, outbound.BaseUnitCost);
+        Assert.Equal(99.99m, outbound.FormulaMovementValue);
+        Assert.Equal(0.01m, outbound.RoundingAdjustmentAmount);
+        Assert.Equal(100m, outbound.MovementValue);
+        Assert.Equal(0m, outbound.NewQuantity);
+        Assert.Equal(0m, outbound.NewValue);
+        var correction = Assert.Single(events, item => item.MovementId == correctionId);
+        Assert.Equal(outbound.Id, correction.CorrectionOfValuationEventId);
+        Assert.Equal(100m, correction.MovementValue);
+        Assert.Equal(99.99m, correction.FormulaMovementValue);
+        Assert.Equal(0.01m, correction.RoundingAdjustmentAmount);
+        Assert.Equal(3m, correction.NewQuantity);
+        Assert.Equal(100m, correction.NewValue);
+
+        var state = Assert.Single(await persistence.ListStatesAsync(context, new InventoryValuationQuery(CompanyId)));
+        Assert.Equal(3m, state.Quantity);
+        Assert.Equal(100m, state.Value);
+        Assert.Equal(33.33m, state.AverageUnitCost);
+        var handoffs = (await persistence.ListFinanceHandoffsAsync(context, new InventoryValuationQuery(CompanyId))).OrderBy(item => item.LedgerSequence).ToArray();
+        var outboundHandoff = Assert.Single(handoffs, item => item.MovementId == outboundId);
+        Assert.Equal(InventoryMovementDirection.Outbound, outboundHandoff.Direction);
+        Assert.Equal(33.33m, outboundHandoff.BaseUnitCost);
+        Assert.Equal(100m, outboundHandoff.BaseAmount);
+        Assert.Equal(-100m, outboundHandoff.SignedBaseAmount);
+        Assert.Equal(0.01m, outboundHandoff.RoundingAdjustmentAmount);
+    }
+
+    [Fact]
+    public async Task Full_depletion_followed_by_inbound_starts_from_zero_value_state()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<InventoryDbContext>().UseSqlite(connection).Options;
+        var context = Context();
+        await AddMovementsAsync(options, context,
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 2m, 33.33m, "SAR", new DateOnly(2026, 1, 1), DateTimeOffset.UtcNow),
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 33.34m, "SAR", new DateOnly(2026, 1, 2), DateTimeOffset.UtcNow.AddSeconds(1)),
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Outbound, 3m, null, null, new DateOnly(2026, 1, 3), DateTimeOffset.UtcNow.AddSeconds(2), sourceType: InventoryMovementSourceType.StockIssue),
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1m, 50m, "SAR", new DateOnly(2026, 1, 4), DateTimeOffset.UtcNow.AddSeconds(3)));
+        var persistence = new InventoryValuationPersistence(options, null, null, null);
+        await CreatePolicyAsync(persistence, context, Policy(new DateOnly(2026, 1, 1), unitCostScale: 2, amountScale: 4), "closeout-restart-policy");
+
+        Assert.True((await persistence.ProcessAsync(context, ProcessCommand("closeout-restart-process"))).Succeeded);
+        var events = (await persistence.ListEventsAsync(context, new InventoryValuationQuery(CompanyId))).OrderBy(item => item.LedgerSequence).ToArray();
+        var laterInbound = events[^1];
+        Assert.Equal(0m, laterInbound.PriorQuantity);
+        Assert.Equal(0m, laterInbound.PriorValue);
+        Assert.Equal(50m, laterInbound.NewValue);
+        var state = Assert.Single(await persistence.ListStatesAsync(context, new InventoryValuationQuery(CompanyId)));
+        Assert.Equal(1m, state.Quantity);
+        Assert.Equal(50m, state.Value);
+        Assert.Equal(50m, state.AverageUnitCost);
+    }
+
+    [Fact]
+    public async Task Reconciliation_fails_closed_for_legacy_zero_quantity_non_zero_value_and_summary_is_partial()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<InventoryDbContext>().UseSqlite(connection).Options;
+        var context = Context();
+        await AddMovementsAsync(options, context, Movement(Guid.NewGuid(), new DateOnly(2026, 1, 1), DateTimeOffset.UtcNow, 10m));
+        var persistence = new InventoryValuationPersistence(options, null, null, null);
+        await CreatePolicyAsync(persistence, context, Policy(new DateOnly(2026, 1, 1)), "legacy-impossible-state-policy");
+        Assert.True((await persistence.ProcessAsync(context, ProcessCommand("legacy-impossible-state-process"))).Succeeded);
+
+        await using (var db = new InventoryDbContext(options, context.TenantContext))
+        {
+            await db.Database.ExecuteSqlRawAsync("UPDATE ValuationStates SET Quantity = 0, Value = 0.01, AverageUnitCost = 0");
+        }
+
+        var row = Assert.Single(await persistence.ReconcileAsync(context, new InventoryValuationQuery(CompanyId)));
+        Assert.Equal(InventoryValuationReconciliationStatus.ValuationMismatch, row.Status);
+        Assert.Equal("valuation_state_zero_quantity_non_zero_value", row.DifferenceReason);
+        var summary = (await persistence.SummaryAsync(context, new InventoryValuationQuery(CompanyId))).Value!;
+        Assert.Equal(InventoryValuationReconciliationStatus.ValuationMismatch, summary.ReconciliationStatus);
+        Assert.False(summary.IsComplete);
+        Assert.True(summary.IsPartial);
     }
 
     [Fact]

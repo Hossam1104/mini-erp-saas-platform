@@ -791,6 +791,10 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                         .HasPrecision(28, 8)
                         .HasColumnType("decimal(28,8)");
 
+                    b.Property<decimal>("RoundingAdjustmentAmount")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("decimal(28,8)");
+
                     b.Property<Guid>("SourceDocumentId")
                         .HasColumnType("uniqueidentifier");
 
@@ -987,6 +991,14 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal?>("MovementValue")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("decimal(28,8)");
+
+                    b.Property<decimal?>("FormulaMovementValue")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("decimal(28,8)");
+
+                    b.Property<decimal?>("RoundingAdjustmentAmount")
                         .HasPrecision(28, 8)
                         .HasColumnType("decimal(28,8)");
 

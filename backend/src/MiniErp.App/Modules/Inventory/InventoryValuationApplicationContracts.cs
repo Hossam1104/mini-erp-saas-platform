@@ -136,7 +136,9 @@ public sealed record MovingWeightedAverageOutput(
     decimal NewQuantity,
     decimal NewValue,
     decimal AverageUnitCost,
-    decimal MovementValue);
+    decimal MovementValue,
+    decimal FormulaMovementValue,
+    decimal RoundingAdjustmentAmount);
 
 public sealed record MovingWeightedAverageCorrectionInput(
     InventoryMovementDirection Direction,
@@ -147,13 +149,15 @@ public sealed record MovingWeightedAverageCorrectionInput(
     int UnitCostScale,
     int AmountScale,
     InventoryValuationRoundingMode RoundingMode,
-    bool IsFullReversal = false);
+    bool IsFullReversal = false,
+    decimal? FormulaReversalValue = null,
+    decimal? RoundingAdjustmentAmount = null);
 
 public static class MovingWeightedAverageCalculator
 {
     public static bool TryApply(MovingWeightedAverageInput input, out MovingWeightedAverageOutput output, out string error)
     {
-        output = new(0m, 0m, 0m, 0m);
+        output = new(0m, 0m, 0m, 0m, 0m, 0m);
         error = string.Empty;
         if (input.Quantity <= 0m || input.PriorQuantity < 0m || input.PriorValue < 0m || input.BaseUnitCost < 0m)
         {
@@ -167,11 +171,15 @@ public static class MovingWeightedAverageCalculator
         var baseUnitCost = Round(input.BaseUnitCost, input.UnitCostScale, input.RoundingMode);
         decimal newQuantity;
         decimal movementValue;
+        decimal formulaMovementValue;
+        decimal roundingAdjustmentAmount;
         decimal newValue;
 
         if (input.Direction == InventoryMovementDirection.Inbound)
         {
-            movementValue = Round(quantity * baseUnitCost, input.AmountScale, input.RoundingMode);
+            formulaMovementValue = Round(quantity * baseUnitCost, input.AmountScale, input.RoundingMode);
+            movementValue = formulaMovementValue;
+            roundingAdjustmentAmount = 0m;
             newQuantity = Round(priorQuantity + quantity, input.AmountScale, input.RoundingMode);
             newValue = Round(priorValue + movementValue, input.AmountScale, input.RoundingMode);
         }
@@ -190,9 +198,23 @@ public static class MovingWeightedAverageCalculator
             }
 
             var priorAverageUnitCost = Round(input.PriorAverageUnitCost.Value, input.UnitCostScale, input.RoundingMode);
-            movementValue = Round(quantity * priorAverageUnitCost, input.AmountScale, input.RoundingMode);
+            formulaMovementValue = Round(quantity * priorAverageUnitCost, input.AmountScale, input.RoundingMode);
             newQuantity = Round(priorQuantity - quantity, input.AmountScale, input.RoundingMode);
-            newValue = Round(priorValue - movementValue, input.AmountScale, input.RoundingMode);
+            if (newQuantity == 0m)
+            {
+                // Full depletion closes the entire stored value. The difference
+                // from the rounded unit-cost formula is immutable evidence, not
+                // an unexplained loss hidden in the resulting state.
+                movementValue = priorValue;
+                roundingAdjustmentAmount = Round(priorValue - formulaMovementValue, input.AmountScale, input.RoundingMode);
+                newValue = 0m;
+            }
+            else
+            {
+                movementValue = formulaMovementValue;
+                roundingAdjustmentAmount = 0m;
+                newValue = Round(priorValue - movementValue, input.AmountScale, input.RoundingMode);
+            }
         }
         else
         {
@@ -206,16 +228,21 @@ public static class MovingWeightedAverageCalculator
             return false;
         }
 
+        if (newQuantity == 0m)
+        {
+            newValue = 0m;
+        }
+
         var average = newQuantity == 0m
             ? 0m
             : Round(newValue / newQuantity, input.UnitCostScale, input.RoundingMode);
-        output = new(newQuantity, newValue, average, movementValue);
+        output = new(newQuantity, newValue, average, movementValue, formulaMovementValue, roundingAdjustmentAmount);
         return true;
     }
 
     public static bool TryApplyCorrection(MovingWeightedAverageCorrectionInput input, out MovingWeightedAverageOutput output, out string error)
     {
-        output = new(0m, 0m, 0m, 0m);
+        output = new(0m, 0m, 0m, 0m, 0m, 0m);
         error = string.Empty;
         if (input.Quantity <= 0m || input.ReversalValue < 0m || input.PriorQuantity < 0m || input.PriorValue < 0m)
         {
@@ -229,6 +256,12 @@ public static class MovingWeightedAverageCalculator
         var reversalValue = input.IsFullReversal
             ? input.ReversalValue
             : Round(input.ReversalValue, input.AmountScale, input.RoundingMode);
+        var formulaReversalValue = input.FormulaReversalValue.HasValue
+            ? Round(input.FormulaReversalValue.Value, input.AmountScale, input.RoundingMode)
+            : reversalValue;
+        var roundingAdjustmentAmount = input.RoundingAdjustmentAmount.HasValue
+            ? Round(input.RoundingAdjustmentAmount.Value, input.AmountScale, input.RoundingMode)
+            : Round(reversalValue - formulaReversalValue, input.AmountScale, input.RoundingMode);
         var newQuantity = input.Direction == InventoryMovementDirection.Inbound
             ? Round(priorQuantity + quantity, input.AmountScale, input.RoundingMode)
             : input.Direction == InventoryMovementDirection.Outbound
@@ -257,7 +290,7 @@ public static class MovingWeightedAverageCalculator
         var signedMovementValue = input.Direction == InventoryMovementDirection.Outbound
             ? -reversalValue
             : reversalValue;
-        output = new(newQuantity, newValue, average, signedMovementValue);
+        output = new(newQuantity, newValue, average, signedMovementValue, formulaReversalValue, roundingAdjustmentAmount);
         return true;
     }
 
