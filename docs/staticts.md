@@ -13,13 +13,15 @@ Jira traceability has been reconciled without closing MESP-131:
 - MESP-120 Exchange Rate consumption comment `11784`.
 - MESP-132 downstream Finance handoff comment `11785`; status remains To Do.
 - MESP-139 downstream Reporting source comment `11786`; status remains To Do.
+- Sol acceptance comment `11788` and delta acceptance comment `11789` remain
+  the independent review authority.
 
 Draft PR #75 remains unmerged and Sol acceptance is still required.
 <!-- MESP-131-JIRA-SYNC-END -->
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-23 17:05 +03:00
+**Last Updated:** 2026-08-23 21:53 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
@@ -27,11 +29,12 @@ Draft PR #75 remains unmerged and Sol acceptance is still required.
 ## Current authoritative fast-track snapshot - 23 August 2026 (MESP-131 implementation; Sol acceptance handoff)
 
 MESP-131 is implemented on branch `feat/MESP-131-mwa-valuation-reconciliation`
-from the exact required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`.
-The implementation commit is `bf491c867b554b2c1f3b091b5196bf82199e161d` and
-Draft PR #75 is Open, Draft, and unmerged. The final documentation handoff
-commit is reported in the completion response after this tracker update. No
-Jira writes were performed.
+from the exact required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`
+and bounded session start `1beca1a02eddcab675a92ae1d0f1915bfca5089f`. The
+remediation implementation commit is `958339d395323106e83b59caeb3b64bbcd0758fd`
+and Draft PR #75 is Open, Draft, and unmerged. The final documentation handoff
+SHA is reported in the completion response after this tracker update. No Jira
+writes were performed.
 
 The bounded capability adds a Company-scoped durable `LedgerSequence` fence
 for all Inventory movement-producing paths, deterministic legacy movement
@@ -52,18 +55,18 @@ from this unaccepted branch. `frontend/assets` remains untouched.
 
 | Current control | Verified position |
 |---|---|
-| MESP-131 code | Required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`; implementation `bf491c867b554b2c1f3b091b5196bf82199e161d`; branch `feat/MESP-131-mwa-valuation-reconciliation`; Draft PR #75 Open/Draft/unmerged. |
+| MESP-131 code | Start `1beca1a02eddcab675a92ae1d0f1915bfca5089f`; remediation `958339d395323106e83b59caeb3b64bbcd0758fd`; required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`; branch `feat/MESP-131-mwa-valuation-reconciliation`; Draft PR #75 Open/Draft/unmerged. |
 | Production capability | ~47% overall; Procurement/P2P ~41%; no production-readiness headline increase pending Sol acceptance/merge. Fast-track 14/26 = 53.8%, not production readiness. |
-| Validation | Focused MESP-131 valuation 7/7; focused Inventory regression 52/52; disposable LocalDB full backend 919/919 with 0 failed/0 skipped; Release build 0 warnings/errors; Angular 248/248; focused Chromium 1/1; full Chromium 28/28; both npm audits 0 vulnerabilities; production initial 499.94 kB and valuation lazy 35.43 kB. |
-| Delivery boundaries | Additive migration `20260823124304_MESP131MovingWeightedAverageValuation`; no Journal/GL/AP/AR/Sales/generic Reporting, migration/cutover, external/statutory, Jira, or Wafra-specific core behavior. Finance handoff is evidence-only. |
-| Runtime | Backend `http://localhost:5300` PID 27788 and frontend `http://localhost:4300` PID 17636; health/root/main.js HTTP 200; both launcher-owned processes remain alive for Owner inspection using the loopback Development bypass without printed credentials. |
-| Next exact session | Sol acceptance of the exact final branch SHA and Draft PR #75. Do not merge or start MESP-132/downstream implementation automatically. |
+| Validation | Focused MESP-131 valuation 27/27; prior Inventory regression 52/52; SQL Server safety 38/38 (previous 32); disposable LocalDB full backend 944/944 with 0 failed/0 skipped; Release build 0 warnings/errors; Angular 254/254 across 35 specs; focused Chromium 5/5; full Chromium 32/32; both npm audits 0 vulnerabilities; production initial 499.94 kB and valuation lazy 35.96 kB. |
+| Delivery boundaries | Original migration `20260823124304_MESP131MovingWeightedAverageValuation` remains unchanged; additive remediation `20260823180537_MESP131SolFinancialIntegrityRemediation`; no Journal/GL/AP/AR/Sales/generic Reporting, migration/cutover, external/statutory, Jira, or Wafra-specific core behavior. Finance handoff is evidence-only. |
+| Runtime | Official launcher restart: backend `http://localhost:5300` PID 36540 and frontend `http://localhost:4300` PID 21248; `/health`, `/`, and `/main.js` each returned HTTP 200; both launcher-owned processes remain alive for Owner inspection using the loopback Development bypass without printed credentials. |
+| Next exact session | Sol delta acceptance of the exact final branch SHA and Draft PR #75. Do not merge or start MESP-132/downstream implementation automatically. |
 
 ## Progress history - 23 August 2026
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
-| 2026-08-23 | MESP-131 bounded MWA valuation, reconciliation, Inventory valuation reporting/export, Finance handoff evidence, durable Company ledger sequence, migration, REST/OpenAPI, and EN/AR RTL lazy workspace. | ~47% | ~41% | Headline held pending Sol acceptance/merge; base `b470179e1d18ef75c0a9247b2340407da6220dc4`; implementation `bf491c867b554b2c1f3b091b5196bf82199e161d`; Draft PR #75; focused 7/7 and 52/52; SQL-backed backend 919/919; Angular 248/248; Chromium 1/1 and 28/28; bundle 499.94 kB; audits clean; runtime 5300/4300 HTTP 200; no Jira writes or downstream implementation. |
+| 2026-08-23 | MESP-131 SOL financial-integrity remediation: LedgerSequence mutation ordering, pool-continuous policy state/versioning, durable predecessor/idempotency/concurrency safety, precise MWA/correction/transfer valuation, Finance handoff sign contract, aggregate summary, safe current reconciliation, and Angular acceptance coverage. | ~47% | ~41% | Headline held pending Sol acceptance/merge; start `1beca1a02eddcab675a92ae1d0f1915bfca5089f`; remediation `958339d395323106e83b59caeb3b64bbcd0758fd`; focused MESP-131 27/27; prior Inventory 52/52; SQL 38/38; backend 944/944; Angular 254/254; Chromium 5/5 and 32/32; bundle 499.94 kB / 35.96 kB valuation lazy; audits clean; official launcher runtime 5300/4300 PIDs 36540/21248 with required HTTP 200 probes; no Jira writes or downstream implementation. |
 
 ## Superseded current snapshot - 23 August 2026 (MESP-130 final ledger-fence remediation; Sol acceptance handoff)
 

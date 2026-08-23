@@ -1,23 +1,25 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
 <!-- MESP-131-ARCH-START -->
-## Current MESP-131 valuation architecture overlay â€” 23 August 2026
+## Current MESP-131 valuation architecture overlay — 23 August 2026
 
 MESP-131 is implemented on Draft PR #75 and is pending Sol acceptance/merge. It extends the existing Inventory module; it does not create a parallel Finance or Reporting domain.
 
 - **Ordering:** every physical Inventory movement receives a durable Tenant + Company `LedgerSequence`; future valuation does not use `PostedAt` or `EffectiveDate` as commit-order authority.
 - **Bootstrap:** pre-MESP-131 movement sequence is deterministically backfilled by Tenant, Company, `PostedAt`, and movement ID as a one-time pre-production starting order.
-- **Policy:** valuation is Tenant-owned, Company-specific, effective-dated and versioned, with Warehouse/Product/UOM or Warehouse/Product/UOM/Tracking scope, functional currency, precision and explicit rounding.
-- **MWA:** decimal deterministic inbound weighted-cost accumulation and outbound consumption at prior average cost; negative valuation state is blocked.
+- **Policy:** valuation is Tenant-owned, Company-specific, effective-dated and versioned, with Warehouse/Product/UOM or Warehouse/Product/UOM/Tracking scope, functional currency, precision and explicit rounding. Version numbers are monotonic; compatible transitions carry the pool state, while incompatible transitions fail closed for rebaseline.
+- **MWA:** decimal deterministic inbound weighted-cost accumulation and outbound consumption at the persisted rounded prior average; empty current-MWA adjustments/count variances remain Pending rather than inventing zero cost.
 - **FX:** exact active effective-dated MESP-120 Exchange Rate version/provenance evidence is snapshotted; no client rate, external feed, inverse guess or silent latest-rate fallback.
 - **History:** current valuation state is a projection; applied valuation events are append-only and preserve source, policy, rate, prior/new state, movement value, actor and correlation.
-- **Pending predecessor:** unresolved cost/policy/FX/link evidence stops later valuation in the same scope; unrelated scopes may continue.
-- **Transfers:** shipment uses source MWA; In-Transit value remains visible; receipt/loss/return inherit linked transfer valuation.
+- **Pending predecessor:** unresolved cost/policy/FX/link evidence creates durable Pending/Blocked evidence and stops later valuation in the same pool; unrelated pools may continue. Process mutation accepts only safe Company/Branch/Warehouse/Product/UOM filters and always orders by LedgerSequence.
+- **Transfers:** shipment uses source MWA; In-Transit quantity and value conserve shipped minus received/lost/returned quantities; receipt/loss/return inherit linked transfer valuation.
 - **Corrections:** original valuation evidence is never rewritten; physical corrections append linked valuation reversal/delta evidence.
 - **Finance boundary:** Inventory emits versioned valuation handoff facts only. Journals, GL/AP/AR, account mapping, periods and financial posting remain MESP-132+.
 - **Reporting boundary:** MESP-131 owns Inventory valuation/reconciliation views and bounded audited CSV export only; generic Reporting remains MESP-139.
-- **Concurrency:** durable valuation scope serialization, Serializable persistence, rowversion/uniqueness and durable idempotency prevent duplicate/forked applied valuation.
-- **Migration:** `20260823124304_MESP131MovingWeightedAverageValuation`.
+- **Concurrency:** durable pool serialization, Serializable persistence, rowversion/uniqueness, SHA-256 fingerprints, existing Inventory idempotency replay, and first-scope conflict handling prevent duplicate/forked applied valuation.
+- **Finance handoff:** `inventory-valuation-finance.v1` exposes Direction, non-negative BaseAmount, and signed inbound/outbound effect; Inventory creates no journals.
+- **Summary:** `/summary` is a dedicated Warehouse aggregate with explicit IsComplete/IsPartial and Pending/Blocked/InTransit facts; no warehouse-level AverageUnitCost is exposed.
+- **Migration:** additive `20260823124304_MESP131MovingWeightedAverageValuation` plus `20260823180537_MESP131SolFinancialIntegrityRemediation`; prior migrations remain unchanged.
 
 See `docs/34_MESP-131_MWA_Valuation_Architecture.md` for the full bounded handoff.
 <!-- MESP-131-ARCH-END -->

@@ -13,6 +13,8 @@ Jira traceability has been reconciled without closing MESP-131:
 - MESP-120 Exchange Rate consumption comment `11784`.
 - MESP-132 downstream Finance handoff comment `11785`; status remains To Do.
 - MESP-139 downstream Reporting source comment `11786`; status remains To Do.
+- Sol acceptance comments `11788` and `11789` remain the independent review
+  authority for this branch.
 
 Draft PR #75 remains unmerged and Sol acceptance is still required.
 <!-- MESP-131-JIRA-SYNC-END -->
@@ -21,19 +23,22 @@ Draft PR #75 remains unmerged and Sol acceptance is still required.
 
 MESP-131 is implemented on branch
 `feat/MESP-131-mwa-valuation-reconciliation`, created from the exact required
-main base `b470179e1d18ef75c0a9247b2340407da6220dc4`. The implementation
-commit is `bf491c867b554b2c1f3b091b5196bf82199e161d`; Draft PR #75 is Open,
-Draft, and unmerged. The final documentation handoff commit is reported in
-the completion response after this state update. Jira is read-only for this
+main base `b470179e1d18ef75c0a9247b2340407da6220dc4` and bounded session start
+`1beca1a02eddcab675a92ae1d0f1915bfca5089f`. The remediation implementation
+commit is `958339d395323106e83b59caeb3b64bbcd0758fd`; Draft PR #75 is Open,
+Draft, and unmerged. The final documentation handoff SHA is reported with the
+completion response after this state update. Jira is read-only for this
 session; no Jira writes were performed.
 
 The bounded capability establishes a durable Company-scoped `LedgerSequence`
 for every Inventory movement-producing path, deterministically bootstraps
 legacy movement order, and never uses `PostedAt` or `EffectiveDate` as the
-ordering authority. The additive migration is
-`20260823124304_MESP131MovingWeightedAverageValuation`; it adds the ledger
-sequence anchor and valuation-owned policy/scope/state/event/run/Finance
-handoff tables. Existing MESP-130 migration content is unchanged.
+ordering authority. The original migration is
+`20260823124304_MESP131MovingWeightedAverageValuation`; additive remediation
+migration `20260823180537_MESP131SolFinancialIntegrityRemediation` adds the
+pool-identity, policy-lineage/version, pending-evidence, and Finance
+direction/sign corrections. Existing MESP-130 and original MESP-131 migration
+content is unchanged.
 
 The valuation contract is policy-versioned and Tenant-safe: decimal Moving
 Weighted Average with configured quantity/unit-cost/amount scales and
@@ -46,6 +51,12 @@ opening/source costs; and explicit Pending/Blocked diagnostics. Applied
 events are immutable and source/line/rate/policy linked. Pending predecessors
 stop later valuation in the same scope; backdated events are applied in
 LedgerSequence order with explicit `backdated_applied` evidence.
+
+Authoritative state and scope-anchor identity is the physical valuation pool,
+not PolicyId: Tenant/Company/Branch/Warehouse/Product/UOM and TrackingIdentity
+only when the selected policy scope includes tracking. Compatible policy
+versions carry state and record current policy metadata; incompatible currency,
+scope, precision, or rounding transitions fail closed for rebaseline.
 
 Opening Balance, Goods Receipt, Stock Adjustment, Inventory Count Variance,
 Stock Issue, Supplier Return, Customer Return boundary, and Warehouse
@@ -60,30 +71,35 @@ Inventory-owned reconciliation compares physical quantity with durable
 valuation state and reports applied/pending/blocked counts, policy/currency,
 latest physical and valued sequences, oldest pending sequence, in-transit
 quantity/value, Finance handoff state, as-of, and freshness without a
-balancing plug. Summary/history/pending-blocked/reconciliation/in-transit/
-correction-history views, useful scope/source/status/policy/currency/date/
-sequence filters, and a bounded Tenant-authorized audited CSV export are
-available. Finance receives immutable valuation facts through
+balancing plug. The dedicated Warehouse summary aggregates Products, labels
+partial/incomplete value truthfully, and exposes no warehouse AverageUnitCost;
+detailed reconciliation retains per-Product MWA. Current-state reconciliation
+accepts only safe current-scope filters. Summary/history/pending-blocked/
+reconciliation/in-transit/correction-history views and bounded audited CSV
+export remain available. Finance receives immutable valuation facts through
 `inventory-valuation-finance.v1`; Inventory creates no journal, GL, AP, AR,
 tax, payment, or period-posting artifact.
 
 REST/OpenAPI operations are catalogue-backed and server-context authorized;
 mutations require antiforgery, Idempotency-Key, correlation, audit, and safe
 errors. Company/Branch/Warehouse authorization is server-derived and client
-Tenant identifiers are never authoritative. SQL optimistic concurrency on the
-valuation scope anchor maps a losing processor to a safe conflict response;
-durable process replay is actor/idempotency/fingerprint bound. The Angular
+Tenant identifiers are never authoritative. Process and correction fingerprints
+are deterministic SHA-256 values bounded for SQL storage; existing Inventory
+idempotency provides exact replay and conflict outcomes, including policy
+creation, and first-scope uniqueness races are safe conflicts. The Angular
 valuation area is lazy-loaded, extends the existing Inventory feature, and is
 EN/AR with RTL support; no product source assets were changed.
 
-Validation at the implementation commit: focused MESP-131 valuation `7/7`,
-focused Inventory regression `52/52`, disposable LocalDB full backend
-`919/919` with zero failures/skips, Release build `0` warnings/`0` errors,
-Angular `248/248`, focused Chromium `1/1`, full Chromium `28/28`, both npm
-audits `0` vulnerabilities, production initial bundle `499.94 kB`, and
-valuation lazy chunk `35.43 kB`. The official launcher left backend
-`http://localhost:5300` PID `27788` and frontend `http://localhost:4300` PID
-`17636` running; `/health`, `/`, and `/main.js` returned HTTP 200.
+Validation after remediation: focused MESP-131 valuation `27/27`, focused
+Inventory regression `52/52`, SQL Server safety `38/38` against disposable
+LocalDB (previous baseline `32`), disposable LocalDB full backend `944/944`
+with zero failures/skips, Release build `0` warnings/`0` errors, Angular
+`254/254` across 35 spec files, focused Chromium `5/5`, full Chromium `32/32`,
+both npm audits `0` vulnerabilities, production initial bundle `499.94 kB`,
+and valuation lazy chunk `35.96 kB`. The official launcher restarted backend
+`http://localhost:5300` PID `36540` and frontend `http://localhost:4300` PID
+`21248`; `/health`, `/`, and `/main.js` each returned HTTP 200 and both
+processes remain running for Owner inspection.
 
 The overall Production-Ready Completion headline remains approximately 47%
 overall and 41% Procurement/P2P pending Sol acceptance/merge. The fast-track

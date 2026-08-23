@@ -3,7 +3,7 @@
 <!-- MESP-131-CURRENT-START -->
 > **Current MESP-131 workspace overlay â€” 23 August 2026; pending Sol acceptance.** The Inventory feature now includes lazy `/app/inventory/valuation` for valuation summary, explainable MWA history, Pending/Blocked states, Inventory reconciliation, In-Transit value, Finance handoff facts, correction history and authorized CSV export. The surface uses server-owned Warehouse context, preserves EN/AR and RTL, never accepts browser-authored cost/FX authority, and keeps `frontend/assets` untouched.
 >
-> **MESP-131 executor-reported frontend evidence.** Angular `248/248` across 34 spec files; production initial total `499.94 kB` with valuation lazy chunk `35.43 kB`; focused MESP-131 Chromium `1/1`; full Chromium `28/28`; both npm audits report 0 vulnerabilities. Draft PR #75 remains open/Draft/unmerged pending Sol acceptance.
+> **MESP-131 executor-reported frontend evidence.** Angular `254/254` across 35 spec files; production initial total `499.94 kB` with valuation lazy chunk `35.96 kB`; focused MESP-131 Chromium `5/5`; full Chromium `32/32`; both npm audits report 0 vulnerabilities. Draft PR #75 remains open/Draft/unmerged pending Sol acceptance. Sol acceptance comments are `11788` and `11789`; no Jira writes were performed.
 <!-- MESP-131-CURRENT-END -->
 
 > **Historical MESP-129 workspace overlay - 22 August 2026.** The Inventory
@@ -113,11 +113,11 @@ npm audit
 
 Current MESP-131 implementation evidence pending Sol acceptance:
 
-- Angular unit tests: **248/248 across 34 spec files**.
+- Angular unit tests: **254/254 across 35 spec files**.
 - Production initial bundle: **499.94 kB**, still within the existing 500 kB budget.
-- Valuation lazy chunk: **35.43 kB**.
-- Focused MESP-131 Chromium: **1/1**.
-- Full Chromium suite: **28/28**.
+- Valuation lazy chunk: **35.96 kB**.
+- Focused MESP-131 Chromium: **5/5**.
+- Full Chromium suite: **32/32**.
 - Both npm audits: **0 vulnerabilities**.
 - `frontend/assets`: **untouched**.
 

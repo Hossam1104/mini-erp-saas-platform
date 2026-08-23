@@ -13,6 +13,8 @@ Jira traceability has been reconciled without closing MESP-131:
 - MESP-120 Exchange Rate consumption comment `11784`.
 - MESP-132 downstream Finance handoff comment `11785`; status remains To Do.
 - MESP-139 downstream Reporting source comment `11786`; status remains To Do.
+- Sol acceptance comment `11788` and delta acceptance comment `11789` remain
+  the independent review authority.
 
 Draft PR #75 remains unmerged and Sol acceptance is still required.
 <!-- MESP-131-JIRA-SYNC-END -->
@@ -26,16 +28,19 @@ Branch: `feat/MESP-131-mwa-valuation-reconciliation`
 
 Exact required main base: `b470179e1d18ef75c0a9247b2340407da6220dc4`
 
-Implementation SHA: `bf491c867b554b2c1f3b091b5196bf82199e161d`
+Starting SHA: `1beca1a02eddcab675a92ae1d0f1915bfca5089f`
 
-Final branch SHA: `1dbd7742471bdbe0b972dd7ccb777a48f3000ad7`
+Remediation implementation SHA: `958339d395323106e83b59caeb3b64bbcd0758fd`
+
+Final branch SHA: recorded in the final documentation handoff commit and completion response.
 
 Draft PR: `#75` - Open, Draft, Unmerged; base `main`.
 
 Jira is read-only for this bounded session. No Jira writes were performed.
 MESP-131 remains In Progress until Sol accepts the exact final branch SHA.
 Do not mark the PR Ready, merge, rebase, force-push, create another PR, or
-start MESP-132 automatically.
+start MESP-132 automatically. Sol owns the independent delta acceptance
+handoff; no Opus prompt is created by this session.
 
 ## Repository Facts Confirmed
 
@@ -45,6 +50,36 @@ start MESP-132 automatically.
   Sales, generic Reporting, external provider, statutory, ZATCA/FATOORA,
   DNS/TLS, migration/cutover, or Wafra-specific core behavior was added.
 - MESP-130 physical movements remain upstream inputs; MESP-132+ owns Finance.
+
+## Sol Delta Acceptance Handoff
+
+The remediation implementation is complete for Sol review. The exact bounded
+delta includes:
+
+- LedgerSequence-authoritative mutation ordering, with AsOf mutation removal
+  and unsafe TrackingIdentity process filters removed;
+- policy-pool continuity and monotonic policy versioning, including compatible
+  carry-forward and fail-closed incompatible transitions;
+- durable missing-policy predecessor evidence and same-pool blocking;
+- empty-state positive CurrentMovingAverage guard;
+- outbound use of the persisted prior rounded average and configured precision;
+- exact full correction reversal and deterministic partial correction;
+- conserved InTransit quantity/value for receipt, loss, and return resolution;
+- bounded SHA-256 REST/correction fingerprints, durable process/policy replay,
+  real conflict semantics, and first-scope concurrency safety;
+- Finance Direction, absolute non-negative BaseAmount, SignedBaseAmount, and
+  `inventory-valuation-finance.v1` contract semantics;
+- dedicated multi-Product Warehouse summary, explicit Partial/Pending/Blocked
+  truthfulness, safe current-state reconciliation filters, and complete pending
+  counts;
+- Angular aggregate-summary, pending-state, Finance-handoff, EN/AR/RTL, and
+  lazy-route truthfulness.
+
+The additive migration, focused MESP-131 tests, SQL Server/LocalDB safety tests,
+full backend suite, Angular suite, focused and full Chromium suites, bundle
+budget, npm audits, runtime restart/HTTP evidence, and protected asset check
+are the acceptance evidence for the exact final branch tip. Sol owns the next
+independent delta acceptance; do not start downstream implementation.
 
 ## Ledger Ordering
 
@@ -107,8 +142,9 @@ rounded by policy.
 ### Valuation State
 
 Durable state is per Tenant/Company/Branch/Warehouse/Product/UOM/(tracking)/
-policy and stores quantity, value, average, last valued LedgerSequence,
-currency, policy version, timestamps, and concurrency token.
+physical valuation pool, never per policy version. It stores quantity, value,
+average, last valued LedgerSequence, current policy metadata, currency,
+timestamps, and concurrency token. Scope anchors use the same pool identity.
 
 ### Append-Only Evidence
 
@@ -241,32 +277,37 @@ export is a file response.
 
 ## Migration / Legacy Bootstrap / SQL Safety
 
-Formal migration: `20260823124304_MESP131MovingWeightedAverageValuation`.
+Formal migrations: `20260823124304_MESP131MovingWeightedAverageValuation` and
+the additive remediation `20260823180537_MESP131SolFinancialIntegrityRemediation`.
 Legacy sequence bootstrap is deterministic and evidence is preserved. The
-disposable SQL Server LocalDB safety harness passed the final source with
-schema, ownership, migration, sequence, concurrency, and valuation checks.
-No production SQL/provider/cutover decision was made.
+remediation migration is separate and the original MESP-131 migration remains
+unchanged. The disposable SQL Server LocalDB safety harness passed the final
+source with schema, ownership, migration, sequence, concurrency, and valuation
+checks. No production SQL/provider/cutover decision was made.
 
 ## Validation Totals
 
-- Focused MESP-131 valuation: `7/7`.
+- Focused MESP-131 valuation: `27/27`.
 - Prior Inventory regression (ledger + stock control + valuation): `52/52`.
-- Full backend LocalDB harness: `919/919`, `0` failed, `0` skipped.
+- SQL Server safety harness: `38/38` against disposable LocalDB (previous
+  baseline `32`).
+- Full backend LocalDB harness: `944/944`, `0` failed, `0` skipped.
 - Release solution build: `0` warnings, `0` errors.
-- Angular: `248/248` across 34 spec files.
-- Production bundle: initial `499.94 kB`; valuation lazy `35.43 kB`; no
+- Angular: `254/254` across 35 spec files.
+- Production bundle: initial `499.94 kB`; valuation lazy `35.96 kB`; no
   initial-budget warning.
-- Focused Playwright: `1/1`; full Playwright: `28/28`.
+- Focused Playwright: `5/5`; full Playwright: `32/32`.
 - Both npm audit modes: `0` vulnerabilities.
 - `git diff --check`: checked before the documentation handoff commit.
 
 ## Runtime Verification
 
-Backend `http://localhost:5300`, PID `27788`; frontend
-`http://localhost:4300`, PID `17636`. Backend health, frontend root, and
-`main.js` each returned HTTP 200. Both official-launcher processes were alive
-after verification and remain running for Owner inspection. Loopback-only
-Development auth bypass was used without printing or persisting credentials.
+Backend `http://localhost:5300`, PID `36540`; frontend
+`http://localhost:4300`, PID `21248`. Backend health, frontend root, and
+`main.js` each returned HTTP 200 after the official `Start-MiniErpDevelopment.ps1
+-Restart` launcher run. Both launcher-owned processes remain running for Owner
+inspection. Loopback-only Development auth bypass was used without printing or
+persisting credentials.
 
 ## Known Limitations / Deferred Finance Policy
 

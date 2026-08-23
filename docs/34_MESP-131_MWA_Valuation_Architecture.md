@@ -1,12 +1,13 @@
 # MESP-131 Moving Weighted Average Valuation Architecture
 
-**Status:** Implementation handoff; pending GPT-5.6 Sol acceptance and merge<br>
+**Status:** Remediation implementation complete; pending GPT-5.6 Sol delta acceptance and merge<br>
 **Date:** 23 August 2026<br>
-**Capability:** MESP-131 â€” Moving Weighted Average valuation, reconciliation, and inventory reporting<br>
+**Capability:** MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting<br>
 **Base main:** `b470179e1d18ef75c0a9247b2340407da6220dc4`<br>
-**Implementation commit:** `bf491c867b554b2c1f3b091b5196bf82199e161d`<br>
-**Implementation handoff tip before documentation reconciliation:** `39fa538d3c6968476927f01c19669715cdc1147f`<br>
-**Draft PR:** #75 â€” Open, Draft, unmerged
+**Starting SHA:** `1beca1a02eddcab675a92ae1d0f1915bfca5089f`<br>
+**Remediation implementation commit:** `958339d395323106e83b59caeb3b64bbcd0758fd`<br>
+**Final branch SHA:** recorded in the final documentation handoff commit and completion report<br>
+**Draft PR:** #75 — Open, Draft, unmerged
 
 ## Purpose and boundary
 
@@ -22,7 +23,13 @@ The MESP-131 migration deterministically bootstraps pre-MESP-131 movement sequen
 
 ## Valuation policy
 
-Valuation is versioned and configuration-led. Policy facts include Tenant, Company, effective period, scope mode, functional currency, quantity/unit-cost/amount precision and explicit rounding mode. Supported scope is Warehouse/Product/UOM with optional Tracking identity.
+Valuation is versioned and configuration-led. Policy facts include Tenant, Company, effective period, scope mode, functional currency, quantity/unit-cost/amount precision and explicit rounding mode. Supported scope is Warehouse/Product/UOM or Warehouse/Product/UOM/Tracking identity. Version numbers are assigned as `max + 1` within the Company series and policy rows are immutable.
+
+Current state and scope-anchor identity is the physical valuation pool, not
+PolicyId: Tenant, Company, Branch, Warehouse, Product, UOM, and TrackingIdentity
+only when configured by the selected scope mode. A compatible policy transition
+preserves state and records current policy metadata; currency, scope, precision,
+or rounding incompatibility fails closed with a rebaseline error.
 
 No Tenant/customer-specific valuation rule is hard-coded.
 
@@ -32,7 +39,7 @@ Inbound:
 
 `NewQuantity = PriorQuantity + InboundQuantity`
 
-`InboundValue = InboundQuantity Ã— BaseUnitCost`
+`InboundValue = InboundQuantity × BaseUnitCost`
 
 `NewValue = PriorValue + InboundValue`
 
@@ -50,7 +57,11 @@ Outbound:
 
 `NewAverage = NewValue / NewQuantity` when quantity is non-zero.
 
-Calculations use decimal arithmetic and policy-defined precision/rounding. Negative valuation state is blocked.
+Calculations use decimal arithmetic and policy-defined precision/rounding. The
+outbound input is the persisted rounded prior average, and an empty state using
+CurrentMovingAverage for a positive adjustment/count variance becomes Pending
+with `current_moving_average_unavailable` rather than a zero-valued application.
+Negative valuation state is blocked.
 
 ## Valuation state and immutable history
 
@@ -58,7 +69,11 @@ Current valuation state is a mutable projection. Applied valuation evidence is a
 
 ## Pending predecessor rule
 
-If a movement cannot be valued because authoritative policy, source cost, FX, linked valuation or another required fact is unavailable, it remains Pending/Blocked. Later movement in the same valuation scope cannot leap over it. Unrelated valuation scopes may continue.
+If a movement cannot be valued because authoritative policy, source cost, FX,
+linked valuation or another required fact is unavailable, it creates durable
+Pending/Blocked evidence. A missing-policy movement uses the conservative
+Company/Branch/Warehouse/Product/UOM predecessor pool and blocks later movement
+in that pool until coverage exists. Unrelated valuation pools may continue.
 
 ## Source valuation
 
@@ -78,7 +93,12 @@ Authoritative revised-source persistence remains a provider-required seam; arbit
 
 ## Warehouse Transfer and In Transit
 
-Transfer Shipment consumes source-Warehouse MWA. In-Transit quantity/value remains visible between shipment and receipt. Destination receipt inherits shipment valuation. Loss and return preserve linked transfer valuation lineage. Missing prerequisite shipment valuation blocks downstream valuation.
+Transfer Shipment consumes source-Warehouse MWA. In-Transit quantity is shipped
+less physical receipt, resolved loss, and physical return, never below zero;
+In-Transit value covers only the remaining quantity at inherited shipment unit
+valuation. Destination receipt inherits shipment valuation. Loss and return
+preserve linked transfer valuation lineage. Missing prerequisite shipment
+valuation leaves quantity truthful and value status Pending.
 
 ## Multi-currency evidence
 
@@ -86,17 +106,34 @@ MESP-131 reuses MESP-120 Exchange Rate identities/versions. Same-currency valuat
 
 ## Concurrency and idempotency
 
-Valuation uses durable scope serialization, Serializable persistence, optimistic concurrency and database uniqueness so multiple workers cannot apply a movement twice or fork state. Public mutations follow existing antiforgery, server Tenant context, correlation, durable idempotency/fingerprint replay and audit conventions.
+Valuation uses durable pool serialization, Serializable persistence, optimistic
+concurrency and database uniqueness so multiple workers cannot apply a movement
+twice or fork state. Process and correction fingerprints are deterministic
+SHA-256 values bounded for SQL storage. Process and policy creation reuse the
+existing Inventory durable idempotency infrastructure; same-key/different-
+fingerprint replays are conflicts, corrupt replay is a safe failure, and a
+first-scope insert race is classified as a safe conflict.
 
 ## Finance handoff
 
-Applied valuation produces versioned Inventory-to-Finance facts: movement/source lineage, LedgerSequence, quantity, functional currency, base unit cost/value, transaction currency, Exchange Rate evidence, policy/version and correction references.
+Applied valuation produces versioned Inventory-to-Finance facts: movement/source
+lineage, LedgerSequence, quantity, functional currency, base unit cost, absolute
+non-negative BaseAmount, Direction, SignedBaseAmount (Inbound positive and
+Outbound negative), transaction currency, Exchange Rate evidence, policy/version
+and correction references under `inventory-valuation-finance.v1`.
 
 Inventory does not claim Journal/GL completion before MESP-132+ exists.
 
 ## Reconciliation and Inventory reporting
 
-Inventory reconciliation compares physical quantity to valued quantity and exposes value, MWA cost, latest physical/valued sequences, pending/blocked counts, oldest pending movement, In-Transit quantity/value, Finance handoff state, policy/currency, as-of and freshness.
+The dedicated `/summary` contract aggregates Warehouse physical quantity, valued
+quantity and valued amount across Products without exposing a warehouse-level
+AverageUnitCost. It reports Pending/Blocked counts, In-Transit quantity/value,
+reconciliation status, latest physical/valued sequences, IsComplete/IsPartial,
+as-of and freshness. Detailed reconciliation retains per-Product MWA rows.
+Current-state reconciliation accepts only safe current-scope filters; effective
+date and sequence history remain report/history evidence rather than a mutation
+or false period reconciliation.
 
 Bounded Inventory views:
 1. Valuation Summary
@@ -111,27 +148,40 @@ CSV export is Tenant-authorized, bounded and audited. Generic Reporting remains 
 
 ## Angular
 
-`/app/inventory/valuation` is lazy-loaded, server-scoped, EN/AR and RTL. It exposes valuation/reconciliation evidence without client Tenant authority or client-authored cost/FX facts. SAR presentation is used only when the actual configured currency is SAR.
+`/app/inventory/valuation` is lazy-loaded, server-scoped, EN/AR and RTL. It
+exposes a real aggregate summary plus per-Product reconciliation evidence
+without client Tenant authority or client-authored cost/FX facts. The client
+selects the current effective policy and excludes future versions; it does not
+use `summary()[0]` or aggregate AverageUnitCost. Finance handoff displays
+Direction and signed-value meaning. SAR presentation is used only when the
+actual configured currency is SAR.
 
 ## Persistence and migration
 
-Formal additive Inventory migration:
+Formal additive Inventory migrations:
 
 `20260823124304_MESP131MovingWeightedAverageValuation`
 
-It adds durable movement sequence plus Inventory-owned valuation policy/state/evidence/handoff structures and related uniqueness/concurrency backstops. MESP-128/129/130 migrations are not rewritten.
+`20260823180537_MESP131SolFinancialIntegrityRemediation`
+
+The remediation migration removes PolicyId from authoritative pool uniqueness,
+adds current-policy metadata and policy lineage/version backstops, makes pending
+policy evidence truthful, adds Finance Direction/SignedBaseAmount, and preserves
+the old MESP-131 migration byte-for-byte. MESP-128/129/130 migrations are not
+rewritten.
 
 ## Reported validation pending Sol acceptance
 
-- Focused MESP-131 valuation: `7/7`
+- Focused MESP-131 valuation: `27/27`
 - Inventory regression: `52/52`
-- Full backend disposable-LocalDB suite: `919/919`, 0 failed, 0 skipped
+- SQL Server safety: `38/38` (previous baseline `32`)
+- Full backend disposable-LocalDB suite: `944/944`, 0 failed, 0 skipped
 - Release build: 0 warnings / 0 errors
-- Angular: `248/248` across 34 spec files
+- Angular: `254/254` across 35 spec files
 - Production initial bundle: `499.94 kB`
-- Valuation lazy chunk: `35.43 kB`
-- Focused Chromium: `1/1`
-- Full Chromium: `28/28`
+- Valuation lazy chunk: `35.96 kB`
+- Focused Chromium: `5/5`
+- Full Chromium: `32/32`
 - npm audits: 0 vulnerabilities
 - `frontend/assets`: untouched
 
@@ -147,5 +197,9 @@ These are executor-reported results. MESP-131 remains In Progress until Sol acce
 - MESP-120 comment `11784`
 - MESP-132 comment `11785`
 - MESP-139 comment `11786`
+- Sol acceptance comment `11788`
+- Sol delta acceptance comment `11789`
+
+No Jira writes were performed by this implementation session.
 
 Approved BRDs and decision packs remain historically unchanged.

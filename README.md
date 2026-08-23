@@ -25,7 +25,7 @@ module-owned persistence are product rules—not customer-specific forks.
 
 The latest **merged** Inventory capability is **MESP-130 â€” Stock Adjustment, Inventory Count, Stock Issue, and Corrections**, merged in PR #74 at `b470179e1d18ef75c0a9247b2340407da6220dc4`.
 
-The current active capability is **MESP-131 â€” Moving Weighted Average valuation, reconciliation, and inventory reporting**. It is implemented on Draft PR #75 at implementation commit `bf491c867b554b2c1f3b091b5196bf82199e161d`. The implementation handoff tip before this documentation reconciliation is `39fa538d3c6968476927f01c19669715cdc1147f`.
+The current active capability is **MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting**. It is implemented on Draft PR #75 at remediation commit `958339d395323106e83b59caeb3b64bbcd0758fd` from the required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`.
 
 MESP-131 remains **In Progress, Draft, unmerged, and pending Sol acceptance**.
 
@@ -39,15 +39,16 @@ The tracked project-control source of truth is [`docs/staticts.md`](docs/statict
 
 | Check | Executor-reported result |
 |---|---:|
-| Focused MESP-131 valuation | 7/7 |
+| Focused MESP-131 valuation | 27/27 |
 | Prior Inventory regression | 52/52 |
-| Full backend disposable-LocalDB suite | 919/919, 0 failed, 0 skipped |
+| SQL Server safety harness | 38/38 against disposable LocalDB (previous baseline 32) |
+| Full backend disposable-LocalDB suite | 944/944, 0 failed, 0 skipped |
 | Release build | 0 warnings / 0 errors |
-| Angular unit tests | 248/248 across 34 spec files |
+| Angular unit tests | 254/254 across 35 spec files |
 | Production initial bundle | 499.94 kB |
-| Valuation lazy chunk | 35.43 kB |
-| Focused Chromium | 1/1 |
-| Full Chromium | 28/28 |
+| Valuation lazy chunk | 35.96 kB |
+| Focused Chromium | 5/5 |
+| Full Chromium | 32/32 |
 | npm audits | 0 vulnerabilities |
 | `frontend/assets` | untouched |
 
@@ -60,6 +61,9 @@ Jira synchronization completed on 23 August 2026:
 - MESP-120 Exchange Rate downstream-consumption traceability `11784`;
 - MESP-132 Finance upstream-handoff traceability `11785`;
 - MESP-139 Reporting source-handoff traceability `11786`.
+
+Sol acceptance comments `11788` and `11789` remain the independent review
+authority. No Jira writes were performed in this implementation session.
 
 ## Capability matrix
 
