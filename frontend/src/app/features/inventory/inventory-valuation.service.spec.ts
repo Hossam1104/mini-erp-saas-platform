@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { AuthService } from '../../core/auth/auth.service';
 import { InventoryValuationService } from './inventory-valuation.service';
+import { InventoryValuationPolicy } from './inventory-valuation.model';
 
 describe('InventoryValuationService', () => {
   let service: InventoryValuationService;
@@ -21,7 +22,7 @@ describe('InventoryValuationService', () => {
   afterEach(() => httpMock.verify());
 
   it('reads the summary, immutable history, pending events, and Finance handoff facts through the bounded routes', () => {
-    service.summary({ companyId: 'company-a', warehouseId: 'warehouse-a' }).subscribe((records) => expect(records).toEqual([]));
+    service.summary({ companyId: 'company-a', warehouseId: 'warehouse-a' }).subscribe((summary) => expect(summary.reconciliationStatus).toBe('Reconciled'));
     expect(httpMock.expectOne('/api/v1/inventory/valuation/summary?companyId=company-a&warehouseId=warehouse-a').request.method).toBe('GET');
 
     service.history({ companyId: 'company-a' }).subscribe((records) => expect(records).toEqual([]));
@@ -32,7 +33,8 @@ describe('InventoryValuationService', () => {
 
     service.financeHandoffs({ companyId: 'company-a' }).subscribe((records) => expect(records).toEqual([]));
     httpMock.expectOne('/api/v1/inventory/valuation/finance-handoffs?companyId=company-a').flush([]);
-    httpMock.match((request) => request.url.includes('/summary') || request.url.includes('/history') || request.url.includes('/pending')).forEach((request) => request.flush([]));
+    httpMock.match((request) => request.url.includes('/summary')).forEach((request) => request.flush({ reconciliationStatus: 'Reconciled' }));
+    httpMock.match((request) => request.url.includes('/history') || request.url.includes('/pending')).forEach((request) => request.flush([]));
   });
 
   it('processes a server-scoped valuation run with antiforgery and idempotency headers', async () => {
@@ -44,5 +46,34 @@ describe('InventoryValuationService', () => {
     expect(request.request.headers.has('Idempotency-Key')).toBe(true);
     request.flush({ appliedCount: 1 });
     await expect(result).resolves.toEqual({ appliedCount: 1 });
+  });
+
+  it('selects only the current effective policy and never a future policy', () => {
+    const policy = (effectiveFrom: string, versionNumber: number): InventoryValuationPolicy => ({
+      id: `policy-${versionNumber}`,
+      tenantId: 'tenant-a',
+      companyId: 'company-a',
+      functionalCurrencyId: 'currency-a',
+      functionalCurrencyCode: 'SAR',
+      scopeMode: 'WarehouseProductUom',
+      effectiveFrom,
+      effectiveTo: null,
+      versionNumber,
+      unitCostScale: 8,
+      amountScale: 8,
+      roundingMode: 'ToEven',
+      goodsReceiptCostBasis: 'PurchaseOrderUnitPrice',
+      positiveAdjustmentCostBasis: 'CurrentMovingAverage',
+      supplierReturnCostBasis: 'CurrentMovingAverage',
+      isActive: true,
+      version: 'v1',
+      supersedesPolicyId: null,
+    });
+
+    const selected = service.selectCurrentPolicy([
+      policy('2026-09-01', 3),
+      policy('2026-01-01', 2),
+    ], new Date('2026-08-23T12:00:00Z'));
+    expect(selected?.versionNumber).toBe(2);
   });
 });

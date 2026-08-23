@@ -11,6 +11,7 @@ import {
   InventoryValuationEvent,
   InventoryValuationPolicy,
   InventoryValuationReconciliation,
+  InventoryValuationSummary,
 } from './inventory-valuation.model';
 import { InventoryValuationFilters, InventoryValuationService } from './inventory-valuation.service';
 
@@ -24,10 +25,10 @@ const copy = {
   stockLedger: { en: 'Stock ledger', ar: '\u0633\u062c\u0644 \u0627\u0644\u0645\u062e\u0632\u0648\u0646' },
   process: { en: 'Process valuation', ar: '\u0645\u0639\u0627\u0644\u062c\u0629 \u0627\u0644\u062a\u0642\u064a\u064a\u0645' },
   authorizedScope: { en: 'Server-authorized scope', ar: '\u0627\u0644\u0646\u0637\u0627\u0642 \u0627\u0644\u0645\u0635\u0631\u062d \u0628\u0647 \u0645\u0646 \u0627\u0644\u062e\u0627\u062f\u0645' },
-  scopeLead: { en: 'Tenant → Company → Warehouse', ar: '\u0627\u0644\u0645\u0624\u0633\u0633\u0629 ← \u0627\u0644\u0634\u0631\u0643\u0629 ← \u0627\u0644\u0645\u0633\u062a\u0648\u062f\u0639' },
+  scopeLead: { en: 'Tenant · Company · Warehouse', ar: '\u0627\u0644\u0645\u0624\u0633\u0633\u0629 · \u0627\u0644\u0634\u0631\u0643\u0629 · \u0627\u0644\u0645\u0633\u062a\u0648\u062f\u0639' },
   chooseWarehouse: { en: 'Choose a warehouse', ar: '\u0627\u062e\u062a\u0631 \u0645\u0633\u062a\u0648\u062f\u0639\u0627\u064b' },
   noScope: { en: 'No server-authorized warehouse context is available.', ar: '\u0644\u0627 \u064a\u0648\u062c\u062f \u0646\u0637\u0627\u0642 \u0645\u0633\u062a\u0648\u062f\u0639 \u0645\u0635\u0631\u062d \u0628\u0647 \u0645\u0646 \u0627\u0644\u062e\u0627\u062f\u0645.' },
-  noScopeLead: { en: 'Select an approved Company or Branch context in the header, then return to this surface.', ar: '\u0627\u062e\u062a\u0631 \u0633\u064a\u0627\u0642 \u0634\u0631\u0643\u0629 \u0623\u0648 \u0641\u0631\u0639 \u0645\u0639\u062a\u0645\u062f\u0627\u064b \u0645\u0646 \u0627\u0644\u0631\u0623\u0633، \u062b\u0645 \u0627\u0639\u062f \u0625\u0644\u0649 \u0647\u0630\u0647 \u0627\u0644\u0648\u0627\u062c\u0647\u0629.' },
+  noScopeLead: { en: 'Select an approved Company or Branch context in the header, then return to this surface.', ar: '\u0627\u062e\u062a\u0631 \u0633\u064a\u0627\u0642 \u0634\u0631\u0643\u0629 \u0623\u0648 \u0641\u0631\u0639 \u0645\u0639\u062a\u0645\u062f\u0627\u064b \u0645\u0646 \u0627\u0644\u0631\u0623\u0633 \u062b\u0645 \u0627\u0639\u062f \u0625\u0644\u0649 \u0647\u0630\u0647 \u0627\u0644\u0648\u0627\u062c\u0647\u0629.' },
   loading: { en: 'Reading valuation evidence…', ar: '\u062c\u0627\u0631\u064d \u0642\u0631\u0627\u0621\u0629 \u0623\u062f\u0644\u0629 \u0627\u0644\u062a\u0642\u064a\u064a\u0645…' },
   loadFailed: { en: 'Valuation evidence is not available right now.', ar: '\u062a\u0639\u0630\u0631 \u062a\u0648\u0641\u064a\u0631 \u0623\u062f\u0644\u0629 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u062d\u0627\u0644\u064a\u0627\u064b.' },
   retry: { en: 'Retry', ar: '\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629' },
@@ -35,6 +36,10 @@ const copy = {
   valuedQuantity: { en: 'Valued quantity', ar: '\u0627\u0644\u0643\u0645\u064a\u0629 \u0627\u0644\u0645\u0642\u064a\u0645\u0629' },
   valuedAmount: { en: 'Valued amount', ar: '\u0642\u064a\u0645\u0629 \u0627\u0644\u0645\u062e\u0632\u0648\u0646' },
   averageCost: { en: 'Average unit cost', ar: '\u0645\u062a\u0648\u0633\u0637 \u062a\u0643\u0644\u0641\u0629 \u0627\u0644\u0648\u062d\u062f\u0629' },
+  complete: { en: 'Complete', ar: '\u0645\u0643\u062a\u0645\u0644' },
+  partial: { en: 'Partial / pending evidence', ar: '\u062c\u0632\u0626\u064a / \u0623\u062f\u0644\u0629 \u0645\u0639\u0644\u0642\u0629' },
+  direction: { en: 'Direction', ar: '\u0627\u0644\u0627\u062a\u062c\u0627\u0647' },
+  signedAmount: { en: 'Signed base amount', ar: '\u0627\u0644\u0642\u064a\u0645\u0629 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629 \u0627\u0644\u0645\u0648\u0642\u0639\u0629' },
   pending: { en: 'Pending', ar: '\u0645\u0639\u0644\u0642' },
   blocked: { en: 'Blocked', ar: '\u0645\u062d\u062c\u0648\u0628' },
   inTransit: { en: 'In transit', ar: '\u0642\u064a\u062f \u0627\u0644\u0646\u0642\u0644' },
@@ -112,14 +117,13 @@ const copy = {
         <section class="ui-surface valuation-controlbar">
           <label class="scope-select"><span>{{ text('authorizedScope') }}</span><select [ngModel]="selectedWarehouseId()" (ngModelChange)="selectWarehouse($event)" data-testid="valuation-warehouse"><option value="">{{ text('chooseWarehouse') }}</option>@for (warehouse of warehouses(); track warehouse.warehouseId) {<option [value]="warehouse.warehouseId">{{ warehouse.displayName }}</option>}</select></label>
           <div class="policy-readout"><span>{{ text('policy') }}</span>@if (policy(); as activePolicy) {<strong>{{ activePolicy.functionalCurrencyCode }} · {{ activePolicy.scopeMode }}</strong><small>{{ text('policyBasis') }}: {{ activePolicy.goodsReceiptCostBasis }}</small>} @else {<strong>{{ text('noPolicy') }}</strong>}</div>
-          <div class="controlbar-meta"><span>{{ text('lastApplied') }}</span><strong>{{ currentSummary()?.lastAppliedLedgerSequence ?? 0 }}</strong></div>
+          <div class="controlbar-meta"><span>{{ text('lastApplied') }}</span><strong>{{ currentSummary()?.latestValuedLedgerSequence ?? 0 }}</strong></div>
         </section>
 
         <section class="valuation-metrics" data-testid="valuation-summary-metrics">
           <article class="metric-card metric-card--accent"><span>{{ text('onHand') }}</span><strong>{{ formatQuantity(currentSummary()?.physicalOnHandQuantity ?? 0) }}</strong><small>{{ currentSummary()?.functionalCurrencyCode ?? '—' }}</small></article>
-          <article class="metric-card"><span>{{ text('valuedQuantity') }}</span><strong>{{ formatQuantity(currentSummary()?.valuedQuantity ?? 0) }}</strong><small>{{ currentSummary()?.status ?? text('reconciled') }}</small></article>
+          <article class="metric-card"><span>{{ text('valuedQuantity') }}</span><strong>{{ formatQuantity(currentSummary()?.valuedQuantity ?? 0) }}</strong><small>{{ currentSummary()?.isComplete ? text('complete') : text('partial') }}</small></article>
           <article class="metric-card"><span>{{ text('valuedAmount') }}</span><strong>{{ formatAmount(currentSummary()?.valuedAmount ?? 0) }}</strong><small>{{ currentSummary()?.functionalCurrencyCode ?? '—' }}</small></article>
-          <article class="metric-card"><span>{{ text('averageCost') }}</span><strong>{{ formatAmount(currentSummary()?.averageUnitCost ?? 0) }}</strong><small>{{ currentSummary()?.functionalCurrencyCode ?? '—' }}</small></article>
           <article class="metric-card metric-card--warn"><span>{{ text('pending') }}</span><strong>{{ currentSummary()?.pendingMovementCount ?? 0 }}</strong><small>{{ text('pendingTab') }}</small></article>
           <article class="metric-card metric-card--warn"><span>{{ text('blocked') }}</span><strong>{{ currentSummary()?.blockedMovementCount ?? 0 }}</strong><small>{{ text('pendingTab') }}</small></article>
           <article class="metric-card metric-card--ink"><span>{{ text('inTransit') }}</span><strong>{{ formatQuantity(currentSummary()?.inTransitQuantity ?? 0) }}</strong><small>{{ formatAmount(currentSummary()?.inTransitValue ?? 0) }}</small></article>
@@ -137,9 +141,9 @@ const copy = {
         @if (activeTab() === 'summary') {
           <section class="valuation-grid">
             <article class="ui-surface valuation-panel valuation-panel--wide">
-              <div class="panel-heading"><div><p class="eyebrow">{{ text('summary') }}</p><h2>{{ text('reconciliation') }}</h2></div><span class="status-badge" [class.status-badge--active]="currentSummary()?.status === 'Reconciled'">{{ currentSummary()?.status ?? text('reconciled') }}</span></div>
-              <div class="recon-line"><span></span><div><strong>{{ formatQuantity(currentSummary()?.valuedQuantity ?? 0) }}</strong><small>{{ text('valuedQuantity') }}</small></div><div><strong>{{ formatQuantity(currentSummary()?.quantityDifference ?? 0) }}</strong><small>{{ text('reason') }}</small></div><div><strong>{{ currentSummary()?.financeHandoffStatus ?? '—' }}</strong><small>{{ text('handoff') }}</small></div></div>
-              <p class="panel-note">{{ currentSummary()?.differenceReason ?? text('immutable') }}</p>
+              <div class="panel-heading"><div><p class="eyebrow">{{ text('summary') }}</p><h2>{{ text('reconciliation') }}</h2></div><span class="status-badge" [class.status-badge--active]="currentSummary()?.isComplete">{{ currentSummary()?.reconciliationStatus ?? text('partial') }}</span></div>
+              <div class="recon-line"><span></span><div><strong>{{ formatQuantity(currentSummary()?.valuedQuantity ?? 0) }}</strong><small>{{ text('valuedQuantity') }}</small></div><div><strong>{{ formatAmount(currentSummary()?.valuedAmount ?? 0) }}</strong><small>{{ text('valuedAmount') }}</small></div><div><strong>{{ currentSummary()?.isComplete ? text('complete') : text('partial') }}</strong><small>{{ text('reconciliation') }}</small></div></div>
+              <p class="panel-note">{{ currentSummary()?.isComplete ? text('immutable') : text('partial') }}</p>
             </article>
             <article class="ui-surface valuation-panel">
               <div class="panel-heading"><div><p class="eyebrow">{{ text('policy') }}</p><h2>{{ policy()?.functionalCurrencyCode ?? '—' }}</h2></div><span class="status-badge status-badge--active">{{ policy()?.roundingMode ?? '—' }}</span></div>
@@ -164,7 +168,7 @@ const copy = {
 
         @if (activeTab() === 'reconciliation') {
           <section class="ui-surface valuation-panel" data-testid="valuation-reconciliation">
-            <div class="panel-heading"><div><p class="eyebrow">{{ text('reconciliation') }}</p><h2>{{ text('onHand') }} ↔ {{ text('valuedQuantity') }}</h2></div><span class="status-badge" [class.status-badge--active]="currentSummary()?.status === 'Reconciled'">{{ currentSummary()?.status ?? '—' }}</span></div>
+            <div class="panel-heading"><div><p class="eyebrow">{{ text('reconciliation') }}</p><h2>{{ text('onHand') }} / {{ text('valuedQuantity') }}</h2></div><span class="status-badge" [class.status-badge--active]="currentSummary()?.isComplete">{{ currentSummary()?.reconciliationStatus ?? '—' }}</span></div>
             <div class="ui-grid-shell"><table class="ui-grid"><thead><tr><th>{{ text('status') }}</th><th>{{ text('onHand') }}</th><th>{{ text('valuedQuantity') }}</th><th>{{ text('valuedAmount') }}</th><th>{{ text('inTransit') }}</th><th>{{ text('handoff') }}</th><th>{{ text('lastApplied') }}</th></tr></thead><tbody>@for (record of reconciliation(); track record.warehouseId + record.productId + record.unitOfMeasureId) {<tr><td><span class="status-badge" [class.status-badge--active]="record.status === 'Reconciled'">{{ record.status }}</span></td><td class="numeric">{{ formatQuantity(record.physicalOnHandQuantity) }}</td><td class="numeric">{{ formatQuantity(record.valuedQuantity) }}</td><td class="numeric">{{ formatAmount(record.valuedAmount) }}<small>{{ record.functionalCurrencyCode }}</small></td><td class="numeric">{{ formatQuantity(record.inTransitQuantity) }}<small>{{ formatAmount(record.inTransitValue) }}</small></td><td>{{ record.financeHandoffStatus }}</td><td class="sequence-cell">#{{ record.lastAppliedLedgerSequence }}</td></tr>} @empty {<tr><td colspan="7"><p class="empty-copy">{{ text('noEvents') }}</p></td></tr>}</tbody></table></div>
           </section>
         }
@@ -172,7 +176,7 @@ const copy = {
         @if (activeTab() === 'handoff') {
           <section class="ui-surface valuation-panel" data-testid="valuation-finance-handoff">
             <div class="panel-heading"><div><p class="eyebrow">{{ text('handoff') }}</p><h2>{{ text('financeReady') }}</h2></div><span class="boundary-chip">{{ text('noJournal') }}</span></div>
-            @if (handoffs().length === 0) {<p class="empty-copy">{{ text('noHandoff') }}</p>} @else {<div class="ui-grid-shell"><table class="ui-grid"><thead><tr><th>{{ text('sequence') }}</th><th>{{ text('source') }}</th><th>{{ text('quantity') }}</th><th>{{ text('unitCost') }}</th><th>{{ text('movementValue') }}</th><th>{{ text('status') }}</th><th>Contract</th></tr></thead><tbody>@for (handoff of handoffs(); track handoff.id) {<tr><td class="sequence-cell">#{{ handoff.ledgerSequence }}</td><td><strong>{{ handoff.sourceType }}</strong><small>{{ handoff.sourceDocumentId.substring(0, 8) }}</small></td><td class="numeric">{{ formatQuantity(handoff.quantity) }}</td><td class="numeric">{{ formatAmount(handoff.baseUnitCost) }}</td><td class="numeric">{{ formatAmount(handoff.baseAmount) }}<small>{{ handoff.functionalCurrencyCode }}</small></td><td><span class="status-badge status-badge--active">{{ handoff.status }}</span></td><td><code>{{ handoff.contractVersion }}</code></td></tr>}</tbody></table></div>}
+            @if (handoffs().length === 0) {<p class="empty-copy">{{ text('noHandoff') }}</p>} @else {<div class="ui-grid-shell"><table class="ui-grid"><thead><tr><th>{{ text('sequence') }}</th><th>{{ text('source') }}</th><th>{{ text('direction') }}</th><th>{{ text('quantity') }}</th><th>{{ text('unitCost') }}</th><th>{{ text('signedAmount') }}</th><th>{{ text('status') }}</th><th>Contract</th></tr></thead><tbody>@for (handoff of handoffs(); track handoff.id) {<tr><td class="sequence-cell">#{{ handoff.ledgerSequence }}</td><td><strong>{{ handoff.sourceType }}</strong><small>{{ handoff.sourceDocumentId.substring(0, 8) }}</small></td><td>{{ handoff.direction }}</td><td class="numeric">{{ formatQuantity(handoff.quantity) }}</td><td class="numeric">{{ formatAmount(handoff.baseUnitCost) }}</td><td class="numeric">{{ formatAmount(handoff.signedBaseAmount) }}<small>{{ handoff.functionalCurrencyCode }}</small></td><td><span class="status-badge status-badge--active">{{ handoff.status }}</span></td><td><code>{{ handoff.contractVersion }}</code></td></tr>}</tbody></table></div>}
           </section>
         }
       }
@@ -188,7 +192,7 @@ export class InventoryValuationWorkspaceComponent implements OnInit {
   readonly warehouses = signal<InventoryWarehouseOption[]>([]);
   readonly selectedWarehouseId = signal('');
   readonly policies = signal<InventoryValuationPolicy[]>([]);
-  readonly summary = signal<InventoryValuationReconciliation[]>([]);
+  readonly summary = signal<InventoryValuationSummary | null>(null);
   readonly reconciliation = signal<InventoryValuationReconciliation[]>([]);
   readonly historyEvents = signal<InventoryValuationEvent[]>([]);
   readonly pendingEvents = signal<InventoryValuationEvent[]>([]);
@@ -197,8 +201,8 @@ export class InventoryValuationWorkspaceComponent implements OnInit {
   readonly error = signal('');
   readonly activeTab = signal<ValuationTab>('summary');
   readonly selectedWarehouse = computed(() => this.warehouses().find(item => item.warehouseId === this.selectedWarehouseId()) ?? null);
-  readonly currentSummary = computed(() => this.summary()[0] ?? null);
-  readonly policy = computed(() => this.policies()[0] ?? null);
+  readonly currentSummary = computed(() => this.summary());
+  readonly policy = computed(() => this.valuation.selectCurrentPolicy(this.policies()));
 
   ngOnInit(): void { void this.load(); }
 
@@ -246,7 +250,7 @@ export class InventoryValuationWorkspaceComponent implements OnInit {
 
   formatQuantity(value: number): string { return new Intl.NumberFormat(this.language.language(), { maximumFractionDigits: 4 }).format(value); }
   formatAmount(value: number): string { return new Intl.NumberFormat(this.language.language(), { minimumFractionDigits: 2, maximumFractionDigits: 8 }).format(value); }
-  formatDate(value: string | null | undefined): string { return value ? new Intl.DateTimeFormat(this.language.language(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'â€”'; }
+  formatDate(value: string | null | undefined): string { return value ? new Intl.DateTimeFormat(this.language.language(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '—'; }
   statusClass(status: string): string { return status === 'Applied' || status === 'Reconciled' ? 'status-badge--active' : status === 'Pending' ? 'status-badge--warning' : 'status-badge--danger'; }
 
   async exportValuation(): Promise<void> {

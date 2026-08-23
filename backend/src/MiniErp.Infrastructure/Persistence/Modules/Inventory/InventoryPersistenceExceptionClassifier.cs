@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using Microsoft.Data.Sqlite;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
@@ -23,6 +24,19 @@ internal static class InventoryPersistenceExceptionClassifier
 
     internal static InvalidOperationException Unavailable(Exception exception) =>
         new("Inventory persistence is unavailable.", exception);
+
+    internal static bool IsUniqueConstraintViolation(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is SqlException sqlException && sqlException.Number is 2601 or 2627)
+                return true;
+            if (current is SqliteException sqliteException && sqliteException.SqliteErrorCode == 19)
+                return true;
+        }
+
+        return false;
+    }
 
     internal static bool IsCorrectionUniqueViolation(Exception exception)
     {

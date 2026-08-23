@@ -60,6 +60,12 @@ public enum InventoryFinanceValuationHandoffStatus
     ReadyForFinance = 3
 }
 
+public enum InventoryInTransitValuationStatus
+{
+    Ready = 1,
+    Pending = 2
+}
+
 public enum InventoryMovementDirection
 {
     Inbound = 1,
@@ -281,22 +287,20 @@ public sealed record InventoryValuationPolicyRequest(
     string FunctionalCurrencyCode,
     InventoryValuationScopeMode ScopeMode,
     DateOnly EffectiveFrom,
-    DateOnly? EffectiveTo = null,
-    int UnitCostScale = 8,
-    int AmountScale = 8,
-    InventoryValuationRoundingMode RoundingMode = InventoryValuationRoundingMode.ToEven,
-    string GoodsReceiptCostBasis = "PurchaseOrderUnitPrice",
-    string PositiveAdjustmentCostBasis = "CurrentMovingAverage",
-    string SupplierReturnCostBasis = "CurrentMovingAverage");
+    DateOnly? EffectiveTo,
+    int UnitCostScale,
+    int AmountScale,
+    InventoryValuationRoundingMode RoundingMode,
+    string GoodsReceiptCostBasis,
+    string PositiveAdjustmentCostBasis,
+    string SupplierReturnCostBasis);
 
 public sealed record InventoryValuationProcessRequest(
     Guid CompanyId,
     Guid? BranchId = null,
     Guid? WarehouseId = null,
     Guid? ProductId = null,
-    Guid? UnitOfMeasureId = null,
-    string? TrackingIdentity = null,
-    DateOnly? AsOfDate = null);
+    Guid? UnitOfMeasureId = null);
 
 public sealed record InventoryValuationCorrectionRequest(
     Guid AuthoritativeSourceRevisionId,
@@ -319,7 +323,8 @@ public sealed record InventoryValuationPolicyRecord(
     string PositiveAdjustmentCostBasis,
     string SupplierReturnCostBasis,
     bool IsActive,
-    byte[] Version);
+    byte[] Version,
+    Guid? SupersedesPolicyId = null);
 
 public sealed record InventoryValuationStateRecord(
     Guid TenantId,
@@ -329,8 +334,8 @@ public sealed record InventoryValuationStateRecord(
     Guid ProductId,
     Guid UnitOfMeasureId,
     string? TrackingIdentity,
-    Guid PolicyId,
-    int PolicyVersionNumber,
+    Guid? CurrentPolicyId,
+    int? CurrentPolicyVersionNumber,
     string FunctionalCurrencyCode,
     decimal Quantity,
     decimal Value,
@@ -365,9 +370,9 @@ public sealed record InventoryMovementValuationEventRecord(
     Guid ProductId,
     Guid UnitOfMeasureId,
     string? TrackingIdentity,
-    Guid PolicyId,
-    int PolicyVersionNumber,
-    string FunctionalCurrencyCode,
+    Guid? PolicyId,
+    int? PolicyVersionNumber,
+    string? FunctionalCurrencyCode,
     decimal Quantity,
     InventoryMovementDirection Direction,
     decimal? TransactionUnitCost,
@@ -385,9 +390,9 @@ public sealed record InventoryMovementValuationEventRecord(
     decimal NewQuantity,
     decimal NewValue,
     decimal? MovementValue,
-    int UnitCostScale,
-    int AmountScale,
-    InventoryValuationRoundingMode RoundingMode,
+    int? UnitCostScale,
+    int? AmountScale,
+    InventoryValuationRoundingMode? RoundingMode,
     Guid? CorrectionOfValuationEventId,
     Guid? SourceRevisionId,
     bool IsBackdated,
@@ -436,10 +441,33 @@ public sealed record InventoryValuationReconciliationRecord(
     long? OldestPendingLedgerSequence,
     decimal InTransitQuantity,
     decimal InTransitValue,
+    InventoryInTransitValuationStatus InTransitValueStatus,
     InventoryFinanceValuationHandoffStatus FinanceHandoffStatus,
     DateTimeOffset AsOf,
     DateTimeOffset FreshAsOf,
     string? DifferenceReason);
+
+public sealed record InventoryValuationSummaryRecord(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid? WarehouseId,
+    string FunctionalCurrencyCode,
+    decimal PhysicalOnHandQuantity,
+    decimal ValuedQuantity,
+    decimal ValuedAmount,
+    int PendingMovementCount,
+    int BlockedMovementCount,
+    decimal InTransitQuantity,
+    decimal InTransitValue,
+    InventoryInTransitValuationStatus InTransitValueStatus,
+    InventoryValuationReconciliationStatus ReconciliationStatus,
+    long? LatestLedgerSequence,
+    long? LatestValuedLedgerSequence,
+    bool IsComplete,
+    bool IsPartial,
+    DateTimeOffset AsOf,
+    DateTimeOffset FreshAsOf);
 
 public sealed record InventoryValuationExportRecord(
     string FileName,
@@ -469,8 +497,10 @@ public sealed record InventoryFinanceValuationHandoffRecord(
     Guid ValuationEvidenceId,
     int ValuationEvidenceVersion,
     decimal Quantity,
+    InventoryMovementDirection Direction,
     decimal BaseUnitCost,
     decimal BaseAmount,
+    decimal SignedBaseAmount,
     Guid PolicyId,
     int PolicyVersionNumber,
     string FunctionalCurrencyCode,

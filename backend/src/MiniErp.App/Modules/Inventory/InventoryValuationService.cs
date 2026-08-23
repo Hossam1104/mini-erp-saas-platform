@@ -36,7 +36,7 @@ public sealed class InventoryValuationService(
             DateTimeOffset.UtcNow,
             context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"),
             idempotencyKey,
-            InventoryFingerprints.Create(request));
+            InventoryFingerprints.Create(request with { FunctionalCurrencyCode = currency.Code.Trim().ToUpperInvariant() }));
         try
         {
             var result = await persistence.CreatePolicyAsync(context, command, cancellationToken);
@@ -65,7 +65,13 @@ public sealed class InventoryValuationService(
     {
         if (!await IsQueryAllowedAsync(context, "inventory.valuation.process", command.CompanyId, command.BranchId, command.WarehouseId, cancellationToken))
             return InventoryOperationResult<InventoryValuationProcessResult>.Failure("forbidden");
-        try { return InventoryOperationResult<InventoryValuationProcessResult>.Success(await persistence.ProcessAsync(context, command, cancellationToken)); }
+        try
+        {
+            var result = await persistence.ProcessAsync(context, command, cancellationToken);
+            return result.Succeeded && result.Value is not null
+                ? InventoryOperationResult<InventoryValuationProcessResult>.Success(result.Value)
+                : InventoryOperationResult<InventoryValuationProcessResult>.Failure(result.Code);
+        }
         catch (InvalidOperationException ex) when (string.Equals(ex.Message, "valuation_concurrency_conflict", StringComparison.Ordinal)) { return InventoryOperationResult<InventoryValuationProcessResult>.Failure("conflict"); }
         catch (InvalidOperationException) { return InventoryOperationResult<InventoryValuationProcessResult>.Failure("persistence_unavailable"); }
     }
@@ -86,9 +92,24 @@ public sealed class InventoryValuationService(
 
     public async Task<InventoryOperationResult<IReadOnlyList<InventoryValuationReconciliationRecord>>> ReconcileAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default)
     {
+        if (!IsCurrentReconciliationQuery(query)) return InventoryOperationResult<IReadOnlyList<InventoryValuationReconciliationRecord>>.Failure("validation_failed");
         if (!await IsQueryAllowedAsync(context, "inventory.valuation.reconciliation.read", query.CompanyId, query.BranchId, query.WarehouseId, cancellationToken)) return InventoryOperationResult<IReadOnlyList<InventoryValuationReconciliationRecord>>.Failure("forbidden");
         try { return InventoryOperationResult<IReadOnlyList<InventoryValuationReconciliationRecord>>.Success(await persistence.ReconcileAsync(context, query, cancellationToken)); }
         catch (InvalidOperationException) { return InventoryOperationResult<IReadOnlyList<InventoryValuationReconciliationRecord>>.Failure("persistence_unavailable"); }
+    }
+
+    public async Task<InventoryOperationResult<InventoryValuationSummaryRecord>> SummaryAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default)
+    {
+        if (!IsCurrentReconciliationQuery(query)) return InventoryOperationResult<InventoryValuationSummaryRecord>.Failure("validation_failed");
+        if (!await IsQueryAllowedAsync(context, "inventory.valuation.summary.read", query.CompanyId, query.BranchId, query.WarehouseId, cancellationToken)) return InventoryOperationResult<InventoryValuationSummaryRecord>.Failure("forbidden");
+        try
+        {
+            var result = await persistence.SummaryAsync(context, query, cancellationToken);
+            return result.Succeeded && result.Value is not null
+                ? InventoryOperationResult<InventoryValuationSummaryRecord>.Success(result.Value)
+                : InventoryOperationResult<InventoryValuationSummaryRecord>.Failure(result.Code);
+        }
+        catch (InvalidOperationException) { return InventoryOperationResult<InventoryValuationSummaryRecord>.Failure("persistence_unavailable"); }
     }
 
     public async Task<InventoryOperationResult<IReadOnlyList<InventoryFinanceValuationHandoffRecord>>> ListFinanceHandoffsAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default)
@@ -134,13 +155,23 @@ public sealed class InventoryValuationService(
         && !string.IsNullOrWhiteSpace(request.FunctionalCurrencyCode)
         && request.EffectiveFrom != default
         && (request.EffectiveTo is null || request.EffectiveTo.Value >= request.EffectiveFrom)
-        && request.UnitCostScale is >= 0 and <= 12
-        && request.AmountScale is >= 0 and <= 12
+        && request.UnitCostScale is > 0 and <= 12
+        && request.AmountScale is > 0 and <= 12
         && request.ScopeMode is InventoryValuationScopeMode.WarehouseProductUom or InventoryValuationScopeMode.WarehouseProductUomTracking
         && request.RoundingMode is InventoryValuationRoundingMode.ToEven or InventoryValuationRoundingMode.AwayFromZero
         && string.Equals(request.GoodsReceiptCostBasis, "PurchaseOrderUnitPrice", StringComparison.Ordinal)
         && string.Equals(request.PositiveAdjustmentCostBasis, "CurrentMovingAverage", StringComparison.Ordinal)
         && request.SupplierReturnCostBasis is "CurrentMovingAverage" or "LinkedReceiptValuation";
+
+    private static bool IsCurrentReconciliationQuery(InventoryValuationQuery query) =>
+        query.Status is null
+        && query.FromLedgerSequence is null
+        && query.ToLedgerSequence is null
+        && query.EffectiveFrom is null
+        && query.EffectiveTo is null
+        && query.SourceType is null
+        && query.PolicyId is null
+        && string.IsNullOrWhiteSpace(query.FunctionalCurrencyCode);
 }
 
 #pragma warning restore CS1591

@@ -852,9 +852,9 @@ public sealed partial class UnavailableInventoryPersistence : IInventoryPersiste
     public Task<IReadOnlyList<InventoryAuditRecord>> ReadAuditAsync(InventoryRequestContext context, string resourceType, Guid resourceId, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryAuditRecord>>();
 }
 
-internal static class InventoryFingerprints
+public static class InventoryFingerprints
 {
-    internal static string Create<T>(T value)
+    public static string Create<T>(T value)
     {
         var json = JsonSerializer.Serialize(value, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)));

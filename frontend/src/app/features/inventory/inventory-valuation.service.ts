@@ -9,6 +9,7 @@ import {
   InventoryValuationPolicy,
   InventoryValuationProcessRequest,
   InventoryValuationReconciliation,
+  InventoryValuationSummary,
   InventoryValuationState,
 } from './inventory-valuation.model';
 
@@ -37,8 +38,8 @@ export class InventoryValuationService {
     return this.api.get<InventoryValuationState[]>(`/inventory/valuation/states${this.query(filters)}`);
   }
 
-  summary(filters: InventoryValuationFilters): Observable<InventoryValuationReconciliation[]> {
-    return this.api.get<InventoryValuationReconciliation[]>(`/inventory/valuation/summary${this.query(filters)}`);
+  summary(filters: InventoryValuationFilters): Observable<InventoryValuationSummary> {
+    return this.api.get<InventoryValuationSummary>(`/inventory/valuation/summary${this.query(filters)}`);
   }
 
   reconciliation(filters: InventoryValuationFilters): Observable<InventoryValuationReconciliation[]> {
@@ -67,6 +68,17 @@ export class InventoryValuationService {
     }
     const headers = this.auth.requestHeaders().set('Idempotency-Key', this.idempotencyKey());
     return firstValueFrom(this.api.post<unknown>('/inventory/valuation/process', payload, { headers }));
+  }
+
+  selectCurrentPolicy(policies: InventoryValuationPolicy[], asOf = new Date()): InventoryValuationPolicy | null {
+    const currentDate = asOf.getTime();
+    return policies
+      .filter((policy) => {
+        const effectiveFrom = new Date(`${policy.effectiveFrom}T00:00:00Z`).getTime();
+        const effectiveTo = policy.effectiveTo ? new Date(`${policy.effectiveTo}T23:59:59.999Z`).getTime() : Number.POSITIVE_INFINITY;
+        return policy.isActive && effectiveFrom <= currentDate && currentDate <= effectiveTo;
+      })
+      .sort((left, right) => right.effectiveFrom.localeCompare(left.effectiveFrom) || right.versionNumber - left.versionNumber)[0] ?? null;
   }
 
   private query(values: InventoryValuationFilters): string {

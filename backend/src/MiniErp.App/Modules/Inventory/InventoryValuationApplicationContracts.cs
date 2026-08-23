@@ -20,8 +20,6 @@ public sealed record InventoryValuationProcessCommand(
     Guid? WarehouseId,
     Guid? ProductId,
     Guid? UnitOfMeasureId,
-    string? TrackingIdentity,
-    DateOnly? AsOfDate,
     Guid ActorId,
     DateTimeOffset OccurredAt,
     string CorrelationId,
@@ -66,7 +64,7 @@ public interface IInventoryValuationPersistence
         Guid companyId,
         CancellationToken cancellationToken = default);
 
-    Task<InventoryValuationProcessResult> ProcessAsync(
+    Task<InventoryPersistenceResult<InventoryValuationProcessResult>> ProcessAsync(
         InventoryRequestContext context,
         InventoryValuationProcessCommand command,
         CancellationToken cancellationToken = default);
@@ -82,6 +80,11 @@ public interface IInventoryValuationPersistence
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<InventoryValuationReconciliationRecord>> ReconcileAsync(
+        InventoryRequestContext context,
+        InventoryValuationQuery query,
+        CancellationToken cancellationToken = default);
+
+    Task<InventoryPersistenceResult<InventoryValuationSummaryRecord>> SummaryAsync(
         InventoryRequestContext context,
         InventoryValuationQuery query,
         CancellationToken cancellationToken = default);
@@ -108,10 +111,11 @@ public sealed class UnavailableInventoryValuationPersistence : IInventoryValuati
 
     public Task<InventoryPersistenceResult<InventoryValuationPolicyRecord>> CreatePolicyAsync(InventoryRequestContext context, InventoryValuationPolicyCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryPersistenceResult<InventoryValuationPolicyRecord>>();
     public Task<IReadOnlyList<InventoryValuationPolicyRecord>> ListPoliciesAsync(InventoryRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryValuationPolicyRecord>>();
-    public Task<InventoryValuationProcessResult> ProcessAsync(InventoryRequestContext context, InventoryValuationProcessCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryValuationProcessResult>();
+    public Task<InventoryPersistenceResult<InventoryValuationProcessResult>> ProcessAsync(InventoryRequestContext context, InventoryValuationProcessCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryPersistenceResult<InventoryValuationProcessResult>>();
     public Task<IReadOnlyList<InventoryValuationStateRecord>> ListStatesAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryValuationStateRecord>>();
     public Task<IReadOnlyList<InventoryMovementValuationEventRecord>> ListEventsAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryMovementValuationEventRecord>>();
     public Task<IReadOnlyList<InventoryValuationReconciliationRecord>> ReconcileAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryValuationReconciliationRecord>>();
+    public Task<InventoryPersistenceResult<InventoryValuationSummaryRecord>> SummaryAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<InventoryPersistenceResult<InventoryValuationSummaryRecord>>();
     public Task<IReadOnlyList<InventoryFinanceValuationHandoffRecord>> ListFinanceHandoffsAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryFinanceValuationHandoffRecord>>();
     public Task<InventoryValuationExportRecord> ExportAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<InventoryValuationExportRecord>();
     public Task<InventoryPersistenceResult<InventoryMovementValuationEventRecord>> CorrectAsync(InventoryRequestContext context, InventoryValuationCorrectionCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryPersistenceResult<InventoryMovementValuationEventRecord>>();
@@ -125,7 +129,8 @@ public sealed record MovingWeightedAverageInput(
     decimal PriorValue,
     int UnitCostScale,
     int AmountScale,
-    InventoryValuationRoundingMode RoundingMode);
+    InventoryValuationRoundingMode RoundingMode,
+    decimal? PriorAverageUnitCost = null);
 
 public sealed record MovingWeightedAverageOutput(
     decimal NewQuantity,
@@ -141,7 +146,8 @@ public sealed record MovingWeightedAverageCorrectionInput(
     decimal PriorValue,
     int UnitCostScale,
     int AmountScale,
-    InventoryValuationRoundingMode RoundingMode);
+    InventoryValuationRoundingMode RoundingMode,
+    bool IsFullReversal = false);
 
 public static class MovingWeightedAverageCalculator
 {
@@ -177,7 +183,14 @@ public static class MovingWeightedAverageCalculator
                 return false;
             }
 
-            movementValue = Round(quantity * (priorQuantity == 0m ? 0m : priorValue / priorQuantity), input.AmountScale, input.RoundingMode);
+            if (input.PriorAverageUnitCost is null)
+            {
+                error = "prior_moving_average_required";
+                return false;
+            }
+
+            var priorAverageUnitCost = Round(input.PriorAverageUnitCost.Value, input.UnitCostScale, input.RoundingMode);
+            movementValue = Round(quantity * priorAverageUnitCost, input.AmountScale, input.RoundingMode);
             newQuantity = Round(priorQuantity - quantity, input.AmountScale, input.RoundingMode);
             newValue = Round(priorValue - movementValue, input.AmountScale, input.RoundingMode);
         }
@@ -213,7 +226,9 @@ public static class MovingWeightedAverageCalculator
         var priorQuantity = Round(input.PriorQuantity, input.AmountScale, input.RoundingMode);
         var priorValue = Round(input.PriorValue, input.AmountScale, input.RoundingMode);
         var quantity = Round(input.Quantity, input.AmountScale, input.RoundingMode);
-        var reversalValue = Round(input.ReversalValue, input.AmountScale, input.RoundingMode);
+        var reversalValue = input.IsFullReversal
+            ? input.ReversalValue
+            : Round(input.ReversalValue, input.AmountScale, input.RoundingMode);
         var newQuantity = input.Direction == InventoryMovementDirection.Inbound
             ? Round(priorQuantity + quantity, input.AmountScale, input.RoundingMode)
             : input.Direction == InventoryMovementDirection.Outbound

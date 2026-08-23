@@ -18,6 +18,7 @@ export interface InventoryValuationPolicy {
   supplierReturnCostBasis: string;
   isActive: boolean;
   version: string;
+  supersedesPolicyId: string | null;
 }
 
 export interface InventoryValuationState {
@@ -28,8 +29,8 @@ export interface InventoryValuationState {
   productId: string;
   unitOfMeasureId: string;
   trackingIdentity: string | null;
-  policyId: string;
-  policyVersionNumber: number;
+  currentPolicyId: string | null;
+  currentPolicyVersionNumber: number | null;
   functionalCurrencyCode: string;
   quantity: number;
   value: number;
@@ -65,9 +66,9 @@ export interface InventoryValuationEvent {
   productId: string;
   unitOfMeasureId: string;
   trackingIdentity: string | null;
-  policyId: string;
-  policyVersionNumber: number;
-  functionalCurrencyCode: string;
+  policyId: string | null;
+  policyVersionNumber: number | null;
+  functionalCurrencyCode: string | null;
   quantity: number;
   direction: string;
   transactionUnitCost: number | null;
@@ -85,9 +86,9 @@ export interface InventoryValuationEvent {
   newQuantity: number;
   newValue: number;
   movementValue: number | null;
-  unitCostScale: number;
-  amountScale: number;
-  roundingMode: string;
+  unitCostScale: number | null;
+  amountScale: number | null;
+  roundingMode: string | null;
   correctionOfValuationEventId: string | null;
   sourceRevisionId: string | null;
   isBackdated: boolean;
@@ -123,10 +124,34 @@ export interface InventoryValuationReconciliation {
   oldestPendingLedgerSequence: number | null;
   inTransitQuantity: number;
   inTransitValue: number;
+  inTransitValueStatus: string;
   financeHandoffStatus: string;
   asOf: string;
   freshAsOf: string;
   differenceReason: string | null;
+}
+
+export interface InventoryValuationSummary {
+  tenantId: string;
+  companyId: string;
+  branchId: string | null;
+  warehouseId: string | null;
+  functionalCurrencyCode: string;
+  physicalOnHandQuantity: number;
+  valuedQuantity: number;
+  valuedAmount: number;
+  pendingMovementCount: number;
+  blockedMovementCount: number;
+  inTransitQuantity: number;
+  inTransitValue: number;
+  inTransitValueStatus: string;
+  reconciliationStatus: string;
+  latestLedgerSequence: number | null;
+  latestValuedLedgerSequence: number | null;
+  isComplete: boolean;
+  isPartial: boolean;
+  asOf: string;
+  freshAsOf: string;
 }
 
 export interface InventoryFinanceValuationHandoff {
@@ -143,8 +168,10 @@ export interface InventoryFinanceValuationHandoff {
   valuationEvidenceId: string;
   valuationEvidenceVersion: number;
   quantity: number;
+  direction: string;
   baseUnitCost: number;
   baseAmount: number;
+  signedBaseAmount: number;
   policyId: string;
   policyVersionNumber: number;
   functionalCurrencyCode: string;
@@ -174,6 +201,4 @@ export interface InventoryValuationProcessRequest {
   warehouseId?: string | null;
   productId?: string | null;
   unitOfMeasureId?: string | null;
-  trackingIdentity?: string | null;
-  asOfDate?: string | null;
 }
