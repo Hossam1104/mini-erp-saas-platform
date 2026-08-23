@@ -1,11 +1,11 @@
 # MESP-131 Moving Weighted Average Valuation Architecture
 
-**Status:** Implementation handoff; pending GPT-5.6 Sol acceptance and merge  
-**Date:** 23 August 2026  
-**Capability:** MESP-131 â€” Moving Weighted Average valuation, reconciliation, and inventory reporting  
-**Base main:** `b470179e1d18ef75c0a9247b2340407da6220dc4`  
-**Implementation commit:** `bf491c867b554b2c1f3b091b5196bf82199e161d`  
-**Implementation handoff tip before documentation reconciliation:** `39fa538d3c6968476927f01c19669715cdc1147f`  
+**Status:** Implementation handoff; pending GPT-5.6 Sol acceptance and merge<br>
+**Date:** 23 August 2026<br>
+**Capability:** MESP-131 â€” Moving Weighted Average valuation, reconciliation, and inventory reporting<br>
+**Base main:** `b470179e1d18ef75c0a9247b2340407da6220dc4`<br>
+**Implementation commit:** `bf491c867b554b2c1f3b091b5196bf82199e161d`<br>
+**Implementation handoff tip before documentation reconciliation:** `39fa538d3c6968476927f01c19669715cdc1147f`<br>
 **Draft PR:** #75 â€” Open, Draft, unmerged
 
 ## Purpose and boundary
