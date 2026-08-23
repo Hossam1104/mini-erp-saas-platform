@@ -28,8 +28,7 @@ Exact required main base: `b470179e1d18ef75c0a9247b2340407da6220dc4`
 
 Implementation SHA: `bf491c867b554b2c1f3b091b5196bf82199e161d`
 
-Final branch SHA: recorded as the final documentation handoff tip in the
-completion response after this file is committed.
+Final branch SHA: `1dbd7742471bdbe0b972dd7ccb777a48f3000ad7`
 
 Draft PR: `#75` - Open, Draft, Unmerged; base `main`.
 
