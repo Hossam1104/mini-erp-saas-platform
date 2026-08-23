@@ -198,6 +198,7 @@ internal sealed class TenantOwnershipVerifierRegistry
             InventoryTenantOwnershipVerifier.For<InventoryAdjustmentEntity>(),
             InventoryTenantOwnershipVerifier.For<InventoryAdjustmentLineEntity>(),
             InventoryTenantOwnershipVerifier.For<InventoryCountEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryCountSnapshotEntity>(),
             InventoryTenantOwnershipVerifier.For<InventoryCountLineEntity>(),
             InventoryTenantOwnershipVerifier.For<InventoryStockIssueEntity>(),
             InventoryTenantOwnershipVerifier.For<InventoryStockIssueLineEntity>(),

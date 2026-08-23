@@ -251,6 +251,68 @@ public sealed class InventoryStockControlTests
     }
 
     [Fact]
+    public async Task Full_count_uses_the_warehouse_ledger_fence_when_movement_posted_at_is_earlier_than_cutoff()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureCreatedAsync(options, context);
+        await SeedStockAsync(options, context, 5m);
+        var persistence = new InventoryPersistence(options);
+
+        var created = Assert.IsType<InventoryCountRecord>(await persistence.CreateCountAsync(
+            context,
+            new InventoryCountCreateCommand(Guid.NewGuid(), scope, "WH-A", "Warehouse A", InventoryCountType.Full, Actor, null,
+                [new InventoryCountLineCommand(Guid.NewGuid(), null, 1, ProductA, UnitA, "", 0m, Product())],
+                DateTimeOffset.UtcNow, Actor, DateTimeOffset.UtcNow, "full-fence-time-correlation", "full-fence-time-key", "full-fence-time-fp")));
+
+        await SeedMovementAsync(options, context, ProductA, UnitA, "SKU-A", "Product A", 1m, "full-fence-time-movement", created.SnapshotCutoff.AddTicks(-1));
+        var submitted = Assert.IsType<InventoryCountRecord>(await persistence.SubmitCountAsync(
+            context,
+            new InventoryCountSubmitCommand(created.Id, created.Version,
+                [new InventoryCountObservationRequest(Assert.Single(created.Lines).Id, 5m)], Actor,
+                "full-fence-time-submit", "full-fence-time-submit-fp", "full-fence-time-submit-correlation", DateTimeOffset.UtcNow)));
+        var blocked = Assert.IsType<InventoryCountRecord>(await persistence.PostCountAsync(
+            context, Action(submitted.Id, submitted.Version, "full-fence-time-post", "full-fence-time-post-fp", DateTimeOffset.UtcNow)));
+
+        Assert.Equal(InventoryControlDocumentStatus.ResnapshotRequired, blocked.Status);
+        Assert.DoesNotContain(await persistence.ListMovementsAsync(context, scope), item => item.SourceType == InventoryMovementSourceType.InventoryCountVariance);
+    }
+
+    [Fact]
+    public async Task Cycle_count_uses_the_selected_identity_fence_when_movement_posted_at_is_earlier_than_cutoff()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureCreatedAsync(options, context);
+        await SeedStockAsync(options, context, 5m);
+        var persistence = new InventoryPersistence(options);
+
+        var created = Assert.IsType<InventoryCountRecord>(await persistence.CreateCountAsync(
+            context,
+            new InventoryCountCreateCommand(Guid.NewGuid(), scope, "WH-A", "Warehouse A", InventoryCountType.Cycle, Actor, null,
+                [new InventoryCountLineCommand(Guid.NewGuid(), null, 1, ProductA, UnitA, "", 0m, Product())],
+                DateTimeOffset.UtcNow, Actor, DateTimeOffset.UtcNow, "cycle-fence-time-correlation", "cycle-fence-time-key", "cycle-fence-time-fp")));
+
+        await SeedMovementAsync(options, context, ProductA, UnitA, "SKU-A", "Product A", 1m, "cycle-fence-time-movement", created.SnapshotCutoff.AddTicks(-1));
+        var line = Assert.Single(created.Lines);
+        var submitted = Assert.IsType<InventoryCountRecord>(await persistence.SubmitCountAsync(
+            context,
+            new InventoryCountSubmitCommand(created.Id, created.Version,
+                [new InventoryCountObservationRequest(line.Id, 5m)], Actor,
+                "cycle-fence-time-submit", "cycle-fence-time-submit-fp", "cycle-fence-time-submit-correlation", DateTimeOffset.UtcNow)));
+        var blocked = Assert.IsType<InventoryCountRecord>(await persistence.PostCountAsync(
+            context, Action(submitted.Id, submitted.Version, "cycle-fence-time-post", "cycle-fence-time-post-fp", DateTimeOffset.UtcNow)));
+
+        Assert.Equal(InventoryControlDocumentStatus.ResnapshotRequired, blocked.Status);
+    }
+
+    [Fact]
     public async Task Full_count_resnapshot_adds_new_warehouse_identity_and_preserves_prior_round()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -274,6 +336,12 @@ public sealed class InventoryStockControlTests
         Assert.True(resnapshot.CurrentRoundGeneration > created.CurrentRoundGeneration);
         Assert.Contains(resnapshot.Lines, item => item.IsCurrentRound && item.ProductId == ProductB && item.ExpectedQuantity == 2m);
         Assert.Contains(resnapshot.Lines, item => !item.IsCurrentRound && item.ProductId == ProductA && item.CountedQuantity == 5m);
+
+        await using var verifyDb = new InventoryDbContext(options, context.TenantContext);
+        var snapshots = await verifyDb.CountSnapshots.AsNoTracking().Where(item => item.CountId == created.Id).OrderBy(item => item.RoundGeneration).ToListAsync();
+        Assert.Equal(2, snapshots.Count);
+        Assert.Equal(1L, snapshots[0].SnapshotWarehouseMovementCount!.Value);
+        Assert.Equal(2L, snapshots[1].SnapshotWarehouseMovementCount!.Value);
     }
 
     [Fact]
@@ -471,14 +539,14 @@ public sealed class InventoryStockControlTests
         await db.SaveChangesAsync();
     }
 
-    private static async Task SeedMovementAsync(DbContextOptions options, InventoryRequestContext context, Guid productId, Guid unitId, string sku, string name, decimal quantity, string correlationId)
+    private static async Task SeedMovementAsync(DbContextOptions options, InventoryRequestContext context, Guid productId, Guid unitId, string sku, string name, decimal quantity, string correlationId, DateTimeOffset? postedAt = null)
     {
         await using var db = new InventoryDbContext(options, context.TenantContext);
         db.StockMovements.Add(new InventoryStockMovementEntity(
             new TenantId(TenantA), Guid.NewGuid(), CompanyA, null, WarehouseA, "WH-A", "Warehouse A", productId,
             sku, name, unitId, "EA", InventoryMovementDirection.Inbound, quantity, null, null, InventoryValuationStatus.Pending, null,
             InventoryMovementSourceType.StockAdjustment, Guid.NewGuid(), Guid.NewGuid(), null,
-            DateOnly.FromDateTime(DateTime.UtcNow), Actor, correlationId, DateTimeOffset.UtcNow));
+            DateOnly.FromDateTime((postedAt ?? DateTimeOffset.UtcNow).UtcDateTime), Actor, correlationId, postedAt ?? DateTimeOffset.UtcNow));
         await db.SaveChangesAsync();
     }
 

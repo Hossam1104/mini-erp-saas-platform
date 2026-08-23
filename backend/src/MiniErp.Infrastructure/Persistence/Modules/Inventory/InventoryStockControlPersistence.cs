@@ -249,6 +249,14 @@ internal sealed partial class InventoryPersistence
                 .ToArray();
             if (requestedByIdentity.Select(item => item.Identity).Distinct().Count() != requestedByIdentity.Length) return null;
 
+            // Establish the Full Count fence before reading the identity universe.
+            // Under Serializable this keeps a movement that would introduce a new
+            // identity behind the snapshot transaction until both the fence and
+            // the identity read have completed.
+            var snapshotWarehouseMovementCount = command.CountType == InventoryCountType.Full
+                ? await CountWarehouseMovementsAsync(db, command.Scope, cancellationToken)
+                : (long?)null;
+
             // For Full Count this is the authoritative warehouse identity universe.
             // It is deliberately read after the Serializable transaction has begun and
             // before anchors, expected quantities, cutoff, and the header are persisted.
@@ -283,15 +291,20 @@ internal sealed partial class InventoryPersistence
 
             var identities = selectedLines.Select(line => new StockIdentityKey(command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, line.ProductId, line.UnitOfMeasureId, line.TrackingIdentity)).Distinct().ToArray();
             await AcquireConcurrencyAnchorsAsync(db, context.TenantId, identities, cancellationToken);
+            var snapshotIdentityMovementCounts = command.CountType == InventoryCountType.Full
+                ? authoritativeLedgerRows.GroupBy(item => item.Identity).ToDictionary(group => group.Key, group => group.LongCount())
+                : await ReadMovementCountsByIdentityAsync(db, identities, cancellationToken);
             var expectedByIdentity = await ReadAvailabilityByIdentityAsync(db, identities, cancellationToken);
             var cutoff = DateTimeOffset.UtcNow;
-            var entity = new InventoryCountEntity(context.TenantId, command.Id, command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, command.WarehouseCode, command.WarehouseName, command.CountType, command.AssignedCounterId, command.ReviewerId, cutoff, command.ActorId, command.OccurredAt, command.ApprovalPolicyJson);
+            var entity = new InventoryCountEntity(context.TenantId, command.Id, command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, command.WarehouseCode, command.WarehouseName, command.CountType, command.AssignedCounterId, command.ReviewerId, cutoff, snapshotWarehouseMovementCount, command.ActorId, command.OccurredAt, command.ApprovalPolicyJson);
             foreach (var line in selectedLines)
             {
                 var identity = new StockIdentityKey(command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, line.ProductId, line.UnitOfMeasureId, line.TrackingIdentity);
-                entity.Lines.Add(new InventoryCountLineEntity(context.TenantId, line.Id, entity.Id, line.PriorLineId, line.RoundGeneration, line.ProductId, line.Product.Sku, line.Product.Name, line.UnitOfMeasureId, line.Product.BaseUnitOfMeasureCode, line.TrackingIdentity, expectedByIdentity[identity].OnHand));
+                entity.Lines.Add(new InventoryCountLineEntity(context.TenantId, line.Id, entity.Id, line.PriorLineId, line.RoundGeneration, line.ProductId, line.Product.Sku, line.Product.Name, line.UnitOfMeasureId, line.Product.BaseUnitOfMeasureCode, line.TrackingIdentity, expectedByIdentity[identity].OnHand, snapshotIdentityMovementCounts.GetValueOrDefault(identity)));
             }
-            db.Counts.Add(entity); AddControlHistory(db, context, "count", entity.Id, null, InventoryControlHistoryAction.Snapshot, entity.Status, entity.Status, command.ActorId, null, null, command.CorrelationId, entity.CurrentRoundGeneration, cutoff); AddAudit(db, context, "count", entity.Id, "inventory.count.create", command.ActorId, "Succeeded", null, command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, "snapshot", cutoff); await db.SaveChangesAsync(cancellationToken); var result = ToCount(entity, true); AddReplay(db, context, "inventory.count.create", command.IdempotencyKey, command.RequestFingerprint, "count", entity.Id, result, cutoff); await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
+            db.Counts.Add(entity);
+            db.CountSnapshots.Add(new InventoryCountSnapshotEntity(context.TenantId, Guid.NewGuid(), entity.Id, entity.CurrentRoundGeneration, cutoff, snapshotWarehouseMovementCount, command.OccurredAt));
+            AddControlHistory(db, context, "count", entity.Id, null, InventoryControlHistoryAction.Snapshot, entity.Status, entity.Status, command.ActorId, null, null, command.CorrelationId, entity.CurrentRoundGeneration, cutoff); AddAudit(db, context, "count", entity.Id, "inventory.count.create", command.ActorId, "Succeeded", null, command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, "snapshot", cutoff); await db.SaveChangesAsync(cancellationToken); var result = ToCount(entity, true); AddReplay(db, context, "inventory.count.create", command.IdempotencyKey, command.RequestFingerprint, "count", entity.Id, result, cutoff); await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
         }
         catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
         catch (DbUpdateConcurrencyException) { return null; }
@@ -361,7 +374,7 @@ internal sealed partial class InventoryPersistence
     }
     public Task<InventoryCountRecord?> RejectCountAsync(InventoryRequestContext context, InventoryControlActionCommand command, bool returnForChange, CancellationToken cancellationToken = default) => MutateCountAsync(context, command, returnForChange ? "inventory.count.return" : "inventory.count.reject", (db, entity, now) => { if (entity.Status != InventoryControlDocumentStatus.PendingApproval) return false; entity.SetStatus(returnForChange ? InventoryControlDocumentStatus.ReturnedForChange : InventoryControlDocumentStatus.Rejected, now); return true; }, returnForChange ? InventoryControlHistoryAction.ReturnedForChange : InventoryControlHistoryAction.Rejected, cancellationToken);
 
-    public Task<InventoryCountRecord?> RequestCountRecountAsync(InventoryRequestContext context, InventoryControlActionCommand command, CancellationToken cancellationToken = default) => MutateCountAsync(context, command, "inventory.count.recount", (db, entity, now) => { if (entity.Status != InventoryControlDocumentStatus.PendingApproval && entity.Status != InventoryControlDocumentStatus.Approved) return false; var current = entity.Lines.Where(item => item.RoundGeneration == entity.CurrentRoundGeneration).ToArray(); entity.BeginNewRound(entity.SnapshotCutoff, now); foreach (var line in current) entity.Lines.Add(new InventoryCountLineEntity(context.TenantId, Guid.NewGuid(), entity.Id, line.Id, entity.CurrentRoundGeneration, line.ProductId, line.ProductSku, line.ProductName, line.UnitOfMeasureId, line.UnitOfMeasureCode, line.TrackingIdentity, line.ExpectedQuantity)); return true; }, InventoryControlHistoryAction.RecountRequested, cancellationToken);
+    public Task<InventoryCountRecord?> RequestCountRecountAsync(InventoryRequestContext context, InventoryControlActionCommand command, CancellationToken cancellationToken = default) => MutateCountAsync(context, command, "inventory.count.recount", (db, entity, now) => { if (entity.Status != InventoryControlDocumentStatus.PendingApproval && entity.Status != InventoryControlDocumentStatus.Approved) return false; var current = entity.Lines.Where(item => item.RoundGeneration == entity.CurrentRoundGeneration).ToArray(); entity.BeginNewRound(entity.SnapshotCutoff, entity.SnapshotWarehouseMovementCount, now); foreach (var line in current) entity.Lines.Add(new InventoryCountLineEntity(context.TenantId, Guid.NewGuid(), entity.Id, line.Id, entity.CurrentRoundGeneration, line.ProductId, line.ProductSku, line.ProductName, line.UnitOfMeasureId, line.UnitOfMeasureCode, line.TrackingIdentity, line.ExpectedQuantity, line.SnapshotIdentityMovementCount)); db.CountSnapshots.Add(new InventoryCountSnapshotEntity(context.TenantId, Guid.NewGuid(), entity.Id, entity.CurrentRoundGeneration, entity.SnapshotCutoff, entity.SnapshotWarehouseMovementCount, now)); return true; }, InventoryControlHistoryAction.RecountRequested, cancellationToken);
 
     public async Task<InventoryCountRecord?> ResnapshotCountAsync(InventoryRequestContext context, InventoryControlActionCommand command, CancellationToken cancellationToken = default)
     {
@@ -376,6 +389,9 @@ internal sealed partial class InventoryPersistence
             if (entity is null || !entity.Version.SequenceEqual(command.ExpectedVersion) || entity.Status != InventoryControlDocumentStatus.ResnapshotRequired) return null;
 
             var previous = entity.Lines.Where(item => item.RoundGeneration == entity.CurrentRoundGeneration).ToArray();
+            var snapshotWarehouseMovementCount = entity.CountType == InventoryCountType.Full
+                ? await CountWarehouseMovementsAsync(db, new InventoryScope(context.TenantId.Value, entity.CompanyId, entity.BranchId, entity.WarehouseId), cancellationToken)
+                : (long?)null;
             var warehouseMovementRows = entity.CountType == InventoryCountType.Full
                 ? await db.StockMovements.AsNoTracking()
                     .Where(item => item.CompanyId == entity.CompanyId && item.BranchId == entity.BranchId && item.WarehouseId == entity.WarehouseId)
@@ -403,9 +419,14 @@ internal sealed partial class InventoryPersistence
                 .ToArray();
 
             await AcquireConcurrencyAnchorsAsync(db, context.TenantId, identities, cancellationToken);
+            var snapshotIdentityMovementCounts = entity.CountType == InventoryCountType.Full
+                ? warehouseMovementRows
+                    .GroupBy(item => new StockIdentityKey(item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingIdentity))
+                    .ToDictionary(group => group.Key, group => group.LongCount())
+                : await ReadMovementCountsByIdentityAsync(db, identities, cancellationToken);
             var expectedByIdentity = await ReadAvailabilityByIdentityAsync(db, identities, cancellationToken);
             var cutoff = DateTimeOffset.UtcNow;
-            entity.BeginNewRound(cutoff, command.OccurredAt);
+            entity.BeginNewRound(cutoff, snapshotWarehouseMovementCount, command.OccurredAt);
             foreach (var identity in identities)
             {
                 var prior = previous.FirstOrDefault(item => StockIdentityKey.From(item).Equals(identity));
@@ -419,12 +440,14 @@ internal sealed partial class InventoryPersistence
                     identity.ProductId,
                     prior?.ProductSku ?? movement?.ProductSku ?? string.Empty,
                     prior?.ProductName ?? movement?.ProductName ?? string.Empty,
-                    identity.UnitOfMeasureId,
-                    prior?.UnitOfMeasureCode ?? movement?.UnitOfMeasureCode ?? string.Empty,
-                    identity.TrackingKey,
-                    expectedByIdentity[identity].OnHand));
+                     identity.UnitOfMeasureId,
+                     prior?.UnitOfMeasureCode ?? movement?.UnitOfMeasureCode ?? string.Empty,
+                     identity.TrackingKey,
+                     expectedByIdentity[identity].OnHand,
+                     snapshotIdentityMovementCounts.GetValueOrDefault(identity)));
             }
 
+            db.CountSnapshots.Add(new InventoryCountSnapshotEntity(context.TenantId, Guid.NewGuid(), entity.Id, entity.CurrentRoundGeneration, cutoff, snapshotWarehouseMovementCount, command.OccurredAt));
             AddControlHistory(db, context, "count", entity.Id, null, InventoryControlHistoryAction.Resnapshot, InventoryControlDocumentStatus.ResnapshotRequired, entity.Status, command.ActorId, null, command.Reason, command.CorrelationId, entity.CurrentRoundGeneration, cutoff);
             AddAudit(db, context, "count", entity.Id, "inventory.count.resnapshot", command.ActorId, "Succeeded", command.Reason, command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, "ResnapshotRequired", "Draft", cutoff);
             await db.SaveChangesAsync(cancellationToken);
@@ -445,16 +468,29 @@ internal sealed partial class InventoryPersistence
         await using var db = CreateContext(context); await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         try
         {
-            var replay = await ProbeReplayAsync<InventoryCountRecord>(db, context, "inventory.count.post", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay.Outcome == InventoryReplayOutcome.Replay) return replay.Value; if (replay.Outcome == InventoryReplayOutcome.Conflict) return null; var entity = await db.Counts.Include(item => item.Lines).SingleOrDefaultAsync(item => item.Id == command.Id, cancellationToken); if (entity is null || !entity.Version.SequenceEqual(command.ExpectedVersion)) return null; if (entity.Status == InventoryControlDocumentStatus.Posted) return ToCount(entity, true); if (entity.Status is not (InventoryControlDocumentStatus.Submitted or InventoryControlDocumentStatus.Approved)) return null;
+            var replay = await ProbeReplayAsync<InventoryCountRecord>(db, context, "inventory.count.post", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay.Outcome == InventoryReplayOutcome.Replay) return replay.Value; if (replay.Outcome == InventoryReplayOutcome.Conflict) return null; var entity = await db.Counts.Include(item => item.Lines).Include(item => item.Snapshots).SingleOrDefaultAsync(item => item.Id == command.Id, cancellationToken); if (entity is null || !entity.Version.SequenceEqual(command.ExpectedVersion)) return null; if (entity.Status == InventoryControlDocumentStatus.Posted) return ToCount(entity, true); if (entity.Status is not (InventoryControlDocumentStatus.Submitted or InventoryControlDocumentStatus.Approved)) return null;
             var current = entity.Lines.Where(item => item.RoundGeneration == entity.CurrentRoundGeneration).ToArray();
             var identities = current.Select(StockIdentityKey.From).Distinct().ToArray();
             await AcquireConcurrencyAnchorsAsync(db, context.TenantId, identities, cancellationToken);
-            var recentMovements = (await db.StockMovements.AsNoTracking().Where(item => item.CompanyId == entity.CompanyId && item.BranchId == entity.BranchId && item.WarehouseId == entity.WarehouseId).ToListAsync(cancellationToken))
-                .Where(item => item.PostedAt > entity.SnapshotCutoff)
-                .Select(item => new StockIdentityKey(item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingIdentity ?? string.Empty))
-                .Where(identity => entity.CountType == InventoryCountType.Full || identities.Contains(identity))
-                .ToList();
-            if (recentMovements.Count > 0)
+            var currentSnapshot = entity.Snapshots.SingleOrDefault(item => item.RoundGeneration == entity.CurrentRoundGeneration);
+            var fenceChanged = currentSnapshot is null;
+            if (!fenceChanged && entity.CountType == InventoryCountType.Full)
+            {
+                var currentWarehouseMovementCount = await CountWarehouseMovementsAsync(
+                    db,
+                    new InventoryScope(context.TenantId.Value, entity.CompanyId, entity.BranchId, entity.WarehouseId),
+                    cancellationToken);
+                fenceChanged = currentSnapshot!.SnapshotWarehouseMovementCount is null
+                    || entity.SnapshotWarehouseMovementCount != currentSnapshot.SnapshotWarehouseMovementCount
+                    || currentWarehouseMovementCount != currentSnapshot.SnapshotWarehouseMovementCount.Value;
+            }
+            else if (!fenceChanged)
+            {
+                var currentIdentityMovementCounts = await ReadMovementCountsByIdentityAsync(db, identities, cancellationToken);
+                fenceChanged = current.Any(line => currentIdentityMovementCounts.GetValueOrDefault(StockIdentityKey.From(line)) != line.SnapshotIdentityMovementCount);
+            }
+
+            if (fenceChanged)
             {
                 var fromStatus = entity.Status; entity.SetStatus(InventoryControlDocumentStatus.ResnapshotRequired, command.OccurredAt);
                 AddControlHistory(db, context, "count", entity.Id, null, InventoryControlHistoryAction.PostBlocked, fromStatus, entity.Status, command.ActorId, null, "resnapshot_required", command.CorrelationId, entity.CurrentRoundGeneration, command.OccurredAt);
@@ -531,6 +567,32 @@ internal sealed partial class InventoryPersistence
     private static void AddControlHistory(InventoryDbContext db, InventoryRequestContext context, string resourceType, Guid resourceId, Guid? lineId, InventoryControlHistoryAction action, InventoryControlDocumentStatus from, InventoryControlDocumentStatus to, Guid actorId, Guid? delegatedFrom, string? reason, string correlationId, int generation, DateTimeOffset at) => db.ControlHistory.Add(new InventoryControlHistoryEntity(context.TenantId, Guid.NewGuid(), resourceType, resourceId, lineId, action, from, to, actorId, delegatedFrom, reason, correlationId, generation, at));
     private static InventoryStockMovementEntity NewControlMovement(InventoryRequestContext context, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, Guid productId, string sku, string name, Guid uomId, string uomCode, InventoryMovementDirection direction, decimal quantity, string trackingIdentity, InventoryMovementSourceType sourceType, Guid sourceDocumentId, Guid sourceLineId, Guid? correctionOfMovementId, DateTimeOffset at, string? sourceReference) => new(context.TenantId, Guid.NewGuid(), companyId, branchId, warehouseId, warehouseCode, warehouseName, productId, sku, name, uomId, uomCode, direction, quantity, null, null, InventoryValuationStatus.Pending, string.IsNullOrEmpty(trackingIdentity) ? null : trackingIdentity, sourceType, sourceDocumentId, sourceLineId, correctionOfMovementId, DateOnly.FromDateTime(at.UtcDateTime), context.ActorId, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), at, sourceReference: sourceReference);
     private static async Task<Dictionary<StockIdentityKey, (decimal OnHand, decimal Reserved)>> ReadAvailabilityByIdentityAsync(InventoryDbContext db, IEnumerable<StockIdentityKey> identities, CancellationToken cancellationToken) { var result = new Dictionary<StockIdentityKey, (decimal, decimal)>(); foreach (var identity in identities.Distinct()) result[identity] = (await SignedQuantityAsync(db, identity, cancellationToken), await ActiveReservedQuantityAsync(db, identity, cancellationToken)); return result; }
+
+    private static Task<long> CountWarehouseMovementsAsync(InventoryDbContext db, InventoryScope scope, CancellationToken cancellationToken) =>
+        db.StockMovements.LongCountAsync(
+            item => item.CompanyId == scope.CompanyId
+                && item.BranchId == scope.BranchId
+                && item.WarehouseId == scope.WarehouseId,
+            cancellationToken);
+
+    private static async Task<Dictionary<StockIdentityKey, long>> ReadMovementCountsByIdentityAsync(InventoryDbContext db, IEnumerable<StockIdentityKey> identities, CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<StockIdentityKey, long>();
+        foreach (var identity in identities.Distinct())
+        {
+            var trackingIdentity = identity.TrackingKey == string.Empty ? null : identity.TrackingKey;
+            result[identity] = await db.StockMovements.LongCountAsync(
+                item => item.CompanyId == identity.CompanyId
+                    && item.BranchId == identity.BranchId
+                    && item.WarehouseId == identity.WarehouseId
+                    && item.ProductId == identity.ProductId
+                    && item.UnitOfMeasureId == identity.UnitOfMeasureId
+                    && item.TrackingIdentity == trackingIdentity,
+                cancellationToken);
+        }
+
+        return result;
+    }
 
     private static async Task<IReadOnlyList<FullCountLedgerRow>> ReadFullCountLedgerRowsAsync(InventoryDbContext db, InventoryScope scope, CancellationToken cancellationToken) =>
         await db.StockMovements

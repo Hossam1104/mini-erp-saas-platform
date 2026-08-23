@@ -327,7 +327,8 @@ public sealed class SqlServerSafetyTests
                     "20260822092802_MESP129PhysicalStockMovements",
                     "20260822194250_MESP130StockControlAndCorrections",
                     "20260822220126_MESP130SolAcceptanceRemediation",
-                    "20260822220521_MESP130SolAcceptanceCountApproval"
+                    "20260822220521_MESP130SolAcceptanceCountApproval",
+                    "20260823104702_MESP130InventoryCountLedgerFence"
                 ],
                 (await inventory.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await inventory.Database.GetPendingMigrationsAsync());
@@ -339,7 +340,7 @@ public sealed class SqlServerSafetyTests
             SELECT COUNT(*)
             FROM INFORMATION_SCHEMA.TABLES
             WHERE TABLE_SCHEMA = N'inventory'
-              AND TABLE_NAME IN (N'OpeningBalances', N'OpeningBalanceRows', N'OpeningBalanceHistory', N'StockLedgerMovements', N'Transfers', N'TransferLines', N'TransferEvents', N'Reservations', N'ReservationHistory', N'AuditEvents', N'IdempotencyEntries', N'ConcurrencyAnchors', N'ReasonCodes', N'Adjustments', N'AdjustmentLines', N'Counts', N'CountLines', N'StockIssues', N'StockIssueLines', N'ControlHistory');
+              AND TABLE_NAME IN (N'OpeningBalances', N'OpeningBalanceRows', N'OpeningBalanceHistory', N'StockLedgerMovements', N'Transfers', N'TransferLines', N'TransferEvents', N'Reservations', N'ReservationHistory', N'AuditEvents', N'IdempotencyEntries', N'ConcurrencyAnchors', N'ReasonCodes', N'Adjustments', N'AdjustmentLines', N'Counts', N'CountSnapshots', N'CountLines', N'StockIssues', N'StockIssueLines', N'ControlHistory');
             SELECT COUNT(*)
             FROM INFORMATION_SCHEMA.TABLES
             WHERE TABLE_SCHEMA = N'tenancy'
@@ -354,7 +355,7 @@ public sealed class SqlServerSafetyTests
             """;
         await using var reader = await command.ExecuteReaderAsync();
         Assert.True(await reader.ReadAsync());
-        Assert.Equal(20, reader.GetInt32(0));
+        Assert.Equal(21, reader.GetInt32(0));
         Assert.True(await reader.NextResultAsync());
         Assert.True(await reader.ReadAsync());
         Assert.Equal(1, reader.GetInt32(0));
@@ -1170,10 +1171,10 @@ public sealed class SqlServerSafetyTests
 
         internal void Release() => release.TrySetResult(true);
 
-        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+        public override async ValueTask<DbDataReader> ReaderExecutedAsync(
             DbCommand command,
-            CommandEventData eventData,
-            InterceptionResult<DbDataReader> result,
+            CommandExecutedEventData eventData,
+            DbDataReader result,
             CancellationToken cancellationToken = default)
         {
             if (command.CommandText.Contains("[StockLedgerMovements]", StringComparison.OrdinalIgnoreCase)
@@ -1181,25 +1182,83 @@ public sealed class SqlServerSafetyTests
             {
                 if (Interlocked.Exchange(ref signaled, 1) == 0)
                 {
-                    return PauseAsync(result, cancellationToken);
+                    entered.TrySetResult(true);
+                    await release.Task.WaitAsync(TimeSpan.FromSeconds(15), cancellationToken);
                 }
             }
 
-            return ValueTask.FromResult(result);
-        }
-
-        private async ValueTask<InterceptionResult<DbDataReader>> PauseAsync(
-            InterceptionResult<DbDataReader> result,
-            CancellationToken cancellationToken)
-        {
-            entered.TrySetResult(true);
-            await release.Task.WaitAsync(TimeSpan.FromSeconds(15), cancellationToken);
             return result;
         }
     }
 
+    private sealed class SelectedIdentityLedgerCountGate : DbCommandInterceptor
+    {
+        private readonly TaskCompletionSource<bool> entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int signaled;
+
+        internal Task WaitAsync() => entered.Task.WaitAsync(TimeSpan.FromSeconds(15));
+
+        internal void Release() => release.TrySetResult(true);
+
+        public override async ValueTask<DbDataReader> ReaderExecutedAsync(
+            DbCommand command,
+            CommandExecutedEventData eventData,
+            DbDataReader result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.Contains("[StockLedgerMovements]", StringComparison.OrdinalIgnoreCase)
+                && command.CommandText.Contains("COUNT_BIG", StringComparison.OrdinalIgnoreCase)
+                && Interlocked.Exchange(ref signaled, 1) == 0)
+            {
+                entered.TrySetResult(true);
+                await release.Task.WaitAsync(TimeSpan.FromSeconds(15), cancellationToken);
+            }
+
+            return result;
+        }
+    }
+
+    private sealed class StockMovementInsertAttemptGate : DbCommandInterceptor
+    {
+        private readonly TaskCompletionSource<bool> entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int signaled;
+
+        internal Task WaitAsync() => entered.Task.WaitAsync(TimeSpan.FromSeconds(15));
+
+        public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            SignalIfMovementInsert(command);
+
+            return ValueTask.FromResult(result);
+        }
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            SignalIfMovementInsert(command);
+            return ValueTask.FromResult(result);
+        }
+
+        private void SignalIfMovementInsert(DbCommand command)
+        {
+            if (command.CommandText.Contains("INSERT INTO [inventory].[StockLedgerMovements]", StringComparison.OrdinalIgnoreCase)
+                && Interlocked.Exchange(ref signaled, 1) == 0)
+            {
+                entered.TrySetResult(true);
+            }
+        }
+    }
+
     [Fact]
-    public async Task MESP130_sql_server_full_count_boundary_never_saves_a_cutoff_after_an_omitted_identity()
+    public async Task MESP130_sql_server_full_count_boundary_blocks_insert_after_authoritative_read_and_uses_ledger_fence()
     {
         var connectionString = await GetConnectionStringAsync();
         var seedOptions = new DbContextOptionsBuilder().UseSqlServer(connectionString).Options;
@@ -1241,28 +1300,31 @@ public sealed class SqlServerSafetyTests
                 DateTimeOffset.UtcNow, context.ActorId, DateTimeOffset.UtcNow, "sql-full-race-create", "sql-full-race-key", "sql-full-race-fingerprint"));
         await gate.WaitAsync();
 
+        var movementGate = new StockMovementInsertAttemptGate();
+        var movementOptions = new DbContextOptionsBuilder()
+            .UseSqlServer(connectionString, sql => sql.CommandTimeout(15))
+            .AddInterceptors(movementGate)
+            .Options;
+        var movementPostedAt = DateTimeOffset.UtcNow.AddMinutes(-5);
         var movementTask = Task.Run(async () =>
         {
-            await using var movementDb = new InventoryDbContext(seedOptions, _fixture.TenantA);
+            await using var movementDb = new InventoryDbContext(movementOptions, _fixture.TenantA);
             movementDb.StockMovements.Add(new InventoryStockMovementEntity(
                 tenantId, Guid.NewGuid(), companyId, null, warehouseId, warehouse.Code, warehouse.Name,
                 productBId, productB.Sku, productB.Name, unitBId, productB.BaseUnitOfMeasureCode,
                 InventoryMovementDirection.Inbound, 3m, null, null, InventoryValuationStatus.Pending, null,
                 InventoryMovementSourceType.StockAdjustment, Guid.NewGuid(), Guid.NewGuid(), null,
-                DateOnly.FromDateTime(DateTime.UtcNow), context.ActorId, "sql-full-race-boundary-b", DateTimeOffset.UtcNow));
+                DateOnly.FromDateTime(movementPostedAt.UtcDateTime), context.ActorId, "sql-full-race-boundary-b", movementPostedAt));
             await movementDb.SaveChangesAsync();
         });
-        await Task.Yield();
+        await movementGate.WaitAsync();
+        Assert.False(movementTask.IsCompleted);
         gate.Release();
         var created = Assert.IsType<InventoryCountRecord>(await createTask.WaitAsync(TimeSpan.FromSeconds(30)));
         await movementTask.WaitAsync(TimeSpan.FromSeconds(30));
 
-        var discovered = created.Lines.SingleOrDefault(item => item.ProductId == productBId);
-        if (discovered is not null)
-        {
-            Assert.Equal(3m, discovered.ExpectedQuantity);
-            return;
-        }
+        Assert.DoesNotContain(created.Lines, item => item.ProductId == productBId);
+        Assert.True(movementPostedAt < created.SnapshotCutoff);
 
         var persistenceAfterBoundary = new InventoryPersistence(seedOptions);
         var submitted = Assert.IsType<InventoryCountRecord>(await persistenceAfterBoundary.SubmitCountAsync(
@@ -1275,6 +1337,85 @@ public sealed class SqlServerSafetyTests
             context,
             new InventoryControlActionCommand(
                 submitted.Id, submitted.Version, context.ActorId, "sql full race", null, "sql-full-race-post-correlation", "sql-full-race-post", "sql-full-race-post-fingerprint", DateTimeOffset.UtcNow)));
+        Assert.Equal(InventoryControlDocumentStatus.ResnapshotRequired, post.Status);
+    }
+
+    [Fact]
+    public async Task MESP130_sql_server_cycle_count_boundary_blocks_selected_insert_after_fence_read()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var seedOptions = new DbContextOptionsBuilder().UseSqlServer(connectionString).Options;
+        var tenantId = _fixture.TenantA.TenantId;
+        var companyId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        var warehouse = new InventoryWarehouseOption(tenantId.Value, companyId, null, warehouseId, "WH-CYCLE-FENCE", "Cycle Count fence warehouse");
+        var product = new InventoryProductReference(tenantId.Value, productId, "SKU-CYCLE-FENCE", "Cycle Count fence product", unitId, "EA", true, true, false);
+        var context = InventoryContext(_fixture.TenantA);
+        var scope = new InventoryScope(tenantId.Value, companyId, null, warehouseId);
+
+        await using (var seedDb = new InventoryDbContext(seedOptions, _fixture.TenantA))
+        {
+            seedDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId, Guid.NewGuid(), companyId, null, warehouseId, warehouse.Code, warehouse.Name,
+                productId, product.Sku, product.Name, unitId, product.BaseUnitOfMeasureCode,
+                InventoryMovementDirection.Inbound, 10m, null, null, InventoryValuationStatus.Pending, null,
+                InventoryMovementSourceType.OpeningBalance, Guid.NewGuid(), Guid.NewGuid(), null,
+                DateOnly.FromDateTime(DateTime.UtcNow), context.ActorId, "sql-cycle-fence-seed", DateTimeOffset.UtcNow));
+            await seedDb.SaveChangesAsync();
+        }
+
+        var fenceGate = new SelectedIdentityLedgerCountGate();
+        var operationOptions = new DbContextOptionsBuilder()
+            .UseSqlServer(connectionString, sql => sql.CommandTimeout(15))
+            .AddInterceptors(fenceGate)
+            .Options;
+        var persistence = new InventoryPersistence(operationOptions);
+        var createTask = persistence.CreateCountAsync(
+            context,
+            new InventoryCountCreateCommand(
+                Guid.NewGuid(), scope, warehouse.Code, warehouse.Name, InventoryCountType.Cycle, context.ActorId, null,
+                [new InventoryCountLineCommand(Guid.NewGuid(), null, 1, productId, unitId, "", 0m, product)],
+                DateTimeOffset.UtcNow, context.ActorId, DateTimeOffset.UtcNow, "sql-cycle-fence-create", "sql-cycle-fence-key", "sql-cycle-fence-fingerprint"));
+        await fenceGate.WaitAsync();
+
+        var movementGate = new StockMovementInsertAttemptGate();
+        var movementOptions = new DbContextOptionsBuilder()
+            .UseSqlServer(connectionString, sql => sql.CommandTimeout(15))
+            .AddInterceptors(movementGate)
+            .Options;
+        var movementPostedAt = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var movementTask = Task.Run(async () =>
+        {
+            await using var movementDb = new InventoryDbContext(movementOptions, _fixture.TenantA);
+            movementDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId, Guid.NewGuid(), companyId, null, warehouseId, warehouse.Code, warehouse.Name,
+                productId, product.Sku, product.Name, unitId, product.BaseUnitOfMeasureCode,
+                InventoryMovementDirection.Inbound, 1m, null, null, InventoryValuationStatus.Pending, null,
+                InventoryMovementSourceType.StockAdjustment, Guid.NewGuid(), Guid.NewGuid(), null,
+                DateOnly.FromDateTime(movementPostedAt.UtcDateTime), context.ActorId, "sql-cycle-fence-movement", movementPostedAt));
+            await movementDb.SaveChangesAsync();
+        });
+        await movementGate.WaitAsync();
+        Assert.False(movementTask.IsCompleted);
+        fenceGate.Release();
+        var created = Assert.IsType<InventoryCountRecord>(await createTask.WaitAsync(TimeSpan.FromSeconds(30)));
+        await movementTask.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.True(movementPostedAt < created.SnapshotCutoff);
+
+        var persistenceAfterBoundary = new InventoryPersistence(seedOptions);
+        var line = Assert.Single(created.Lines);
+        var submitted = Assert.IsType<InventoryCountRecord>(await persistenceAfterBoundary.SubmitCountAsync(
+            context,
+            new InventoryCountSubmitCommand(
+                created.Id, created.Version,
+                [new InventoryCountObservationRequest(line.Id, 10m)],
+                context.ActorId, "sql-cycle-fence-submit", "sql-cycle-fence-submit-fingerprint", "sql-cycle-fence-submit-correlation", DateTimeOffset.UtcNow)));
+        var post = Assert.IsType<InventoryCountRecord>(await persistenceAfterBoundary.PostCountAsync(
+            context,
+            new InventoryControlActionCommand(
+                submitted.Id, submitted.Version, context.ActorId, "sql cycle fence", null, "sql-cycle-fence-post-correlation", "sql-cycle-fence-post", "sql-cycle-fence-post-fingerprint", DateTimeOffset.UtcNow)));
         Assert.Equal(InventoryControlDocumentStatus.ResnapshotRequired, post.Status);
     }
 

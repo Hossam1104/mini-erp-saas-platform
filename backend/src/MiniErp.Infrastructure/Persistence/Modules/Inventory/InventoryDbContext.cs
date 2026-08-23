@@ -25,6 +25,7 @@ internal sealed class InventoryDbContext(DbContextOptions options, TenantContext
     internal DbSet<InventoryAdjustmentEntity> Adjustments => Set<InventoryAdjustmentEntity>();
     internal DbSet<InventoryAdjustmentLineEntity> AdjustmentLines => Set<InventoryAdjustmentLineEntity>();
     internal DbSet<InventoryCountEntity> Counts => Set<InventoryCountEntity>();
+    internal DbSet<InventoryCountSnapshotEntity> CountSnapshots => Set<InventoryCountSnapshotEntity>();
     internal DbSet<InventoryCountLineEntity> CountLines => Set<InventoryCountLineEntity>();
     internal DbSet<InventoryStockIssueEntity> StockIssues => Set<InventoryStockIssueEntity>();
     internal DbSet<InventoryStockIssueLineEntity> StockIssueLines => Set<InventoryStockIssueLineEntity>();
@@ -111,6 +112,7 @@ internal sealed class InventoryDbContext(DbContextOptions options, TenantContext
         modelBuilder.Entity<InventoryAdjustmentEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
         modelBuilder.Entity<InventoryAdjustmentLineEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
         modelBuilder.Entity<InventoryCountEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryCountSnapshotEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
         modelBuilder.Entity<InventoryCountLineEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
         modelBuilder.Entity<InventoryStockIssueEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
         modelBuilder.Entity<InventoryStockIssueLineEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);

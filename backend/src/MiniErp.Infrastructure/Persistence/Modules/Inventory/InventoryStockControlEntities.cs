@@ -101,9 +101,9 @@ internal sealed class InventoryAdjustmentLineEntity : ITenantOwned
 internal sealed class InventoryCountEntity : ITenantOwned
 {
     private InventoryCountEntity() { }
-    internal InventoryCountEntity(TenantId tenantId, Guid id, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, InventoryCountType countType, Guid assignedCounterId, Guid? reviewerId, DateTimeOffset cutoff, Guid actorId, DateTimeOffset at, string? approvalPolicyJson = null)
+    internal InventoryCountEntity(TenantId tenantId, Guid id, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, InventoryCountType countType, Guid assignedCounterId, Guid? reviewerId, DateTimeOffset cutoff, long? snapshotWarehouseMovementCount, Guid actorId, DateTimeOffset at, string? approvalPolicyJson = null)
     {
-        Id = id; TenantId = tenantId; CompanyId = companyId; BranchId = branchId; WarehouseId = warehouseId; WarehouseCode = warehouseCode; WarehouseName = warehouseName; CountType = countType; AssignedCounterId = assignedCounterId; ReviewerId = reviewerId; CurrentRoundGeneration = 1; SnapshotCutoff = cutoff; Status = InventoryControlDocumentStatus.Draft; ApprovalPolicySnapshotJson = approvalPolicyJson; CurrentStageApproverIdsJson = "[]"; CreatedByActorId = actorId; CreatedAt = at; UpdatedAt = at; TouchVersion();
+        Id = id; TenantId = tenantId; CompanyId = companyId; BranchId = branchId; WarehouseId = warehouseId; WarehouseCode = warehouseCode; WarehouseName = warehouseName; CountType = countType; AssignedCounterId = assignedCounterId; ReviewerId = reviewerId; CurrentRoundGeneration = 1; SnapshotCutoff = cutoff; SnapshotWarehouseMovementCount = snapshotWarehouseMovementCount; Status = InventoryControlDocumentStatus.Draft; ApprovalPolicySnapshotJson = approvalPolicyJson; CurrentStageApproverIdsJson = "[]"; CreatedByActorId = actorId; CreatedAt = at; UpdatedAt = at; TouchVersion();
     }
     internal Guid Id { get; private set; }
     public TenantId TenantId { get; private set; }
@@ -126,6 +126,7 @@ internal sealed class InventoryCountEntity : ITenantOwned
     internal Guid? LastDelegatedFromActorId { get; private set; }
     internal int CurrentRoundGeneration { get; private set; }
     internal DateTimeOffset SnapshotCutoff { get; private set; }
+    internal long? SnapshotWarehouseMovementCount { get; private set; }
     internal Guid CreatedByActorId { get; private set; }
     internal DateTimeOffset CreatedAt { get; private set; }
     internal DateTimeOffset UpdatedAt { get; private set; }
@@ -134,21 +135,42 @@ internal sealed class InventoryCountEntity : ITenantOwned
     internal DateTimeOffset? PostedAt { get; private set; }
     internal byte[] Version { get; private set; } = [];
     internal List<InventoryCountLineEntity> Lines { get; } = [];
+    internal List<InventoryCountSnapshotEntity> Snapshots { get; } = [];
     internal void SetStatus(InventoryControlDocumentStatus status, DateTimeOffset at) { Status = status; UpdatedAt = at; TouchVersion(); }
     internal void MarkSubmitted(InventoryControlDocumentStatus status, DateTimeOffset at) { Status = status; SubmittedAt = at; UpdatedAt = at; TouchVersion(); }
     internal void MarkApproved(Guid actorId, DateTimeOffset at) { ApproverId = actorId; LastApproverId = actorId; ApprovedAt = at; Status = InventoryControlDocumentStatus.Approved; UpdatedAt = at; TouchVersion(); }
     internal void MarkPosted(Guid actorId, DateTimeOffset at) { PosterId = actorId; PostedAt = at; Status = InventoryControlDocumentStatus.Posted; UpdatedAt = at; TouchVersion(); }
     internal void RecordApproval(Guid actorId, Guid? delegatedFrom, int stageIndex, IReadOnlyCollection<Guid> approvers, bool finalStage, DateTimeOffset at) { LastApproverId = actorId; LastDelegatedFromActorId = delegatedFrom; CurrentApprovalStageIndex = stageIndex; CurrentStageApprovalCount = approvers.Count; CurrentStageApproverIdsJson = finalStage ? "[]" : System.Text.Json.JsonSerializer.Serialize(approvers); if (finalStage) { ApproverId = actorId; ApprovedAt = at; Status = InventoryControlDocumentStatus.Approved; } UpdatedAt = at; TouchVersion(); }
-    internal void BeginNewRound(DateTimeOffset cutoff, DateTimeOffset at) { CurrentRoundGeneration++; SnapshotCutoff = cutoff; Status = InventoryControlDocumentStatus.Draft; ApproverId = null; ApprovedAt = null; LastApproverId = null; LastDelegatedFromActorId = null; CurrentApprovalStageIndex = 0; CurrentStageApprovalCount = 0; CurrentStageApproverIdsJson = "[]"; UpdatedAt = at; TouchVersion(); }
+    internal void BeginNewRound(DateTimeOffset cutoff, long? snapshotWarehouseMovementCount, DateTimeOffset at) { CurrentRoundGeneration++; SnapshotCutoff = cutoff; SnapshotWarehouseMovementCount = snapshotWarehouseMovementCount; Status = InventoryControlDocumentStatus.Draft; ApproverId = null; ApprovedAt = null; LastApproverId = null; LastDelegatedFromActorId = null; CurrentApprovalStageIndex = 0; CurrentStageApprovalCount = 0; CurrentStageApproverIdsJson = "[]"; UpdatedAt = at; TouchVersion(); }
+    internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
+}
+
+internal sealed class InventoryCountSnapshotEntity : ITenantOwned
+{
+    private InventoryCountSnapshotEntity() { }
+    internal InventoryCountSnapshotEntity(TenantId tenantId, Guid id, Guid countId, int roundGeneration, DateTimeOffset snapshotCutoff, long? snapshotWarehouseMovementCount, DateTimeOffset at)
+    {
+        Id = id; TenantId = tenantId; CountId = countId; RoundGeneration = roundGeneration; SnapshotCutoff = snapshotCutoff; SnapshotWarehouseMovementCount = snapshotWarehouseMovementCount; CreatedAt = at; TouchVersion();
+    }
+
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid CountId { get; private set; }
+    internal InventoryCountEntity Count { get; private set; } = null!;
+    internal int RoundGeneration { get; private set; }
+    internal DateTimeOffset SnapshotCutoff { get; private set; }
+    internal long? SnapshotWarehouseMovementCount { get; private set; }
+    internal DateTimeOffset CreatedAt { get; private set; }
+    internal byte[] Version { get; private set; } = [];
     internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
 }
 
 internal sealed class InventoryCountLineEntity : ITenantOwned
 {
     private InventoryCountLineEntity() { }
-    internal InventoryCountLineEntity(TenantId tenantId, Guid id, Guid countId, Guid? priorLineId, int roundGeneration, Guid productId, string sku, string name, Guid uomId, string uomCode, string trackingIdentity, decimal expectedQuantity)
+    internal InventoryCountLineEntity(TenantId tenantId, Guid id, Guid countId, Guid? priorLineId, int roundGeneration, Guid productId, string sku, string name, Guid uomId, string uomCode, string trackingIdentity, decimal expectedQuantity, long snapshotIdentityMovementCount)
     {
-        Id = id; TenantId = tenantId; CountId = countId; PriorLineId = priorLineId; RoundGeneration = roundGeneration; ProductId = productId; ProductSku = sku; ProductName = name; UnitOfMeasureId = uomId; UnitOfMeasureCode = uomCode; TrackingIdentity = trackingIdentity; ExpectedQuantity = expectedQuantity; TouchVersion();
+        Id = id; TenantId = tenantId; CountId = countId; PriorLineId = priorLineId; RoundGeneration = roundGeneration; ProductId = productId; ProductSku = sku; ProductName = name; UnitOfMeasureId = uomId; UnitOfMeasureCode = uomCode; TrackingIdentity = trackingIdentity; ExpectedQuantity = expectedQuantity; SnapshotIdentityMovementCount = snapshotIdentityMovementCount; TouchVersion();
     }
     internal Guid Id { get; private set; }
     public TenantId TenantId { get; private set; }
@@ -163,6 +185,7 @@ internal sealed class InventoryCountLineEntity : ITenantOwned
     internal string UnitOfMeasureCode { get; private set; } = string.Empty;
     internal string TrackingIdentity { get; private set; } = string.Empty;
     internal decimal ExpectedQuantity { get; private set; }
+    internal long SnapshotIdentityMovementCount { get; private set; }
     internal decimal? CountedQuantity { get; private set; }
     internal decimal? Variance { get; private set; }
     internal Guid? VarianceReasonCodeId { get; private set; }
