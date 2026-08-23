@@ -1,5 +1,81 @@
 # Current State
 
+## Current authoritative position - 23 August 2026 (MESP-131 implementation; Sol acceptance handoff)
+
+MESP-131 is implemented on branch
+`feat/MESP-131-mwa-valuation-reconciliation`, created from the exact required
+main base `b470179e1d18ef75c0a9247b2340407da6220dc4`. The implementation
+commit is `bf491c867b554b2c1f3b091b5196bf82199e161d`; Draft PR #75 is Open,
+Draft, and unmerged. The final documentation handoff commit is reported in
+the completion response after this state update. Jira is read-only for this
+session; no Jira writes were performed.
+
+The bounded capability establishes a durable Company-scoped `LedgerSequence`
+for every Inventory movement-producing path, deterministically bootstraps
+legacy movement order, and never uses `PostedAt` or `EffectiveDate` as the
+ordering authority. The additive migration is
+`20260823124304_MESP131MovingWeightedAverageValuation`; it adds the ledger
+sequence anchor and valuation-owned policy/scope/state/event/run/Finance
+handoff tables. Existing MESP-130 migration content is unchanged.
+
+The valuation contract is policy-versioned and Tenant-safe: decimal Moving
+Weighted Average with configured quantity/unit-cost/amount scales and
+ToEven/AwayFromZero rounding; Company/Branch/Warehouse/Product/UOM and
+optional tracking scope; active Master Data functional-currency identity;
+Purchase Order unit price for Goods Receipt; current MWA or linked receipt for
+Supplier Return; current MWA for configured positive adjustments/count
+variance; exact active effective-dated MESP-120 exchange-rate snapshots for
+opening/source costs; and explicit Pending/Blocked diagnostics. Applied
+events are immutable and source/line/rate/policy linked. Pending predecessors
+stop later valuation in the same scope; backdated events are applied in
+LedgerSequence order with explicit `backdated_applied` evidence.
+
+Opening Balance, Goods Receipt, Stock Adjustment, Inventory Count Variance,
+Stock Issue, Supplier Return, Customer Return boundary, and Warehouse
+Transfer shipment/receipt/loss/return seams are represented. Transfer receipts
+inherit shipment valuation and unresolved shipment evidence remains Pending.
+Customer Return without authoritative original delivery valuation remains
+Pending. Physical corrections append a source-linked reversal event with a
+signed movement value; authoritative source-revision correction persistence is
+an explicit provider-required seam and never fabricates revised cost.
+
+Inventory-owned reconciliation compares physical quantity with durable
+valuation state and reports applied/pending/blocked counts, policy/currency,
+latest physical and valued sequences, oldest pending sequence, in-transit
+quantity/value, Finance handoff state, as-of, and freshness without a
+balancing plug. Summary/history/pending-blocked/reconciliation/in-transit/
+correction-history views, useful scope/source/status/policy/currency/date/
+sequence filters, and a bounded Tenant-authorized audited CSV export are
+available. Finance receives immutable valuation facts through
+`inventory-valuation-finance.v1`; Inventory creates no journal, GL, AP, AR,
+tax, payment, or period-posting artifact.
+
+REST/OpenAPI operations are catalogue-backed and server-context authorized;
+mutations require antiforgery, Idempotency-Key, correlation, audit, and safe
+errors. Company/Branch/Warehouse authorization is server-derived and client
+Tenant identifiers are never authoritative. SQL optimistic concurrency on the
+valuation scope anchor maps a losing processor to a safe conflict response;
+durable process replay is actor/idempotency/fingerprint bound. The Angular
+valuation area is lazy-loaded, extends the existing Inventory feature, and is
+EN/AR with RTL support; no product source assets were changed.
+
+Validation at the implementation commit: focused MESP-131 valuation `7/7`,
+focused Inventory regression `52/52`, disposable LocalDB full backend
+`919/919` with zero failures/skips, Release build `0` warnings/`0` errors,
+Angular `248/248`, focused Chromium `1/1`, full Chromium `28/28`, both npm
+audits `0` vulnerabilities, production initial bundle `499.94 kB`, and
+valuation lazy chunk `35.43 kB`. The official launcher left backend
+`http://localhost:5300` PID `27788` and frontend `http://localhost:4300` PID
+`17636` running; `/health`, `/`, and `/main.js` returned HTTP 200.
+
+The overall Production-Ready Completion headline remains approximately 47%
+overall and 41% Procurement/P2P pending Sol acceptance/merge. The fast-track
+ratio before MESP-131 acceptance is 14/26 = 53.8%, not production readiness.
+No MESP-132, Finance GL/AP/AR, Sales, generic Reporting, migration/cutover,
+external/statutory, or Wafra-specific core implementation was started. The
+next exact action is Sol acceptance of the exact final branch tip and Draft
+PR #75. No Opus prompt is created by this handoff.
+
 ## Current authoritative position - 23 August 2026 (MESP-130 final ledger-fence remediation complete; Sol acceptance handoff)
 
 MESP-129 is Done. MESP-130 remains In Progress pending Sol acceptance. The
