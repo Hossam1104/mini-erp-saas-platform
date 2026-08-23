@@ -6,7 +6,7 @@ using MiniErp.App.Modules.Procurement;
 
 namespace MiniErp.App.Modules.Inventory;
 
-public sealed class InventoryService(
+public sealed partial class InventoryService(
     IInventoryPersistence persistence,
     InventoryResourceAuthorizationService authorization,
     IInventoryWarehouseProvider warehouses,
@@ -15,10 +15,14 @@ public sealed class InventoryService(
     IInventorySupplierReturnSourceProvider? supplierReturnSources = null,
     IInventorySupplierReturnHandoffWriter? supplierReturnHandoff = null,
     ISupplierReturnPhysicalEffectGate? physicalEffectGate = null,
-    IInventorySupplierReturnStateProvider? supplierReturnState = null)
+    IInventorySupplierReturnStateProvider? supplierReturnState = null,
+    IInventoryApprovalPolicyProvider? approvalPolicies = null,
+    IInventoryApprovalDelegationProvider? approvalDelegation = null)
 {
     private readonly ISupplierReturnPhysicalEffectGate supplierReturnPhysicalEffectGate = physicalEffectGate ?? new SupplierReturnPhysicalEffectGate();
     private readonly IInventorySupplierReturnStateProvider supplierReturnStateProvider = supplierReturnState ?? new NoInventorySupplierReturnStateProvider();
+    private readonly IInventoryApprovalPolicyProvider approvalPolicyProvider = approvalPolicies ?? new NoInventoryApprovalPolicyProvider();
+    private readonly IInventoryApprovalDelegationProvider approvalDelegationProvider = approvalDelegation ?? new NoInventoryApprovalDelegationProvider();
 
     public async Task<InventoryOperationResult<IReadOnlyList<InventoryWarehouseOption>>> ListWarehousesAsync(
         InventoryRequestContext context,

@@ -240,3 +240,81 @@ export interface InventoryCustomerReturnBoundary {
   messageKey: string;
   authoritativeSource: string | null;
 }
+
+export type InventoryReasonCategory = 'Adjustment' | 'CountVariance' | 'StockIssue';
+export type InventoryAdjustmentDirection = 'Increase' | 'Decrease';
+export type InventoryControlStatus = 'Draft' | 'Submitted' | 'PendingApproval' | 'Approved' | 'Rejected' | 'ReturnedForChange' | 'Posted' | 'Corrected' | 'RecountRequired' | 'ResnapshotRequired' | 'Blocked';
+
+export interface InventoryReasonCode {
+  id: string; tenantId: string; code: string; englishName: string; arabicName: string; category: InventoryReasonCategory;
+  isActive: boolean; createdByActorId: string; createdAt: string; updatedAt: string; version: string;
+}
+
+export interface InventoryReasonCodeCreate { code: string; englishName: string; arabicName: string; category: InventoryReasonCategory; }
+export interface InventoryReasonCodeUpdate { englishName: string; arabicName: string; category: InventoryReasonCategory; isActive: boolean; }
+
+export interface InventoryAdjustmentLine {
+  id: string; productId: string; productSku: string; productName: string; unitOfMeasureId: string; unitOfMeasureCode: string;
+  direction: InventoryAdjustmentDirection; quantity: number; trackingIdentity: string; reasonCodeId: string; reasonCode: string;
+  reasonEnglishName: string; reasonArabicName: string; evidenceReference: string | null; movementId: string | null; version: string;
+}
+
+export interface InventoryApproval {
+  policyId: string; policyVersion: number; stageIndex: number; stageKey: string; requiredApprovals: number; recordedApprovals: number;
+  allowDelegation: boolean; lastApproverId: string | null; delegatedFromActorId: string | null;
+}
+
+export interface InventoryAdjustment {
+  id: string; tenantId: string; companyId: string; branchId: string | null; warehouseId: string; warehouseCode: string; warehouseName: string;
+  requesterId: string; status: InventoryControlStatus; evidenceReference: string | null; lines: InventoryAdjustmentLine[]; approval: InventoryApproval | null;
+  createdAt: string; updatedAt: string; submittedAt: string | null; approvedAt: string | null; postedAt: string | null; version: string;
+}
+
+export interface InventoryCountLine {
+  id: string; priorLineId: string | null; roundGeneration: number; productId: string; productSku: string; productName: string;
+  unitOfMeasureId: string; unitOfMeasureCode: string; trackingIdentity: string; expectedQuantity: number | null; countedQuantity: number | null;
+  variance: number | null; varianceReasonCodeId: string | null; varianceReasonCode: string | null; varianceReasonEnglishName: string | null;
+  varianceReasonArabicName: string | null; isCurrentRound: boolean; countedAt: string | null; version: string;
+}
+
+export interface InventoryCount {
+  id: string; tenantId: string; companyId: string; branchId: string | null; warehouseId: string; warehouseCode: string; warehouseName: string;
+  countType: 'Full' | 'Cycle'; assignedCounterId: string; reviewerId: string | null; approverId: string | null; posterId: string | null;
+  status: InventoryControlStatus; currentRoundGeneration: number; snapshotCutoff: string; lines: InventoryCountLine[]; approval: InventoryApproval | null; createdAt: string;
+  updatedAt: string; submittedAt: string | null; approvedAt: string | null; postedAt: string | null; version: string;
+}
+
+export interface InventoryStockIssueLine {
+  id: string; productId: string; productSku: string; productName: string; unitOfMeasureId: string; unitOfMeasureCode: string; quantity: number;
+  trackingIdentity: string; reasonCodeId: string; reasonCode: string; reasonEnglishName: string; reasonArabicName: string;
+  evidenceReference: string | null; movementId: string | null; version: string;
+}
+
+export interface InventoryStockIssue {
+  id: string; tenantId: string; companyId: string; branchId: string | null; warehouseId: string; warehouseCode: string; warehouseName: string;
+  requesterId: string; destinationUseDescription: string; status: InventoryControlStatus; lines: InventoryStockIssueLine[];
+  approval: InventoryApproval | null; createdAt: string; updatedAt: string; submittedAt: string | null; approvedAt: string | null; postedAt: string | null; version: string;
+}
+
+export interface InventoryControlAction { reason?: string; }
+export interface InventoryControlHistory {
+  id: string;
+  resourceType: string;
+  resourceId: string;
+  lineId: string | null;
+  action: string;
+  fromStatus: string;
+  toStatus: string;
+  actorId: string;
+  delegatedFromActorId: string | null;
+  reason: string | null;
+  correlationId: string;
+  roundGeneration: number;
+  occurredAt: string;
+  version: string;
+}
+export interface InventoryAdjustmentCreate { companyId: string; branchId: string | null; warehouseId: string; evidenceReference: string | null; lines: Array<{ productId: string; unitOfMeasureId: string; direction: InventoryAdjustmentDirection; quantity: number; reasonCode: string; trackingIdentity: string | null; evidenceReference: string | null }>; }
+export interface InventoryCountCreate { companyId: string; branchId: string | null; warehouseId: string; countType: 'Full' | 'Cycle'; assignedCounterId: string; reviewerId: string | null; lines: Array<{ productId: string; unitOfMeasureId: string; trackingIdentity: string | null }>; }
+export interface InventoryCountSubmit { observations: Array<{ countLineId: string; countedQuantity: number }>; }
+export interface InventoryCountVarianceReason { countLineId: string; reasonCode: string; }
+export interface InventoryStockIssueCreate { companyId: string; branchId: string | null; warehouseId: string; destinationUseDescription: string; lines: Array<{ productId: string; unitOfMeasureId: string; quantity: number; reasonCode: string; trackingIdentity: string | null; evidenceReference: string | null }>; }

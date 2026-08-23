@@ -10,7 +10,7 @@ using MiniErp.Contracts.Modules.Inventory;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
-internal sealed class InventoryPersistence(DbContextOptions options) : IInventoryPersistence
+internal sealed partial class InventoryPersistence(DbContextOptions options) : IInventoryPersistence
 {
     private InventoryDbContext CreateContext(InventoryRequestContext context) => new(options, context.TenantContext);
 
@@ -895,6 +895,15 @@ internal sealed class InventoryPersistence(DbContextOptions options) : IInventor
 
         internal static StockIdentityKey From(InventoryReservationEntity reservation) =>
             new(reservation.CompanyId, reservation.BranchId, reservation.WarehouseId, reservation.ProductId, reservation.UnitOfMeasureId, reservation.TrackingIdentity ?? string.Empty);
+
+        internal static StockIdentityKey From(InventoryAdjustmentLineEntity line) =>
+            new(line.Adjustment.CompanyId, line.Adjustment.BranchId, line.Adjustment.WarehouseId, line.ProductId, line.UnitOfMeasureId, line.TrackingIdentity);
+
+        internal static StockIdentityKey From(InventoryStockIssueLineEntity line) =>
+            new(line.StockIssue.CompanyId, line.StockIssue.BranchId, line.StockIssue.WarehouseId, line.ProductId, line.UnitOfMeasureId, line.TrackingIdentity);
+
+        internal static StockIdentityKey From(InventoryCountLineEntity line) =>
+            new(line.Count.CompanyId, line.Count.BranchId, line.Count.WarehouseId, line.ProductId, line.UnitOfMeasureId, line.TrackingIdentity);
     }
 }
 

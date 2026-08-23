@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
 {
     [DbContext(typeof(InventoryDbContext))]
-    partial class InventoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260822220521_MESP130SolAcceptanceCountApproval")]
+    partial class MESP130SolAcceptanceCountApproval
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -489,9 +492,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<DateTimeOffset>("SnapshotCutoff")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<long?>("SnapshotWarehouseMovementCount")
-                        .HasColumnType("bigint");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -574,9 +574,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<int>("RoundGeneration")
                         .HasColumnType("int");
 
-                    b.Property<long>("SnapshotIdentityMovementCount")
-                        .HasColumnType("bigint");
-
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
@@ -629,46 +626,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.HasIndex("TenantId", "CountId", "RoundGeneration");
 
                     b.ToTable("CountLines", "inventory");
-                });
-
-            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryCountSnapshotEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CountId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<int>("RoundGeneration")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("SnapshotCutoff")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<long?>("SnapshotWarehouseMovementCount")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<byte[]>("Version")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "Id")
-                        .IsUnique();
-
-                    b.HasIndex("TenantId", "CountId", "RoundGeneration")
-                        .IsUnique();
-
-                    b.ToTable("CountSnapshots", "inventory");
                 });
 
             modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryIdempotencyEntity", b =>
@@ -1711,18 +1668,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Navigation("Count");
                 });
 
-            modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryCountSnapshotEntity", b =>
-                {
-                    b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryCountEntity", "Count")
-                        .WithMany("Snapshots")
-                        .HasForeignKey("TenantId", "CountId")
-                        .HasPrincipalKey("TenantId", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Count");
-                });
-
             modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryOpeningBalanceHistoryEntity", b =>
                 {
                     b.HasOne("MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryOpeningBalanceEntity", null)
@@ -1800,8 +1745,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
             modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryCountEntity", b =>
                 {
                     b.Navigation("Lines");
-
-                    b.Navigation("Snapshots");
                 });
 
             modelBuilder.Entity("MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryOpeningBalanceEntity", b =>

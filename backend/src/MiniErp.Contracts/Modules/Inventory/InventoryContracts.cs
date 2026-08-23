@@ -12,7 +12,10 @@ public enum InventoryMovementSourceType
     SupplierReturn = 6,
     CustomerReturn = 7,
     WarehouseTransferLoss = 8,
-    WarehouseTransferReturn = 9
+    WarehouseTransferReturn = 9,
+    StockAdjustment = 10,
+    InventoryCountVariance = 11,
+    StockIssue = 12
 }
 
 public enum InventoryValuationStatus

@@ -131,3 +131,54 @@ test('Inventory opening posts to the ledger and reservation release restores ava
   await page.getByRole('button', { name: 'Release' }).click();
   await expect(page.locator('.metric-grid strong').nth(2)).toHaveText('5');
 });
+
+test('MESP-130 stock control keeps counts blind and accepts physical observations', async ({ page }) => {
+  let countStatus = 'Draft';
+  let countVersion = 'AQ==';
+  let countReason: string | undefined;
+  let adjustmentStatus = 'Draft';
+  const count = () => ({ id: 'count-1', tenantId: 'tenant-a', companyId: 'company-a', branchId: null, warehouseId: 'warehouse-a', warehouseCode: 'WH-A', warehouseName: 'Main warehouse', countType: 'Cycle', assignedCounterId: 'actor-1', reviewerId: null, approverId: null, posterId: null, status: countStatus, currentRoundGeneration: 1, snapshotCutoff: '2026-08-22T10:00:00Z', approval: null, createdAt: '2026-08-22T10:00:00Z', updatedAt: '2026-08-22T10:00:00Z', submittedAt: countStatus === 'Draft' ? null : '2026-08-22T10:01:00Z', approvedAt: null, postedAt: null, version: countVersion, lines: [{ id: 'line-1', priorLineId: null, roundGeneration: 1, productId: 'product-a', productSku: 'SKU-A', productName: 'Product A', unitOfMeasureId: 'unit-a', unitOfMeasureCode: 'EA', trackingIdentity: '', expectedQuantity: countStatus === 'Draft' ? null : 5, countedQuantity: countStatus === 'Draft' ? null : 7, variance: countStatus === 'Draft' ? null : 2, varianceReasonCodeId: countReason ? 'reason-count' : null, varianceReasonCode: countReason ?? null, varianceReasonEnglishName: countReason ? 'Variance review' : null, varianceReasonArabicName: countReason ? 'مراجعة الفرق' : null, isCurrentRound: true, countedAt: countStatus === 'Draft' ? null : '2026-08-22T10:01:00Z', version: countVersion }] });
+
+  await page.route('**/api/v1/auth/development-bypass', (route) => route.fulfill({ json: { authenticated: false } }));
+  await page.route('**/api/v1/auth/session', (route) => route.fulfill({ json: session }));
+  await page.route('**/api/v1/auth/entry', (route) => route.fulfill({ json: { entryMode: 'TenantHost', canonicalHost: '127.0.0.1', candidateTenantId: 'tenant-a', candidateTenantDisplayName: 'Alpha Tenant', authorizedTenants: [{ tenantId: 'tenant-a', displayName: 'Alpha Tenant', canonicalHost: 'tenant.localhost' }], operationalContexts: [{ contextId: 'context-a', kind: 'Company', displayName: 'Alpha Company', eligibilityVersion: 1 }], selectedOperationalContextId: 'context-a', operationalSelectionVersion: 1, branding: { displayName: 'Alpha Tenant', logoLightUrl: null, logoDarkUrl: null, logoAltText: 'Alpha Tenant', tenantConfigured: true }, currencyPresentation: { currencyCode: 'SAR', symbolAssetUrl: null, symbolTextFallback: 'SAR' }, code: null } }));
+  await page.route('**/api/v1/auth/contexts', (route) => route.fulfill({ json: { contexts: [] } }));
+  await page.route('**/api/v1/auth/antiforgery', (route) => route.fulfill({ status: 204, headers: { 'X-CSRF-TOKEN': 'inventory-control-e2e-token' } }));
+  await page.route('**/api/v1/inventory/warehouses**', (route) => route.fulfill({ json: [{ tenantId: 'tenant-a', companyId: 'company-a', branchId: null, warehouseId: 'warehouse-a', code: 'WH-A', name: 'Main warehouse', displayName: 'WH-A · Main warehouse', isActive: true }] }));
+  await page.route('**/api/v1/inventory/transfers**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/inventory/customer-returns/boundary', (route) => route.fulfill({ json: { available: false, code: 'unavailable', message: 'Sales handoff required', sourceType: 'CustomerReturn' } }));
+  await page.route('**/api/v1/master-data/products', (route) => route.fulfill({ json: [{ id: 'product-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', sku: 'SKU-A', englishName: 'Product A', arabicName: null, description: null, categoryId: 'category-a', baseUnitOfMeasureId: 'unit-a', trackingDefaultEnabled: false, trackingEnabledOverride: false, trackingEnabled: false, isSellable: true, isPurchasable: true, isInventoryRelevant: true, barcodes: [] }] }));
+  await page.route('**/api/v1/master-data/units-of-measure', (route) => route.fulfill({ json: [{ id: 'unit-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', code: 'EA', englishName: 'Each', arabicName: null }] }));
+  await page.route('**/api/v1/inventory/ledger**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/inventory/opening-balances**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/inventory/reservations**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/inventory/availability**', (route) => route.fulfill({ json: { onHandQuantity: 5, reservedQuantity: 0, availableQuantity: 5, unitOfMeasureCode: 'EA' } }));
+  await page.route('**/api/v1/inventory/reason-codes**', (route) => {
+    const category = new URL(route.request().url()).searchParams.get('category');
+    const categories = category ? [category] : ['Adjustment', 'CountVariance', 'StockIssue'];
+    return route.fulfill({ json: categories.map(value => ({ id: `reason-${value}`, tenantId: 'tenant-a', code: 'COUNT-DAMAGE', englishName: 'Variance review', arabicName: 'مراجعة الفرق', category: value, isActive: true, version: 'AQ==' })) });
+  });
+  await page.route('**/api/v1/inventory/adjustments**', async (route) => { if (route.request().method() === 'POST') { adjustmentStatus = 'Draft'; return route.fulfill({ json: { id: 'adjustment-1', status: adjustmentStatus, version: 'AQ==', lines: [{ productSku: 'SKU-A', direction: 'Increase', quantity: 1, reasonCode: 'COUNT-DAMAGE' }] } }); } return route.fulfill({ json: [{ id: 'adjustment-1', status: adjustmentStatus, version: 'AQ==', lines: [{ productSku: 'SKU-A', direction: 'Increase', quantity: 1, reasonCode: 'COUNT-DAMAGE' }] }] }); });
+  await page.route('**/api/v1/inventory/adjustments/adjustment-1/submit', async (route) => { adjustmentStatus = 'PendingApproval'; return route.fulfill({ json: { id: 'adjustment-1', status: adjustmentStatus, version: 'Ag==', lines: [{ productSku: 'SKU-A', direction: 'Increase', quantity: 1, reasonCode: 'COUNT-DAMAGE' }] } }); });
+  await page.route('**/api/v1/inventory/counts**', async (route) => { const path = new URL(route.request().url()).pathname; if (route.request().method() === 'POST' && path.endsWith('/submit')) { countStatus = 'PendingApproval'; countVersion = 'Ag=='; return route.fulfill({ json: count() }); } if (route.request().method() === 'POST' && path.endsWith('/variance-reason')) { countReason = 'COUNT-DAMAGE'; countVersion = 'Aw=='; return route.fulfill({ json: count() }); } return route.fulfill({ json: countStatus === 'Draft' ? [count()] : [count()] }); });
+  await page.route('**/api/v1/inventory/stock-issues**', (route) => route.fulfill({ json: [] }));
+
+  await page.goto('/app/inventory');
+  const stockControl = page.locator('[data-testid="inventory-stock-control"]');
+  await expect(stockControl).toBeVisible();
+  await expect(stockControl).not.toContainText('Expected:');
+  await expect(stockControl.getByRole('button', { name: 'Submit observations' })).toBeVisible();
+  await expect(stockControl.getByRole('button', { name: 'Submit zero-variance' })).toHaveCount(0);
+  await stockControl.getByRole('spinbutton', { name: 'SKU-A · EA' }).fill('7');
+  await stockControl.getByRole('button', { name: 'Submit observations' }).click();
+  await expect(stockControl).toContainText('Expected: 5');
+  await stockControl.locator('.count-review select').selectOption('COUNT-DAMAGE');
+  await stockControl.getByRole('button', { name: 'Record reason' }).click();
+  await expect(stockControl).toContainText('COUNT-DAMAGE');
+
+  const adjustmentForm = stockControl.locator('form.control-form').first();
+  await adjustmentForm.locator('input[name="quantity"]').fill('1');
+  await adjustmentForm.locator('select[name="reason"]').selectOption('COUNT-DAMAGE');
+  await adjustmentForm.getByRole('button', { name: 'Create draft' }).click();
+  await expect(stockControl.locator('.stock-control__lists section').first().getByText('Draft')).toBeVisible();
+});

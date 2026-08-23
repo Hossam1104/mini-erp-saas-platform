@@ -21,6 +21,15 @@ internal sealed class InventoryDbContext(DbContextOptions options, TenantContext
     internal DbSet<InventoryAuditEntity> Audit => Set<InventoryAuditEntity>();
     internal DbSet<InventoryIdempotencyEntity> Idempotency => Set<InventoryIdempotencyEntity>();
     internal DbSet<InventoryConcurrencyAnchorEntity> ConcurrencyAnchors => Set<InventoryConcurrencyAnchorEntity>();
+    internal DbSet<InventoryReasonCodeEntity> ReasonCodes => Set<InventoryReasonCodeEntity>();
+    internal DbSet<InventoryAdjustmentEntity> Adjustments => Set<InventoryAdjustmentEntity>();
+    internal DbSet<InventoryAdjustmentLineEntity> AdjustmentLines => Set<InventoryAdjustmentLineEntity>();
+    internal DbSet<InventoryCountEntity> Counts => Set<InventoryCountEntity>();
+    internal DbSet<InventoryCountSnapshotEntity> CountSnapshots => Set<InventoryCountSnapshotEntity>();
+    internal DbSet<InventoryCountLineEntity> CountLines => Set<InventoryCountLineEntity>();
+    internal DbSet<InventoryStockIssueEntity> StockIssues => Set<InventoryStockIssueEntity>();
+    internal DbSet<InventoryStockIssueLineEntity> StockIssueLines => Set<InventoryStockIssueLineEntity>();
+    internal DbSet<InventoryControlHistoryEntity> ControlHistory => Set<InventoryControlHistoryEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,7 +58,7 @@ internal sealed class InventoryDbContext(DbContextOptions options, TenantContext
         ConfigureBase(movement, "StockLedgerMovements");
         movement.Property(item => item.WarehouseCode).HasMaxLength(128).IsRequired(); movement.Property(item => item.WarehouseName).HasMaxLength(256).IsRequired();
         movement.Property(item => item.CompanyId).IsRequired(); movement.Property(item => item.BranchId).IsRequired(false); movement.Property(item => item.WarehouseId).IsRequired(); movement.Property(item => item.ProductId).IsRequired(); movement.Property(item => item.ProductSku).HasMaxLength(128).IsRequired(); movement.Property(item => item.ProductName).HasMaxLength(256).IsRequired(); movement.Property(item => item.UnitOfMeasureId).IsRequired(); movement.Property(item => item.UnitOfMeasureCode).HasMaxLength(128).IsRequired(); movement.Property(item => item.Direction).IsRequired(); movement.Property(item => item.Quantity).HasPrecision(28, 8).IsRequired(); movement.Property(item => item.UnitCost).HasPrecision(28, 8).IsRequired(false); movement.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired(false); movement.Property(item => item.ValuationStatus).IsRequired(); movement.Property(item => item.TrackingIdentity).HasMaxLength(256).IsRequired(false); movement.Property(item => item.SourceType).IsRequired(); movement.Property(item => item.SourceDocumentId).IsRequired(); movement.Property(item => item.SourceLineId).IsRequired(); movement.Property(item => item.CorrectionOfMovementId).IsRequired(false); movement.Property(item => item.GoodsReceiptId).IsRequired(false); movement.Property(item => item.GoodsReceiptLineId).IsRequired(false); movement.Property(item => item.SupplierReturnId).IsRequired(false); movement.Property(item => item.SupplierReturnLineId).IsRequired(false); movement.Property(item => item.PurchaseOrderId).IsRequired(false); movement.Property(item => item.PurchaseOrderLineId).IsRequired(false); movement.Property(item => item.TransferId).IsRequired(false); movement.Property(item => item.TransferLineId).IsRequired(false); movement.Property(item => item.SourceReference).HasMaxLength(512).IsRequired(false); movement.Property(item => item.EffectiveDate).IsRequired(); movement.Property(item => item.ActorId).IsRequired(); movement.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired(); movement.Property(item => item.PostedAt).IsRequired();
-        movement.HasIndex(item => new { item.TenantId, item.Id }).IsUnique(); movement.HasIndex(item => new { item.TenantId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingIdentity }); movement.HasIndex(item => new { item.TenantId, item.SourceType, item.SourceDocumentId, item.SourceLineId }).IsUnique();
+        movement.HasIndex(item => new { item.TenantId, item.Id }).IsUnique(); movement.HasIndex(item => new { item.TenantId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingIdentity }); movement.HasIndex(item => new { item.TenantId, item.SourceType, item.SourceDocumentId, item.SourceLineId }).IsUnique(); movement.HasIndex(item => new { item.TenantId, item.CorrectionOfMovementId }).IsUnique().HasFilter(Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer" ? "[CorrectionOfMovementId] IS NOT NULL" : "CorrectionOfMovementId IS NOT NULL");
 
         var transfer = modelBuilder.Entity<InventoryTransferEntity>();
         ConfigureBase(transfer, "Transfers");
@@ -97,6 +106,17 @@ internal sealed class InventoryDbContext(DbContextOptions options, TenantContext
         var anchor = modelBuilder.Entity<InventoryConcurrencyAnchorEntity>();
         ConfigureBase(anchor, "ConcurrencyAnchors");
         anchor.Property(item => item.CompanyId).IsRequired(); anchor.Property(item => item.BranchId).IsRequired(false); anchor.Property(item => item.WarehouseId).IsRequired(); anchor.Property(item => item.ProductId).IsRequired(); anchor.Property(item => item.UnitOfMeasureId).IsRequired(); anchor.Property(item => item.TrackingKey).HasMaxLength(256).IsRequired(); anchor.Property(item => item.TouchSequence).IsRequired(); anchor.HasIndex(item => new { item.TenantId, item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingKey }).IsUnique().HasFilter(null); anchor.HasIndex(item => new { item.TenantId, item.Id }).IsUnique();
+
+        InventoryStockControlModelBuilder.Configure(modelBuilder, Database.ProviderName);
+        modelBuilder.Entity<InventoryReasonCodeEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryAdjustmentEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryAdjustmentLineEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryCountEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryCountSnapshotEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryCountLineEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryStockIssueEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryStockIssueLineEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
+        modelBuilder.Entity<InventoryControlHistoryEntity>().HasQueryFilter(item => item.TenantId == TrustedTenantId);
     }
 
     private void ConfigureBase<TEntity>(EntityTypeBuilder<TEntity> entity, string tableName) where TEntity : class, ITenantOwned
