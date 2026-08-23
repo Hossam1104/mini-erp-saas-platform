@@ -1,4 +1,4 @@
-# MESP-131 - Sol Acceptance Handoff
+# MESP-131 - Final Valuation-Integrity Remediation
 
 <!-- MESP-131-JIRA-SYNC-START -->
 ## Jira/documentation synchronization â€” 23 August 2026
@@ -15,6 +15,7 @@ Jira traceability has been reconciled without closing MESP-131:
 - MESP-139 downstream Reporting source comment `11786`; status remains To Do.
 - Sol acceptance comment `11788` and delta acceptance comment `11789` remain
   the independent review authority.
+- Latest Sol final-delta acceptance comment: `11794`.
 
 Draft PR #75 remains unmerged and Sol acceptance is still required.
 <!-- MESP-131-JIRA-SYNC-END -->
@@ -28,11 +29,13 @@ Branch: `feat/MESP-131-mwa-valuation-reconciliation`
 
 Exact required main base: `b470179e1d18ef75c0a9247b2340407da6220dc4`
 
-Starting SHA: `1beca1a02eddcab675a92ae1d0f1915bfca5089f`
+Starting SHA: `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`
 
-Remediation implementation SHA: `958339d395323106e83b59caeb3b64bbcd0758fd`
+Remediation implementation SHA: `42794bd6c13d2eae7c8b0b5d4e4c67e73a1ef7e5`
 
-Final branch SHA: recorded in the final documentation handoff commit and completion response.
+Final branch SHA: the validated implementation tip is
+`42794bd6c13d2eae7c8b0b5d4e4c67e73a1ef7e5`; the final documentation-only
+handoff commit is reported in the completion response.
 
 Draft PR: `#75` - Open, Draft, Unmerged; base `main`.
 
@@ -80,6 +83,35 @@ full backend suite, Angular suite, focused and full Chromium suites, bundle
 budget, npm audits, runtime restart/HTTP evidence, and protected asset check
 are the acceptance evidence for the exact final branch tip. Sol owns the next
 independent delta acceptance; do not start downstream implementation.
+
+## Final Valuation-Integrity Remediation Delta
+
+- **Tracking blocker isolation:** `missingPolicyBlockedBasePools` is reserved
+  for unknown-scope `valuation_policy_not_configured` predecessors; known
+  policies use `stoppedValuationScopes` keyed by the derived valuation scope.
+  Tracking policies isolate LOT-A and LOT-B failures; non-tracking policies
+  intentionally retain one combined Warehouse/Product/UOM pool.
+- **Full-depletion closeout:** an outbound that reaches zero quantity closes
+  the stored prior value, preserving formula movement value, rounding
+  adjustment, actual movement value, and the zero quantity/value/average
+  invariant. Partial outbound remains formula-based and does not close out.
+- **Correction and Finance evidence:** full closeout correction restores the
+  actual original amount, while Finance handoff preserves Direction,
+  BaseUnitCost, absolute BaseAmount, SignedBaseAmount, and the rounding
+  adjustment evidence.
+- **Reconciliation fail-closed:** zero-quantity/non-zero-value and negative
+  valuation state is reported as `ValuationMismatch`; summary completeness is
+  false and partial when any row is mismatched.
+- **Additive persistence:** migration
+  `20260823211902_MESP131SolFinalValuationIntegrity` adds only the immutable
+  formula/rounding evidence columns; prior MESP-131 migrations are unchanged.
+
+Final evidence: focused valuation `34/34`; prior Inventory regression `52/52`;
+SQL Server safety `39/39` against disposable LocalDB; full disposable-LocalDB
+backend `952/952`, `0` failed, `0` skipped; Release build `0` warnings and
+`0` errors; Angular `254/254` across 35 spec files; focused Chromium `5/5`,
+full Chromium `32/32`; initial production bundle `499.94 kB`; valuation lazy
+chunk `35.96 kB`; and both npm audits at `0 vulnerabilities`.
 
 ## Ledger Ordering
 

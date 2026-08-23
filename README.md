@@ -23,6 +23,25 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
+### MESP-131 final valuation-integrity remediation - 24 August 2026
+
+The final bounded remediation is implemented on Draft PR #75 at
+`42794bd6c13d2eae7c8b0b5d4e4c67e73a1ef7e5`, from exact start
+`fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`. It isolates known-policy
+valuation failures by tracking scope, preserves conservative missing-policy
+base-pool blocking, closes full depletion against stored value with explicit
+formula/rounding/actual-value evidence, and reports impossible valuation state
+as `ValuationMismatch` instead of complete reconciliation. MESP-131 remains
+In Progress, Draft, unmerged, and pending Sol acceptance; no downstream
+Finance or MESP-132 implementation was started.
+
+Final evidence is focused valuation `34/34`, SQL safety `39/39`, full backend
+`952/952` with zero failures/skips, Release build `0/0`, Angular `254/254`,
+focused/full Chromium `5/5` and `32/32`, initial bundle `499.94 kB`, and both
+npm audits at `0 vulnerabilities`. The additive migration is
+`20260823211902_MESP131SolFinalValuationIntegrity`; `frontend/assets` is
+untouched.
+
 The latest **merged** Inventory capability is **MESP-130 â€” Stock Adjustment, Inventory Count, Stock Issue, and Corrections**, merged in PR #74 at `b470179e1d18ef75c0a9247b2340407da6220dc4`.
 
 The current active capability is **MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting**. It is implemented on Draft PR #75 at remediation commit `958339d395323106e83b59caeb3b64bbcd0758fd` from the required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`.
@@ -39,10 +58,10 @@ The tracked project-control source of truth is [`docs/staticts.md`](docs/statict
 
 | Check | Executor-reported result |
 |---|---:|
-| Focused MESP-131 valuation | 27/27 |
+| Focused MESP-131 valuation | 34/34 |
 | Prior Inventory regression | 52/52 |
-| SQL Server safety harness | 38/38 against disposable LocalDB (previous baseline 32) |
-| Full backend disposable-LocalDB suite | 944/944, 0 failed, 0 skipped |
+| SQL Server safety harness | 39/39 against disposable LocalDB (previous baseline 38) |
+| Full backend disposable-LocalDB suite | 952/952, 0 failed, 0 skipped |
 | Release build | 0 warnings / 0 errors |
 | Angular unit tests | 254/254 across 35 spec files |
 | Production initial bundle | 499.94 kB |

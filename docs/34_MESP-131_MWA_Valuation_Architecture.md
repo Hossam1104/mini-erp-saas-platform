@@ -1,12 +1,12 @@
 # MESP-131 Moving Weighted Average Valuation Architecture
 
-**Status:** Remediation implementation complete; pending GPT-5.6 Sol delta acceptance and merge<br>
-**Date:** 23 August 2026<br>
+**Status:** Final valuation-integrity remediation complete; pending GPT-5.6 Sol delta acceptance and merge<br>
+**Date:** 24 August 2026<br>
 **Capability:** MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting<br>
 **Base main:** `b470179e1d18ef75c0a9247b2340407da6220dc4`<br>
-**Starting SHA:** `1beca1a02eddcab675a92ae1d0f1915bfca5089f`<br>
-**Remediation implementation commit:** `958339d395323106e83b59caeb3b64bbcd0758fd`<br>
-**Final branch SHA:** recorded in the final documentation handoff commit and completion report<br>
+**Starting SHA:** `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`<br>
+**Remediation implementation commit:** `42794bd6c13d2eae7c8b0b5d4e4c67e73a1ef7e5`<br>
+**Final branch SHA:** final documentation handoff commit is reported in the completion response<br>
 **Draft PR:** #75 — Open, Draft, unmerged
 
 ## Purpose and boundary
@@ -14,6 +14,48 @@
 MESP-131 adds deterministic Inventory-owned operational valuation over the existing immutable physical stock ledger. Inventory remains owner of physical movements and operational valuation evidence. Finance remains owner of account mapping, periods, balanced journals, subledgers, posting, reversal and accounting reconciliation.
 
 No GL, AP, AR, tax posting, payment, B2B Sales, generic Reporting, external FX provider, statutory/ZATCA/FATOORA, migration/cutover, or Wafra-specific reusable core behavior is added.
+
+## Final valuation-integrity remediation
+
+Known-policy failures are tracked by the derived `ValuationScopeKey`. A
+tracking-scoped policy keeps each TrackingIdentity independent, so a missing
+FX/source-cost/current-MWA/transfer/correction/calculation predecessor in
+LOT-A stops only LOT-A. A non-tracking policy deliberately derives an empty
+TrackingIdentity and keeps the combined Warehouse/Product/UOM pool stopped.
+Missing-policy evidence remains conservative at the base
+Company/Branch/Warehouse/Product/UOM pool because scope mode is not yet known.
+
+For an ordinary outbound that fully depletes the stored quantity, the
+valuation engine uses the persisted rounded prior average for its formula,
+but the actual movement value is the complete stored prior value. It persists
+the unsigned formula value and the explicit absolute rounding bridge:
+
+`RoundingAdjustmentAmount = ActualMovementValue - FormulaMovementValue`
+
+The resulting quantity, value, and average are all zero. Partial outbound
+continues to use the normal rounded formula and does not force closeout. A
+full-depletion correction restores the actual original value and carries the
+formula/rounding lineage into the linked reversal evidence. Finance handoff
+uses the actual absolute `BaseAmount`, directional `SignedBaseAmount`, and
+the same rounding evidence; Finance does not infer the residual.
+
+Valuation state transitions reject negative state and zero-quantity/non-zero-
+value writes. Reconciliation independently detects legacy or corrupt
+zero-quantity/non-zero-value and negative state as `ValuationMismatch`, and a
+Warehouse summary with any mismatch is incomplete and partial.
+
+The formal additive migration
+`20260823211902_MESP131SolFinalValuationIntegrity` adds nullable
+`MovementValuationEvents.FormulaMovementValue`, nullable
+`MovementValuationEvents.RoundingAdjustmentAmount`, and required/default-zero
+`FinanceValuationHandoffs.RoundingAdjustmentAmount`. The preceding MESP-131
+migrations remain unchanged.
+
+Final evidence: focused valuation `34/34`; SQL Server safety `39/39` against
+disposable LocalDB; full backend `952/952` with zero failures/skips; Release
+build 0 warnings/errors; Angular `254/254`; focused/full Chromium `5/5` and
+`32/32`; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; both
+npm audits report 0 vulnerabilities.
 
 ## Durable ledger ordering
 

@@ -15,20 +15,21 @@ Jira traceability has been reconciled without closing MESP-131:
 - MESP-139 downstream Reporting source comment `11786`; status remains To Do.
 - Sol acceptance comments `11788` and `11789` remain the independent review
   authority for this branch.
+- Latest Sol final-delta acceptance comment: `11794`.
 
 Draft PR #75 remains unmerged and Sol acceptance is still required.
 <!-- MESP-131-JIRA-SYNC-END -->
 
-## Current authoritative position - 23 August 2026 (MESP-131 implementation; Sol acceptance handoff)
+## Current authoritative position - 24 August 2026 (MESP-131 final valuation-integrity remediation; Sol acceptance handoff)
 
 MESP-131 is implemented on branch
 `feat/MESP-131-mwa-valuation-reconciliation`, created from the exact required
-main base `b470179e1d18ef75c0a9247b2340407da6220dc4` and bounded session start
-`1beca1a02eddcab675a92ae1d0f1915bfca5089f`. The remediation implementation
-commit is `958339d395323106e83b59caeb3b64bbcd0758fd`; Draft PR #75 is Open,
-Draft, and unmerged. The final documentation handoff SHA is reported with the
-completion response after this state update. Jira is read-only for this
-session; no Jira writes were performed.
+main base `b470179e1d18ef75c0a9247b2340407da6220dc4` and exact remediation start
+`fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`. The final remediation
+implementation commit is `42794bd6c13d2eae7c8b0b5d4e4c67e73a1ef7e5`; Draft PR
+#75 is Open, Draft, and unmerged. The final documentation-only handoff SHA is
+reported with the completion response after this state update. Jira is
+read-only for this session; no Jira writes were performed.
 
 The bounded capability establishes a durable Company-scoped `LedgerSequence`
 for every Inventory movement-producing path, deterministically bootstraps
@@ -90,16 +91,15 @@ creation, and first-scope uniqueness races are safe conflicts. The Angular
 valuation area is lazy-loaded, extends the existing Inventory feature, and is
 EN/AR with RTL support; no product source assets were changed.
 
-Validation after remediation: focused MESP-131 valuation `27/27`, focused
-Inventory regression `52/52`, SQL Server safety `38/38` against disposable
-LocalDB (previous baseline `32`), disposable LocalDB full backend `944/944`
+Validation after final remediation: focused MESP-131 valuation `34/34`, prior
+Inventory regression `52/52`, SQL Server safety `39/39` against disposable
+LocalDB (previous baseline `38`), disposable LocalDB full backend `952/952`
 with zero failures/skips, Release build `0` warnings/`0` errors, Angular
 `254/254` across 35 spec files, focused Chromium `5/5`, full Chromium `32/32`,
 both npm audits `0` vulnerabilities, production initial bundle `499.94 kB`,
-and valuation lazy chunk `35.96 kB`. The official launcher restarted backend
-`http://localhost:5300` PID `36540` and frontend `http://localhost:4300` PID
-`21248`; `/health`, `/`, and `/main.js` each returned HTTP 200 and both
-processes remain running for Owner inspection.
+and valuation lazy chunk `35.96 kB`. Final launcher URLs, PIDs, and HTTP
+probes are recorded in the completion response after the mandated runtime
+restart; both processes remain required to stay running for Owner inspection.
 
 The overall Production-Ready Completion headline remains approximately 47%
 overall and 41% Procurement/P2P pending Sol acceptance/merge. The fast-track
