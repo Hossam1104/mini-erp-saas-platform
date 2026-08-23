@@ -318,8 +318,10 @@ export is a file response.
 
 ## Migration / Legacy Bootstrap / SQL Safety
 
-Formal migrations: `20260823124304_MESP131MovingWeightedAverageValuation` and
-the additive remediation `20260823180537_MESP131SolFinancialIntegrityRemediation`.
+Formal migrations: `20260823124304_MESP131MovingWeightedAverageValuation`,
+the additive remediation `20260823180537_MESP131SolFinancialIntegrityRemediation`,
+and final additive evidence migration
+`20260823211902_MESP131SolFinalValuationIntegrity`.
 Legacy sequence bootstrap is deterministic and evidence is preserved. The
 remediation migration is separate and the original MESP-131 migration remains
 unchanged. The disposable SQL Server LocalDB safety harness passed the final
@@ -328,11 +330,11 @@ checks. No production SQL/provider/cutover decision was made.
 
 ## Validation Totals
 
-- Focused MESP-131 valuation: `27/27`.
+- Focused MESP-131 valuation: `34/34`.
 - Prior Inventory regression (ledger + stock control + valuation): `52/52`.
-- SQL Server safety harness: `38/38` against disposable LocalDB (previous
-  baseline `32`).
-- Full backend LocalDB harness: `944/944`, `0` failed, `0` skipped.
+- SQL Server safety harness: `39/39` against disposable LocalDB (previous
+  baseline `38`).
+- Full backend LocalDB harness: `952/952`, `0` failed, `0` skipped.
 - Release solution build: `0` warnings, `0` errors.
 - Angular: `254/254` across 35 spec files.
 - Production bundle: initial `499.94 kB`; valuation lazy `35.96 kB`; no
@@ -343,8 +345,8 @@ checks. No production SQL/provider/cutover decision was made.
 
 ## Runtime Verification
 
-Backend `http://localhost:5300`, PID `36540`; frontend
-`http://localhost:4300`, PID `21248`. Backend health, frontend root, and
+Backend `http://localhost:5300`, PID `15844`; frontend
+`http://localhost:4300`, PID `12120`. Backend health, frontend root, and
 `main.js` each returned HTTP 200 after the official `Start-MiniErpDevelopment.ps1
 -Restart` launcher run. Both launcher-owned processes remain running for Owner
 inspection. Loopback-only Development auth bypass was used without printing or

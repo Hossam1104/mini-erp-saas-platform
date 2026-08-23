@@ -206,6 +206,8 @@ Formal additive Inventory migrations:
 
 `20260823180537_MESP131SolFinancialIntegrityRemediation`
 
+`20260823211902_MESP131SolFinalValuationIntegrity`
+
 The remediation migration removes PolicyId from authoritative pool uniqueness,
 adds current-policy metadata and policy lineage/version backstops, makes pending
 policy evidence truthful, adds Finance Direction/SignedBaseAmount, and preserves
@@ -214,10 +216,10 @@ rewritten.
 
 ## Reported validation pending Sol acceptance
 
-- Focused MESP-131 valuation: `27/27`
+- Focused MESP-131 valuation: `34/34`
 - Inventory regression: `52/52`
-- SQL Server safety: `38/38` (previous baseline `32`)
-- Full backend disposable-LocalDB suite: `944/944`, 0 failed, 0 skipped
+- SQL Server safety: `39/39` (previous baseline `38`)
+- Full backend disposable-LocalDB suite: `952/952`, 0 failed, 0 skipped
 - Release build: 0 warnings / 0 errors
 - Angular: `254/254` across 35 spec files
 - Production initial bundle: `499.94 kB`
