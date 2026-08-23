@@ -97,9 +97,10 @@ LocalDB (previous baseline `38`), disposable LocalDB full backend `952/952`
 with zero failures/skips, Release build `0` warnings/`0` errors, Angular
 `254/254` across 35 spec files, focused Chromium `5/5`, full Chromium `32/32`,
 both npm audits `0` vulnerabilities, production initial bundle `499.94 kB`,
-and valuation lazy chunk `35.96 kB`. Final launcher URLs, PIDs, and HTTP
-probes are recorded in the completion response after the mandated runtime
-restart; both processes remain required to stay running for Owner inspection.
+and valuation lazy chunk `35.96 kB`. The final launcher kept backend
+`http://localhost:5300` PID `15844` and frontend `http://localhost:4300` PID
+`12120` alive; `/health`, `/`, and `/main.js` each returned HTTP 200 without
+printing credentials.
 
 The overall Production-Ready Completion headline remains approximately 47%
 overall and 41% Procurement/P2P pending Sol acceptance/merge. The fast-track

@@ -22,7 +22,7 @@ Draft PR #75 remains unmerged and Sol acceptance is still required.
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-24 00:37 +03:00
+**Last Updated:** 2026-08-24 00:47 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
@@ -64,7 +64,7 @@ from this unaccepted branch. `frontend/assets` remains untouched.
 | Production capability | ~47% overall; Procurement/P2P ~41%; no production-readiness headline increase pending Sol acceptance/merge. Fast-track 14/26 = 53.8%, not production readiness. |
 | Validation | Focused MESP-131 valuation 34/34; prior Inventory regression 52/52; SQL Server safety 39/39 (previous 38); disposable LocalDB full backend 952/952 with 0 failed/0 skipped; Release build 0 warnings/errors; Angular 254/254 across 35 specs; focused Chromium 5/5; full Chromium 32/32; both npm audits 0 vulnerabilities; production initial 499.94 kB and valuation lazy 35.96 kB. |
 | Delivery boundaries | Original migrations `20260823124304_MESP131MovingWeightedAverageValuation` and `20260823180537_MESP131SolFinancialIntegrityRemediation` remain unchanged; additive final migration `20260823211902_MESP131SolFinalValuationIntegrity`; no Journal/GL/AP/AR/Sales/generic Reporting, migration/cutover, external/statutory, Jira, or Wafra-specific core behavior. Finance handoff is evidence-only. |
-| Runtime | Official launcher restart: backend `http://localhost:5300` PID 36540 and frontend `http://localhost:4300` PID 21248; `/health`, `/`, and `/main.js` each returned HTTP 200; both launcher-owned processes remain alive for Owner inspection using the loopback Development bypass without printed credentials. |
+| Runtime | Final official launcher restart: backend `http://localhost:5300` PID 15844 and frontend `http://localhost:4300` PID 12120; `/health`, `/`, and `/main.js` each returned HTTP 200; both launcher-owned processes remain alive for Owner inspection using the loopback Development bypass without printed credentials. |
 | Next exact session | Sol delta acceptance of the exact final branch SHA and Draft PR #75. Do not merge or start MESP-132/downstream implementation automatically. |
 
 ## Progress history - 24 August 2026

@@ -113,6 +113,15 @@ backend `952/952`, `0` failed, `0` skipped; Release build `0` warnings and
 full Chromium `32/32`; initial production bundle `499.94 kB`; valuation lazy
 chunk `35.96 kB`; and both npm audits at `0 vulnerabilities`.
 
+## Final Runtime Verification
+
+- Backend URL: `http://localhost:5300`; `/health`: HTTP 200; API PID `15844`.
+- Frontend URL: `http://localhost:4300`; `/`: HTTP 200; Angular PID `12120`.
+- Frontend `/main.js`: HTTP 200.
+- Both repository-owned processes are alive and left running for Owner
+  inspection. No credentials were printed.
+- `frontend/assets` has zero changes.
+
 ## Ledger Ordering
 
 ### Company Ledger Sequence
