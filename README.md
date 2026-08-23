@@ -26,7 +26,7 @@ module-owned persistence are product rules—not customer-specific forks.
 ### MESP-131 final valuation-integrity remediation - 24 August 2026
 
 The final bounded remediation is implemented on Draft PR #75 at
-`42794bd6c13d2eae7c8b0b5d4e4c67e73a1ef7e5`, from exact start
+`42794bda13bada7f37dcbf6ef6b8cc8e73eba889`, from exact start
 `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`. It isolates known-policy
 valuation failures by tracking scope, preserves conservative missing-policy
 base-pool blocking, closes full depletion against stored value with explicit

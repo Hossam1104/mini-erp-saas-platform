@@ -26,7 +26,7 @@ MESP-131 is implemented on branch
 `feat/MESP-131-mwa-valuation-reconciliation`, created from the exact required
 main base `b470179e1d18ef75c0a9247b2340407da6220dc4` and exact remediation start
 `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`. The final remediation
-implementation commit is `42794bd6c13d2eae7c8b0b5d4e4c67e73a1ef7e5`; Draft PR
+implementation commit is `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; Draft PR
 #75 is Open, Draft, and unmerged. The final documentation-only handoff SHA is
 reported with the completion response after this state update. Jira is
 read-only for this session; no Jira writes were performed.

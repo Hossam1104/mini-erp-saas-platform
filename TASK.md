@@ -31,10 +31,10 @@ Exact required main base: `b470179e1d18ef75c0a9247b2340407da6220dc4`
 
 Starting SHA: `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`
 
-Remediation implementation SHA: `42794bd6c13d2eae7c8b0b5d4e4c67e73a1ef7e5`
+Remediation implementation SHA: `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`
 
 Final branch SHA: the validated implementation tip is
-`42794bd6c13d2eae7c8b0b5d4e4c67e73a1ef7e5`; the final documentation-only
+`42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; the final documentation-only
 handoff commit is reported in the completion response.
 
 Draft PR: `#75` - Open, Draft, Unmerged; base `main`.
