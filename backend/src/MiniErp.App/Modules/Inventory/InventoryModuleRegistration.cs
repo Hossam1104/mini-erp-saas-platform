@@ -13,6 +13,7 @@ public static class InventoryModuleRegistration
         services.AddSingleton<InventoryTenantContextResolver>();
         services.AddSingleton<InventoryResourceAuthorizationService>();
         services.AddSingleton<InventoryService>();
+        services.AddSingleton<InventoryValuationService>();
         services.AddSingleton<IInventoryWarehouseProvider, NoInventoryWarehouseProvider>();
         services.AddSingleton<IInventoryProductProvider, NoInventoryProductProvider>();
         services.AddSingleton<IInventoryGoodsReceiptSourceProvider, NoInventoryGoodsReceiptSourceProvider>();
@@ -22,6 +23,7 @@ public static class InventoryModuleRegistration
         services.AddSingleton<IInventoryApprovalPolicyProvider, NoInventoryApprovalPolicyProvider>();
         services.AddSingleton<IInventoryApprovalDelegationProvider, NoInventoryApprovalDelegationProvider>();
         services.AddSingleton<IInventoryPersistence, UnavailableInventoryPersistence>();
+        services.AddSingleton<IInventoryValuationPersistence, UnavailableInventoryValuationPersistence>();
         services.AddSingleton<IGoodsReceiptInventoryEffectReader, InventoryPersistenceGoodsReceiptEffectReader>();
         services.AddSingleton<ISupplierReturnInventoryEffectReader, InventoryPersistenceSupplierReturnEffectReader>();
         return services;

@@ -3,6 +3,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MiniErp.App.Modules.Inventory;
+using MiniErp.App.Modules.MasterData;
+using MiniErp.App.Modules.Procurement;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
@@ -13,6 +15,12 @@ public static class InventoryPersistenceServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services); ArgumentNullException.ThrowIfNull(configureOptions);
         var optionsBuilder = new DbContextOptionsBuilder(); configureOptions(optionsBuilder);
         services.AddSingleton<IInventoryPersistence>(new InventoryPersistence(optionsBuilder.Options));
+        services.AddSingleton<IInventoryValuationPersistence>(serviceProvider =>
+            new InventoryValuationPersistence(
+                optionsBuilder.Options,
+                serviceProvider.GetService<IGoodsReceiptPersistence>(),
+                serviceProvider.GetService<IPurchaseOrderPersistence>(),
+                serviceProvider.GetService<IMasterDataExchangeRatePersistence>()));
         return services;
     }
 

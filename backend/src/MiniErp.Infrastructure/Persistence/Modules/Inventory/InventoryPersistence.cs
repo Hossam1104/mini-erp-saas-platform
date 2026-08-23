@@ -21,7 +21,7 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
         if (scope is not null) query = query.Where(item => item.CompanyId == scope.CompanyId && item.BranchId == scope.BranchId && item.WarehouseId == scope.WarehouseId);
         if (productId.HasValue) query = query.Where(item => item.ProductId == productId.Value);
         var values = await query.ToListAsync(cancellationToken);
-        return values.OrderByDescending(item => item.PostedAt).Select(ToMovement.Compile()).ToArray();
+        return values.OrderByDescending(item => item.LedgerSequence).ThenByDescending(item => item.PostedAt).Select(ToMovement.Compile()).ToArray();
     }
 
     public async Task<InventoryMovementRecord?> FindMovementAsync(InventoryRequestContext context, Guid movementId, CancellationToken cancellationToken = default)
@@ -220,11 +220,10 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
             var rows = batch.Rows.Where(item => item.Status == InventoryOpeningRowStatus.Valid).ToArray();
             if (rows.Length == 0) return null;
             var now = DateTimeOffset.UtcNow;
-            foreach (var row in rows)
-            {
-                db.StockMovements.Add(new InventoryStockMovementEntity(context.TenantId, Guid.NewGuid(), batch.CompanyId, batch.BranchId, batch.WarehouseId, batch.WarehouseCode, batch.WarehouseName, row.ProductId, row.ProductSku, row.ProductName, row.UnitOfMeasureId, row.UnitOfMeasureCode, InventoryMovementDirection.Inbound, row.Quantity, row.UnitCost, row.CurrencyCode, row.TrackingIdentity, InventoryMovementSourceType.OpeningBalance, batch.Id, row.Id, null, batch.AsOfDate, actorId, correlationId, now));
-                row.MarkPosted(now);
-            }
+            var movements = rows.Select(row => new InventoryStockMovementEntity(context.TenantId, Guid.NewGuid(), batch.CompanyId, batch.BranchId, batch.WarehouseId, batch.WarehouseCode, batch.WarehouseName, row.ProductId, row.ProductSku, row.ProductName, row.UnitOfMeasureId, row.UnitOfMeasureCode, InventoryMovementDirection.Inbound, row.Quantity, row.UnitCost, row.CurrencyCode, row.TrackingIdentity, InventoryMovementSourceType.OpeningBalance, batch.Id, row.Id, null, batch.AsOfDate, actorId, correlationId, now)).ToArray();
+            await AcquireConcurrencyAnchorsAsync(db, context.TenantId, movements.Select(StockIdentityKey.From), cancellationToken);
+            db.StockMovements.AddRange(movements);
+            foreach (var row in rows) row.MarkPosted(now);
             var from = batch.Status; batch.SetStatus(InventoryOpeningBalanceStatus.Posted, now); batch.TouchVersion();
             db.OpeningBalanceHistory.Add(new InventoryOpeningBalanceHistoryEntity(context.TenantId, Guid.NewGuid(), id, from, batch.Status, "posted", actorId, reason, correlationId, now));
             AddAudit(db, context, "opening-balance", id, "inventory.opening.post", actorId, "Succeeded", reason, correlationId, idempotencyKey, fingerprint, from.ToString(), "Posted", now);
@@ -874,7 +873,7 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
         return value is null ? InventoryReplayProbe<T>.Conflict : InventoryReplayProbe<T>.ForReplay(value);
     }
 
-    private static readonly System.Linq.Expressions.Expression<Func<InventoryStockMovementEntity, InventoryMovementRecord>> ToMovement = item => new InventoryMovementRecord(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.Direction, item.Quantity, item.UnitCost, item.CurrencyCode, item.TrackingIdentity, item.SourceType, item.SourceDocumentId, item.SourceLineId, item.CorrectionOfMovementId, item.EffectiveDate, item.ActorId, item.CorrelationId, item.PostedAt, item.Version, item.ValuationStatus, item.GoodsReceiptId, item.GoodsReceiptLineId, item.SupplierReturnId, item.SupplierReturnLineId, item.PurchaseOrderId, item.PurchaseOrderLineId, item.TransferId, item.TransferLineId, item.SourceReference);
+    private static readonly System.Linq.Expressions.Expression<Func<InventoryStockMovementEntity, InventoryMovementRecord>> ToMovement = item => new InventoryMovementRecord(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.Direction, item.Quantity, item.UnitCost, item.CurrencyCode, item.TrackingIdentity, item.SourceType, item.SourceDocumentId, item.SourceLineId, item.CorrectionOfMovementId, item.EffectiveDate, item.ActorId, item.CorrelationId, item.PostedAt, item.Version, item.ValuationStatus, item.GoodsReceiptId, item.GoodsReceiptLineId, item.SupplierReturnId, item.SupplierReturnLineId, item.PurchaseOrderId, item.PurchaseOrderLineId, item.TransferId, item.TransferLineId, item.SourceReference, item.LedgerSequence);
     private static readonly System.Linq.Expressions.Expression<Func<InventoryReservationEntity, InventoryReservationRecord>> ToReservation = item => new InventoryReservationRecord(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.TrackingIdentity, item.SourceType, item.SourceReference, item.RequestedQuantity, item.ReservedQuantity, item.UnallocatedQuantity, item.Status, item.ActorId, item.CreatedAt, item.UpdatedAt, item.Version);
 
     private static InventoryOpeningBalanceRecord ToOpening(InventoryOpeningBalanceEntity item) => new(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.AsOfDate, item.SourceOwner, item.SourceSystem, item.ExtractedAt, item.SourceReference, item.Status, item.Rows.Count, item.Rows.Count(row => row.Status is InventoryOpeningRowStatus.Valid or InventoryOpeningRowStatus.Posted), item.Rows.Count(row => row.Status == InventoryOpeningRowStatus.Quarantined), item.Rows.Where(row => row.Status is InventoryOpeningRowStatus.Valid or InventoryOpeningRowStatus.Posted).Sum(row => row.Quantity), item.CreatedAt, item.UpdatedAt, item.Rows.OrderBy(row => row.Id).Select(row => new InventoryOpeningBalanceRowRecord(row.Id, row.ProductId, row.ProductSku, row.ProductName, row.UnitOfMeasureId, row.UnitOfMeasureCode, row.Quantity, row.UnitCost, row.CurrencyCode, row.TrackingIdentity, row.SourceLineReference, row.Status, row.ValidationCode, row.PostedAt, row.Version, row.SourceFingerprint)).ToArray(), item.Version);

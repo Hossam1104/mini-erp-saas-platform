@@ -117,6 +117,7 @@ internal sealed class InventoryStockMovementEntity : ITenantOwned
     internal decimal? UnitCost { get; private set; }
     internal string? CurrencyCode { get; private set; }
     internal InventoryValuationStatus ValuationStatus { get; private set; }
+    internal long LedgerSequence { get; private set; }
     internal string? TrackingIdentity { get; private set; }
     internal InventoryMovementSourceType SourceType { get; private set; }
     internal Guid SourceDocumentId { get; private set; }
@@ -136,6 +137,37 @@ internal sealed class InventoryStockMovementEntity : ITenantOwned
     internal string CorrelationId { get; private set; } = string.Empty;
     internal DateTimeOffset PostedAt { get; private set; }
     internal byte[] Version { get; private set; } = [];
+    internal void AssignLedgerSequence(long sequence)
+    {
+        if (sequence <= 0) throw new ArgumentOutOfRangeException(nameof(sequence));
+        if (LedgerSequence != 0 && LedgerSequence != sequence) throw new InvalidOperationException("Ledger sequence is immutable.");
+        LedgerSequence = sequence;
+    }
+}
+
+internal sealed class InventoryCompanyLedgerSequenceAnchorEntity : ITenantOwned
+{
+    private InventoryCompanyLedgerSequenceAnchorEntity() { }
+
+    internal InventoryCompanyLedgerSequenceAnchorEntity(TenantId tenantId, Guid companyId, long nextSequence)
+    {
+        Id = Guid.NewGuid(); TenantId = tenantId; CompanyId = companyId; NextSequence = nextSequence; TouchVersion();
+    }
+
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid CompanyId { get; private set; }
+    internal long NextSequence { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal long Reserve(int count)
+    {
+        if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
+        var first = NextSequence;
+        checked { NextSequence += count; }
+        TouchVersion();
+        return first;
+    }
+    internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
 }
 
 internal sealed class InventoryTransferEntity : ITenantOwned

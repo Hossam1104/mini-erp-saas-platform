@@ -182,3 +182,28 @@ test('MESP-130 stock control keeps counts blind and accepts physical observation
   await adjustmentForm.getByRole('button', { name: 'Create draft' }).click();
   await expect(stockControl.locator('.stock-control__lists section').first().getByText('Draft')).toBeVisible();
 });
+
+test('MESP-131 valuation workspace renders explainable MWA evidence and switches to Arabic RTL', async ({ page }) => {
+  await page.route('**/api/v1/auth/development-bypass', (route) => route.fulfill({ json: { authenticated: false } }));
+  await page.route('**/api/v1/auth/session', (route) => route.fulfill({ json: session }));
+  await page.route('**/api/v1/auth/entry', (route) => route.fulfill({ json: { entryMode: 'TenantHost', canonicalHost: '127.0.0.1', candidateTenantId: 'tenant-a', candidateTenantDisplayName: 'Alpha Tenant', authorizedTenants: [{ tenantId: 'tenant-a', displayName: 'Alpha Tenant', canonicalHost: 'tenant.localhost' }], operationalContexts: [{ contextId: 'context-a', kind: 'Company', displayName: 'Alpha Company', eligibilityVersion: 1 }], selectedOperationalContextId: 'context-a', operationalSelectionVersion: 1, branding: { displayName: 'Alpha Tenant', logoLightUrl: null, logoDarkUrl: null, logoAltText: 'Alpha Tenant', tenantConfigured: true }, currencyPresentation: { currencyCode: 'SAR', symbolAssetUrl: null, symbolTextFallback: 'SAR' }, code: null } }));
+  await page.route('**/api/v1/auth/contexts', (route) => route.fulfill({ json: { contexts: [] } }));
+  await page.route('**/api/v1/inventory/warehouses**', (route) => route.fulfill({ json: [{ tenantId: 'tenant-a', companyId: 'company-a', branchId: null, warehouseId: 'warehouse-a', code: 'WH-A', name: 'Main warehouse', displayName: 'WH-A · Main warehouse', isActive: true }] }));
+  await page.route('**/api/v1/inventory/valuation/policies**', (route) => route.fulfill({ json: [{ id: 'policy-a', functionalCurrencyCode: 'SAR', scopeMode: 'WarehouseProductUom', effectiveFrom: '2026-08-01', effectiveTo: null, versionNumber: 1, roundingMode: 'ToEven', goodsReceiptCostBasis: 'PurchaseOrderUnitPrice', positiveAdjustmentCostBasis: 'CurrentMovingAverage', supplierReturnCostBasis: 'CurrentMovingAverage' }] }));
+  await page.route('**/api/v1/inventory/valuation/summary**', (route) => route.fulfill({ json: [{ warehouseId: 'warehouse-a', productId: 'product-a', unitOfMeasureId: 'uom-a', functionalCurrencyCode: 'SAR', status: 'Reconciled', physicalOnHandQuantity: 15, valuedQuantity: 15, quantityDifference: 0, valuedAmount: 200, averageUnitCost: 13.33333333, pendingMovementCount: 0, blockedMovementCount: 0, inTransitQuantity: 2, inTransitValue: 26.66666666, financeHandoffStatus: 'ReadyForFinance', lastAppliedLedgerSequence: 4, eligibleMovementCount: 4, appliedMovementCount: 4, asOf: '2026-08-23T10:00:00Z', freshAsOf: '2026-08-23T10:00:00Z', differenceReason: null }] }));
+  await page.route('**/api/v1/inventory/valuation/reconciliation**', (route) => route.fulfill({ json: [{ warehouseId: 'warehouse-a', productId: 'product-a', unitOfMeasureId: 'uom-a', functionalCurrencyCode: 'SAR', status: 'Reconciled', physicalOnHandQuantity: 15, valuedQuantity: 15, quantityDifference: 0, valuedAmount: 200, averageUnitCost: 13.33333333, pendingMovementCount: 0, blockedMovementCount: 0, inTransitQuantity: 2, inTransitValue: 26.66666666, financeHandoffStatus: 'ReadyForFinance', lastAppliedLedgerSequence: 4 }] }));
+  await page.route('**/api/v1/inventory/valuation/history**', (route) => route.fulfill({ json: [{ id: 'event-a', movementId: 'movement-a', sourceType: 'OpeningBalance', sourceDocumentId: 'opening-a', sourceReference: 'OPEN-001', ledgerSequence: 4, status: 'Applied', statusCode: 'applied', quantity: 15, direction: 'Inbound', baseUnitCost: 13.33333333, movementValue: 200, newValue: 200, effectiveOn: '2026-08-23', functionalCurrencyCode: 'SAR' }] }));
+  await page.route('**/api/v1/inventory/valuation/pending**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/inventory/valuation/finance-handoffs**', (route) => route.fulfill({ json: [{ id: 'handoff-a', movementId: 'movement-a', sourceType: 'OpeningBalance', sourceDocumentId: 'opening-a', ledgerSequence: 4, quantity: 15, baseUnitCost: 13.33333333, baseAmount: 200, functionalCurrencyCode: 'SAR', status: 'ReadyForFinance', contractVersion: 'inventory-valuation-finance.v1' }] }));
+
+  await page.goto('/app/inventory/valuation');
+
+  await expect(page.locator('[data-testid="inventory-valuation-workspace"]')).toBeVisible();
+  await expect(page.locator('h1')).toHaveText('Moving Weighted Average');
+  await expect(page.locator('[data-testid="valuation-summary-metrics"] strong').nth(2)).toContainText('200');
+  await page.getByRole('tab', { name: /MWA history/ }).click();
+  await expect(page.locator('[data-testid="valuation-history"]')).toContainText('OPEN-001');
+  await page.getByRole('button', { name: 'Language' }).click();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('h1')).toContainText('المتوسط المتحرك المرجح');
+});

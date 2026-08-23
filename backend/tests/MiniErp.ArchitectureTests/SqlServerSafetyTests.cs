@@ -328,7 +328,8 @@ public sealed class SqlServerSafetyTests
                     "20260822194250_MESP130StockControlAndCorrections",
                     "20260822220126_MESP130SolAcceptanceRemediation",
                     "20260822220521_MESP130SolAcceptanceCountApproval",
-                    "20260823104702_MESP130InventoryCountLedgerFence"
+                    "20260823104702_MESP130InventoryCountLedgerFence",
+                    "20260823124304_MESP131MovingWeightedAverageValuation"
                 ],
                 (await inventory.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await inventory.Database.GetPendingMigrationsAsync());
@@ -340,7 +341,7 @@ public sealed class SqlServerSafetyTests
             SELECT COUNT(*)
             FROM INFORMATION_SCHEMA.TABLES
             WHERE TABLE_SCHEMA = N'inventory'
-              AND TABLE_NAME IN (N'OpeningBalances', N'OpeningBalanceRows', N'OpeningBalanceHistory', N'StockLedgerMovements', N'Transfers', N'TransferLines', N'TransferEvents', N'Reservations', N'ReservationHistory', N'AuditEvents', N'IdempotencyEntries', N'ConcurrencyAnchors', N'ReasonCodes', N'Adjustments', N'AdjustmentLines', N'Counts', N'CountSnapshots', N'CountLines', N'StockIssues', N'StockIssueLines', N'ControlHistory');
+              AND TABLE_NAME IN (N'OpeningBalances', N'OpeningBalanceRows', N'OpeningBalanceHistory', N'StockLedgerMovements', N'Transfers', N'TransferLines', N'TransferEvents', N'Reservations', N'ReservationHistory', N'AuditEvents', N'IdempotencyEntries', N'ConcurrencyAnchors', N'ReasonCodes', N'Adjustments', N'AdjustmentLines', N'Counts', N'CountSnapshots', N'CountLines', N'StockIssues', N'StockIssueLines', N'ControlHistory', N'CompanyLedgerSequenceAnchors', N'ValuationPolicies', N'ValuationScopeAnchors', N'ValuationStates', N'MovementValuationEvents', N'ValuationRuns', N'FinanceValuationHandoffs');
             SELECT COUNT(*)
             FROM INFORMATION_SCHEMA.TABLES
             WHERE TABLE_SCHEMA = N'tenancy'
@@ -355,13 +356,68 @@ public sealed class SqlServerSafetyTests
             """;
         await using var reader = await command.ExecuteReaderAsync();
         Assert.True(await reader.ReadAsync());
-        Assert.Equal(21, reader.GetInt32(0));
+        Assert.Equal(28, reader.GetInt32(0));
         Assert.True(await reader.NextResultAsync());
         Assert.True(await reader.ReadAsync());
         Assert.Equal(1, reader.GetInt32(0));
         Assert.True(await reader.NextResultAsync());
         Assert.True(await reader.ReadAsync());
         Assert.Equal(1, reader.GetInt32(0));
+    }
+
+    [Fact]
+    public async Task MESP131_sql_server_uses_durable_company_ledger_sequence_for_legacy_and_new_movement_shape()
+    {
+        var options = new DbContextOptionsBuilder().UseSqlServer(await GetConnectionStringAsync()).Options;
+        var tenantId = _fixture.TenantA.TenantId;
+        var companyId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        var firstId = Guid.NewGuid();
+        var secondId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        await using (var db = new InventoryDbContext(options, _fixture.TenantA))
+        {
+            db.StockMovements.AddRange(
+                new InventoryStockMovementEntity(
+                    tenantId, firstId, companyId, null, warehouseId, "WH-MWA", "MWA warehouse", productId,
+                    "SKU-MWA", "MWA product", unitId, "EA", InventoryMovementDirection.Inbound, 10m, 10m, "SAR",
+                    InventoryValuationStatus.Known, null, InventoryMovementSourceType.OpeningBalance, Guid.NewGuid(), Guid.NewGuid(), null,
+                    DateOnly.FromDateTime(DateTime.UtcNow), actorId, "sql-mesp131-first", DateTimeOffset.UtcNow),
+                new InventoryStockMovementEntity(
+                    tenantId, secondId, companyId, null, warehouseId, "WH-MWA", "MWA warehouse", productId,
+                    "SKU-MWA", "MWA product", unitId, "EA", InventoryMovementDirection.Inbound, 5m, 20m, "SAR",
+                    InventoryValuationStatus.Known, null, InventoryMovementSourceType.StockAdjustment, Guid.NewGuid(), Guid.NewGuid(), null,
+                    DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)), actorId, "sql-mesp131-second", DateTimeOffset.UtcNow.AddDays(-10)));
+            await db.SaveChangesAsync();
+        }
+
+        await using var connection = new SqlConnection(await GetConnectionStringAsync());
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT [Id], [LedgerSequence]
+            FROM [inventory].[StockLedgerMovements]
+            WHERE [TenantId] = @tenantId AND [CompanyId] = @companyId
+            ORDER BY [LedgerSequence];
+            SELECT [NextSequence]
+            FROM [inventory].[CompanyLedgerSequenceAnchors]
+            WHERE [TenantId] = @tenantId AND [CompanyId] = @companyId;
+            """;
+        command.Parameters.AddWithValue("@tenantId", tenantId.Value);
+        command.Parameters.AddWithValue("@companyId", companyId);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(firstId, reader.GetGuid(0));
+        Assert.Equal(1L, reader.GetInt64(1));
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(secondId, reader.GetGuid(0));
+        Assert.Equal(2L, reader.GetInt64(1));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(3L, reader.GetInt64(0));
     }
 
     [Fact]

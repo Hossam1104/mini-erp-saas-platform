@@ -165,7 +165,26 @@ public sealed class InventoryResourceAuthorizationService
     public bool IsAllowed(InventoryRequestContext context, string operationId, Guid tenantId, Guid companyId, Guid? branchId, Guid warehouseId) =>
         IsAllowed(context, operationId, new InventoryScope(tenantId, companyId, branchId, warehouseId));
 
-    private static bool ScopeAllows(ScopeReference? trustedScope, InventoryScope target)
+    public bool IsCompanyAllowed(InventoryRequestContext context, string operationId, Guid tenantId, Guid companyId, Guid? branchId)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        if (tenantId != context.TenantId.Value
+            || !FoundationOperationCatalog.TryGet(operationId, out var descriptor)
+            || descriptor.SecurityProfile is not FoundationSecurityProfile.OrdinaryMembership
+                and not FoundationSecurityProfile.SupportGrant
+            || descriptor.ExactPermissionCode is null
+            || context.AuthorizationPath != (descriptor.SecurityProfile == FoundationSecurityProfile.OrdinaryMembership
+                ? TenantAuthorizationPath.OrdinaryMembership
+                : TenantAuthorizationPath.SupportGrant)
+            || !string.Equals(context.FoundationContext.Permission, descriptor.ExactPermissionCode, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return ScopeAllows(context.TrustedScope, new InventoryScope(tenantId, companyId, branchId, Guid.Empty), allowWarehouseScope: false);
+    }
+
+    private static bool ScopeAllows(ScopeReference? trustedScope, InventoryScope target, bool allowWarehouseScope = true)
     {
         if (trustedScope is null)
         {
@@ -190,7 +209,7 @@ public sealed class InventoryResourceAuthorizationService
             return target.BranchId == branchId;
         }
 
-        if (value.StartsWith("Warehouse:", StringComparison.OrdinalIgnoreCase)
+        if (allowWarehouseScope && value.StartsWith("Warehouse:", StringComparison.OrdinalIgnoreCase)
             && Guid.TryParse(value["Warehouse:".Length..], out var warehouseId))
         {
             return target.WarehouseId == warehouseId;

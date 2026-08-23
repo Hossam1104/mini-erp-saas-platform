@@ -24,6 +24,42 @@ public enum InventoryValuationStatus
     Pending = 2
 }
 
+public enum InventoryValuationEventStatus
+{
+    Pending = 1,
+    Applied = 2,
+    Blocked = 3
+}
+
+public enum InventoryValuationScopeMode
+{
+    WarehouseProductUom = 1,
+    WarehouseProductUomTracking = 2
+}
+
+public enum InventoryValuationRoundingMode
+{
+    ToEven = 1,
+    AwayFromZero = 2
+}
+
+public enum InventoryValuationReconciliationStatus
+{
+    Reconciled = 1,
+    PendingValuation = 2,
+    Blocked = 3,
+    QuantityMismatch = 4,
+    ValuationMismatch = 5,
+    FinanceHandoffPending = 6
+}
+
+public enum InventoryFinanceValuationHandoffStatus
+{
+    NotConfigured = 1,
+    Pending = 2,
+    ReadyForFinance = 3
+}
+
 public enum InventoryMovementDirection
 {
     Inbound = 1,
@@ -236,7 +272,226 @@ public sealed record InventoryMovementRecord(
     Guid? PurchaseOrderLineId = null,
     Guid? TransferId = null,
     Guid? TransferLineId = null,
-    string? SourceReference = null);
+    string? SourceReference = null,
+    long LedgerSequence = 0);
+
+public sealed record InventoryValuationPolicyRequest(
+    Guid CompanyId,
+    Guid FunctionalCurrencyId,
+    string FunctionalCurrencyCode,
+    InventoryValuationScopeMode ScopeMode,
+    DateOnly EffectiveFrom,
+    DateOnly? EffectiveTo = null,
+    int UnitCostScale = 8,
+    int AmountScale = 8,
+    InventoryValuationRoundingMode RoundingMode = InventoryValuationRoundingMode.ToEven,
+    string GoodsReceiptCostBasis = "PurchaseOrderUnitPrice",
+    string PositiveAdjustmentCostBasis = "CurrentMovingAverage",
+    string SupplierReturnCostBasis = "CurrentMovingAverage");
+
+public sealed record InventoryValuationProcessRequest(
+    Guid CompanyId,
+    Guid? BranchId = null,
+    Guid? WarehouseId = null,
+    Guid? ProductId = null,
+    Guid? UnitOfMeasureId = null,
+    string? TrackingIdentity = null,
+    DateOnly? AsOfDate = null);
+
+public sealed record InventoryValuationCorrectionRequest(
+    Guid AuthoritativeSourceRevisionId,
+    string Reason);
+
+public sealed record InventoryValuationPolicyRecord(
+    Guid Id,
+    Guid TenantId,
+    Guid CompanyId,
+    Guid FunctionalCurrencyId,
+    string FunctionalCurrencyCode,
+    InventoryValuationScopeMode ScopeMode,
+    DateOnly EffectiveFrom,
+    DateOnly? EffectiveTo,
+    int VersionNumber,
+    int UnitCostScale,
+    int AmountScale,
+    InventoryValuationRoundingMode RoundingMode,
+    string GoodsReceiptCostBasis,
+    string PositiveAdjustmentCostBasis,
+    string SupplierReturnCostBasis,
+    bool IsActive,
+    byte[] Version);
+
+public sealed record InventoryValuationStateRecord(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid WarehouseId,
+    Guid ProductId,
+    Guid UnitOfMeasureId,
+    string? TrackingIdentity,
+    Guid PolicyId,
+    int PolicyVersionNumber,
+    string FunctionalCurrencyCode,
+    decimal Quantity,
+    decimal Value,
+    decimal AverageUnitCost,
+    long LastAppliedLedgerSequence,
+    DateTimeOffset UpdatedAt,
+    byte[] Version);
+
+public sealed record InventoryMovementValuationEventRecord(
+    Guid Id,
+    Guid TenantId,
+    Guid MovementId,
+    InventoryMovementSourceType SourceType,
+    Guid SourceDocumentId,
+    Guid SourceLineId,
+    Guid? CorrectionOfMovementId,
+    Guid? GoodsReceiptId,
+    Guid? GoodsReceiptLineId,
+    Guid? SupplierReturnId,
+    Guid? SupplierReturnLineId,
+    Guid? PurchaseOrderId,
+    Guid? PurchaseOrderLineId,
+    Guid? TransferId,
+    Guid? TransferLineId,
+    string? SourceReference,
+    long LedgerSequence,
+    InventoryValuationEventStatus Status,
+    string StatusCode,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid WarehouseId,
+    Guid ProductId,
+    Guid UnitOfMeasureId,
+    string? TrackingIdentity,
+    Guid PolicyId,
+    int PolicyVersionNumber,
+    string FunctionalCurrencyCode,
+    decimal Quantity,
+    InventoryMovementDirection Direction,
+    decimal? TransactionUnitCost,
+    string? TransactionCurrencyCode,
+    Guid? ExchangeRateId,
+    Guid? ExchangeRateVersionId,
+    int? ExchangeRateVersionNumber,
+    decimal? ExchangeRate,
+    int? ExchangeRateScale,
+    string? ExchangeRateProvenance,
+    DateOnly EffectiveOn,
+    decimal? BaseUnitCost,
+    decimal PriorQuantity,
+    decimal PriorValue,
+    decimal NewQuantity,
+    decimal NewValue,
+    decimal? MovementValue,
+    int UnitCostScale,
+    int AmountScale,
+    InventoryValuationRoundingMode RoundingMode,
+    Guid? CorrectionOfValuationEventId,
+    Guid? SourceRevisionId,
+    bool IsBackdated,
+    string? PendingReason,
+    string CorrelationId,
+    Guid ActorId,
+    DateTimeOffset OccurredAt,
+    byte[] Version);
+
+public sealed record InventoryValuationProcessResult(
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid? WarehouseId,
+    Guid? ProductId,
+    int AppliedCount,
+    int PendingCount,
+    int BlockedCount,
+    long? LatestLedgerSequence,
+    DateTimeOffset AsOf,
+    string FunctionalCurrencyCode,
+    string? PolicyId,
+    string? Message);
+
+public sealed record InventoryValuationReconciliationRecord(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid WarehouseId,
+    Guid ProductId,
+    Guid UnitOfMeasureId,
+    string? TrackingIdentity,
+    string FunctionalCurrencyCode,
+    Guid? PolicyId,
+    InventoryValuationReconciliationStatus Status,
+    decimal PhysicalOnHandQuantity,
+    decimal ValuedQuantity,
+    decimal QuantityDifference,
+    decimal ValuedAmount,
+    decimal AverageUnitCost,
+    long? LatestLedgerSequence,
+    long LastAppliedLedgerSequence,
+    int EligibleMovementCount,
+    int AppliedMovementCount,
+    int PendingMovementCount,
+    int BlockedMovementCount,
+    long? OldestPendingLedgerSequence,
+    decimal InTransitQuantity,
+    decimal InTransitValue,
+    InventoryFinanceValuationHandoffStatus FinanceHandoffStatus,
+    DateTimeOffset AsOf,
+    DateTimeOffset FreshAsOf,
+    string? DifferenceReason);
+
+public sealed record InventoryValuationExportRecord(
+    string FileName,
+    string ContentType,
+    string Content,
+    Guid TenantId,
+    Guid CompanyId,
+    string FunctionalCurrencyCode,
+    Guid? PolicyId,
+    int? PolicyVersionNumber,
+    DateTimeOffset AsOf,
+    DateTimeOffset FreshAsOf,
+    Guid ActorId,
+    string CorrelationId);
+
+public sealed record InventoryFinanceValuationHandoffRecord(
+    Guid Id,
+    Guid TenantId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid WarehouseId,
+    Guid MovementId,
+    long LedgerSequence,
+    InventoryMovementSourceType SourceType,
+    Guid SourceDocumentId,
+    Guid SourceLineId,
+    Guid ValuationEvidenceId,
+    int ValuationEvidenceVersion,
+    decimal Quantity,
+    decimal BaseUnitCost,
+    decimal BaseAmount,
+    Guid PolicyId,
+    int PolicyVersionNumber,
+    string FunctionalCurrencyCode,
+    decimal? TransactionUnitCost,
+    string? TransactionCurrencyCode,
+    Guid? ExchangeRateId,
+    Guid? ExchangeRateVersionId,
+    int? ExchangeRateVersionNumber,
+    decimal? ExchangeRate,
+    int? ExchangeRateScale,
+    string? ExchangeRateProvenance,
+    Guid ProductId,
+    Guid UnitOfMeasureId,
+    string? TrackingIdentity,
+    Guid? CorrectionOfMovementId,
+    InventoryFinanceValuationHandoffStatus Status,
+    string ContractVersion,
+    string CorrelationId,
+    DateTimeOffset AsOf,
+    DateTimeOffset CreatedAt,
+    byte[] Version);
 
 public sealed record InventoryAvailabilityRecord(
     Guid TenantId,
