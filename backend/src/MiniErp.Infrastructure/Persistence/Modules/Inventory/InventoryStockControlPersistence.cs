@@ -243,13 +243,50 @@ internal sealed partial class InventoryPersistence
         await using var db = CreateContext(context); await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         try
         {
-            var replay = await ProbeReplayAsync<InventoryCountRecord>(db, context, "inventory.count.create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay.Outcome == InventoryReplayOutcome.Replay) return replay.Value; if (replay.Outcome == InventoryReplayOutcome.Conflict || command.Lines.Count == 0) return null;
-            var identities = command.Lines.Select(line => new StockIdentityKey(command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, line.ProductId, line.UnitOfMeasureId, line.TrackingIdentity)).Distinct().ToArray();
+            var replay = await ProbeReplayAsync<InventoryCountRecord>(db, context, "inventory.count.create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay.Outcome == InventoryReplayOutcome.Replay) return replay.Value; if (replay.Outcome == InventoryReplayOutcome.Conflict) return null;
+            var requestedByIdentity = command.Lines
+                .Select(line => (Identity: new StockIdentityKey(command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, line.ProductId, line.UnitOfMeasureId, line.TrackingIdentity), Line: line))
+                .ToArray();
+            if (requestedByIdentity.Select(item => item.Identity).Distinct().Count() != requestedByIdentity.Length) return null;
+
+            // For Full Count this is the authoritative warehouse identity universe.
+            // It is deliberately read after the Serializable transaction has begun and
+            // before anchors, expected quantities, cutoff, and the header are persisted.
+            var authoritativeLedgerRows = command.CountType == InventoryCountType.Full
+                ? await ReadFullCountLedgerRowsAsync(db, command.Scope, cancellationToken)
+                : [];
+            var authoritativeByIdentity = authoritativeLedgerRows
+                .GroupBy(item => item.Identity)
+                .Select(group => group.OrderBy(item => item.MovementId).First())
+                .ToDictionary(item => item.Identity);
+            var selectedLines = new List<InventoryCountLineCommand>(authoritativeByIdentity.Count + requestedByIdentity.Length);
+            foreach (var row in authoritativeByIdentity.Values.OrderBy(item => item.Identity, StockIdentityComparer.Instance))
+            {
+                var product = new InventoryProductReference(
+                    context.TenantId.Value,
+                    row.Identity.ProductId,
+                    row.ProductSku,
+                    row.ProductName,
+                    row.Identity.UnitOfMeasureId,
+                    row.UnitOfMeasureCode,
+                    IsActive: true,
+                    IsInventoryRelevant: true,
+                    TrackingEnabled: !string.IsNullOrEmpty(row.Identity.TrackingKey));
+                selectedLines.Add(requestedByIdentity.FirstOrDefault(item => item.Identity == row.Identity).Line is { } requested
+                    ? requested with { Product = product, UnitOfMeasureId = row.Identity.UnitOfMeasureId, TrackingIdentity = row.Identity.TrackingKey }
+                    : new InventoryCountLineCommand(Guid.NewGuid(), null, 1, row.Identity.ProductId, row.Identity.UnitOfMeasureId, row.Identity.TrackingKey, 0m, product));
+            }
+            selectedLines.AddRange(requestedByIdentity
+                .Where(item => !authoritativeByIdentity.ContainsKey(item.Identity))
+                .Select(item => item.Line));
+            if (selectedLines.Count == 0 || selectedLines.Count > 5000) return null;
+
+            var identities = selectedLines.Select(line => new StockIdentityKey(command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, line.ProductId, line.UnitOfMeasureId, line.TrackingIdentity)).Distinct().ToArray();
             await AcquireConcurrencyAnchorsAsync(db, context.TenantId, identities, cancellationToken);
             var expectedByIdentity = await ReadAvailabilityByIdentityAsync(db, identities, cancellationToken);
             var cutoff = DateTimeOffset.UtcNow;
             var entity = new InventoryCountEntity(context.TenantId, command.Id, command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, command.WarehouseCode, command.WarehouseName, command.CountType, command.AssignedCounterId, command.ReviewerId, cutoff, command.ActorId, command.OccurredAt, command.ApprovalPolicyJson);
-            foreach (var line in command.Lines)
+            foreach (var line in selectedLines)
             {
                 var identity = new StockIdentityKey(command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, line.ProductId, line.UnitOfMeasureId, line.TrackingIdentity);
                 entity.Lines.Add(new InventoryCountLineEntity(context.TenantId, line.Id, entity.Id, line.PriorLineId, line.RoundGeneration, line.ProductId, line.Product.Sku, line.Product.Name, line.UnitOfMeasureId, line.Product.BaseUnitOfMeasureCode, line.TrackingIdentity, expectedByIdentity[identity].OnHand));
@@ -415,6 +452,7 @@ internal sealed partial class InventoryPersistence
             var recentMovements = (await db.StockMovements.AsNoTracking().Where(item => item.CompanyId == entity.CompanyId && item.BranchId == entity.BranchId && item.WarehouseId == entity.WarehouseId).ToListAsync(cancellationToken))
                 .Where(item => item.PostedAt > entity.SnapshotCutoff)
                 .Select(item => new StockIdentityKey(item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingIdentity ?? string.Empty))
+                .Where(identity => entity.CountType == InventoryCountType.Full || identities.Contains(identity))
                 .ToList();
             if (recentMovements.Count > 0)
             {
@@ -493,6 +531,47 @@ internal sealed partial class InventoryPersistence
     private static void AddControlHistory(InventoryDbContext db, InventoryRequestContext context, string resourceType, Guid resourceId, Guid? lineId, InventoryControlHistoryAction action, InventoryControlDocumentStatus from, InventoryControlDocumentStatus to, Guid actorId, Guid? delegatedFrom, string? reason, string correlationId, int generation, DateTimeOffset at) => db.ControlHistory.Add(new InventoryControlHistoryEntity(context.TenantId, Guid.NewGuid(), resourceType, resourceId, lineId, action, from, to, actorId, delegatedFrom, reason, correlationId, generation, at));
     private static InventoryStockMovementEntity NewControlMovement(InventoryRequestContext context, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, Guid productId, string sku, string name, Guid uomId, string uomCode, InventoryMovementDirection direction, decimal quantity, string trackingIdentity, InventoryMovementSourceType sourceType, Guid sourceDocumentId, Guid sourceLineId, Guid? correctionOfMovementId, DateTimeOffset at, string? sourceReference) => new(context.TenantId, Guid.NewGuid(), companyId, branchId, warehouseId, warehouseCode, warehouseName, productId, sku, name, uomId, uomCode, direction, quantity, null, null, InventoryValuationStatus.Pending, string.IsNullOrEmpty(trackingIdentity) ? null : trackingIdentity, sourceType, sourceDocumentId, sourceLineId, correctionOfMovementId, DateOnly.FromDateTime(at.UtcDateTime), context.ActorId, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), at, sourceReference: sourceReference);
     private static async Task<Dictionary<StockIdentityKey, (decimal OnHand, decimal Reserved)>> ReadAvailabilityByIdentityAsync(InventoryDbContext db, IEnumerable<StockIdentityKey> identities, CancellationToken cancellationToken) { var result = new Dictionary<StockIdentityKey, (decimal, decimal)>(); foreach (var identity in identities.Distinct()) result[identity] = (await SignedQuantityAsync(db, identity, cancellationToken), await ActiveReservedQuantityAsync(db, identity, cancellationToken)); return result; }
+
+    private static async Task<IReadOnlyList<FullCountLedgerRow>> ReadFullCountLedgerRowsAsync(InventoryDbContext db, InventoryScope scope, CancellationToken cancellationToken) =>
+        await db.StockMovements
+            .AsNoTracking()
+            .Where(item => item.CompanyId == scope.CompanyId && item.BranchId == scope.BranchId && item.WarehouseId == scope.WarehouseId)
+            .Select(item => new FullCountLedgerRow(
+                item.Id,
+                new StockIdentityKey(item.CompanyId, item.BranchId, item.WarehouseId, item.ProductId, item.UnitOfMeasureId, item.TrackingIdentity ?? string.Empty),
+                item.ProductSku,
+                item.ProductName,
+                item.UnitOfMeasureCode))
+            .ToListAsync(cancellationToken);
+
+    private sealed record FullCountLedgerRow(
+        Guid MovementId,
+        StockIdentityKey Identity,
+        string ProductSku,
+        string ProductName,
+        string UnitOfMeasureCode);
+
+    private sealed class StockIdentityComparer : IComparer<StockIdentityKey>
+    {
+        internal static readonly StockIdentityComparer Instance = new();
+
+        public int Compare(StockIdentityKey? left, StockIdentityKey? right)
+        {
+            if (ReferenceEquals(left, right)) return 0;
+            if (left is null) return -1;
+            if (right is null) return 1;
+            var result = left.CompanyId.CompareTo(right.CompanyId);
+            if (result != 0) return result;
+            result = Nullable.Compare(left.BranchId, right.BranchId);
+            if (result != 0) return result;
+            result = left.WarehouseId.CompareTo(right.WarehouseId);
+            if (result != 0) return result;
+            result = left.ProductId.CompareTo(right.ProductId);
+            if (result != 0) return result;
+            result = left.UnitOfMeasureId.CompareTo(right.UnitOfMeasureId);
+            return result != 0 ? result : StringComparer.Ordinal.Compare(left.TrackingKey, right.TrackingKey);
+        }
+    }
 }
 
 #pragma warning restore CS1591

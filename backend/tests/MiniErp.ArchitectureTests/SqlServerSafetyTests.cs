@@ -1160,6 +1160,124 @@ public sealed class SqlServerSafetyTests
         }
     }
 
+    private sealed class FullCountLedgerQueryGate : DbCommandInterceptor
+    {
+        private readonly TaskCompletionSource<bool> entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int signaled;
+
+        internal Task WaitAsync() => entered.Task.WaitAsync(TimeSpan.FromSeconds(15));
+
+        internal void Release() => release.TrySetResult(true);
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.Contains("[StockLedgerMovements]", StringComparison.OrdinalIgnoreCase)
+                && command.CommandText.Contains("[ProductSku]", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Interlocked.Exchange(ref signaled, 1) == 0)
+                {
+                    return PauseAsync(result, cancellationToken);
+                }
+            }
+
+            return ValueTask.FromResult(result);
+        }
+
+        private async ValueTask<InterceptionResult<DbDataReader>> PauseAsync(
+            InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken)
+        {
+            entered.TrySetResult(true);
+            await release.Task.WaitAsync(TimeSpan.FromSeconds(15), cancellationToken);
+            return result;
+        }
+    }
+
+    [Fact]
+    public async Task MESP130_sql_server_full_count_boundary_never_saves_a_cutoff_after_an_omitted_identity()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var seedOptions = new DbContextOptionsBuilder().UseSqlServer(connectionString).Options;
+        var tenantId = _fixture.TenantA.TenantId;
+        var companyId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var productAId = Guid.NewGuid();
+        var unitAId = Guid.NewGuid();
+        var productBId = Guid.NewGuid();
+        var unitBId = Guid.NewGuid();
+        var warehouse = new InventoryWarehouseOption(tenantId.Value, companyId, null, warehouseId, "WH-FULL-RACE", "Full Count race warehouse");
+        var productA = new InventoryProductReference(tenantId.Value, productAId, "SKU-FULL-A", "Full Count product A", unitAId, "EA", true, true, false);
+        var productB = new InventoryProductReference(tenantId.Value, productBId, "SKU-FULL-B", "Full Count product B", unitBId, "EA", true, true, false);
+        var context = InventoryContext(_fixture.TenantA);
+        var scope = new InventoryScope(tenantId.Value, companyId, null, warehouseId);
+
+        await using (var seedDb = new InventoryDbContext(seedOptions, _fixture.TenantA))
+        {
+            seedDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId, Guid.NewGuid(), companyId, null, warehouseId, warehouse.Code, warehouse.Name,
+                productAId, productA.Sku, productA.Name, unitAId, unitAId == Guid.Empty ? "EA" : productA.BaseUnitOfMeasureCode,
+                InventoryMovementDirection.Inbound, 5m, null, null, InventoryValuationStatus.Pending, null,
+                InventoryMovementSourceType.OpeningBalance, Guid.NewGuid(), Guid.NewGuid(), null,
+                DateOnly.FromDateTime(DateTime.UtcNow), context.ActorId, "sql-full-race-seed-a", DateTimeOffset.UtcNow));
+            await seedDb.SaveChangesAsync();
+        }
+
+        var gate = new FullCountLedgerQueryGate();
+        var operationOptions = new DbContextOptionsBuilder()
+            .UseSqlServer(connectionString, sql => sql.CommandTimeout(15))
+            .AddInterceptors(gate)
+            .Options;
+        var persistence = new InventoryPersistence(operationOptions);
+        var createTask = persistence.CreateCountAsync(
+            context,
+            new InventoryCountCreateCommand(
+                Guid.NewGuid(), scope, warehouse.Code, warehouse.Name, InventoryCountType.Full, context.ActorId, null,
+                [new InventoryCountLineCommand(Guid.NewGuid(), null, 1, productAId, unitAId, "", 0m, productA)],
+                DateTimeOffset.UtcNow, context.ActorId, DateTimeOffset.UtcNow, "sql-full-race-create", "sql-full-race-key", "sql-full-race-fingerprint"));
+        await gate.WaitAsync();
+
+        var movementTask = Task.Run(async () =>
+        {
+            await using var movementDb = new InventoryDbContext(seedOptions, _fixture.TenantA);
+            movementDb.StockMovements.Add(new InventoryStockMovementEntity(
+                tenantId, Guid.NewGuid(), companyId, null, warehouseId, warehouse.Code, warehouse.Name,
+                productBId, productB.Sku, productB.Name, unitBId, productB.BaseUnitOfMeasureCode,
+                InventoryMovementDirection.Inbound, 3m, null, null, InventoryValuationStatus.Pending, null,
+                InventoryMovementSourceType.StockAdjustment, Guid.NewGuid(), Guid.NewGuid(), null,
+                DateOnly.FromDateTime(DateTime.UtcNow), context.ActorId, "sql-full-race-boundary-b", DateTimeOffset.UtcNow));
+            await movementDb.SaveChangesAsync();
+        });
+        await Task.Yield();
+        gate.Release();
+        var created = Assert.IsType<InventoryCountRecord>(await createTask.WaitAsync(TimeSpan.FromSeconds(30)));
+        await movementTask.WaitAsync(TimeSpan.FromSeconds(30));
+
+        var discovered = created.Lines.SingleOrDefault(item => item.ProductId == productBId);
+        if (discovered is not null)
+        {
+            Assert.Equal(3m, discovered.ExpectedQuantity);
+            return;
+        }
+
+        var persistenceAfterBoundary = new InventoryPersistence(seedOptions);
+        var submitted = Assert.IsType<InventoryCountRecord>(await persistenceAfterBoundary.SubmitCountAsync(
+            context,
+            new InventoryCountSubmitCommand(
+                created.Id, created.Version,
+                created.Lines.Select(item => new InventoryCountObservationRequest(item.Id, item.ExpectedQuantity ?? 0m)).ToArray(),
+                context.ActorId, "sql-full-race-submit", "sql-full-race-submit-fingerprint", "sql-full-race-submit-correlation", DateTimeOffset.UtcNow)));
+        var post = Assert.IsType<InventoryCountRecord>(await persistenceAfterBoundary.PostCountAsync(
+            context,
+            new InventoryControlActionCommand(
+                submitted.Id, submitted.Version, context.ActorId, "sql full race", null, "sql-full-race-post-correlation", "sql-full-race-post", "sql-full-race-post-fingerprint", DateTimeOffset.UtcNow)));
+        Assert.Equal(InventoryControlDocumentStatus.ResnapshotRequired, post.Status);
+    }
+
     [Fact]
     public async Task MESP130_sql_server_correction_index_allows_one_direct_correction_only()
     {

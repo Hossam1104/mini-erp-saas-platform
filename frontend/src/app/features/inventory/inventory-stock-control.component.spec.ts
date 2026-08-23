@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { LanguageService } from '../../core/i18n/language.service';
 import { MasterDataService } from '../master-data/master-data.service';
 import { InventoryStockControlComponent } from './inventory-stock-control.component';
 import { InventoryService } from './inventory.service';
@@ -63,5 +64,14 @@ describe('InventoryStockControlComponent', () => {
     await component.loadAdjustmentHistory('adjustment-1');
     expect(component.historyFor('adjustment-1')).toHaveLength(1);
     expect(component.isEligibleCorrection({ ...movement, sourceType: 'GoodsReceipt' })).toBe(false);
+  });
+
+  it('renders the Stock Control surface in Arabic and applies RTL document settings', () => {
+    const language = TestBed.inject(LanguageService);
+    language.setLanguage('ar');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain(component.stockText('stockControlTitle'));
+    expect(document.documentElement.dir).toBe('rtl');
+    language.setLanguage('en');
   });
 });

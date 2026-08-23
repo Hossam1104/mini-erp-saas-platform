@@ -5,7 +5,7 @@
 MESP-129 is Done. MESP-130 Sol acceptance remediation is implemented at its
 bounded Stock Adjustment, Inventory Count, Stock Issue, and eligible correction
 scope on branch `feat/MESP-130-stock-control-corrections`, from the exact
-required start SHA `88eac382213c86e9d816fee0232b9e917c5d104d` and main base
+required start SHA `fd3db1ae842f3abba1cb4880200b6b6dac5f379d` and main base
 `6f6d204726cc4baf9979961ea6936c0d03e93e32`. The remediation implementation
 commit is `3320cf284d64a58be7fb0f00ac654ee7a11d7b00`. Draft PR #74 remains Open,
 Draft, and unmerged. Jira is read-only; no Jira writes were performed.
@@ -31,17 +31,17 @@ behavior was added. Return-for-change is not exposed in the bounded UI because
 there is no edit/resubmit contract; unsupported physical sources remain
 uncorrectable. Owner-managed `frontend/assets` remains untouched.
 
-Validation: focused Inventory/MESP-130 `6/6`; REST/OpenAPI `33/33`; SQL Server
-safety `30/30` through disposable LocalDB; full backend `903/903` passed with
-0 failed and 0 skipped; Angular `245/245` across 33 spec files; focused
-MESP-130 Chromium `1/1`; full Chromium `27/27`; both npm audits report 0
-vulnerabilities; production initial bundle `499.97 kB`, Inventory lazy chunk
-`69.05 kB`, Supplier Quotation lazy chunk `91.94 kB`; final Release build
+Validation: focused Inventory/MESP-130 `10/10`; SQL Server safety `31/31`
+through disposable LocalDB; full backend `908/908` passed with 0 failed and 0
+skipped; Angular `246/246` across 33 spec files; focused MESP-130 Chromium
+`1/1`; full Chromium `27/27`; both npm audits report 0 vulnerabilities;
+production initial bundle `499.81 kB`, Inventory lazy chunk `90.11 kB`,
+Supplier Quotation lazy chunk `91.94 kB`; final Release build
 `0` warnings/`0` errors. `git diff --check` is clean before the documentation
 handoff commit.
 
-The mandatory runtime is `http://localhost:5300` backend PID `23588` and
-`http://localhost:4300` frontend PID `39252`; `/health`, `/`, and `/main.js`
+The mandatory runtime is `http://localhost:5300` backend PID `20036` and
+`http://localhost:4300` frontend PID `34964`; `/health`, `/`, and `/main.js`
 returned HTTP 200 and both processes remain alive. The supported loopback-only
 Development bypass was used without printing credentials. Production-readiness
 remains approximately 47% overall and 41% Procurement/P2P pending Sol

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Inventory;
+using MiniErp.App.Modules.Procurement;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
 using MiniErp.Contracts.Modules.Procurement;
@@ -24,6 +25,8 @@ public sealed class InventoryStockControlTests
     private static readonly Guid UnitB = Guid.Parse("88888888-8888-8888-8888-888888888889");
     private static readonly Guid Actor = Guid.Parse("44444444-4444-4444-4444-444444444444");
     private static readonly Guid Actor2 = Guid.Parse("44444444-4444-4444-4444-444444444445");
+    private static readonly Guid Actor3 = Guid.Parse("44444444-4444-4444-4444-444444444446");
+    private static readonly Guid Actor4 = Guid.Parse("44444444-4444-4444-4444-444444444447");
 
     [Fact]
     public async Task Adjustment_posting_is_tenant_scoped_immutable_and_durablely_replayable()
@@ -273,6 +276,176 @@ public sealed class InventoryStockControlTests
         Assert.Contains(resnapshot.Lines, item => !item.IsCurrentRound && item.ProductId == ProductA && item.CountedQuantity == 5m);
     }
 
+    [Fact]
+    public async Task Full_count_creation_discovers_existing_ledger_identities_inside_the_persistence_snapshot()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureCreatedAsync(options, context);
+        await SeedStockAsync(options, context, 5m);
+        await SeedMovementAsync(options, context, ProductB, UnitB, "SKU-B", "Product B", 2m, "full-discovery");
+        var persistence = new InventoryPersistence(options);
+
+        var created = Assert.IsType<InventoryCountRecord>(await persistence.CreateCountAsync(
+            context,
+            new InventoryCountCreateCommand(
+                Guid.NewGuid(), scope, "WH-A", "Warehouse A", InventoryCountType.Full, Actor, null,
+                [new InventoryCountLineCommand(Guid.NewGuid(), null, 1, ProductA, UnitA, "", 0m, Product())],
+                DateTimeOffset.UtcNow, Actor, DateTimeOffset.UtcNow, "full-discovery-correlation", "full-discovery-key", "full-discovery-fp")));
+
+        Assert.Equal(2, created.Lines.Count);
+        var discovered = Assert.Single(created.Lines, line => line.ProductId == ProductB);
+        Assert.Equal("SKU-B", discovered.ProductSku);
+        Assert.Equal("Product B", discovered.ProductName);
+        Assert.Equal(UnitB, discovered.UnitOfMeasureId);
+        Assert.Equal("EA", discovered.UnitOfMeasureCode);
+        Assert.Equal(2m, discovered.ExpectedQuantity);
+    }
+
+    [Fact]
+    public async Task Cycle_count_only_invalidates_for_selected_identity_movements()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureCreatedAsync(options, context);
+        await SeedStockAsync(options, context, 5m);
+        var persistence = new InventoryPersistence(options);
+
+        var unrelatedCount = Assert.IsType<InventoryCountRecord>(await persistence.CreateCountAsync(
+            context,
+            new InventoryCountCreateCommand(
+                Guid.NewGuid(), scope, "WH-A", "Warehouse A", InventoryCountType.Cycle, Actor, null,
+                [new InventoryCountLineCommand(Guid.NewGuid(), null, 1, ProductA, UnitA, "", 0m, Product())],
+                DateTimeOffset.UtcNow, Actor, DateTimeOffset.UtcNow, "cycle-unrelated-correlation", "cycle-unrelated-key", "cycle-unrelated-fp")));
+        await SeedMovementAsync(options, context, ProductB, UnitB, "SKU-B", "Product B", 2m, "cycle-unrelated-movement");
+        var unrelatedSubmitted = Assert.IsType<InventoryCountRecord>(await persistence.SubmitCountAsync(
+            context,
+            new InventoryCountSubmitCommand(
+                unrelatedCount.Id, unrelatedCount.Version,
+                [new InventoryCountObservationRequest(Assert.Single(unrelatedCount.Lines).Id, 5m)],
+                Actor, "cycle-unrelated-submit", "cycle-unrelated-submit-fp", "cycle-unrelated-submit-correlation", DateTimeOffset.UtcNow)));
+        var unrelatedPosted = Assert.IsType<InventoryCountRecord>(await persistence.PostCountAsync(
+            context, Action(unrelatedSubmitted.Id, unrelatedSubmitted.Version, "cycle-unrelated-post", "cycle-unrelated-post-fp", DateTimeOffset.UtcNow)));
+        Assert.Equal(InventoryControlDocumentStatus.Posted, unrelatedPosted.Status);
+
+        var selectedCount = Assert.IsType<InventoryCountRecord>(await persistence.CreateCountAsync(
+            context,
+            new InventoryCountCreateCommand(
+                Guid.NewGuid(), scope, "WH-A", "Warehouse A", InventoryCountType.Cycle, Actor, null,
+                [new InventoryCountLineCommand(Guid.NewGuid(), null, 1, ProductA, UnitA, "", 0m, Product())],
+                DateTimeOffset.UtcNow, Actor, DateTimeOffset.UtcNow, "cycle-selected-correlation", "cycle-selected-key", "cycle-selected-fp")));
+        await SeedMovementAsync(options, context, ProductA, UnitA, "SKU-A", "Product A", 1m, "cycle-selected-movement");
+        var selectedSubmitted = Assert.IsType<InventoryCountRecord>(await persistence.SubmitCountAsync(
+            context,
+            new InventoryCountSubmitCommand(
+                selectedCount.Id, selectedCount.Version,
+                [new InventoryCountObservationRequest(Assert.Single(selectedCount.Lines).Id, 5m)],
+                Actor, "cycle-selected-submit", "cycle-selected-submit-fp", "cycle-selected-submit-correlation", DateTimeOffset.UtcNow)));
+        var selectedPost = Assert.IsType<InventoryCountRecord>(await persistence.PostCountAsync(
+            context, Action(selectedSubmitted.Id, selectedSubmitted.Version, "cycle-selected-post", "cycle-selected-post-fp", DateTimeOffset.UtcNow)));
+        Assert.Equal(InventoryControlDocumentStatus.ResnapshotRequired, selectedPost.Status);
+    }
+
+    [Fact]
+    public async Task Adjustment_approval_requires_two_distinct_eligible_actors_and_records_valid_delegation()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var persistence = new InventoryPersistence(options);
+        var context = Context(TenantA);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureCreatedAsync(options, context);
+        var at = DateTimeOffset.UtcNow;
+        var reason = Assert.IsType<InventoryReasonCodeRecord>(await persistence.CreateReasonCodeAsync(
+            context,
+            new InventoryReasonCodeCommand(Guid.NewGuid(), "DAMAGE", "Damage", "تلف", InventoryReasonCategory.Adjustment, Actor, at, "approval-delta-reason", "approval-delta-reason-key", "approval-delta-reason-fp")));
+        var deniedPolicy = ApprovalPolicy("adjustment-denied", allowDelegation: false);
+        var deniedService = CreateService(options, [new InventoryApprovalPolicyBinding(scope, "stock-adjustment", deniedPolicy)]);
+        var deniedDraft = AssertSucceeded(await deniedService.CreateAdjustmentAsync(
+            Context(TenantA, Actor, "tenant.inventory.adjustment.create"),
+            new InventoryAdjustmentCreateRequest(CompanyA, null, WarehouseA, "denied delegation",
+                [new InventoryAdjustmentLineRequest(ProductA, UnitA, InventoryAdjustmentDirection.Increase, 1m, reason.Code)]),
+            "approval-denied-create")).Value!;
+        var deniedSubmitted = AssertSucceeded(await deniedService.SubmitAdjustmentAsync(
+            Context(TenantA, Actor, "tenant.inventory.adjustment.submit"), deniedDraft.Id, deniedDraft.Version, null, "approval-denied-submit")).Value!;
+        var denied = await deniedService.ApproveAdjustmentAsync(
+            Context(TenantA, Actor4, "tenant.inventory.adjustment.approve"), deniedSubmitted.Id, deniedSubmitted.Version, null, "approval-denied-delegate");
+        Assert.False(denied.Succeeded);
+        Assert.Equal("approver_not_eligible", denied.Code);
+
+        var delegationPolicy = ApprovalPolicy("adjustment-delegation", allowDelegation: true);
+        var delegationService = CreateService(
+            options,
+            [new InventoryApprovalPolicyBinding(scope, "stock-adjustment", delegationPolicy)],
+            [new PurchaseRequestApprovalDelegation(TenantA, CompanyA, null, "approval-stage", Actor3, Actor4, at.AddMinutes(-1), at.AddHours(1), "temporary controller delegation")]);
+        var draft = AssertSucceeded(await delegationService.CreateAdjustmentAsync(
+            Context(TenantA, Actor, "tenant.inventory.adjustment.create"),
+            new InventoryAdjustmentCreateRequest(CompanyA, null, WarehouseA, "delegated approval",
+                [new InventoryAdjustmentLineRequest(ProductA, UnitA, InventoryAdjustmentDirection.Increase, 1m, reason.Code)]),
+            "approval-delta-create")).Value!;
+        var submitted = AssertSucceeded(await delegationService.SubmitAdjustmentAsync(
+            Context(TenantA, Actor, "tenant.inventory.adjustment.submit"), draft.Id, draft.Version, null, "approval-delta-submit")).Value!;
+
+        var first = AssertSucceeded(await delegationService.ApproveAdjustmentAsync(
+            Context(TenantA, Actor2, "tenant.inventory.adjustment.approve"), submitted.Id, submitted.Version, null, "approval-delta-first")).Value!;
+        Assert.Equal(InventoryControlDocumentStatus.PendingApproval, first.Status);
+        Assert.Equal(1, first.Approval!.RecordedApprovals);
+        Assert.Equal(Actor2, first.Approval.LastApproverId);
+
+        var duplicate = await delegationService.ApproveAdjustmentAsync(
+            Context(TenantA, Actor2, "tenant.inventory.adjustment.approve"), first.Id, first.Version, null, "approval-delta-first-retry-different-key");
+        Assert.False(duplicate.Succeeded);
+        Assert.Equal("conflict", duplicate.Code);
+
+        var completed = AssertSucceeded(await delegationService.ApproveAdjustmentAsync(
+            Context(TenantA, Actor4, "tenant.inventory.adjustment.approve"), first.Id, first.Version, null, "approval-delta-delegated-second")).Value!;
+        Assert.Equal(InventoryControlDocumentStatus.Approved, completed.Status);
+        Assert.Equal(Actor4, completed.Approval!.LastApproverId);
+        Assert.Equal(Actor3, completed.Approval.DelegatedFromActorId);
+        var persisted = Assert.IsType<InventoryAdjustmentRecord>(await persistence.FindAdjustmentAsync(context, completed.Id));
+        Assert.Equal(Actor4, persisted.Approval!.LastApproverId);
+        Assert.Equal(Actor3, persisted.Approval.DelegatedFromActorId);
+    }
+
+    [Fact]
+    public async Task Stock_issue_uses_the_same_two_distinct_approval_semantics()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var persistence = new InventoryPersistence(options);
+        var context = Context(TenantA);
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        await EnsureCreatedAsync(options, context);
+        var at = DateTimeOffset.UtcNow;
+        var reason = Assert.IsType<InventoryReasonCodeRecord>(await persistence.CreateReasonCodeAsync(
+            context,
+            new InventoryReasonCodeCommand(Guid.NewGuid(), "USE", "Internal use", "استخدام داخلي", InventoryReasonCategory.StockIssue, Actor, at, "issue-approval-delta-reason", "issue-approval-delta-reason-key", "issue-approval-delta-reason-fp")));
+        var service = CreateService(options, [new InventoryApprovalPolicyBinding(scope, "stock-issue", ApprovalPolicy("issue-two-approvers", allowDelegation: false))]);
+        var draft = AssertSucceeded(await service.CreateStockIssueAsync(
+            Context(TenantA, Actor, "tenant.inventory.issue.create"),
+            new InventoryStockIssueCreateRequest(CompanyA, null, WarehouseA, "internal use",
+                [new InventoryIssueLineRequest(ProductA, UnitA, 1m, reason.Code)]),
+            "issue-approval-delta-create")).Value!;
+        var submitted = AssertSucceeded(await service.SubmitStockIssueAsync(
+            Context(TenantA, Actor, "tenant.inventory.issue.submit"), draft.Id, draft.Version, null, "issue-approval-delta-submit")).Value!;
+        var first = AssertSucceeded(await service.ApproveStockIssueAsync(
+            Context(TenantA, Actor2, "tenant.inventory.issue.approve"), submitted.Id, submitted.Version, null, "issue-approval-delta-first")).Value!;
+        Assert.Equal(InventoryControlDocumentStatus.PendingApproval, first.Status);
+        Assert.Equal(1, first.Approval!.RecordedApprovals);
+        var completed = AssertSucceeded(await service.ApproveStockIssueAsync(
+            Context(TenantA, Actor3, "tenant.inventory.issue.approve"), first.Id, first.Version, null, "issue-approval-delta-second")).Value!;
+        Assert.Equal(InventoryControlDocumentStatus.Approved, completed.Status);
+        Assert.Equal(2, completed.Approval!.RequiredApprovals);
+    }
+
     private static InventoryControlActionCommand Action(Guid id, byte[] version, string key, string fingerprint, DateTimeOffset at, Guid actorId = default) =>
         new(id, version, actorId == Guid.Empty ? Actor : actorId, "test action", null, $"correlation-{key}", key, fingerprint, at);
 
@@ -311,11 +484,38 @@ public sealed class InventoryStockControlTests
 
     private static InventoryProductReference Product() => new(TenantA, ProductA, "SKU-A", "Product A", UnitA, "EA", true, true, false);
 
-    private static InventoryRequestContext Context(Guid tenantId) =>
+    private static InventoryOperationResult<T> AssertSucceeded<T>(InventoryOperationResult<T> result)
+    {
+        Assert.True(result.Succeeded, result.Code);
+        return result;
+    }
+
+    private static PurchaseRequestApprovalPolicyDefinition ApprovalPolicy(string policyId, bool allowDelegation) =>
+        new(policyId, 1, [new PurchaseRequestApprovalStageDefinition("approval-stage", 1, 2, [Actor2, Actor3], allowDelegation)], false, DateTimeOffset.UnixEpoch);
+
+    private static InventoryService CreateService(
+        DbContextOptions options,
+        IReadOnlyList<InventoryApprovalPolicyBinding> policyBindings,
+        IReadOnlyList<PurchaseRequestApprovalDelegation>? delegations = null) =>
+        new(
+            new InventoryPersistence(options),
+            new InventoryResourceAuthorizationService(),
+            new ConfiguredInventoryWarehouseProvider([new InventoryWarehouseOption(TenantA, CompanyA, null, WarehouseA, "WH-A", "Warehouse A")]),
+            new StaticInventoryProductProvider(Product()),
+            approvalPolicies: new ConfiguredInventoryApprovalPolicyProvider(policyBindings),
+            approvalDelegation: new ConfiguredInventoryApprovalDelegationProvider(delegations ?? []));
+
+    private static InventoryRequestContext Context(Guid tenantId, Guid actorId = default, string permission = "tenant.inventory.ledger.view") =>
         new InventoryTenantContextResolver().Resolve(
             FoundationRequestContext.ForTenant(
-                Actor,
+                actorId == Guid.Empty ? Actor : actorId,
                 Guid.Parse("55555555-5555-5555-5555-555555555555"),
-                TenantContext.ForOrdinaryMembership(new TenantId(tenantId), new MembershipReference(Guid.NewGuid()), new ScopeReference($"Warehouse:{WarehouseA:D}"), actorId: Actor),
-                "tenant.inventory.ledger.view")).Context!;
+                TenantContext.ForOrdinaryMembership(new TenantId(tenantId), new MembershipReference(Guid.NewGuid()), new ScopeReference($"Warehouse:{WarehouseA:D}"), actorId: actorId == Guid.Empty ? Actor : actorId),
+                permission)).Context!;
+
+    private sealed class StaticInventoryProductProvider(InventoryProductReference product) : IInventoryProductProvider
+    {
+        public Task<InventoryProductReference?> FindAsync(InventoryRequestContext context, Guid productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<InventoryProductReference?>(product.TenantId == context.TenantId.Value && product.ProductId == productId ? product : null);
+    }
 }

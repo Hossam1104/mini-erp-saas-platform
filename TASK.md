@@ -1,118 +1,86 @@
-# MESP-130 — Sol Delta Acceptance Handoff: Stock Control Remediation
+# MESP-130 - Final Sol Delta Acceptance Handoff
 
 Reviewer: GPT-5.6 Sol
 
 Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 
-Capability: MESP-130 — Stock Adjustment, Inventory Count, Stock Issue, and
+Capability: MESP-130 - Stock Adjustment, Inventory Count, Stock Issue, and
 eligible stock-movement corrections.
 
 Branch: `feat/MESP-130-stock-control-corrections`
 
-Exact required starting SHA: `88eac382213c86e9d816fee0232b9e917c5d104d`
+Exact required starting SHA: `fd3db1ae842f3abba1cb4880200b6b6dac5f379d`
 
 Exact main base: `6f6d204726cc4baf9979961ea6936c0d03e93e32`
 
 Remediation implementation SHA: `3320cf284d64a58be7fb0f00ac654ee7a11d7b00`
 
-Final branch SHA: the final documentation/runtime handoff tip is reported in
-the completion response because Git cannot embed a commit's own SHA in that
-commit's content.
+Final branch SHA: recorded after the final documentation/runtime handoff
+commit.
 
-Draft PR: `#74` — Open, Draft, Unmerged; base `main`.
+Draft PR: `#74` - Open, Draft, Unmerged; base `main`.
 
-Jira: read-only. No Jira writes were performed. MESP-130 remains In Progress
-until Sol acceptance. Do not mark the PR Ready, merge, rebase, force-push,
-create another PR, or start downstream work.
+Jira is read-only for this session. No Jira writes were performed. MESP-130
+remains In Progress until Sol accepts the exact final branch SHA. Do not mark
+the PR Ready, merge, rebase, force-push, create another PR, or start MESP-131
+or downstream Finance, Sales, Reporting, migration, or cutover work.
 
-## Remediation delivered
+## Bounded delta delivered
 
-### P1 corrections
+- Full Count no longer enumerates identities in the application service before
+  persistence. Persistence opens the Serializable transaction first, reads the
+  authoritative warehouse ledger identity universe inside that transaction,
+  supplements explicitly requested identities, and validates cutoff/anchors/
+  availability/lines atomically. A LocalDB race proves a post-cutoff new
+  identity cannot be silently omitted.
+- Cycle Count remains explicitly selected-identity scoped. Unrelated movement
+  does not invalidate it; movement on a selected identity returns the required
+  resnapshot state.
+- Adjustment and Stock Issue approvals require two distinct current-stage
+  approvers, reject duplicate actor replay under a new idempotency key, preserve
+  active delegation evidence, and fail closed when delegation is invalid.
+- Stock Control is localized in EN and AR in the lazy Inventory feature. The
+  blind counter surface records physical quantities only; reviewer controls,
+  status/history labels, reason catalogue, corrections, recount, resnapshot,
+  and RTL direction are covered.
+- Two unused shared translation entries were removed so the production initial
+  bundle remains below the repository's existing budget; no budget increase was
+  made. `frontend/assets` was untouched.
 
-- Approval state: Adjustment and Stock Issue approvals now persist distinct
-  current-stage approver identities, reject duplicate same-stage approval,
-  advance only after the configured distinct-approval count is met, preserve
-  delegation evidence, and fail closed for invalid or missing configured
-  policy. Count variance approval uses the same configured policy seam while
-  every non-zero variance remains approval-required; no threshold was invented.
-- Blind count: counter submission carries only `CountLineId` and physical
-  `CountedQuantity`; normal assigned-counter list/detail reads redact expected,
-  variance, and derived values before submission. Reviewer reads expose
-  Expected/Counted/Variance only after observation submission.
-- Cutoff/full count: snapshot cutoff is established after anchors and the
-  authoritative expected read; cycle staleness remains identity-scoped;
-  full-count staleness is warehouse-scoped and detects new identities; zero
-  variance passes final stale validation; full resnapshot preserves old rounds
-  and adds the current warehouse identity universe.
-- Correction uniqueness: formal SQL/SQLite-compatible migration adds a
-  Tenant-scoped unique filtered index on non-null
-  `CorrectionOfMovementId`; duplicate races classify deterministically rather
-  than becoming generic persistence-unavailable failures.
+## Verified evidence
 
-### P2 corrections
-
-- Tests: added executable multi-stage Adjustment/Issue approval, distinct
-  approver, blind count, cutoff, full-count new-identity/resnapshot, and SQL
-  correction-index regressions; expanded Angular and browser coverage.
-- UI: completed the existing Stock Control workspace with reason catalogue
-  list/create/edit/activate/deactivate, physical blind count entry, reviewer
-  variance reason, approve/reject, recount, resnapshot, lifecycle history,
-  eligible correction reason/linkage, and Adjustment/Issue create-submit-
-  approve/reject-post controls. Return-for-change is not exposed because the
-  bounded UI has no edit/resubmit contract; this avoids a dead-end action.
-- Bundle: removed the unused `ApiClientService.put()` seam; final initial
-  production bundle is `499.97 kB`, within the `<= 500.00 kB` warning budget.
-- Reason validation: UpdateReasonCode now rejects blank English/Arabic names,
-  undefined categories, invalid versions, and preserves immutable code and
-  historical snapshots through the existing server contract.
-
-## Validation evidence
-
-- Focused Inventory/MESP-130 tests: `6/6` passed.
-- REST/OpenAPI structural tests: `33/33` passed within the backend suite.
-- SQL Server safety: `30/30` passed through the disposable LocalDB runner;
-  the new correction test proves one direct correction, deterministic duplicate
-  rejection, one persisted correction row, and the unique filtered index.
-- Full backend suite: `903/903` passed, `0` failed, `0` skipped.
-- Release build: `dotnet build .\backend\MiniErp.sln --configuration Release`
-  passed with `0` warnings and `0` errors.
-- Angular unit tests: `245/245` passed across `33` spec files.
+- Focused Inventory Stock Control tests: `10/10` passed.
+- SQL Server safety suite: `31/31` passed through disposable LocalDB,
+  including the Full Count atomic identity race regression.
+- Full backend suite: `908/908` passed, `0` failed, `0` skipped.
+- Release build: `0` warnings, `0` errors.
+- Angular unit tests: `246/246` across `33` spec files.
 - Focused MESP-130 Chromium: `1/1` passed.
 - Full Chromium: `27/27` passed.
-- Production bundle: initial `499.97 kB`; Inventory lazy chunk `69.05 kB`;
-  Supplier Quotation lazy chunk `91.94 kB`.
-- `npm audit --omit=dev`: `0` vulnerabilities.
-- `npm audit`: `0` vulnerabilities.
-- `git diff --check`: clean before the documentation-only handoff commit.
+- Production bundle: initial `499.81 kB` with no budget warning; Inventory
+  lazy chunk `90.11 kB`; Supplier Quotation lazy chunk `91.94 kB`.
+- `npm audit --omit=dev`: `0` vulnerabilities; `npm audit`: `0`
+  vulnerabilities.
+- `git diff --check`: clean; `frontend/assets`: zero changes.
 
-## Runtime verification
+## Runtime left for Owner inspection
 
-- Backend URL: `http://localhost:5300`.
-- Frontend URL: `http://localhost:4300`.
-- Backend PID: `23588`.
-- Frontend PID: `39252`.
-- Backend health: `GET /health` returned HTTP `200`.
-- Frontend status: `GET /` and `GET /main.js` returned HTTP `200`.
-- Both processes were verified alive after the probes and remain running for
-  Owner inspection. The supported loopback Development bypass was used by the
-  launcher; no credentials were printed or persisted.
+- Backend: `http://localhost:5300`, PID `20036`; `GET /health` returned 200.
+- Frontend: `http://localhost:4300`, PID `34964`; `GET /` and `GET /main.js`
+  returned 200.
+- The supported loopback-only Development auth bypass was used. No
+  credentials were printed or persisted.
 
-## Migration and boundaries
+## Boundaries and known limitations
 
-- Formal additive migrations:
-  `20260822220126_MESP130SolAcceptanceRemediation` and
-  `20260822220521_MESP130SolAcceptanceCountApproval`.
-- MESP-128 immutable ledger, deterministic anchors, Serializable posting,
-  reservation protection, MESP-129 physical movement history, Tenant and
-  operational-context authorization, Pending valuation, idempotency, audit,
-  and history remain authoritative.
-- No MWA, Finance, GL, AP, AR, tax, payment, Sales, Reporting, external,
-  statutory/ZATCA/FATOORA, DNS/TLS, migration/cutover, supplier portal, or
-  Wafra-specific core implementation was added.
-- `frontend/assets` has zero changes. Owner-managed source assets remain
-  protected.
+MESP-130 remains Pending-valuation for new physical effects and does not
+create Finance, GL, AP, AR, tax, payment, Sales, Reporting, MWA, external,
+statutory/ZATCA/FATOORA, DNS/TLS, production-provider, migration/cutover,
+supplier-portal, or Wafra-specific core behavior. MESP-131 owns MWA. Unsupported
+physical source movements remain ineligible for correction. Return-for-change is
+not exposed because this bounded UI has no edit/resubmit contract.
 
-## Next exact step
+## Next exact action
 
-Sol performs delta acceptance against the exact final branch tip and Draft PR
-#74. Do not start MESP-131 or any downstream implementation automatically.
+Sol performs final delta acceptance against this exact final branch tip and
+Draft PR #74. Do not start another implementation task automatically.

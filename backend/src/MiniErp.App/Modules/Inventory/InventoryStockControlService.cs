@@ -174,19 +174,13 @@ public sealed partial class InventoryService
         var lineRequests = request.Lines ?? [];
         if (request.CountType == InventoryCountType.Cycle && lineRequests.Count == 0) return InventoryOperationResult<InventoryCountRecord>.Failure("lines_required");
         if (lineRequests.Count > 5000) return InventoryOperationResult<InventoryCountRecord>.Failure("too_many_lines");
+        // Full Count ledger identity discovery belongs to the persistence transaction.
+        // The application may validate explicitly requested identities, but it must not
+        // enumerate the authoritative warehouse universe before the Serializable
+        // snapshot transaction begins.
         var selected = new List<InventoryCountLineRequest>(lineRequests);
-        if (request.CountType == InventoryCountType.Full)
-        {
-            var movements = await persistence.ListMovementsAsync(context, scope.Value, null, cancellationToken);
-            selected = movements
-                .Select(item => new InventoryCountLineRequest(item.ProductId, item.UnitOfMeasureId, item.TrackingIdentity))
-                .Concat(lineRequests)
-                .GroupBy(item => new { item.ProductId, item.UnitOfMeasureId, Tracking = NormalizeTracking(item.TrackingIdentity) ?? string.Empty })
-                .Select(group => new InventoryCountLineRequest(group.Key.ProductId, group.Key.UnitOfMeasureId, string.IsNullOrEmpty(group.Key.Tracking) ? null : group.Key.Tracking))
-                .ToList();
-        }
         if (selected.Count > 5000) return InventoryOperationResult<InventoryCountRecord>.Failure("too_many_lines");
-        if (selected.Count == 0) return InventoryOperationResult<InventoryCountRecord>.Failure("lines_required");
+        if (request.CountType == InventoryCountType.Cycle && selected.Count == 0) return InventoryOperationResult<InventoryCountRecord>.Failure("lines_required");
         var countApprovalPolicy = await approvalPolicyProvider.ResolveAsync(context, scope.Value!, "count-variance", DateTimeOffset.UtcNow, cancellationToken);
         if (countApprovalPolicy is not null && !PurchaseRequestValuePolicy.IsValidPolicy(countApprovalPolicy)) return InventoryOperationResult<InventoryCountRecord>.Failure("approval_policy_invalid");
         var lines = new List<InventoryCountLineCommand>(selected.Count);
