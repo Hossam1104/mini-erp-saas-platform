@@ -12,8 +12,8 @@ Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 Branch: `feat/MESP-132-finance-foundation`
 Exact base: `fcec241dfedb529fef89d4336adf1e571917c52a`
 Implementation commit: `af86b78`
-Draft PR: one Open/Draft/unmerged PR to `main`; the actual number is recorded
-after push in the final handoff.
+Draft PR: `#76`, Open/Draft/unmerged, head
+`effd7c335be4fc198c15d39a7d502c401de6e14b`, base `main`.
 
 ### Delivered architecture
 

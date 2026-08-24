@@ -90,8 +90,8 @@ periods, journals, posting rules, Inventory handoff, and GL inquiry tabs in
 EN/AR with RTL support. It contains no raw GUID entry. The implementation
 does not add AP/AR, cash/bank, tax/VAT/ZATCA/FATOORA, financial statements,
 generic Reporting, Sales, production migration/cutover, external providers,
-or Wafra-specific Finance behavior. The final Draft PR number is recorded in
-the tracked handoff after push; no Jira writes were performed by this session.
+or Wafra-specific Finance behavior. Draft PR `#76` is Open, Draft, and
+unmerged for Sol acceptance; no Jira writes were performed by this session.
 
 ### MESP-132 validation evidence
 

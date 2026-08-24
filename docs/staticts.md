@@ -49,7 +49,7 @@ Jira writes were performed and no Opus review was requested.
 
 | Current control | Verified position |
 |---|---|
-| MESP-132 code | Branch `feat/MESP-132-finance-foundation`; implementation `af86b78`; base `fcec241dfedb529fef89d4336adf1e571917c52a`; Draft PR number recorded after push. |
+| MESP-132 code | Branch `feat/MESP-132-finance-foundation`; implementation `af86b78`; final branch `effd7c335be4fc198c15d39a7d502c401de6e14b`; base `fcec241dfedb529fef89d4336adf1e571917c52a`; Draft PR #76 Open/Draft/unmerged. |
 | Production capability | ~47% overall; Procurement/P2P ~41%; headlines unchanged. Fast-track 15/26 = 57.7%, not production readiness. |
 | Validation | Finance 5/5; REST/OpenAPI + host security 52/52; prior Inventory 89/89; SQL safety 41/41; full backend 969/969 with 0 failed/0 skipped; Release 0 warnings/errors; Angular 258/258; initial 496.34 kB; Finance lazy 36.60 kB; focused Playwright 2/2; full Playwright 34/34; npm audits 0 vulnerabilities. |
 | Delivery boundaries | Finance foundation only; no AP/AR, cash/bank, tax/VAT/ZATCA/FATOORA, financial statements, generic Reporting, Sales, production migration/cutover, external providers, statutory certification, or Wafra-specific Finance behavior. `frontend/assets` untouched. |
