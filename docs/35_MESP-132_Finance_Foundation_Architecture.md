@@ -2,14 +2,15 @@
 
 ## Status and boundary
 
-**Current acceptance state:** MESP-132 is In Progress / activated under Epic
-MESP-10. The implementation is on `feat/MESP-132-finance-foundation` with
-source/test implementation commit
-`dcae7e231bd264580c33e60c35f5cc8436c4f050`, based on
-`fcec241dfedb529fef89d4336adf1e571917c52a`; PR #76 is Open, Draft, and
-unmerged. The validated implementation remains pending Sol acceptance. The accepted
-fast-track count remains `15/26 = 57.7%` and production-readiness remains
-approximately `47%` overall / `41%` Procurement/P2P.
+**Current acceptance state:** MESP-132 is merged through PR #76 under Epic
+MESP-10 at squash SHA `ccc52a892c8258778f57c55c12fa0032bd3e276b`, from
+accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`. The retained
+implementation branch is `feat/MESP-132-finance-foundation`; its source/test
+implementation commit is `dcae7e231bd264580c33e60c35f5cc8436c4f050`, based on
+`fcec241dfedb529fef89d4336adf1e571917c52a`. MESP-132 remains Jira In Progress
+pending Sol closure and MESP-10 reconciliation. Accepted fast-track completion
+is `16/26 = 61.5%`; production-readiness remains approximately `47%` overall /
+`41%` Procurement/P2P.
 
 MESP-132 adds the bounded Release 1 Finance / General Ledger foundation on
 the exact baseline `fcec241dfedb529fef89d4336adf1e571917c52a`. It is Company
@@ -17,9 +18,9 @@ owned inside a Tenant and is deliberately configuration-led. It does not
 make a Tenant-wide accounting book, seed customer accounts, or add
 customer-specific Wafra behavior.
 
-This document describes the implementation on
-`feat/MESP-132-finance-foundation`. It is an implementation handoff, not a
-replacement for the approved Finance BRD or the Owner decision register.
+This document describes the merged implementation and retained feature branch.
+It is an implementation architecture record, not a replacement for the
+approved Finance BRD or the Owner decision register.
 
 ## Company accounting boundary
 

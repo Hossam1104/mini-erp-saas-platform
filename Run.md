@@ -183,10 +183,10 @@ Development runtime. It is a lazy Angular route with Company-selected Chart of A
 Fiscal Periods, Journals, Posting Rules, Inventory Handoff, and GL inquiry
 views. The backend remains authoritative for Tenant/Company scope, posting,
 period eligibility, balancing, FX, mapping, idempotency, and audit. Current
-runtime evidence is backend `http://localhost:5300` PID `26896` with `/health`
-HTTP 200 and frontend `http://localhost:4300` PID `6244` with `/`, `/main.js`,
-and `/app/finance` HTTP 200. MESP-132 remains on Draft PR #76 pending Sol
-acceptance; this is not a production-readiness claim.
+runtime evidence is recorded in the merged-main handoff and `docs/staticts.md`;
+the final launcher probes `/health`, `/`, `/main.js`, and `/app/finance` at
+the verified local URLs. PR #76 is squash-merged; Sol still owns Jira closure
+and Finance Epic reconciliation. This is not a production-readiness claim.
 
 The current Procurement runtime includes the bounded Purchase Order and manual
 Supplier Confirmation journey at these relative routes:

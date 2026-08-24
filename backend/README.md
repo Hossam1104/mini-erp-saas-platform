@@ -29,9 +29,10 @@
 > detection reports no changes; no Owner-managed asset changes. The public
 > Manual Journal contract is manual-only and five SQL Server contention races
 > prove safe ordering/uniqueness. The active branch is
-> `feat/MESP-132-finance-foundation` at implementation commit `dcae7e2`, based
-> on `fcec241dfedb529fef89d4336adf1e571917c52a`. Draft PR #76 is Open, Draft,
-> and unmerged; final Sol acceptance is pending.
+> The retained feature branch `feat/MESP-132-finance-foundation` carries the
+> accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7` from
+> implementation commit `dcae7e2`, based on `fcec241dfedb529fef89d4336adf1e571917c52a`.
+> PR #76 is squash-merged into `main`; Sol still owns Jira closure.
 <!-- MESP-132-CURRENT-END -->
 
 > **Historical MESP-129 runtime overlay - 22 August 2026.** The backend now

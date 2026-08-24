@@ -4,13 +4,11 @@ This file is the lightweight ADR index for Release 1. The approved architecture 
 
 ## Current implementation state — MESP-132 Finance foundation — 24 August 2026
 
-MESP-132 is the active bounded implementation capability under Epic MESP-10,
-In Progress / activated. The feature branch is
-`feat/MESP-132-finance-foundation` at exact implementation head
-`dcae7e231bd264580c33e60c35f5cc8436c4f050`, based on synchronized main
-`fcec241dfedb529fef89d4336adf1e571917c52a`; Draft PR #76 is Open, Draft, and
-unmerged pending Sol acceptance. MESP-131 is the latest completed capability,
-with PR #75 merged at
+MESP-132 is the latest merged bounded capability under Epic MESP-10, with Jira
+status still In Progress / activated pending Sol closure. PR #76 is squash-
+merged at `ccc52a892c8258778f57c55c12fa0032bd3e276b` from accepted feature
+head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; the feature branch is retained.
+MESP-131 is the prior completed capability, with PR #75 merged at
 `a8664d6a0d006e463a1a03fadd76c28475475f58`; MESP-131 and MESP-8 are Done.
 
 The final remediation validation is Finance `12/12`, REST/OpenAPI and host
@@ -18,7 +16,7 @@ security `53/53`, prior Inventory `89/89`, SQL safety `46/46`, full backend
 `982/982`, Angular `259/259`, focused/full Chromium `2/2` and `34/34`, and npm
 audits clean. Public manual requests are source-authority constrained and the
 SQL suite proves five provider-realistic Finance races. Accepted fast-track
-completion remains `15/26 = 57.7%`;
+completion is now `16/26 = 61.5%`;
 production-readiness remains approximately `47%` overall / `41%` Procurement-
 P2P. No next capability starts automatically and no Opus prompt is created by
 this handoff.

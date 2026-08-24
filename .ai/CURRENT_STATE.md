@@ -1,6 +1,6 @@
 # Current State
 
-## MESP-132 Finance foundation implementation handoff - 24 August 2026
+## MESP-132 Finance foundation merged-main handoff - 24 August 2026
 
 MESP-132 is the active bounded implementation capability under Finance Epic
 MESP-10. Jira activation is already recorded (`MESP-132` comment `11845`,
@@ -9,14 +9,17 @@ is `11843`. This session performed no Jira writes, did not invoke Claude
 Opus 5, and did not create an Opus review prompt.
 
 Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
-Current merged `main`: `fcec241dfedb529fef89d4336adf1e571917c52a`.
-Branch: `feat/MESP-132-finance-foundation`
-Exact base: `fcec241dfedb529fef89d4336adf1e571917c52a`
-Starting SHA: `2f523582fbd3394b1eb11580eff490ba83aa9afb`.
-Source/test implementation commit: `dcae7e231bd264580c33e60c35f5cc8436c4f050`.
-Draft PR: `#76`, Open/Draft/unmerged, targeting `main`; the final branch SHA is
-reverified after the documentation reconciliation push. Latest Sol hold is
-comment `11852`; mergeability is `MERGEABLE`.
+PR #76 is merged into `main` at squash SHA
+`ccc52a892c8258778f57c55c12fa0032bd3e276b` from accepted feature head
+`c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`. The retained feature branch is
+`feat/MESP-132-finance-foundation`; its exact base was
+`fcec241dfedb529fef89d4336adf1e571917c52a`, starting SHA
+`2f523582fbd3394b1eb11580eff490ba83aa9afb`, and source/test implementation
+commit `dcae7e231bd264580c33e60c35f5cc8436c4f050`. MESP-132 remains Jira In
+Progress while Sol owns closure and MESP-10 reconciliation. The final main SHA
+is the post-merge documentation reconciliation commit recorded by this handoff;
+the latest Sol acceptance is comment `11855` with prior holds `11848` and
+`11852`.
 
 ### Delivered architecture
 
@@ -92,18 +95,20 @@ consolidation/intercompany, fixed assets, payroll, treasury, budgeting,
 automated FX/revaluation, production migration/cutover, external providers,
 statutory certification, and Wafra-specific Finance behavior remain deferred.
 
-Sol accepts the exact final branch SHA and the single Draft PR. No next Finance
-task starts automatically and no Opus prompt is added.
+Sol verifies the merged PR/main SHA, closes MESP-132 in Jira, reconciles the
+MESP-10 Finance Epic, determines and activates the next approved capability,
+and issues the next Luna execution prompt. No next Finance task starts
+automatically and no Opus prompt is added.
 
 ### Final runtime verification
 
 The verified Release backend executable and generated-proxy Development
 frontend were restarted after the final Release build with the explicit
 loopback-only Development auth bypass. Backend `http://localhost:5300` is PID
-`23772`; `/health` returned HTTP 200. Frontend `http://localhost:4300` is PID
-`28656`; `/`, `/main.js`, and
-`/app/finance` each returned HTTP 200. Both repository-owned processes remain
-running for Owner inspection and no credential was printed or persisted.
+`21112`; `/health` returned HTTP 200. Frontend `http://localhost:4300` is PID
+`39640`; `/`, `/main.js`, and `/app/finance` each returned HTTP 200. Both
+repository-owned processes remain running for Owner inspection and no
+credential was printed or persisted.
 
 ## Historical MESP-131 guarded merge state - 24 August 2026
 
@@ -143,7 +148,7 @@ Jira traceability has been reconciled without closing MESP-131:
 PR #75 is merged into `main`; Sol closure is still required in Jira.
 <!-- MESP-131-JIRA-SYNC-END -->
 
-## Current authoritative position - 24 August 2026 (MESP-131 final P1 correction-quantity remediation; Sol acceptance handoff)
+## Historical / superseded authoritative position - 24 August 2026 (MESP-131 final P1 correction-quantity remediation; Sol acceptance handoff)
 
 MESP-131 is implemented on branch
 `feat/MESP-131-mwa-valuation-reconciliation`, created from the exact required
@@ -273,7 +278,7 @@ external/statutory, or Wafra-specific core implementation was started. The
 next exact action is Sol governance closure of merged MESP-131 and evaluation
 of MESP-132 activation. No Opus prompt is created by this handoff.
 
-## Current authoritative position - 23 August 2026 (MESP-130 final ledger-fence remediation complete; Sol acceptance handoff)
+## Historical / superseded authoritative position - 23 August 2026 (MESP-130 final ledger-fence remediation complete; Sol acceptance handoff)
 
 MESP-129 is Done. MESP-130 remains In Progress pending Sol acceptance. The
 final ledger-fence remediation is pushed on branch
@@ -377,7 +382,7 @@ acceptance and merge. MESP-130 remains In Progress. The next exact action is
 Sol delta acceptance of the final branch tip; do not start MESP-131 or
 downstream implementation.
 
-## Current authoritative position - 22 August 2026 (MESP-129 OPUS P1 remediation complete; Sol delta handoff)
+## Historical / superseded authoritative position - 22 August 2026 (MESP-129 OPUS P1 remediation complete; Sol delta handoff)
 
 MESP-129 remains bounded to its Inventory physical-movement capability on
 branch `feat/MESP-129-physical-stock-movements`, based exactly on synchronized
@@ -505,7 +510,7 @@ Procurement/P2P pending Sol acceptance and merge. The next exact session is
 Sol acceptance of the source commit and Draft PR #73; do not merge or start
 MESP-130, MESP-131, commercial Sales, Finance, or downstream implementation.
 
-## Current authoritative position - 22 August 2026 (MESP-128 Opus stock-integrity delta remediation complete; delta-only review handoff)
+## Historical / superseded authoritative position - 22 August 2026 (MESP-128 Opus stock-integrity delta remediation complete; delta-only review handoff)
 
 MESP-128 remains bounded to the Inventory-owned physical-stock foundation on
 branch `feat/MESP-128-inventory-ledger-foundation`, based exactly on main
@@ -563,7 +568,7 @@ portal, or Wafra-specific core behavior was added. MESP-129 and all downstream
 implementation remain unstarted. The next independent review is delta-only;
 do not merge or start downstream implementation from this handoff.
 
-## Current authoritative position - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
+## Historical / superseded authoritative position - 21 August 2026 (MESP-127 Supplier Return implementation complete; Sol acceptance handoff)
 
 MESP-127 is implementation-complete at its bounded Procurement-owned scope on
 branch `feat/MESP-127-supplier-return-corrections`, based exactly on
@@ -608,7 +613,7 @@ external integration, statutory/ZATCA/FATOORA, DNS/TLS, or Wafra-specific core
 behavior was started. The next exact session is Sol acceptance of this branch
 and Draft PR; do not merge or begin MESP-128 from this handoff.
 
-## Current authoritative position - 21 August 2026 (MESP-126 Opus P1 remediation complete; delta review handoff)
+## Historical / superseded authoritative position - 21 August 2026 (MESP-126 Opus P1 remediation complete; delta review handoff)
 
 MESP-126 P1 remediation is committed at
 `d2a107e427df335a0067c77c30d07562608ab743` on
@@ -651,7 +656,7 @@ PR #70 remains open, Draft, and unmerged. Independent Claude Opus 5
 read-only delta re-review is the next exact session; no MESP-127/AP/GL/payment/
 stock/FX override or merge is authorized.
 
-## Current authoritative position - 20 August 2026 (MESP-126 SOL acceptance remediation complete; independent review handoff)
+## Historical / superseded authoritative position - 20 August 2026 (MESP-126 SOL acceptance remediation complete; independent review handoff)
 
 MESP-125 (Goods Receipt and Purchase Invoice Handoff) is **Done** and
 squash-merged to `main` by PR #69 at merge SHA
@@ -1278,7 +1283,7 @@ product, test, migration, or schema code was changed.
   production DNS/TLS topology, cross-host auth/SSO, canonical-host constraints, host-header
   abuse, cache/session isolation.
 
-### Current Position & Next Capability
+### Historical Position & Next Capability (superseded)
 
 | Current fact | Verified position |
 |---|---|
@@ -1857,7 +1862,7 @@ No next task starts automatically. The corrected MESP-38 prompt must be
 executed only in a fresh session after this reconciliation is reviewed,
 merged, closed, and repository state is synchronized.
 
-## Current authoritative position - 11 August 2026 (MESP-37 Saudi Localization BRD complete)
+## Historical / superseded authoritative position - 11 August 2026 (MESP-37 Saudi Localization BRD complete)
 
 MESP-37 - Produce Saudi Localization and Compliance BRD is **Done** at the
 bounded product-only documentation scope. The canonical artifact is
@@ -1908,7 +1913,7 @@ for the completed MESP-37 product-only BRD session. All earlier scope,
 readiness, PRD, decision, and implementation history remains preserved. The
 exact next session is in root `TASK.md`; this session must not execute it.
 
-## Current authoritative position - 11 August 2026 (MESP-112 Saudi scope rebaseline)
+## Historical / superseded authoritative position - 11 August 2026 (MESP-112 Saudi scope rebaseline)
 
 MESP-112 - Rebaseline Release 1 Saudi localization and compliance scope is
 complete at its bounded documentation/Jira/Product Decision/governance scope
@@ -1951,7 +1956,7 @@ artifact, its historical verdict, the approved PRD, and all prior state
 history remain preserved. The exact next session is in root TASK.md; this
 session must not execute it.
 
-## Current authoritative position — 11 August 2026 (MESP-111 readiness complete; MESP-37 remains To Do)
+## Historical / superseded authoritative position — 11 August 2026 (MESP-111 readiness complete; MESP-37 remains To Do)
 
 MESP-111 — Prepare Saudi regulatory evidence and external-validation readiness
 is **Done** at its explicitly bounded documentation, research, traceability
@@ -2361,7 +2366,7 @@ after every five completed sessions or earlier at a critical architecture,
 security/Tenant-isolation, accounting, migration/data-model, or major
 cross-module checkpoint.
 
-## Current verified position — 8 August 2026 (MESP-31 closed; MESP-95 active)
+## Historical / superseded verified position — 8 August 2026 (MESP-31 closed; MESP-95 active)
 
 The Stage-A and Stage-B gates are now sequenced and live. MESP-31 is closed
 after its approved BRD merged, and MESP-95 is the single active

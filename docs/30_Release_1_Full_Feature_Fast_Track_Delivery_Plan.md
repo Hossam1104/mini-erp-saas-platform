@@ -12,17 +12,17 @@ Inventory fast-track execution currently stands at:
 - MESP-130 â€” Done.
 - MESP-131 â€” Done; PR #75 merged to `main` at
   `a8664d6a0d006e463a1a03fadd76c28475475f58`.
-- MESP-132 â€” In Progress / activated under Epic MESP-10; Draft PR #76 is Open,
-  Draft, and unmerged pending Sol acceptance.
+- MESP-132 â€” merged through PR #76 under Epic MESP-10; Jira remains In Progress
+  pending Sol closure and Finance Epic reconciliation.
 
-Fast-track completion before accepting MESP-132 remains `15/26 = 57.7%`; this is capability completion, not production readiness. Overall production-readiness remains approximately `47%` and Procurement/P2P `41%`.
+Fast-track completion after the verified MESP-132 merge is `16/26 = 61.5%`; this is capability completion, not production readiness. Overall production-readiness remains approximately `47%` and Procurement/P2P `41%`.
 <!-- MESP-132-EXECUTION-END -->
 
 **Status:** Current planning baseline; A1-A16 and B1-B6 approved in MESP-116, C1-C9 remain open gates
 **Date:** 12 August 2026
 **Milestone:** **31 August 2026 — Release 1 Integrated Preview**
 **Governance task:** MESP-115 (Done), MESP-116 (Done at bounded governance scope)
-**Current bounded session:** Sol acceptance of MESP-132 exact implementation head and Draft PR #76; no next capability starts automatically
+**Current bounded session:** post-merge Sol Jira closure/reconciliation for MESP-132; no next capability starts automatically
 
 ## 1. Purpose and authority
 
@@ -77,10 +77,10 @@ cross-module dependency map is
 | MESP-115 | Done at the bounded documentation/Jira/governance rebaseline. |
 | MESP-116 | Done at the bounded approval/unblock reconciliation; Jira comment `10957`, closure transition, final dependency map, PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e`, merge `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`, and post-merge synchronization `66183c1` are recorded. |
 | MESP-117–MESP-131 | Completed bounded capabilities at their accepted merged scopes. |
-| MESP-132 | In Progress / activated under MESP-10; Draft PR #76 pending Sol acceptance. |
+| MESP-132 | Merged through PR #76 under MESP-10; Jira closure and Finance Epic reconciliation remain with Sol. |
 | MESP-133–MESP-142 | Capability backlog remains To Do / not activated. |
 | Product implementation | Existing bounded Category, UOM, Product, Supplier, and Customer slices remain evidence; the planned capability completion and shared Angular experience are not claimed complete. |
-| Current acceptance handoff | MESP-132 source/test implementation `dcae7e231bd264580c33e60c35f5cc8436c4f050` from starting SHA `2f523582fbd3394b1eb11580eff490ba83aa9afb`; Sol acceptance of Draft PR #76 is the next governance action. |
+| Current acceptance handoff | MESP-132 accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; PR #76 squash SHA `ccc52a892c8258778f57c55c12fa0032bd3e276b`; Sol Jira closure and MESP-10 reconciliation are the next governance actions. |
 | Production capability | No percentage increase is justified by this governance/Jira work. |
 
 This plan deliberately does not rewrite approved historical BRDs. Current

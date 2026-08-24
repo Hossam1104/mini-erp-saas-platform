@@ -9,7 +9,8 @@
 **P1 remediation SHA:** `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`<br>
 **Final accepted feature SHA:** `db624fbb71d15ee55022e247df0f83894d026257`<br>
 **Merged main SHA:** `a8664d6a0d006e463a1a03fadd76c28475475f58`<br>
-**Current downstream:** MESP-132 Finance foundation is active on Draft PR #76
+**Current downstream:** MESP-132 Finance foundation is merged through PR #76 at
+`ccc52a892c8258778f57c55c12fa0032bd3e276b`; Jira closure remains with Sol
 
 ## Purpose and boundary
 
@@ -272,8 +273,9 @@ rewritten.
 These are accepted results on feature head
 `db624fbb71d15ee55022e247df0f83894d026257`. PR #75 is squash-merged into
 `main` at `a8664d6a0d006e463a1a03fadd76c28475475f58`; MESP-131 is Done in Jira
-through closure comment `11842`. MESP-132 is the active downstream capability
-under Epic MESP-10 and remains pending Sol acceptance of Draft PR #76.
+through closure comment `11842`. MESP-132 is the latest downstream capability
+under Epic MESP-10, merged through PR #76, and remains Jira In Progress pending
+Sol closure and Finance Epic reconciliation.
 
 ## Jira traceability
 

@@ -11,39 +11,42 @@ Jira traceability is current for the MESP-132 acceptance stage:
 - MESP-53 report-boundary comment `11782`.
 - MESP-113 Inventory-policy consumption comment `11783`.
 - MESP-120 Exchange Rate consumption comment `11784`.
-- MESP-132 is In Progress / activated; activation comment `11845`.
+- MESP-132 is In Progress / activated; activation comment `11845`; Sol final
+  acceptance comment `11855` is recorded and Jira closure remains pending.
 - MESP-10 Finance and Accounting is In Progress; activation comment `11844`.
 - MESP-139 downstream Reporting source comment `11786`; status remains To Do.
 - Sol acceptance comment `11788` and delta acceptance comment `11789` remain
   the independent review authority.
 - Latest Sol final-delta acceptance comment `11794`.
-- Opus P1 finding source comment `11835`; latest Sol final acceptance hold
-  comment `11852`.
+- Opus P1 finding source comment `11835`; prior Sol holds are `11848` and
+  `11852`.
 
-PR #75 is merged into `main`; MESP-132 is the active implementation branch.
+PR #75 is merged into `main`; PR #76 is merged and its retained feature branch
+is preserved. No Jira writes were performed by this session.
 <!-- MESP-132-JIRA-SYNC-END -->
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-24 21:20 +03:00
+**Last Updated:** 2026-08-24 21:43 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
 
-## Current authoritative fast-track snapshot - 24 August 2026 (MESP-132 implementation active; Sol acceptance pending)
+## Current authoritative fast-track snapshot - 24 August 2026 (MESP-132 merged; Sol Jira closure pending)
 
 | Current repository control | Verified position |
 |---|---|
-| Current main | `fcec241dfedb529fef89d4336adf1e571917c52a` (`main` and `origin/main` synchronized) |
-| Active capability | MESP-132 Core Finance / General Ledger foundation; In Progress / activated under Epic MESP-10 |
-| Active branch / PR | `feat/MESP-132-finance-foundation`; source/test implementation commit `dcae7e231bd264580c33e60c35f5cc8436c4f050` from start `2f523582fbd3394b1eb11580eff490ba83aa9afb`; PR #76 Open/Draft/unmerged |
-| Latest completed capability | MESP-131 Moving Weighted Average valuation; PR #75 merged at `a8664d6a0d006e463a1a03fadd76c28475475f58` |
-| Accepted fast-track | 15/26 = 57.7%; MESP-132 is not counted until Sol acceptance and merge |
+| Current main | PR #76 squash main SHA `ccc52a892c8258778f57c55c12fa0032bd3e276b`; the final main SHA is this post-merge documentation reconciliation commit, recorded in the final handoff |
+| Current capability | MESP-132 Core Finance / General Ledger foundation; merged under Epic MESP-10, Jira remains In Progress / activated pending Sol closure |
+| Retained branch / PR | `feat/MESP-132-finance-foundation`; accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; PR #76 Merged |
+| Latest completed capability | MESP-132 Core Finance / General Ledger foundation; PR #76 squash-merged at `ccc52a892c8258778f57c55c12fa0032bd3e276b` |
+| Accepted fast-track | 16/26 = 61.5%; capability completion is distinct from production readiness |
 | Production-readiness | ~47% overall; ~41% Procurement/P2P; distinct from capability completion |
 
-MESP-132 is implemented on branch `feat/MESP-132-finance-foundation` from
-the exact required main base `fcec241dfedb529fef89d4336adf1e571917c52a` at
-source/test implementation commit `dcae7e231bd264580c33e60c35f5cc8436c4f050`.
+MESP-132 is merged from retained branch `feat/MESP-132-finance-foundation`,
+from the exact required main base `fcec241dfedb529fef89d4336adf1e571917c52a`
+at accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; its
+source/test implementation commit was `dcae7e231bd264580c33e60c35f5cc8436c4f050`.
 It adds the bounded Company-owned Finance /
 GL foundation: COA, Fiscal Calendar/Year/Period control, Cost Center,
 balanced manual journals, reversal, immutable GL facts, versioned posting
@@ -52,20 +55,20 @@ rules, source-to-GL uniqueness, exact MESP-120 FX evidence, and the
 `/app/finance` workspace provides bounded Finance and GL inquiry views in
 EN/AR and RTL.
 
-This is a Draft-PR implementation handoff, not accepted capability credit.
-Fast-track completion therefore remains **15/26 = 57.7%**; Overall Production-
-Ready Completion remains **~47%** and Procurement/P2P remains **~41%**. No
-Jira writes were performed and no Opus review was requested.
+This is a verified merged-capability handoff. Fast-track completion is
+therefore **16/26 = 61.5%**; Overall Production-Ready Completion remains
+**~47%** and Procurement/P2P remains **~41%**. No Jira writes were performed
+and no Opus review was requested.
 
 | Current control | Verified position |
 |---|---|
-| MESP-132 code | Branch `feat/MESP-132-finance-foundation`; source/test implementation `dcae7e231bd264580c33e60c35f5cc8436c4f050`; base `fcec241dfedb529fef89d4336adf1e571917c52a`; Draft PR #76 Open/Draft/unmerged; latest Sol hold `11852`. |
-| Production capability | ~47% overall; Procurement/P2P ~41%; headlines unchanged. Fast-track 15/26 = 57.7%, not production readiness. |
-| Validation | Finance 12/12; REST/OpenAPI + host security 53/53; prior Inventory 89/89; SQL safety 46/46; full backend 982/982 with 0 failed/0 skipped; Release 0 warnings/errors; Angular 259/259; initial 496.34 kB; Finance lazy 36.45 kB; focused Playwright 2/2; full Playwright 34/34; npm audits 0 vulnerabilities; Finance EF model-change detection clean. |
-| Runtime | Backend `http://localhost:5300` PID `23772`, `/health` HTTP 200; frontend `http://localhost:4300` PID `28656`, `/`, `/main.js`, and `/app/finance` HTTP 200; both processes left running. |
-| Markdown reconciliation | 67 tracked Markdown files inspected; 14 current live-state files changed; 53 unchanged; 10 approved/historical session artifacts preserved; 0 unmarked stale live MESP-132 references remain. |
+| MESP-132 code | Retained branch `feat/MESP-132-finance-foundation`; accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; PR #76 squash SHA `ccc52a892c8258778f57c55c12fa0032bd3e276b`; Sol acceptance `11855`; prior holds `11848`, `11852`. |
+| Production capability | ~47% overall; Procurement/P2P ~41%; headlines unchanged. Fast-track 16/26 = 61.5%, not production readiness. |
+| Validation | Post-merge Release build 0 warnings/0 errors; focused Finance 12/12; bounded Inventory regression 89/89; accepted exact-head REST/OpenAPI + host security 53/53, SQL safety 46/46, backend 982/982, Angular 259/259, Playwright 2/2 + 34/34, initial 496.34 kB, Finance lazy 36.45 kB, and npm audits 0 vulnerabilities; Finance EF model-change detection clean. |
+| Runtime | Final merged-main launcher: backend `http://localhost:5300` PID `21112`, `/health` HTTP 200; frontend `http://localhost:4300` PID `39640`, `/`, `/main.js`, and `/app/finance` HTTP 200; both processes left running. |
+| Markdown reconciliation | 67 tracked Markdown files inspected; 16 current live-state files changed; 51 unchanged; approved/historical content preserved in all 67 files; 0 unmarked stale live MESP-132 references remain. |
 | Delivery boundaries | Finance foundation only; no AP/AR, cash/bank, tax/VAT/ZATCA/FATOORA, financial statements, generic Reporting, Sales, production migration/cutover, external providers, statutory certification, or Wafra-specific Finance behavior. `frontend/assets` untouched. |
-| Next exact session | Sol acceptance of the exact final branch SHA and the single Draft PR. Do not increase accepted capability count until Sol accepts and merges MESP-132. |
+| Next exact session | Sol verifies the final main/PR merge SHA, closes MESP-132 in Jira, reconciles MESP-10, determines and activates the next approved capability, and issues the next Luna prompt. Do not start MESP-133 automatically. |
 
 ## Current module / capability matrix — 24 August 2026
 
@@ -75,7 +78,7 @@ Jira writes were performed and no Opus review was requested.
 | Master Data and Business Parties | Done / merged at bounded slices | Reusable bounded source capability; SQL/provider and full Release 1 gates remain distinct. |
 | Procurement / P2P through MESP-124 | Done / merged at bounded capabilities | MESP-125+ downstream receiving/invoice effects are separate capabilities. |
 | Inventory MESP-128–MESP-131 | Done / merged | Physical ledger, movement, stock control, MWA valuation, reconciliation, and Finance handoff evidence; no accounting journal ownership. |
-| MESP-132 Finance / GL foundation | In Progress / Draft PR | Active under Epic MESP-10; PR #76 Open/Draft/unmerged; implementation validation pending Sol acceptance. |
+| MESP-132 Finance / GL foundation | Merged / Jira In Progress | Accepted through PR #76; Sol Jira closure and MESP-10 Finance Epic reconciliation remain. |
 | MESP-133–MESP-142 | To Do / not activated | No next capability is inferred from the current Draft PR. |
 | Production / provider / cutover gates | Production Gate | MESP-48, MESP-50, SQL/provider, backup/restore, capacity, legal/specialist, migration/cutover, and external/statutory validation remain open or deferred. |
 
@@ -143,6 +146,7 @@ production readiness. `frontend/assets` remains untouched.
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
+| 2026-08-24 | MESP-132 guarded squash merge and post-merge reconciliation: PR #76 merged at `ccc52a892c8258778f57c55c12fa0032bd3e276b` from accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; Jira remains In Progress pending Sol closure. | ~47% | ~41% | Accepted fast-track completion is now **16/26 = 61.5%**; merged-main Release build 0/0; focused Finance 12/12; bounded Inventory 89/89; accepted exact-head SQL 46/46; REST/host 53/53, backend 982/982, Angular 259/259, Playwright 2/2 + 34/34, bundle 496.34 kB / Finance lazy 36.45 kB, audits clean; final runtime backend 5300 PID 21112 and frontend 4300 PID 39640 with required HTTP 200 probes; no Jira writes or Opus review. |
 | 2026-08-24 | MESP-132 final Sol acceptance remediation completed on the existing Draft PR branch: public manual Journal input is server-forced to `manual-journal.v1` / `manual` with no browser-controlled source identity, evidence, Posting Rule, or amount authority; trusted Inventory lineage remains source-owned; and SQL Server provider-realistic concurrency evidence covers period close/post, account restriction/post, same-Journal post, same-source Inventory handoff processing, and first-company JournalSequence allocation. | ~47% | ~41% | No production-capability increase; source/test implementation `dcae7e231bd264580c33e60c35f5cc8436c4f050`; Finance 12/12; REST/host 53/53; Inventory 89/89; SQL 46/46; backend 982/982; Release 0/0; Angular 259/259; bundle 496.34 kB / Finance lazy 36.45 kB; Chromium 2/2 and 34/34; audits clean; runtime PIDs 23772/28656 with HTTP 200 probes; PR #76 remains Open/Draft/unmerged; latest Sol hold `11852`; no Jira or Opus. |
 | 2026-08-24 | MESP-132 Sol Finance correctness remediation and repository-wide Markdown reconciliation completed on the existing Draft PR branch. Company authorization is resource-resolved for ID routes; manual amounts are server-derived; FX direction is source/transaction → Company functional; approval/SoD and Inventory handoff policy seams fail closed; directional mapping and additive migration are validated. | ~47% | ~41% | No production-capability increase; implementation commit `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`; focused Finance 9/9; full backend 973/973; SQL safety 41/41; Release 0/0; Angular 258/258; bundle 496.34 kB / Finance lazy 36.50 kB; Chromium 2/2 and 34/34; audits clean; runtime 5300/4300 HTTP 200; PR #76 remains Draft/unmerged; no Jira or Opus. |
 | 2026-08-24 | Repository-wide Markdown / project-state reconciliation for the MESP-132 acceptance stage: current main, active branch/head, PR state, capability matrix, validation, runtime, and next Sol action synchronized across live overlays; approved and historical bodies preserved. | ~47% | ~41% | No production-capability increase; accepted fast-track remains 15/26 = 57.7%; MESP-132 remains Draft/unmerged pending Sol acceptance; `frontend/assets` untouched. |
@@ -1743,11 +1747,14 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 Current active development area:
 
-> **Current active implementation:** MESP-132 Core Finance / GL foundation is
-> In Progress / activated on branch `feat/MESP-132-finance-foundation` from
-> exact base `fcec241dfedb529fef89d4336adf1e571917c52a`, at source/test
-> implementation commit `dcae7e231bd264580c33e60c35f5cc8436c4f050`. Draft PR #76 is Open/Draft/
-> unmerged pending Sol acceptance.
+> **Current merged capability:** MESP-132 Core Finance / GL foundation is
+> squash-merged through PR #76 at `ccc52a892c8258778f57c55c12fa0032bd3e276b`
+> from accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`.
+> Jira remains In Progress / activated pending Sol closure and MESP-10
+> Finance Epic reconciliation. The retained implementation branch is
+> `feat/MESP-132-finance-foundation`; its source/test implementation commit is
+> `dcae7e231bd264580c33e60c35f5cc8436c4f050` from exact base
+> `fcec241dfedb529fef89d4336adf1e571917c52a`.
 > The bounded source includes Company-owned COA, Fiscal Calendar/Year/Period,
 > Cost Center, manual journals, balanced posting, reversal, immutable GL
 > facts, versioned posting rules, exact MESP-120 FX evidence, and the

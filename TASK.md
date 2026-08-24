@@ -1,6 +1,70 @@
-# CURRENT SESSION HANDOFF — MESP-132 FINANCE FOUNDATION ACCEPTANCE
+# MESP-132 GUARDED MERGE — FULL SOL GOVERNANCE HANDOFF
 
-## Current repository truth — 24 August 2026
+## Final merged-main state — 24 August 2026
+
+- **Accepted feature head:** `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`
+- **Pre-merge main:** `fcec241dfedb529fef89d4336adf1e571917c52a`
+- **PR:** `#76` — MESP-132 Core Finance and GL foundation
+- **PR state:** **Merged**; feature branch `feat/MESP-132-finance-foundation` retained
+- **Squash SHA:** `ccc52a892c8258778f57c55c12fa0032bd3e276b`
+- **Documentation commit:** this single post-merge Markdown/state reconciliation commit
+- **Final main:** this post-merge documentation/state reconciliation commit; exact SHA is recorded in the final response and repository verification
+- **Sol acceptance:** Jira comment `11855`
+- **Prior Sol holds:** Jira comments `11848`, `11852`
+- **MESP-131:** Done; **MESP-8:** Done
+- **MESP-10:** In Progress until Sol decides Finance Epic closure/continuation
+
+## Accepted validation evidence
+
+Focused Finance `12/12`; REST/OpenAPI and host-security `53/53`; prior Inventory
+regression `89/89`; SQL Server safety `46/46` with 0 failures/skips; full backend
+`982/982` with 0 failures/skips; Release `0 warnings / 0 errors`; Angular
+`259/259` across 37 spec files; focused/full Playwright `2/2` and `34/34`;
+initial bundle `496.34 kB`; Finance lazy chunk `36.45 kB`; npm audits report
+0 vulnerabilities; `frontend/assets` untouched.
+
+## Post-merge validation and runtime
+
+- Release build on merged `main`: `0 warnings / 0 errors`.
+- Focused Finance: `12/12`.
+- Bounded existing Inventory regression: `89/89`.
+- SQL Server `46/46` is preserved as accepted exact-head disposable-LocalDB evidence; the full SQL harness was not rerun because squash merge does not alter source semantics.
+- Final runtime: backend `http://localhost:5300`, PID `21112`, `/health` HTTP 200; frontend `http://localhost:4300`, PID `39640`, `/`, `/main.js`, and `/app/finance` HTTP 200; both are repository-owned and left running.
+
+## Markdown audit
+
+- Total tracked Markdown: `67`; all `67` were read.
+- Current-state files were reconciled; approved requirements and historical/session bodies were preserved.
+- The final counts and intentionally historical stale-looking references are recorded in the completion response and `docs/staticts.md`.
+
+## Accepted capability and production readiness
+
+Accepted fast-track capability completion is **16/26 = 61.5%**. This is not
+production readiness. Preserve the evidence-based headlines at approximately
+**47% overall** and **41% Procurement/P2P**.
+
+## Sol next action
+
+Sol must:
+
+1. Verify final `main` and PR #76 squash/documentation merge SHAs.
+2. Close MESP-132 in Jira.
+3. Reconcile the MESP-10 Finance Epic.
+4. Determine the next approved capability.
+5. Activate the next Jira item.
+6. Issue the next Luna execution prompt.
+
+Do not activate MESP-133. Do not write the next implementation prompt in this
+handoff. No Jira writes were performed by this session, no Claude Opus 5 review
+was performed, and no downstream AP/AR/cash-bank/tax/statements/Sales/
+Reporting/migration/cutover/external/statutory/Wafra-specific implementation
+was started.
+
+---
+
+# Historical handoff — MESP-132 FINANCE FOUNDATION ACCEPTANCE
+
+## Historical pre-merge repository truth — 24 August 2026 (superseded)
 
 - **Current main:** `fcec241dfedb529fef89d4336adf1e571917c52a` (`main` and
   `origin/main` synchronized).
@@ -26,7 +90,7 @@
 - **Production-readiness headlines:** approximately **47% overall** and
   **41% Procurement/P2P**; unchanged by Draft implementation work.
 
-## MESP-132 final source-authority and SQL-concurrency remediation pending Sol acceptance
+## Historical MESP-132 final source-authority and SQL-concurrency remediation pending Sol acceptance
 
 Public manual Journal requests no longer accept source contract/event/evidence,
 Posting Rule, or amount-authority fields; the server forces the manual source

@@ -6,7 +6,7 @@
 MESP-131 is accepted and merged through PR #75 at
 `a8664d6a0d006e463a1a03fadd76c28475475f58`; it extends the existing Inventory
 module and does not create a parallel Finance or Reporting domain. MESP-132 is
-the active Finance implementation on Draft PR #76.
+the merged Finance foundation from PR #76; Jira closure remains with Sol.
 
 - **Ordering:** every physical Inventory movement receives a durable Tenant + Company `LedgerSequence`; future valuation does not use `PostedAt` or `EffectiveDate` as commit-order authority.
 - **Bootstrap:** pre-MESP-131 movement sequence is deterministically backfilled by Tenant, Company, `PostedAt`, and movement ID as a one-time pre-production starting order.
@@ -17,7 +17,7 @@ the active Finance implementation on Draft PR #76.
 - **Pending predecessor:** unknown-policy evidence uses a conservative base pool; once policy scope is known, unresolved cost/policy/FX/link evidence stops only the derived valuation scope. Tracking policies therefore isolate LOT-A and LOT-B; non-tracking policies deliberately combine them. Process mutation accepts only safe Company/Branch/Warehouse/Product/UOM filters and always orders by LedgerSequence.
 - **Transfers:** shipment uses source MWA; In-Transit quantity and value conserve shipped minus received/lost/returned quantities; receipt/loss/return inherit linked transfer valuation.
 - **Corrections:** original valuation evidence is never rewritten; physical corrections append linked valuation reversal/delta evidence.
-- **Finance boundary:** Inventory emits versioned valuation handoff facts only. Journals, GL/AP/AR, account mapping, periods and financial posting remain MESP-132+.
+- **Finance boundary:** Inventory emits versioned valuation handoff facts only. Journals, GL/AP/AR, account mapping, periods and financial posting are owned by the bounded MESP-132 Finance foundation and its explicitly deferred downstream capabilities.
 - **Reporting boundary:** MESP-131 owns Inventory valuation/reconciliation views and bounded audited CSV export only; generic Reporting remains MESP-139.
 - **Concurrency:** durable pool serialization, Serializable persistence, rowversion/uniqueness, SHA-256 fingerprints, existing Inventory idempotency replay, and first-scope conflict handling prevent duplicate/forked applied valuation.
 - **Finance handoff:** `inventory-valuation-finance.v1` exposes Direction, non-negative BaseAmount, signed inbound/outbound effect, and immutable rounding-adjustment evidence; Inventory creates no journals.
@@ -31,12 +31,14 @@ See `docs/34_MESP-131_MWA_Valuation_Architecture.md` for the full bounded handof
 <!-- MESP-132-ARCH-START -->
 ## Current MESP-132 Finance foundation overlay - 24 August 2026
 
-MESP-132 adds the bounded Company-owned Finance / GL foundation on branch
-`feat/MESP-132-finance-foundation`, from exact base
-`fcec241dfedb529fef89d4336adf1e571917c52a`, at source/test implementation
-commit `dcae7e231bd264580c33e60c35f5cc8436c4f050` from starting SHA
-`2f523582fbd3394b1eb11580eff490ba83aa9afb`. Draft PR #76 is Open, Draft, and
-unmerged pending Sol acceptance. It follows the existing four-project direction:
+MESP-132 adds the bounded Company-owned Finance / GL foundation, squash-merged
+through PR #76 into `main` at `ccc52a892c8258778f57c55c12fa0032bd3e276b` from
+accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`. The retained
+feature branch is `feat/MESP-132-finance-foundation`; its source/test
+implementation commit is `dcae7e231bd264580c33e60c35f5cc8436c4f050` from
+starting SHA `2f523582fbd3394b1eb11580eff490ba83aa9afb`, based on
+`fcec241dfedb529fef89d4336adf1e571917c52a`. MESP-132 remains Jira In Progress
+pending Sol closure and MESP-10 reconciliation. It follows the existing four-project direction:
 Contracts expose
 Finance records, App owns request context/authorization seams, Infrastructure
 owns `FinanceDbContext`, `finance` schema entities/migrations and provider

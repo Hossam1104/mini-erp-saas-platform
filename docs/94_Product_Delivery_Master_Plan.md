@@ -16,15 +16,16 @@
 >
 > The active implementation capability is MESP-132 (Finance / General Ledger
 > foundation), which is In Progress / activated under Epic MESP-10. Current main
-> is `fcec241dfedb529fef89d4336adf1e571917c52a`; the feature branch is
-> `feat/MESP-132-finance-foundation` at source/test implementation commit
-> `dcae7e231bd264580c33e60c35f5cc8436c4f050` (starting SHA
-> `2f523582fbd3394b1eb11580eff490ba83aa9afb`); Draft PR #76 is Open, Draft, and
-> unmerged pending Sol acceptance. MESP-131 is Done through PR #75 merged at
-> `a8664d6a0d006e463a1a03fadd76c28475475f58`. The accepted fast-track count is
-> 15/26 = 57.7%; production-readiness remains approximately 47% overall and
-> 41% Procurement/P2P. Immediate next action is Sol acceptance; no capability
-> starts automatically.
+> is `ccc52a892c8258778f57c55c12fa0032bd3e276b`, the PR #76 squash merge from
+> accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`. The retained
+> feature branch is `feat/MESP-132-finance-foundation`; its source/test
+> implementation commit is `dcae7e231bd264580c33e60c35f5cc8436c4f050` (starting
+> SHA `2f523582fbd3394b1eb11580eff490ba83aa9afb`). MESP-132 remains Jira In
+> Progress pending Sol closure and MESP-10 reconciliation. MESP-131 is Done
+> through PR #75 merged at `a8664d6a0d006e463a1a03fadd76c28475475f58`. The
+> accepted fast-track count is 16/26 = 61.5%; production-readiness remains
+> approximately 47% overall and 41% Procurement/P2P. No capability starts
+> automatically.
 
 > **Historical pre-fast-track overlay — MESP-38 completion.** The prior
 > MESP-38/MESP-39 overlay immediately below remains preserved evidence only;
@@ -397,11 +398,11 @@
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
 | Current activity | `MESP-132 Finance / General Ledger foundation is In Progress / activated under MESP-10; MESP-131 and MESP-8 are Done; MESP-23 and named production/legal/external gates remain preserved.` |
-| Current implementation item | `MESP-132 on feat/MESP-132-finance-foundation, source/test implementation dcae7e231bd264580c33e60c35f5cc8436c4f050 from start 2f523582fbd3394b1eb11580eff490ba83aa9afb, Draft PR #76 Open/Draft/unmerged pending Sol acceptance.` |
-| Merged-main baseline | `main and origin/main are synchronized at fcec241dfedb529fef89d4336adf1e571917c52a; MESP-131 PR #75 merged at a8664d6a0d006e463a1a03fadd76c28475475f58.` |
+| Current implementation item | `MESP-132 merged through PR #76 at squash SHA ccc52a892c8258778f57c55c12fa0032bd3e276b from accepted feature head c0e04553db3c7b04fa7f7870b60fc439ec8a40b7; retained branch feat/MESP-132-finance-foundation; Jira In Progress pending Sol closure.` |
+| Merged-main baseline | `main and origin/main are synchronized at the post-merge documentation reconciliation commit; PR #76 squash SHA is ccc52a892c8258778f57c55c12fa0032bd3e276b; MESP-131 PR #75 merged at a8664d6a0d006e463a1a03fadd76c28475475f58.` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `PR #76 is Open/Draft/unmerged for MESP-132; no merge or Ready-for-Review transition is authorized by this handoff.` |
-| Current review checkpoint | `MESP-132 final source-authority and SQL-concurrency remediation pending Sol acceptance: Finance 12/12; REST/host 53/53; SQL 46/46; backend 982/982; Angular 259/259; bundle 496.34 kB initial / 36.45 kB Finance lazy; Chromium 2/2 focused and 34/34 full; runtime 5300/4300 HTTP 200 probes.` |
+| Open Pull Request | `PR #76 is merged; the retained feature branch is preserved for traceability and no next implementation capability is activated automatically.` |
+| Current review checkpoint | `MESP-132 post-merge evidence: Release build 0/0; focused Finance 12/12; bounded Inventory regression 89/89; accepted exact-head SQL 46/46; prior exact-head backend/REST/Angular/Playwright/bundle/audit evidence remains recorded; runtime probes are recorded in the merged-main handoff.` |
 
 ---
 

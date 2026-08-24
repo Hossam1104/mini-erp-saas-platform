@@ -25,14 +25,14 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ### Current acceptance stage: MESP-132 Finance foundation - 24 August 2026
 
-The repository is on synchronized `main` baseline
-`fcec241dfedb529fef89d4336adf1e571917c52a` with MESP-132 active under Finance
-Epic MESP-10. The feature branch is
-`feat/MESP-132-finance-foundation`; this final bounded remediation started at
-`2f523582fbd3394b1eb11580eff490ba83aa9afb` and its implementation commit is
-`dcae7e2`. Draft PR #76 remains Open, Draft, and unmerged. Sol acceptance is
-pending. The accepted fast-track count remains **15/26 = 57.7%** and
-production-readiness remains approximately **47% overall / 41% Procurement/P2P**.
+PR #76 is squash-merged into `main` at
+`ccc52a892c8258778f57c55c12fa0032bd3e276b`. Its exact accepted feature head
+is `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; the retained feature branch
+is `feat/MESP-132-finance-foundation`. MESP-132 remains Jira In Progress and
+awaits Sol's Jira closure. The post-merge documentation reconciliation commit
+is the final `main` state recorded by this handoff. Accepted fast-track
+completion is **16/26 = 61.5%** and production-readiness remains approximately
+**47% overall / 41% Procurement/P2P**.
 
 MESP-132 delivers the bounded Company-owned Finance / General Ledger
 foundation described below. The final remediation forces the public Manual
@@ -41,9 +41,9 @@ lineage, and adds five provider-realistic SQL Server concurrency races. Final
 evidence is Finance `12/12`, REST/OpenAPI and host security `53/53`, SQL safety
 `46/46`, full backend `982/982`, Angular `259/259`, focused/full Chromium
 `2/2` and `34/34`, initial bundle `496.34 kB`, Finance lazy chunk `36.45 kB`,
-and clean npm audits. Runtime is backend `http://localhost:5300` PID `23772`
-and frontend `http://localhost:4300` PID `28656`, with recorded HTTP 200 health
-and Finance-route evidence.
+and clean npm audits. Final merged-main runtime is backend
+`http://localhost:5300` PID `21112` and frontend `http://localhost:4300` PID
+`39640`; `/health`, `/`, `/main.js`, and `/app/finance` returned HTTP 200.
 
 ### MESP-131 guarded merge complete - 24 August 2026
 
@@ -96,11 +96,12 @@ The implementation adds Inventory-owned deterministic MWA valuation evidence ove
 
 It does **not** implement GL, AP, AR, tax posting, payments, Sales, generic Reporting, migration/cutover, external providers, statutory/ZATCA/FATOORA, or Wafra-specific reusable core behavior.
 
-### MESP-132 Core Finance foundation - implementation handoff - 24 August 2026
+### MESP-132 Core Finance foundation - merged capability - 24 August 2026
 
-MESP-132 is implemented on `feat/MESP-132-finance-foundation` through the
-bounded source-authority and SQL concurrency implementation commit `dcae7e2`,
-from the exact required main base `fcec241dfedb529fef89d4336adf1e571917c52a`.
+MESP-132 is merged through PR #76 from the bounded source-authority and SQL
+concurrency implementation, whose accepted feature head is
+`c0e04553db3c7b04fa7f7870b60fc439ec8a40b7` and whose implementation commit
+was `dcae7e2`, based on `fcec241dfedb529fef89d4336adf1e571917c52a`.
 The bounded capability adds Company-owned
 Chart of Accounts, Fiscal Calendar/Year/Period controls, approved Cost
 Center dimension support, manual journals, balanced functional-currency
@@ -116,10 +117,9 @@ periods, journals, posting rules, Inventory handoff, and GL inquiry tabs in
 EN/AR with RTL support. It contains no raw GUID entry. The implementation
 does not add AP/AR, cash/bank, tax/VAT/ZATCA/FATOORA, financial statements,
 generic Reporting, Sales, production migration/cutover, external providers,
-or Wafra-specific Finance behavior. Draft PR `#76` is Open, Draft, and
-unmerged for Sol acceptance; no Jira writes were performed by this session.
-Implementation validation is pending Sol acceptance of the exact final branch
-commit.
+or Wafra-specific Finance behavior. The squash merge is accepted at the
+source/test head above; Sol still owns Jira closure and Finance Epic
+reconciliation. No Jira writes were performed by this session.
 
 ### MESP-132 validation evidence
 
@@ -139,7 +139,7 @@ commit.
 | npm audits | 0 vulnerabilities |
 | `frontend/assets` | untouched |
 
-The tracked project-control source of truth is [`docs/staticts.md`](docs/staticts.md). The conservative production-readiness headline remains approximately **47% overall** and approximately **41% Procurement/P2P**; the merge does not change those production-readiness figures. Fast-track capability completion is **15/26 = 57.7%**; that is not production readiness.
+The tracked project-control source of truth is [`docs/staticts.md`](docs/staticts.md). The conservative production-readiness headline remains approximately **47% overall** and approximately **41% Procurement/P2P**; the merge does not change those production-readiness figures. Fast-track capability completion is **16/26 = 61.5%**; that is not production readiness.
 
 ### MESP-131 accepted implementation evidence
 
@@ -196,7 +196,7 @@ Legend: âœ… merged/usable at a bounded scope Â· ðŸš§ implemented/activ
 | Goods Receipt physical effects / Transfers / In Transit / Supplier Return stock | âœ… | MESP-129 immutable movement lineage |
 | Stock Adjustment / Counts / Stock Issue / corrections | âœ… | MESP-130 count fences, SoD, blind counting and correction history |
 | MWA valuation / Inventory reconciliation | merged | MESP-131 PR #75 merged; bounded Inventory-owned capability, Jira closure recorded in comment `11842` |
-| Core Finance: COA / periods / journals / GL | active | MESP-132 Draft PR; Sol acceptance pending |
+| Core Finance: COA / periods / journals / GL | merged | MESP-132 PR #76 squash-merged; Sol Jira closure pending |
 | AP / AR / cash / settlement | ðŸ“‹ | Downstream Finance |
 | B2B Sales / Order-to-Cash | ðŸ“‹ | Required Release 1 work; not started |
 | Generic Reporting and Analytics | ðŸ“‹ / ðŸ”’ | MESP-139; MESP-131 only provides Inventory-owned source views |
@@ -398,7 +398,7 @@ or local database process as a production deployment model.
 
 ## Scope discipline
 
-MESP-130 is merged to `main` at `b470179e1d18ef75c0a9247b2340407da6220dc4`. MESP-131 is merged through PR #75 at `a8664d6a0d006e463a1a03fadd76c28475475f58` and Jira Done through closure comment `11842`. MESP-132 is the active bounded Finance foundation implementation on its Draft PR.
+MESP-130 is merged to `main` at `b470179e1d18ef75c0a9247b2340407da6220dc4`. MESP-131 is merged through PR #75 at `a8664d6a0d006e463a1a03fadd76c28475475f58` and Jira Done through closure comment `11842`. MESP-132 is the latest bounded Finance foundation merged through PR #76 at `ccc52a892c8258778f57c55c12fa0032bd3e276b`; Sol owns Jira closure.
 
 Inventory valuation produces operational valuation and Finance handoff facts only; MESP-132 consumes that handoff without mutating Inventory. MESP-132 creates bounded Finance journals and GL facts, but does not add AP/AR, tax/payment effects, B2B Sales, generic Reporting, migration/cutover, external/statutory integrations, or Wafra-specific core behavior.
 

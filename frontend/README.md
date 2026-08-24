@@ -36,9 +36,10 @@
 > `36.45 kB`, focused Finance Chromium is `2/2`, full Chromium is `34/34`, and
 > both npm audits report `0 vulnerabilities`. The implementation branch is
 > `feat/MESP-132-finance-foundation`, source-authority/SQL implementation
-> commit `dcae7e2`, from exact base
-> `fcec241dfedb529fef89d4336adf1e571917c52a`. Draft PR #76 is Open, Draft,
-> and unmerged; final Sol acceptance is pending.
+> The retained feature branch carries accepted feature head
+> `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`, from implementation commit
+> `dcae7e2` and exact base `fcec241dfedb529fef89d4336adf1e571917c52a`.
+> PR #76 is squash-merged into `main`; Sol still owns Jira closure.
 <!-- MESP-132-CURRENT-END -->
 
 > **Historical MESP-129 workspace overlay - 22 August 2026.** The Inventory
@@ -156,10 +157,10 @@ Accepted merged-main MESP-131 frontend evidence:
 - Both npm audits: **0 vulnerabilities**.
 - `frontend/assets`: **untouched**.
 
-Current MESP-132 implementation evidence pending Sol acceptance is recorded above and in
+Current MESP-132 implementation evidence is recorded above and in
 `docs/35_MESP-132_Finance_Foundation_Architecture.md`. The Finance route is
-implemented but remains subject to Sol acceptance of the Draft PR; it is not
-a production-readiness claim.
+implemented and merged, but it is not a production-readiness claim; Sol still
+owns Jira closure and Finance Epic reconciliation.
 
 The Playwright checks are automated API-fixture/browser evidence, not a manual interactive production sign-off.
 
