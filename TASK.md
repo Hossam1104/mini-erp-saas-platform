@@ -1,3 +1,125 @@
+# MESP-133 - AP / AR / CASH / PAYMENT / RECEIPT / SETTLEMENT IMPLEMENTATION HANDOFF
+
+This bounded session is complete. The implementation is on the focused branch
+below and Draft PR #77 remains open and unmerged for GPT-5.6 Sol review. Do
+not start MESP-134 or merge this branch automatically.
+
+## Starting Main SHA
+
+`9ace42c7a830b5ef155a26b18d4a888676b8c188` (exact `main` and
+`origin/main` baseline before branch creation).
+
+## Branch
+
+`feat/MESP-133-ap-ar-cash-settlement`
+
+## Implementation SHA
+
+`3a579e3ad66378d3537e3f1bdb2b7d15954481c2` - source and test
+implementation commit.
+
+## Final Branch SHA
+
+The final branch head is the documentation/tracker handoff commit after this
+implementation commit. The exact value is recorded by `git rev-parse HEAD` in
+the completion report and must be verified by Sol after push.
+
+## Draft PR
+
+- **Number:** `#77`
+- **State:** **Open / Draft / Unmerged**
+- **Head:** `feat/MESP-133-ap-ar-cash-settlement`
+- **Base:** `main`
+- **Mergeability:** Do not merge or mark ready in this session; GPT-5.6 Sol
+  owns the independent review and merge recommendation.
+
+## Repository Architecture Findings
+
+MESP-133 is implemented inside the existing Tenant-authorized, Company-scoped
+Finance module. The new module-owned persistence consists of payment methods,
+cash accounts, open items, settlement documents, and allocations, with additive
+migration `20260824220208_MESP133ApArCashSettlement`. Tenant ownership filters
+and verification cover all new entities. REST mutation handlers use the
+existing trusted-context, authorization, anti-forgery, idempotency, audit,
+optimistic-concurrency, and OpenAPI foundations. Angular adds lazy AP, AR, and
+settlement routes under `/app/finance` with EN/AR/RTL presentation.
+
+## Accounts Payable
+
+AP recognizes only the existing MESP-126 Finance-ready supplier-invoice
+handoff. Held, unresolved, non-comparable, rejected, or pending evidence is
+not recognized. Payment-term and due-date evidence is snapshotted; there is no
+hardcoded Net-30 fallback. Because the current upstream handoff does not
+provide trusted terms, recognition fails closed with
+`payment_terms_not_configured` until the upstream contract is complete.
+
+## docs/staticts.md
+
+The tracked statistics file was read and updated directly. The production
+headline remains approximately 47%, Procurement/P2P approximately 41%, and
+accepted fast-track remains 16/26 = 61.5% because this PR is Draft and
+unmerged. The 25 August progress row records the exact base, implementation
+commit, PR, validation counts, runtime probes, and unchanged boundaries.
+
+## Documentation
+
+Added `docs/36_MESP-133_AP_AR_Cash_Settlement_Architecture.md` covering scope,
+authorization, AP/AR source contracts, payment and allocation invariants,
+posting/GL lineage, persistence, API/UI routes, validation, and deferred
+scope. All 67 tracked Markdown files were audited; approved and historical
+content was preserved. `frontend/assets` is untouched.
+
+## TASK.md
+
+This MESP-133 handoff is now the top current session record. The historical
+MESP-132 handoff remains below it for traceability. The next action is Sol's
+independent review of Draft PR #77, not automatic execution of another
+capability.
+
+## PR Description
+
+Draft PR #77 describes the reusable AP/AR/cash/payment/receipt/settlement
+spine, its fail-closed boundaries, MESP-132 Posting Rule/journal lineage,
+additive migration, and validation evidence. It remains open and Draft.
+
+## Jira
+
+MESP-133 remains In Progress / activated under Epic MESP-10. Activation
+comment: `11859`. MESP-10 activation comment: `11860`. No Jira writes were
+performed during this implementation session.
+
+### Writes Performed
+
+No Jira writes, external provider configuration, credentials, production
+configuration, DNS/TLS changes, migration execution against a production
+database, or asset changes were performed.
+
+## Opus
+
+### Review Performed
+
+No Claude Opus review was performed and no Opus prompt was added. The required
+next reviewer is GPT-5.6 Sol.
+
+## Explicit Deferred Scope
+
+MESP-134 FX/exchange-rate setup; tax/VAT/ZATCA/FATOORA; Sales lifecycle;
+external bank feeds, payment gateways, and providers; supplier/customer
+portals; statements; fixed assets; payroll; treasury; generic Reporting;
+production provider setup; backup/restore, capacity, legal, specialist,
+migration/cutover, external/statutory, and Wafra-specific core gates remain
+open or deferred. Posted documents and allocations remain immutable and use
+explicit reversals. No production-readiness or merged-capability increase is
+claimed from this Draft PR.
+
+## Next Step
+
+GPT-5.6 Sol reviews the complete focused diff and evidence, with special focus
+on AP term/source fail-closed behavior, Company/Tenant isolation, Posting Rule
+and GL lineage, settlement/allocation/reversal invariants, concurrency races,
+and additive migration safety. Sol then recommends merge or remediation and
+reconciles Jira; this branch must remain open/unmerged until that decision.
+
 # MESP-132 GUARDED MERGE — FULL SOL GOVERNANCE HANDOFF
 
 ## Final merged-main state — 24 August 2026
