@@ -149,8 +149,6 @@ export interface FinanceJournalWriteRequest {
   postingDate: string;
   transactionCurrencyCode: string | null;
   exchangeRate: number | null;
-  sourceContract: string;
-  sourceEvent: string;
   description: string;
   lines: Array<{
     accountId: string;

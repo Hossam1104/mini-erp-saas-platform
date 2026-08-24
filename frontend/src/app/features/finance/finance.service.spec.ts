@@ -51,4 +51,40 @@ describe('FinanceService', () => {
     expect(periods.request.method).toBe('GET');
     periods.flush([]);
   });
+
+  it('submits manual journals without source-owned authority fields', async () => {
+    const payload = {
+      companyId: 'company-a',
+      journalDate: '2026-08-24',
+      postingDate: '2026-08-24',
+      transactionCurrencyCode: null,
+      exchangeRate: null,
+      description: 'Manual journal',
+      lines: [
+        { accountId: 'debit-account', debit: 10, credit: 0, costCenterId: null, description: null },
+        { accountId: 'credit-account', debit: 0, credit: 10, costCenterId: null, description: null },
+      ],
+    };
+    const promise = service.createJournal(payload);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const request = httpMock.expectOne('/api/v1/finance/journals');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(payload);
+    expect(Object.keys(request.request.body).sort()).toEqual([
+      'companyId',
+      'description',
+      'exchangeRate',
+      'journalDate',
+      'lines',
+      'postingDate',
+      'transactionCurrencyCode',
+    ]);
+    expect(request.request.body.sourceContract).toBeUndefined();
+    expect(request.request.body.sourceEvent).toBeUndefined();
+    expect(request.request.body.sourceEvidenceId).toBeUndefined();
+    expect(request.request.body.sourceEvidenceVersion).toBeUndefined();
+    expect(request.request.body.postingRuleId).toBeUndefined();
+    request.flush({});
+    await promise;
+  });
 });

@@ -5,6 +5,7 @@ using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Finance;
 using MiniErp.App.Modules.Inventory;
 using MiniErp.App.Modules.MasterData;
+using MiniErp.Api;
 using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.MasterData;
@@ -181,6 +182,148 @@ public sealed class FinanceFoundationTests
         Assert.True(authorization.Authorize(context, "finance.journal.post", CompanyId).Allowed);
         Assert.Equal("permission_denied", authorization.Authorize(context, "finance.journal.create", CompanyId).Code);
         Assert.Equal("company_scope_denied", authorization.Authorize(context, "finance.journal.post", Guid.NewGuid()).Code);
+    }
+
+    [Fact]
+    public async Task Public_manual_journal_contract_forces_manual_source_identity_and_cannot_select_source_rule()
+    {
+        var requestType = typeof(FinanceEndpoints.FinanceJournalWriteRequest);
+        var sourceOwnedProperties = new[] { "SourceContract", "SourceEvent", "SourceEvidenceId", "SourceEvidenceVersion", "PostingRuleId" };
+        Assert.DoesNotContain(requestType.GetProperties(), property => sourceOwnedProperties.Contains(property.Name, StringComparer.Ordinal));
+
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        await EnsureCreatedAsync(options);
+        var persistence = CreatePersistence(options);
+        var context = Context("tenant.finance.journal.create");
+        var debit = await CreateAccountAsync(persistence, context, "1700", FinanceAccountType.Asset, true);
+        var credit = await CreateAccountAsync(persistence, context, "4700", FinanceAccountType.Revenue, true);
+        Assert.True(debit.Succeeded, debit.Code);
+        Assert.True(credit.Succeeded, credit.Code);
+
+        var request = new FinanceEndpoints.FinanceJournalWriteRequest(
+            CompanyId,
+            new DateOnly(2026, 1, 15),
+            new DateOnly(2026, 1, 15),
+            null,
+            1m,
+            null,
+            null,
+            null,
+            "Browser manual journal",
+            [
+                new FinanceEndpoints.FinanceJournalLineWriteRequest(debit.Value!.Id, 25m, 0m, null, null),
+                new FinanceEndpoints.FinanceJournalLineWriteRequest(credit.Value!.Id, 0m, 25m, null, null)
+            ]);
+        var toCommand = typeof(FinanceEndpoints).GetMethod("ToCommand", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.NotNull(toCommand);
+        var command = (FinanceJournalCommand)toCommand!.Invoke(null, [request, "manual-public"]!)!;
+
+        Assert.Equal("manual-journal.v1", command.SourceContract);
+        Assert.Equal("manual", command.SourceEvent);
+        Assert.Null(command.SourceEvidenceId);
+        Assert.Null(command.SourceEvidenceVersion);
+        Assert.Null(command.PostingRuleId);
+        Assert.Equal(FinanceJournalAmountAuthority.ManualTransactionCurrency, command.AmountAuthority);
+        Assert.Equal(FinanceApprovalRequirement.Required, command.ApprovalRequirement);
+
+        var created = await persistence.CreateJournalAsync(context, command);
+        Assert.True(created.Succeeded, created.Code);
+        Assert.Equal("manual-journal.v1", created.Value!.SourceContract);
+        Assert.Equal("manual", created.Value.SourceEvent);
+        Assert.Null(created.Value.SourceEvidenceId);
+        Assert.Null(created.Value.SourceEvidenceVersion);
+        Assert.Null(created.Value.PostingRuleId);
+        Assert.Equal(FinanceJournalAmountAuthority.ManualTransactionCurrency, created.Value.AmountAuthority);
+        Assert.Equal(FinanceApprovalRequirement.Required, created.Value.ApprovalRequirement);
+
+        await using var db = new FinanceDbContext(options, context.TenantContext);
+        Assert.Empty(await db.SourceEffects.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Manual_journal_edit_cannot_convert_manual_lineage_or_amount_authority()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        await EnsureCreatedAsync(options);
+        var persistence = CreatePersistence(options);
+        var context = Context("tenant.finance.journal.create");
+        var debit = await CreateAccountAsync(persistence, context, "1800", FinanceAccountType.Asset, true);
+        var credit = await CreateAccountAsync(persistence, context, "4800", FinanceAccountType.Revenue, true);
+        var originalCommand = Journal(debit.Value!.Id, credit.Value!.Id, "manual-edit", 30m);
+        var created = await persistence.CreateJournalAsync(context, originalCommand);
+        Assert.True(created.Succeeded, created.Code);
+
+        var forgedEdit = originalCommand with
+        {
+            Id = created.Value!.Id,
+            SourceContract = "inventory-valuation-finance.v1",
+            SourceEvent = "Inbound",
+            SourceEvidenceId = Guid.NewGuid(),
+            SourceEvidenceVersion = 1,
+            PostingRuleId = Guid.NewGuid(),
+            AmountAuthority = FinanceJournalAmountAuthority.SourceFunctionalCurrency,
+            ApprovalRequirement = FinanceApprovalRequirement.NotRequired,
+            Description = "attempted source impersonation"
+        };
+        var edited = await persistence.EditJournalAsync(context, forgedEdit, created.Value.Version);
+
+        Assert.True(edited.Succeeded, edited.Code);
+        Assert.Equal("manual-journal.v1", edited.Value!.SourceContract);
+        Assert.Equal("manual", edited.Value.SourceEvent);
+        Assert.Null(edited.Value.SourceEvidenceId);
+        Assert.Null(edited.Value.SourceEvidenceVersion);
+        Assert.Null(edited.Value.PostingRuleId);
+        Assert.Equal(FinanceJournalAmountAuthority.ManualTransactionCurrency, edited.Value.AmountAuthority);
+        Assert.Equal(FinanceApprovalRequirement.Required, edited.Value.ApprovalRequirement);
+    }
+
+    [Fact]
+    public async Task Trusted_source_generated_journal_can_still_carry_inventory_lineage()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        await EnsureCreatedAsync(options);
+        var persistence = CreatePersistence(options);
+        var context = Context("tenant.finance.handoff.process");
+        var debit = await CreateAccountAsync(persistence, context, "1900", FinanceAccountType.Asset, true);
+        var credit = await CreateAccountAsync(persistence, context, "4900", FinanceAccountType.Revenue, true);
+        var evidenceId = Guid.NewGuid();
+        var command = new FinanceJournalCommand(
+            CompanyId,
+            new DateOnly(2026, 1, 15),
+            new DateOnly(2026, 1, 15),
+            null,
+            1m,
+            null,
+            null,
+            null,
+            "inventory-valuation-finance.v1",
+            "Inbound",
+            evidenceId,
+            1,
+            Guid.NewGuid(),
+            "Trusted inventory handoff",
+            [new FinanceJournalLineCommand(debit.Value!.Id, 40m, 0m, null, "SAR", null, null), new FinanceJournalLineCommand(credit.Value!.Id, 0m, 40m, null, "SAR", null, null)],
+            Guid.NewGuid(),
+            "trusted-inventory",
+            "trusted-inventory",
+            FinanceJournalAmountAuthority.SourceFunctionalCurrency,
+            FinanceApprovalRequirement.NotRequired);
+
+        var created = await persistence.CreateJournalAsync(context, command);
+
+        Assert.True(created.Succeeded, created.Code);
+        Assert.Equal("inventory-valuation-finance.v1", created.Value!.SourceContract);
+        Assert.Equal("Inbound", created.Value.SourceEvent);
+        Assert.Equal(evidenceId, created.Value.SourceEvidenceId);
+        Assert.Equal(1, created.Value.SourceEvidenceVersion);
+        Assert.Equal(command.PostingRuleId, created.Value.PostingRuleId);
+        Assert.Equal(FinanceJournalAmountAuthority.SourceFunctionalCurrency, created.Value.AmountAuthority);
     }
 
     [Fact]

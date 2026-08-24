@@ -171,9 +171,7 @@ internal sealed class FinanceJournalEntity : FinanceEntity
     {
         JournalDate = command.JournalDate; PostingDate = command.PostingDate; TransactionCurrencyCode = command.TransactionCurrencyCode;
         ExchangeRate = command.ExchangeRate; ExchangeRateId = command.ExchangeRateId; ExchangeRateVersionId = command.ExchangeRateVersionId;
-        ExchangeRateVersionNumber = command.ExchangeRateVersionNumber; SourceContract = command.SourceContract; SourceEvent = command.SourceEvent;
-        SourceEvidenceId = command.SourceEvidenceId; SourceEvidenceVersion = command.SourceEvidenceVersion; PostingRuleId = command.PostingRuleId;
-        Description = command.Description; AmountAuthority = command.AmountAuthority; ApprovalRequirement = command.ApprovalRequirement; TouchVersion();
+        ExchangeRateVersionNumber = command.ExchangeRateVersionNumber; Description = command.Description; TouchVersion();
     }
     internal void ReplaceLines(IEnumerable<FinanceJournalLineEntity> lines)
     {
