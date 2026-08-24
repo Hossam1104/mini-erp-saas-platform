@@ -3,10 +3,10 @@
 ## Status and boundary
 
 **Current acceptance state:** MESP-132 is In Progress / activated under Epic
-MESP-10. The implementation is on `feat/MESP-132-finance-foundation` at exact
-MESP-132 implementation head `0b627c5b127d92d5a99543f475867a187801a653`, based on
+MESP-10. The implementation is on `feat/MESP-132-finance-foundation` with
+correctness remediation commit `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`, based on
 `fcec241dfedb529fef89d4336adf1e571917c52a`; PR #76 is Open, Draft, and
-unmerged. Implementation validation is pending Sol acceptance. The accepted
+unmerged. The validated implementation remains pending Sol acceptance. The accepted
 fast-track count remains `15/26 = 57.7%` and production-readiness remains
 approximately `47%` overall / `41%` Procurement/P2P.
 
@@ -119,6 +119,12 @@ a suspense or plug line. Before posting, Finance revalidates Company scope,
 period, account lifecycle/effective dates/posting eligibility, dimensions,
 mapping, and exact functional-currency debit/credit equality.
 
+Manual journal lines expose debit/credit sides only; the server derives a
+positive transaction amount and reversal swaps sides without negating that
+amount. Source-generated handoff lines may carry a null transaction amount
+when no authoritative source-document amount exists; Inventory functional
+`BaseAmount`/`SignedBaseAmount` is not converted a second time.
+
 Reversal creates a new Posted journal with equal-and-opposite lines, links it
 to the exact original, preserves account/dimension/currency/rate evidence,
 requires a reason and eligible posting period, and marks the original
@@ -138,6 +144,15 @@ rule returns `pending_mapping`; more than one applicable rule returns
 `ambiguous_mapping`; neither path chooses first/latest/lowest-ID policy.
 The selected rule and version are snapshotted on the Posted journal.
 
+The rule key includes both source type and movement direction. Inbound and
+outbound classifications are centralized and cannot silently share a mapping;
+missing mapping is `PendingMapping`, while ambiguous mapping is `Blocked`.
+The handoff company is resolved from the exact server-owned Inventory handoff
+before authorization or processing. Source-generated journals distinguish
+functional-source authority from manual transaction-currency authority, carry
+positive transaction amounts only when authoritative source evidence exists,
+and never perform a second FX conversion from Inventory `BaseAmount`.
+
 Source financial effects are protected by a Tenant + Company + source
 contract + source evidence ID/version uniqueness constraint. A retry of the
 same actor/key/fingerprint replays its durable result; a different payload
@@ -153,6 +168,12 @@ MESP-120 Exchange Rate and Version, direct source/target currencies, version
 number, rate, effective-date applicability, and provenance-backed Master Data
 record. Latest-rate fallback, inversion, future-rate use, external feeds, and
 silent defaults are rejected.
+
+The accepted FX direction is transaction/source currency to Company functional
+currency (for example USD → SAR at 3.75); the inverse pair is rejected. At
+posting time Finance re-reads each account's current CurrencyBehavior, so a
+manual foreign-currency journal is blocked if any participating account is
+now `FunctionalOnly`.
 
 Reporting Currency is not a second ledger. MESP-132 creates no parallel
 reporting book, consolidation, revaluation, or generic financial-statement
@@ -182,7 +203,13 @@ uses an exact Finance operation descriptor and permission. Company scope is
 checked against server-owned Company configuration and compatible Branch
 scope. The implementation does not create a second approval engine; journal
 status transitions and the reusable authorization/SoD seams leave approval
-and posting authority separate where policy requires it.
+and posting authority separate where policy requires it. Approval uses the
+exact `finance.journal.approve` operation and rejects approval by either the
+creator or submitter. Source handoff approval is policy-driven: `Required`
+creates and submits a journal with `pending_approval`, `NotRequired` posts
+directly, and an unconfigured policy fails closed as
+`approval_policy_not_configured`; no browser or handoff actor is fabricated
+as `ApprovedBy`.
 
 Unsafe REST mutations require antiforgery and `Idempotency-Key`. Durable
 Finance idempotency records preserve actor, operation, key, fingerprint,

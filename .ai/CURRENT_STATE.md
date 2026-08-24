@@ -12,10 +12,9 @@ Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 Current merged `main`: `fcec241dfedb529fef89d4336adf1e571917c52a`.
 Branch: `feat/MESP-132-finance-foundation`
 Exact base: `fcec241dfedb529fef89d4336adf1e571917c52a`
-Implementation commit: `af86b78`; exact current feature head:
-`0b627c5b127d92d5a99543f475867a187801a653`
-Draft PR: `#76`, Open/Draft/unmerged, head
-`0b627c5b127d92d5a99543f475867a187801a653`, base `main`.
+Correctness remediation commit: `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`.
+Draft PR: `#76`, Open/Draft/unmerged, targeting `main`; the final branch SHA
+is the correctness remediation commit above.
 
 ### Delivered architecture
 
@@ -44,6 +43,10 @@ Draft PR: `#76`, Open/Draft/unmerged, head
 - Foreign currency preserves transaction facts and validates exact active
   MESP-120 Exchange Rate identity/version/number/rate/effective window and
   direct currency pair; no inverse/latest/browser/external rate is accepted.
+- Resource-scoped Finance routes resolve the authoritative Company from the
+  Tenant-filtered resource before authorization; journal approval enforces
+  exact permission and no-self-approval; source handoff approval policy,
+  direction, amount authority, and account currency behavior fail closed.
 - Finance consumes `inventory-valuation-finance.v1` ReadyForFinance evidence,
   applies deterministic configured mapping, records source-to-GL uniqueness,
   and never mutates Inventory.
@@ -55,17 +58,17 @@ Draft PR: `#76`, Open/Draft/unmerged, head
 
 ### Validation evidence
 
-- Focused Finance foundation: `5/5`.
+- Focused Finance correctness remediation: `9/9`.
 - REST/OpenAPI and host-security subset: `52/52`.
 - Prior Inventory regression: `89/89`.
 - SQL Server safety: `41/41` against disposable LocalDB (one new Finance
   schema/ownership uniqueness case over the accepted `40/40` baseline).
-- Full backend wrapper: `969/969`, 0 failed, 0 skipped; disposable database
+- Full backend wrapper: `973/973`, 0 failed, 0 skipped; disposable database
   was torn down by the wrapper and the runtime connection was unchanged.
 - Release build: 0 warnings, 0 errors. Finance migration model-change check:
   `No changes have been made to the model since the last migration.`
 - Angular: `258/258` across 37 spec files; initial bundle `496.34 kB`; Finance
-  lazy chunk `36.60 kB`; focused Finance Chromium `2/2`; full Chromium `34/34`;
+  lazy chunk `36.50 kB`; focused Finance Chromium `2/2`; full Chromium `34/34`;
   both npm audits report 0 vulnerabilities.
 - Finance migration Designer contains a populated `BuildTargetModel`.
   `frontend/assets` has zero changes.
@@ -83,10 +86,11 @@ task starts automatically and no Opus prompt is added.
 
 ### Final runtime verification
 
-The official `scripts/Start-MiniErpDevelopment.ps1 -Restart` launcher was run
-after the final Release build with the explicit loopback-only Development auth
-bypass. Backend `http://localhost:5300` is PID `41320`; `/health` returned
-HTTP 200. Frontend `http://localhost:4300` is PID `5432`; `/`, `/main.js`, and
+The verified Release backend executable and generated-proxy Development
+frontend were restarted after the final Release build with the explicit
+loopback-only Development auth bypass. Backend `http://localhost:5300` is PID
+`26896`; `/health` returned HTTP 200. Frontend `http://localhost:4300` is PID
+`6244`; `/`, `/main.js`, and
 `/app/finance` each returned HTTP 200. Both repository-owned processes remain
 running for Owner inspection and no credential was printed or persisted.
 

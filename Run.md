@@ -178,13 +178,13 @@ the full Foundation suite, use the dedicated safe runner:
 
 ## MESP-132 Finance runtime
 
-The current Finance runtime is available at `/app/finance` from the official
-launcher. It is a lazy Angular route with Company-selected Chart of Accounts,
+The current Finance runtime is available at `/app/finance` from the verified
+Development runtime. It is a lazy Angular route with Company-selected Chart of Accounts,
 Fiscal Periods, Journals, Posting Rules, Inventory Handoff, and GL inquiry
 views. The backend remains authoritative for Tenant/Company scope, posting,
 period eligibility, balancing, FX, mapping, idempotency, and audit. Current
-runtime evidence is backend `http://localhost:5300` PID `41320` with `/health`
-HTTP 200 and frontend `http://localhost:4300` PID `5432` with `/`, `/main.js`,
+runtime evidence is backend `http://localhost:5300` PID `26896` with `/health`
+HTTP 200 and frontend `http://localhost:4300` PID `6244` with `/`, `/main.js`,
 and `/app/finance` HTTP 200. MESP-132 remains on Draft PR #76 pending Sol
 acceptance; this is not a production-readiness claim.
 

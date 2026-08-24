@@ -31,11 +31,11 @@
 > accessible labels, and no raw GUID entry.
 >
 > **MESP-132 validation.** Angular passes `258/258` across 37 spec files;
-> production initial total is `496.34 kB`, Finance lazy chunk is `36.60 kB`,
+> production initial total is `496.34 kB`, Finance lazy chunk is `36.50 kB`,
 > focused Finance Chromium is `2/2`, full Chromium is `34/34`, and both npm
 > audits report `0 vulnerabilities`. The implementation branch is
-> `feat/MESP-132-finance-foundation`, implementation commit `af86b78`, exact
-> MESP-132 implementation head `0b627c5b127d92d5a99543f475867a187801a653`, from exact
+> `feat/MESP-132-finance-foundation`, correctness remediation commit
+> `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`, from exact
 > base `fcec241dfedb529fef89d4336adf1e571917c52a`. Draft PR #76 is Open,
 > Draft, and unmerged; implementation validation is pending Sol acceptance.
 <!-- MESP-132-CURRENT-END -->

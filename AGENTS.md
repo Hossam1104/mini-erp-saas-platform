@@ -63,21 +63,24 @@ velocity, or forecast:
 The repository is currently at `main` SHA
 `fcec241dfedb529fef89d4336adf1e571917c52a` with the active bounded
 implementation capability **MESP-132 Finance / General Ledger foundation** on
-branch `feat/MESP-132-finance-foundation`. The exact MESP-132 implementation head is
-`0b627c5b127d92d5a99543f475867a187801a653`; PR #76 is **Open, Draft, and
+branch `feat/MESP-132-finance-foundation`. The correctness remediation commit is
+`2eb5b9db30e625eacbf72e1f6610e9e4210b288f`; PR #76 is **Open, Draft, and
 unmerged** against `main`. MESP-132 is **In Progress / activated** under Epic
 MESP-10 (activation comments `11845` and `11844`). MESP-131 and its parent
 Inventory Epic MESP-8 are Done (closure comments `11842` and `11843`).
 
-MESP-132 implementation validation is pending Sol acceptance of the exact
-feature head: Finance `5/5`; REST/OpenAPI and host-security `52/52`; prior
-Inventory regression `89/89`; SQL Server safety `41/41`; full backend
-`969/969` with 0 failures and 0 skips; Release build 0 warnings/0 errors;
-Angular `258/258` across 37 spec files; initial bundle `496.34 kB`; Finance
-lazy chunk `36.60 kB`; focused/full Chromium `2/2` and `34/34`; npm audits
-clean. Runtime evidence is backend `http://localhost:5300` PID `41320` and
-frontend `http://localhost:4300` PID `5432`, with the recorded health, root,
-main.js, and `/app/finance` HTTP 200 probes. `frontend/assets` is untouched.
+MESP-132 correctness remediation is implemented in commit
+`2eb5b9db30e625eacbf72e1f6610e9e4210b288f`; the final bounded branch also
+contains the required Markdown reconciliation. Validation is pending Sol
+acceptance of the exact implementation delta: Finance `9/9`; REST/OpenAPI and
+host-security `52/52`; prior Inventory regression `89/89`; SQL Server safety
+`41/41`; full backend `973/973` with 0 failures and 0 skips; Release build 0
+warnings/0 errors; Angular `258/258` across 37 spec files; initial bundle
+`496.34 kB`; Finance lazy chunk `36.50 kB`; focused/full Chromium `2/2` and
+`34/34`; npm audits clean. Runtime evidence is backend
+`http://localhost:5300` PID `26896` and frontend `http://localhost:4300` PID
+`6244`, with health, root, main.js, and `/app/finance` HTTP 200 probes.
+`frontend/assets` is untouched.
 
 Accepted fast-track capability completion remains **15/26 = 57.7%**; MESP-132
 must not be counted until Sol accepts and merges it. Overall production-ready

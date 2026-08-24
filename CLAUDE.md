@@ -14,17 +14,18 @@
 The current active implementation is **MESP-132 Finance / General Ledger
 foundation** under Epic MESP-10. The synchronized `main` SHA is
 `fcec241dfedb529fef89d4336adf1e571917c52a`; the exact MESP-132 implementation head is
-`0b627c5b127d92d5a99543f475867a187801a653` on
-`feat/MESP-132-finance-foundation`; PR #76 is Open, Draft, and unmerged.
+`2eb5b9db30e625eacbf72e1f6610e9e4210b288f` on
+`feat/MESP-132-finance-foundation`; PR #76 is Open, Draft, and unmerged,
+with the final Markdown reconciliation following this implementation commit.
 MESP-132 is In Progress / activated, while MESP-131 and MESP-8 are Done.
 
-Implementation validation is pending Sol acceptance: Finance `5/5`, REST/
+Implementation validation is pending Sol acceptance: Finance `9/9`, REST/
 OpenAPI and host security `52/52`, prior Inventory `89/89`, SQL safety
-`41/41`, full backend `969/969` with 0 failures and 0 skips, Release 0/0,
+`41/41`, full backend `973/973` with 0 failures and 0 skips, Release 0/0,
 Angular `258/258` across 37 spec files, initial bundle `496.34 kB`, Finance
-lazy chunk `36.60 kB`, Chromium `2/2` focused and `34/34` full, and npm audits
-clean. Runtime is backend `http://localhost:5300` PID `41320` and frontend
-`http://localhost:4300` PID `5432`, with the recorded HTTP 200 probes.
+lazy chunk `36.50 kB`, Chromium `2/2` focused and `34/34` full, and npm audits
+clean. Runtime is backend `http://localhost:5300` PID `26896` and frontend
+`http://localhost:4300` PID `6244`, with the recorded HTTP 200 probes.
 Accepted fast-track completion remains `15/26 = 57.7%`; production readiness
 remains approximately `47%` overall and `41%` Procurement/P2P. Do not count
 the Draft PR as accepted capability or start the next capability automatically.

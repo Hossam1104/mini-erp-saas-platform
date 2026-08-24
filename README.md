@@ -28,19 +28,19 @@ module-owned persistence are product rules—not customer-specific forks.
 The repository is on synchronized `main` baseline
 `fcec241dfedb529fef89d4336adf1e571917c52a` with MESP-132 active under Finance
 Epic MESP-10. The feature branch is
-`feat/MESP-132-finance-foundation` at exact MESP-132 implementation head
-`0b627c5b127d92d5a99543f475867a187801a653`; Draft PR #76 is Open, Draft, and
+`feat/MESP-132-finance-foundation` with validated correctness remediation
+commit `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`; Draft PR #76 is Open, Draft, and
 unmerged. Implementation validation is pending Sol acceptance. The accepted
 fast-track count remains **15/26 = 57.7%** and production-readiness remains
 approximately **47% overall / 41% Procurement/P2P**.
 
 MESP-132 delivers the bounded Company-owned Finance / General Ledger
-foundation described below, with Finance `5/5`, REST/OpenAPI and host security
-`52/52`, SQL safety `41/41`, full backend `969/969`, Angular `258/258`,
+foundation described below, with Finance `9/9`, REST/OpenAPI and host security
+`52/52`, SQL safety `41/41`, full backend `973/973`, Angular `258/258`,
 focused/full Chromium `2/2` and `34/34`, initial bundle `496.34 kB`, Finance
-lazy chunk `36.60 kB`, and clean npm audits. Runtime is backend
-`http://localhost:5300` PID `41320` and frontend `http://localhost:4300` PID
-`5432`, with recorded HTTP 200 health and Finance-route evidence.
+lazy chunk `36.50 kB`, and clean npm audits. Runtime is backend
+`http://localhost:5300` PID `26896` and frontend `http://localhost:4300` PID
+`6244`, with recorded HTTP 200 health and Finance-route evidence.
 
 ### MESP-131 guarded merge complete - 24 August 2026
 
@@ -95,10 +95,10 @@ It does **not** implement GL, AP, AR, tax posting, payments, Sales, generic Repo
 
 ### MESP-132 Core Finance foundation - implementation handoff - 24 August 2026
 
-MESP-132 is implemented on `feat/MESP-132-finance-foundation` at exact
-MESP-132 implementation head `0b627c5b127d92d5a99543f475867a187801a653`, from the exact
-required main base `fcec241dfedb529fef89d4336adf1e571917c52a`. The bounded
-capability is in implementation commit `af86b78` and adds Company-owned
+MESP-132 is implemented on `feat/MESP-132-finance-foundation` through the
+correctness remediation commit `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`, from
+the exact required main base `fcec241dfedb529fef89d4336adf1e571917c52a`. The bounded
+capability adds Company-owned
 Chart of Accounts, Fiscal Calendar/Year/Period controls, approved Cost
 Center dimension support, manual journals, balanced functional-currency
 posting, reversal, immutable GL facts, versioned effective-dated posting
@@ -114,22 +114,22 @@ does not add AP/AR, cash/bank, tax/VAT/ZATCA/FATOORA, financial statements,
 generic Reporting, Sales, production migration/cutover, external providers,
 or Wafra-specific Finance behavior. Draft PR `#76` is Open, Draft, and
 unmerged for Sol acceptance; no Jira writes were performed by this session.
-Implementation validation is pending Sol acceptance of the exact MESP-132
-implementation head.
+Implementation validation is pending Sol acceptance of the exact final branch
+commit.
 
 ### MESP-132 validation evidence
 
 | Check | Result |
 |---|---:|
-| Focused Finance foundation | 5/5 |
+| Focused Finance foundation and correctness remediation | 9/9 |
 | REST/OpenAPI and host-security subset | 52/52 |
 | Prior Inventory regression | 89/89 |
 | SQL Server safety harness | 41/41 against disposable LocalDB |
-| Full backend disposable-LocalDB suite | 969/969, 0 failed, 0 skipped |
+| Full backend disposable-LocalDB suite | 973/973, 0 failed, 0 skipped |
 | Release build | 0 warnings / 0 errors |
 | Angular unit tests | 258/258 across 37 spec files |
 | Production initial bundle | 496.34 kB |
-| Finance lazy chunk | 36.60 kB |
+| Finance lazy chunk | 36.50 kB |
 | Focused Chromium Finance journeys | 2/2 |
 | Full Chromium suite | 34/34 |
 | npm audits | 0 vulnerabilities |

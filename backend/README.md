@@ -21,14 +21,13 @@
 > AP/AR, cash/bank, tax, financial statements, generic Reporting, Sales,
 > migration/cutover, external/statutory, or Wafra-specific behavior.
 >
-> **MESP-132 validation.** Focused Finance `5/5`; REST/OpenAPI plus
-> host-security subset `52/52`; prior Inventory regression `89/89`; SQL
-> safety `41/41`; disposable-LocalDB backend `969/969` with 0 failed/0
+> **MESP-132 validation.** Focused Finance correctness remediation `9/9`;
+> REST/OpenAPI plus host-security subset `52/52`; prior Inventory regression
+> `89/89`; SQL safety `41/41`; disposable-LocalDB backend `973/973` with 0 failed/0
 > skipped; Release build 0 warnings/0 errors; Finance migration model-change
 > detection reports no changes; no Owner-managed asset changes. The active
 > branch is `feat/MESP-132-finance-foundation` at implementation commit
-> `af86b78`, at exact MESP-132 implementation head
-> `0b627c5b127d92d5a99543f475867a187801a653`, based on
+> `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`, based on
 > `fcec241dfedb529fef89d4336adf1e571917c52a`. Draft PR #76 is Open, Draft,
 > and unmerged; implementation validation is pending Sol acceptance.
 <!-- MESP-132-CURRENT-END -->
