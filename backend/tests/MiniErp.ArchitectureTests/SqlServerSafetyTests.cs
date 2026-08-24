@@ -6,14 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Migrations;
 using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.App.Modules.Finance;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.Modules.Inventory;
+using MiniErp.App.Modules.MasterData;
+using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
+using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence;
 using MiniErp.Infrastructure.Persistence.Migrations.Inventory;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
+using MiniErp.Infrastructure.Persistence.Modules.Finance;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using Xunit;
@@ -154,6 +159,13 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
             await inventory.Database.MigrateAsync();
         }
 
+        await using (var finance = new FinanceDbContext(
+                         SqlServerMigrationConfiguration.Configure(_connectionString, SqlServerMigrationConfiguration.FinanceHistoryTable),
+                         TenantA))
+        {
+            await finance.Database.MigrateAsync();
+        }
+
         await CreateProbeTablesAsync();
         Factory = new TenantPersistenceSessionFactory(_options);
     }
@@ -282,6 +294,7 @@ public sealed class SqlServerSafetyTests
         var businessPartiesOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.BusinessPartiesHistoryTable);
         var procurementOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.ProcurementHistoryTable);
         var inventoryOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.InventoryHistoryTable);
+        var financeOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.FinanceHistoryTable);
 
         await using (var tenancy = new TenantPersistenceDbContext(tenancyOptions, _fixture.TenantA))
         {
@@ -339,6 +352,17 @@ public sealed class SqlServerSafetyTests
             Assert.Empty(await inventory.Database.GetPendingMigrationsAsync());
         }
 
+        await using (var finance = new FinanceDbContext(financeOptions, _fixture.TenantA))
+        {
+            Assert.Equal(
+                [
+                    "20260824125115_MESP132FinanceFoundation",
+                    "20260824152331_MESP132SolFinanceCorrectnessRemediation"
+                ],
+                (await finance.Database.GetAppliedMigrationsAsync()).ToArray());
+            Assert.Empty(await finance.Database.GetPendingMigrationsAsync());
+        }
+
         await using var connection = await _fixture.OpenConnectionAsync();
         await using var command = connection.CreateCommand();
         command.CommandText = """
@@ -367,6 +391,221 @@ public sealed class SqlServerSafetyTests
         Assert.True(await reader.NextResultAsync());
         Assert.True(await reader.ReadAsync());
         Assert.Equal(1, reader.GetInt32(0));
+    }
+
+    [Fact]
+    public async Task MESP132_sql_server_creates_only_module_owned_tenant_finance_tables()
+    {
+        await using var connection = await _fixture.OpenConnectionAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = N'finance'
+              AND TABLE_NAME IN (N'Accounts', N'FiscalCalendars', N'FiscalYears', N'FiscalPeriods', N'CostCenters', N'PostingRules', N'Journals', N'JournalLines', N'AuditEvents', N'IdempotencyEntries', N'SourceEffects');
+            SELECT COUNT(*)
+            FROM sys.indexes AS indexes
+            INNER JOIN sys.tables AS tables ON tables.object_id = indexes.object_id
+            INNER JOIN sys.schemas AS schemas ON schemas.schema_id = tables.schema_id
+            WHERE schemas.name = N'finance'
+              AND tables.name = N'SourceEffects'
+              AND indexes.name = N'IX_SourceEffects_TenantId_CompanyId_SourceContract_SourceEvidenceId_SourceEvidenceVersion';
+            """;
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(11, reader.GetInt32(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
+    }
+
+    [Fact]
+    public async Task MESP132_sql_server_period_close_and_post_have_one_consistent_committed_order()
+    {
+        var scenario = await CreateApprovedFinanceJournalAsync();
+        var post = SafeFinanceOperationAsync(() => scenario.FirstPersistence.PostJournalAsync(
+            scenario.FirstContext,
+            new FinanceJournalActionCommand(scenario.ApprovedJournal.Id, scenario.ApprovedJournal.Version, "sql-period-post", "sql-period-post", "sql-period-post")));
+        var close = SafeFinanceOperationAsync(() => scenario.SecondPersistence.SetPeriodStateAsync(
+            scenario.SecondContext,
+            new FinancePeriodStateCommand(scenario.Period.Id, FinanceFiscalPeriodState.Closed, "SQL race close", scenario.Period.Version, "sql-period-close", "sql-period-close")));
+
+        await Task.WhenAll(post, close);
+        var posted = await post;
+        var closed = await close;
+
+        Assert.True(closed.Succeeded, closed.Code);
+        Assert.True(posted.Succeeded || posted.Code is "period_closed" or "concurrency_conflict", posted.Code);
+        await using var db = new FinanceDbContext(scenario.Options, scenario.FirstContext.TenantContext);
+        var persistedPeriod = await db.FiscalPeriods.SingleAsync(item => item.Id == scenario.Period.Id);
+        var persistedJournal = await db.Journals.SingleAsync(item => item.Id == scenario.ApprovedJournal.Id);
+        Assert.Equal(FinanceFiscalPeriodState.Closed, persistedPeriod.State);
+        if (posted.Succeeded)
+        {
+            Assert.Equal(FinanceJournalStatus.Posted, persistedJournal.Status);
+            Assert.Equal(scenario.Period.Id, persistedJournal.FiscalPeriodId);
+        }
+        else
+        {
+            Assert.NotEqual(FinanceJournalStatus.Posted, persistedJournal.Status);
+        }
+    }
+
+    [Fact]
+    public async Task MESP132_sql_server_account_restriction_and_post_have_one_consistent_committed_order()
+    {
+        var scenario = await CreateApprovedFinanceJournalAsync(foreignCurrency: true);
+        var restrictiveChange = SafeFinanceOperationAsync(() => scenario.SecondPersistence.EditAccountAsync(
+            scenario.SecondContext,
+            new FinanceAccountCommand(
+                scenario.CompanyId,
+                scenario.DebitAccount.Code,
+                scenario.DebitAccount.EnglishName,
+                scenario.DebitAccount.ArabicName,
+                scenario.DebitAccount.ParentAccountId,
+                scenario.DebitAccount.AccountType,
+                scenario.DebitAccount.IsPostingAccount,
+                FinanceCurrencyBehavior.FunctionalOnly,
+                scenario.DebitAccount.EffectiveFrom,
+                scenario.DebitAccount.EffectiveTo,
+                scenario.DebitAccount.Id,
+                scenario.DebitAccount.Version,
+                "sql-account-restrict",
+                "sql-account-restrict")));
+        var post = SafeFinanceOperationAsync(() => scenario.FirstPersistence.PostJournalAsync(
+            scenario.FirstContext,
+            new FinanceJournalActionCommand(scenario.ApprovedJournal.Id, scenario.ApprovedJournal.Version, "sql-account-post", "sql-account-post", "sql-account-post")));
+
+        await Task.WhenAll(post, restrictiveChange);
+        var posted = await post;
+        var changed = await restrictiveChange;
+
+        Assert.True(changed.Succeeded, changed.Code);
+        Assert.True(posted.Succeeded || posted.Code is "account_currency_behavior_invalid" or "concurrency_conflict", posted.Code);
+        await using var db = new FinanceDbContext(scenario.Options, scenario.FirstContext.TenantContext);
+        var persistedAccount = await db.Accounts.SingleAsync(item => item.Id == scenario.DebitAccount.Id);
+        var persistedJournal = await db.Journals.SingleAsync(item => item.Id == scenario.ApprovedJournal.Id);
+        Assert.Equal(FinanceCurrencyBehavior.FunctionalOnly, persistedAccount.CurrencyBehavior);
+        if (posted.Succeeded)
+        {
+            Assert.Equal(FinanceJournalStatus.Posted, persistedJournal.Status);
+            var postedDebitLine = await db.JournalLines.Where(item => item.JournalId == persistedJournal.Id).SingleAsync(item => item.Debit > 0m);
+            Assert.Equal(37.50m, postedDebitLine.FunctionalDebit);
+        }
+        else
+        {
+            Assert.NotEqual(FinanceJournalStatus.Posted, persistedJournal.Status);
+        }
+    }
+
+    [Fact]
+    public async Task MESP132_sql_server_same_approved_journal_concurrent_post_has_one_authoritative_effect()
+    {
+        var scenario = await CreateApprovedFinanceJournalAsync();
+        var first = SafeFinanceOperationAsync(() => scenario.FirstPersistence.PostJournalAsync(
+            scenario.FirstContext,
+            new FinanceJournalActionCommand(scenario.ApprovedJournal.Id, scenario.ApprovedJournal.Version, "sql-same-journal-a", "sql-same-journal-a", "sql-same-journal-a")));
+        var second = SafeFinanceOperationAsync(() => scenario.SecondPersistence.PostJournalAsync(
+            scenario.SecondContext,
+            new FinanceJournalActionCommand(scenario.ApprovedJournal.Id, scenario.ApprovedJournal.Version, "sql-same-journal-b", "sql-same-journal-b", "sql-same-journal-b")));
+
+        var results = await Task.WhenAll(first, second);
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "concurrency_conflict" or "source_effect_exists");
+
+        await using var db = new FinanceDbContext(scenario.Options, scenario.FirstContext.TenantContext);
+        Assert.Equal(FinanceJournalStatus.Posted, (await db.Journals.SingleAsync(item => item.Id == scenario.ApprovedJournal.Id)).Status);
+        Assert.Equal(2, await db.JournalLines.CountAsync(item => item.JournalId == scenario.ApprovedJournal.Id));
+        Assert.Equal(1, await db.AuditEvents.CountAsync(item => item.ResourceId == scenario.ApprovedJournal.Id && item.OperationId == "finance.journal.post" && item.Result == "Succeeded"));
+    }
+
+    [Fact]
+    public async Task MESP132_sql_server_same_inventory_handoff_concurrent_processing_has_one_source_effect()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var financeOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.FinanceHistoryTable);
+        var inventoryOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.InventoryHistoryTable);
+        var companyId = Guid.NewGuid();
+        var inventoryContext = InventoryContext(_fixture.TenantA, "tenant.inventory.valuation.process");
+        var tenantId = _fixture.TenantA.TenantId;
+        var warehouseId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+        await using (var inventoryDb = new InventoryDbContext(inventoryOptions, _fixture.TenantA))
+        {
+            inventoryDb.StockMovements.Add(SqlMovement(tenantId, companyId, warehouseId, productId, unitId, InventoryMovementDirection.Inbound, 1m, 25m, "SAR", "sql-finance-handoff-race"));
+            await inventoryDb.SaveChangesAsync();
+        }
+
+        var inventory = new InventoryValuationPersistence(inventoryOptions, null, null, null);
+        var policy = await inventory.CreatePolicyAsync(inventoryContext, new InventoryValuationPolicyCommand(Guid.NewGuid(), SqlPolicy(companyId, new DateOnly(2026, 1, 1)), inventoryContext.ActorId, DateTimeOffset.UtcNow, "sql-finance-handoff-policy", "sql-finance-handoff-policy", "sql-finance-handoff-policy"));
+        Assert.True(policy.Succeeded, policy.Code);
+        var processed = await inventory.ProcessAsync(inventoryContext, new InventoryValuationProcessCommand(companyId, null, warehouseId, productId, unitId, inventoryContext.ActorId, DateTimeOffset.UtcNow, "sql-finance-handoff-process", "sql-finance-handoff-process", "sql-finance-handoff-process"));
+        Assert.True(processed.Succeeded, processed.Code);
+        var handoff = Assert.Single(await inventory.ListFinanceHandoffsAsync(inventoryContext, new InventoryValuationQuery(companyId)));
+        Assert.Equal(InventoryFinanceValuationHandoffStatus.ReadyForFinance, handoff.Status);
+
+        var provider = new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(tenantId.Value, companyId, "SQL Handoff Company", "SAR")]);
+        var approval = new SqlFinanceSourceApprovalPolicy(FinanceApprovalRequirement.NotRequired);
+        var first = new FinancePersistence(financeOptions, provider, inventory, new UnavailableMasterDataExchangeRatePersistence(), approval);
+        var second = new FinancePersistence(financeOptions, provider, inventory, new UnavailableMasterDataExchangeRatePersistence(), approval);
+        var firstContext = FinanceContext("tenant.finance.handoff.process");
+        var secondContext = FinanceContext("tenant.finance.handoff.process");
+        var accounts = await CreateFinanceAccountsAsync(first, firstContext, companyId, "sql-handoff");
+        var calendar = await first.CreateCalendarAsync(firstContext, new FinanceFiscalCalendarCommand(companyId, "SQL Handoff FY", Guid.NewGuid(), "sql-handoff-calendar", "sql-handoff-calendar"));
+        Assert.True(calendar.Succeeded, calendar.Code);
+        var year = await first.CreateYearAsync(firstContext, new FinanceFiscalYearCommand(calendar.Value!.Id, 2026, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), Guid.NewGuid(), "sql-handoff-year", "sql-handoff-year"));
+        Assert.True(year.Succeeded, year.Code);
+        var period = await first.CreatePeriodAsync(firstContext, new FinanceFiscalPeriodCommand(year.Value!.Id, 1, "2026", "2026", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), Guid.NewGuid(), "sql-handoff-period", "sql-handoff-period"));
+        Assert.True(period.Succeeded, period.Code);
+        var opened = await first.SetPeriodStateAsync(firstContext, new FinancePeriodStateCommand(period.Value!.Id, FinanceFiscalPeriodState.Open, null, period.Value.Version, "sql-handoff-open", "sql-handoff-open"));
+        Assert.True(opened.Succeeded, opened.Code);
+        var rule = await first.CreatePostingRuleAsync(firstContext, new FinancePostingRuleCommand(companyId, "inventory-valuation-finance.v1", "OpeningBalance:Inbound", accounts.Debit.Id, accounts.Credit.Id, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), "sql-handoff-rule", "sql-handoff-rule"));
+        Assert.True(rule.Succeeded, rule.Code);
+
+        var firstProcess = SafeFinanceOperationAsync(() => first.ProcessHandoffAsync(firstContext, new FinanceHandoffProcessCommand(handoff.Id, "sql-handoff-process-a", "sql-handoff-process-a")));
+        var secondProcess = SafeFinanceOperationAsync(() => second.ProcessHandoffAsync(secondContext, new FinanceHandoffProcessCommand(handoff.Id, "sql-handoff-process-b", "sql-handoff-process-b")));
+        var results = await Task.WhenAll(firstProcess, secondProcess);
+
+        Assert.Contains(results, item => item.Succeeded);
+        Assert.All(results, item => Assert.True(item.Succeeded || item.Code is "concurrency_conflict" or "source_effect_exists" or "finance_conflict", item.Code));
+        await using var financeDb = new FinanceDbContext(financeOptions, _fixture.TenantA);
+        Assert.Equal(1, await financeDb.Journals.CountAsync(item => item.CompanyId == companyId && item.SourceContract == "inventory-valuation-finance.v1"));
+        Assert.Equal(1, await financeDb.SourceEffects.CountAsync(item => item.CompanyId == companyId && item.SourceContract == "inventory-valuation-finance.v1"));
+        var journalId = await financeDb.Journals.Where(journal => journal.CompanyId == companyId && journal.SourceContract == "inventory-valuation-finance.v1").Select(journal => journal.Id).SingleAsync();
+        Assert.Equal(2, await financeDb.JournalLines.CountAsync(item => item.JournalId == journalId));
+        Assert.Equal(1, await financeDb.AuditEvents.CountAsync(item => item.OperationId == "finance.journal.post" && item.Result == "Succeeded" && item.ResourceId == journalId));
+    }
+
+    [Fact]
+    public async Task MESP132_sql_server_first_company_journal_sequence_concurrency_is_unique_or_safe_conflict()
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.FinanceHistoryTable);
+        var companyId = Guid.NewGuid();
+        var provider = new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(_fixture.TenantA.TenantId.Value, companyId, "SQL Sequence Company", "SAR")]);
+        var first = new FinancePersistence(options, provider, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
+        var second = new FinancePersistence(options, provider, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
+        var contextA = FinanceContext("tenant.finance.journal.create");
+        var contextB = FinanceContext("tenant.finance.journal.create");
+        var accounts = await CreateFinanceAccountsAsync(first, contextA, companyId, "sql-sequence");
+        var calendar = await first.CreateCalendarAsync(contextA, new FinanceFiscalCalendarCommand(companyId, "SQL Sequence FY", Guid.NewGuid(), "sql-sequence-calendar", "sql-sequence-calendar"));
+        var year = await first.CreateYearAsync(contextA, new FinanceFiscalYearCommand(calendar.Value!.Id, 2026, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), Guid.NewGuid(), "sql-sequence-year", "sql-sequence-year"));
+        var period = await first.CreatePeriodAsync(contextA, new FinanceFiscalPeriodCommand(year.Value!.Id, 1, "2026-01", "January", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.NewGuid(), "sql-sequence-period", "sql-sequence-period"));
+        Assert.True((await first.SetPeriodStateAsync(contextA, new FinancePeriodStateCommand(period.Value!.Id, FinanceFiscalPeriodState.Open, null, period.Value.Version, "sql-sequence-open", "sql-sequence-open"))).Succeeded);
+        var commandA = SqlManualJournal(companyId, accounts, "sql-sequence-a");
+        var commandB = SqlManualJournal(companyId, accounts, "sql-sequence-b");
+
+        var results = await Task.WhenAll(
+            SafeFinanceOperationAsync(() => first.CreateJournalAsync(contextA, commandA)),
+            SafeFinanceOperationAsync(() => second.CreateJournalAsync(contextB, commandB)));
+
+        Assert.All(results, item => Assert.True(item.Succeeded || item.Code is "concurrency_conflict" or "idempotency_conflict"));
+        var sequences = results.Where(item => item.Succeeded).Select(item => item.Value!.JournalSequence).ToArray();
+        Assert.Equal(sequences.Length, sequences.Distinct().Count());
+        await using var db = new FinanceDbContext(options, _fixture.TenantA);
+        var persistedSequences = await db.Journals.Where(item => item.CompanyId == companyId).Select(item => item.JournalSequence).ToArrayAsync();
+        Assert.Equal(persistedSequences.Length, persistedSequences.Distinct().Count());
     }
 
     [Fact]
@@ -1867,6 +2106,154 @@ public sealed class SqlServerSafetyTests
         Assert.True(await reader.NextResultAsync());
         Assert.True(await reader.ReadAsync());
         Assert.Equal(1, reader.GetInt32(0));
+    }
+
+    private sealed record SqlFinanceScenario(
+        DbContextOptions Options,
+        Guid CompanyId,
+        FinancePersistence FirstPersistence,
+        FinancePersistence SecondPersistence,
+        FinanceRequestContext FirstContext,
+        FinanceRequestContext SecondContext,
+        FinanceAccountRecord DebitAccount,
+        FinanceAccountRecord CreditAccount,
+        FinanceFiscalPeriodRecord Period,
+        FinanceJournalRecord ApprovedJournal);
+
+    private async Task<SqlFinanceScenario> CreateApprovedFinanceJournalAsync(bool foreignCurrency = false)
+    {
+        var connectionString = await GetConnectionStringAsync();
+        var options = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.FinanceHistoryTable);
+        var companyId = Guid.NewGuid();
+        var provider = new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(_fixture.TenantA.TenantId.Value, companyId, "SQL Finance Company", "SAR")]);
+        IMasterDataExchangeRatePersistence exchangeRates = foreignCurrency
+            ? new SqlFinanceExchangeRatePersistence(_fixture.TenantA.TenantId, "USD", "SAR", 3.75m)
+            : new UnavailableMasterDataExchangeRatePersistence();
+        var first = new FinancePersistence(options, provider, new UnavailableInventoryValuationPersistence(), exchangeRates);
+        var second = new FinancePersistence(options, provider, new UnavailableInventoryValuationPersistence(), exchangeRates);
+        var firstContext = FinanceContext("tenant.finance.journal.create");
+        var secondContext = FinanceContext("tenant.finance.journal.post");
+        var accounts = await CreateFinanceAccountsAsync(first, firstContext, companyId, "sql-race");
+        var calendar = await first.CreateCalendarAsync(firstContext, new FinanceFiscalCalendarCommand(companyId, "SQL Finance FY", Guid.NewGuid(), "sql-race-calendar", "sql-race-calendar"));
+        Assert.True(calendar.Succeeded, calendar.Code);
+        var year = await first.CreateYearAsync(firstContext, new FinanceFiscalYearCommand(calendar.Value!.Id, 2026, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), Guid.NewGuid(), "sql-race-year", "sql-race-year"));
+        Assert.True(year.Succeeded, year.Code);
+        var period = await first.CreatePeriodAsync(firstContext, new FinanceFiscalPeriodCommand(year.Value!.Id, 1, "2026-01", "January", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.NewGuid(), "sql-race-period", "sql-race-period"));
+        Assert.True(period.Succeeded, period.Code);
+        var opened = await first.SetPeriodStateAsync(firstContext, new FinancePeriodStateCommand(period.Value!.Id, FinanceFiscalPeriodState.Open, null, period.Value.Version, "sql-race-open", "sql-race-open"));
+        Assert.True(opened.Succeeded, opened.Code);
+
+        var rateId = foreignCurrency ? ((SqlFinanceExchangeRatePersistence)exchangeRates).RateId : (Guid?)null;
+        var rateVersionId = foreignCurrency ? ((SqlFinanceExchangeRatePersistence)exchangeRates).RateVersionId : (Guid?)null;
+        var currency = foreignCurrency ? "USD" : (string?)null;
+        var rate = foreignCurrency ? 3.75m : 1m;
+        var command = new FinanceJournalCommand(
+            companyId,
+            new DateOnly(2026, 1, 15),
+            new DateOnly(2026, 1, 15),
+            currency,
+            rate,
+            rateId,
+            rateVersionId,
+            foreignCurrency ? 1 : null,
+            "manual-journal.v1",
+            "manual",
+            null,
+            null,
+            null,
+            "SQL concurrency journal",
+            [
+                new FinanceJournalLineCommand(accounts.Debit.Id, 10m, 0m, foreignCurrency ? 10m : null, foreignCurrency ? "USD" : "SAR", null, null),
+                new FinanceJournalLineCommand(accounts.Credit.Id, 0m, 10m, foreignCurrency ? 10m : null, foreignCurrency ? "USD" : "SAR", null, null)
+            ],
+            Guid.NewGuid(),
+            "sql-race-create",
+            "sql-race-create");
+        var created = await first.CreateJournalAsync(firstContext, command);
+        Assert.True(created.Succeeded, created.Code);
+        var submitted = await first.TransitionJournalAsync(firstContext, new FinanceJournalActionCommand(created.Value!.Id, created.Value.Version, "SQL concurrency submit", "sql-race-submit", "sql-race-submit"), FinanceJournalStatus.Submitted);
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approverContext = FinanceContext("tenant.finance.journal.approve");
+        var approved = await first.TransitionJournalAsync(approverContext, new FinanceJournalActionCommand(submitted.Value!.Id, submitted.Value.Version, "SQL concurrency approve", "sql-race-approve", "sql-race-approve"), FinanceJournalStatus.Approved);
+        Assert.True(approved.Succeeded, approved.Code);
+
+        return new SqlFinanceScenario(options, companyId, first, second, firstContext, secondContext, accounts.Debit, accounts.Credit, opened.Value!, approved.Value!);
+    }
+
+    private async Task<(FinanceAccountRecord Debit, FinanceAccountRecord Credit)> CreateFinanceAccountsAsync(IFinancePersistence persistence, FinanceRequestContext context, Guid companyId, string prefix)
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var debit = await persistence.CreateAccountAsync(context, new FinanceAccountCommand(companyId, $"{prefix}-D-{suffix}", "SQL debit", null, null, FinanceAccountType.Asset, true, FinanceCurrencyBehavior.TransactionCurrencyAllowed, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, $"{prefix}-debit-{suffix}", $"{prefix}-debit-{suffix}"));
+        var credit = await persistence.CreateAccountAsync(context, new FinanceAccountCommand(companyId, $"{prefix}-C-{suffix}", "SQL credit", null, null, FinanceAccountType.Revenue, true, FinanceCurrencyBehavior.TransactionCurrencyAllowed, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, $"{prefix}-credit-{suffix}", $"{prefix}-credit-{suffix}"));
+        Assert.True(debit.Succeeded, debit.Code);
+        Assert.True(credit.Succeeded, credit.Code);
+        return (debit.Value!, credit.Value!);
+    }
+
+    private static FinanceJournalCommand SqlManualJournal(Guid companyId, (FinanceAccountRecord Debit, FinanceAccountRecord Credit) accounts, string key) =>
+        new(companyId, new DateOnly(2026, 1, 15), new DateOnly(2026, 1, 15), null, 1m, null, null, null, "manual-journal.v1", "manual", null, null, null, "SQL sequence journal", [new FinanceJournalLineCommand(accounts.Debit.Id, 10m, 0m, null, "SAR", null, null), new FinanceJournalLineCommand(accounts.Credit.Id, 0m, 10m, null, "SAR", null, null)], Guid.NewGuid(), key, key);
+
+    private FinanceRequestContext FinanceContext(string permission)
+    {
+        var foundation = FoundationRequestContext.ForTenant(Guid.NewGuid(), Guid.NewGuid(), _fixture.TenantA, permission);
+        Assert.True(FinanceRequestContext.TryCreate(foundation, out var context));
+        return context!;
+    }
+
+    private static async Task<FinanceOperationResult<T>> SafeFinanceOperationAsync<T>(Func<Task<FinanceOperationResult<T>>> action)
+    {
+        try
+        {
+            return await action();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return FinanceOperationResult<T>.Failure("concurrency_conflict");
+        }
+        catch (Exception exception) when (IsExpectedFinanceContention(exception))
+        {
+            return FinanceOperationResult<T>.Failure("concurrency_conflict");
+        }
+    }
+
+    private static bool IsExpectedFinanceContention(Exception exception)
+    {
+        if (exception is DbUpdateConcurrencyException) return true;
+        if (exception is DbUpdateException dbUpdate
+            && dbUpdate.InnerException is SqlException sql
+            && sql.Errors.Cast<SqlError>().Any(error => error.Number is 1205 or 2601 or 2627 or 3960)) return true;
+        return exception.InnerException is not null && IsExpectedFinanceContention(exception.InnerException);
+    }
+
+    private sealed class SqlFinanceSourceApprovalPolicy(FinanceApprovalRequirement requirement) : IFinanceSourceApprovalPolicy
+    {
+        public FinanceApprovalRequirement Resolve(string sourceContract, string sourceEvent) =>
+            string.Equals(sourceContract, "inventory-valuation-finance.v1", StringComparison.OrdinalIgnoreCase)
+                ? requirement
+                : FinanceApprovalRequirement.NotConfigured;
+    }
+
+    private sealed class SqlFinanceExchangeRatePersistence : IMasterDataExchangeRatePersistence
+    {
+        private readonly UnavailableMasterDataExchangeRatePersistence fallback = new();
+        private readonly MasterDataExchangeRateRecord record;
+
+        public SqlFinanceExchangeRatePersistence(TenantId tenantId, string sourceCurrency, string targetCurrency, decimal rate)
+        {
+            RateId = Guid.NewGuid();
+            RateVersionId = Guid.NewGuid();
+            record = new MasterDataExchangeRateRecord(RateId, tenantId, Guid.NewGuid(), Guid.NewGuid(), sourceCurrency, targetCurrency, MasterDataLifecycleState.Active, 1, [new MasterDataExchangeRateVersionRecord(RateVersionId, 1, new DateOnly(2026, 1, 1), null, rate, 4, ExchangeRateProvenance.Configured, "SQL test", sourceCurrency, targetCurrency)], [1]);
+        }
+
+        public Guid RateId { get; }
+        public Guid RateVersionId { get; }
+        public Task<IReadOnlyList<MasterDataExchangeRateRecord>> ListExchangeRatesAsync(TenantContext tenantContext, CancellationToken cancellationToken = default) => fallback.ListExchangeRatesAsync(tenantContext, cancellationToken);
+        public Task<MasterDataExchangeRateRecord?> FindExchangeRateAsync(TenantContext tenantContext, Guid exchangeRateId, CancellationToken cancellationToken = default) => Task.FromResult(record.Id == exchangeRateId ? record : null);
+        public Task<MasterDataPersistenceResult<MasterDataExchangeRateRecord>> CreateExchangeRateAsync(TenantContext tenantContext, Guid exchangeRateId, CreateMasterDataExchangeRateCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => fallback.CreateExchangeRateAsync(tenantContext, exchangeRateId, command, evidence, cancellationToken);
+        public Task<MasterDataPersistenceResult<MasterDataExchangeRateRecord>> EditExchangeRateAsync(TenantContext tenantContext, EditMasterDataExchangeRateCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => fallback.EditExchangeRateAsync(tenantContext, command, evidence, cancellationToken);
+        public Task<MasterDataPersistenceResult<MasterDataExchangeRateRecord>> SetExchangeRateLifecycleAsync(TenantContext tenantContext, Guid exchangeRateId, MasterDataLifecycleState lifecycleState, byte[] expectedVersion, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => fallback.SetExchangeRateLifecycleAsync(tenantContext, exchangeRateId, lifecycleState, expectedVersion, evidence, cancellationToken);
+        public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(TenantContext tenantContext, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => fallback.AppendAuditAsync(tenantContext, evidence, cancellationToken);
+        public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(TenantContext tenantContext, Guid? exchangeRateId = null, CancellationToken cancellationToken = default) => fallback.ReadAuditHistoryAsync(tenantContext, exchangeRateId, cancellationToken);
     }
 
     private static InventoryValuationPolicyRequest SqlPolicy(

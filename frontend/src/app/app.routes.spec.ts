@@ -1,4 +1,3 @@
-import { TenantSelectComponent } from './features/context/tenant-select.component';
 import { ApplicationShellComponent } from './features/shell/application-shell.component';
 import { routes } from './app.routes';
 
@@ -9,12 +8,12 @@ describe('Application route contract', () => {
     const compatibilityRoute = routes.find((route) => route.path === 'tenant/select');
 
     expect(appRoute?.component).toBe(ApplicationShellComponent);
-    expect(workspaceRoute?.component).toBe(TenantSelectComponent);
+    expect(workspaceRoute?.loadComponent).toBeDefined();
     expect(compatibilityRoute?.redirectTo).toBe('app/workspaces');
     expect(compatibilityRoute?.canActivate).toBeUndefined();
   });
 
-  it('exposes the bounded procurement navigation surfaces without opening downstream inventory or finance pages', () => {
+  it('exposes the bounded procurement and Finance foundation navigation surfaces', () => {
     const appRoute = routes.find((route) => route.path === 'app');
     const childPaths = (appRoute?.children ?? []).map((route) => route.path);
 
@@ -25,6 +24,7 @@ describe('Application route contract', () => {
     expect(childPaths).toContain('procurement/purchase-requests');
     expect(childPaths).toContain('procurement/supplier-quotations');
     expect(childPaths).toContain('procurement/invoice-matching');
+    expect(childPaths).toContain('finance');
     expect(childPaths).toContain('procurement/purchase-orders');
     expect(childPaths).not.toContain('inventory/goods-receipts');
     expect(childPaths).not.toContain('finance/accounts-payable');

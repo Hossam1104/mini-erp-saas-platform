@@ -609,6 +609,53 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
         Assert.DoesNotContain("identity.recovery.consume", document, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task OpenApi_manual_journal_request_exposes_no_source_authority_fields()
+    {
+        using var client = factory.CreateClient();
+        using var document = JsonDocument.Parse(await client.GetStringAsync("/openapi/v1.json"));
+        var root = document.RootElement;
+        var schema = root.GetProperty("paths")
+            .GetProperty("/api/v1/finance/journals")
+            .GetProperty("post")
+            .GetProperty("requestBody")
+            .GetProperty("content")
+            .GetProperty("application/json")
+            .GetProperty("schema");
+        if (schema.TryGetProperty("$ref", out var reference))
+        {
+            var schemaName = reference.GetString()!.Split('/').Last();
+            schema = root.GetProperty("components").GetProperty("schemas").GetProperty(schemaName);
+        }
+
+        var properties = new HashSet<string>(StringComparer.Ordinal);
+        CollectOpenApiProperties(schema, root, properties);
+        foreach (var sourceOwnedField in new[] { "sourceContract", "sourceEvent", "sourceEvidenceId", "sourceEvidenceVersion", "postingRuleId" })
+        {
+            Assert.DoesNotContain(sourceOwnedField, properties);
+        }
+    }
+
+    private static void CollectOpenApiProperties(JsonElement schema, JsonElement root, ISet<string> properties)
+    {
+        if (schema.TryGetProperty("$ref", out var reference))
+        {
+            var schemaName = reference.GetString()!.Split('/').Last();
+            CollectOpenApiProperties(root.GetProperty("components").GetProperty("schemas").GetProperty(schemaName), root, properties);
+        }
+
+        if (schema.TryGetProperty("properties", out var directProperties))
+        {
+            foreach (var property in directProperties.EnumerateObject()) properties.Add(property.Name);
+        }
+
+        foreach (var composition in new[] { "allOf", "oneOf", "anyOf" })
+        {
+            if (!schema.TryGetProperty(composition, out var alternatives)) continue;
+            foreach (var alternative in alternatives.EnumerateArray()) CollectOpenApiProperties(alternative, root, properties);
+        }
+    }
+
     private async Task<HttpResponseMessage> PostProbeAsync(
         HttpClient client,
         string idempotencyKey,

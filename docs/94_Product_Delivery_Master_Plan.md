@@ -1,7 +1,7 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative current full-feature fast-track overlay — 19 August 2026
-> (MESP-124 merge reconciliation).** Release 1 remains the full-feature reusable B2B ERP. The
+> **Authoritative current full-feature fast-track overlay — 24 August 2026
+> (MESP-132 acceptance stage).** Release 1 remains the full-feature reusable B2B ERP. The
 > milestone is **31 August 2026 — Release 1 Integrated Preview**, a running
 > preview of the real codebase, not an MVP, throwaway/demo UI, Wafra fork, or
 > scope cut. Unfinished capability remains required after the preview.
@@ -14,11 +14,17 @@
 > is complete, reviewed by Claude Opus 5 (APPROVE FOR MERGE), and squash-merged to `main`
 > at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (PR #68).
 >
-> The active implementation capability is MESP-125 (Goods Receipt and Purchase
-> Invoice handoff), which is In Progress / activated under Epic MESP-7 (FIN-OD-01
-> resolved contract-bound under MESP-116 / PD-046). Prerequisite gates MESP-41,
-> MESP-43, MESP-44, MESP-45, MESP-113, and MESP-116 are Done. Immediate implementation
-> executor is Claude Sonnet 5 per `TASK.md`.
+> The active implementation capability is MESP-132 (Finance / General Ledger
+> foundation), which is In Progress / activated under Epic MESP-10. Current main
+> is `fcec241dfedb529fef89d4336adf1e571917c52a`; the feature branch is
+> `feat/MESP-132-finance-foundation` at source/test implementation commit
+> `dcae7e231bd264580c33e60c35f5cc8436c4f050` (starting SHA
+> `2f523582fbd3394b1eb11580eff490ba83aa9afb`); Draft PR #76 is Open, Draft, and
+> unmerged pending Sol acceptance. MESP-131 is Done through PR #75 merged at
+> `a8664d6a0d006e463a1a03fadd76c28475475f58`. The accepted fast-track count is
+> 15/26 = 57.7%; production-readiness remains approximately 47% overall and
+> 41% Procurement/P2P. Immediate next action is Sol acceptance; no capability
+> starts automatically.
 
 > **Historical pre-fast-track overlay — MESP-38 completion.** The prior
 > MESP-38/MESP-39 overlay immediately below remains preserved evidence only;
@@ -387,15 +393,15 @@
 | Owner | Hossam |
 | Repository | `Hossam1104/mini-erp-saas-platform` |
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
-| Last updated | 12 August 2026 |
+| Last updated | 24 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-38 is Done as the bounded documentation-only Security, Audit, and Data Governance BRD under MESP-13; MESP-23 remains In Progress; MESP-48/MESP-50/MESP-53/MESP-54/MESP-110/MESP-113 remain open; no source implementation item is active.` |
-| Current implementation item | `None. MESP-39 Integrations and External Services BRD is the next separately authorized item and remains To Do/not activated.` |
-| Merged-main baseline | `PR #57 merged the MESP-38 documentation BRD at 67b7fb79475fb194489bc03ed153c999d20a6eaf from reviewed head 42f2a1cb7b15580a6a92c4603253b6ea5104c203; the MESP-37 baseline remains preserved.` |
+| Current activity | `MESP-132 Finance / General Ledger foundation is In Progress / activated under MESP-10; MESP-131 and MESP-8 are Done; MESP-23 and named production/legal/external gates remain preserved.` |
+| Current implementation item | `MESP-132 on feat/MESP-132-finance-foundation, source/test implementation dcae7e231bd264580c33e60c35f5cc8436c4f050 from start 2f523582fbd3394b1eb11580eff490ba83aa9afb, Draft PR #76 Open/Draft/unmerged pending Sol acceptance.` |
+| Merged-main baseline | `main and origin/main are synchronized at fcec241dfedb529fef89d4336adf1e571917c52a; MESP-131 PR #75 merged at a8664d6a0d006e463a1a03fadd76c28475475f58.` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `None. PR #57 is merged; no implementation item is active.` |
-| Current review checkpoint | `MESP-38 is Done with the approved bounded BRD at docs/29_Security_Audit_and_Data_Governance_BRD.md; PR #57 merged at 67b7fb79475fb194489bc03ed153c999d20a6eaf; Jira evidence 10934/10935/10936/10937/10938/10939; MESP-23 and named production/legal/external gates remain preserved. No source or production capability is claimed.` |
+| Open Pull Request | `PR #76 is Open/Draft/unmerged for MESP-132; no merge or Ready-for-Review transition is authorized by this handoff.` |
+| Current review checkpoint | `MESP-132 final source-authority and SQL-concurrency remediation pending Sol acceptance: Finance 12/12; REST/host 53/53; SQL 46/46; backend 982/982; Angular 259/259; bundle 496.34 kB initial / 36.45 kB Finance lazy; Chromium 2/2 focused and 34/34 full; runtime 5300/4300 HTTP 200 probes.` |
 
 ---
 

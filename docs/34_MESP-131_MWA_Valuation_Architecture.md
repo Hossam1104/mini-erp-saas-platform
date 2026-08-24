@@ -1,14 +1,15 @@
 # MESP-131 Moving Weighted Average Valuation Architecture
 
-**Status:** Final valuation-integrity remediation complete; pending GPT-5.6 Sol delta acceptance and merge<br>
+**Status:** Accepted and merged through PR #75; MESP-131 and MESP-8 are Done<br>
 **Date:** 24 August 2026<br>
 **Capability:** MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting<br>
 **Base main:** `b470179e1d18ef75c0a9247b2340407da6220dc4`<br>
 **Migration-repair session start SHA:** `48ddf07a645da0130699314243ae8b23907b3bfc`<br>
 **Pre-repair implementation baseline:** `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`<br>
 **P1 remediation SHA:** `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`<br>
-**Final branch SHA:** final documentation handoff tip is reported in the completion response<br>
-**Draft PR:** #75 — Open, Draft, unmerged
+**Final accepted feature SHA:** `db624fbb71d15ee55022e247df0f83894d026257`<br>
+**Merged main SHA:** `a8664d6a0d006e463a1a03fadd76c28475475f58`<br>
+**Current downstream:** MESP-132 Finance foundation is active on Draft PR #76
 
 ## Purpose and boundary
 
@@ -270,8 +271,9 @@ rewritten.
 
 These are accepted results on feature head
 `db624fbb71d15ee55022e247df0f83894d026257`. PR #75 is squash-merged into
-`main` at `a8664d6a0d006e463a1a03fadd76c28475475f58`; MESP-131 remains Jira In
-Progress only until Sol records closure.
+`main` at `a8664d6a0d006e463a1a03fadd76c28475475f58`; MESP-131 is Done in Jira
+through closure comment `11842`. MESP-132 is the active downstream capability
+under Epic MESP-10 and remains pending Sol acceptance of Draft PR #76.
 
 ## Jira traceability
 

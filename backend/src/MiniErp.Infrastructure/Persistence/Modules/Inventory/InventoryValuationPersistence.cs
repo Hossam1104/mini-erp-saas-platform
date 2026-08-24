@@ -404,6 +404,15 @@ internal sealed class InventoryValuationPersistence(
         await using var db = CreateContext(context); var values = await ApplyHandoffScope(db.FinanceValuationHandoffs.AsNoTracking(), query).OrderByDescending(item => item.LedgerSequence).ToListAsync(cancellationToken); return values.Select(ToHandoff).ToArray();
     }
 
+    public async Task<Guid?> ResolveFinanceHandoffCompanyIdAsync(InventoryRequestContext context, Guid handoffId, CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context);
+        return await db.FinanceValuationHandoffs.AsNoTracking()
+            .Where(item => item.Id == handoffId)
+            .Select(item => (Guid?)item.CompanyId)
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<InventoryValuationExportRecord> ExportAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default)
     {
         await using var db = CreateContext(context);

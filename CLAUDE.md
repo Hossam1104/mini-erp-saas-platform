@@ -9,7 +9,35 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
+## Current execution overlay - 24 August 2026 (MESP-132 final Sol acceptance remediation)
+
+The current active implementation is **MESP-132 Finance / General Ledger
+foundation** under Epic MESP-10. The synchronized `main` SHA is
+`fcec241dfedb529fef89d4336adf1e571917c52a`; this bounded remediation started at
+`2f523582fbd3394b1eb11580eff490ba83aa9afb` and the source/test implementation
+commit is `dcae7e2` on `feat/MESP-132-finance-foundation`. PR #76 remains Open,
+Draft, and unmerged. MESP-132 is In Progress / activated, while MESP-131 and
+MESP-8 are Done.
+
+The public Manual Journal contract is now server-owned manual identity only;
+manual edits cannot convert lineage or amount authority, and trusted Inventory
+handoffs retain source evidence. Five provider-realistic SQL Server LocalDB
+concurrency cases cover period close/post, account restriction/post, the same
+Journal, the same Inventory source handoff, and first-company JournalSequence;
+nested SQL contention maps to safe Finance conflict behavior.
+
+Final validation is Finance `12/12`, REST/OpenAPI and host security `53/53`,
+prior Inventory `89/89`, SQL safety `46/46`, full backend `982/982` with 0
+failures and 0 skips, Release 0/0, Angular `259/259` across 37 spec files,
+initial bundle `496.34 kB`, Finance lazy chunk `36.45 kB`, Chromium `2/2`
+focused and `34/34` full, and both npm audits clean. Runtime is backend
+`http://localhost:5300` PID `23772` and frontend `http://localhost:4300` PID
+`28656`, with the recorded HTTP 200 probes. Accepted fast-track completion
+remains `15/26 = 57.7%`; production readiness remains approximately `47%`
+overall and `41%` Procurement/P2P. Do not count the Draft PR as accepted
+capability or start the next capability automatically.
+
+## Historical execution overlay - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
 
 MESP-124 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR
 MERGE), and squash-merged to `main`** at commit

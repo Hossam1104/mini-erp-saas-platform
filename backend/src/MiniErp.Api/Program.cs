@@ -14,10 +14,12 @@ using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Platform;
 using MiniErp.App.Modules.Procurement;
 using MiniErp.App.Modules.Inventory;
+using MiniErp.App.Modules.Finance;
 using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.BusinessParties;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
+using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Platform;
 using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence;
@@ -25,6 +27,7 @@ using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
+using MiniErp.Infrastructure.Persistence.Modules.Finance;
 using MiniErp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -89,11 +92,13 @@ builder.Services.AddCustomerIdentity();
 builder.Services.AddMasterDataImport();
 builder.Services.AddPurchaseRequestApprovalFoundation(builder.Configuration);
 builder.Services.AddInventoryApplication();
+builder.Services.AddFinanceApplication();
 builder.Services.AddSingleton<IInventoryProductProvider, MasterDataInventoryProductProvider>();
 string? developmentMasterDataSqliteConnectionString = null;
 string? developmentBusinessPartiesSqliteConnectionString = null;
 string? developmentProcurementSqliteConnectionString = null;
 string? developmentInventorySqliteConnectionString = null;
+string? developmentFinanceSqliteConnectionString = null;
 var sqlServerConnectionString = builder.Configuration["MESP_SQLSERVER_CONNECTION_STRING"];
 if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
 {
@@ -101,6 +106,7 @@ if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
     builder.Services.AddBusinessPartiesSqlServerPersistence(sqlServerConnectionString);
     builder.Services.AddProcurementSqlServerPersistence(sqlServerConnectionString);
     builder.Services.AddInventorySqlServerPersistence(sqlServerConnectionString);
+    builder.Services.AddFinanceSqlServerPersistence(sqlServerConnectionString);
 }
 else if (builder.Environment.IsDevelopment())
 {
@@ -108,6 +114,7 @@ else if (builder.Environment.IsDevelopment())
     var configuredBusinessPartiesConnectionString = builder.Configuration["MESP_DEV_BUSINESS_PARTIES_SQLITE_CONNECTION_STRING"];
     var configuredProcurementConnectionString = builder.Configuration["MESP_DEV_PROCUREMENT_SQLITE_CONNECTION_STRING"];
     var configuredInventoryConnectionString = builder.Configuration["MESP_DEV_INVENTORY_SQLITE_CONNECTION_STRING"];
+    var configuredFinanceConnectionString = builder.Configuration["MESP_DEV_FINANCE_SQLITE_CONNECTION_STRING"];
     var configuredSqliteDirectory = builder.Configuration["MESP_DEV_SQLITE_DIRECTORY"];
     var localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     var defaultSqliteDirectory = string.IsNullOrWhiteSpace(configuredSqliteDirectory)
@@ -137,11 +144,15 @@ else if (builder.Environment.IsDevelopment())
     developmentInventorySqliteConnectionString = string.IsNullOrWhiteSpace(configuredInventoryConnectionString)
         ? $"Data Source={Path.Combine(defaultSqliteDirectory, "inventory.db")}"
         : configuredInventoryConnectionString;
+    developmentFinanceSqliteConnectionString = string.IsNullOrWhiteSpace(configuredFinanceConnectionString)
+        ? $"Data Source={Path.Combine(defaultSqliteDirectory, "finance.db")}"
+        : configuredFinanceConnectionString;
 
     builder.Services.AddMasterDataSqlitePersistence(developmentMasterDataSqliteConnectionString);
     builder.Services.AddBusinessPartiesSqlitePersistence(developmentBusinessPartiesSqliteConnectionString);
     builder.Services.AddProcurementSqlitePersistence(developmentProcurementSqliteConnectionString);
     builder.Services.AddInventorySqlitePersistence(developmentInventorySqliteConnectionString);
+    builder.Services.AddFinanceSqlitePersistence(developmentFinanceSqliteConnectionString);
 }
 
 // Inventory consumes Procurement source contracts through application seams. The registrations
@@ -229,6 +240,19 @@ if (builder.Environment.IsDevelopment()
                 developmentOrgScopeBranchId,
                 developmentOrgScopeCompanyName,
                 developmentOrgScopeBranchName)
+        ]));
+
+    var configuredFunctionalCurrency = builder.Configuration["MESP_DEV_FINANCE_FUNCTIONAL_CURRENCY"];
+    builder.Services.AddSingleton<IFinanceCompanyProvider>(_ =>
+        new ConfiguredFinanceCompanyProvider(
+        [
+            new FinanceCompanyOption(
+                developmentOrgScopeTenantId,
+                developmentOrgScopeCompanyId,
+                developmentOrgScopeCompanyName,
+                string.IsNullOrWhiteSpace(configuredFunctionalCurrency) ? "SAR" : configuredFunctionalCurrency,
+                developmentOrgScopeBranchId,
+                IsActive: true)
         ]));
 }
 
@@ -328,6 +352,8 @@ if (developmentMasterDataSqliteConnectionString is not null
         developmentProcurementSqliteConnectionString);
     InventoryPersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
         developmentInventorySqliteConnectionString);
+    FinancePersistenceServiceCollectionExtensions.EnsureDevelopmentSqliteDatabase(
+        developmentFinanceSqliteConnectionString!);
 }
 
 app.SeedDevelopmentBootstrap();
@@ -879,6 +905,7 @@ app.MapSupplierReturnEndpoints();
 app.MapPurchaseInvoiceHandoffEndpoints();
 app.MapPurchaseInvoiceMatchingEndpoints();
 app.MapInventoryEndpoints();
+app.MapFinanceEndpoints();
 
 app.MapOpenApi("/openapi/v1.json")
     .WithName("platform.openapi")

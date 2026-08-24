@@ -58,7 +58,48 @@ velocity, or forecast:
 - **Presentational Only**: Presentation-layer only; causes zero FX conversion, zero tax effect, zero accounting effect, and zero persisted amount change.
 - **Fallback & Non-SAR**: Safe text fallback (e.g. `SAR`) is preserved for semantic clarity in multi-currency comparison, audit, and exports. Non-SAR currencies remain completely unaffected. Governed by MESP-12 / MESP-37.
 
-## Current execution overlay - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
+## Current execution overlay - 24 August 2026 (MESP-132 final Sol acceptance remediation)
+
+The repository remains based on synchronized `main` SHA
+`fcec241dfedb529fef89d4336adf1e571917c52a`, with the active bounded
+implementation capability **MESP-132 Finance / General Ledger foundation** on
+branch `feat/MESP-132-finance-foundation`. This bounded remediation started at
+`2f523582fbd3394b1eb11580eff490ba83aa9afb` and its source/test implementation
+commit is `dcae7e2`; PR #76 remains **Open, Draft, and unmerged** against
+`main`. MESP-132 remains **In Progress / activated** under Epic MESP-10
+(activation comments `11845` and `11844`). MESP-131 and its parent Inventory
+Epic MESP-8 are Done (closure comments `11842` and `11843`).
+
+The public Manual Journal request no longer accepts source-owned identity,
+evidence, or PostingRule fields; the server forces `manual-journal.v1` /
+`manual`, null source evidence and rule, ManualTransactionCurrency authority,
+and Required approval. Manual edits preserve that identity, while trusted
+Inventory handoff processing retains its source lineage. Finance now has five
+provider-realistic SQL Server LocalDB races covering period close/post, account
+restriction/post, same-Journal posting, same-source Inventory handoff, and
+first-company JournalSequence creation; nested SQL contention is classified as
+a safe Finance conflict.
+
+Final validation is Finance `12/12`; REST/OpenAPI and host-security `53/53`;
+prior Inventory regression `89/89`; SQL Server safety `46/46`; full backend
+`982/982` with 0 failures and 0 skips; Release build 0 warnings/0 errors;
+Angular `259/259` across 37 spec files; initial bundle `496.34 kB`; Finance
+lazy chunk `36.45 kB`; focused/full Chromium `2/2` and `34/34`; both npm audits
+report 0 vulnerabilities. Runtime evidence is backend
+`http://localhost:5300` PID `23772` and frontend `http://localhost:4300` PID
+`28656`, with health, root, main.js, and `/app/finance` HTTP 200 probes.
+`frontend/assets` and the existing Finance migrations are untouched.
+
+Accepted fast-track capability completion remains **15/26 = 57.7%**; MESP-132
+must not be counted until Sol accepts and merges it. Overall production-ready
+completion remains approximately **47%** and Procurement/P2P approximately
+**41%**. Production/provider, MESP-48/MESP-50, backup/restore, capacity,
+legal, specialist, migration/cutover, external/statutory, and Wafra-specific
+core gates remain open or deferred. No next Finance capability starts
+automatically, no Jira writes were performed, and no Opus prompt is added by
+this handoff.
+
+## Historical execution overlay - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
 
 MESP-124 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR
 MERGE), and squash-merged to `main`** at commit
