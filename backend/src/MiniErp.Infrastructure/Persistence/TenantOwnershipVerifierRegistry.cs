@@ -6,6 +6,7 @@ using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
+using MiniErp.Infrastructure.Persistence.Modules.Finance;
 
 namespace MiniErp.Infrastructure.Persistence;
 
@@ -210,6 +211,25 @@ internal sealed class TenantOwnershipVerifierRegistry
             InventoryTenantOwnershipVerifier.For<InventoryMovementValuationEventEntity>(),
             InventoryTenantOwnershipVerifier.For<InventoryValuationRunEntity>(),
             InventoryTenantOwnershipVerifier.For<InventoryFinanceValuationHandoffEntity>()
+        ]);
+    }
+
+    internal static TenantOwnershipVerifierRegistry CreateFinance()
+    {
+        return new TenantOwnershipVerifierRegistry(
+        [
+            new TenantOwnershipVerifierRegistration(typeof(TenantOwnedRecord), TenantOwnershipStoreVerifier.ReadStoredTenantId, TenantOwnershipStoreVerifier.ReadStoredTenantIdAsync),
+            FinanceTenantOwnershipVerifier.For<FinanceAccountEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceFiscalCalendarEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceFiscalYearEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceFiscalPeriodEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceCostCenterEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinancePostingRuleEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceJournalEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceJournalLineEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceAuditEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceIdempotencyEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceSourceEffectEntity>()
         ]);
     }
 

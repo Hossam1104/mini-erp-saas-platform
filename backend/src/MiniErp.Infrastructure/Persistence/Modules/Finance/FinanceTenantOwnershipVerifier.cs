@@ -1,0 +1,27 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using MiniErp.App.BuildingBlocks.Tenancy;
+
+namespace MiniErp.Infrastructure.Persistence.Modules.Finance;
+
+internal static class FinanceTenantOwnershipVerifier
+{
+    internal static TenantOwnershipVerifierRegistration For<TEntity>() where TEntity : class, ITenantOwned => new(
+        typeof(TEntity),
+        static (context, entry) => Read<TEntity>(context, entry),
+        static (context, entry, cancellationToken) => ReadAsync<TEntity>(context, entry, cancellationToken));
+
+    private static TenantId? Read<TEntity>(TenantPersistenceDbContext context, EntityEntry entry) where TEntity : class, ITenantOwned
+    {
+        if (context is not FinanceDbContext finance || entry.Entity is not TEntity || entry.Property("Id").CurrentValue is not Guid id || id == Guid.Empty) return null;
+        var stored = finance.Set<TEntity>().Where(item => EF.Property<Guid>(item, "Id") == id).Select(item => item.TenantId).SingleOrDefault();
+        return stored == default ? null : stored;
+    }
+
+    private static async Task<TenantId?> ReadAsync<TEntity>(TenantPersistenceDbContext context, EntityEntry entry, CancellationToken cancellationToken) where TEntity : class, ITenantOwned
+    {
+        if (context is not FinanceDbContext finance || entry.Entity is not TEntity || entry.Property("Id").CurrentValue is not Guid id || id == Guid.Empty) return null;
+        var stored = await finance.Set<TEntity>().Where(item => EF.Property<Guid>(item, "Id") == id).Select(item => item.TenantId).SingleOrDefaultAsync(cancellationToken);
+        return stored == default ? null : stored;
+    }
+}

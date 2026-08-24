@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { sessionGuard } from './core/auth/session.guard';
 import { SignInComponent } from './features/auth/sign-in.component';
-import { TenantSelectComponent } from './features/context/tenant-select.component';
 import { ApplicationShellComponent } from './features/shell/application-shell.component';
 import { WorkspaceHomeComponent } from './features/workspace/workspace-home.component';
 
@@ -14,7 +13,7 @@ export const routes: Routes = [
     canActivate: [sessionGuard],
     children: [
       { path: '', component: WorkspaceHomeComponent },
-      { path: 'workspaces', component: TenantSelectComponent },
+      { path: 'workspaces', loadComponent: () => import('./features/context/tenant-select.component').then((module) => module.TenantSelectComponent) },
       { path: 'master-data', pathMatch: 'full', redirectTo: 'master-data/categories' },
       { path: 'master-data/imports', loadComponent: () => import('./features/master-data/master-data-import-workspace.component').then((module) => module.MasterDataImportWorkspaceComponent) },
       { path: 'master-data/imports/:id', loadComponent: () => import('./features/master-data/master-data-import-workspace.component').then((module) => module.MasterDataImportWorkspaceComponent) },
@@ -24,6 +23,7 @@ export const routes: Routes = [
       { path: 'price-lists/:id', loadComponent: () => import('./features/master-data/price-list-workspace.component').then((module) => module.PriceListWorkspaceComponent) },
       { path: 'inventory/valuation', loadComponent: () => import('./features/inventory/inventory-valuation-workspace.component').then((module) => module.InventoryValuationWorkspaceComponent) },
       { path: 'inventory', loadComponent: () => import('./features/inventory/inventory-workspace.component').then((module) => module.InventoryWorkspaceComponent) },
+      { path: 'finance', loadComponent: () => import('./features/finance/finance-workspace.component').then((module) => module.FinanceWorkspaceComponent) },
       { path: 'procurement/purchase-requests', loadComponent: () => import('./features/procurement/purchase-request-workspace.component').then((module) => module.PurchaseRequestWorkspaceComponent) },
       { path: 'procurement/purchase-requests/new', loadComponent: () => import('./features/procurement/purchase-request-workspace.component').then((module) => module.PurchaseRequestWorkspaceComponent) },
       { path: 'procurement/purchase-requests/:id', loadComponent: () => import('./features/procurement/purchase-request-workspace.component').then((module) => module.PurchaseRequestWorkspaceComponent) },

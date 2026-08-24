@@ -14,6 +14,7 @@ using MiniErp.Infrastructure.Persistence;
 using MiniErp.Infrastructure.Persistence.Migrations.Inventory;
 using MiniErp.Infrastructure.Persistence.Modules.BusinessParties;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
+using MiniErp.Infrastructure.Persistence.Modules.Finance;
 using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using Xunit;
@@ -154,6 +155,13 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
             await inventory.Database.MigrateAsync();
         }
 
+        await using (var finance = new FinanceDbContext(
+                         SqlServerMigrationConfiguration.Configure(_connectionString, SqlServerMigrationConfiguration.FinanceHistoryTable),
+                         TenantA))
+        {
+            await finance.Database.MigrateAsync();
+        }
+
         await CreateProbeTablesAsync();
         Factory = new TenantPersistenceSessionFactory(_options);
     }
@@ -282,6 +290,7 @@ public sealed class SqlServerSafetyTests
         var businessPartiesOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.BusinessPartiesHistoryTable);
         var procurementOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.ProcurementHistoryTable);
         var inventoryOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.InventoryHistoryTable);
+        var financeOptions = SqlServerMigrationConfiguration.Configure(connectionString, SqlServerMigrationConfiguration.FinanceHistoryTable);
 
         await using (var tenancy = new TenantPersistenceDbContext(tenancyOptions, _fixture.TenantA))
         {
@@ -339,6 +348,12 @@ public sealed class SqlServerSafetyTests
             Assert.Empty(await inventory.Database.GetPendingMigrationsAsync());
         }
 
+        await using (var finance = new FinanceDbContext(financeOptions, _fixture.TenantA))
+        {
+            Assert.Equal(["20260824125115_MESP132FinanceFoundation"], (await finance.Database.GetAppliedMigrationsAsync()).ToArray());
+            Assert.Empty(await finance.Database.GetPendingMigrationsAsync());
+        }
+
         await using var connection = await _fixture.OpenConnectionAsync();
         await using var command = connection.CreateCommand();
         command.CommandText = """
@@ -364,6 +379,32 @@ public sealed class SqlServerSafetyTests
         Assert.True(await reader.NextResultAsync());
         Assert.True(await reader.ReadAsync());
         Assert.Equal(1, reader.GetInt32(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
+    }
+
+    [Fact]
+    public async Task MESP132_sql_server_creates_only_module_owned_tenant_finance_tables()
+    {
+        await using var connection = await _fixture.OpenConnectionAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = N'finance'
+              AND TABLE_NAME IN (N'Accounts', N'FiscalCalendars', N'FiscalYears', N'FiscalPeriods', N'CostCenters', N'PostingRules', N'Journals', N'JournalLines', N'AuditEvents', N'IdempotencyEntries', N'SourceEffects');
+            SELECT COUNT(*)
+            FROM sys.indexes AS indexes
+            INNER JOIN sys.tables AS tables ON tables.object_id = indexes.object_id
+            INNER JOIN sys.schemas AS schemas ON schemas.schema_id = tables.schema_id
+            WHERE schemas.name = N'finance'
+              AND tables.name = N'SourceEffects'
+              AND indexes.name = N'IX_SourceEffects_TenantId_CompanyId_SourceContract_SourceEvidenceId_SourceEvidenceVersion';
+            """;
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(11, reader.GetInt32(0));
         Assert.True(await reader.NextResultAsync());
         Assert.True(await reader.ReadAsync());
         Assert.Equal(1, reader.GetInt32(0));
