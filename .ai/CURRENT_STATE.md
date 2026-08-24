@@ -79,6 +79,15 @@ statutory certification, and Wafra-specific Finance behavior remain deferred.
 Sol accepts the exact final branch SHA and the single Draft PR. No next Finance
 task starts automatically and no Opus prompt is added.
 
+### Final runtime verification
+
+The official `scripts/Start-MiniErpDevelopment.ps1 -Restart` launcher was run
+after the final Release build with the explicit loopback-only Development auth
+bypass. Backend `http://localhost:5300` is PID `41320`; `/health` returned
+HTTP 200. Frontend `http://localhost:4300` is PID `5432`; `/`, `/main.js`, and
+`/app/finance` each returned HTTP 200. Both repository-owned processes remain
+running for Owner inspection and no credential was printed or persisted.
+
 ## MESP-131 guarded merge state - 24 August 2026
 
 PR #75 is merged into `main` at exact squash SHA

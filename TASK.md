@@ -787,7 +787,9 @@ Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 Branch: `feat/MESP-132-finance-foundation`
 Exact required base SHA: `fcec241dfedb529fef89d4336adf1e571917c52a`
 Implementation SHA: `af86b78` (`feat: implement MESP-132 finance foundation`)
-Final branch SHA: `effd7c335be4fc198c15d39a7d502c401de6e14b`.
+Final branch SHA: exact final tip is reported in the completion response after
+this runtime/documentation handoff commit; pre-runtime pushed tip was
+`c8dcf98`.
 Draft PR: `#76`, Open, Draft, unmerged; head
 `effd7c335be4fc198c15d39a7d502c401de6e14b`; base `main`.
 
@@ -892,6 +894,16 @@ intercompany, fixed assets, payroll, treasury, budgeting, automated FX feeds,
 period-end revaluation, production migration/opening-balance execution,
 cutover, external providers, statutory certification, Sales, and Wafra-
 specific Finance behavior were not started.
+
+## Final runtime verification
+
+The official `scripts/Start-MiniErpDevelopment.ps1 -Restart` launcher was run
+after the final Release build with the explicit loopback-only Development auth
+bypass. Backend URL `http://localhost:5300`, PID `41320`, health HTTP 200.
+Frontend URL `http://localhost:4300`, PID `5432`, root HTTP 200, `main.js`
+HTTP 200, and lazy Finance route `/app/finance` HTTP 200. Both
+repository-owned processes remain running for Owner inspection. No password or
+other credential was printed or persisted.
 
 ## Exact next action
 
