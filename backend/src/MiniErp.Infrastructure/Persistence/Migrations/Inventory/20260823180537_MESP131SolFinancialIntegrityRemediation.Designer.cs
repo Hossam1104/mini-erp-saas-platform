@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
 {
     [DbContext(typeof(InventoryDbContext))]
-    partial class InventoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260823180537_MESP131SolFinancialIntegrityRemediation")]
+    partial class MESP131SolFinancialIntegrityRemediation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -787,10 +790,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                         .HasPrecision(28, 8)
                         .HasColumnType("decimal(28,8)");
 
-                    b.Property<decimal>("RoundingAdjustmentAmount")
-                        .HasPrecision(28, 8)
-                        .HasColumnType("decimal(28,8)");
-
                     b.Property<decimal>("SignedBaseAmount")
                         .HasPrecision(28, 8)
                         .HasColumnType("decimal(28,8)");
@@ -971,10 +970,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<int?>("ExchangeRateVersionNumber")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("FormulaMovementValue")
-                        .HasPrecision(28, 8)
-                        .HasColumnType("decimal(28,8)");
-
                     b.Property<string>("FunctionalCurrencyCode")
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
@@ -1037,10 +1032,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Quantity")
-                        .HasPrecision(28, 8)
-                        .HasColumnType("decimal(28,8)");
-
-                    b.Property<decimal?>("RoundingAdjustmentAmount")
                         .HasPrecision(28, 8)
                         .HasColumnType("decimal(28,8)");
 

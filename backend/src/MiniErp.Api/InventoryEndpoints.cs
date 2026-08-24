@@ -1,5 +1,6 @@
 #pragma warning disable CS1591
 
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Antiforgery;
 using MiniErp.App.BuildingBlocks.Rest;
@@ -205,6 +206,25 @@ public static class InventoryEndpoints
             await ExecuteMutationAsync(id, body, http, resolver, tenantResolver, audit, idem, "inventory.movement.correct", (value, context, action, key, inventory) => action is null ? Task.FromResult(InventoryOperationResult<InventoryMovementRecord>.Failure("validation_failed")) : inventory.CorrectMovementAsync(context, value, ReadVersion(http)!, action, key, http.RequestAborted)))
             .WithName("inventory.movement.correct").WithTags("Inventory").WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("inventory.movement.correct")));
 
+        MapValuationGet<IReadOnlyList<InventoryValuationPolicyRecord>>(endpoints, "/api/v1/inventory/valuation/policies", "inventory.valuation.policy.read", (context, http, valuation) => valuation.ListPoliciesAsync(context, ParseGuid(http, "companyId") ?? Guid.Empty, http.RequestAborted));
+        MapValuationGet<IReadOnlyList<InventoryValuationStateRecord>>(endpoints, "/api/v1/inventory/valuation/states", "inventory.valuation.state.read", (context, http, valuation) => valuation.ListStatesAsync(context, ParseValuationQuery(http), http.RequestAborted));
+        MapValuationGet<IReadOnlyList<InventoryMovementValuationEventRecord>>(endpoints, "/api/v1/inventory/valuation/history", "inventory.valuation.history.read", (context, http, valuation) => valuation.ListEventsAsync(context, ParseValuationQuery(http), http.RequestAborted));
+        MapValuationGet<IReadOnlyList<InventoryValuationReconciliationRecord>>(endpoints, "/api/v1/inventory/valuation/reconciliation", "inventory.valuation.reconciliation.read", (context, http, valuation) => valuation.ReconcileAsync(context, ParseValuationQuery(http), http.RequestAborted));
+        MapValuationGet<IReadOnlyList<InventoryFinanceValuationHandoffRecord>>(endpoints, "/api/v1/inventory/valuation/finance-handoffs", "inventory.valuation.finance-handoff.read", (context, http, valuation) => valuation.ListFinanceHandoffsAsync(context, ParseValuationQuery(http), http.RequestAborted));
+        MapValuationGet<InventoryValuationSummaryRecord>(endpoints, "/api/v1/inventory/valuation/summary", "inventory.valuation.summary.read", (context, http, valuation) => valuation.SummaryAsync(context, ParseValuationQuery(http), http.RequestAborted));
+        MapValuationGet<IReadOnlyList<InventoryMovementValuationEventRecord>>(endpoints, "/api/v1/inventory/valuation/pending", "inventory.valuation.pending.read", (context, http, valuation) => valuation.ListEventsAsync(context, ParseValuationQuery(http) with { Status = InventoryValuationEventStatus.Pending }, http.RequestAborted));
+        MapValuationGet<IReadOnlyList<InventoryValuationReconciliationRecord>>(endpoints, "/api/v1/inventory/valuation/in-transit", "inventory.valuation.in-transit.read", (context, http, valuation) => valuation.ReconcileAsync(context, ParseValuationQuery(http), http.RequestAborted));
+        MapValuationExport(endpoints);
+        endpoints.MapPost("/api/v1/inventory/valuation/policies", async (InventoryValuationPolicyRequest? request, HttpContext http, ITrustedRequestContextResolver resolver, InventoryTenantContextResolver tenantResolver, FoundationAuditCoordinator audit, LocalMasterDataIdempotencyStore idem) =>
+            await ExecuteMutationAsync(http, resolver, tenantResolver, audit, idem, "inventory.valuation.policy.create", request, (context, key) => request is null ? Task.FromResult(InventoryOperationResult<InventoryValuationPolicyRecord>.Failure("validation_failed")) : http.RequestServices.GetRequiredService<InventoryValuationService>().CreatePolicyAsync(context, request, key, http.RequestAborted), setEtag: true))
+            .WithName("inventory.valuation.policy.create").WithTags("Inventory").WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("inventory.valuation.policy.create")));
+        endpoints.MapPost("/api/v1/inventory/valuation/process", async (InventoryValuationProcessRequest? request, HttpContext http, ITrustedRequestContextResolver resolver, InventoryTenantContextResolver tenantResolver, FoundationAuditCoordinator audit, LocalMasterDataIdempotencyStore idem) =>
+            await ExecuteMutationAsync(http, resolver, tenantResolver, audit, idem, "inventory.valuation.process", request, (context, key) => request is null ? Task.FromResult(InventoryOperationResult<InventoryValuationProcessResult>.Failure("validation_failed")) : http.RequestServices.GetRequiredService<InventoryValuationService>().ProcessAsync(context, new InventoryValuationProcessCommand(request.CompanyId, request.BranchId, request.WarehouseId, request.ProductId, request.UnitOfMeasureId, context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), key, InventoryFingerprints.Create(request)), http.RequestAborted), setEtag: false))
+            .WithName("inventory.valuation.process").WithTags("Inventory").WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("inventory.valuation.process")));
+        endpoints.MapPost("/api/v1/inventory/valuation/history/{valuationEventId:guid}/correction", async (Guid valuationEventId, InventoryValuationCorrectionRequest? request, HttpContext http, ITrustedRequestContextResolver resolver, InventoryTenantContextResolver tenantResolver, FoundationAuditCoordinator audit, LocalMasterDataIdempotencyStore idem) =>
+            await ExecuteMutationAsync(http, resolver, tenantResolver, audit, idem, "inventory.valuation.correction", request, (context, key) => request is null ? Task.FromResult(InventoryOperationResult<InventoryMovementValuationEventRecord>.Failure("validation_failed")) : http.RequestServices.GetRequiredService<InventoryValuationService>().CorrectAsync(context, new InventoryValuationCorrectionCommand(valuationEventId, request.AuthoritativeSourceRevisionId, request.Reason, context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), key, InventoryFingerprints.Create(new { valuationEventId, request })), http.RequestAborted), setEtag: false))
+            .WithName("inventory.valuation.correction").WithTags("Inventory").WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("inventory.valuation.correction")));
+
         return endpoints;
     }
 
@@ -215,6 +235,35 @@ public static class InventoryEndpoints
             var foundation = await resolver.ResolveAsync(http, http.RequestAborted); var resolution = tenantResolver.Resolve(foundation);
             if (!resolution.Allowed || resolution.Context is null) return await Problem(http, foundation.SecurityProfile == FoundationSecurityProfile.Anonymous ? 401 : 403, resolution.Code, operationId);
             var result = await operation(resolution.Context, http); return ToResult(http, result, operationId, setEtag: false);
+        }).WithName(operationId).WithTags("Inventory").WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired(operationId)));
+    }
+
+    private static void MapValuationGet<T>(IEndpointRouteBuilder endpoints, string route, string operationId, Func<InventoryRequestContext, HttpContext, InventoryValuationService, Task<InventoryOperationResult<T>>> operation)
+    {
+        endpoints.MapGet(route, async (HttpContext http, ITrustedRequestContextResolver resolver, InventoryTenantContextResolver tenantResolver, InventoryValuationService valuation) =>
+        {
+            var foundation = await resolver.ResolveAsync(http, http.RequestAborted); var resolution = tenantResolver.Resolve(foundation);
+            if (!resolution.Allowed || resolution.Context is null) return await Problem(http, foundation.SecurityProfile == FoundationSecurityProfile.Anonymous ? 401 : 403, resolution.Code, operationId);
+            var result = await operation(resolution.Context, http, valuation); return ToResult(http, result, operationId, setEtag: false);
+        }).WithName(operationId).WithTags("Inventory").WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired(operationId)));
+    }
+
+    private static void MapValuationExport(IEndpointRouteBuilder endpoints)
+    {
+        const string operationId = "inventory.valuation.export";
+        endpoints.MapGet("/api/v1/inventory/valuation/export", async (HttpContext http, ITrustedRequestContextResolver resolver, InventoryTenantContextResolver tenantResolver, InventoryValuationService valuation) =>
+        {
+            var foundation = await resolver.ResolveAsync(http, http.RequestAborted);
+            var resolution = tenantResolver.Resolve(foundation);
+            if (!resolution.Allowed || resolution.Context is null)
+                return await Problem(http, foundation.SecurityProfile == FoundationSecurityProfile.Anonymous ? 401 : 403, resolution.Code, operationId);
+
+            var result = await valuation.ExportAsync(resolution.Context, ParseValuationQuery(http), http.RequestAborted);
+            if (!result.Succeeded || result.Value is null)
+                return ToResult(http, result, operationId, setEtag: false);
+
+            var export = result.Value;
+            return Results.File(Encoding.UTF8.GetBytes(export.Content), export.ContentType, export.FileName);
         }).WithName(operationId).WithTags("Inventory").WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired(operationId)));
     }
 
@@ -308,11 +357,26 @@ public static class InventoryEndpoints
             if (setEtag && result.Value is InventoryMovementRecord movement) http.Response.Headers.ETag = $"\"{Convert.ToBase64String(movement.Version)}\"";
             return Results.Json(result.Value);
         }
-        var status = result.Code is "forbidden" or "tenant_context_failed" or "warehouse_not_available" ? 403 : result.Code is "not_found" ? 404 : result.Code is "persistence_unavailable" or "inventory_handoff_pending" ? 503 : result.Code is "conflict" or "duplicate_or_conflict" or "insufficient_available" or "idempotency_conflict" or "inventory_handoff_reconciliation_conflict" or "resnapshot_required" or "reservation_reconciliation_required" or "negative_stock_or_reservation" ? 409 : 400;
+        var status = result.Code is "forbidden" or "tenant_context_failed" or "warehouse_not_available" ? 403 : result.Code is "not_found" ? 404 : result.Code is "persistence_unavailable" or "inventory_handoff_pending" ? 503 : result.Code is "conflict" or "duplicate_or_conflict" or "insufficient_available" or "idempotency_conflict" or "inventory_handoff_reconciliation_conflict" or "resnapshot_required" or "reservation_reconciliation_required" or "negative_stock_or_reservation" or "valuation_concurrency_conflict" or "valuation_policy_overlap" or "valuation_policy_transition_requires_rebaseline" ? 409 : 400;
         return Results.Problem(statusCode: status, title: status == 403 ? "Access denied" : "Inventory operation failed", detail: "The Inventory operation could not be completed.", type: $"https://api.minierp.local/problems/{result.Code}", extensions: new Dictionary<string, object?> { ["code"] = result.Code, ["correlationId"] = Correlation(http), ["operationId"] = operationId });
     }
 
     private static Guid? ParseGuid(HttpContext http, string name) => Guid.TryParse(http.Request.Query[name].FirstOrDefault(), out var value) ? value : null;
+    private static InventoryValuationQuery ParseValuationQuery(HttpContext http) => new(
+        ParseGuid(http, "companyId") ?? Guid.Empty,
+        ParseGuid(http, "branchId"),
+        ParseGuid(http, "warehouseId"),
+        ParseGuid(http, "productId"),
+        ParseGuid(http, "unitOfMeasureId"),
+        http.Request.Query["trackingIdentity"].FirstOrDefault(),
+        Enum.TryParse<InventoryValuationEventStatus>(http.Request.Query["status"].FirstOrDefault(), true, out var status) ? status : null,
+        long.TryParse(http.Request.Query["fromSequence"].FirstOrDefault(), out var fromSequence) ? fromSequence : null,
+        long.TryParse(http.Request.Query["toSequence"].FirstOrDefault(), out var toSequence) ? toSequence : null,
+        DateOnly.TryParse(http.Request.Query["effectiveFrom"].FirstOrDefault(), out var effectiveFrom) ? effectiveFrom : null,
+        DateOnly.TryParse(http.Request.Query["effectiveTo"].FirstOrDefault(), out var effectiveTo) ? effectiveTo : null,
+        Enum.TryParse<InventoryMovementSourceType>(http.Request.Query["sourceType"].FirstOrDefault(), true, out var sourceType) ? sourceType : null,
+        ParseGuid(http, "policyId"),
+        http.Request.Query["currency"].FirstOrDefault());
     private static T? ParseEnum<T>(HttpContext http, string name) where T : struct, Enum => Enum.TryParse<T>(http.Request.Query[name].FirstOrDefault(), true, out var value) ? value : null;
     private static bool ParseBool(HttpContext http, string name) => bool.TryParse(http.Request.Query[name].FirstOrDefault(), out var value) && value;
     private static Guid ParseRouteGuid(HttpContext http, string name) => Guid.TryParse(http.Request.RouteValues[name]?.ToString(), out var value) ? value : Guid.Empty;

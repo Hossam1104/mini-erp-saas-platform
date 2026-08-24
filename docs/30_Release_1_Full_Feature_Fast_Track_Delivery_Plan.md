@@ -1,5 +1,21 @@
 # Release 1 Full-Feature Fast-Track Delivery Plan
 
+<!-- MESP-131-EXECUTION-START -->
+## Execution overlay â€” 23 August 2026
+
+This overlay does not change the approved plan baseline.
+
+Inventory fast-track execution currently stands at:
+
+- MESP-128 â€” Done.
+- MESP-129 â€” Done.
+- MESP-130 â€” Done.
+- MESP-131 â€” implemented on Draft PR #75, In Progress, pending Sol acceptance/merge.
+- MESP-132 â€” To Do / not activated.
+
+Fast-track completion before accepting MESP-131 remains `14/26 = 53.8%`; this is capability completion, not production readiness.
+<!-- MESP-131-EXECUTION-END -->
+
 **Status:** Current planning baseline; A1-A16 and B1-B6 approved in MESP-116, C1-C9 remain open gates
 **Date:** 12 August 2026
 **Milestone:** **31 August 2026 — Release 1 Integrated Preview**

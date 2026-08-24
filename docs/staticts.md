@@ -1,13 +1,98 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
+<!-- MESP-131-JIRA-SYNC-START -->
+## Jira/documentation synchronization â€” 23 August 2026
+
+Jira traceability has been reconciled without closing MESP-131:
+
+- MESP-131 remains In Progress; implementation handoff comment `11779`.
+- MESP-8 Inventory Epic is In Progress; progress comment `11780`.
+- MESP-54 FX consumption comment `11781`.
+- MESP-53 report-boundary comment `11782`.
+- MESP-113 Inventory-policy consumption comment `11783`.
+- MESP-120 Exchange Rate consumption comment `11784`.
+- MESP-132 downstream Finance handoff comment `11785`; status remains To Do.
+- MESP-139 downstream Reporting source comment `11786`; status remains To Do.
+- Sol acceptance comment `11788` and delta acceptance comment `11789` remain
+  the independent review authority.
+- Latest Sol final-delta acceptance comment `11794`.
+- Opus P1 finding source comment `11835`; latest Sol final acceptance hold
+  comment `11839`.
+
+Draft PR #75 remains unmerged and Sol acceptance is still required.
+<!-- MESP-131-JIRA-SYNC-END -->
+
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-23 14:08 +03:00
+**Last Updated:** 2026-08-24 13:35 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
 
-## Current authoritative fast-track snapshot - 23 August 2026 (MESP-130 final ledger-fence remediation; Sol acceptance handoff)
+## Current authoritative fast-track snapshot - 24 August 2026 (MESP-131 final valuation-integrity remediation; Sol acceptance handoff)
+
+MESP-131 final Opus P1 correction-quantity remediation is implemented on branch
+`feat/MESP-131-mwa-valuation-reconciliation` at source/test commit
+`64c4f4ea9b917119d07cb26df7ecac8c2239bfac`, from the exact required main
+base `b470179e1d18ef75c0a9247b2340407da6220dc4`
+and exact migration-repair session start
+`48ddf07a645da0130699314243ae8b23907b3bfc`. The pre-repair implementation
+baseline is `42794bda13bada7f37dcbf6ef6b8cc8e73eba889` and Draft PR #75 is
+Open, Draft, and unmerged. The final migration-repair handoff SHA is reported
+in the completion response after this tracker update. No Jira writes were
+performed.
+
+The bounded capability adds a Company-scoped durable `LedgerSequence` fence
+for all Inventory movement-producing paths, deterministic legacy movement
+bootstrap, policy-versioned decimal Moving Weighted Average valuation,
+source/line/rate snapshots, append-only Applied/Pending/Blocked evidence,
+predecessor blocking, backdated diagnostics, physical correction reversal
+lineage, Warehouse Transfer shipment/in-transit/receipt/loss/return evidence,
+Inventory-owned reconciliation and report filters, Finance-ready valuation
+handoff facts without journals, and a bounded audited CSV export. The lazy
+Angular surface exposes summary, MWA history, pending/blocked, reconciliation,
+in-transit, Finance handoff, as-of/freshness, and EN/AR RTL controls. The final
+remediation isolates known-policy blockers by valuation scope, keeps unknown
+policy blockers conservative at the base pool, closes full depletion against
+stored value with explicit formula/rounding/actual-value evidence, and makes
+reconciliation fail closed as `ValuationMismatch` for impossible state. The
+P1 correction fails drifted-average corrections closed as Blocked with
+`correction_would_orphan_residual_value`, isolates the affected valuation
+scope, preserves unrelated same-Company processing, keeps physical quantity at
+Stock Ledger `decimal(28,8)` precision, and compares reconciliation quantities
+without monetary rounding. No schema migration was required; the four Opus P2
+observations remain deferred. The final correction delta removes monetary
+`AmountScale` from correction quantity arithmetic and adds direct and
+product-reachable fractional correction regressions proving
+`1.005 - 0.001 = 1.004`, truthful outbound Finance evidence, final state
+`1.004 / 100.40 / 100.00`, and exact `Reconciled` status. No QuantityScale,
+tolerance, schema, or migration was added.
+
+The overall Production-Ready Completion headline remains **~47%** and
+Procurement/P2P remains **~41%** pending Sol acceptance and merge. The
+fast-track completed ratio before MESP-131 acceptance is **14/26 = 53.8%**;
+that ratio is not production readiness, and no headline increase is claimed
+from this unaccepted branch. `frontend/assets` remains untouched.
+
+| Current control | Verified position |
+|---|---|
+| MESP-131 code | Migration-repair start `48ddf07a645da0130699314243ae8b23907b3bfc`; pre-repair baseline `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`; branch `feat/MESP-131-mwa-valuation-reconciliation`; Draft PR #75 Open/Draft/unmerged. |
+| Production capability | ~47% overall; Procurement/P2P ~41%; no production-readiness headline increase pending Sol acceptance/merge. Fast-track 14/26 = 53.8%, not production readiness. |
+| Validation | Focused MESP-131 valuation 44/44; combined Inventory regression 89/89; SQL Server safety 40/40; disposable LocalDB full backend 963/963 with 0 failed/0 skipped; model-change detection clean; Release build 0 warnings/errors; Angular 254/254 across 35 specs; focused Chromium 5/5; full Chromium 32/32; both npm audits 0 vulnerabilities; production initial 499.94 kB and valuation lazy 35.96 kB. |
+| Delivery boundaries | Original migrations `20260823124304_MESP131MovingWeightedAverageValuation` and `20260823180537_MESP131SolFinancialIntegrityRemediation` remain unchanged; regenerated final migration `20260823225921_MESP131SolFinalValuationIntegrity` contains only the three approved evidence columns; no Journal/GL/AP/AR/Sales/generic Reporting, migration/cutover, external/statutory, Jira, or Wafra-specific core behavior. Finance handoff is evidence-only. |
+| Runtime | Official launcher final runtime: backend `http://localhost:5300` PID 44188 and frontend `http://localhost:4300` PID 20316; `/health`, `/`, and `/main.js` each returned HTTP 200; no credentials were printed. |
+| Next exact session | Sol delta acceptance of the exact final branch SHA and Draft PR #75. Do not merge or start MESP-132/downstream implementation automatically. |
+
+## Progress history - 24 August 2026
+
+| Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
+|---|---|---:|---:|---|
+| 2026-08-24 | MESP-131 final Opus P1 correction-quantity remediation: correction arithmetic now preserves exact physical ledger precision without monetary `AmountScale`; direct calculator and product-reachable fractional Stock Adjustment correction regressions prove `1.005 - 0.001 = 1.004`, truthful Finance handoff, final `1.004 / 100.40 / 100.00` state, and exact reconciliation. | ~47% | ~41% | Headline held pending Sol acceptance/merge; source/test `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`; focused valuation 44/44; combined Inventory 89/89; SQL 40/40; backend 963/963; Release build 0/0; accepted Angular/Chromium/bundle/audit evidence unchanged; runtime 5300/4300 PIDs 44188/20316 with HTTP 200 probes; Opus/Sol references 11835/11839; no Jira writes, migration, asset, or downstream implementation. |
+| 2026-08-24 | MESP-131 Opus P1 financial-correctness remediation: drifted-average corrections fail closed as scoped Blocked evidence; physical quantity no longer uses monetary AmountScale; exact fractional quantity, event, Finance handoff, and reconciliation regressions added. | ~47% | ~41% | Headline held pending Sol acceptance/merge; source/test `5908ce2645929c0881e4fd7e9ebf0d9b67d4acb1`; focused valuation 42/42; combined Inventory 87/87; SQL 40/40; backend 961/961; Release build 0/0; Angular 254/254; Chromium 5/5 and 32/32; audits clean; runtime 5300/4300 HTTP 200; no Jira writes, migration, asset, or downstream implementation. |
+| 2026-08-24 | MESP-131 final valuation-integrity remediation: tracking-scoped known-policy blocker isolation, conservative missing-policy base blocker, full-depletion closeout with formula/rounding/actual-value evidence, zero-state invariant, fail-closed ValuationMismatch reconciliation, additive migration, and executable SQLite/SQL Server regressions. | ~47% | ~41% | Headline held pending Sol acceptance/merge; start `fa0091ac6a698cbd58b0cb28e57bb36f527ed9b2`; remediation `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; focused 34/34; prior Inventory 52/52; SQL 39/39; backend 952/952; Angular 254/254; Chromium 5/5 and 32/32; bundle 499.94 kB / 35.96 kB valuation lazy; audits clean; final runtime 5300/4300 PIDs 15844/12120 with required HTTP 200 probes; no Jira writes or downstream implementation. |
+| 2026-08-24 | MESP-131 final EF migration artifact repair: regenerated the populated Designer through EF tooling after removing the empty-target artifact; exact three-column additive delta preserved; preceding migrations unchanged; added target-model metadata regression. | ~47% | ~41% | Headline held with no capability increase pending Sol acceptance/merge; migration-repair start `48ddf07a645da0130699314243ae8b23907b3bfc`; final migration `20260823225921_MESP131SolFinalValuationIntegrity`; focused valuation 34/34; prior Inventory 52/52; SQL 40/40; backend 953/953; model-change detection clean; isolated Release build 0 warnings/errors; no Jira writes, runtime restart, frontend, asset, or downstream implementation. |
+
+## Superseded current snapshot - 23 August 2026 (MESP-130 final ledger-fence remediation; Sol acceptance handoff)
 
 MESP-130 final ledger-fence remediation is implemented and pushed on branch
 `feat/MESP-130-stock-control-corrections`, starting from exact bounded-session

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
 {
     [DbContext(typeof(InventoryDbContext))]
-    partial class InventoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260823124304_MESP131MovingWeightedAverageValuation")]
+    partial class MESP131MovingWeightedAverageValuation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -740,9 +743,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<int>("Direction")
-                        .HasColumnType("int");
-
                     b.Property<decimal?>("ExchangeRate")
                         .HasPrecision(28, 12)
                         .HasColumnType("decimal(28,12)");
@@ -784,14 +784,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Quantity")
-                        .HasPrecision(28, 8)
-                        .HasColumnType("decimal(28,8)");
-
-                    b.Property<decimal>("RoundingAdjustmentAmount")
-                        .HasPrecision(28, 8)
-                        .HasColumnType("decimal(28,8)");
-
-                    b.Property<decimal>("SignedBaseAmount")
                         .HasPrecision(28, 8)
                         .HasColumnType("decimal(28,8)");
 
@@ -921,7 +913,7 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<Guid>("ActorId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("AmountScale")
+                    b.Property<int>("AmountScale")
                         .HasColumnType("int");
 
                     b.Property<decimal?>("BaseUnitCost")
@@ -971,11 +963,8 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<int?>("ExchangeRateVersionNumber")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("FormulaMovementValue")
-                        .HasPrecision(28, 8)
-                        .HasColumnType("decimal(28,8)");
-
                     b.Property<string>("FunctionalCurrencyCode")
+                        .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
@@ -1013,10 +1002,10 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
-                    b.Property<Guid?>("PolicyId")
+                    b.Property<Guid>("PolicyId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("PolicyVersionNumber")
+                    b.Property<int>("PolicyVersionNumber")
                         .HasColumnType("int");
 
                     b.Property<decimal>("PriorQuantity")
@@ -1040,11 +1029,7 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                         .HasPrecision(28, 8)
                         .HasColumnType("decimal(28,8)");
 
-                    b.Property<decimal?>("RoundingAdjustmentAmount")
-                        .HasPrecision(28, 8)
-                        .HasColumnType("decimal(28,8)");
-
-                    b.Property<int?>("RoundingMode")
+                    b.Property<int>("RoundingMode")
                         .HasColumnType("int");
 
                     b.Property<Guid>("SourceDocumentId")
@@ -1099,7 +1084,7 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<Guid?>("TransferLineId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("UnitCostScale")
+                    b.Property<int>("UnitCostScale")
                         .HasColumnType("int");
 
                     b.Property<Guid>("UnitOfMeasureId")
@@ -2145,9 +2130,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<int>("ScopeMode")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("SupersedesPolicyId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("SupplierReturnCostBasis")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -2174,9 +2156,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "Id")
-                        .IsUnique();
-
-                    b.HasIndex("TenantId", "CompanyId", "VersionNumber")
                         .IsUnique();
 
                     b.HasIndex("TenantId", "CompanyId", "EffectiveFrom", "EffectiveTo");
@@ -2241,6 +2220,9 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("PolicyId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
@@ -2269,7 +2251,7 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.HasIndex("TenantId", "Id")
                         .IsUnique();
 
-                    b.HasIndex("TenantId", "CompanyId", "BranchId", "WarehouseId", "ProductId", "UnitOfMeasureId", "TrackingIdentity")
+                    b.HasIndex("TenantId", "PolicyId", "CompanyId", "BranchId", "WarehouseId", "ProductId", "UnitOfMeasureId", "TrackingIdentity")
                         .IsUnique();
 
                     b.ToTable("ValuationScopeAnchors", "inventory");
@@ -2290,12 +2272,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("CurrentPolicyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("CurrentPolicyVersionNumber")
-                        .HasColumnType("int");
-
                     b.Property<string>("FunctionalCurrencyCode")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -2303,6 +2279,12 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
 
                     b.Property<long>("LastAppliedLedgerSequence")
                         .HasColumnType("bigint");
+
+                    b.Property<Guid>("PolicyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PolicyVersionNumber")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
@@ -2343,7 +2325,7 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Inventory
                     b.HasIndex("TenantId", "Id")
                         .IsUnique();
 
-                    b.HasIndex("TenantId", "CompanyId", "BranchId", "WarehouseId", "ProductId", "UnitOfMeasureId", "TrackingIdentity")
+                    b.HasIndex("TenantId", "PolicyId", "CompanyId", "BranchId", "WarehouseId", "ProductId", "UnitOfMeasureId", "TrackingIdentity")
                         .IsUnique();
 
                     b.ToTable("ValuationStates", "inventory");

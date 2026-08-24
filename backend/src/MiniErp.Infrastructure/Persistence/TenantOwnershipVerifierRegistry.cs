@@ -202,7 +202,14 @@ internal sealed class TenantOwnershipVerifierRegistry
             InventoryTenantOwnershipVerifier.For<InventoryCountLineEntity>(),
             InventoryTenantOwnershipVerifier.For<InventoryStockIssueEntity>(),
             InventoryTenantOwnershipVerifier.For<InventoryStockIssueLineEntity>(),
-            InventoryTenantOwnershipVerifier.For<InventoryControlHistoryEntity>()
+            InventoryTenantOwnershipVerifier.For<InventoryControlHistoryEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryCompanyLedgerSequenceAnchorEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryValuationPolicyEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryValuationScopeAnchorEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryValuationStateEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryMovementValuationEventEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryValuationRunEntity>(),
+            InventoryTenantOwnershipVerifier.For<InventoryFinanceValuationHandoffEntity>()
         ]);
     }
 

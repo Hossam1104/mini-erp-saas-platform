@@ -22,6 +22,7 @@ export const routes: Routes = [
       { path: 'master-data/:resource/:id', loadComponent: () => import('./features/master-data/master-data-workspace.component').then((module) => module.MasterDataWorkspaceComponent) },
       { path: 'price-lists', loadComponent: () => import('./features/master-data/price-list-workspace.component').then((module) => module.PriceListWorkspaceComponent) },
       { path: 'price-lists/:id', loadComponent: () => import('./features/master-data/price-list-workspace.component').then((module) => module.PriceListWorkspaceComponent) },
+      { path: 'inventory/valuation', loadComponent: () => import('./features/inventory/inventory-valuation-workspace.component').then((module) => module.InventoryValuationWorkspaceComponent) },
       { path: 'inventory', loadComponent: () => import('./features/inventory/inventory-workspace.component').then((module) => module.InventoryWorkspaceComponent) },
       { path: 'procurement/purchase-requests', loadComponent: () => import('./features/procurement/purchase-request-workspace.component').then((module) => module.PurchaseRequestWorkspaceComponent) },
       { path: 'procurement/purchase-requests/new', loadComponent: () => import('./features/procurement/purchase-request-workspace.component').then((module) => module.PurchaseRequestWorkspaceComponent) },

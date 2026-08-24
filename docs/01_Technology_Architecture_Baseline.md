@@ -1,5 +1,30 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
+<!-- MESP-131-ARCH-START -->
+## Current MESP-131 valuation architecture overlay — 24 August 2026
+
+MESP-131 is implemented on Draft PR #75 and is pending Sol acceptance/merge. It extends the existing Inventory module; it does not create a parallel Finance or Reporting domain.
+
+- **Ordering:** every physical Inventory movement receives a durable Tenant + Company `LedgerSequence`; future valuation does not use `PostedAt` or `EffectiveDate` as commit-order authority.
+- **Bootstrap:** pre-MESP-131 movement sequence is deterministically backfilled by Tenant, Company, `PostedAt`, and movement ID as a one-time pre-production starting order.
+- **Policy:** valuation is Tenant-owned, Company-specific, effective-dated and versioned, with Warehouse/Product/UOM or Warehouse/Product/UOM/Tracking scope, functional currency, precision and explicit rounding. Version numbers are monotonic; compatible transitions carry the pool state, while incompatible transitions fail closed for rebaseline.
+- **MWA:** decimal deterministic inbound weighted-cost accumulation and outbound consumption at the persisted rounded prior average; empty current-MWA adjustments/count variances remain Pending rather than inventing zero cost.
+- **FX:** exact active effective-dated MESP-120 Exchange Rate version/provenance evidence is snapshotted; no client rate, external feed, inverse guess or silent latest-rate fallback.
+- **History:** current valuation state is a projection; applied valuation events are append-only and preserve source, policy, rate, prior/new state, movement value, actor and correlation.
+- **Pending predecessor:** unknown-policy evidence uses a conservative base pool; once policy scope is known, unresolved cost/policy/FX/link evidence stops only the derived valuation scope. Tracking policies therefore isolate LOT-A and LOT-B; non-tracking policies deliberately combine them. Process mutation accepts only safe Company/Branch/Warehouse/Product/UOM filters and always orders by LedgerSequence.
+- **Transfers:** shipment uses source MWA; In-Transit quantity and value conserve shipped minus received/lost/returned quantities; receipt/loss/return inherit linked transfer valuation.
+- **Corrections:** original valuation evidence is never rewritten; physical corrections append linked valuation reversal/delta evidence.
+- **Finance boundary:** Inventory emits versioned valuation handoff facts only. Journals, GL/AP/AR, account mapping, periods and financial posting remain MESP-132+.
+- **Reporting boundary:** MESP-131 owns Inventory valuation/reconciliation views and bounded audited CSV export only; generic Reporting remains MESP-139.
+- **Concurrency:** durable pool serialization, Serializable persistence, rowversion/uniqueness, SHA-256 fingerprints, existing Inventory idempotency replay, and first-scope conflict handling prevent duplicate/forked applied valuation.
+- **Finance handoff:** `inventory-valuation-finance.v1` exposes Direction, non-negative BaseAmount, signed inbound/outbound effect, and immutable rounding-adjustment evidence; Inventory creates no journals.
+- **Closeout invariant:** full depletion uses stored prior value as actual movement value, preserves rounded formula value and `RoundingAdjustmentAmount`, and leaves quantity, value, and average at zero. Persistence rejects impossible negative or zero-quantity/non-zero-value state transitions; reconciliation reports legacy impossible state as `ValuationMismatch` and summary becomes partial.
+- **Summary:** `/summary` is a dedicated Warehouse aggregate with explicit IsComplete/IsPartial and Pending/Blocked/InTransit facts; no warehouse-level AverageUnitCost is exposed.
+- **Migration:** additive `20260823124304_MESP131MovingWeightedAverageValuation`, `20260823180537_MESP131SolFinancialIntegrityRemediation`, and regenerated final additive `20260823225921_MESP131SolFinalValuationIntegrity`; its populated Designer carries the exact three approved evidence columns, and prior migrations remain unchanged.
+
+See `docs/34_MESP-131_MWA_Valuation_Architecture.md` for the full bounded handoff.
+<!-- MESP-131-ARCH-END -->
+
 > **Current MESP-123 B2 implementation overlay - 16 August 2026.** The
 > approved shared SQL Server direction now has a bounded local Development
 > execution path: an explicit `MESP_SQLSERVER_CONNECTION_STRING` selects the

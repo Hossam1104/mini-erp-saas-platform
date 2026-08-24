@@ -260,6 +260,18 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.matching.resolve-exception" => "Resolve a three-way match exception with controlled authorization",
         "procurement.matching.history.read" => "Read three-way match evaluation history",
         "procurement.matching.audit.read" => "Read three-way match evaluation audit evidence",
+        "inventory.valuation.policy.read" => "Read effective Moving Weighted Average valuation policies",
+        "inventory.valuation.policy.create" => "Create an effective-dated Moving Weighted Average valuation policy",
+        "inventory.valuation.state.read" => "Read current Moving Weighted Average state by valuation scope",
+        "inventory.valuation.history.read" => "Read immutable movement valuation evidence and status history",
+        "inventory.valuation.process" => "Process physical movements through the Moving Weighted Average valuation policy",
+        "inventory.valuation.reconciliation.read" => "Reconcile physical movement quantities with valuation evidence",
+        "inventory.valuation.finance-handoff.read" => "Read Finance-ready valuation handoff facts without posting journals",
+        "inventory.valuation.summary.read" => "Read the Inventory valuation summary by authorized scope",
+        "inventory.valuation.pending.read" => "Read pending Inventory valuation events and their blocking reasons",
+        "inventory.valuation.in-transit.read" => "Read in-transit quantity and valuation reconciliation facts",
+        "inventory.valuation.export" => "Export immutable Inventory valuation evidence with scope and freshness metadata",
+        "inventory.valuation.correction" => "Request a source-linked Inventory valuation correction",
         _ => GenericSummary(operationId)
     };
 
@@ -530,6 +542,18 @@ public sealed class MiniErpOpenApiOperationTransformer : IOpenApiOperationTransf
         "procurement.matching.resolve-exception" => "A controlled, reasoned, optimistic-concurrency-protected exception resolution whose different-actor requirement is policy-driven and which never posts Finance/AP/accounting entries.",
         "procurement.matching.history.read" => "Immutable Tenant-filtered three-way match evaluation history.",
         "procurement.matching.audit.read" => "Immutable Tenant-filtered three-way match evaluation audit evidence.",
+        "inventory.valuation.policy.read" => "Tenant-filtered effective-dated Moving Weighted Average valuation policies.",
+        "inventory.valuation.policy.create" => "The persisted valuation policy with effective window, functional currency, rounding, and scope-mode evidence.",
+        "inventory.valuation.state.read" => "The current durable Moving Weighted Average quantity, value, and unit-cost state for each authorized scope.",
+        "inventory.valuation.history.read" => "Immutable valuation events with ledger sequence, source lineage, cost evidence, FX evidence, status, and resulting state.",
+        "inventory.valuation.process" => "The durable idempotent valuation run result with applied, pending, blocked, and skipped movement counts.",
+        "inventory.valuation.reconciliation.read" => "Physical-versus-valued quantity, value, in-transit, and Finance-handoff reconciliation facts.",
+        "inventory.valuation.finance-handoff.read" => "Per-movement Finance handoff facts with source and valuation evidence; no journal or GL posting is created.",
+        "inventory.valuation.summary.read" => "The authorized Inventory valuation reconciliation summary.",
+        "inventory.valuation.pending.read" => "Pending valuation events with explicit blocking diagnostics and predecessor sequence context.",
+        "inventory.valuation.in-transit.read" => "Transfer in-transit quantities and their source/receipt valuation evidence.",
+        "inventory.valuation.export" => "A bounded CSV export of immutable valuation evidence with tenant, scope, policy, currency, as-of, freshness, actor, and correlation metadata.",
+        "inventory.valuation.correction" => "A source-linked correction result or a truthful diagnostic when authoritative revised source evidence is unavailable.",
         _ => "The documented operation result with no provider or internal implementation details."
     };
 

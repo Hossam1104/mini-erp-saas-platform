@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const session = {
   authenticated: true,
@@ -11,6 +11,58 @@ const session = {
   selectedContextId: 'context-a',
   selectionVersion: 1,
 };
+
+async function setupValuationRoutes(page: Page, options: {
+  summary?: Record<string, unknown>;
+  processedSummary?: Record<string, unknown>;
+  reconciliation?: Record<string, unknown>[];
+  history?: Record<string, unknown>[];
+  handoffs?: Record<string, unknown>[];
+} = {}): Promise<{ processCount: () => number }> {
+  let processed = false;
+  let processRequests = 0;
+  const initialSummary = {
+    tenantId: 'tenant-a', companyId: 'company-a', branchId: null, warehouseId: 'warehouse-a', functionalCurrencyCode: 'SAR',
+    physicalOnHandQuantity: 15, valuedQuantity: 15, valuedAmount: 200, pendingMovementCount: 0, blockedMovementCount: 0,
+    inTransitQuantity: 2, inTransitValue: 26.66666666, inTransitValueStatus: 'Ready', reconciliationStatus: 'Reconciled',
+    latestLedgerSequence: 4, latestValuedLedgerSequence: 4, isComplete: true, isPartial: false,
+    asOf: '2026-08-23T10:00:00Z', freshAsOf: '2026-08-23T10:00:00Z', ...options.summary,
+  };
+  const processedSummary = {
+    ...initialSummary, valuedAmount: 216, latestLedgerSequence: 5, latestValuedLedgerSequence: 5,
+    asOf: '2026-08-23T10:05:00Z', freshAsOf: '2026-08-23T10:05:00Z', ...options.processedSummary,
+  };
+  const reconciliation = options.reconciliation ?? [
+    { warehouseId: 'warehouse-a', productId: 'product-a', unitOfMeasureId: 'uom-a', functionalCurrencyCode: 'SAR', status: 'Reconciled', physicalOnHandQuantity: 10, valuedQuantity: 10, quantityDifference: 0, valuedAmount: 133.33333333, averageUnitCost: 13.33333333, pendingMovementCount: 0, blockedMovementCount: 0, inTransitQuantity: 1, inTransitValue: 13.33333333, inTransitValueStatus: 'Ready', financeHandoffStatus: 'ReadyForFinance', lastAppliedLedgerSequence: 3 },
+    { warehouseId: 'warehouse-a', productId: 'product-b', unitOfMeasureId: 'uom-a', functionalCurrencyCode: 'SAR', status: 'Reconciled', physicalOnHandQuantity: 5, valuedQuantity: 5, quantityDifference: 0, valuedAmount: 66.66666667, averageUnitCost: 13.33333333, pendingMovementCount: 0, blockedMovementCount: 0, inTransitQuantity: 1, inTransitValue: 13.33333333, inTransitValueStatus: 'Ready', financeHandoffStatus: 'ReadyForFinance', lastAppliedLedgerSequence: 4 },
+  ];
+  const history = options.history ?? [{ id: 'event-a', movementId: 'movement-a', sourceType: 'OpeningBalance', sourceDocumentId: 'opening-a', sourceReference: 'OPEN-001', ledgerSequence: 4, status: 'Applied', statusCode: 'applied', quantity: 15, direction: 'Inbound', baseUnitCost: 13.33333333, movementValue: 200, newValue: 200, effectiveOn: '2026-08-23', functionalCurrencyCode: 'SAR' }];
+  const handoffs = options.handoffs ?? [
+    { id: 'handoff-in', movementId: 'movement-in', sourceType: 'OpeningBalance', sourceDocumentId: 'opening-a', ledgerSequence: 3, quantity: 15, direction: 'Inbound', baseUnitCost: 13.33333333, baseAmount: 200, signedBaseAmount: 200, functionalCurrencyCode: 'SAR', status: 'ReadyForFinance', contractVersion: 'inventory-valuation-finance.v1' },
+    { id: 'handoff-out', movementId: 'movement-out', sourceType: 'StockIssue', sourceDocumentId: 'issue-a', ledgerSequence: 4, quantity: 2, direction: 'Outbound', baseUnitCost: 13.33333333, baseAmount: 26.66666666, signedBaseAmount: -26.66666666, functionalCurrencyCode: 'SAR', status: 'ReadyForFinance', contractVersion: 'inventory-valuation-finance.v1' },
+  ];
+
+  await page.route('**/api/v1/auth/development-bypass', (route) => route.fulfill({ json: { authenticated: false } }));
+  await page.route('**/api/v1/auth/session', (route) => route.fulfill({ json: session }));
+  await page.route('**/api/v1/auth/entry', (route) => route.fulfill({ json: { entryMode: 'TenantHost', canonicalHost: '127.0.0.1', candidateTenantId: 'tenant-a', candidateTenantDisplayName: 'Alpha Tenant', authorizedTenants: [{ tenantId: 'tenant-a', displayName: 'Alpha Tenant', canonicalHost: 'tenant.localhost' }], operationalContexts: [{ contextId: 'context-a', kind: 'Company', displayName: 'Alpha Company', eligibilityVersion: 1 }], selectedOperationalContextId: 'context-a', operationalSelectionVersion: 1, branding: { displayName: 'Alpha Tenant', logoLightUrl: null, logoDarkUrl: null, logoAltText: 'Alpha Tenant', tenantConfigured: true }, currencyPresentation: { currencyCode: 'SAR', symbolAssetUrl: null, symbolTextFallback: 'SAR' }, code: null } }));
+  await page.route('**/api/v1/auth/contexts', (route) => route.fulfill({ json: { contexts: [] } }));
+  await page.route('**/api/v1/auth/antiforgery', (route) => route.fulfill({ status: 204, headers: { 'X-CSRF-TOKEN': 'inventory-control-e2e-token' } }));
+  await page.route('**/api/v1/inventory/warehouses**', (route) => route.fulfill({ json: [{ tenantId: 'tenant-a', companyId: 'company-a', branchId: null, warehouseId: 'warehouse-a', code: 'WH-A', name: 'Main warehouse', displayName: 'WH-A · Main warehouse', isActive: true }] }));
+  await page.route('**/api/v1/inventory/valuation/policies**', (route) => route.fulfill({ json: [{ id: 'policy-a', functionalCurrencyCode: 'SAR', scopeMode: 'WarehouseProductUom', effectiveFrom: '2026-08-01', effectiveTo: null, versionNumber: 1, roundingMode: 'ToEven', goodsReceiptCostBasis: 'PurchaseOrderUnitPrice', positiveAdjustmentCostBasis: 'CurrentMovingAverage', supplierReturnCostBasis: 'CurrentMovingAverage', isActive: true, supersedesPolicyId: null }] }));
+  await page.route('**/api/v1/inventory/valuation/summary**', (route) => route.fulfill({ json: processed ? processedSummary : initialSummary }));
+  await page.route('**/api/v1/inventory/valuation/reconciliation**', (route) => route.fulfill({ json: reconciliation }));
+  await page.route('**/api/v1/inventory/valuation/history**', (route) => route.fulfill({ json: history }));
+  await page.route('**/api/v1/inventory/valuation/pending**', (route) => route.fulfill({ json: history.filter(event => event.status === 'Pending' || event.status === 'Blocked') }));
+  await page.route('**/api/v1/inventory/valuation/finance-handoffs**', (route) => route.fulfill({ json: handoffs }));
+  await page.route('**/api/v1/inventory/valuation/process', async (route) => {
+    if (route.request().method() !== 'POST') return route.fulfill({ json: {} });
+    processRequests += 1;
+    processed = true;
+    return route.fulfill({ json: { appliedCount: 1, pendingCount: 0, blockedCount: 0, latestLedgerSequence: 5, latestValuedLedgerSequence: 5 } });
+  });
+
+  return { processCount: () => processRequests };
+}
 
 test('Inventory workspace renders server-provided scope and availability', async ({ page }) => {
   await page.route('**/api/v1/auth/development-bypass', (route) => route.fulfill({ json: { authenticated: false } }));
@@ -181,4 +233,68 @@ test('MESP-130 stock control keeps counts blind and accepts physical observation
   await adjustmentForm.locator('select[name="reason"]').selectOption('COUNT-DAMAGE');
   await adjustmentForm.getByRole('button', { name: 'Create draft' }).click();
   await expect(stockControl.locator('.stock-control__lists section').first().getByText('Draft')).toBeVisible();
+});
+
+test('MESP-131 aggregate summary combines two Products without a warehouse average', async ({ page }) => {
+  await setupValuationRoutes(page);
+  await page.goto('/app/inventory/valuation');
+
+  await expect(page.locator('[data-testid="inventory-valuation-workspace"]')).toBeVisible();
+  await expect(page.locator('[data-testid="valuation-summary-metrics"] strong').nth(0)).toHaveText('15');
+  await expect(page.locator('[data-testid="valuation-summary-metrics"] strong').nth(1)).toHaveText('15');
+  await expect(page.locator('[data-testid="valuation-summary-metrics"] strong').nth(2)).toContainText('200');
+  await expect(page.locator('[data-testid="inventory-valuation-workspace"]')).not.toContainText('Average unit cost');
+
+  await page.getByRole('tab', { name: 'Reconciliation' }).click();
+  await expect(page.locator('[data-testid="valuation-reconciliation"] tbody tr')).toHaveCount(2);
+  await expect(page.locator('[data-testid="valuation-reconciliation"]')).toContainText('133.33333333');
+  await expect(page.locator('[data-testid="valuation-reconciliation"]')).toContainText('66.66666667');
+});
+
+test('MESP-131 pending Product produces a visible partial summary', async ({ page }) => {
+  await setupValuationRoutes(page, {
+    summary: { valuedQuantity: 10, valuedAmount: 133.33333333, pendingMovementCount: 1, reconciliationStatus: 'PendingValuation', isComplete: false, isPartial: true },
+    reconciliation: [{ warehouseId: 'warehouse-a', productId: 'product-b', unitOfMeasureId: 'uom-a', functionalCurrencyCode: 'SAR', status: 'Pending', physicalOnHandQuantity: 5, valuedQuantity: 0, quantityDifference: 5, valuedAmount: 0, averageUnitCost: null, pendingMovementCount: 1, blockedMovementCount: 0, inTransitQuantity: 0, inTransitValue: 0, inTransitValueStatus: 'Pending', financeHandoffStatus: 'Pending', lastAppliedLedgerSequence: 0 }],
+    history: [{ id: 'event-pending', movementId: 'movement-pending', sourceType: 'StockIssue', sourceDocumentId: 'issue-pending', sourceReference: 'PENDING-001', ledgerSequence: 5, status: 'Pending', statusCode: 'valuation_policy_not_configured', pendingReason: 'valuation_policy_not_configured', quantity: 5, direction: 'Outbound', baseUnitCost: null, movementValue: null, newValue: 0, effectiveOn: '2026-08-23', functionalCurrencyCode: 'SAR' }],
+  });
+  await page.goto('/app/inventory/valuation');
+
+  await expect(page.locator('[data-testid="valuation-summary-metrics"]')).toContainText('Partial');
+  await expect(page.locator('[data-testid="valuation-summary-metrics"]')).toContainText('1');
+  await expect(page.locator('[data-testid="inventory-valuation-workspace"]')).toContainText('PendingValuation');
+  await expect(page.locator('[data-testid="inventory-valuation-workspace"]')).not.toContainText('Complete');
+});
+
+test('MESP-131 processing refreshes the aggregate safely', async ({ page }) => {
+  const routes = await setupValuationRoutes(page, { processedSummary: { valuedAmount: 216 } });
+  await page.goto('/app/inventory/valuation');
+  await expect(page.locator('[data-testid="valuation-summary-metrics"] strong').nth(2)).toContainText('200');
+
+  await page.getByTestId('valuation-process').click();
+  await expect.poll(routes.processCount).toBe(1);
+  await expect(page.locator('[data-testid="valuation-summary-metrics"] strong').nth(2)).toContainText('216');
+  await expect(page.locator('[data-testid="valuation-summary-metrics"]')).toContainText('5');
+});
+
+test('MESP-131 Finance handoff exposes direction and signed amount', async ({ page }) => {
+  await setupValuationRoutes(page);
+  await page.goto('/app/inventory/valuation');
+  await page.getByRole('tab', { name: 'Finance handoff' }).click();
+
+  const handoff = page.locator('[data-testid="valuation-finance-handoff"]');
+  await expect(handoff).toContainText('Inbound');
+  await expect(handoff).toContainText('Outbound');
+  await expect(handoff).toContainText('-26.66666666');
+  await expect(handoff).toContainText('inventory-valuation-finance.v1');
+});
+
+test('MESP-131 valuation evidence keeps the Arabic route RTL', async ({ page }) => {
+  await setupValuationRoutes(page);
+  await page.goto('/app/inventory/valuation');
+
+  await expect(page.locator('h1')).toHaveText('Moving Weighted Average');
+  await page.getByRole('button', { name: 'Language' }).click();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
+  await expect(page.locator('h1')).toContainText('المتوسط المتحرك المرجح');
 });
