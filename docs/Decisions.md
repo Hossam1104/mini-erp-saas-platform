@@ -2,7 +2,26 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
-## MESP-124 Purchase Order & Supplier Confirmation Merge Reconciliation - 19 August 2026
+## Current implementation state — MESP-132 Finance foundation — 24 August 2026
+
+MESP-132 is the active bounded implementation capability under Epic MESP-10,
+In Progress / activated. The feature branch is
+`feat/MESP-132-finance-foundation` at exact implementation head
+`0b627c5b127d92d5a99543f475867a187801a653`, based on synchronized main
+`fcec241dfedb529fef89d4336adf1e571917c52a`; Draft PR #76 is Open, Draft, and
+unmerged pending Sol acceptance. MESP-131 is the latest completed capability,
+with PR #75 merged at
+`a8664d6a0d006e463a1a03fadd76c28475475f58`; MESP-131 and MESP-8 are Done.
+
+The implementation validation baseline is Finance `5/5`, REST/OpenAPI and
+host security `52/52`, prior Inventory `89/89`, SQL safety `41/41`, full
+backend `969/969`, Angular `258/258`, focused/full Chromium `2/2` and `34/34`,
+and npm audits clean. Accepted fast-track completion remains `15/26 = 57.7%`;
+production-readiness remains approximately `47%` overall / `41%` Procurement-
+P2P. No next capability starts automatically and no Opus prompt is created by
+this handoff.
+
+## Historical MESP-124 Purchase Order & Supplier Confirmation Merge Reconciliation - 19 August 2026
 
 MESP-124 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR MERGE),
 and squash-merged to `main`** at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6`
@@ -34,7 +53,7 @@ and Arabic; it is explanatory UX and not an authorization mechanism.
 - **P3-7**: Cancelled/Rejected PO permanently consumes the source decision in MESP-124; controlled reopen remains a future explicit capability/decision.
 - **P3-8**: Transitive `nanoid` lockfile-only security patch is intentionally present.
 
-### Downstream Next Candidate & Decision Gate
+### Historical downstream candidate & decision gate
 The active implementation capability is **MESP-125 (Goods Receipt and Purchase Invoice handoff)**
 under Epic MESP-7. It is **IN PROGRESS / ACTIVATED** (Jira activation comment `11503`).
 FIN-OD-01 is **APPROVED CONTRACT-BOUND** under MESP-116 (comment `10957`) and PD-046

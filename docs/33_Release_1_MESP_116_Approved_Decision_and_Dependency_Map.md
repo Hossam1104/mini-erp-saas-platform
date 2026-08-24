@@ -1,7 +1,7 @@
 # Release 1 MESP-116 Approved Decision and Dependency Map
 
-<!-- MESP-131-EXECUTION-START -->
-## Execution overlay â€” 23 August 2026
+<!-- MESP-132-EXECUTION-START -->
+## Execution overlay â€” 24 August 2026
 
 This overlay does not change the approved plan baseline.
 
@@ -10,18 +10,20 @@ Inventory fast-track execution currently stands at:
 - MESP-128 â€” Done.
 - MESP-129 â€” Done.
 - MESP-130 â€” Done.
-- MESP-131 â€” implemented on Draft PR #75, In Progress, pending Sol acceptance/merge.
-- MESP-132 â€” To Do / not activated.
+- MESP-131 â€” Done; PR #75 merged to `main` at
+  `a8664d6a0d006e463a1a03fadd76c28475475f58`.
+- MESP-132 â€” In Progress / activated under Epic MESP-10; Draft PR #76 is Open,
+  Draft, and unmerged pending Sol acceptance.
 
-Fast-track completion before accepting MESP-131 remains `14/26 = 53.8%`; this is capability completion, not production readiness.
-<!-- MESP-131-EXECUTION-END -->
+Fast-track completion before accepting MESP-132 remains `15/26 = 57.7%`; this is capability completion, not production readiness. Overall production-readiness remains approximately `47%` and Procurement/P2P `41%`.
+<!-- MESP-132-EXECUTION-END -->
 
-**Date:** 12 August 2026
-**Status:** Current MESP-116 governance handoff
+**Date:** 12 August 2026 (historical approval baseline)
+**Status:** Approved MESP-116 governance handoff; current acceptance overlay is above
 **Owner evidence:** MESP-116 Jira comment `10957`
 **Product Decision evidence:** MESP-22 Jira comment `10958` (PD-025-PD-046)
 **Living register:** MESP-23 Jira comment `10976`
-**First capability handoff:** MESP-117 Jira comment `10977`
+**Current acceptance handoff:** MESP-132 exact implementation head `0b627c5b127d92d5a99543f475867a187801a653`; Sol acceptance of Draft PR #76
 **Repository evidence:** PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e`, merged at `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`
 
 ## 1. Authority and boundary
@@ -36,9 +38,9 @@ commitment, or production distribution.
 
 C1-C9 remain open production/external/legal/provider/infrastructure gates.
 MESP-39 remains future-release and unactivated. MESP-40 remains a required
-Release 1 migration/onboarding task but is unactivated. MESP-117-MESP-142 all
-remain To Do/not activated; only MESP-117 is prepared as the next fresh-session
-handoff.
+Release 1 migration/onboarding task but is unactivated. MESP-133-MESP-142 remain
+To Do/not activated; MESP-132 is the single active implementation capability and
+its Draft PR awaits Sol acceptance.
 
 ## 2. Cross-cutting gates used by every capability
 
@@ -86,7 +88,11 @@ acceptance boundary needed to activate one capability at a time.
 | MESP-141 / MESP-15 | PD-041; MESP-40 BRD must be activated/ready; all source BRDs and MESP-48/50/SQL gates. | Versioned import batches, quarantine/reconciliation evidence, owning opening ledgers. | Onboarding/migration API/DB/UI, dry run, resumability/idempotency, cutover/rollback/audit. | G-SEC/G-AUD/G-LOC/G-DATA/G-PROD; Finance/Inventory/Migration/SQL/backup/restore validation before destructive action. | **Preview:** after safe contracts exist, no production cutover claim. **Full R1:** repeatable Tenant onboarding with reconciled rollback-safe opening data. |
 | MESP-142 / MESP-1 | All completed capability contracts, C1-C9, Opus checkpoints A/B/C, UAT/release gates. | Executable real codebase and verified cross-module evidence. | End-to-end API/DB/UI, regression/performance/UAT/release checklist; no fake demo branch. | G-SEC/G-AUD/G-LOC/G-DATA/G-PROD; full affected suites, SQL/provider, volume, privacy/legal, deployment and Opus checkpoint evidence. | **Preview:** truthful running integrated preview with completed/pending/blocked/gated map. **Full R1:** complete Definition of Done and production/RC evidence; unfinished work is never reclassified as complete. |
 
-## 4. MESP-117 fresh-session handoff
+## 4. Historical MESP-117 fresh-session handoff
+
+The following handoff is preserved as approved historical evidence from the
+MESP-116 governance session. The current executable handoff is the MESP-132
+acceptance overlay at the top of this document.
 
 MESP-117 is the first capability handoff, not an activation performed by
 MESP-116. The next fresh session must:

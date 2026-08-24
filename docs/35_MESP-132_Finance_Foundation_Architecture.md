@@ -2,6 +2,14 @@
 
 ## Status and boundary
 
+**Current acceptance state:** MESP-132 is In Progress / activated under Epic
+MESP-10. The implementation is on `feat/MESP-132-finance-foundation` at exact
+MESP-132 implementation head `0b627c5b127d92d5a99543f475867a187801a653`, based on
+`fcec241dfedb529fef89d4336adf1e571917c52a`; PR #76 is Open, Draft, and
+unmerged. Implementation validation is pending Sol acceptance. The accepted
+fast-track count remains `15/26 = 57.7%` and production-readiness remains
+approximately `47%` overall / `41%` Procurement/P2P.
+
 MESP-132 adds the bounded Release 1 Finance / General Ledger foundation on
 the exact baseline `fcec241dfedb529fef89d4336adf1e571917c52a`. It is Company
 owned inside a Tenant and is deliberately configuration-led. It does not

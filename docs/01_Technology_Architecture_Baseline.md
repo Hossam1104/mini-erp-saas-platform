@@ -3,7 +3,10 @@
 <!-- MESP-131-ARCH-START -->
 ## Current MESP-131 valuation architecture overlay — 24 August 2026
 
-MESP-131 is implemented on Draft PR #75 and is pending Sol acceptance/merge. It extends the existing Inventory module; it does not create a parallel Finance or Reporting domain.
+MESP-131 is accepted and merged through PR #75 at
+`a8664d6a0d006e463a1a03fadd76c28475475f58`; it extends the existing Inventory
+module and does not create a parallel Finance or Reporting domain. MESP-132 is
+the active Finance implementation on Draft PR #76.
 
 - **Ordering:** every physical Inventory movement receives a durable Tenant + Company `LedgerSequence`; future valuation does not use `PostedAt` or `EffectiveDate` as commit-order authority.
 - **Bootstrap:** pre-MESP-131 movement sequence is deterministically backfilled by Tenant, Company, `PostedAt`, and movement ID as a one-time pre-production starting order.
@@ -31,7 +34,10 @@ See `docs/34_MESP-131_MWA_Valuation_Architecture.md` for the full bounded handof
 MESP-132 adds the bounded Company-owned Finance / GL foundation on branch
 `feat/MESP-132-finance-foundation`, from exact base
 `fcec241dfedb529fef89d4336adf1e571917c52a`, at implementation commit
-`af86b78`. It follows the existing four-project direction: Contracts expose
+`af86b78` and exact MESP-132 implementation head
+`0b627c5b127d92d5a99543f475867a187801a653`. Draft PR #76 is Open, Draft, and
+unmerged pending Sol acceptance. It follows the existing four-project direction:
+Contracts expose
 Finance records, App owns request context/authorization seams, Infrastructure
 owns `FinanceDbContext`, `finance` schema entities/migrations and provider
 composition, and Api maps the REST/OpenAPI surface without a direct EF

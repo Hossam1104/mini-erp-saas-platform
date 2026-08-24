@@ -9,11 +9,13 @@ is `11843`. This session performed no Jira writes, did not invoke Claude
 Opus 5, and did not create an Opus review prompt.
 
 Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
+Current merged `main`: `fcec241dfedb529fef89d4336adf1e571917c52a`.
 Branch: `feat/MESP-132-finance-foundation`
 Exact base: `fcec241dfedb529fef89d4336adf1e571917c52a`
-Implementation commit: `af86b78`
+Implementation commit: `af86b78`; exact current feature head:
+`0b627c5b127d92d5a99543f475867a187801a653`
 Draft PR: `#76`, Open/Draft/unmerged, head
-`effd7c335be4fc198c15d39a7d502c401de6e14b`, base `main`.
+`0b627c5b127d92d5a99543f475867a187801a653`, base `main`.
 
 ### Delivered architecture
 
@@ -88,7 +90,7 @@ HTTP 200. Frontend `http://localhost:4300` is PID `5432`; `/`, `/main.js`, and
 `/app/finance` each returned HTTP 200. Both repository-owned processes remain
 running for Owner inspection and no credential was printed or persisted.
 
-## MESP-131 guarded merge state - 24 August 2026
+## Historical MESP-131 guarded merge state - 24 August 2026
 
 PR #75 is merged into `main` at exact squash SHA
 `a8664d6a0d006e463a1a03fadd76c28475475f58`. The approved feature head was
@@ -107,7 +109,7 @@ Both P1 findings were remediated and Sol-accepted; four Opus P2 observations
 remain deferred as recorded in `TASK.md`.
 
 <!-- MESP-131-JIRA-SYNC-START -->
-## Jira/documentation synchronization â€” 23 August 2026
+## Historical Jira/documentation synchronization â€” 23 August 2026
 
 Jira traceability has been reconciled without closing MESP-131:
 

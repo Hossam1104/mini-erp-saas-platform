@@ -1,4 +1,52 @@
-# MESP-131 - Final Valuation-Integrity Remediation
+# CURRENT SESSION HANDOFF — MESP-132 FINANCE FOUNDATION ACCEPTANCE
+
+## Current repository truth — 24 August 2026
+
+- **Current main:** `fcec241dfedb529fef89d4336adf1e571917c52a` (`main` and
+  `origin/main` synchronized).
+- **Current capability:** **MESP-132 — Core Finance / General Ledger
+  foundation**, **In Progress / activated** under Epic **MESP-10**. Activation
+  evidence: MESP-132 comment `11845`; Epic comment `11844`.
+- **Feature branch / implementation head:** `feat/MESP-132-finance-foundation` at exact
+  `0b627c5b127d92d5a99543f475867a187801a653`; base
+  `fcec241dfedb529fef89d4336adf1e571917c52a`.
+- **Pull request:** **#76 — Open, Draft, unmerged**, targeting `main`.
+- **Latest completed capability:** **MESP-131 — Moving Weighted Average
+  valuation**, PR #75 merged to `main` at
+  `a8664d6a0d006e463a1a03fadd76c28475475f58`, from accepted feature head
+  `db624fbb71d15ee55022e247df0f83894d026257`. MESP-131 and MESP-8 are Done
+  in Jira (closure comments `11842` and `11843`).
+- **Accepted fast-track completion:** **15/26 = 57.7%**. MESP-132 is not
+  capability #16 until Sol accepts and merges PR #76.
+- **Production-readiness headlines:** approximately **47% overall** and
+  **41% Procurement/P2P**; unchanged by Draft implementation work.
+
+## MESP-132 implementation validation pending Sol acceptance
+
+Focused Finance `5/5`; REST/OpenAPI and host-security `52/52`; prior Inventory
+regression `89/89`; SQL Server safety `41/41`; full backend `969/969` with
+0 failed and 0 skipped; Release build 0 warnings/0 errors; Angular `258/258`
+across 37 spec files; initial production bundle `496.34 kB`; Finance lazy
+chunk `36.60 kB`; focused/full Chromium `2/2` and `34/34`; npm audits report
+0 vulnerabilities; `frontend/assets` untouched.
+
+Runtime evidence: backend `http://localhost:5300` PID `41320`, `/health` HTTP
+200; frontend `http://localhost:4300` PID `5432`, `/`, `/main.js`, and
+`/app/finance` HTTP 200. Both repository-owned processes remain available for
+Owner inspection.
+
+## Exact next Sol action
+
+Sol verifies the exact MESP-132 implementation head
+`0b627c5b127d92d5a99543f475867a187801a653` and the bounded evidence on Draft
+PR #76, then accepts or returns MESP-132. Do not merge, mark Ready, rebase,
+force-push, create another PR, invoke Opus, or start MESP-133+ or downstream
+Finance/Sales/Reporting work automatically. No Jira writes are performed by
+this documentation reconciliation session.
+
+---
+
+# Historical handoff — MESP-131 Final Valuation-Integrity Remediation
 
 ## MESP-131 guarded merge result and full Sol governance handoff - 24 August 2026
 
@@ -779,7 +827,7 @@ Sol performs final acceptance against the exact final branch tip and Draft PR
 `#74`, then the Owner decides whether to merge. Do not start another
 implementation task automatically. No Opus review prompt is created by this
 handoff.
-# MESP-132 - CORE FINANCE / GL FOUNDATION: SOL ACCEPTANCE HANDOFF
+# Historical MESP-132 implementation handoff evidence (current acceptance state is above)
 
 ## Session identity
 
@@ -787,11 +835,10 @@ Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 Branch: `feat/MESP-132-finance-foundation`
 Exact required base SHA: `fcec241dfedb529fef89d4336adf1e571917c52a`
 Implementation SHA: `af86b78` (`feat: implement MESP-132 finance foundation`)
-Final branch SHA: exact final tip is reported in the completion response after
-this runtime/documentation handoff commit; pre-runtime pushed tip was
-`c8dcf98`.
-Draft PR: `#76`, Open, Draft, unmerged; head
-`effd7c335be4fc198c15d39a7d502c401de6e14b`; base `main`.
+Implementation/source head: `0b627c5b127d92d5a99543f475867a187801a653`.
+Draft PR: `#76`, Open, Draft, unmerged; implementation head
+`0b627c5b127d92d5a99543f475867a187801a653`; base `main`. This historical
+handoff predates the current documentation reconciliation commit.
 
 Jira is read-only for this implementation session. Existing facts are:
 

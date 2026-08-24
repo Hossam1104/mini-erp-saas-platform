@@ -4,7 +4,7 @@
 > **MESP-131 Opus P1 financial-correctness remediation - 24 August 2026.** Drifted-average corrections fail closed as Blocked evidence with `correction_would_orphan_residual_value`, stop only the affected valuation scope, and never persist an impossible zero-quantity/non-zero-value state. Physical quantity arithmetic preserves Stock Ledger `decimal(28,8)` precision; `AmountScale` remains monetary-only and reconciliation compares exact stored quantities. No schema migration was required.
 >
 > **Final validation.** Final P1 correction-quantity commit `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`; focused valuation `44/44`; combined Inventory regression `89/89`; SQL safety `40/40`; canonical disposable-LocalDB backend `963/963` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `254/254`; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused/full Chromium `5/5` and `32/32`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. The final correction regression proves `1.005 - 0.001 = 1.004` without monetary quantity rounding. PR #75 is merged into `main`; no Jira writes were performed.
-> **Current MESP-131 merged-main overlay â€” 24 August 2026; Jira closure pending Sol.** Inventory now contains a deterministic Company-scoped `LedgerSequence` for movement ordering, versioned decimal Moving Weighted Average valuation policy/state/evidence, exact MESP-120 Exchange Rate snapshots, Pending/Blocked predecessor handling, append-only correction/reversal history, Warehouse Transfer/In-Transit value lineage, Inventory reconciliation, Finance handoff facts, and bounded valuation/report/export REST surfaces. Finance posting remains downstream: no Journal, GL, AP, AR, tax, payment, fiscal-period, Sales, generic Reporting, statutory, migration/cutover, external-provider, or Wafra-specific reusable core behavior is introduced.
+> **Current MESP-131 merged-main overlay â€” 24 August 2026; MESP-131 and MESP-8 are Done in Jira.** Inventory now contains a deterministic Company-scoped `LedgerSequence` for movement ordering, versioned decimal Moving Weighted Average valuation policy/state/evidence, exact MESP-120 Exchange Rate snapshots, Pending/Blocked predecessor handling, append-only correction/reversal history, Warehouse Transfer/In-Transit value lineage, Inventory reconciliation, Finance handoff facts, and bounded valuation/report/export REST surfaces. Finance posting remains downstream: no Journal, GL, AP, AR, tax, payment, fiscal-period, Sales, generic Reporting, statutory, migration/cutover, external-provider, or Wafra-specific reusable core behavior is introduced.
 >
 > **MESP-131 accepted validation.** Focused valuation `44/44`; combined Inventory regression `89/89`; SQL Server safety `40/40` against disposable LocalDB; canonical disposable-LocalDB backend `963/963` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `254/254` across 35 specs; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused Chromium `5/5`; full Chromium `32/32`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. PR #75 is merged into `main`; no Jira writes were performed.
 <!-- MESP-131-CURRENT-END -->
@@ -27,7 +27,10 @@
 > skipped; Release build 0 warnings/0 errors; Finance migration model-change
 > detection reports no changes; no Owner-managed asset changes. The active
 > branch is `feat/MESP-132-finance-foundation` at implementation commit
-> `af86b78`, based on `fcec241dfedb529fef89d4336adf1e571917c52a`.
+> `af86b78`, at exact MESP-132 implementation head
+> `0b627c5b127d92d5a99543f475867a187801a653`, based on
+> `fcec241dfedb529fef89d4336adf1e571917c52a`. Draft PR #76 is Open, Draft,
+> and unmerged; implementation validation is pending Sol acceptance.
 <!-- MESP-132-CURRENT-END -->
 
 > **Historical MESP-129 runtime overlay - 22 August 2026.** The backend now

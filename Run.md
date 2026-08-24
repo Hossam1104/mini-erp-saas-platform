@@ -118,7 +118,7 @@ absent, the existing module-owned SQLite fallback remains available for local
 development and tests.
 
 Development startup applies the formal EF migrations sequentially for the
-five persistence contexts. Production startup does not auto-migrate:
+six persistence contexts. Production startup does not auto-migrate:
 
 | Context | Schema / owner | History table |
 |---|---|---|
@@ -127,6 +127,7 @@ five persistence contexts. Production startup does not auto-migrate:
 | `BusinessPartiesDbContext` | `businessparties` / Business Parties | `dbo.__EFMigrationsHistory_BusinessParties` |
 | `ProcurementDbContext` | `procurement` / Procurement and Phase-C quotation data | `dbo.__EFMigrationsHistory_Procurement` |
 | `InventoryDbContext` | `inventory` / Inventory physical stock and ledger data | `dbo.__EFMigrationsHistory_Inventory` |
+| `FinanceDbContext` | `finance` / Finance foundation and GL facts | `dbo.__EFMigrationsHistory_Finance` |
 
 `tenancy.TenantOwnedRecords` is created and upgraded only by the Tenancy
 context. The later module alignment migrations are intentionally no-op
@@ -174,6 +175,18 @@ the full Foundation suite, use the dedicated safe runner:
 ```
 
 ## MESP-124 Purchase Order runtime
+
+## MESP-132 Finance runtime
+
+The current Finance runtime is available at `/app/finance` from the official
+launcher. It is a lazy Angular route with Company-selected Chart of Accounts,
+Fiscal Periods, Journals, Posting Rules, Inventory Handoff, and GL inquiry
+views. The backend remains authoritative for Tenant/Company scope, posting,
+period eligibility, balancing, FX, mapping, idempotency, and audit. Current
+runtime evidence is backend `http://localhost:5300` PID `41320` with `/health`
+HTTP 200 and frontend `http://localhost:4300` PID `5432` with `/`, `/main.js`,
+and `/app/finance` HTTP 200. MESP-132 remains on Draft PR #76 pending Sol
+acceptance; this is not a production-readiness claim.
 
 The current Procurement runtime includes the bounded Purchase Order and manual
 Supplier Confirmation journey at these relative routes:

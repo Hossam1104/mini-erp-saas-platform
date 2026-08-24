@@ -1,10 +1,24 @@
 # Mini ERP Tenant-Aware Shell
 
-<!-- MESP-131-CURRENT-START -->
+<!-- MESP-131-HISTORICAL-START -->
 > **Current MESP-131 workspace overlay â€” 23 August 2026; pending Sol acceptance.** The Inventory feature now includes lazy `/app/inventory/valuation` for valuation summary, explainable MWA history, Pending/Blocked states, Inventory reconciliation, In-Transit value, Finance handoff facts, correction history and authorized CSV export. The surface uses server-owned Warehouse context, preserves EN/AR and RTL, never accepts browser-authored cost/FX authority, and keeps `frontend/assets` untouched.
 >
 > **MESP-131 executor-reported frontend evidence.** Angular `254/254` across 35 spec files; production initial total `499.94 kB` with valuation lazy chunk `35.96 kB`; focused MESP-131 Chromium `5/5`; full Chromium `32/32`; both npm audits report 0 vulnerabilities. Draft PR #75 remains open/Draft/unmerged pending Sol acceptance. Sol acceptance comments are `11788` and `11789`; no Jira writes were performed.
-<!-- MESP-131-CURRENT-END -->
+<!-- MESP-131-HISTORICAL-END -->
+
+<!-- MESP-131-MERGED-CURRENT-START -->
+> **Current MESP-131 merged-main workspace overlay — 24 August 2026.** PR #75
+> is merged to `main`; MESP-131 and MESP-8 are Done in Jira. The Inventory
+> valuation workspace remains the bounded EN/AR RTL surface for summary, MWA
+> history, Pending/Blocked state, reconciliation, In-Transit value, Finance
+> handoff facts, correction history, and authorized export. It uses server-owned
+> Warehouse context and never accepts browser-authored cost or FX authority.
+>
+> **Accepted frontend evidence.** Angular `254/254` across 35 spec files;
+> initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused/full
+> Chromium `5/5` and `32/32`; npm audits report 0 vulnerabilities; assets are
+> untouched.
+<!-- MESP-131-MERGED-CURRENT-END -->
 
 <!-- MESP-132-CURRENT-START -->
 > **MESP-132 Finance workspace - 24 August 2026.** The shell now lazy-loads
@@ -20,8 +34,10 @@
 > production initial total is `496.34 kB`, Finance lazy chunk is `36.60 kB`,
 > focused Finance Chromium is `2/2`, full Chromium is `34/34`, and both npm
 > audits report `0 vulnerabilities`. The implementation branch is
-> `feat/MESP-132-finance-foundation`, implementation commit `af86b78` from
-> exact base `fcec241dfedb529fef89d4336adf1e571917c52a`.
+> `feat/MESP-132-finance-foundation`, implementation commit `af86b78`, exact
+> MESP-132 implementation head `0b627c5b127d92d5a99543f475867a187801a653`, from exact
+> base `fcec241dfedb529fef89d4336adf1e571917c52a`. Draft PR #76 is Open,
+> Draft, and unmerged; implementation validation is pending Sol acceptance.
 <!-- MESP-132-CURRENT-END -->
 
 > **Historical MESP-129 workspace overlay - 22 August 2026.** The Inventory
@@ -129,7 +145,7 @@ npm audit --omit=dev
 npm audit
 ```
 
-Current MESP-131 implementation evidence pending Sol acceptance:
+Accepted merged-main MESP-131 frontend evidence:
 
 - Angular unit tests: **254/254 across 35 spec files**.
 - Production initial bundle: **499.94 kB**, still within the existing 500 kB budget.
@@ -139,7 +155,7 @@ Current MESP-131 implementation evidence pending Sol acceptance:
 - Both npm audits: **0 vulnerabilities**.
 - `frontend/assets`: **untouched**.
 
-Current MESP-132 implementation evidence is recorded above and in
+Current MESP-132 implementation evidence pending Sol acceptance is recorded above and in
 `docs/35_MESP-132_Finance_Foundation_Architecture.md`. The Finance route is
 implemented but remains subject to Sol acceptance of the Draft PR; it is not
 a production-readiness claim.

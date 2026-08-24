@@ -58,7 +58,36 @@ velocity, or forecast:
 - **Presentational Only**: Presentation-layer only; causes zero FX conversion, zero tax effect, zero accounting effect, and zero persisted amount change.
 - **Fallback & Non-SAR**: Safe text fallback (e.g. `SAR`) is preserved for semantic clarity in multi-currency comparison, audit, and exports. Non-SAR currencies remain completely unaffected. Governed by MESP-12 / MESP-37.
 
-## Current execution overlay - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
+## Current execution overlay - 24 August 2026 (MESP-132 activated; MESP-131 merged)
+
+The repository is currently at `main` SHA
+`fcec241dfedb529fef89d4336adf1e571917c52a` with the active bounded
+implementation capability **MESP-132 Finance / General Ledger foundation** on
+branch `feat/MESP-132-finance-foundation`. The exact MESP-132 implementation head is
+`0b627c5b127d92d5a99543f475867a187801a653`; PR #76 is **Open, Draft, and
+unmerged** against `main`. MESP-132 is **In Progress / activated** under Epic
+MESP-10 (activation comments `11845` and `11844`). MESP-131 and its parent
+Inventory Epic MESP-8 are Done (closure comments `11842` and `11843`).
+
+MESP-132 implementation validation is pending Sol acceptance of the exact
+feature head: Finance `5/5`; REST/OpenAPI and host-security `52/52`; prior
+Inventory regression `89/89`; SQL Server safety `41/41`; full backend
+`969/969` with 0 failures and 0 skips; Release build 0 warnings/0 errors;
+Angular `258/258` across 37 spec files; initial bundle `496.34 kB`; Finance
+lazy chunk `36.60 kB`; focused/full Chromium `2/2` and `34/34`; npm audits
+clean. Runtime evidence is backend `http://localhost:5300` PID `41320` and
+frontend `http://localhost:4300` PID `5432`, with the recorded health, root,
+main.js, and `/app/finance` HTTP 200 probes. `frontend/assets` is untouched.
+
+Accepted fast-track capability completion remains **15/26 = 57.7%**; MESP-132
+must not be counted until Sol accepts and merges it. Overall production-ready
+completion remains approximately **47%** and Procurement/P2P approximately
+**41%**. Production/provider, MESP-48/MESP-50, backup/restore, capacity,
+legal, specialist, migration/cutover, external/statutory, and Wafra-specific
+core gates remain open or deferred. No next Finance capability starts
+automatically, and no Opus prompt is added by this handoff.
+
+## Historical execution overlay - 19 August 2026 (MESP-125 activated; FIN-OD-01 reconciled; MESP-124 merged)
 
 MESP-124 is **complete, independently reviewed by Claude Opus 5 (APPROVE FOR
 MERGE), and squash-merged to `main`** at commit
