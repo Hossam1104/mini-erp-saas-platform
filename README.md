@@ -36,15 +36,19 @@ as `ValuationMismatch` instead of complete reconciliation. MESP-131 remains
 In Progress, Draft, unmerged, and pending Sol acceptance; no downstream
 Finance or MESP-132 implementation was started.
 
-The P1 correction commit is `5908ce2645929c0881e4fd7e9ebf0d9b67d4acb1`.
+The final P1 correction-quantity commit is
+`64c4f4ea9b917119d07cb26df7ecac8c2239bfac`.
 Drifted-average corrections fail closed as Blocked evidence with
 `correction_would_orphan_residual_value`, stop only the affected valuation
 scope, and leave unrelated same-Company pools processing. Physical quantity
 arithmetic preserves Stock Ledger `decimal(28,8)` precision; `AmountScale`
 remains monetary-only, and reconciliation compares exact stored quantities.
+The direct and product-reachable fractional correction regressions prove
+`1.005 - 0.001 = 1.004`, truthful outbound Finance evidence, final state
+`1.004 / 100.40 / 100.00`, and `Reconciled` status.
 
-Final evidence is focused valuation `42/42`, combined Inventory regression
-`87/87`, SQL safety `40/40`, full backend `961/961` with zero failures/skips,
+Final evidence is focused valuation `44/44`, combined Inventory regression
+`89/89`, SQL safety `40/40`, full backend `963/963` with zero failures/skips,
 model-change detection clean, isolated
 Release build `0/0`, Angular `254/254`,
 focused/full Chromium `5/5` and `32/32`, initial bundle `499.94 kB`, and both
@@ -68,8 +72,8 @@ The tracked project-control source of truth is [`docs/staticts.md`](docs/statict
 
 | Check | Executor-reported result |
 |---|---:|
-| Focused MESP-131 valuation | 42/42 |
-| Combined Inventory regression | 87/87 |
+| Focused MESP-131 valuation | 44/44 |
+| Combined Inventory regression | 89/89 |
 | SQL Server safety harness | 40/40 against disposable LocalDB (previous baseline 39) |
 | Full backend disposable-LocalDB suite | 961/961, 0 failed, 0 skipped |
 | Release build | 0 warnings / 0 errors |
@@ -81,7 +85,7 @@ The tracked project-control source of truth is [`docs/staticts.md`](docs/statict
 | npm audits | 0 vulnerabilities |
 | `frontend/assets` | untouched |
 
-No schema migration was required for the P1 correction. The four non-blocking
+No schema migration was required for the final P1 correction. The four non-blocking
 Opus P2 observations remain explicitly deferred.
 
 Jira synchronization completed on 23 August 2026:

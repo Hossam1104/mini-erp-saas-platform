@@ -20,17 +20,18 @@ Jira traceability has been reconciled without closing MESP-131:
 Draft PR #75 remains unmerged and Sol acceptance is still required.
 <!-- MESP-131-JIRA-SYNC-END -->
 
-## Current authoritative position - 24 August 2026 (MESP-131 final valuation-integrity remediation; Sol acceptance handoff)
+## Current authoritative position - 24 August 2026 (MESP-131 final P1 correction-quantity remediation; Sol acceptance handoff)
 
 MESP-131 is implemented on branch
 `feat/MESP-131-mwa-valuation-reconciliation`, created from the exact required
 main base `b470179e1d18ef75c0a9247b2340407da6220dc4` and exact migration-repair
 session start `48ddf07a645da0130699314243ae8b23907b3bfc`. The pre-repair
 implementation baseline is `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; Draft
-PR #75 is Open, Draft, and unmerged. The P1 remediation source/test commit is
-`5908ce2645929c0881e4fd7e9ebf0d9b67d4acb1`; the final documentation handoff
-tip is reported with the completion response after this state update. Jira is
-read-only for this session; no Jira writes were performed.
+PR #75 is Open, Draft, and unmerged. The final P1 correction-quantity
+source/test commit is `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`; the final
+documentation handoff tip is reported with the completion response after this
+state update. Jira finding source is comment `11835` and Sol hold is comment
+`11839`; Jira is read-only for this session and no Jira writes were performed.
 
 The bounded capability establishes a durable Company-scoped `LedgerSequence`
 for every Inventory movement-producing path, deterministically bootstraps
@@ -92,6 +93,15 @@ quantity differences preserve exact physical Stock Ledger `decimal(28,8)`
 facts; `AmountScale` is monetary-only. No QuantityScale or schema migration was
 introduced. The four Opus P2 observations remain deferred.
 
+The final P1 delta removes the remaining monetary-rounding defect from
+`TryApplyCorrection`: correction quantities now preserve exact physical
+`decimal(28,8)` arithmetic for both inbound and outbound directions. A direct
+calculator regression and a product-reachable SAR Stock Adjustment correction
+regression prove `1.005 - 0.001 = 1.004`, truthful outbound Finance handoff
+facts (`0.001`, `100.00`, `0.10`, `-0.10`), final state `1.004 / 100.40 / 100.00`,
+and exact `Reconciled` status. `AmountScale` remains monetary-only, with no
+QuantityScale, tolerance, schema, or migration change.
+
 Inventory-owned reconciliation compares physical quantity with durable
 valuation state and reports applied/pending/blocked counts, policy/currency,
 latest physical and valued sequences, oldest pending sequence, in-transit
@@ -115,9 +125,9 @@ creation, and first-scope uniqueness races are safe conflicts. The Angular
 valuation area is lazy-loaded, extends the existing Inventory feature, and is
 EN/AR with RTL support; no product source assets were changed.
 
-Validation after the P1 remediation: focused MESP-131 valuation `42/42`,
-combined Inventory regression `87/87`, SQL Server safety `40/40` against
-disposable LocalDB, disposable LocalDB full backend `961/961` with zero
+Validation after the final P1 correction-quantity delta: focused MESP-131
+valuation `44/44`, combined Inventory regression `89/89`, SQL Server safety
+`40/40` against disposable LocalDB, disposable LocalDB full backend `963/963` with zero
 failures/skips, model-change detection clean, isolated
 Release solution build `0` warnings/`0` errors, Angular
 `254/254` across 35 spec files, focused Chromium `5/5`, full Chromium `32/32`,
@@ -125,8 +135,8 @@ both npm audits `0` vulnerabilities, production initial bundle `499.94 kB`,
 and valuation lazy chunk `35.96 kB`.
 
 The official launcher restarted the final runtime on backend
-`http://localhost:5300` PID `16088` and frontend `http://localhost:4300` PID
-`43800`. `/health`, `/`, and `/main.js` each returned HTTP 200; both
+`http://localhost:5300` PID `44188` and frontend `http://localhost:4300` PID
+`20316`. `/health`, `/`, and `/main.js` each returned HTTP 200; both
 repository-owned processes remain alive for Owner inspection. The explicit
 loopback-only Development auth bypass was used without printing credentials.
 

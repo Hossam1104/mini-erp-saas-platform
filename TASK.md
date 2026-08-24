@@ -54,6 +54,112 @@ handoff; no Opus prompt is created by this session.
   DNS/TLS, migration/cutover, or Wafra-specific core behavior was added.
 - MESP-130 physical movements remain upstream inputs; MESP-132+ owns Finance.
 
+## MESP-131 FINAL OPUS P1 QUANTITY-CORRECTION REMEDIATION HANDOFF - 24 August 2026
+
+### Starting SHA
+
+`5bf94cdf48e3f103e58c3b13c20c5824b55d785a`
+
+### Implementation SHA
+
+`64c4f4ea9b917119d07cb26df7ecac8c2239bfac`
+
+### Final Branch SHA
+
+The final documentation handoff tip is reported in the completion response
+after this bounded session is committed and pushed. The implementation tip
+above is the exact source/test delta SHA on
+`feat/MESP-131-mwa-valuation-reconciliation`.
+
+### PR #75 State
+
+Open, Draft, unmerged, base `main`; the existing PR is reused. The Opus P1
+finding source is Jira comment `11835`, and Sol's latest acceptance hold is
+comment `11839`. No Jira writes were performed.
+
+### Exact source fix
+
+`MovingWeightedAverageCalculator.TryApplyCorrection` now computes correction
+quantity as exact physical ledger arithmetic: inbound uses
+`priorQuantity + quantity`, outbound uses `priorQuantity - quantity`, and
+neither operand nor result uses monetary `AmountScale`. Monetary values still
+round through `AmountScale`, including `PriorValue`, reversal values, formula
+reversal values, rounding adjustments, `NewValue`, and the derived average
+unit cost through its configured unit-cost precision.
+
+### Fractional correction regression
+
+The product-reachable SQLite valuation regression uses SAR, UnitCostScale 2,
+and AmountScale 2: inbound `1.004 @ 100.00` produces `1.004 / 100.40`, a
+positive Stock Adjustment `+0.001` at CurrentMovingAverage produces
+`1.005 / 100.50 / 100.00`, and its normal outbound physical correction of
+`0.001` produces:
+
+- Prior quantity `1.005`;
+- correction quantity `0.001`, Direction `Outbound`;
+- exact event arithmetic `1.005 - 0.001 = 1.004`;
+- ReversalValue/BaseAmount `0.10`, SignedBaseAmount `-0.10`, BaseUnitCost
+  `100.00`;
+- New quantity `1.004`, NewValue `100.40`, and AverageUnitCost `100.00`;
+- final valuation state `1.004 / 100.40 / 100.00`;
+- physical/valued quantity difference `0` and reconciliation `Reconciled`.
+
+The direct calculator regression uses Outbound `0.001`, PriorQuantity
+`1.005`, PriorValue `100.50`, ReversalValue `0.10`, UnitCostScale `2`, and
+AmountScale `2`; it asserts `NewQuantity = 1.004`, `NewValue = 100.40`, and no
+error.
+
+### P1 preservation
+
+The drifted-correction case remains fail-closed with
+`correction_would_orphan_residual_value`, Blocked evidence, unchanged
+affected state, and unrelated Company pools continuing. Existing ordinary
+fractional inbound/outbound/full-depletion, exact event arithmetic, Finance
+handoff reconstruction, and `0.005` reconciliation-mismatch regressions
+remain unchanged and passing.
+
+### Schema / migration status
+
+No schema or migration changed. Existing quantity storage remains
+`decimal(28,8)`, and the accepted final migration remains
+`20260823225921_MESP131SolFinalValuationIntegrity`.
+
+### Final validation
+
+- Focused MESP-131 valuation: `44/44`, 0 failed, 0 skipped.
+- Combined Inventory ledger/stock-control/valuation regression: `89/89`, 0
+  failed, 0 skipped.
+- SQL Server safety: `40/40` against disposable LocalDB.
+- Full backend: `963/963`, 0 failed, 0 skipped, through the safe disposable
+  LocalDB runner.
+- Release solution build: `0` warnings, `0` errors.
+- Frontend source unchanged; accepted Angular evidence remains `254/254`,
+  initial bundle `499.94 kB`, valuation lazy chunk `35.96 kB`, focused
+  Chromium `5/5`, full Chromium `32/32`, and both npm audits at `0
+  vulnerabilities`.
+- `git diff --check` clean; `frontend/assets` has no changes.
+
+### Runtime evidence
+
+- Backend URL `http://localhost:5300`, PID `44188`, `/health` HTTP 200.
+- Frontend URL `http://localhost:4300`, PID `20316`, `/` HTTP 200 and
+  `/main.js` HTTP 200.
+- Both repository-owned processes were restarted by the official launcher and
+  left running for Owner inspection. Credentials were not printed.
+
+### Deferred Opus P2 findings
+
+The four Opus P2 observations remain deferred: pre-first-process ScopeMode
+transition; `/valuation/pending` omission of Blocked; correction BaseUnitCost
+evidence semantics; and the mixed-functional-currency summary guard. No P3
+item was changed, no P2-3 expansion was performed, and no MESP-132 or
+downstream implementation was started.
+
+### Next step
+
+Sol final delta verification of the exact branch SHA, followed by bounded
+Claude Opus 5 re-review. Do not insert the Opus prompt or start MESP-132.
+
 ## OPUS P1 Remediation Acceptance Handoff - 24 August 2026
 
 ### Starting SHA
