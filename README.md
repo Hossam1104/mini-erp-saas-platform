@@ -36,8 +36,16 @@ as `ValuationMismatch` instead of complete reconciliation. MESP-131 remains
 In Progress, Draft, unmerged, and pending Sol acceptance; no downstream
 Finance or MESP-132 implementation was started.
 
-Final evidence is focused valuation `34/34`, SQL safety `40/40`, full backend
-`953/953` with zero failures/skips, model-change detection clean, isolated
+The P1 correction commit is `5908ce2645929c0881e4fd7e9ebf0d9b67d4acb1`.
+Drifted-average corrections fail closed as Blocked evidence with
+`correction_would_orphan_residual_value`, stop only the affected valuation
+scope, and leave unrelated same-Company pools processing. Physical quantity
+arithmetic preserves Stock Ledger `decimal(28,8)` precision; `AmountScale`
+remains monetary-only, and reconciliation compares exact stored quantities.
+
+Final evidence is focused valuation `42/42`, combined Inventory regression
+`87/87`, SQL safety `40/40`, full backend `961/961` with zero failures/skips,
+model-change detection clean, isolated
 Release build `0/0`, Angular `254/254`,
 focused/full Chromium `5/5` and `32/32`, initial bundle `499.94 kB`, and both
 npm audits at `0 vulnerabilities`. The regenerated additive migration is
@@ -46,7 +54,7 @@ untouched.
 
 The latest **merged** Inventory capability is **MESP-130 â€” Stock Adjustment, Inventory Count, Stock Issue, and Corrections**, merged in PR #74 at `b470179e1d18ef75c0a9247b2340407da6220dc4`.
 
-The current active capability is **MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting**. It is implemented on Draft PR #75 at remediation commit `958339d395323106e83b59caeb3b64bbcd0758fd` from the required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`.
+The current active capability is **MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting**. It is implemented on Draft PR #75 at P1 remediation commit `5908ce2645929c0881e4fd7e9ebf0d9b67d4acb1` from the required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`.
 
 MESP-131 remains **In Progress, Draft, unmerged, and pending Sol acceptance**.
 
@@ -60,10 +68,10 @@ The tracked project-control source of truth is [`docs/staticts.md`](docs/statict
 
 | Check | Executor-reported result |
 |---|---:|
-| Focused MESP-131 valuation | 34/34 |
-| Prior Inventory regression | 52/52 |
+| Focused MESP-131 valuation | 42/42 |
+| Combined Inventory regression | 87/87 |
 | SQL Server safety harness | 40/40 against disposable LocalDB (previous baseline 39) |
-| Full backend disposable-LocalDB suite | 953/953, 0 failed, 0 skipped |
+| Full backend disposable-LocalDB suite | 961/961, 0 failed, 0 skipped |
 | Release build | 0 warnings / 0 errors |
 | Angular unit tests | 254/254 across 35 spec files |
 | Production initial bundle | 499.94 kB |
@@ -72,6 +80,9 @@ The tracked project-control source of truth is [`docs/staticts.md`](docs/statict
 | Full Chromium | 32/32 |
 | npm audits | 0 vulnerabilities |
 | `frontend/assets` | untouched |
+
+No schema migration was required for the P1 correction. The four non-blocking
+Opus P2 observations remain explicitly deferred.
 
 Jira synchronization completed on 23 August 2026:
 - MESP-131 implementation handoff comment `11779`;

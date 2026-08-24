@@ -6,7 +6,8 @@
 **Base main:** `b470179e1d18ef75c0a9247b2340407da6220dc4`<br>
 **Migration-repair session start SHA:** `48ddf07a645da0130699314243ae8b23907b3bfc`<br>
 **Pre-repair implementation baseline:** `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`<br>
-**Final branch SHA:** final documentation handoff commit is reported in the completion response<br>
+**P1 remediation SHA:** `5908ce2645929c0881e4fd7e9ebf0d9b67d4acb1`<br>
+**Final branch SHA:** final documentation handoff tip is reported in the completion response<br>
 **Draft PR:** #75 — Open, Draft, unmerged
 
 ## Purpose and boundary
@@ -44,6 +45,31 @@ value writes. Reconciliation independently detects legacy or corrupt
 zero-quantity/non-zero-value and negative state as `ValuationMismatch`, and a
 Warehouse summary with any mismatch is incomplete and partial.
 
+### Opus P1 financial-correctness remediation
+
+`TryApplyCorrection` calculates correction quantity using the exact physical
+ledger quantity and rejects `NewQuantity = 0` with `NewValue != 0` using the
+deterministic code `correction_would_orphan_residual_value`. The persistence
+processor records that movement as `Blocked`, adds its derived valuation scope
+to the stopped-scope set, and records later movements in that scope as
+`pending_predecessor`. Unrelated valuation scopes in the same Company continue
+processing. The guard runs before `InventoryValuationStateEntity.Apply`, whose
+known state invariant remains a second deterministic boundary.
+
+MWA input, prior, correction, and resulting quantities are not rounded with
+`AmountScale`. They preserve the physical Stock Ledger `decimal(28,8)` value;
+there is no customer-configured QuantityScale in MESP-131. `UnitCostScale` and
+`AmountScale` remain policy controls for unit costs and monetary values,
+including formula movement value, actual movement value, rounding bridges, and
+Finance handoff amounts. Reconciliation uses the exact stored
+`physicalQuantity - valuedQuantity` difference with no money-scale tolerance.
+
+The direct regressions cover the drifted-average sequence (original adjustment
+value 100, current state 10/150, correction Blocked, successor pending, and an
+unrelated product Applied), fractional inbound `1.005 @ 100 = 100.50`, partial
+outbound `0.005 = 0.50`, fractional full depletion, exact quantity mismatch,
+self-consistent event arithmetic, and reconstructable Finance handoff facts.
+
 The formal additive migration
 `20260823225921_MESP131SolFinalValuationIntegrity` adds nullable
 `MovementValuationEvents.FormulaMovementValue`, nullable
@@ -51,8 +77,9 @@ The formal additive migration
 `FinanceValuationHandoffs.RoundingAdjustmentAmount`. The preceding MESP-131
 migrations remain unchanged.
 
-Final evidence: focused valuation `34/34`; SQL Server safety `40/40` against
-disposable LocalDB; full backend `953/953` with zero failures/skips; model-
+Final evidence: focused valuation `42/42`; combined Inventory regression
+`87/87`; SQL Server safety `40/40` against disposable LocalDB; full backend
+`961/961` with zero failures/skips; model-
 change detection clean; isolated Release build 0 warnings/errors; Angular
 `254/254`; focused/full Chromium `5/5` and
 `32/32`; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; both
@@ -217,10 +244,10 @@ rewritten.
 
 ## Reported validation pending Sol acceptance
 
-- Focused MESP-131 valuation: `34/34`
-- Inventory regression: `52/52`
+- Focused MESP-131 valuation: `42/42`
+- Combined Inventory regression: `87/87`
 - SQL Server safety: `40/40` (previous baseline `39`)
-- Full backend disposable-LocalDB suite: `953/953`, 0 failed, 0 skipped
+- Full backend disposable-LocalDB suite: `961/961`, 0 failed, 0 skipped
 - Model-change detection: clean
 - Release build: 0 warnings / 0 errors using isolated output so the Owner
   runtime's in-place Release assemblies remained locked and intact

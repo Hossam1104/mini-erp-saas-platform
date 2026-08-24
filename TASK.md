@@ -54,6 +54,110 @@ handoff; no Opus prompt is created by this session.
   DNS/TLS, migration/cutover, or Wafra-specific core behavior was added.
 - MESP-130 physical movements remain upstream inputs; MESP-132+ owns Finance.
 
+## OPUS P1 Remediation Acceptance Handoff - 24 August 2026
+
+### Starting SHA
+
+`33e002806f8eeefe545ff0f33f281bccb3862be0`
+
+### P1 Remediation SHA
+
+`5908ce2645929c0881e4fd7e9ebf0d9b67d4acb1`
+
+### Final Branch SHA
+
+The final documentation handoff tip is reported in the completion response
+after this bounded session. The branch remains
+`feat/MESP-131-mwa-valuation-reconciliation`.
+
+### PR #75 State
+
+Open, Draft, unmerged, base `main`. Opus finding source: Jira comment
+`11835`. No rebase, force-push, merge, Ready-for-Review transition, or new PR
+was performed.
+
+### P1-1 Drifted-Average Correction
+
+The exact reproduced sequence is: SAR policy with UnitCostScale 2 and
+AmountScale 2; inbound 10 @ 10.00; positive +10 Stock Adjustment valued at
+the current MWA with original value 100; inbound 20 @ 20.00; outbound Stock
+Issue 30 @ MWA 15, leaving quantity 10/value 150; then a physical outbound
+correction of the original +10 adjustment. The exact reversal value is 100,
+which would otherwise calculate quantity 0/value 50.
+
+`MovingWeightedAverageCalculator.TryApplyCorrection` now returns `false`
+with `correction_would_orphan_residual_value` for zero quantity with residual
+value. The normal persistence path records the correction as `Blocked` with
+that status/reason before state apply, preserves the affected state at
+10/150, adds the valuation scope to `stoppedValuationScopes`, and records the
+same-scope successor as `pending_predecessor`. The deterministic pre-`Apply`
+state invariant check remains defense in depth; no broad exception swallowing
+or silent value rebaseline was introduced.
+
+The same regression includes a second Product pool in the same Company. Its
+eligible inbound movement is `Applied`, proving the blocked correction does
+not become a Company-wide infrastructure failure. No invalid quantity/value
+state is persisted and the original immutable adjustment remains valued at
+100.
+
+### P1-2 Physical Quantity Precision
+
+`AmountScale` is no longer used for input, prior, new, correction, or
+difference quantity arithmetic. Physical quantity remains the authoritative
+Stock Ledger `decimal(28,8)` fact; no customer-configured QuantityScale was
+introduced. `UnitCostScale` and `AmountScale` remain active for unit costs and
+true monetary values, including movement formula values, closeout rounding
+bridges, actual movement values, and Finance handoff amounts.
+
+The regressions prove inbound `1.005 @ 100.00` persists quantity `1.005` with
+movement/base amount `100.50`; outbound `0.005` preserves the physical
+quantity and values it at `0.50`; full fractional depletion closes to
+quantity/value/average zero with formula `100.50` and rounding adjustment
+zero; event prior/quantity/new arithmetic is internally consistent; Finance
+handoff Quantity/BaseUnitCost/BaseAmount/SignedBaseAmount reconstruct the
+fractional amount; and exact reconciliation detects physical `1.005` versus
+valued `1.000` as `QuantityMismatch` with difference `0.005`, not a false
+reconciliation.
+
+### Schema / Migration Status
+
+No schema migration was required for this P1 remediation. Existing quantity
+columns already persist `decimal(28,8)`. The prior approved additive final EF
+migration `20260823225921_MESP131SolFinalValuationIntegrity` remains unchanged;
+the preceding MESP-131 migrations remain unchanged.
+
+### Validation
+
+- Focused MESP-131 valuation: `42/42`, 0 failed, 0 skipped.
+- Combined Inventory ledger/stock-control/valuation regression: `87/87`, 0
+  failed, 0 skipped.
+- SQL Server safety: `40/40` against disposable `MiniErpFoundation_*`
+  LocalDB through `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` only.
+- Full backend: `961/961`, 0 failed, 0 skipped, through the safe disposable
+  LocalDB runner.
+- Release solution build: `0` warnings, `0` errors.
+- Frontend source was unchanged; Angular remained `254/254` across 35 spec
+  files; production initial bundle `499.94 kB`, valuation lazy chunk
+  `35.96 kB`.
+- Focused MESP-131 Chromium: `5/5`; full Chromium: `32/32`.
+- Production-only and full npm audits: `0 vulnerabilities`.
+- Runtime after official launcher restart: backend `5300`, PID `16088`,
+  frontend `4300`, PID `43800`; `/health`, `/`, and `/main.js` each HTTP
+  200; both processes alive; no credentials printed.
+- `git diff --check`: clean before the documentation handoff commit.
+- `frontend/assets`: zero changes.
+
+### Deferred Opus P2 Findings
+
+The four non-blocking observations from Jira `11835` remain deferred and were
+not expanded into this P1 remediation: scope-mode transition before first
+valuation process; `/valuation/pending` omission of Blocked events; outbound
+correction evidence displaying current MWA rather than original event cost;
+and the missing mixed-functional-currency summary guard.
+
+Sol owns independent delta acceptance and review routing. No Opus prompt is
+created by this handoff.
+
 ## Sol Delta Acceptance Handoff
 
 The remediation implementation is complete for Sol review. The exact bounded
@@ -111,9 +215,9 @@ The preceding migrations
 `20260823124304_MESP131MovingWeightedAverageValuation` and
 `20260823180537_MESP131SolFinancialIntegrityRemediation` remain unchanged.
 The SQL safety suite gained one metadata regression proving the final target
-model and snapshot are populated. Validation is focused valuation `34/34`,
-the preserved prior Inventory regression `52/52`, SQL Server safety `40/40`,
-full disposable-LocalDB backend `953/953`, model-change detection clean, and
+model and snapshot are populated. Validation is focused valuation `42/42`,
+the combined Inventory regression `87/87`, SQL Server safety `40/40`,
+full disposable-LocalDB backend `961/961`, model-change detection clean, and
 an isolated-output Release solution build with `0` warnings and `0` errors.
 
 ## Final Valuation-Integrity Remediation Delta
@@ -138,9 +242,10 @@ an isolated-output Release solution build with `0` warnings and `0` errors.
   `20260823225921_MESP131SolFinalValuationIntegrity` adds only the immutable
   formula/rounding evidence columns; prior MESP-131 migrations are unchanged.
 
-Final evidence: focused valuation `34/34`; prior Inventory regression `52/52`;
-SQL Server safety `40/40` against disposable LocalDB; full disposable-LocalDB
-backend `953/953`, `0` failed, `0` skipped; model-change detection clean;
+Final evidence: focused valuation `42/42`; combined Inventory regression
+`87/87`; SQL Server safety `40/40` against disposable LocalDB; full
+disposable-LocalDB backend `961/961`, `0` failed, `0` skipped;
+model-change detection clean;
 isolated-output Release build `0` warnings and
 `0` errors; Angular `254/254` across 35 spec files; focused Chromium `5/5`,
 full Chromium `32/32`; initial production bundle `499.94 kB`; valuation lazy
@@ -148,9 +253,9 @@ chunk `35.96 kB`; and both npm audits at `0 vulnerabilities`.
 
 ## Final Runtime Verification
 
-- Backend URL: `http://localhost:5300`; `/health`: HTTP 200; Owner API PID
-  `15844` was preserved and not restarted during this migration-only session.
-- Frontend URL: `http://localhost:4300`; `/`: HTTP 200; Angular PID `12120`.
+- Backend URL: `http://localhost:5300`; `/health`: HTTP 200; official launcher
+  PID `16088` remains running.
+- Frontend URL: `http://localhost:4300`; `/`: HTTP 200; Angular PID `43800`.
 - Frontend `/main.js`: HTTP 200.
 - Both repository-owned processes are alive for Owner inspection. No
   credentials were printed.

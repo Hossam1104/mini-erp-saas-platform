@@ -27,8 +27,9 @@ MESP-131 is implemented on branch
 main base `b470179e1d18ef75c0a9247b2340407da6220dc4` and exact migration-repair
 session start `48ddf07a645da0130699314243ae8b23907b3bfc`. The pre-repair
 implementation baseline is `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; Draft
-PR #75 is Open, Draft, and unmerged. The final migration-repair handoff SHA is
-reported with the completion response after this state update. Jira is
+PR #75 is Open, Draft, and unmerged. The P1 remediation source/test commit is
+`5908ce2645929c0881e4fd7e9ebf0d9b67d4acb1`; the final documentation handoff
+tip is reported with the completion response after this state update. Jira is
 read-only for this session; no Jira writes were performed.
 
 The bounded capability establishes a durable Company-scoped `LedgerSequence`
@@ -81,6 +82,16 @@ Pending. Physical corrections append a source-linked reversal event with a
 signed movement value; authoritative source-revision correction persistence is
 an explicit provider-required seam and never fabricates revised cost.
 
+The Opus P1 remediation now fails closed when a drifted full correction would
+produce zero quantity with residual value, using
+`correction_would_orphan_residual_value`. The correction is persisted as
+Blocked evidence, only its derived valuation scope is stopped, later movement
+in that scope receives `pending_predecessor`, and unrelated same-Company pools
+continue. MWA quantity input/prior/new/correction arithmetic and reconciliation
+quantity differences preserve exact physical Stock Ledger `decimal(28,8)`
+facts; `AmountScale` is monetary-only. No QuantityScale or schema migration was
+introduced. The four Opus P2 observations remain deferred.
+
 Inventory-owned reconciliation compares physical quantity with durable
 valuation state and reports applied/pending/blocked counts, policy/currency,
 latest physical and valued sequences, oldest pending sequence, in-transit
@@ -104,18 +115,20 @@ creation, and first-scope uniqueness races are safe conflicts. The Angular
 valuation area is lazy-loaded, extends the existing Inventory feature, and is
 EN/AR with RTL support; no product source assets were changed.
 
-Validation after final migration repair: focused MESP-131 valuation `34/34`,
-prior Inventory regression `52/52`, SQL Server safety `40/40` against
-disposable LocalDB (previous baseline `39`), disposable LocalDB full backend
-`953/953` with zero failures/skips, model-change detection clean, isolated
+Validation after the P1 remediation: focused MESP-131 valuation `42/42`,
+combined Inventory regression `87/87`, SQL Server safety `40/40` against
+disposable LocalDB, disposable LocalDB full backend `961/961` with zero
+failures/skips, model-change detection clean, isolated
 Release solution build `0` warnings/`0` errors, Angular
 `254/254` across 35 spec files, focused Chromium `5/5`, full Chromium `32/32`,
 both npm audits `0` vulnerabilities, production initial bundle `499.94 kB`,
-and valuation lazy chunk `35.96 kB`. The existing Owner launcher kept backend
-`http://localhost:5300` PID `15844` and frontend `http://localhost:4300` PID
-`12120` alive; `/health`, `/`, and `/main.js` each returned HTTP 200 without
-printing credentials, and no runtime restart was performed in this
-migration-only session.
+and valuation lazy chunk `35.96 kB`.
+
+The official launcher restarted the final runtime on backend
+`http://localhost:5300` PID `16088` and frontend `http://localhost:4300` PID
+`43800`. `/health`, `/`, and `/main.js` each returned HTTP 200; both
+repository-owned processes remain alive for Owner inspection. The explicit
+loopback-only Development auth bypass was used without printing credentials.
 
 The overall Production-Ready Completion headline remains approximately 47%
 overall and 41% Procurement/P2P pending Sol acceptance/merge. The fast-track
