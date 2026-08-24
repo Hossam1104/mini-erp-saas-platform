@@ -195,7 +195,7 @@ export class FinanceWorkspaceComponent implements OnInit {
   }
 
   private newJournalDraft(): FinanceJournalWriteRequest {
-    return { companyId: '', journalDate: this.today(), postingDate: this.today(), transactionCurrencyCode: null, exchangeRate: null, sourceContract: 'manual-journal.v1', sourceEvent: 'manual', description: '', lines: [{ accountId: '', debit: 0, credit: 0, transactionAmount: null, transactionCurrencyCode: null, costCenterId: null, description: null }, { accountId: '', debit: 0, credit: 0, transactionAmount: null, transactionCurrencyCode: null, costCenterId: null, description: null }] };
+    return { companyId: '', journalDate: this.today(), postingDate: this.today(), transactionCurrencyCode: null, exchangeRate: null, sourceContract: 'manual-journal.v1', sourceEvent: 'manual', description: '', lines: [{ accountId: '', debit: 0, credit: 0, costCenterId: null, description: null }, { accountId: '', debit: 0, credit: 0, costCenterId: null, description: null }] };
   }
 
   private newRuleDraft(): FinancePostingRuleWriteRequest {

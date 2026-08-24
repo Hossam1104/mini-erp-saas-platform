@@ -18,7 +18,8 @@ public static class FinancePersistenceServiceCollectionExtensions
             optionsBuilder.Options,
             provider.GetRequiredService<IFinanceCompanyProvider>(),
             provider.GetRequiredService<IInventoryValuationPersistence>(),
-            provider.GetRequiredService<IMasterDataExchangeRatePersistence>()));
+            provider.GetRequiredService<IMasterDataExchangeRatePersistence>(),
+            provider.GetRequiredService<IFinanceSourceApprovalPolicy>()));
         return services;
     }
 

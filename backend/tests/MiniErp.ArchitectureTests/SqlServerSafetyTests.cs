@@ -350,7 +350,12 @@ public sealed class SqlServerSafetyTests
 
         await using (var finance = new FinanceDbContext(financeOptions, _fixture.TenantA))
         {
-            Assert.Equal(["20260824125115_MESP132FinanceFoundation"], (await finance.Database.GetAppliedMigrationsAsync()).ToArray());
+            Assert.Equal(
+                [
+                    "20260824125115_MESP132FinanceFoundation",
+                    "20260824152331_MESP132SolFinanceCorrectnessRemediation"
+                ],
+                (await finance.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await finance.Database.GetPendingMigrationsAsync());
         }
 

@@ -78,6 +78,8 @@ export interface FinanceJournalLine {
   credit: number;
   functionalDebit: number;
   functionalCredit: number;
+  transactionAmount: number | null;
+  transactionCurrencyCode: string | null;
   costCenterId: string | null;
   costCenterCode: string | null;
   description: string | null;
@@ -91,6 +93,8 @@ export interface FinanceJournal {
   functionalCurrencyCode: string;
   sourceContract: string;
   sourceEvent: string;
+  amountAuthority: string;
+  approvalRequirement: string;
   description: string;
   status: string;
   lines: FinanceJournalLine[];
@@ -152,8 +156,6 @@ export interface FinanceJournalWriteRequest {
     accountId: string;
     debit: number;
     credit: number;
-    transactionAmount: number | null;
-    transactionCurrencyCode: string | null;
     costCenterId: string | null;
     description: string | null;
   }>;

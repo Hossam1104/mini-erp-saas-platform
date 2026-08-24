@@ -54,6 +54,19 @@ public enum FinanceJournalStatus
     Reversed = 7
 }
 
+public enum FinanceJournalAmountAuthority
+{
+    ManualTransactionCurrency = 1,
+    SourceFunctionalCurrency = 2
+}
+
+public enum FinanceApprovalRequirement
+{
+    NotConfigured = 0,
+    Required = 1,
+    NotRequired = 2
+}
+
 public enum FinancePostingRuleLifecycle
 {
     Enabled = 1,
@@ -65,7 +78,8 @@ public enum FinanceSourceHandoffStatus
     Ready = 1,
     PendingMapping = 2,
     Posted = 3,
-    Blocked = 4
+    Blocked = 4,
+    PendingApproval = 5
 }
 
 public sealed record FinanceCompanyOption(
@@ -206,7 +220,9 @@ public sealed record FinanceJournalRecord(
     DateTimeOffset CreatedAt,
     DateTimeOffset? PostedAt,
     IReadOnlyList<FinanceJournalLineRecord> Lines,
-    byte[] Version);
+    byte[] Version,
+    FinanceJournalAmountAuthority AmountAuthority = FinanceJournalAmountAuthority.ManualTransactionCurrency,
+    FinanceApprovalRequirement ApprovalRequirement = FinanceApprovalRequirement.Required);
 
 public sealed record FinanceHandoffRecord(
     Guid Id,

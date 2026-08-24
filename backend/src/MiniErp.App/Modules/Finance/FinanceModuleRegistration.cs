@@ -10,6 +10,7 @@ public static class FinanceModuleRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
         services.AddSingleton<IFinanceCompanyProvider, NoFinanceCompanyProvider>();
+        services.AddSingleton<IFinanceSourceApprovalPolicy, UnconfiguredFinanceSourceApprovalPolicy>();
         services.AddSingleton<IFinancePersistence, UnavailableFinancePersistence>();
         services.AddSingleton<FinanceAuthorizationService>();
         return services;

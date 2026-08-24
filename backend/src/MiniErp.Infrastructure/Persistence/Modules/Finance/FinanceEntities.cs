@@ -131,7 +131,7 @@ internal sealed class FinanceJournalEntity : FinanceEntity
     private FinanceJournalEntity() { JournalNumber = FunctionalCurrencyCode = SourceContract = SourceEvent = Description = CorrelationId = string.Empty; Lines = []; }
     internal FinanceJournalEntity(TenantId tenantId, Guid id, FinanceJournalCommand command, long sequence, string functionalCurrency, Guid actorId, DateTimeOffset at) : base(tenantId, id)
     {
-        JournalSequence = sequence; JournalNumber = $"{sequence:D8}"; CompanyId = command.CompanyId; JournalDate = command.JournalDate; PostingDate = command.PostingDate; FunctionalCurrencyCode = functionalCurrency; TransactionCurrencyCode = command.TransactionCurrencyCode; ExchangeRate = command.ExchangeRate; ExchangeRateId = command.ExchangeRateId; ExchangeRateVersionId = command.ExchangeRateVersionId; ExchangeRateVersionNumber = command.ExchangeRateVersionNumber; SourceContract = command.SourceContract; SourceEvent = command.SourceEvent; SourceEvidenceId = command.SourceEvidenceId; SourceEvidenceVersion = command.SourceEvidenceVersion; PostingRuleId = command.PostingRuleId; Description = command.Description; Status = FinanceJournalStatus.Draft; CreatedBy = actorId; CreatedAt = at; CorrelationId = string.Empty; Lines = [];
+        JournalSequence = sequence; JournalNumber = $"{sequence:D8}"; CompanyId = command.CompanyId; JournalDate = command.JournalDate; PostingDate = command.PostingDate; FunctionalCurrencyCode = functionalCurrency; TransactionCurrencyCode = command.TransactionCurrencyCode; ExchangeRate = command.ExchangeRate; ExchangeRateId = command.ExchangeRateId; ExchangeRateVersionId = command.ExchangeRateVersionId; ExchangeRateVersionNumber = command.ExchangeRateVersionNumber; SourceContract = command.SourceContract; SourceEvent = command.SourceEvent; SourceEvidenceId = command.SourceEvidenceId; SourceEvidenceVersion = command.SourceEvidenceVersion; PostingRuleId = command.PostingRuleId; Description = command.Description; AmountAuthority = command.AmountAuthority; ApprovalRequirement = command.ApprovalRequirement; Status = FinanceJournalStatus.Draft; CreatedBy = actorId; CreatedAt = at; CorrelationId = string.Empty; Lines = [];
     }
     internal Guid CompanyId { get; private set; }
     internal long JournalSequence { get; private set; }
@@ -152,6 +152,8 @@ internal sealed class FinanceJournalEntity : FinanceEntity
     internal int? SourceEvidenceVersion { get; private set; }
     internal Guid? PostingRuleId { get; private set; }
     internal int? PostingRuleVersionNumber { get; private set; }
+    internal FinanceJournalAmountAuthority AmountAuthority { get; private set; }
+    internal FinanceApprovalRequirement ApprovalRequirement { get; private set; }
     internal string Description { get; private set; }
     internal FinanceJournalStatus Status { get; private set; }
     internal Guid CreatedBy { get; private set; }
@@ -171,7 +173,7 @@ internal sealed class FinanceJournalEntity : FinanceEntity
         ExchangeRate = command.ExchangeRate; ExchangeRateId = command.ExchangeRateId; ExchangeRateVersionId = command.ExchangeRateVersionId;
         ExchangeRateVersionNumber = command.ExchangeRateVersionNumber; SourceContract = command.SourceContract; SourceEvent = command.SourceEvent;
         SourceEvidenceId = command.SourceEvidenceId; SourceEvidenceVersion = command.SourceEvidenceVersion; PostingRuleId = command.PostingRuleId;
-        Description = command.Description; TouchVersion();
+        Description = command.Description; AmountAuthority = command.AmountAuthority; ApprovalRequirement = command.ApprovalRequirement; TouchVersion();
     }
     internal void ReplaceLines(IEnumerable<FinanceJournalLineEntity> lines)
     {
@@ -191,8 +193,8 @@ internal sealed class FinanceJournalEntity : FinanceEntity
 internal sealed class FinanceJournalLineEntity : FinanceEntity
 {
     private FinanceJournalLineEntity() { AccountCode = AccountName = string.Empty; }
-    internal FinanceJournalLineEntity(TenantId tenantId, Guid id, Guid journalId, int number, FinanceAccountEntity account, FinanceJournalLineCommand command, FinanceCostCenterEntity? costCenter, decimal functionalDebit, decimal functionalCredit) : base(tenantId, id)
-    { JournalId = journalId; LineNumber = number; AccountId = account.Id; AccountCode = account.Code; AccountName = account.EnglishName; Debit = command.Debit; Credit = command.Credit; FunctionalDebit = functionalDebit; FunctionalCredit = functionalCredit; TransactionAmount = command.TransactionAmount; TransactionCurrencyCode = command.TransactionCurrencyCode; CostCenterId = costCenter?.Id; CostCenterCode = costCenter?.Code; Description = command.Description; }
+    internal FinanceJournalLineEntity(TenantId tenantId, Guid id, Guid journalId, int number, FinanceAccountEntity account, FinanceJournalLineCommand command, FinanceCostCenterEntity? costCenter, decimal functionalDebit, decimal functionalCredit, FinanceJournalAmountAuthority amountAuthority) : base(tenantId, id)
+    { JournalId = journalId; LineNumber = number; AccountId = account.Id; AccountCode = account.Code; AccountName = account.EnglishName; Debit = command.Debit; Credit = command.Credit; FunctionalDebit = functionalDebit; FunctionalCredit = functionalCredit; TransactionAmount = amountAuthority == FinanceJournalAmountAuthority.SourceFunctionalCurrency ? command.TransactionAmount : command.TransactionAmount ?? Math.Max(command.Debit, command.Credit); TransactionCurrencyCode = command.TransactionCurrencyCode; CostCenterId = costCenter?.Id; CostCenterCode = costCenter?.Code; Description = command.Description; }
     internal Guid JournalId { get; private set; }
     internal int LineNumber { get; private set; }
     internal Guid AccountId { get; private set; }

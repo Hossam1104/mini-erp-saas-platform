@@ -94,6 +94,11 @@ public interface IInventoryValuationPersistence
         InventoryValuationQuery query,
         CancellationToken cancellationToken = default);
 
+    Task<Guid?> ResolveFinanceHandoffCompanyIdAsync(
+        InventoryRequestContext context,
+        Guid handoffId,
+        CancellationToken cancellationToken = default);
+
     Task<InventoryValuationExportRecord> ExportAsync(
         InventoryRequestContext context,
         InventoryValuationQuery query,
@@ -117,6 +122,7 @@ public sealed class UnavailableInventoryValuationPersistence : IInventoryValuati
     public Task<IReadOnlyList<InventoryValuationReconciliationRecord>> ReconcileAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryValuationReconciliationRecord>>();
     public Task<InventoryPersistenceResult<InventoryValuationSummaryRecord>> SummaryAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<InventoryPersistenceResult<InventoryValuationSummaryRecord>>();
     public Task<IReadOnlyList<InventoryFinanceValuationHandoffRecord>> ListFinanceHandoffsAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryFinanceValuationHandoffRecord>>();
+    public Task<Guid?> ResolveFinanceHandoffCompanyIdAsync(InventoryRequestContext context, Guid handoffId, CancellationToken cancellationToken = default) => Task.FromResult<Guid?>(null);
     public Task<InventoryValuationExportRecord> ExportAsync(InventoryRequestContext context, InventoryValuationQuery query, CancellationToken cancellationToken = default) => Unavailable<InventoryValuationExportRecord>();
     public Task<InventoryPersistenceResult<InventoryMovementValuationEventRecord>> CorrectAsync(InventoryRequestContext context, InventoryValuationCorrectionCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryPersistenceResult<InventoryMovementValuationEventRecord>>();
 }

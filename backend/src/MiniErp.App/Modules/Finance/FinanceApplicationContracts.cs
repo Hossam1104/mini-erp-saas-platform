@@ -8,6 +8,7 @@ using MiniErp.App.Modules.Identity;
 using MiniErp.App.Modules.Inventory;
 using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Foundation;
+using MiniErp.Contracts.Modules.Inventory;
 
 namespace MiniErp.App.Modules.Finance;
 
@@ -54,6 +55,34 @@ public sealed record FinanceAuthorizationResult(bool Allowed, string Code)
     public static FinanceAuthorizationResult Denied(string code) => new(false, code);
 }
 
+public enum FinanceResourceType
+{
+    Account = 1,
+    Calendar = 2,
+    FiscalYear = 3,
+    FiscalPeriod = 4,
+    CostCenter = 5,
+    PostingRule = 6,
+    Journal = 7,
+    InventoryHandoff = 8
+}
+
+public interface IFinanceSourceApprovalPolicy
+{
+    FinanceApprovalRequirement Resolve(string sourceContract, string sourceEvent);
+}
+
+public sealed class UnconfiguredFinanceSourceApprovalPolicy : IFinanceSourceApprovalPolicy
+{
+    public static UnconfiguredFinanceSourceApprovalPolicy Instance { get; } = new();
+    public FinanceApprovalRequirement Resolve(string sourceContract, string sourceEvent) => FinanceApprovalRequirement.NotConfigured;
+}
+
+public static class FinanceInventoryPostingClassifier
+{
+    public static string Classify(InventoryMovementSourceType sourceType, InventoryMovementDirection direction) => $"{sourceType}:{direction}";
+}
+
 public sealed class FinanceAuthorizationService
 {
     private readonly IFinanceCompanyProvider companies;
@@ -74,8 +103,10 @@ public sealed class FinanceAuthorizationService
             return FinanceAuthorizationResult.Success();
         }
 
-        var company = companies.List(context.TenantId).SingleOrDefault(item => item.CompanyId == targetCompany && item.IsActive);
-        if (company is null)
+        var companyOptions = companies.List(context.TenantId)
+            .Where(item => item.CompanyId == targetCompany && item.IsActive)
+            .ToArray();
+        if (companyOptions.Length == 0 || companyOptions.Select(item => item.FunctionalCurrencyCode).Distinct(StringComparer.OrdinalIgnoreCase).Count() != 1)
         {
             return FinanceAuthorizationResult.Denied("company_scope_denied");
         }
@@ -90,7 +121,8 @@ public sealed class FinanceAuthorizationService
             }
 
             if (value.StartsWith("Branch:", StringComparison.OrdinalIgnoreCase)
-                && (!Guid.TryParse(value["Branch:".Length..], out var branchId) || company.BranchId != branchId))
+                && (!Guid.TryParse(value["Branch:".Length..], out var branchId)
+                    || !companyOptions.Any(item => item.BranchId == branchId)))
             {
                 return FinanceAuthorizationResult.Denied("company_scope_denied");
             }
@@ -117,7 +149,7 @@ public sealed class ConfiguredFinanceCompanyProvider(IEnumerable<FinanceCompanyO
             && !string.IsNullOrWhiteSpace(item.FunctionalCurrencyCode))
         .Select(item => item with { FunctionalCurrencyCode = item.FunctionalCurrencyCode.Trim().ToUpperInvariant() })
         .GroupBy(item => (item.TenantId, item.CompanyId, item.BranchId))
-        .Select(group => group.Single())
+        .Select(group => group.First())
         .ToArray();
 
     public IReadOnlyList<FinanceCompanyOption> List(TenantId tenantId) => options
@@ -150,7 +182,7 @@ public sealed record FinancePeriodStateCommand(Guid PeriodId, FinanceFiscalPerio
 public sealed record FinanceCostCenterCommand(Guid CompanyId, string Code, string EnglishName, string? ArabicName, DateOnly EffectiveFrom, DateOnly? EffectiveTo, Guid Id, string IdempotencyKey, string RequestFingerprint);
 public sealed record FinancePostingRuleCommand(Guid CompanyId, string SourceContract, string SourceEvent, Guid DebitAccountId, Guid CreditAccountId, bool CostCenterRequired, DateOnly EffectiveFrom, DateOnly? EffectiveTo, Guid Id, string IdempotencyKey, string RequestFingerprint);
 public sealed record FinanceJournalLineCommand(Guid AccountId, decimal Debit, decimal Credit, decimal? TransactionAmount, string? TransactionCurrencyCode, Guid? CostCenterId, string? Description);
-public sealed record FinanceJournalCommand(Guid CompanyId, DateOnly JournalDate, DateOnly PostingDate, string? TransactionCurrencyCode, decimal? ExchangeRate, Guid? ExchangeRateId, Guid? ExchangeRateVersionId, int? ExchangeRateVersionNumber, string SourceContract, string SourceEvent, Guid? SourceEvidenceId, int? SourceEvidenceVersion, Guid? PostingRuleId, string Description, IReadOnlyList<FinanceJournalLineCommand> Lines, Guid Id, string IdempotencyKey, string RequestFingerprint);
+public sealed record FinanceJournalCommand(Guid CompanyId, DateOnly JournalDate, DateOnly PostingDate, string? TransactionCurrencyCode, decimal? ExchangeRate, Guid? ExchangeRateId, Guid? ExchangeRateVersionId, int? ExchangeRateVersionNumber, string SourceContract, string SourceEvent, Guid? SourceEvidenceId, int? SourceEvidenceVersion, Guid? PostingRuleId, string Description, IReadOnlyList<FinanceJournalLineCommand> Lines, Guid Id, string IdempotencyKey, string RequestFingerprint, FinanceJournalAmountAuthority AmountAuthority = FinanceJournalAmountAuthority.ManualTransactionCurrency, FinanceApprovalRequirement ApprovalRequirement = FinanceApprovalRequirement.Required);
 public sealed record FinanceJournalActionCommand(Guid JournalId, byte[] ExpectedVersion, string? Reason, string IdempotencyKey, string RequestFingerprint);
 public sealed record FinanceReversalCommand(Guid JournalId, DateOnly PostingDate, string Reason, Guid Id, string IdempotencyKey, string RequestFingerprint);
 public sealed record FinanceHandoffProcessCommand(Guid HandoffId, string IdempotencyKey, string RequestFingerprint);
@@ -163,6 +195,7 @@ public interface IFinancePersistence
     Task<FinanceOperationResult<FinanceAccountRecord>> EditAccountAsync(FinanceRequestContext context, FinanceAccountCommand command, CancellationToken cancellationToken = default);
     Task<FinanceOperationResult<FinanceAccountRecord>> SetAccountLifecycleAsync(FinanceRequestContext context, Guid accountId, Guid companyId, FinanceAccountLifecycle lifecycle, byte[] expectedVersion, string idempotencyKey, string fingerprint, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FinanceFiscalCalendarRecord>> ListCalendarsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default);
+    Task<Guid?> ResolveCompanyIdAsync(FinanceRequestContext context, FinanceResourceType resourceType, Guid resourceId, CancellationToken cancellationToken = default);
     Task<FinanceOperationResult<FinanceFiscalCalendarRecord>> CreateCalendarAsync(FinanceRequestContext context, FinanceFiscalCalendarCommand command, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FinanceFiscalYearRecord>> ListYearsAsync(FinanceRequestContext context, Guid calendarId, CancellationToken cancellationToken = default);
     Task<FinanceOperationResult<FinanceFiscalYearRecord>> CreateYearAsync(FinanceRequestContext context, FinanceFiscalYearCommand command, CancellationToken cancellationToken = default);
@@ -202,6 +235,7 @@ public sealed class UnavailableFinancePersistence : IFinancePersistence
     public Task<FinanceOperationResult<FinanceAccountRecord>> EditAccountAsync(FinanceRequestContext context, FinanceAccountCommand command, CancellationToken cancellationToken = default) => Task.FromResult(Unavailable<FinanceAccountRecord>());
     public Task<FinanceOperationResult<FinanceAccountRecord>> SetAccountLifecycleAsync(FinanceRequestContext context, Guid accountId, Guid companyId, FinanceAccountLifecycle lifecycle, byte[] expectedVersion, string idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) => Task.FromResult(Unavailable<FinanceAccountRecord>());
     public Task<IReadOnlyList<FinanceFiscalCalendarRecord>> ListCalendarsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => EmptyCalendars;
+    public Task<Guid?> ResolveCompanyIdAsync(FinanceRequestContext context, FinanceResourceType resourceType, Guid resourceId, CancellationToken cancellationToken = default) => Task.FromResult<Guid?>(null);
     public Task<FinanceOperationResult<FinanceFiscalCalendarRecord>> CreateCalendarAsync(FinanceRequestContext context, FinanceFiscalCalendarCommand command, CancellationToken cancellationToken = default) => Task.FromResult(Unavailable<FinanceFiscalCalendarRecord>());
     public Task<IReadOnlyList<FinanceFiscalYearRecord>> ListYearsAsync(FinanceRequestContext context, Guid calendarId, CancellationToken cancellationToken = default) => EmptyYears;
     public Task<FinanceOperationResult<FinanceFiscalYearRecord>> CreateYearAsync(FinanceRequestContext context, FinanceFiscalYearCommand command, CancellationToken cancellationToken = default) => Task.FromResult(Unavailable<FinanceFiscalYearRecord>());
