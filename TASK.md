@@ -1,5 +1,53 @@
 # MESP-131 - Final Valuation-Integrity Remediation
 
+## MESP-131 guarded merge result and full Sol governance handoff - 24 August 2026
+
+Feature head: `db624fbb71d15ee55022e247df0f83894d026257`
+Base before merge: `b470179e1d18ef75c0a9247b2340407da6220dc4`
+PR: `#75`
+PR merge state: **Merged**
+Exact squash/main SHA: `a8664d6a0d006e463a1a03fadd76c28475475f58`
+
+Final validation: focused MESP-131 `44/44`; combined Inventory `89/89`; SQL
+safety accepted `40/40`; full backend `963/963` with 0 failed and 0 skipped;
+Release `0` warnings and `0` errors; Angular `254/254`; Playwright `5/5`
+focused and `32/32` full; bundle `499.94 kB` initial with `35.96 kB`
+valuation lazy chunk; npm audits `0 vulnerabilities`; `frontend/assets`
+untouched.
+
+Post-merge validation: build `0` warnings and `0` errors; focused MESP-131
+tests `44/44`; combined Inventory regression `89/89`. Runtime is running from
+merged `main`: backend `http://localhost:5300`, PID `26856`, `/health` HTTP
+200; frontend `http://localhost:4300`, PID `39044`, `/` HTTP 200 and `/main.js`
+HTTP 200.
+
+Sol/Jira references: `11779`, `11780`, `11781`, `11782`, `11783`, `11784`,
+`11785`, `11786`, `11788`, `11789`, `11794`, `11797`, `11799`, `11835`,
+`11839`, `11840`, `11841`. No Jira writes were performed. The Opus critical
+checkpoint was completed once; no second Opus review is required. Both Opus P1
+findings were remediated and Sol-accepted. Deferred Opus P2 follow-up remains:
+ScopeMode transition before first valuation process; `/valuation/pending`
+omission of Blocked events; correction BaseUnitCost evidence semantics; and
+mixed-functional-currency summary guard.
+
+MESP-131 still requires Jira closure by Sol. MESP-132 is **not yet
+activated**. No Finance, GL, AP, AR, Sales, generic Reporting,
+migration/cutover, or downstream implementation was started.
+
+### Next action - Sol governance
+
+Sol must:
+
+1. Verify merged `main` SHA `a8664d6a0d006e463a1a03fadd76c28475475f58`.
+2. Record final MESP-131 Jira closure.
+3. Move MESP-131 to Done.
+4. Reconcile the MESP-8 Inventory Epic.
+5. Evaluate and activate MESP-132 as the next implementation capability.
+6. Issue the next Luna xHigh execution prompt.
+
+Do not put the MESP-132 implementation prompt in `TASK.md`; Sol writes it
+after governance closure.
+
 <!-- MESP-131-JIRA-SYNC-START -->
 ## Jira/documentation synchronization â€” 23 August 2026
 
@@ -17,7 +65,7 @@ Jira traceability has been reconciled without closing MESP-131:
   the independent review authority.
 - Latest Sol final-delta acceptance comment: `11794`.
 
-Draft PR #75 remains unmerged and Sol acceptance is still required.
+PR #75 is merged; MESP-131 Jira closure remains owned by Sol.
 <!-- MESP-131-JIRA-SYNC-END -->
 
 Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
@@ -34,16 +82,15 @@ Exact bounded migration-repair session start SHA:
 
 Pre-repair implementation SHA: `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`
 
-Final branch SHA: the validated migration-repair handoff commit is reported in
-the completion response after this bounded session is committed and pushed.
+Final branch SHA: `db624fbb71d15ee55022e247df0f83894d026257`; squash/main SHA:
+`a8664d6a0d006e463a1a03fadd76c28475475f58`.
 
-Draft PR: `#75` - Open, Draft, Unmerged; base `main`.
+PR: `#75` - Merged into `main`; base `main`.
 
 Jira is read-only for this bounded session. No Jira writes were performed.
-MESP-131 remains In Progress until Sol accepts the exact final branch SHA.
-Do not mark the PR Ready, merge, rebase, force-push, create another PR, or
-start MESP-132 automatically. Sol owns the independent delta acceptance
-handoff; no Opus prompt is created by this session.
+MESP-131 remains Jira In Progress until Sol records closure. No rebase,
+force-push, second PR, or automatic MESP-132 implementation was performed.
+Sol owns the governance closure handoff; no MESP-132 prompt is created here.
 
 ## Repository Facts Confirmed
 
@@ -613,10 +660,11 @@ without printing or persisting credentials.
 
 ## Exact Next Action
 
-Sol performs acceptance against the exact final branch SHA and Draft PR #75.
-The PR remains Draft and unmerged. The Owner decides whether to merge after
-acceptance. No Jira writes were performed, and no next implementation task is
-started automatically.
+Superseded by the guarded merge handoff at the top of this file. Sol now
+verifies merged main, records final MESP-131 Jira closure, moves MESP-131 to
+Done, reconciles MESP-8, evaluates/activates MESP-132, and issues the next
+Luna xHigh prompt. No Jira writes were performed, and no implementation task
+is started automatically.
 
 # MESP-130 - FINAL LEDGER-FENCE REMEDIATION: GPT-5.6 Sol Acceptance Handoff
 

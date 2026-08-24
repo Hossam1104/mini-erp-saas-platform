@@ -23,9 +23,13 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### MESP-131 final valuation-integrity remediation - 24 August 2026
+### MESP-131 guarded merge complete - 24 August 2026
 
-The final bounded remediation is implemented on Draft PR #75 at the
+The final bounded MESP-131 capability is merged through PR #75 into `main` at
+the exact squash SHA `a8664d6a0d006e463a1a03fadd76c28475475f58`. The approved
+feature head is `db624fbb71d15ee55022e247df0f83894d026257`; the pre-merge main
+base is `b470179e1d18ef75c0a9247b2340407da6220dc4`. The final bounded
+remediation was implemented from the
 pre-repair baseline `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; the bounded
 EF migration repair starts at exact SHA
 `48ddf07a645da0130699314243ae8b23907b3bfc`. It isolates known-policy
@@ -33,8 +37,8 @@ valuation failures by tracking scope, preserves conservative missing-policy
 base-pool blocking, closes full depletion against stored value with explicit
 formula/rounding/actual-value evidence, and reports impossible valuation state
 as `ValuationMismatch` instead of complete reconciliation. MESP-131 remains
-In Progress, Draft, unmerged, and pending Sol acceptance; no downstream
-Finance or MESP-132 implementation was started.
+Jira In Progress pending Sol closure; no downstream Finance or MESP-132
+implementation was started.
 
 The final P1 correction-quantity commit is
 `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`.
@@ -58,24 +62,25 @@ untouched.
 
 The latest **merged** Inventory capability is **MESP-130 â€” Stock Adjustment, Inventory Count, Stock Issue, and Corrections**, merged in PR #74 at `b470179e1d18ef75c0a9247b2340407da6220dc4`.
 
-The current active capability is **MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting**. It is implemented on Draft PR #75 at P1 remediation commit `5908ce2645929c0881e4fd7e9ebf0d9b67d4acb1` from the required main base `b470179e1d18ef75c0a9247b2340407da6220dc4`.
+The current merged capability is **MESP-131 — Moving Weighted Average valuation, reconciliation, and inventory reporting**. Its accepted feature head is `db624fbb71d15ee55022e247df0f83894d026257` and PR #75 is merged into `main`.
 
-MESP-131 remains **In Progress, Draft, unmerged, and pending Sol acceptance**.
+MESP-131 remains **In Progress in Jira pending Sol closure**; MESP-132 is not
+yet activated.
 
 The implementation adds Inventory-owned deterministic MWA valuation evidence over the immutable physical ledger: Company-scoped `LedgerSequence`, versioned valuation policy, functional currency and MESP-120 Exchange Rate snapshots, append-only valuation history, pending/blocked predecessor handling, Warehouse Transfer/In-Transit value lineage, correction/reversal evidence, reconciliation, Finance handoff facts, bounded valuation reporting/export, and a lazy EN/AR RTL valuation workspace.
 
 It does **not** implement GL, AP, AR, tax posting, payments, Sales, generic Reporting, migration/cutover, external providers, statutory/ZATCA/FATOORA, or Wafra-specific reusable core behavior.
 
-The tracked project-control source of truth is [`docs/staticts.md`](docs/staticts.md). The conservative production-readiness headline remains approximately **47% overall** and approximately **41% Procurement/P2P** pending Sol acceptance and merge of MESP-131. Fast-track capability completion before accepting MESP-131 is **14/26 = 53.8%**; that is not production readiness.
+The tracked project-control source of truth is [`docs/staticts.md`](docs/staticts.md). The conservative production-readiness headline remains approximately **47% overall** and approximately **41% Procurement/P2P**; the merge does not change those production-readiness figures. Fast-track capability completion is **15/26 = 57.7%**; that is not production readiness.
 
-### MESP-131 implementation evidence pending Sol acceptance
+### MESP-131 accepted implementation evidence
 
 | Check | Executor-reported result |
 |---|---:|
 | Focused MESP-131 valuation | 44/44 |
 | Combined Inventory regression | 89/89 |
 | SQL Server safety harness | 40/40 against disposable LocalDB (previous baseline 39) |
-| Full backend disposable-LocalDB suite | 961/961, 0 failed, 0 skipped |
+| Full backend disposable-LocalDB suite | 963/963, 0 failed, 0 skipped |
 | Release build | 0 warnings / 0 errors |
 | Angular unit tests | 254/254 across 35 spec files |
 | Production initial bundle | 499.94 kB |
@@ -122,7 +127,7 @@ Legend: âœ… merged/usable at a bounded scope Â· ðŸš§ implemented/activ
 | Inventory ledger/opening/availability/reservation/tracking | âœ… | MESP-128 authoritative physical ledger foundation |
 | Goods Receipt physical effects / Transfers / In Transit / Supplier Return stock | âœ… | MESP-129 immutable movement lineage |
 | Stock Adjustment / Counts / Stock Issue / corrections | âœ… | MESP-130 count fences, SoD, blind counting and correction history |
-| MWA valuation / Inventory reconciliation | ðŸš§ | MESP-131 Draft PR #75; pending Sol acceptance and merge |
+| MWA valuation / Inventory reconciliation | merged | MESP-131 PR #75 merged; bounded Inventory-owned capability, with Jira closure pending |
 | Core Finance: COA / periods / journals / GL | ðŸ“‹ | MESP-132+ |
 | AP / AR / cash / settlement | ðŸ“‹ | Downstream Finance |
 | B2B Sales / Order-to-Cash | ðŸ“‹ | Required Release 1 work; not started |
@@ -325,7 +330,7 @@ or local database process as a production deployment model.
 
 ## Scope discipline
 
-MESP-130 is merged to `main` at `b470179e1d18ef75c0a9247b2340407da6220dc4`. MESP-131 is implemented on Draft PR #75 and remains unmerged pending Sol acceptance.
+MESP-130 is merged to `main` at `b470179e1d18ef75c0a9247b2340407da6220dc4`. MESP-131 is merged through PR #75 at `a8664d6a0d006e463a1a03fadd76c28475475f58`; Sol owns Jira closure.
 
 Inventory valuation produces operational valuation and Finance handoff facts only. It does not create Finance journals, GL/AP/AR, tax/payment effects, B2B Sales, generic Reporting, migration/cutover, external/statutory integrations, or Wafra-specific core behavior.
 

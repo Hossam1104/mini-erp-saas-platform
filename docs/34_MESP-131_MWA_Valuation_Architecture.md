@@ -251,12 +251,12 @@ policy evidence truthful, adds Finance Direction/SignedBaseAmount, and preserves
 the old MESP-131 migration byte-for-byte. MESP-128/129/130 migrations are not
 rewritten.
 
-## Reported validation pending Sol acceptance
+## Accepted validation and guarded merge result - 24 August 2026
 
-- Focused MESP-131 valuation: `42/42`
-- Combined Inventory regression: `87/87`
+- Focused MESP-131 valuation: `44/44`
+- Combined Inventory regression: `89/89`
 - SQL Server safety: `40/40` (previous baseline `39`)
-- Full backend disposable-LocalDB suite: `961/961`, 0 failed, 0 skipped
+- Full backend disposable-LocalDB suite: `963/963`, 0 failed, 0 skipped
 - Model-change detection: clean
 - Release build: 0 warnings / 0 errors using isolated output so the Owner
   runtime's in-place Release assemblies remained locked and intact
@@ -268,7 +268,10 @@ rewritten.
 - npm audits: 0 vulnerabilities
 - `frontend/assets`: untouched
 
-These are executor-reported results. MESP-131 remains In Progress until Sol accepts the exact live branch head and PR #75 is subsequently merged.
+These are accepted results on feature head
+`db624fbb71d15ee55022e247df0f83894d026257`. PR #75 is squash-merged into
+`main` at `a8664d6a0d006e463a1a03fadd76c28475475f58`; MESP-131 remains Jira In
+Progress only until Sol records closure.
 
 ## Jira traceability
 

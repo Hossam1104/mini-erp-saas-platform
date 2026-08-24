@@ -1,5 +1,23 @@
 # Current State
 
+## MESP-131 guarded merge state - 24 August 2026
+
+PR #75 is merged into `main` at exact squash SHA
+`a8664d6a0d006e463a1a03fadd76c28475475f58`. The approved feature head was
+`db624fbb71d15ee55022e247df0f83894d026257`, from pre-merge main base
+`b470179e1d18ef75c0a9247b2340407da6220dc4`. Post-merge Release build passed
+with 0 warnings and 0 errors; focused MESP-131 valuation passed `44/44`; the
+combined Inventory regression passed `89/89`. The official merged-main runtime
+is backend `http://localhost:5300` PID `26856` and frontend
+`http://localhost:4300` PID `39044`; `/health`, `/`, and `/main.js` returned
+HTTP 200. `frontend/assets` is untouched.
+
+Sol owns Jira closure, MESP-8 reconciliation, and evaluation/activation of
+MESP-132. No Jira writes or MESP-132 implementation were performed. The Opus
+critical checkpoint was completed once; no second Opus review is required.
+Both P1 findings were remediated and Sol-accepted; four Opus P2 observations
+remain deferred as recorded in `TASK.md`.
+
 <!-- MESP-131-JIRA-SYNC-START -->
 ## Jira/documentation synchronization â€” 23 August 2026
 
@@ -17,7 +35,7 @@ Jira traceability has been reconciled without closing MESP-131:
   authority for this branch.
 - Latest Sol final-delta acceptance comment: `11794`.
 
-Draft PR #75 remains unmerged and Sol acceptance is still required.
+PR #75 is merged into `main`; Sol closure is still required in Jira.
 <!-- MESP-131-JIRA-SYNC-END -->
 
 ## Current authoritative position - 24 August 2026 (MESP-131 final P1 correction-quantity remediation; Sol acceptance handoff)
@@ -27,7 +45,8 @@ MESP-131 is implemented on branch
 main base `b470179e1d18ef75c0a9247b2340407da6220dc4` and exact migration-repair
 session start `48ddf07a645da0130699314243ae8b23907b3bfc`. The pre-repair
 implementation baseline is `42794bda13bada7f37dcbf6ef6b8cc8e73eba889`; Draft
-PR #75 is Open, Draft, and unmerged. The final P1 correction-quantity
+PR #75 is merged into `main` at the guarded-merge squash SHA recorded above.
+The final P1 correction-quantity
 source/test commit is `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`; the final
 documentation handoff tip is reported with the completion response after this
 state update. Jira finding source is comment `11835` and Sol hold is comment
@@ -134,19 +153,20 @@ Release solution build `0` warnings/`0` errors, Angular
 both npm audits `0` vulnerabilities, production initial bundle `499.94 kB`,
 and valuation lazy chunk `35.96 kB`.
 
-The official launcher restarted the final runtime on backend
-`http://localhost:5300` PID `44188` and frontend `http://localhost:4300` PID
-`20316`. `/health`, `/`, and `/main.js` each returned HTTP 200; both
+The official launcher restarted the merged-main runtime on backend
+`http://localhost:5300` PID `26856` and frontend `http://localhost:4300` PID
+`39044`. `/health`, `/`, and `/main.js` each returned HTTP 200; both
 repository-owned processes remain alive for Owner inspection. The explicit
 loopback-only Development auth bypass was used without printing credentials.
 
 The overall Production-Ready Completion headline remains approximately 47%
-overall and 41% Procurement/P2P pending Sol acceptance/merge. The fast-track
-ratio before MESP-131 acceptance is 14/26 = 53.8%, not production readiness.
+overall and 41% Procurement/P2P; the merge does not change production
+readiness. Fast-track capability completion is now 15/26 = 57.7%, not
+production readiness.
 No MESP-132, Finance GL/AP/AR, Sales, generic Reporting, migration/cutover,
 external/statutory, or Wafra-specific core implementation was started. The
-next exact action is Sol acceptance of the exact final branch tip and Draft
-PR #75. No Opus prompt is created by this handoff.
+next exact action is Sol governance closure of merged MESP-131 and evaluation
+of MESP-132 activation. No Opus prompt is created by this handoff.
 
 ## Current authoritative position - 23 August 2026 (MESP-130 final ledger-fence remediation complete; Sol acceptance handoff)
 
