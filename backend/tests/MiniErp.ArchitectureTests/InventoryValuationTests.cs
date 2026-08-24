@@ -346,6 +346,88 @@ public sealed class InventoryValuationTests
     }
 
     [Fact]
+    public void Moving_weighted_average_correction_preserves_fractional_physical_quantity()
+    {
+        Assert.True(MovingWeightedAverageCalculator.TryApplyCorrection(
+            new MovingWeightedAverageCorrectionInput(
+                InventoryMovementDirection.Outbound,
+                0.001m,
+                0.10m,
+                1.005m,
+                100.50m,
+                2,
+                2,
+                InventoryValuationRoundingMode.ToEven),
+            out var output,
+            out var error), error);
+
+        Assert.Equal(1.004m, output.NewQuantity);
+        Assert.Equal(100.40m, output.NewValue);
+        Assert.Equal(100m, output.AverageUnitCost);
+        Assert.Equal(-0.10m, output.MovementValue);
+        Assert.Equal(0.10m, output.FormulaMovementValue);
+        Assert.Equal(0m, output.RoundingAdjustmentAmount);
+    }
+
+    [Fact]
+    public async Task Fractional_stock_adjustment_correction_preserves_quantity_and_reconciles()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<InventoryDbContext>().UseSqlite(connection).Options;
+        var context = Context();
+        var adjustmentId = Guid.NewGuid();
+        var correctionId = Guid.NewGuid();
+        var postedAt = DateTimeOffset.UtcNow;
+        await AddMovementsAsync(options, context,
+            CustomMovement(Guid.NewGuid(), CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 1.004m, 100m, "SAR", new DateOnly(2026, 1, 1), postedAt),
+            CustomMovement(adjustmentId, CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Inbound, 0.001m, null, null, new DateOnly(2026, 1, 2), postedAt.AddSeconds(1), sourceType: InventoryMovementSourceType.StockAdjustment),
+            CustomMovement(correctionId, CompanyId, WarehouseId, ProductId, UnitId, InventoryMovementDirection.Outbound, 0.001m, null, null, new DateOnly(2026, 1, 3), postedAt.AddSeconds(2), sourceType: InventoryMovementSourceType.Correction, correctionOfMovementId: adjustmentId));
+        var persistence = new InventoryValuationPersistence(options, null, null, null);
+        await CreatePolicyAsync(persistence, context, Policy(new DateOnly(2026, 1, 1), unitCostScale: 2, amountScale: 2), "fractional-correction-policy");
+
+        var result = await persistence.ProcessAsync(context, ProcessCommand("fractional-correction-process"));
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Equal(3, result.Value!.AppliedCount);
+        var events = (await persistence.ListEventsAsync(context, new InventoryValuationQuery(CompanyId))).OrderBy(item => item.LedgerSequence).ToArray();
+        var adjustment = Assert.Single(events, item => item.MovementId == adjustmentId);
+        Assert.Equal(InventoryValuationEventStatus.Applied, adjustment.Status);
+        Assert.Equal(0.001m, adjustment.Quantity);
+        Assert.Equal(1.004m, adjustment.PriorQuantity);
+        Assert.Equal(1.005m, adjustment.NewQuantity);
+        Assert.Equal(0.10m, adjustment.MovementValue);
+        Assert.Equal(100.50m, adjustment.NewValue);
+
+        var correction = Assert.Single(events, item => item.MovementId == correctionId);
+        Assert.Equal(InventoryValuationEventStatus.Applied, correction.Status);
+        Assert.Equal(1.005m, correction.PriorQuantity);
+        Assert.Equal(0.001m, correction.Quantity);
+        Assert.Equal(1.004m, correction.NewQuantity);
+        Assert.Equal(-0.10m, correction.MovementValue);
+        Assert.Equal(100.40m, correction.NewValue);
+        Assert.Equal(correction.PriorQuantity - correction.Quantity, correction.NewQuantity);
+
+        var state = Assert.Single(await persistence.ListStatesAsync(context, new InventoryValuationQuery(CompanyId)));
+        Assert.Equal(1.004m, state.Quantity);
+        Assert.Equal(100.40m, state.Value);
+        Assert.Equal(100m, state.AverageUnitCost);
+
+        var handoff = Assert.Single(
+            await persistence.ListFinanceHandoffsAsync(context, new InventoryValuationQuery(CompanyId)),
+            item => item.MovementId == correctionId);
+        Assert.Equal(0.001m, handoff.Quantity);
+        Assert.Equal(InventoryMovementDirection.Outbound, handoff.Direction);
+        Assert.Equal(100m, handoff.BaseUnitCost);
+        Assert.Equal(0.10m, handoff.BaseAmount);
+        Assert.Equal(-0.10m, handoff.SignedBaseAmount);
+
+        var reconciliation = Assert.Single(await persistence.ReconcileAsync(context, new InventoryValuationQuery(CompanyId)));
+        Assert.Equal(0m, reconciliation.QuantityDifference);
+        Assert.Equal(InventoryValuationReconciliationStatus.Reconciled, reconciliation.Status);
+    }
+
+    [Fact]
     public async Task Fractional_inbound_preserves_physical_quantity_and_finance_amount()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

@@ -269,9 +269,9 @@ public static class MovingWeightedAverageCalculator
             ? Round(input.RoundingAdjustmentAmount.Value, input.AmountScale, input.RoundingMode)
             : Round(reversalValue - formulaReversalValue, input.AmountScale, input.RoundingMode);
         var newQuantity = input.Direction == InventoryMovementDirection.Inbound
-            ? Round(priorQuantity + quantity, input.AmountScale, input.RoundingMode)
+            ? priorQuantity + quantity
             : input.Direction == InventoryMovementDirection.Outbound
-                ? Round(priorQuantity - quantity, input.AmountScale, input.RoundingMode)
+                ? priorQuantity - quantity
                 : -1m;
         var newValue = input.Direction == InventoryMovementDirection.Inbound
             ? Round(priorValue + reversalValue, input.AmountScale, input.RoundingMode)
