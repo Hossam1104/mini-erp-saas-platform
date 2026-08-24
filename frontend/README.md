@@ -6,6 +6,24 @@
 > **MESP-131 executor-reported frontend evidence.** Angular `254/254` across 35 spec files; production initial total `499.94 kB` with valuation lazy chunk `35.96 kB`; focused MESP-131 Chromium `5/5`; full Chromium `32/32`; both npm audits report 0 vulnerabilities. Draft PR #75 remains open/Draft/unmerged pending Sol acceptance. Sol acceptance comments are `11788` and `11789`; no Jira writes were performed.
 <!-- MESP-131-CURRENT-END -->
 
+<!-- MESP-132-CURRENT-START -->
+> **MESP-132 Finance workspace - 24 August 2026.** The shell now lazy-loads
+> `/app/finance` with server-populated Company context and bounded tabs for
+> Chart of Accounts, Fiscal Periods, Journals, Posting Rules, Inventory
+> Finance Handoff, and GL inquiry. Manual journal UX shows debit, credit, and
+> difference while the backend remains authoritative for balance, period,
+> account, dimension, FX, mapping, authorization, and source uniqueness.
+> The new surface preserves EN/AR, RTL/LTR, safe errors, responsive forms,
+> accessible labels, and no raw GUID entry.
+>
+> **MESP-132 validation.** Angular passes `258/258` across 37 spec files;
+> production initial total is `496.34 kB`, Finance lazy chunk is `36.60 kB`,
+> focused Finance Chromium is `2/2`, full Chromium is `34/34`, and both npm
+> audits report `0 vulnerabilities`. The implementation branch is
+> `feat/MESP-132-finance-foundation`, implementation commit `af86b78` from
+> exact base `fcec241dfedb529fef89d4336adf1e571917c52a`.
+<!-- MESP-132-CURRENT-END -->
+
 > **Historical MESP-129 workspace overlay - 22 August 2026.** The Inventory
 > workspace now exposes server-authorized Warehouse Transfers with direct and
 > two-step/InTransit flows, partial receipt, shortage/loss and overage-safe
@@ -121,6 +139,11 @@ Current MESP-131 implementation evidence pending Sol acceptance:
 - Both npm audits: **0 vulnerabilities**.
 - `frontend/assets`: **untouched**.
 
+Current MESP-132 implementation evidence is recorded above and in
+`docs/35_MESP-132_Finance_Foundation_Architecture.md`. The Finance route is
+implemented but remains subject to Sol acceptance of the Draft PR; it is not
+a production-readiness claim.
+
 The Playwright checks are automated API-fixture/browser evidence, not a manual interactive production sign-off.
 
 Terminal Cancelled/Rejected Purchase Order detail communicates the bounded
@@ -152,6 +175,6 @@ inventing business data.
 
 Tenant schema/migrations, DNS/TLS provisioning, full Platform Administration,
 Purchase Order downstream effects (stock, invoice posting, AP, payment,
-accounting), Inventory, Finance posting, B2B Sales, Retail POS,
-Wafra-specific core behavior, production deployment, and external/statutory
-country-pack behavior remain explicitly out of scope.
+accounting), Inventory, AP/AR/cash/bank Finance follow-on, B2B Sales, Retail
+POS, Wafra-specific core behavior, production deployment, generic Reporting,
+and external/statutory country-pack behavior remain explicitly out of scope.

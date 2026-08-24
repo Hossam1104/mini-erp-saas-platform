@@ -25,6 +25,61 @@ MESP-131 is implemented on Draft PR #75 and is pending Sol acceptance/merge. It 
 See `docs/34_MESP-131_MWA_Valuation_Architecture.md` for the full bounded handoff.
 <!-- MESP-131-ARCH-END -->
 
+<!-- MESP-132-ARCH-START -->
+## Current MESP-132 Finance foundation overlay - 24 August 2026
+
+MESP-132 adds the bounded Company-owned Finance / GL foundation on branch
+`feat/MESP-132-finance-foundation`, from exact base
+`fcec241dfedb529fef89d4336adf1e571917c52a`, at implementation commit
+`af86b78`. It follows the existing four-project direction: Contracts expose
+Finance records, App owns request context/authorization seams, Infrastructure
+owns `FinanceDbContext`, `finance` schema entities/migrations and provider
+composition, and Api maps the REST/OpenAPI surface without a direct EF
+dependency.
+
+- **Company boundary:** server-configured active Companies are the Finance
+  book boundary. Each Company owns functional currency, COA, fiscal calendar,
+  periods, dimensions, journals, GL facts and posting rules; no Tenant-wide
+  accounting currency or cross-Company book is inferred.
+- **COA:** normalized Company-unique account codes, five standard account
+  types, hierarchy/cycle checks, posting/grouping eligibility, lifecycle and
+  effective dates, optimistic versions, and account code/name snapshots on
+  journal lines.
+- **Fiscal control:** explicit Company Calendar, Year and non-overlapping
+  Period boundaries. Periods are Draft/Open/SoftClosed/Closed; posting-date
+  resolution is server-side and ambiguous/no-period resolution fails closed.
+  No automatic year-end retained-earnings, P&L close, carry-forward or
+  opening journal is fabricated.
+- **Finance dimension:** Cost Center is the bounded approved dimension. The
+  repository had no existing persisted Master Data Cost Center to reuse, so
+  the narrow Company-applicable structure is Finance-owned; no other generic
+  dimensions are introduced.
+- **GL:** Draft/Submitted/Approved/Rejected/Cancelled/Posted/Reversed
+  journals, immutable Posted lines, exact functional-currency balancing,
+  account/dimension/period checks, controlled equal-and-opposite reversal,
+  and derived GL inquiry over Posted Journal Lines.
+- **Rules and lineage:** versioned effective-dated source/event mappings,
+  explicit lifecycle, deterministic single-rule selection, exact
+  `inventory-valuation-finance.v1` handoff consumption, and Tenant/Company/
+  contract/evidence/version uniqueness for source financial effects.
+- **Security and resilience:** trusted Tenant/Company context, exact
+  operation permissions, existing approval/SoD seams, antiforgery,
+  idempotency, If-Match concurrency, Serializable transactions, safe Problem
+  Details and immutable audit evidence.
+- **Frontend:** lazy `/app/finance` with server-provided selectors, bounded
+  Finance and GL views, EN/AR and RTL support, accessible responsive forms,
+  and no raw GUID entry. Finance does not compute accounting authority in the
+  browser.
+
+The formal Finance migration creates only Finance-owned tables and preserves
+Tenancy ownership of shared `tenancy.TenantOwnedRecords`. Production SQL
+provider selection, migration/cutover, backup/restore, legal/specialist
+validation and external/statutory integration remain production gates.
+
+See `docs/35_MESP-132_Finance_Foundation_Architecture.md` for the bounded
+implementation handoff and explicit deferred scope.
+<!-- MESP-132-ARCH-END -->
+
 > **Current MESP-123 B2 implementation overlay - 16 August 2026.** The
 > approved shared SQL Server direction now has a bounded local Development
 > execution path: an explicit `MESP_SQLSERVER_CONNECTION_STRING` selects the

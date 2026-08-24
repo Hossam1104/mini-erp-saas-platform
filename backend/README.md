@@ -9,6 +9,27 @@
 > **MESP-131 accepted validation.** Focused valuation `44/44`; combined Inventory regression `89/89`; SQL Server safety `40/40` against disposable LocalDB; canonical disposable-LocalDB backend `963/963` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `254/254` across 35 specs; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused Chromium `5/5`; full Chromium `32/32`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. PR #75 is merged into `main`; no Jira writes were performed.
 <!-- MESP-131-CURRENT-END -->
 
+<!-- MESP-132-CURRENT-START -->
+> **MESP-132 Core Finance / GL foundation - 24 August 2026.** The backend now
+> owns Company-scoped Chart of Accounts, Fiscal Calendar/Year/Period control,
+> approved Cost Center dimension support, manual Journal lifecycle, balanced
+> functional-currency posting, controlled reversal, immutable Posted Journal
+> Lines as GL facts, versioned/effective-dated Posting Rules, durable
+> source-to-GL uniqueness, exact MESP-120 Exchange Rate evidence, and the
+> `inventory-valuation-finance.v1` Inventory handoff consumer. Finance does
+> not mutate Inventory, does not seed customer accounts, and does not add
+> AP/AR, cash/bank, tax, financial statements, generic Reporting, Sales,
+> migration/cutover, external/statutory, or Wafra-specific behavior.
+>
+> **MESP-132 validation.** Focused Finance `5/5`; REST/OpenAPI plus
+> host-security subset `52/52`; prior Inventory regression `89/89`; SQL
+> safety `41/41`; disposable-LocalDB backend `969/969` with 0 failed/0
+> skipped; Release build 0 warnings/0 errors; Finance migration model-change
+> detection reports no changes; no Owner-managed asset changes. The active
+> branch is `feat/MESP-132-finance-foundation` at implementation commit
+> `af86b78`, based on `fcec241dfedb529fef89d4336adf1e571917c52a`.
+<!-- MESP-132-CURRENT-END -->
+
 > **Historical MESP-129 runtime overlay - 22 August 2026.** The backend now
 > consumes authoritative Procurement Goods Receipt lines for one-time accepted
 > quantity posting, blocks Goods Receipt cancellation while an active physical

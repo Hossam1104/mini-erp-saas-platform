@@ -779,3 +779,123 @@ Sol performs final acceptance against the exact final branch tip and Draft PR
 `#74`, then the Owner decides whether to merge. Do not start another
 implementation task automatically. No Opus review prompt is created by this
 handoff.
+# MESP-132 - CORE FINANCE / GL FOUNDATION: SOL ACCEPTANCE HANDOFF
+
+## Session identity
+
+Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
+Branch: `feat/MESP-132-finance-foundation`
+Exact required base SHA: `fcec241dfedb529fef89d4336adf1e571917c52a`
+Implementation SHA: `af86b78` (`feat: implement MESP-132 finance foundation`)
+Final branch SHA: recorded after the documentation/tracker handoff commit.
+Draft PR: one Open/Draft/unmerged PR to `main`; actual number is recorded
+after push and must not be assumed.
+
+Jira is read-only for this implementation session. Existing facts are:
+
+- MESP-132 In Progress / activated: `11845`;
+- MESP-10 In Progress / activated: `11844`;
+- MESP-131 Done / closure: `11842`;
+- MESP-8 Done / closure: `11843`.
+
+No Jira writes were performed. No Claude Opus 5 review was performed or
+requested, and no Opus prompt is included. Sol owns acceptance of this exact
+final branch SHA.
+
+## Architecture delivered
+
+- **Company books:** Finance is Company/legal-entity scoped inside a trusted
+  Tenant. Each Company owns its COA, functional currency, Fiscal Calendar,
+  Fiscal Years, Periods, journals, GL facts, posting rules, and reconciliation
+  state. No universal Tenant currency is inferred; SAR is only an explicit
+  Company fixture/configuration value.
+- **COA:** normalized code, Tenant + Company uniqueness, English/optional
+  Arabic name, parent, Asset/Liability/Equity/Revenue/Expense type, posting
+  eligibility, currency behavior, effective dates, lifecycle, concurrency and
+  historical account snapshots.
+- **Hierarchy:** same-Company parent validation, self-parent rejection,
+  ancestry-cycle protection and deterministic account ordering. No customer
+  account seed or Wafra code is authoritative.
+- **Fiscal Calendar / Year / Period:** Finance-owned Company Calendar with
+  explicit Year boundaries and non-overlapping Periods inside one Year.
+  Period lifecycle is Draft, Open, SoftClosed, Closed; posting date resolves
+  to exactly one period and missing/ambiguous resolution fails closed.
+- **Year-end boundary:** no retained-earnings, automatic P&L close,
+  carry-forward, equity mapping, or opening journal mechanic was fabricated.
+- **Cost Center:** approved bounded Finance dimension. Repository inspection
+  found no existing persisted Master Data Cost Center to reuse, so the narrow
+  Company-applicable `finance.CostCenters` structure is Finance-owned. It is
+  lifecycle/effective-dated and server-authorized; no other dimensions were
+  invented.
+- **Journal / Lines:** Finance-owned Journal and Journal Lines preserve dates,
+  Company/functional/transaction currency, FX evidence, source lineage,
+  posting-rule identity/version, actors, correlation, reason, status, version,
+  account/dimension snapshots, debit/credit and functional amounts.
+- **Lifecycle:** Draft -> Submitted -> Approved -> Posted, with Rejected and
+  Cancelled before posting. Posting is separate from approval. Posted facts
+  are immutable.
+- **Balance invariant:** at least two lines; each line has exactly one positive
+  economic side; no negatives, both-sides, zero lines, suspense plug or
+  automatic balancing. Debit and credit must balance exactly in functional
+  currency after server FX validation.
+- **Post / reversal:** post validates Company, account, effective date,
+  posting eligibility, required dimension, exact period, rule determinism,
+  source uniqueness, and balance. Reversal creates a separate equal-and-
+  opposite Posted Journal, links the original, requires reason and eligible
+  period, and never mutates/deletes the original.
+- **Posting Rules:** Company-owned source/event mapping with monotonic version,
+  effective window, enabled/disabled lifecycle, debit/credit accounts and
+  Cost Center requiredness. Zero applicable rules are Pending Mapping;
+  multiple applicable rules are Ambiguous Mapping; no arbitrary rule choice.
+- **Multi-currency / MESP-120:** functional currency is the book balance;
+  transaction currency is preserved. Foreign currency requires exact active
+  direct MESP-120 Exchange Rate ID, Version ID, Version Number, rate, pair,
+  effective window and provenance. No inverse/latest/browser/external rate.
+- **MESP-131 handoff:** Finance consumes `inventory-valuation-finance.v1`
+  ReadyForFinance evidence, maps through one exact rule, creates/posts the
+  journal, records source lineage and durable uniqueness, and does not mutate
+  Inventory valuation or physical movement.
+- **Security:** trusted Tenant/Company context, exact operation permission,
+  reusable approval/SoD seams, antiforgery, safe errors, If-Match concurrency,
+  durable actor/key/fingerprint replay, Serializable transactions and audit.
+- **Angular:** lazy `/app/finance` Company-selected COA, periods, journals,
+  posting rules, Inventory handoff and GL inquiry; server selectors only,
+  EN/AR, RTL, accessible/responsive UI, no raw GUID entry.
+
+## Validation evidence
+
+- Focused Finance tests: `5/5`, 0 failed, 0 skipped.
+- REST/OpenAPI and host-security subset: `52/52`.
+- Prior Inventory regression: `89/89`.
+- SQL Server safety: `41/41` against disposable LocalDB; this is one case
+  above the accepted `40/40` baseline.
+- Full backend wrapper `scripts/Test-MiniErpBackend.ps1 -NoBuild:$false`:
+  `969/969`, 0 failed, 0 skipped; the disposable database was torn down and
+  the runtime connection remained unchanged.
+- Release solution build: 0 warnings, 0 errors.
+- EF Finance model-change check: no changes since the last migration.
+- Finance migration Designer: populated `BuildTargetModel` confirmed.
+- Angular unit tests: `258/258` across 37 spec files.
+- Production bundle: initial `496.34 kB`; Finance lazy chunk `36.60 kB`; no
+  initial-budget warning.
+- Focused Finance Playwright: `2/2`; full Chromium: `34/34`.
+- `npm audit --omit=dev` and `npm audit`: 0 vulnerabilities.
+- `git diff --check`: clean after final documentation changes.
+- `frontend/assets`: zero changes.
+
+## Deferred scope
+
+AP, AR, supplier/customer invoices, payments, receipts, allocations,
+settlement, cash/bank, tax/VAT, ZATCA/FATOORA, financial statements, generic
+Reporting, P&L/Balance Sheet/Cash Flow, AP/AR aging, consolidation,
+intercompany, fixed assets, payroll, treasury, budgeting, automated FX feeds,
+period-end revaluation, production migration/opening-balance execution,
+cutover, external providers, statutory certification, Sales, and Wafra-
+specific Finance behavior were not started.
+
+## Exact next action
+
+Sol verifies the exact final branch SHA and the single Draft PR, then accepts
+or returns the bounded MESP-132 implementation. Do not merge, mark Ready,
+rebase, force-push, create another PR, invoke Opus, or start MESP-133+ or
+downstream Finance/Sales/Reporting work automatically.

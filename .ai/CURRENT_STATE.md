@@ -1,5 +1,84 @@
 # Current State
 
+## MESP-132 Finance foundation implementation handoff - 24 August 2026
+
+MESP-132 is the active bounded implementation capability under Finance Epic
+MESP-10. Jira activation is already recorded (`MESP-132` comment `11845`,
+`MESP-10` comment `11844`); MESP-131 closure is `11842` and MESP-8 closure
+is `11843`. This session performed no Jira writes, did not invoke Claude
+Opus 5, and did not create an Opus review prompt.
+
+Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
+Branch: `feat/MESP-132-finance-foundation`
+Exact base: `fcec241dfedb529fef89d4336adf1e571917c52a`
+Implementation commit: `af86b78`
+Draft PR: one Open/Draft/unmerged PR to `main`; the actual number is recorded
+after push in the final handoff.
+
+### Delivered architecture
+
+- Finance books are Company/legal-entity scoped inside trusted Tenant scope;
+  functional currency is Company configuration, not a universal Tenant rule.
+- The Company-owned COA has normalized Company-unique codes, Asset/Liability/
+  Equity/Revenue/Expense types, hierarchy and cycle guards, grouping versus
+  posting eligibility, effective dates, lifecycle, concurrency, and historical
+  account code/name snapshots.
+- Finance owns the configured Fiscal Calendar, explicit Fiscal Years, and
+  non-overlapping Fiscal Periods. Periods are Draft/Open/SoftClosed/Closed;
+  posting-date resolution is exact and Closed/SoftClosed posting fails closed.
+  No retained-earnings, automatic P&L close, carry-forward, or opening journal
+  mechanic was invented.
+- Cost Center is the only bounded Finance posting dimension. Repository
+  inspection found terminology/BRD references but no existing persisted Master
+  Data Cost Center to reuse, so the narrow Company-applicable structure is
+  Finance-owned and lifecycle/effective validation is server-side.
+- Journals and lines implement Draft/Submitted/Approved/Rejected/Cancelled/
+  Posted/Reversed, exact one-sided line rules, functional-currency balance,
+  immutable Posted facts, controlled equal-and-opposite reversal, and bounded
+  GL inquiry derived from Posted Journal Lines.
+- Posting Rules are Company-owned, versioned, effective-dated, explicitly
+  enabled/disabled, and map one source/event to debit/credit accounts and
+  required Cost Center. Missing or ambiguous mappings fail closed.
+- Foreign currency preserves transaction facts and validates exact active
+  MESP-120 Exchange Rate identity/version/number/rate/effective window and
+  direct currency pair; no inverse/latest/browser/external rate is accepted.
+- Finance consumes `inventory-valuation-finance.v1` ReadyForFinance evidence,
+  applies deterministic configured mapping, records source-to-GL uniqueness,
+  and never mutates Inventory.
+- Trusted Tenant/Company authorization, exact operation permissions, reusable
+  approval/SoD seams, antiforgery, Idempotency-Key replay, If-Match versions,
+  Serializable writes, safe Problem Details and audit evidence are enforced.
+- Lazy Angular `/app/finance` provides Company-selected COA, periods, journals,
+  rules, handoff and GL views in EN/AR with RTL and no raw GUID entry.
+
+### Validation evidence
+
+- Focused Finance foundation: `5/5`.
+- REST/OpenAPI and host-security subset: `52/52`.
+- Prior Inventory regression: `89/89`.
+- SQL Server safety: `41/41` against disposable LocalDB (one new Finance
+  schema/ownership uniqueness case over the accepted `40/40` baseline).
+- Full backend wrapper: `969/969`, 0 failed, 0 skipped; disposable database
+  was torn down by the wrapper and the runtime connection was unchanged.
+- Release build: 0 warnings, 0 errors. Finance migration model-change check:
+  `No changes have been made to the model since the last migration.`
+- Angular: `258/258` across 37 spec files; initial bundle `496.34 kB`; Finance
+  lazy chunk `36.60 kB`; focused Finance Chromium `2/2`; full Chromium `34/34`;
+  both npm audits report 0 vulnerabilities.
+- Finance migration Designer contains a populated `BuildTargetModel`.
+  `frontend/assets` has zero changes.
+
+### Scope and next step
+
+AP/AR, invoices, payments, cash/bank, tax/VAT/ZATCA/FATOORA, financial
+statements, generic Reporting, Sales, year-end retained-earnings mechanics,
+consolidation/intercompany, fixed assets, payroll, treasury, budgeting,
+automated FX/revaluation, production migration/cutover, external providers,
+statutory certification, and Wafra-specific Finance behavior remain deferred.
+
+Sol accepts the exact final branch SHA and the single Draft PR. No next Finance
+task starts automatically and no Opus prompt is added.
+
 ## MESP-131 guarded merge state - 24 August 2026
 
 PR #75 is merged into `main` at exact squash SHA
