@@ -235,6 +235,20 @@ internal sealed class InventoryValuationPersistence(
                     continue;
                 }
 
+                // Keep the entity invariant as a deterministic processing
+                // boundary as well as a calculator invariant. No invalid
+                // calculated state may reach Apply or escape as an outage.
+                if (calculation.NewQuantity < 0m
+                    || calculation.NewValue < 0m
+                    || calculation.NewQuantity == 0m && calculation.NewValue != 0m)
+                {
+                    const string invariantCode = "valuation_state_invariant_violation";
+                    AddPendingEventIfMissing(db, existingEvents, context, movement, policy, state, invariantCode, invariantCode, command, InventoryValuationEventStatus.Blocked, baseCost, cost, correction?.OriginalValuationEventId);
+                    stoppedValuationScopes.Add(scopeKey);
+                    blocked++;
+                    continue;
+                }
+
                 var isBackdated = appliedEventsForCompany.Any(item => item.CompanyId == scopeKey.CompanyId && item.BranchId == scopeKey.BranchId && item.WarehouseId == scopeKey.WarehouseId && item.ProductId == scopeKey.ProductId && item.UnitOfMeasureId == scopeKey.UnitOfMeasureId && item.TrackingIdentity == scopeKey.TrackingIdentity && item.EffectiveOn > movement.EffectiveDate);
                 var eventEntity = new InventoryMovementValuationEventEntity(context.TenantId, Guid.NewGuid(), movement.Id, movement.LedgerSequence, InventoryValuationEventStatus.Applied, isBackdated ? "backdated_applied" : "applied", movement, policy, state.Quantity, state.Value, calculation.NewQuantity, calculation.NewValue, calculation.MovementValue, calculation.FormulaMovementValue, calculation.RoundingAdjustmentAmount, baseCost, cost.ExchangeRateId, cost.ExchangeRateVersionId, cost.ExchangeRateVersionNumber, cost.ExchangeRate, cost.ExchangeRateScale, cost.ExchangeRateProvenance, correction?.OriginalValuationEventId, null, isBackdated, null, command.ActorId, command.CorrelationId, command.OccurredAt, cost.TransactionUnitCost, cost.TransactionCurrencyCode);
                 db.MovementValuationEvents.Add(eventEntity);
@@ -314,7 +328,12 @@ internal sealed class InventoryValuationPersistence(
             var appliedMovementIds = movementStatuses.Where(item => item.HasApplied).Select(item => item.MovementId).ToHashSet();
             var pendingMovementStatuses = movementStatuses.Where(item => !item.HasApplied && item.HasPending).ToArray();
             var blockedMovementStatuses = movementStatuses.Where(item => !item.HasApplied && item.HasBlocked).ToArray();
-            var valuedQuantity = state?.Quantity ?? 0m; var quantityDifference = MovingWeightedAverageCalculator.Round(physicalQuantity - valuedQuantity, policy?.AmountScale ?? 8, policy?.RoundingMode ?? InventoryValuationRoundingMode.ToEven);
+            var valuedQuantity = state?.Quantity ?? 0m;
+            // Quantity is a physical ledger fact, not a monetary amount. Both
+            // values are persisted at decimal(28,8), so compare the exact
+            // stored decimal facts without AmountScale or a currency
+            // tolerance.
+            var quantityDifference = physicalQuantity - valuedQuantity;
             var appliedHandoffCount = handoffs.Count(item => appliedMovementIds.Contains(item.MovementId) && item.Status == InventoryFinanceValuationHandoffStatus.ReadyForFinance);
             var financeHandoffStatus = appliedMovementIds.Count == 0
                 ? InventoryFinanceValuationHandoffStatus.Pending

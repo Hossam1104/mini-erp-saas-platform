@@ -165,9 +165,12 @@ public static class MovingWeightedAverageCalculator
             return false;
         }
 
-        var priorQuantity = Round(input.PriorQuantity, input.AmountScale, input.RoundingMode);
+        // Quantity is a physical ledger fact. AmountScale controls monetary
+        // values only; do not collapse physical quantities to currency
+        // precision here.
+        var priorQuantity = input.PriorQuantity;
         var priorValue = Round(input.PriorValue, input.AmountScale, input.RoundingMode);
-        var quantity = Round(input.Quantity, input.AmountScale, input.RoundingMode);
+        var quantity = input.Quantity;
         var baseUnitCost = Round(input.BaseUnitCost, input.UnitCostScale, input.RoundingMode);
         decimal newQuantity;
         decimal movementValue;
@@ -180,7 +183,7 @@ public static class MovingWeightedAverageCalculator
             formulaMovementValue = Round(quantity * baseUnitCost, input.AmountScale, input.RoundingMode);
             movementValue = formulaMovementValue;
             roundingAdjustmentAmount = 0m;
-            newQuantity = Round(priorQuantity + quantity, input.AmountScale, input.RoundingMode);
+            newQuantity = priorQuantity + quantity;
             newValue = Round(priorValue + movementValue, input.AmountScale, input.RoundingMode);
         }
         else if (input.Direction == InventoryMovementDirection.Outbound)
@@ -199,7 +202,7 @@ public static class MovingWeightedAverageCalculator
 
             var priorAverageUnitCost = Round(input.PriorAverageUnitCost.Value, input.UnitCostScale, input.RoundingMode);
             formulaMovementValue = Round(quantity * priorAverageUnitCost, input.AmountScale, input.RoundingMode);
-            newQuantity = Round(priorQuantity - quantity, input.AmountScale, input.RoundingMode);
+            newQuantity = priorQuantity - quantity;
             if (newQuantity == 0m)
             {
                 // Full depletion closes the entire stored value. The difference
@@ -250,9 +253,12 @@ public static class MovingWeightedAverageCalculator
             return false;
         }
 
-        var priorQuantity = Round(input.PriorQuantity, input.AmountScale, input.RoundingMode);
+        // Correction quantities follow the same physical-ledger precision as
+        // ordinary movements. Only reversal values are monetary and may use
+        // AmountScale.
+        var priorQuantity = input.PriorQuantity;
         var priorValue = Round(input.PriorValue, input.AmountScale, input.RoundingMode);
-        var quantity = Round(input.Quantity, input.AmountScale, input.RoundingMode);
+        var quantity = input.Quantity;
         var reversalValue = input.IsFullReversal
             ? input.ReversalValue
             : Round(input.ReversalValue, input.AmountScale, input.RoundingMode);
@@ -278,6 +284,16 @@ public static class MovingWeightedAverageCalculator
             error = newQuantity < 0m
                 ? "correction_would_make_quantity_negative"
                 : "correction_would_make_value_negative";
+            return false;
+        }
+
+        if (newQuantity == 0m && newValue != 0m)
+        {
+            // A correction cannot silently absorb value drift that would
+            // leave an impossible zero-quantity/non-zero-value state. The
+            // processing path records the correction as Blocked and stops
+            // only this valuation scope for explicit remediation.
+            error = "correction_would_orphan_residual_value";
             return false;
         }
 
