@@ -28,19 +28,22 @@ module-owned persistence are product rules—not customer-specific forks.
 The repository is on synchronized `main` baseline
 `fcec241dfedb529fef89d4336adf1e571917c52a` with MESP-132 active under Finance
 Epic MESP-10. The feature branch is
-`feat/MESP-132-finance-foundation` with validated correctness remediation
-commit `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`; Draft PR #76 is Open, Draft, and
-unmerged. Implementation validation is pending Sol acceptance. The accepted
-fast-track count remains **15/26 = 57.7%** and production-readiness remains
-approximately **47% overall / 41% Procurement/P2P**.
+`feat/MESP-132-finance-foundation`; this final bounded remediation started at
+`2f523582fbd3394b1eb11580eff490ba83aa9afb` and its implementation commit is
+`dcae7e2`. Draft PR #76 remains Open, Draft, and unmerged. Sol acceptance is
+pending. The accepted fast-track count remains **15/26 = 57.7%** and
+production-readiness remains approximately **47% overall / 41% Procurement/P2P**.
 
 MESP-132 delivers the bounded Company-owned Finance / General Ledger
-foundation described below, with Finance `9/9`, REST/OpenAPI and host security
-`52/52`, SQL safety `41/41`, full backend `973/973`, Angular `258/258`,
-focused/full Chromium `2/2` and `34/34`, initial bundle `496.34 kB`, Finance
-lazy chunk `36.50 kB`, and clean npm audits. Runtime is backend
-`http://localhost:5300` PID `26896` and frontend `http://localhost:4300` PID
-`6244`, with recorded HTTP 200 health and Finance-route evidence.
+foundation described below. The final remediation forces the public Manual
+Journal contract to manual source identity, preserves trusted Inventory
+lineage, and adds five provider-realistic SQL Server concurrency races. Final
+evidence is Finance `12/12`, REST/OpenAPI and host security `53/53`, SQL safety
+`46/46`, full backend `982/982`, Angular `259/259`, focused/full Chromium
+`2/2` and `34/34`, initial bundle `496.34 kB`, Finance lazy chunk `36.45 kB`,
+and clean npm audits. Runtime is backend `http://localhost:5300` PID `23772`
+and frontend `http://localhost:4300` PID `28656`, with recorded HTTP 200 health
+and Finance-route evidence.
 
 ### MESP-131 guarded merge complete - 24 August 2026
 
@@ -96,16 +99,17 @@ It does **not** implement GL, AP, AR, tax posting, payments, Sales, generic Repo
 ### MESP-132 Core Finance foundation - implementation handoff - 24 August 2026
 
 MESP-132 is implemented on `feat/MESP-132-finance-foundation` through the
-correctness remediation commit `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`, from
-the exact required main base `fcec241dfedb529fef89d4336adf1e571917c52a`. The bounded
-capability adds Company-owned
+bounded source-authority and SQL concurrency implementation commit `dcae7e2`,
+from the exact required main base `fcec241dfedb529fef89d4336adf1e571917c52a`.
+The bounded capability adds Company-owned
 Chart of Accounts, Fiscal Calendar/Year/Period controls, approved Cost
 Center dimension support, manual journals, balanced functional-currency
 posting, reversal, immutable GL facts, versioned effective-dated posting
 rules, durable source-to-GL uniqueness, and consumption of the accepted
 `inventory-valuation-finance.v1` handoff. Finance uses trusted Tenant and
 Company scope, exact operation permissions, antiforgery, idempotency,
-optimistic concurrency, audit, and safe REST/OpenAPI outcomes.
+optimistic concurrency, audit, safe REST/OpenAPI outcomes, server-owned Manual
+Journal identity, and provider-realistic SQL Server race evidence.
 
 The Angular surface is lazy `/app/finance`, with Company selectors, COA,
 periods, journals, posting rules, Inventory handoff, and GL inquiry tabs in
@@ -121,15 +125,15 @@ commit.
 
 | Check | Result |
 |---|---:|
-| Focused Finance foundation and correctness remediation | 9/9 |
-| REST/OpenAPI and host-security subset | 52/52 |
+| Focused Finance foundation and correctness remediation | 12/12 |
+| REST/OpenAPI and host-security subset | 53/53 |
 | Prior Inventory regression | 89/89 |
-| SQL Server safety harness | 41/41 against disposable LocalDB |
-| Full backend disposable-LocalDB suite | 973/973, 0 failed, 0 skipped |
+| SQL Server safety harness | 46/46 against disposable LocalDB |
+| Full backend disposable-LocalDB suite | 982/982, 0 failed, 0 skipped |
 | Release build | 0 warnings / 0 errors |
-| Angular unit tests | 258/258 across 37 spec files |
+| Angular unit tests | 259/259 across 37 spec files |
 | Production initial bundle | 496.34 kB |
-| Finance lazy chunk | 36.50 kB |
+| Finance lazy chunk | 36.45 kB |
 | Focused Chromium Finance journeys | 2/2 |
 | Full Chromium suite | 34/34 |
 | npm audits | 0 vulnerabilities |

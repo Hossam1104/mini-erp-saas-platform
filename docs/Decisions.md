@@ -7,16 +7,18 @@ This file is the lightweight ADR index for Release 1. The approved architecture 
 MESP-132 is the active bounded implementation capability under Epic MESP-10,
 In Progress / activated. The feature branch is
 `feat/MESP-132-finance-foundation` at exact implementation head
-`0b627c5b127d92d5a99543f475867a187801a653`, based on synchronized main
+`dcae7e231bd264580c33e60c35f5cc8436c4f050`, based on synchronized main
 `fcec241dfedb529fef89d4336adf1e571917c52a`; Draft PR #76 is Open, Draft, and
 unmerged pending Sol acceptance. MESP-131 is the latest completed capability,
 with PR #75 merged at
 `a8664d6a0d006e463a1a03fadd76c28475475f58`; MESP-131 and MESP-8 are Done.
 
-The implementation validation baseline is Finance `5/5`, REST/OpenAPI and
-host security `52/52`, prior Inventory `89/89`, SQL safety `41/41`, full
-backend `969/969`, Angular `258/258`, focused/full Chromium `2/2` and `34/34`,
-and npm audits clean. Accepted fast-track completion remains `15/26 = 57.7%`;
+The final remediation validation is Finance `12/12`, REST/OpenAPI and host
+security `53/53`, prior Inventory `89/89`, SQL safety `46/46`, full backend
+`982/982`, Angular `259/259`, focused/full Chromium `2/2` and `34/34`, and npm
+audits clean. Public manual requests are source-authority constrained and the
+SQL suite proves five provider-realistic Finance races. Accepted fast-track
+completion remains `15/26 = 57.7%`;
 production-readiness remains approximately `47%` overall / `41%` Procurement-
 P2P. No next capability starts automatically and no Opus prompt is created by
 this handoff.

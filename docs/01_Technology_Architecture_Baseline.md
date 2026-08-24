@@ -33,9 +33,9 @@ See `docs/34_MESP-131_MWA_Valuation_Architecture.md` for the full bounded handof
 
 MESP-132 adds the bounded Company-owned Finance / GL foundation on branch
 `feat/MESP-132-finance-foundation`, from exact base
-`fcec241dfedb529fef89d4336adf1e571917c52a`, at implementation commit
-`af86b78` and exact MESP-132 implementation head
-`0b627c5b127d92d5a99543f475867a187801a653`. Draft PR #76 is Open, Draft, and
+`fcec241dfedb529fef89d4336adf1e571917c52a`, at source/test implementation
+commit `dcae7e231bd264580c33e60c35f5cc8436c4f050` from starting SHA
+`2f523582fbd3394b1eb11580eff490ba83aa9afb`. Draft PR #76 is Open, Draft, and
 unmerged pending Sol acceptance. It follows the existing four-project direction:
 Contracts expose
 Finance records, App owns request context/authorization seams, Infrastructure

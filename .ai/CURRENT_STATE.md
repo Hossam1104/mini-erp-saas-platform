@@ -12,9 +12,11 @@ Repository: `D:\AI Tools\Hossam\mini-erp-saas-platform`
 Current merged `main`: `fcec241dfedb529fef89d4336adf1e571917c52a`.
 Branch: `feat/MESP-132-finance-foundation`
 Exact base: `fcec241dfedb529fef89d4336adf1e571917c52a`
-Correctness remediation commit: `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`.
-Draft PR: `#76`, Open/Draft/unmerged, targeting `main`; the final branch SHA
-is the correctness remediation commit above.
+Starting SHA: `2f523582fbd3394b1eb11580eff490ba83aa9afb`.
+Source/test implementation commit: `dcae7e231bd264580c33e60c35f5cc8436c4f050`.
+Draft PR: `#76`, Open/Draft/unmerged, targeting `main`; the final branch SHA is
+reverified after the documentation reconciliation push. Latest Sol hold is
+comment `11852`; mergeability is `MERGEABLE`.
 
 ### Delivered architecture
 
@@ -50,6 +52,15 @@ is the correctness remediation commit above.
 - Finance consumes `inventory-valuation-finance.v1` ReadyForFinance evidence,
   applies deterministic configured mapping, records source-to-GL uniqueness,
   and never mutates Inventory.
+- Public manual Journal requests expose no source contract/event/evidence,
+  posting-rule, or amount-authority fields. The server forces
+  `manual-journal.v1` / `manual`, null source evidence and rule identity,
+  manual amount authority, and `Required` approval. Trusted Inventory
+  handoffs retain their source lineage; manual edits cannot convert a journal
+  into a source-generated one.
+- SQL Server provider-realistic races cover period close versus post, account
+  restriction versus post, same-Journal concurrent post, same-source
+  Inventory handoff processing, and first-company JournalSequence allocation.
 - Trusted Tenant/Company authorization, exact operation permissions, reusable
   approval/SoD seams, antiforgery, Idempotency-Key replay, If-Match versions,
   Serializable writes, safe Problem Details and audit evidence are enforced.
@@ -58,17 +69,17 @@ is the correctness remediation commit above.
 
 ### Validation evidence
 
-- Focused Finance correctness remediation: `9/9`.
-- REST/OpenAPI and host-security subset: `52/52`.
+- Focused Finance correctness remediation: `12/12`.
+- REST/OpenAPI and host-security subset: `53/53`.
 - Prior Inventory regression: `89/89`.
-- SQL Server safety: `41/41` against disposable LocalDB (one new Finance
-  schema/ownership uniqueness case over the accepted `40/40` baseline).
-- Full backend wrapper: `973/973`, 0 failed, 0 skipped; disposable database
+- SQL Server safety: `46/46` against disposable LocalDB, including the five
+  Finance concurrency races above.
+- Full backend wrapper: `982/982`, 0 failed, 0 skipped; disposable database
   was torn down by the wrapper and the runtime connection was unchanged.
 - Release build: 0 warnings, 0 errors. Finance migration model-change check:
   `No changes have been made to the model since the last migration.`
-- Angular: `258/258` across 37 spec files; initial bundle `496.34 kB`; Finance
-  lazy chunk `36.50 kB`; focused Finance Chromium `2/2`; full Chromium `34/34`;
+- Angular: `259/259` across 37 spec files; initial bundle `496.34 kB`; Finance
+  lazy chunk `36.45 kB`; focused Finance Chromium `2/2`; full Chromium `34/34`;
   both npm audits report 0 vulnerabilities.
 - Finance migration Designer contains a populated `BuildTargetModel`.
   `frontend/assets` has zero changes.
@@ -89,8 +100,8 @@ task starts automatically and no Opus prompt is added.
 The verified Release backend executable and generated-proxy Development
 frontend were restarted after the final Release build with the explicit
 loopback-only Development auth bypass. Backend `http://localhost:5300` is PID
-`26896`; `/health` returned HTTP 200. Frontend `http://localhost:4300` is PID
-`6244`; `/`, `/main.js`, and
+`23772`; `/health` returned HTTP 200. Frontend `http://localhost:4300` is PID
+`28656`; `/`, `/main.js`, and
 `/app/finance` each returned HTTP 200. Both repository-owned processes remain
 running for Owner inspection and no credential was printed or persisted.
 

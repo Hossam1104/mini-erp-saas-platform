@@ -4,7 +4,8 @@
 
 **Current acceptance state:** MESP-132 is In Progress / activated under Epic
 MESP-10. The implementation is on `feat/MESP-132-finance-foundation` with
-correctness remediation commit `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`, based on
+source/test implementation commit
+`dcae7e231bd264580c33e60c35f5cc8436c4f050`, based on
 `fcec241dfedb529fef89d4336adf1e571917c52a`; PR #76 is Open, Draft, and
 unmerged. The validated implementation remains pending Sol acceptance. The accepted
 fast-track count remains `15/26 = 57.7%` and production-readiness remains
@@ -157,6 +158,30 @@ Source financial effects are protected by a Tenant + Company + source
 contract + source evidence ID/version uniqueness constraint. A retry of the
 same actor/key/fingerprint replays its durable result; a different payload
 with the same key fails with an idempotency conflict.
+
+## Manual Journal source authority and SQL Server concurrency evidence
+
+The public manual Journal write contract is intentionally narrower than the
+trusted source-generated path. It does not accept source contract, source
+event, source evidence ID/version, Posting Rule identity, or amount-authority
+fields from the browser. The server always persists the manual identity
+`manual-journal.v1` / `manual`, null source evidence and rule identity, manual
+amount authority, and `Required` approval. Manual edit preserves the existing
+source identity and amount authority, so a client cannot convert a trusted
+source-generated Journal into a manual or otherwise impersonate source-owned
+evidence. The Inventory handoff path remains the sole trusted route for
+`inventory-valuation-finance.v1` lineage and retains its source evidence,
+directional mapping, and source-owned functional amount authority.
+
+The SQL Server provider-realistic safety suite proves the exact contention
+boundaries required for this foundation: period close versus posting,
+account restriction versus posting, two concurrent posts of the same
+approved Journal, two concurrent processes for the same Inventory handoff
+with different idempotency keys, and first-company JournalSequence
+allocation. Expected SQL Server deadlock/duplicate/concurrency outcomes are
+classified as public safe conflicts, and final durable state is asserted for
+each race. The suite passes `46/46` against disposable LocalDB with no new
+migration or model drift.
 
 ## Multi-currency
 

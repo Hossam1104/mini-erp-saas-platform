@@ -23,7 +23,7 @@ Fast-track completion before accepting MESP-132 remains `15/26 = 57.7%`; this is
 **Owner evidence:** MESP-116 Jira comment `10957`
 **Product Decision evidence:** MESP-22 Jira comment `10958` (PD-025-PD-046)
 **Living register:** MESP-23 Jira comment `10976`
-**Current acceptance handoff:** MESP-132 exact implementation head `0b627c5b127d92d5a99543f475867a187801a653`; Sol acceptance of Draft PR #76
+**Current acceptance handoff:** MESP-132 source/test implementation `dcae7e231bd264580c33e60c35f5cc8436c4f050` from starting SHA `2f523582fbd3394b1eb11580eff490ba83aa9afb`; Sol acceptance of Draft PR #76
 **Repository evidence:** PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e`, merged at `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`
 
 ## 1. Authority and boundary

@@ -7,10 +7,14 @@
 - **Current capability:** **MESP-132 — Core Finance / General Ledger
   foundation**, **In Progress / activated** under Epic **MESP-10**. Activation
   evidence: MESP-132 comment `11845`; Epic comment `11844`.
-- **Feature branch / implementation commit:** `feat/MESP-132-finance-foundation`;
-  correctness remediation commit
-  `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`; exact implementation base
-  `fcec241dfedb529fef89d4336adf1e571917c52a`.
+- **Starting SHA:** `2f523582fbd3394b1eb11580eff490ba83aa9afb`.
+- **Feature branch / final bounded implementation commit:**
+  `feat/MESP-132-finance-foundation` at
+  `dcae7e231bd264580c33e60c35f5cc8436c4f050`; exact implementation base
+  `fcec241dfedb529fef89d4336adf1e571917c52a`. The final branch head is
+  reverified after the documentation reconciliation push.
+- **Latest Sol hold:** `11852`; current PR mergeability is `MERGEABLE`; no Jira
+  write was performed in this session.
 - **Pull request:** **#76 — Open, Draft, unmerged**, targeting `main`.
 - **Latest completed capability:** **MESP-131 — Moving Weighted Average
   valuation**, PR #75 merged to `main` at
@@ -22,24 +26,31 @@
 - **Production-readiness headlines:** approximately **47% overall** and
   **41% Procurement/P2P**; unchanged by Draft implementation work.
 
-## MESP-132 correctness remediation validation pending Sol acceptance
+## MESP-132 final source-authority and SQL-concurrency remediation pending Sol acceptance
 
-Focused Finance `9/9`; REST/OpenAPI and host-security `52/52`; prior Inventory
-regression `89/89`; SQL Server safety `41/41`; full backend `973/973` with
-0 failed and 0 skipped; Release build 0 warnings/0 errors; Angular `258/258`
+Public manual Journal requests no longer accept source contract/event/evidence,
+Posting Rule, or amount-authority fields; the server forces the manual source
+identity and preserves trusted source-generated lineage on the separate
+Inventory handoff path. SQL Server provider-realistic races cover period close
+versus post, account restriction versus post, same-Journal post, same-source
+Inventory handoff processing, and first-company JournalSequence allocation.
+
+Focused Finance `12/12`; REST/OpenAPI and host-security `53/53`; prior Inventory
+regression `89/89`; SQL Server safety `46/46`; full backend `982/982` with
+0 failed and 0 skipped; Release build 0 warnings/0 errors; Angular `259/259`
 across 37 spec files; initial production bundle `496.34 kB`; Finance lazy
-chunk `36.50 kB`; focused/full Chromium `2/2` and `34/34`; npm audits report
+chunk `36.45 kB`; focused/full Chromium `2/2` and `34/34`; npm audits report
 0 vulnerabilities; `frontend/assets` untouched.
 
-Runtime evidence: backend `http://localhost:5300` PID `26896`, `/health` HTTP
-200; frontend `http://localhost:4300` PID `6244`, `/`, `/main.js`, and
+Runtime evidence: backend `http://localhost:5300` PID `23772`, `/health` HTTP
+200; frontend `http://localhost:4300` PID `28656`, `/`, `/main.js`, and
 `/app/finance` HTTP 200. Both repository-owned processes remain available for
 Owner inspection.
 
 ## Exact next Sol action
 
-Sol verifies the exact MESP-132 implementation commit
-`2eb5b9db30e625eacbf72e1f6610e9e4210b288f` and the bounded evidence on Draft
+Sol verifies the exact MESP-132 source/test implementation commit
+`dcae7e231bd264580c33e60c35f5cc8436c4f050` and the bounded evidence on Draft
 PR #76, then accepts or returns MESP-132. Do not merge, mark Ready, rebase,
 force-push, create another PR, invoke Opus, or start MESP-133+ or downstream
 Finance/Sales/Reporting work automatically. No Jira writes are performed by

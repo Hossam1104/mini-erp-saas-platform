@@ -10,7 +10,8 @@
 <!-- MESP-131-CURRENT-END -->
 
 <!-- MESP-132-CURRENT-START -->
-> **MESP-132 Core Finance / GL foundation - 24 August 2026.** The backend now
+> **MESP-132 Core Finance / GL foundation - final Sol acceptance remediation,
+> 24 August 2026.** The backend now
 > owns Company-scoped Chart of Accounts, Fiscal Calendar/Year/Period control,
 > approved Cost Center dimension support, manual Journal lifecycle, balanced
 > functional-currency posting, controlled reversal, immutable Posted Journal
@@ -21,15 +22,16 @@
 > AP/AR, cash/bank, tax, financial statements, generic Reporting, Sales,
 > migration/cutover, external/statutory, or Wafra-specific behavior.
 >
-> **MESP-132 validation.** Focused Finance correctness remediation `9/9`;
-> REST/OpenAPI plus host-security subset `52/52`; prior Inventory regression
-> `89/89`; SQL safety `41/41`; disposable-LocalDB backend `973/973` with 0 failed/0
+> **MESP-132 validation.** Focused Finance correctness remediation `12/12`;
+> REST/OpenAPI plus host-security subset `53/53`; prior Inventory regression
+> `89/89`; SQL safety `46/46`; disposable-LocalDB backend `982/982` with 0 failed/0
 > skipped; Release build 0 warnings/0 errors; Finance migration model-change
-> detection reports no changes; no Owner-managed asset changes. The active
-> branch is `feat/MESP-132-finance-foundation` at implementation commit
-> `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`, based on
-> `fcec241dfedb529fef89d4336adf1e571917c52a`. Draft PR #76 is Open, Draft,
-> and unmerged; implementation validation is pending Sol acceptance.
+> detection reports no changes; no Owner-managed asset changes. The public
+> Manual Journal contract is manual-only and five SQL Server contention races
+> prove safe ordering/uniqueness. The active branch is
+> `feat/MESP-132-finance-foundation` at implementation commit `dcae7e2`, based
+> on `fcec241dfedb529fef89d4336adf1e571917c52a`. Draft PR #76 is Open, Draft,
+> and unmerged; final Sol acceptance is pending.
 <!-- MESP-132-CURRENT-END -->
 
 > **Historical MESP-129 runtime overlay - 22 August 2026.** The backend now

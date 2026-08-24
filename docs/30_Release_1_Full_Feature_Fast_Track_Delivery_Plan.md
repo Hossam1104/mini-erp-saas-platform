@@ -80,7 +80,7 @@ cross-module dependency map is
 | MESP-132 | In Progress / activated under MESP-10; Draft PR #76 pending Sol acceptance. |
 | MESP-133–MESP-142 | Capability backlog remains To Do / not activated. |
 | Product implementation | Existing bounded Category, UOM, Product, Supplier, and Customer slices remain evidence; the planned capability completion and shared Angular experience are not claimed complete. |
-| Current acceptance handoff | MESP-132 exact implementation head `0b627c5b127d92d5a99543f475867a187801a653`; Sol acceptance of Draft PR #76 is the next governance action. |
+| Current acceptance handoff | MESP-132 source/test implementation `dcae7e231bd264580c33e60c35f5cc8436c4f050` from starting SHA `2f523582fbd3394b1eb11580eff490ba83aa9afb`; Sol acceptance of Draft PR #76 is the next governance action. |
 | Production capability | No percentage increase is justified by this governance/Jira work. |
 
 This plan deliberately does not rewrite approved historical BRDs. Current

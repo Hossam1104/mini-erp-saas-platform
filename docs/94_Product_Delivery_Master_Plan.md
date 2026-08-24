@@ -17,8 +17,9 @@
 > The active implementation capability is MESP-132 (Finance / General Ledger
 > foundation), which is In Progress / activated under Epic MESP-10. Current main
 > is `fcec241dfedb529fef89d4336adf1e571917c52a`; the feature branch is
-> `feat/MESP-132-finance-foundation` at exact MESP-132 implementation head
-> `0b627c5b127d92d5a99543f475867a187801a653`; Draft PR #76 is Open, Draft, and
+> `feat/MESP-132-finance-foundation` at source/test implementation commit
+> `dcae7e231bd264580c33e60c35f5cc8436c4f050` (starting SHA
+> `2f523582fbd3394b1eb11580eff490ba83aa9afb`); Draft PR #76 is Open, Draft, and
 > unmerged pending Sol acceptance. MESP-131 is Done through PR #75 merged at
 > `a8664d6a0d006e463a1a03fadd76c28475475f58`. The accepted fast-track count is
 > 15/26 = 57.7%; production-readiness remains approximately 47% overall and
@@ -396,11 +397,11 @@
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
 | Current activity | `MESP-132 Finance / General Ledger foundation is In Progress / activated under MESP-10; MESP-131 and MESP-8 are Done; MESP-23 and named production/legal/external gates remain preserved.` |
-| Current implementation item | `MESP-132 on feat/MESP-132-finance-foundation, exact head 0b627c5b127d92d5a99543f475867a187801a653, Draft PR #76 Open/Draft/unmerged pending Sol acceptance.` |
+| Current implementation item | `MESP-132 on feat/MESP-132-finance-foundation, source/test implementation dcae7e231bd264580c33e60c35f5cc8436c4f050 from start 2f523582fbd3394b1eb11580eff490ba83aa9afb, Draft PR #76 Open/Draft/unmerged pending Sol acceptance.` |
 | Merged-main baseline | `main and origin/main are synchronized at fcec241dfedb529fef89d4336adf1e571917c52a; MESP-131 PR #75 merged at a8664d6a0d006e463a1a03fadd76c28475475f58.` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
 | Open Pull Request | `PR #76 is Open/Draft/unmerged for MESP-132; no merge or Ready-for-Review transition is authorized by this handoff.` |
-| Current review checkpoint | `MESP-132 implementation validation pending Sol acceptance: Finance 5/5; REST/host 52/52; SQL 41/41; backend 969/969; Angular 258/258; Chromium 2/2 focused and 34/34 full; runtime 5300/4300 HTTP 200 probes.` |
+| Current review checkpoint | `MESP-132 final source-authority and SQL-concurrency remediation pending Sol acceptance: Finance 12/12; REST/host 53/53; SQL 46/46; backend 982/982; Angular 259/259; bundle 496.34 kB initial / 36.45 kB Finance lazy; Chromium 2/2 focused and 34/34 full; runtime 5300/4300 HTTP 200 probes.` |
 
 ---
 
