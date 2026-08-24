@@ -169,3 +169,125 @@ export interface FinancePostingRuleWriteRequest {
   effectiveFrom: string;
   effectiveTo: string | null;
 }
+
+export interface FinancePaymentMethod {
+  id: string;
+  companyId: string;
+  code: string;
+  englishName: string;
+  arabicName: string | null;
+  direction: string;
+  lifecycle: string;
+  isManual: boolean;
+  requiresReference: boolean;
+  version: string;
+}
+
+export interface FinanceCashAccount {
+  id: string;
+  companyId: string;
+  code: string;
+  englishName: string;
+  arabicName: string | null;
+  kind: string;
+  currencyCode: string;
+  linkedAccountId: string;
+  linkedAccountCode: string;
+  lifecycle: string;
+  version: string;
+}
+
+export interface FinanceOpenItem {
+  id: string;
+  companyId: string;
+  kind: string;
+  supplierId: string | null;
+  customerId: string | null;
+  sourceContract: string;
+  sourceEvidenceId: string;
+  reference: string | null;
+  documentDate: string;
+  dueDate: string;
+  currencyCode: string;
+  originalAmount: number;
+  allocatedAmount: number;
+  outstandingAmount: number;
+  status: string;
+  recognitionState: string;
+  recognitionJournalId: string | null;
+  paymentTerm: { code: string; versionNumber: number; dueDate: string } | null;
+  version: string;
+}
+
+export interface FinanceSettlementDocument {
+  id: string;
+  companyId: string;
+  status: string;
+  direction: string;
+  supplierId: string | null;
+  customerId: string | null;
+  cashAccountId: string;
+  paymentMethodId: string;
+  documentDate: string;
+  currencyCode: string;
+  amount: number;
+  functionalCurrencyCode: string;
+  functionalAmount: number;
+  externalReference: string | null;
+  postedJournalId: string | null;
+  unallocatedAmount: number;
+  allocatedAmount: number;
+  version: string;
+}
+
+export interface FinanceAllocation {
+  id: string;
+  companyId: string;
+  settlementDocumentId: string;
+  openItemId: string;
+  amount: number;
+  currencyCode: string;
+  functionalAmount: number;
+  allocationDate: string;
+  status: string;
+  reversalOfAllocationId: string | null;
+  journalId: string | null;
+  version: string;
+}
+
+export interface FinanceAgingRow {
+  openItemId: string;
+  kind: string;
+  supplierId: string | null;
+  customerId: string | null;
+  reference: string | null;
+  dueDate: string;
+  daysOverdue: number;
+  currencyCode: string;
+  outstandingAmount: number;
+  status: string;
+}
+
+export interface FinanceExposure {
+  companyId: string;
+  customerId: string;
+  currencyCode: string;
+  openReceivables: number;
+  overdueReceivables: number;
+  unappliedCredits: number;
+  netReceivableExposure: number;
+  asOfDate: string;
+  creditHold: boolean;
+  holdReason: string | null;
+}
+
+export interface FinanceReconciliation {
+  companyId: string;
+  kind: string | null;
+  scope: string;
+  subledgerAmount: number;
+  postedJournalAmount: number;
+  difference: number;
+  status: string;
+  asOfDate: string;
+}

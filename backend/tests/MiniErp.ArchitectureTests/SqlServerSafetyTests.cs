@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Finance;
 using MiniErp.App.BuildingBlocks.Rest;
+using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.Inventory;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.Contracts.Modules.Finance;
@@ -357,7 +358,8 @@ public sealed class SqlServerSafetyTests
             Assert.Equal(
                 [
                     "20260824125115_MESP132FinanceFoundation",
-                    "20260824152331_MESP132SolFinanceCorrectnessRemediation"
+                    "20260824152331_MESP132SolFinanceCorrectnessRemediation",
+                    "20260824220208_MESP133ApArCashSettlement"
                 ],
                 (await finance.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await finance.Database.GetPendingMigrationsAsync());
@@ -402,7 +404,7 @@ public sealed class SqlServerSafetyTests
             SELECT COUNT(*)
             FROM INFORMATION_SCHEMA.TABLES
             WHERE TABLE_SCHEMA = N'finance'
-              AND TABLE_NAME IN (N'Accounts', N'FiscalCalendars', N'FiscalYears', N'FiscalPeriods', N'CostCenters', N'PostingRules', N'Journals', N'JournalLines', N'AuditEvents', N'IdempotencyEntries', N'SourceEffects');
+              AND TABLE_NAME IN (N'Accounts', N'FiscalCalendars', N'FiscalYears', N'FiscalPeriods', N'CostCenters', N'PostingRules', N'Journals', N'JournalLines', N'AuditEvents', N'IdempotencyEntries', N'SourceEffects', N'PaymentMethods', N'CashAccounts', N'OpenItems', N'SettlementDocuments', N'Allocations');
             SELECT COUNT(*)
             FROM sys.indexes AS indexes
             INNER JOIN sys.tables AS tables ON tables.object_id = indexes.object_id
@@ -413,10 +415,135 @@ public sealed class SqlServerSafetyTests
             """;
         await using var reader = await command.ExecuteReaderAsync();
         Assert.True(await reader.ReadAsync());
-        Assert.Equal(11, reader.GetInt32(0));
+        Assert.Equal(16, reader.GetInt32(0));
         Assert.True(await reader.NextResultAsync());
         Assert.True(await reader.ReadAsync());
         Assert.Equal(1, reader.GetInt32(0));
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_payment_method_same_code_race_is_unique_or_safe_conflict()
+    {
+        var (options, companyId) = await CreateSettlementOptionsAsync();
+        var first = CreateSettlementPersistence(options, companyId);
+        var second = CreateSettlementPersistence(options, companyId);
+        var firstContext = FinanceContext("tenant.finance.settlement.configure");
+        var secondContext = FinanceContext("tenant.finance.settlement.configure");
+        var firstCommand = PaymentMethodCommand(companyId, "BANK-RACE", Guid.NewGuid(), "bank-race-a");
+        var secondCommand = firstCommand with { Id = Guid.NewGuid(), IdempotencyKey = "bank-race-b", RequestFingerprint = "bank-race-b" };
+
+        var results = await Task.WhenAll(
+            SafeFinanceOperationAsync(() => first.CreatePaymentMethodAsync(firstContext, firstCommand)),
+            SafeFinanceOperationAsync(() => second.CreatePaymentMethodAsync(secondContext, secondCommand)));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "payment_method_duplicate" or "concurrency_conflict");
+        Assert.Single(await first.ListPaymentMethodsAsync(firstContext, companyId));
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_payment_method_lifecycle_race_has_one_committed_transition()
+    {
+        var (options, companyId) = await CreateSettlementOptionsAsync();
+        var creator = CreateSettlementPersistence(options, companyId);
+        var created = await creator.CreatePaymentMethodAsync(FinanceContext("tenant.finance.settlement.configure"), PaymentMethodCommand(companyId, "LIFECYCLE-RACE", Guid.NewGuid(), "lifecycle-create"));
+        Assert.True(created.Succeeded, created.Code);
+        var first = CreateSettlementPersistence(options, companyId);
+        var second = CreateSettlementPersistence(options, companyId);
+        var results = await Task.WhenAll(
+            SafeFinanceOperationAsync(() => first.SetPaymentMethodLifecycleAsync(FinanceContext("tenant.finance.settlement.configure"), created.Value!.Id, companyId, FinancePaymentMethodLifecycle.Inactive, created.Value!.Version, "lifecycle-a", "lifecycle-a")),
+            SafeFinanceOperationAsync(() => second.SetPaymentMethodLifecycleAsync(FinanceContext("tenant.finance.settlement.configure"), created.Value!.Id, companyId, FinancePaymentMethodLifecycle.Inactive, created.Value!.Version, "lifecycle-b", "lifecycle-b")));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code == "concurrency_conflict");
+        Assert.Equal(FinancePaymentMethodLifecycle.Inactive, (await first.ListPaymentMethodsAsync(FinanceContext("tenant.finance.settlement.configure"), companyId)).Single().Lifecycle);
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_cash_account_same_code_race_is_unique_or_safe_conflict()
+    {
+        var (options, companyId) = await CreateSettlementOptionsAsync();
+        var account = await CreateSettlementLinkedAccountAsync(options, companyId, "cash-code-race");
+        var first = CreateSettlementPersistence(options, companyId);
+        var second = CreateSettlementPersistence(options, companyId);
+        var firstCommand = CashAccountCommand(companyId, account.Id, "CASH-RACE", Guid.NewGuid(), "cash-race-a");
+        var secondCommand = firstCommand with { Id = Guid.NewGuid(), IdempotencyKey = "cash-race-b", RequestFingerprint = "cash-race-b" };
+
+        var results = await Task.WhenAll(
+            SafeFinanceOperationAsync(() => first.CreateCashAccountAsync(FinanceContext("tenant.finance.settlement.configure"), firstCommand)),
+            SafeFinanceOperationAsync(() => second.CreateCashAccountAsync(FinanceContext("tenant.finance.settlement.configure"), secondCommand)));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "cash_account_duplicate" or "concurrency_conflict");
+        Assert.Single(await first.ListCashAccountsAsync(FinanceContext("tenant.finance.settlement.configure"), companyId));
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_cash_account_lifecycle_race_has_one_committed_transition()
+    {
+        var (options, companyId) = await CreateSettlementOptionsAsync();
+        var account = await CreateSettlementLinkedAccountAsync(options, companyId, "cash-lifecycle-race");
+        var creator = CreateSettlementPersistence(options, companyId);
+        var created = await creator.CreateCashAccountAsync(FinanceContext("tenant.finance.settlement.configure"), CashAccountCommand(companyId, account.Id, "CASH-LIFECYCLE-RACE", Guid.NewGuid(), "cash-lifecycle-create"));
+        Assert.True(created.Succeeded, created.Code);
+        var results = await Task.WhenAll(
+            SafeFinanceOperationAsync(() => CreateSettlementPersistence(options, companyId).SetCashAccountLifecycleAsync(FinanceContext("tenant.finance.settlement.configure"), created.Value!.Id, companyId, FinancePaymentMethodLifecycle.Inactive, created.Value!.Version, "cash-lifecycle-a", "cash-lifecycle-a")),
+            SafeFinanceOperationAsync(() => CreateSettlementPersistence(options, companyId).SetCashAccountLifecycleAsync(FinanceContext("tenant.finance.settlement.configure"), created.Value!.Id, companyId, FinancePaymentMethodLifecycle.Inactive, created.Value!.Version, "cash-lifecycle-b", "cash-lifecycle-b")));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code == "concurrency_conflict");
+        Assert.Equal(FinancePaymentMethodLifecycle.Inactive, (await creator.ListCashAccountsAsync(FinanceContext("tenant.finance.settlement.configure"), companyId)).Single().Lifecycle);
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_payment_method_edit_same_version_race_has_one_authoritative_edit()
+    {
+        var (options, companyId) = await CreateSettlementOptionsAsync();
+        var creator = CreateSettlementPersistence(options, companyId);
+        var created = await creator.CreatePaymentMethodAsync(FinanceContext("tenant.finance.settlement.configure"), PaymentMethodCommand(companyId, "EDIT-RACE", Guid.NewGuid(), "edit-create"));
+        Assert.True(created.Succeeded, created.Code);
+        var firstCommand = PaymentMethodCommand(companyId, "EDIT-RACE-A", created.Value!.Id, "edit-a") with { ExpectedVersion = created.Value.Version };
+        var secondCommand = PaymentMethodCommand(companyId, "EDIT-RACE-B", created.Value.Id, "edit-b") with { ExpectedVersion = created.Value.Version };
+        var results = await Task.WhenAll(
+            SafeFinanceOperationAsync(() => CreateSettlementPersistence(options, companyId).EditPaymentMethodAsync(FinanceContext("tenant.finance.settlement.configure"), firstCommand)),
+            SafeFinanceOperationAsync(() => CreateSettlementPersistence(options, companyId).EditPaymentMethodAsync(FinanceContext("tenant.finance.settlement.configure"), secondCommand)));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code == "concurrency_conflict");
+        var code = (await creator.ListPaymentMethodsAsync(FinanceContext("tenant.finance.settlement.configure"), companyId)).Single().Code;
+        Assert.True(code is "EDIT-RACE-A" or "EDIT-RACE-B");
+    }
+
+    private async Task<(DbContextOptions Options, Guid CompanyId)> CreateSettlementOptionsAsync()
+    {
+        var options = SqlServerMigrationConfiguration.Configure(await GetConnectionStringAsync(), SqlServerMigrationConfiguration.FinanceHistoryTable);
+        return (options, Guid.NewGuid());
+    }
+
+    private FinanceSettlementPersistence CreateSettlementPersistence(DbContextOptions options, Guid companyId) =>
+        new(
+            options,
+            new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(_fixture.TenantA.TenantId.Value, companyId, "SQL Settlement Company", "SAR")]),
+            new UnavailableMasterDataExchangeRatePersistence(),
+            new UnavailableCustomerPersistence(),
+            new UnavailableSupplierPersistence(),
+            new UnavailableMasterDataCurrencyPaymentTermPersistence(),
+            new UnavailableFinanceSupplierInvoiceSourceProvider());
+
+    private static FinancePaymentMethodCommand PaymentMethodCommand(Guid companyId, string code, Guid id, string key) =>
+        new(companyId, code, code, null, FinancePaymentMethodDirection.Both, true, false, new DateOnly(2026, 1, 1), null, id, null, key, key);
+
+    private static FinanceCashAccountCommand CashAccountCommand(Guid companyId, Guid linkedAccountId, string code, Guid id, string key) =>
+        new(companyId, code, code, null, FinanceCashAccountKind.Bank, "SAR", linkedAccountId, null, new DateOnly(2026, 1, 1), null, id, null, key, key);
+
+    private async Task<FinanceAccountRecord> CreateSettlementLinkedAccountAsync(DbContextOptions options, Guid companyId, string key)
+    {
+        var provider = new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(_fixture.TenantA.TenantId.Value, companyId, "SQL Settlement Company", "SAR")]);
+        var persistence = new FinancePersistence(options, provider, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
+        var context = FinanceContext("tenant.finance.account.create");
+        var result = await persistence.CreateAccountAsync(context, new FinanceAccountCommand(companyId, $"{key}-ACCOUNT", "Settlement cash account", null, null, FinanceAccountType.Asset, true, FinanceCurrencyBehavior.TransactionCurrencyAllowed, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, $"{key}-account", $"{key}-account"));
+        Assert.True(result.Succeeded, result.Code);
+        return result.Value!;
     }
 
     [Fact]

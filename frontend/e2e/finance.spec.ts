@@ -38,6 +38,16 @@ async function setupFinanceRoutes(page: Page): Promise<void> {
   await page.route('**/api/v1/finance/journals**', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/v1/finance/gl**', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/v1/finance/inventory-handoffs**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/finance/ap/open-items**', (route) => route.fulfill({ json: [{ id: 'open-item-a', companyId: 'company-a', kind: 'Payable', partyId: 'supplier-a', reference: 'PI-1001', documentDate: '2026-08-01', dueDate: '2026-08-31', currencyCode: 'SAR', originalAmount: 1250, allocatedAmount: 0, outstandingAmount: 1250, sourceContract: 'procurement-supplier-invoice.v1', sourceIdentity: 'match-a', recognitionState: 'Recognized', status: 'Open', recognitionJournalId: 'journal-a', version: 'AQ==' }] }));
+  await page.route('**/api/v1/finance/ap/aging**', (route) => route.fulfill({ json: [{ openItemId: 'open-item-a', reference: 'PI-1001', dueDate: '2026-08-31', daysOverdue: 0, outstandingAmount: 1250, currencyCode: 'SAR', status: 'Open' }] }));
+  await page.route('**/api/v1/finance/ar/open-items**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/finance/ar/aging**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/finance/payment-methods**', (route) => route.fulfill({ json: [{ id: 'method-a', companyId: 'company-a', code: 'BANK', name: 'Bank transfer', direction: 'Both', lifecycle: 'Active', version: 'AQ==' }] }));
+  await page.route('**/api/v1/finance/cash-accounts**', (route) => route.fulfill({ json: [{ id: 'cash-a', companyId: 'company-a', code: '1000', name: 'Main bank', kind: 'Bank', currencyCode: 'SAR', linkedAccountCode: '1000', lifecycle: 'Active', version: 'AQ==' }] }));
+  await page.route('**/api/v1/finance/payments**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/finance/receipts**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/finance/allocations**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/finance/settlement/reconciliation**', (route) => route.fulfill({ json: [{ scope: 'Settlement', subledgerAmount: 0, postedJournalAmount: 0, difference: 0, status: 'Reconciled' }] }));
 }
 
 test('Finance workspace renders Company books, periods, and bounded GL evidence', async ({ page }) => {
@@ -60,4 +70,27 @@ test('Finance workspace changes the authenticated shell to RTL for Arabic', asyn
   await expect(page.locator('[data-testid="finance-workspace"]')).toBeVisible();
   await page.locator('.language-button').click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+});
+
+test('AP workspace renders source lineage and aging evidence', async ({ page }) => {
+  await setupFinanceRoutes(page);
+  await page.goto('/app/finance/ap');
+
+  const payable = page.locator('[data-testid="finance-settlement-workspace"]');
+  await expect(payable).toBeVisible();
+  await expect(payable.getByRole('heading', { level: 1 })).toContainText('Accounts Payable');
+  await expect(payable).toContainText('PI-1001');
+  await expect(payable).toContainText('procurement-supplier-invoice.v1');
+  await expect(payable).toContainText('Aging');
+});
+
+test('settlements workspace presents configured methods and on-account reconciliation', async ({ page }) => {
+  await setupFinanceRoutes(page);
+  await page.goto('/app/finance/settlements');
+
+  const settlements = page.locator('[data-testid="finance-settlement-workspace"]');
+  await expect(settlements).toBeVisible();
+  await expect(settlements.getByRole('heading', { level: 1 })).toContainText('Payments, receipts, and allocation');
+  await expect(settlements).toContainText('Payment Method');
+  await expect(settlements).toContainText('Settlement');
 });
