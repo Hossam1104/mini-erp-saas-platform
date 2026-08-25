@@ -31,6 +31,28 @@ async function setupFinanceRoutes(page: Page): Promise<void> {
     code: null,
   } }));
   await page.route('**/api/v1/finance/companies', (route) => route.fulfill({ json: [{ tenantId: 'tenant-a', companyId: 'company-a', companyName: 'Alpha Company', functionalCurrencyCode: 'SAR', branchId: null, isActive: true }] }));
+  await page.route('**/api/v1/master-data/currencies', (route) => route.fulfill({ json: [
+    { id: 'currency-sar', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', code: 'SAR', englishName: 'Saudi Riyal', arabicName: null, revision: 1 },
+    { id: 'currency-usd', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', code: 'USD', englishName: 'US Dollar', arabicName: null, revision: 1 },
+  ] }));
+  await page.route('**/api/v1/master-data/exchange-rates', (route) => route.fulfill({ json: [{
+    id: 'rate-usd-sar', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==',
+    sourceCurrencyId: 'currency-usd', targetCurrencyId: 'currency-sar', sourceCurrencyCode: 'USD', targetCurrencyCode: 'SAR',
+    currentVersionNumber: 3, versions: [{ id: 'rate-version-3', versionNumber: 3, effectiveFrom: '2026-01-01', effectiveTo: null, rate: 3.75, rateScale: 6, provenance: 'Configured', sourceNotes: 'MESP-120 configured reference', sourceCurrencyCode: 'USD', targetCurrencyCode: 'SAR' }],
+  }] }));
+  await page.route('**/api/v1/master-data/exchange-rates/rate-usd-sar/reference?effectiveOn=*', (route) => {
+    const effectiveOn = new URL(route.request().url()).searchParams.get('effectiveOn') ?? '2026-08-25';
+    return route.fulfill({ json: {
+      id: 'rate-usd-sar', tenantId: 'tenant-a', sourceCurrencyId: 'currency-usd', targetCurrencyId: 'currency-sar', sourceCurrencyCode: 'USD', targetCurrencyCode: 'SAR',
+      lifecycleState: 'Active', versionNumber: 3, versionId: 'rate-version-3', effectiveOn, effectiveFrom: '2026-01-01', effectiveTo: null,
+      rate: 3.75, rateScale: 6, provenance: 'Configured', sourceNotes: 'MESP-120 configured reference', referenceValue: '3.750000', version: 'AQ==',
+    } });
+  });
+  await page.route('**/api/v1/master-data/customers', (route) => route.fulfill({ json: [{ id: 'customer-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', code: 'CUS-1', englishLegalName: 'Customer One', arabicLegalName: null, englishTradingName: null, arabicTradingName: null, contacts: [] }] }));
+  await page.route('**/api/v1/master-data/payment-terms', (route) => route.fulfill({ json: [{
+    id: 'term-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', code: 'NET30', englishName: 'Net 30', arabicName: null, currentVersionNumber: 1,
+    versions: [{ id: 'term-version-a', versionNumber: 1, effectiveFrom: '2026-01-01', effectiveTo: null, baseDateRule: 'DocumentDate', scheduleMode: 'SingleDueDate', dueOffsetDays: 30, dueOffsetMonths: 0, installments: [], earlySettlementDiscountEnabled: false, earlySettlementDiscountPercentage: null, earlySettlementDiscountDays: 0, earlySettlementDiscountMonths: 0, code: 'NET30', englishName: 'Net 30', arabicName: null }],
+  }] }));
   await page.route('**/api/v1/finance/accounts**', (route) => route.fulfill({ json: [{ id: 'account-a', companyId: 'company-a', code: '1000', englishName: 'Cash', arabicName: null, parentAccountId: null, accountType: 'Asset', isPostingAccount: true, lifecycle: 'Active', effectiveFrom: '2026-01-01', effectiveTo: null, version: 'AQ==' }] }));
   await page.route('**/api/v1/finance/calendars**', (route) => route.fulfill({ json: [{ id: 'calendar-a', companyId: 'company-a', name: 'FY 2026', functionalCurrencyCode: 'SAR', lifecycle: 'Active', version: 'AQ==' }] }));
   await page.route('**/api/v1/finance/calendars/calendar-a/years', (route) => route.fulfill({ json: [{ id: 'year-a', calendarId: 'calendar-a', yearNumber: 2026, startDate: '2026-01-01', endDate: '2026-12-31', state: 'Open' }] }));
@@ -106,4 +128,35 @@ test('settlements workspace presents configured methods and on-account reconcili
   await expect(settlements.getByRole('heading', { level: 1 })).toContainText('Payments, receipts, and allocation');
   await expect(settlements).toContainText('Payment Method');
   await expect(settlements).toContainText('Settlement');
+});
+
+test('Manual AR resolves exact MESP-120 non-functional currency evidence before creation', async ({ page }) => {
+  await setupFinanceRoutes(page);
+  let submittedPayload: Record<string, unknown> | undefined;
+  await page.route('**/api/v1/finance/ar/manual', async (route) => {
+    submittedPayload = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({ json: {
+      id: 'ar-fx-1', companyId: 'company-a', customerId: 'customer-a', kind: 'Receivable', reference: 'AR-FX-1', documentDate: '2026-08-25', dueDate: '2026-09-24', currencyCode: 'USD', originalAmount: 100, allocatedAmount: 0, outstandingAmount: 100, status: 'Open', recognitionState: 'Recognized', recognitionJournalId: 'journal-ar-fx', version: 'AQ==',
+    } });
+  });
+
+  await page.goto('/app/finance/ar');
+  const ar = page.locator('[data-testid="finance-settlement-workspace"]');
+  await ar.locator('select').first().selectOption('company-a');
+  await ar.locator('[data-testid="ar-customer-select"]').selectOption('customer-a');
+  await ar.locator('[data-testid="ar-payment-term-select"]').selectOption('term-a');
+  await ar.locator('input').nth(1).fill('USD');
+  await ar.locator('input[type="number"]').fill('100');
+  await expect(ar.locator('[data-testid="ar-exchange-rate-select"]')).toBeVisible();
+  await ar.locator('[data-testid="ar-exchange-rate-select"]').selectOption('rate-usd-sar');
+  await expect(ar.locator('[data-testid="ar-fx-reference"]')).toContainText('3.75');
+  const createReceivable = ar.getByRole('button', { name: 'Create manual receivable' });
+  await expect(createReceivable).toBeEnabled();
+  await createReceivable.click();
+  await expect.poll(() => submittedPayload).toBeDefined();
+
+  expect(submittedPayload).toMatchObject({
+    companyId: 'company-a', customerId: 'customer-a', paymentTermId: 'term-a', currencyCode: 'USD', amount: 100,
+    exchangeRate: 3.75, exchangeRateId: 'rate-usd-sar', exchangeRateVersionId: 'rate-version-3', exchangeRateVersionNumber: 3,
+  });
 });

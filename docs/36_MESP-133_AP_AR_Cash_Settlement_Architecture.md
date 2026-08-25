@@ -142,21 +142,21 @@ Tenant/workspace chooser.
 ## Verification evidence
 
 The remediation was validated from the exact required main base, original
-Sol-reviewed head, and HOLD 2 starting SHA
-`29caa6594bc281c07aa2edd3b5dadc3e3a238e29`. The final implementation commit
-is `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`:
+Sol-reviewed head, and HOLD 3 starting SHA
+`452441084a44d1a8a0a1d8db3a0d679aac5ff550`. The HOLD 3 implementation commit
+is `a9c46a27349cb617770277699ad74456262b81c4`:
 
 - Release backend build: 0 warnings, 0 errors;
-- disposable SQL Server LocalDB backend suite: 1005/1005 passed, 0 failed,
+- disposable SQL Server LocalDB backend suite: 1009/1009 passed, 0 failed,
   0 skipped;
 - SQL Server safety coverage: 61/61 passed, with the five retained MESP-133
   configuration races and ten financial races, including
   `MESP133_sql_server_allocation_vs_settlement_reversal_race_has_one_valid_serialization`;
-- Angular unit tests: 270/270 passed across 38 spec files, including 11/11
+- Angular unit tests: 274/274 passed across 38 spec files, including 15/15
   focused Finance settlement-workspace tests;
-- focused Finance Playwright: 5/5; full Playwright Chromium: 37/37;
-- production build: 0 warnings/errors, 496.43 kB initial bundle, 34.31 kB
-  Finance/GL lazy chunk, and 47.13 kB settlement lazy chunk;
+- focused Finance Playwright: 6/6; full Playwright Chromium: 38/38;
+- production build: 0 warnings/errors, 496.44 kB initial bundle, 34.31 kB
+  Finance/GL lazy chunk, and 56.04 kB settlement lazy chunk;
 - both npm audits: 0 vulnerabilities;
 - runtime health, frontend root, `main.js`, `/app/finance`,
   `/app/finance/ap`, `/app/finance/ar`, and `/app/finance/settlements` probes
@@ -176,7 +176,7 @@ GPT-5.6 Sol must independently review the complete remediation diff, rerun or
 verify the validation evidence, inspect the AP term/source boundary, approval
 policy reuse, Posting Rule/GL lineage, reconciliation/as-of semantics,
 route/document integrity, reversal invariants, and additive migration safety.
-MESP-133 remains In Progress / activated in Jira; HOLD comments `11892` and
-`11926`, MESP-10 progress comments `11893` and `11927`, and manual-AR
-supplemental finding `11928` already exist. No Jira writes, merge, Ready
+MESP-133 remains In Progress / activated in Jira; HOLD comments `11892`,
+`11926`, and `11963`, MESP-10 progress comments `11893`, `11927`, and `11964`,
+and manual-AR supplemental finding `11928` already exist. No Jira writes, merge, Ready
 transition, MESP-134/MESP-135 activation, or Opus review/prompt were performed.

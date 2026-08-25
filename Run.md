@@ -184,7 +184,7 @@ AR, and settlement routes `/app/finance/ap`, `/app/finance/ar`, and
 server-owned source/direction/mapping authority, truthful approval and
 reconciliation states, manual-only settlement methods, and EN/AR RTL
 presentation. Runtime evidence is recorded in `docs/staticts.md`; the current
-owner-inspection processes are backend PID `39276` and frontend PID `26888`.
+owner-inspection processes are backend PID `34964` and frontend PID `34380`.
 PR #77 remains Open/Draft/Unmerged for Sol review. This is not a
 production-readiness claim.
 

@@ -2,19 +2,20 @@
 
 ## Current execution reconciliation - 25 August 2026
 
-The current bounded capability is MESP-133 AP/AR/cash settlement remediation,
-active/In Progress under MESP-10 on Draft PR #77. MESP-132 is
-Done/merged/closed; Sol HOLD `11892` and MESP-10 progress comment `11893`
+The current bounded capability is MESP-133 AP/AR/cash settlement HOLD 3
+micro-remediation, active/In Progress under MESP-10 on Draft PR #77. MESP-132 is
+Done/merged/closed; Sol HOLD `11892` / `11926` / `11963` and MESP-10 progress
+comments `11893` / `11927` / `11964`
 remain the acceptance authority. MESP-134 and MESP-135 are To Do and
 unactivated. Fast-track remains `16/26 = 61.5%`; production readiness remains
 approximately `47%` overall / `41%` Procurement/P2P. The older 24 August
 MESP-132 overlay below is historical and retained for traceability.
 
-HOLD 2 remediation is implemented at `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`
-from exact starting SHA `29caa6594bc281c07aa2edd3b5dadc3e3a238e29`. Final
-evidence is full backend `1005/1005`, SQL safety `61/61`, REST/OpenAPI/host
-`54/54`, Angular `270/270` including focused settlement workspace `11/11`,
-focused/full Chromium `5/5` and `37/37`, Release
+HOLD 3 remediation is implemented at `a9c46a27349cb617770277699ad74456262b81c4`
+from exact starting SHA `452441084a44d1a8a0a1d8db3a0d679aac5ff550`. Final
+evidence is full backend `1009/1009`, SQL safety `61/61`, REST/OpenAPI/host
+`54/54`, Angular `274/274` including focused settlement workspace `15/15`,
+focused/full Chromium `6/6` and `38/38`, Release
 `0 warnings/0 errors`, and 0-vulnerability audits. Sol HOLD 2 `11926`, Finance
 Epic reconciliation `11927`, and manual-AR supplemental finding `11928` remain
 the authority; PR #77 stays Open/Draft/Unmerged and no Jira write or merge was

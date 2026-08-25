@@ -21,7 +21,7 @@
 <!-- MESP-131-MERGED-CURRENT-END -->
 
 <!-- MESP-133-CURRENT-START -->
-> **MESP-133 Finance settlement workspaces - 25 August 2026.** The shell
+> **MESP-133 Finance settlement workspaces HOLD 3 - 25 August 2026.** The shell
 > keeps the lazy routes `/app/finance/ap`, `/app/finance/ar`, and
 > `/app/finance/settlements`. The AP, AR, and settlement surfaces present
 > server-derived Company scope, source lineage, outstanding/unapplied
@@ -32,11 +32,11 @@
 > server-authoritative. No Wafra-specific branching or external provider UI
 > was added.
 >
-> **MESP-133 validation.** Angular passes `270/270` across 38 spec files;
-> production initial total is `496.43 kB`, Finance/GL lazy chunk is `34.31 kB`,
-> settlement lazy chunk is `47.13 kB`, focused Angular workspace coverage is
-> `11/11`, focused Finance Chromium is `5/5`, full
-> Chromium is `37/37`, and both npm audits report `0 vulnerabilities`. PR #77
+> **MESP-133 validation.** Angular passes `274/274` across 38 spec files;
+> production initial total is `496.44 kB`, Finance/GL lazy chunk is `34.31 kB`,
+> settlement lazy chunk is `56.04 kB`, focused Angular workspace coverage is
+> `15/15`, focused Finance Chromium is `6/6`, full
+> Chromium is `38/38`, and both npm audits report `0 vulnerabilities`. PR #77
 > remains Draft/unmerged for independent Sol review; MESP-132 is Done/merged.
 <!-- MESP-133-CURRENT-END -->
 

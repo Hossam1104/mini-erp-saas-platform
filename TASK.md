@@ -1,3 +1,62 @@
+# MESP-133 HOLD 3 - FINAL GPT-5.6 SOL RE-REVIEW HANDOFF
+
+This is the exact next bounded session: independently re-review the final
+HOLD 3 micro-remediation on Draft PR #77, then stop. Do not merge, mark Ready,
+write Jira, activate MESP-134/MESP-135, invoke Claude Opus, or start another
+capability.
+
+- Branch: `feat/MESP-133-ap-ar-cash-settlement`; PR #77; base `main`; branch
+  remains Open/Draft/Unmerged.
+- Required main baseline: `9ace42c7a830b5ef155a26b18d4a888676b8c188`.
+- HOLD 3 starting SHA: `452441084a44d1a8a0a1d8db3a0d679aac5ff550`.
+- HOLD 3 implementation SHA: `a9c46a27349cb617770277699ad74456262b81c4`.
+- The final documentation/tracker handoff SHA is the branch SHA returned by
+  `git rev-parse HEAD` after the documentation commit is pushed; do not
+  force-push or rebase.
+
+## HOLD 3 bounded fixes
+
+1. AP source readiness now resolves the authoritative Supplier and requires
+   exact Tenant ownership, Active lifecycle, candidate Company authorization,
+   and Purchase Order/source handoff identity. Supplier Invoice Date or the
+   trusted document date is authoritative; missing dates and unsupported
+   ReceiptDate/DeliveryDate semantics fail closed. No `CreatedAt` fallback.
+2. Manual AR and Payment/Receipt UI journeys consume the MESP-120 configured
+   Exchange Rate list and exact document-date reference endpoint. Non-functional
+   transactions submit the authorized rate, rate ID, version ID, and version
+   number; functional-currency transactions submit no FX evidence. Date,
+   Company, and currency changes clear stale evidence and errors are localized.
+   No realized FX or MESP-134 behavior was added.
+3. Direct Finance persistence regressions cover historical AP/AR lineage after
+   rule changes, allocation mismatch, allocation reversal reconciliation, and
+   no-PendingMapping outcomes; supplier missing, inactive, and cross-Tenant
+   source cases fail closed.
+
+## Verified evidence
+
+- Release build: 0 warnings / 0 errors.
+- REST/OpenAPI/host: 54/54.
+- Full backend: 1009/1009, 0 failures, 0 skips; SQL safety 61/61 against
+  disposable LocalDB.
+- Focused backend remediation: 11/11; Angular: 274/274 across 38 specs,
+  focused settlement workspace 15/15.
+- Focused Finance Chromium: 6/6, including non-functional-currency Manual AR
+  creation payload evidence; full Chromium: 38/38.
+- Production bundle: initial 496.44 kB; Finance/GL lazy 34.31 kB; settlement
+  lazy 56.04 kB. Both npm audits: 0 vulnerabilities.
+- Retained runtime: backend `http://localhost:5300` PID `34964`; frontend
+  `http://localhost:4300` PID `34380`; required health, root, `main.js`, and
+  Finance route probes returned HTTP 200.
+- All 68 tracked Markdown files were read; current state, README files,
+  Run.md, architecture/plan overlays, tracker, AGENTS.md, and CLAUDE.md were
+  reconciled. `frontend/assets` remains untouched.
+- Jira acceptance authority remains Sol HOLD 3 `11963`, Finance Epic HOLD 3
+  reconciliation `11964`, prior HOLD `11926`/`11927`, and manual-AR finding
+  `11928`. No Jira writes were performed.
+
+Next action: GPT-5.6 Sol independently reviews PR #77 and decides acceptance
+or further bounded feedback. STOP after that handoff.
+
 # MESP-133 HOLD 2 - FINAL GPT-5.6 SOL HANDOFF
 
 This bounded final remediation is complete. STOP after this handoff for

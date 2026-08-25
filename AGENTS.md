@@ -58,14 +58,15 @@ velocity, or forecast:
 - **Presentational Only**: Presentation-layer only; causes zero FX conversion, zero tax effect, zero accounting effect, and zero persisted amount change.
 - **Fallback & Non-SAR**: Safe text fallback (e.g. `SAR`) is preserved for semantic clarity in multi-currency comparison, audit, and exports. Non-SAR currencies remain completely unaffected. Governed by MESP-12 / MESP-37.
 
-## Current execution overlay - 25 August 2026 (MESP-133 Sol acceptance remediation)
+## Current execution overlay - 25 August 2026 (MESP-133 Sol HOLD 3 micro-remediation)
 
 PR #77 is Open/Draft/Unmerged on `feat/MESP-133-ap-ar-cash-settlement` from
-Sol-reviewed head `f30537d38106065891794a583b905a6fecd44d61`, based on main
+HOLD 3 starting head `452441084a44d1a8a0a1d8db3a0d679aac5ff550`, based on main
 `9ace42c7a830b5ef155a26b18d4a888676b8c188`. MESP-132 is Done/merged/closed;
 MESP-133 remains In Progress/activated under MESP-10 while Sol HOLD `11892` /
-HOLD 2 `11926`, MESP-10 progress comment `11893` / reconciliation `11927`,
-and manual-AR supplemental finding `11928` remain the acceptance authority. No Jira
+HOLD 2 `11926` / HOLD 3 `11963`, MESP-10 progress comment `11893` /
+reconciliation `11927` / HOLD 3 `11964`, and manual-AR supplemental finding
+`11928` remain the acceptance authority. No Jira
 writes, merge, Ready transition, MESP-134/MESP-135 activation, or Opus review
 was performed.
 
@@ -75,19 +76,24 @@ is `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`; the final documentation/tracker
 handoff SHA is recorded by `git rev-parse HEAD` after push.
 
 The remediation resolves AP trusted payment-term/version and due-date
-derivation, reuses `IFinanceSourceApprovalPolicy`, enforces manual-only
+derivation, validates authoritative Supplier Tenant/lifecycle/Company/source
+identity and fails closed without CreatedAt date fallback, reuses
+`IFinanceSourceApprovalPolicy`, enforces manual-only
 methods, binds cash/bank settlement posting to the selected linked GL account,
 reconciles active subledger balances to actual journal lines, applies
 accounting-date as-of allocation/receipt semantics, and enforces AP/AR and
-Payment/Receipt route integrity plus rejected-to-Draft correction.
+Payment/Receipt route integrity plus rejected-to-Draft correction. Manual AR
+and settlements resolve config-led MESP-120 Exchange Rate references by exact
+document date, persist authorized rate/version evidence, and omit FX evidence
+for functional-currency transactions.
 
 Final validation is Release `0 warnings/0 errors`; REST/OpenAPI/host `54/54`;
-full backend `1005/1005` with 0 failures/0 skips; SQL safety `61/61` against
-disposable LocalDB; Angular `270/270` across 38 specs (focused settlement
-workspace `11/11`); focused Finance Chromium `5/5`; full Chromium `37/37`;
-initial bundle `496.43 kB`; Finance/GL
-lazy `34.31 kB`; settlement lazy `47.13 kB`; and both npm audits
-`0 vulnerabilities`. Runtime backend PID `39276` and frontend PID `26888` are
+full backend `1009/1009` with 0 failures/0 skips; SQL safety `61/61` against
+disposable LocalDB; Angular `274/274` across 38 specs (focused settlement
+workspace `15/15`); focused Finance Chromium `6/6`; full Chromium `38/38`;
+initial bundle `496.44 kB`; Finance/GL
+lazy `34.31 kB`; settlement lazy `56.04 kB`; and both npm audits
+`0 vulnerabilities`. Runtime backend PID `34964` and frontend PID `34380` are
 left running with required
 HTTP 200 probes. `frontend/assets` is untouched. Accepted fast-track remains
 `16/26 = 61.5%`; production readiness remains approximately `47%` overall and

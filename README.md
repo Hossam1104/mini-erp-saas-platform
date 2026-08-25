@@ -23,18 +23,21 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### Current acceptance stage: MESP-133 AP / AR / cash settlement remediation - 25 August 2026
+### Current acceptance stage: MESP-133 AP / AR / cash settlement HOLD 3 micro-remediation - 25 August 2026
 
 MESP-132 is Done/merged/closed at its accepted bounded scope. MESP-133 is the
 current active Finance capability under MESP-10. PR #77 is implemented on
 `feat/MESP-133-ap-ar-cash-settlement` but remains Open, Draft, and unmerged
-while GPT-5.6 Sol reviews the remediation. Sol HOLD comments `11892` / `11926`,
-MESP-10 progress comments `11893` / `11927`, and the manual-AR supplemental
-finding `11928` remain the acceptance authority; MESP-10 is still In Progress,
-MESP-134 and MESP-135 remain To Do, and no Jira writes were performed by this
-session.
+while GPT-5.6 Sol reviews the remediation. Sol HOLD comments `11892` / `11926` /
+`11963`, MESP-10 progress comments `11893` / `11927` / `11964`, and the
+manual-AR supplemental finding `11928` remain the acceptance authority; MESP-10
+is still In Progress, MESP-134 and MESP-135 remain To Do, and no Jira writes
+were performed by this session.
 
-The remediation makes AP recognition consume trusted MESP-126 evidence with
+HOLD 3 adds authoritative Supplier existence, Tenant, Active-lifecycle,
+candidate-Company, and handoff-identity validation to AP source readiness;
+trusted AP dates are the Supplier Invoice Date/document date only, with no
+CreatedAt fallback. It also makes AP recognition consume trusted MESP-126 evidence with
 historical payment-term snapshots and reproducible due dates, reuses the
 MESP-132 `IFinanceSourceApprovalPolicy`, enforces internal manual-only
 settlement methods, binds cash/bank posting to the selected linked GL account,
@@ -42,20 +45,23 @@ reconciles active AP/AR and cash movement against actual journal lines, and
 applies accounting-date as-of semantics to aging and exposure. Route/document
 direction and rejected-document correction paths are explicit and fail closed.
 No realized FX, provider, bank-feed, gateway, statutory, Sales, or Wafra-
-specific core behavior was added.
+specific core behavior was added. Manual AR and Payment/Receipt journeys use
+config-led MESP-120 Exchange Rate selection and exact document-date references;
+functional-currency transactions carry no FX evidence and realized FX remains
+out of scope.
 
-The focused source/test remediation commit is
-`b9eba368922899165324086aa59298d054fec25d`; the final implementation commit
-for this HOLD 2 session is `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`.
+The focused source/test remediation commits are
+`b9eba368922899165324086aa59298d054fec25d` and
+`a9c46a27349cb617770277699ad74456262b81c4` (HOLD 3 implementation).
 
 Verified remediation evidence is REST/OpenAPI/host `54/54`, SQL safety `61/61`,
-full backend `1005/1005`, Angular `270/270` across 38 spec files, focused
-Finance Chromium `5/5`, full Chromium `37/37`, Release build `0 warnings / 0
-errors`, initial bundle `496.43 kB`, Finance/GL lazy chunk `34.31 kB`,
-settlement lazy chunk `47.13 kB`, and both npm audits at `0 vulnerabilities`.
+full backend `1009/1009`, Angular `274/274` across 38 spec files, focused
+Finance Chromium `6/6`, full Chromium `38/38`, Release build `0 warnings / 0
+errors`, initial bundle `496.44 kB`, Finance/GL lazy chunk `34.31 kB`,
+settlement lazy chunk `56.04 kB`, and both npm audits at `0 vulnerabilities`.
 The repository runtime is running for owner inspection at backend
-`http://localhost:5300` (PID `39276`) and frontend `http://localhost:4300`
-(PID `26888`). The backend health and the
+`http://localhost:5300` (PID `34964`) and frontend `http://localhost:4300`
+(PID `34380`). The backend health and the
 frontend `/`, `/main.js`, `/app/finance`, `/app/finance/ap`,
 `/app/finance/ar`, and `/app/finance/settlements` routes returned HTTP 200.
 
