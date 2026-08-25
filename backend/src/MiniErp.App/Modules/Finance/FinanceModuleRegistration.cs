@@ -12,6 +12,8 @@ public static class FinanceModuleRegistration
         services.AddSingleton<IFinanceCompanyProvider, NoFinanceCompanyProvider>();
         services.AddSingleton<IFinanceSourceApprovalPolicy, UnconfiguredFinanceSourceApprovalPolicy>();
         services.AddSingleton<IFinancePersistence, UnavailableFinancePersistence>();
+        services.AddSingleton<IFinanceSettlementPersistence, UnavailableFinanceSettlementPersistence>();
+        services.AddSingleton<IFinanceSupplierInvoiceSourceProvider, UnavailableFinanceSupplierInvoiceSourceProvider>();
         services.AddSingleton<FinanceAuthorizationService>();
         return services;
     }

@@ -9,31 +9,38 @@
 > **MESP-131 accepted validation.** Focused valuation `44/44`; combined Inventory regression `89/89`; SQL Server safety `40/40` against disposable LocalDB; canonical disposable-LocalDB backend `963/963` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `254/254` across 35 specs; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused Chromium `5/5`; full Chromium `32/32`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. PR #75 is merged into `main`; no Jira writes were performed.
 <!-- MESP-131-CURRENT-END -->
 
-<!-- MESP-132-CURRENT-START -->
-> **MESP-132 Core Finance / GL foundation - final Sol acceptance remediation,
-> 24 August 2026.** The backend now
-> owns Company-scoped Chart of Accounts, Fiscal Calendar/Year/Period control,
-> approved Cost Center dimension support, manual Journal lifecycle, balanced
-> functional-currency posting, controlled reversal, immutable Posted Journal
-> Lines as GL facts, versioned/effective-dated Posting Rules, durable
-> source-to-GL uniqueness, exact MESP-120 Exchange Rate evidence, and the
-> `inventory-valuation-finance.v1` Inventory handoff consumer. Finance does
-> not mutate Inventory, does not seed customer accounts, and does not add
-> AP/AR, cash/bank, tax, financial statements, generic Reporting, Sales,
-> migration/cutover, external/statutory, or Wafra-specific behavior.
+<!-- MESP-133-CURRENT-START -->
+> **MESP-133 AP / AR / cash settlement verification-only HOLD 4 - 25 August 2026.** The
+> backend now consumes trusted MESP-126 Finance-ready evidence with an
+> authoritative historical payment-term/version snapshot and reproducible due
+> date, reuses `IFinanceSourceApprovalPolicy` for settlement SoD, enforces
+> internal manual-only payment methods, and validates settlement direction,
+> Company scope, lifecycle, currency, and effective dates at posting time.
+> Cash/bank posting must match the selected account's linked GL account through
+> the configured Posting Rule. AP/AR reconciliation derives active subledger
+> balances and actual posted/reversed journal lines; aging/exposure use
+> accounting-date as-of allocation semantics. Rejected settlements return to
+> Draft only through the server-side correction path. Realized FX and external
+> providers remain fail-closed/deferred to MESP-134 and later scope.
 >
-> **MESP-132 validation.** Focused Finance correctness remediation `12/12`;
-> REST/OpenAPI plus host-security subset `53/53`; prior Inventory regression
-> `89/89`; SQL safety `46/46`; disposable-LocalDB backend `982/982` with 0 failed/0
-> skipped; Release build 0 warnings/0 errors; Finance migration model-change
-> detection reports no changes; no Owner-managed asset changes. The public
-> Manual Journal contract is manual-only and five SQL Server contention races
-> prove safe ordering/uniqueness. The active branch is
-> The retained feature branch `feat/MESP-132-finance-foundation` carries the
-> accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7` from
-> implementation commit `dcae7e2`, based on `fcec241dfedb529fef89d4336adf1e571917c52a`.
-> PR #76 is squash-merged into `main`; Sol still owns Jira closure.
-<!-- MESP-132-CURRENT-END -->
+> **MESP-133 validation.** HOLD 4 directly instantiates the real
+> `ProcurementFinanceSupplierInvoiceSourceProvider` with bounded authoritative
+> dependency fakes and adds four provider cases plus one historical recognition
+> rule A→B persistence regression. Focused remediation coverage is `16/16`, the
+> `54/54` REST/OpenAPI/host contract suite, and 15 named MESP-133 SQL race
+> tests; the complete SQL safety class is `61/61` against disposable LocalDB,
+> the canonical disposable-LocalDB backend is `1014/1014`
+> with 0 failed/0 skipped, and Release build is 0 warnings/0 errors. The
+> additive migration remains `20260824220208_MESP133ApArCashSettlement`; no
+> migration edit or Owner-managed asset change was made. PR #77 remains Open,
+> Draft, and unmerged on `feat/MESP-133-ap-ar-cash-settlement` for Sol HOLD
+> `11926`/`11963`/`11967` re-review (with Finance Epic `11927`/`11964`/`11968` and manual-AR
+> supplemental finding `11928`); MESP-132 is Done/merged/closed and no Jira writes were
+> performed. The focused source/test commit is
+> `b9eba368922899165324086aa59298d054fec25d`; HOLD 3 implementation commit is
+> `a9c46a27349cb617770277699ad74456262b81c4`; HOLD 4 test commit is
+> `7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`.
+<!-- MESP-133-CURRENT-END -->
 
 > **Historical MESP-129 runtime overlay - 22 August 2026.** The backend now
 > consumes authoritative Procurement Goods Receipt lines for one-time accepted

@@ -9,7 +9,37 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 24 August 2026 (MESP-132 final Sol acceptance remediation)
+## Current execution overlay - 25 August 2026 (MESP-133 Sol HOLD 3 micro-remediation)
+
+PR #77 is Open/Draft/Unmerged on `feat/MESP-133-ap-ar-cash-settlement` from
+HOLD 3 starting head `452441084a44d1a8a0a1d8db3a0d679aac5ff550`, based on main
+`9ace42c7a830b5ef155a26b18d4a888676b8c188`. MESP-132 is Done/merged/closed;
+MESP-133 remains In Progress/activated under MESP-10 while Sol HOLD `11892` /
+HOLD 2 `11926` / HOLD 3 `11963`, MESP-10 progress comment `11893` /
+reconciliation `11927` / HOLD 3 `11964`, and manual-AR supplemental finding
+`11928` remain authoritative. No Jira writes,
+merge, Ready transition, next-capability activation, or Opus review occurred.
+
+The focused source/test remediation commit is
+`b9eba368922899165324086aa59298d054fec25d`; the final implementation commit
+is `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`; the documentation/tracker
+handoff SHA is recorded after push.
+
+The remediation closes trusted AP payment-term/version and due-date handling,
+reuses `IFinanceSourceApprovalPolicy`, enforces manual-only settlement
+methods, binds cash/bank posting to linked GL mappings, implements actual
+subledger/GL reconciliation and accounting-date as-of semantics, and enforces
+AP/AR and Payment/Receipt route integrity with rejected-to-Draft correction.
+Final validation is REST/OpenAPI/host `54/54`, full backend `1009/1009`, SQL
+safety `61/61`, Angular `274/274` (focused settlement workspace `15/15`),
+focused/full Chromium `6/6` and `38/38`,
+Release `0/0`, initial `496.44 kB`, Finance/GL lazy `34.31 kB`, settlement
+lazy `56.04 kB`, both audits clean; runtime PIDs `34964`/`34380` remain
+running.
+Fast-track remains `16/26 = 61.5%`; production readiness remains `~47%`
+overall / `~41%` Procurement/P2P; MESP-134 is not activated.
+
+## Historical execution overlay - 24 August 2026 (MESP-132 final Sol acceptance remediation)
 
 The current merged capability is **MESP-132 Finance / General Ledger
 foundation** under Epic MESP-10. PR #76 is squash-merged into `main` at

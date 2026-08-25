@@ -23,27 +23,61 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### Current acceptance stage: MESP-132 Finance foundation - 24 August 2026
+### Current acceptance stage: MESP-133 AP / AR / cash settlement verification-only HOLD 4 - 25 August 2026
 
-PR #76 is squash-merged into `main` at
-`ccc52a892c8258778f57c55c12fa0032bd3e276b`. Its exact accepted feature head
-is `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; the retained feature branch
-is `feat/MESP-132-finance-foundation`. MESP-132 remains Jira In Progress and
-awaits Sol's Jira closure. The post-merge documentation reconciliation commit
-is the final `main` state recorded by this handoff. Accepted fast-track
-completion is **16/26 = 61.5%** and production-readiness remains approximately
-**47% overall / 41% Procurement/P2P**.
+MESP-132 is Done/merged/closed at its accepted bounded scope. MESP-133 is the
+current active Finance capability under MESP-10. PR #77 is implemented on
+`feat/MESP-133-ap-ar-cash-settlement` but remains Open, Draft, and unmerged
+while GPT-5.6 Sol reviews the verification evidence. Sol HOLD comments `11892`
+/ `11926` / `11963` / `11967`, MESP-10 progress comments `11893` / `11927` /
+`11964` / `11968`, and the
+manual-AR supplemental finding `11928` remain the acceptance authority; MESP-10
+is still In Progress, MESP-134 and MESP-135 remain To Do, and no Jira writes
+were performed by this session.
 
-MESP-132 delivers the bounded Company-owned Finance / General Ledger
-foundation described below. The final remediation forces the public Manual
-Journal contract to manual source identity, preserves trusted Inventory
-lineage, and adds five provider-realistic SQL Server concurrency races. Final
-evidence is Finance `12/12`, REST/OpenAPI and host security `53/53`, SQL safety
-`46/46`, full backend `982/982`, Angular `259/259`, focused/full Chromium
-`2/2` and `34/34`, initial bundle `496.34 kB`, Finance lazy chunk `36.45 kB`,
-and clean npm audits. Final merged-main runtime is backend
-`http://localhost:5300` PID `21112` and frontend `http://localhost:4300` PID
-`39640`; `/health`, `/`, `/main.js`, and `/app/finance` returned HTTP 200.
+HOLD 4 changes tests only. The real `ProcurementFinanceSupplierInvoiceSourceProvider`
+is directly exercised with bounded authoritative dependency fakes for active,
+missing, inactive, cross-Tenant, missing-date/CreatedAt, and unsupported
+date-basis cases. A real Finance persistence regression recognizes February
+under recognition Posting Rule A and May under non-overlapping Rule B, inspects
+the actual AP Control A/B journal lines, and proves historical reconciliation
+does not reinterpret the earlier item. HOLD 3 adds authoritative Supplier existence, Tenant, Active-lifecycle,
+candidate-Company, and handoff-identity validation to AP source readiness;
+trusted AP dates are the Supplier Invoice Date/document date only, with no
+CreatedAt fallback. It also makes AP recognition consume trusted MESP-126 evidence with
+historical payment-term snapshots and reproducible due dates, reuses the
+MESP-132 `IFinanceSourceApprovalPolicy`, enforces internal manual-only
+settlement methods, binds cash/bank posting to the selected linked GL account,
+reconciles active AP/AR and cash movement against actual journal lines, and
+applies accounting-date as-of semantics to aging and exposure. Route/document
+direction and rejected-document correction paths are explicit and fail closed.
+No realized FX, provider, bank-feed, gateway, statutory, Sales, or Wafra-
+specific core behavior was added. Manual AR and Payment/Receipt journeys use
+config-led MESP-120 Exchange Rate selection and exact document-date references;
+functional-currency transactions carry no FX evidence and realized FX remains
+out of scope.
+
+The focused source/test remediation commits are
+`b9eba368922899165324086aa59298d054fec25d` and
+`a9c46a27349cb617770277699ad74456262b81c4` (HOLD 3 implementation); HOLD 4
+test commit is `7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`.
+
+Verified remediation evidence is REST/OpenAPI/host `54/54`, SQL safety `61/61`,
+full backend `1014/1014`, focused Finance `16/16`, Angular `274/274` across 38 spec files, focused
+Finance Chromium `6/6`, full Chromium `38/38`, Release build `0 warnings / 0
+errors`, initial bundle `496.44 kB`, Finance/GL lazy chunk `34.31 kB`,
+settlement lazy chunk `56.04 kB`, and both npm audits at `0 vulnerabilities`.
+The repository runtime is running for owner inspection at backend
+`http://localhost:5300` (PID `32024`) and frontend `http://localhost:4300`
+(PID `1164`). The backend health and the
+frontend `/`, `/main.js`, `/app/finance`, `/app/finance/ap`,
+`/app/finance/ar`, and `/app/finance/settlements` routes returned HTTP 200.
+
+Accepted fast-track completion remains **16/26 = 61.5%** and production
+readiness remains approximately **47% overall / 41% Procurement/P2P**. MESP-133
+does not count as an accepted capability until Sol accepts it and the owner
+controls the merge. The next planned Finance capability is MESP-134, but it is
+not activated.
 
 ### MESP-131 guarded merge complete - 24 August 2026
 
@@ -59,8 +93,8 @@ valuation failures by tracking scope, preserves conservative missing-policy
 base-pool blocking, closes full depletion against stored value with explicit
 formula/rounding/actual-value evidence, and reports impossible valuation state
 as `ValuationMismatch` instead of complete reconciliation. MESP-131 Jira
-closure is recorded in comment `11842`. MESP-132 is now the active
-Finance implementation capability on its dedicated feature branch.
+closure is recorded in comment `11842`. MESP-133 is now the active Finance
+implementation/remediation capability on its dedicated feature branch.
 
 The final P1 correction-quantity commit is
 `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`.

@@ -9,6 +9,7 @@ using MiniErp.App.Modules.Inventory;
 using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Foundation;
 using MiniErp.Contracts.Modules.Inventory;
+using MiniErp.Contracts.Modules.Procurement;
 
 namespace MiniErp.App.Modules.Finance;
 

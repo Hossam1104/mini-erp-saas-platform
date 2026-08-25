@@ -16,6 +16,17 @@ import {
   FinancePostingRule,
   FinancePostingRuleWriteRequest,
   FinanceAccountWriteRequest,
+  FinanceAllocation,
+  FinanceAgingRow,
+  FinanceCashAccount,
+  FinanceExposure,
+  FinanceOpenItem,
+  FinancePaymentMethod,
+  FinanceReconciliation,
+  FinanceSettlementDocument,
+  FinanceApSourceReady,
+  FinanceManualReceivableRequest,
+  FinanceSettlementWriteRequest,
 } from './finance.model';
 
 @Injectable({ providedIn: 'root' })
@@ -45,6 +56,32 @@ export class FinanceService {
   postJournal(id: string, version: string): Promise<FinanceJournal> { return this.mutate(`/finance/journals/${id}/post`, {}, version); }
   reverseJournal(id: string, postingDate: string, reason: string): Promise<FinanceJournal> { return this.mutate(`/finance/journals/${id}/reverse`, { postingDate, reason }); }
   processHandoff(id: string): Promise<FinanceJournal> { return this.mutate(`/finance/inventory-handoffs/${id}/process`, {}); }
+
+  apOpenItems(companyId: string): Observable<FinanceOpenItem[]> { return this.http.get<FinanceOpenItem[]>('/api/v1/finance/ap/open-items', { params: new HttpParams().set('companyId', companyId) }); }
+  apSourceReady(companyId: string): Observable<FinanceApSourceReady[]> { return this.http.get<FinanceApSourceReady[]>('/api/v1/finance/ap/source-ready', { params: new HttpParams().set('companyId', companyId) }); }
+  arOpenItems(companyId: string): Observable<FinanceOpenItem[]> { return this.http.get<FinanceOpenItem[]>('/api/v1/finance/ar/open-items', { params: new HttpParams().set('companyId', companyId) }); }
+  apAging(companyId: string): Observable<FinanceAgingRow[]> { return this.http.get<FinanceAgingRow[]>('/api/v1/finance/ap/aging', { params: new HttpParams().set('companyId', companyId) }); }
+  arAging(companyId: string): Observable<FinanceAgingRow[]> { return this.http.get<FinanceAgingRow[]>('/api/v1/finance/ar/aging', { params: new HttpParams().set('companyId', companyId) }); }
+  exposure(companyId: string, customerId: string): Observable<FinanceExposure | null> { return this.http.get<FinanceExposure | null>('/api/v1/finance/ar/exposure', { params: new HttpParams().set('companyId', companyId).set('customerId', customerId) }); }
+  paymentMethods(companyId: string): Observable<FinancePaymentMethod[]> { return this.http.get<FinancePaymentMethod[]>('/api/v1/finance/payment-methods', { params: new HttpParams().set('companyId', companyId) }); }
+  cashAccounts(companyId: string): Observable<FinanceCashAccount[]> { return this.http.get<FinanceCashAccount[]>('/api/v1/finance/cash-accounts', { params: new HttpParams().set('companyId', companyId) }); }
+  payments(companyId: string): Observable<FinanceSettlementDocument[]> { return this.http.get<FinanceSettlementDocument[]>('/api/v1/finance/payments', { params: new HttpParams().set('companyId', companyId) }); }
+  receipts(companyId: string): Observable<FinanceSettlementDocument[]> { return this.http.get<FinanceSettlementDocument[]>('/api/v1/finance/receipts', { params: new HttpParams().set('companyId', companyId) }); }
+  allocations(companyId: string): Observable<FinanceAllocation[]> { return this.http.get<FinanceAllocation[]>('/api/v1/finance/allocations', { params: new HttpParams().set('companyId', companyId) }); }
+  reconciliation(companyId: string): Observable<FinanceReconciliation[]> { return this.http.get<FinanceReconciliation[]>('/api/v1/finance/settlement/reconciliation', { params: new HttpParams().set('companyId', companyId) }); }
+  customers(): Observable<unknown[]> { return this.http.get<unknown[]>('/api/v1/master-data/customers'); }
+  suppliers(): Observable<unknown[]> { return this.http.get<unknown[]>('/api/v1/master-data/suppliers'); }
+  paymentTerms(): Observable<unknown[]> { return this.http.get<unknown[]>('/api/v1/master-data/payment-terms'); }
+
+  recognizeAp(sourceEvidenceId: string): Promise<FinanceOpenItem> { return this.mutate('/finance/ap/recognize', { sourceEvidenceId }); }
+  createManualReceivable(payload: FinanceManualReceivableRequest): Promise<FinanceOpenItem> { return this.mutate('/finance/ar/manual', payload); }
+  createPayment(payload: FinanceSettlementWriteRequest): Promise<FinanceSettlementDocument> { return this.mutate('/finance/payments', payload); }
+  createReceipt(payload: FinanceSettlementWriteRequest): Promise<FinanceSettlementDocument> { return this.mutate('/finance/receipts', payload); }
+  settlementAction(direction: 'Payment' | 'Receipt', id: string, action: 'submit' | 'approve' | 'reject', version: string, reason: string | null = null): Promise<FinanceSettlementDocument> { return this.mutate(`/finance/${direction === 'Payment' ? 'payments' : 'receipts'}/${id}/${action}`, { reason }, version); }
+  postSettlement(direction: 'Payment' | 'Receipt', id: string, version: string): Promise<FinanceSettlementDocument> { return this.mutate(`/finance/${direction === 'Payment' ? 'payments' : 'receipts'}/${id}/post`, {}, version); }
+  reverseSettlement(direction: 'Payment' | 'Receipt', id: string, reason: string): Promise<FinanceSettlementDocument> { return this.mutate(`/finance/${direction === 'Payment' ? 'payments' : 'receipts'}/${id}/reverse`, { postingDate: new Date().toISOString().slice(0, 10), reason }); }
+  createAllocation(payload: { settlementDocumentId: string; openItemId: string; amount: number; allocationDate: string; reason: string | null }): Promise<FinanceAllocation> { return this.mutate('/finance/allocations', payload); }
+  reverseAllocation(id: string, version: string, reason: string): Promise<FinanceAllocation> { return this.mutate(`/finance/allocations/${id}/reverse`, { reason }, version); }
 
   private async mutate<T>(path: string, payload: unknown, version?: string): Promise<T> {
     if (!await this.auth.bootstrapAntiforgery()) {

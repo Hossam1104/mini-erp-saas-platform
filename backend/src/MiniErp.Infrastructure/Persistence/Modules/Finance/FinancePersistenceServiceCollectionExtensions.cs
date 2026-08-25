@@ -2,9 +2,11 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.Finance;
 using MiniErp.App.Modules.Inventory;
 using MiniErp.App.Modules.MasterData;
+using MiniErp.App.Modules.Procurement;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.Finance;
 
@@ -20,6 +22,22 @@ public static class FinancePersistenceServiceCollectionExtensions
             provider.GetRequiredService<IInventoryValuationPersistence>(),
             provider.GetRequiredService<IMasterDataExchangeRatePersistence>(),
             provider.GetRequiredService<IFinanceSourceApprovalPolicy>()));
+        services.AddSingleton<IFinanceSettlementPersistence>(provider => new FinanceSettlementPersistence(
+            optionsBuilder.Options,
+            provider.GetRequiredService<IFinanceCompanyProvider>(),
+            provider.GetRequiredService<IMasterDataExchangeRatePersistence>(),
+            provider.GetRequiredService<IBusinessCustomerReferenceReader>(),
+            provider.GetRequiredService<ISupplierPersistence>(),
+            provider.GetRequiredService<IMasterDataCurrencyPaymentTermPersistence>(),
+            provider.GetRequiredService<IFinanceSupplierInvoiceSourceProvider>(),
+            provider.GetRequiredService<IFinanceSourceApprovalPolicy>()));
+        services.AddSingleton<IFinanceSupplierInvoiceSourceProvider>(provider => new ProcurementFinanceSupplierInvoiceSourceProvider(
+            provider.GetRequiredService<IPurchaseInvoiceHandoffPersistence>(),
+            provider.GetRequiredService<IPurchaseInvoiceMatchPersistence>(),
+            provider.GetRequiredService<IFinanceCompanyProvider>(),
+            provider.GetRequiredService<IPurchaseOrderPersistence>(),
+            provider.GetRequiredService<IMasterDataCurrencyPaymentTermPersistence>(),
+            provider.GetRequiredService<ISupplierPersistence>()));
         return services;
     }
 

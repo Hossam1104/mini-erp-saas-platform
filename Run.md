@@ -176,17 +176,17 @@ the full Foundation suite, use the dedicated safe runner:
 
 ## MESP-124 Purchase Order runtime
 
-## MESP-132 Finance runtime
+## MESP-133 Finance settlement runtime
 
-The current Finance runtime is available at `/app/finance` from the verified
-Development runtime. It is a lazy Angular route with Company-selected Chart of Accounts,
-Fiscal Periods, Journals, Posting Rules, Inventory Handoff, and GL inquiry
-views. The backend remains authoritative for Tenant/Company scope, posting,
-period eligibility, balancing, FX, mapping, idempotency, and audit. Current
-runtime evidence is recorded in the merged-main handoff and `docs/staticts.md`;
-the final launcher probes `/health`, `/`, `/main.js`, and `/app/finance` at
-the verified local URLs. PR #76 is squash-merged; Sol still owns Jira closure
-and Finance Epic reconciliation. This is not a production-readiness claim.
+The current Finance runtime is available at `/app/finance` plus the lazy AP,
+AR, and settlement routes `/app/finance/ap`, `/app/finance/ar`, and
+`/app/finance/settlements`. The HOLD 4 verification keeps Company/Tenant scope,
+server-owned source/direction/mapping authority, truthful approval and
+reconciliation states, manual-only settlement methods, and EN/AR RTL
+presentation. Runtime evidence is recorded in `docs/staticts.md`; the current
+owner-inspection processes are backend PID `32024` and frontend PID `1164`.
+PR #77 remains Open/Draft/Unmerged for Sol review. This is not a
+production-readiness claim.
 
 The current Procurement runtime includes the bounded Purchase Order and manual
 Supplier Confirmation journey at these relative routes:

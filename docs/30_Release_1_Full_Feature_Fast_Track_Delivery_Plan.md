@@ -1,5 +1,30 @@
 # Release 1 Full-Feature Fast-Track Delivery Plan
 
+## Current execution reconciliation - 25 August 2026
+
+The current bounded capability is MESP-133 AP/AR/cash settlement verification-only HOLD 4
+micro-remediation, active/In Progress under MESP-10 on Draft PR #77. MESP-132 is
+Done/merged/closed; Sol HOLD `11892` / `11926` / `11963` / `11967` and MESP-10 progress
+comments `11893` / `11927` / `11964` / `11968`
+remain the acceptance authority. MESP-134 and MESP-135 are To Do and
+unactivated. Fast-track remains `16/26 = 61.5%`; production readiness remains
+approximately `47%` overall / `41%` Procurement/P2P. The older 24 August
+MESP-132 overlay below is historical and retained for traceability.
+
+HOLD 4 adds no production code. Its implementation/test commit is
+`7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`, from exact starting SHA
+`30ea4a04e5fb120a292083edc03073e37b278b11`. Final evidence is full backend
+`1014/1014`, focused Finance `16/16`, SQL safety `61/61`, REST/OpenAPI/host
+`54/54`, Angular `274/274` including focused settlement workspace `15/15`,
+focused/full Chromium `6/6` and `38/38`, Release
+`0 warnings/0 errors`, and 0-vulnerability audits. Sol HOLD 2 `11926`, Finance
+Epic reconciliation `11927`, HOLD 3 `11963` / `11964`, HOLD 4 `11967` /
+`11968`, and manual-AR supplemental finding `11928` remain the authority; PR
+#77 stays Open/Draft/Unmerged and no Jira write or merge was performed. The
+real Procurement source-provider cases and historical recognition rule A→B
+regression are now present and passed; the existing allocation-vs-settlement-
+reversal race remains retained.
+
 <!-- MESP-132-EXECUTION-START -->
 ## Execution overlay â€” 24 August 2026
 
@@ -22,7 +47,8 @@ Fast-track completion after the verified MESP-132 merge is `16/26 = 61.5%`; this
 **Date:** 12 August 2026
 **Milestone:** **31 August 2026 — Release 1 Integrated Preview**
 **Governance task:** MESP-115 (Done), MESP-116 (Done at bounded governance scope)
-**Current bounded session:** post-merge Sol Jira closure/reconciliation for MESP-132; no next capability starts automatically
+**Current bounded session:** GPT-5.6 Sol independent acceptance re-review of
+MESP-133 Draft PR #77; no merge, Jira write, or next capability starts automatically
 
 ## 1. Purpose and authority
 
@@ -78,7 +104,8 @@ cross-module dependency map is
 | MESP-116 | Done at the bounded approval/unblock reconciliation; Jira comment `10957`, closure transition, final dependency map, PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e`, merge `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`, and post-merge synchronization `66183c1` are recorded. |
 | MESP-117–MESP-131 | Completed bounded capabilities at their accepted merged scopes. |
 | MESP-132 | Merged through PR #76 under MESP-10; Jira closure and Finance Epic reconciliation remain with Sol. |
-| MESP-133–MESP-142 | Capability backlog remains To Do / not activated. |
+| MESP-133 | In Progress / activated on Draft PR #77; awaiting Sol HOLD 2 review. |
+| MESP-134–MESP-142 | Capability backlog remains To Do / not activated. |
 | Product implementation | Existing bounded Category, UOM, Product, Supplier, and Customer slices remain evidence; the planned capability completion and shared Angular experience are not claimed complete. |
 | Current acceptance handoff | MESP-132 accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; PR #76 squash SHA `ccc52a892c8258778f57c55c12fa0032bd3e276b`; Sol Jira closure and MESP-10 reconciliation are the next governance actions. |
 | Production capability | No percentage increase is justified by this governance/Jira work. |
