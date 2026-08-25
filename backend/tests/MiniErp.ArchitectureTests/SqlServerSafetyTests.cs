@@ -280,6 +280,8 @@ public sealed class SqlServerSafetyFixture : IAsyncLifetime
 public sealed class SqlServerSafetyTests
 {
     private readonly SqlServerSafetyFixture _fixture;
+    private static readonly Guid ActorId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+    private static readonly Guid ApproverId = Guid.Parse("66666666-6666-6666-6666-666666666666");
 
     public SqlServerSafetyTests(SqlServerSafetyFixture fixture)
     {
@@ -514,6 +516,213 @@ public sealed class SqlServerSafetyTests
         Assert.True(code is "EDIT-RACE-A" or "EDIT-RACE-B");
     }
 
+    [Fact]
+    public async Task MESP133_sql_server_same_ap_source_concurrent_recognition_has_one_source_effect()
+    {
+        var (options, companyId) = await CreateSettlementOptionsAsync();
+        var provider = new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(_fixture.TenantA.TenantId.Value, companyId, "SQL AP Company", "SAR")]);
+        var first = CreateFinanceSettlementPersistence(options, companyId, provider, new SqlFinanceSourceApprovalPolicy(FinanceApprovalRequirement.NotRequired), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value));
+        var second = CreateFinanceSettlementPersistence(options, companyId, provider, new SqlFinanceSourceApprovalPolicy(FinanceApprovalRequirement.NotRequired), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value));
+        var context = FinanceContext("tenant.finance.ap.recognize");
+        var accounts = await CreateFinanceAccountsAsync(new FinancePersistence(options, provider, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence()), context, companyId, "sql-ap-recognition");
+        await CreateOpenPeriodAndRuleAsync(options, provider, context, companyId, accounts.Debit.Id, accounts.Credit.Id, "procurement-supplier-invoice.v1", "recognition");
+
+        var supplierId = Guid.NewGuid();
+        var source = new FinanceSupplierInvoiceSourceRecord(
+            _fixture.TenantA.TenantId.Value,
+            companyId,
+            supplierId,
+            "procurement-supplier-invoice.v1",
+            Guid.NewGuid(),
+            1,
+            Guid.NewGuid(),
+            1,
+            "AP-RACE",
+            new DateOnly(2026, 1, 15),
+            "SAR",
+            100m,
+            "SAR",
+            100m,
+            1m,
+            null,
+            null,
+            null,
+            new FinancePaymentTermSnapshotRecord(Guid.NewGuid(), "NET30", "Net 30", null, 1, Guid.NewGuid(), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 14)),
+            new DateOnly(2026, 2, 14),
+            Guid.NewGuid(),
+            1,
+            "sql-ap-race",
+            "sql-ap-race");
+        var sourceProvider = new SqlStaticSupplierInvoiceSourceProvider(source);
+        first = CreateFinanceSettlementPersistence(options, companyId, provider, new SqlFinanceSourceApprovalPolicy(FinanceApprovalRequirement.NotRequired), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, supplierId), sourceProvider);
+        second = CreateFinanceSettlementPersistence(options, companyId, provider, new SqlFinanceSourceApprovalPolicy(FinanceApprovalRequirement.NotRequired), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, supplierId), sourceProvider);
+
+        var firstTask = SafeFinanceOperationAsync(() => first.RecognizeSupplierInvoiceAsync(FinanceContext("tenant.finance.ap.recognize"), new FinanceSupplierInvoiceRecognitionCommand(source.SourceEvidenceId, "sql-ap-recognize-a", "sql-ap-recognize-a")));
+        var secondTask = SafeFinanceOperationAsync(() => second.RecognizeSupplierInvoiceAsync(FinanceContext("tenant.finance.ap.recognize"), new FinanceSupplierInvoiceRecognitionCommand(source.SourceEvidenceId, "sql-ap-recognize-b", "sql-ap-recognize-b")));
+        var results = await Task.WhenAll(firstTask, secondTask);
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "source_effect_exists" or "concurrency_conflict" or "finance_conflict");
+        await using var db = new FinanceDbContext(options, _fixture.TenantA);
+        Assert.Equal(1, await db.OpenItems.CountAsync(item => item.SourceEvidenceId == source.SourceEvidenceId));
+        Assert.Equal(1, await db.SourceEffects.CountAsync(item => item.SourceEvidenceId == source.SourceEvidenceId));
+        Assert.Equal(1, await db.Journals.CountAsync(item => item.SourceEvidenceId == source.SourceEvidenceId));
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_same_payable_open_item_concurrent_allocation_cannot_over_allocate()
+    {
+        var scenario = await CreatePaymentSettlementScenarioAsync("allocation-item-race");
+        var seeded = await SeedPayableSettlementAsync(scenario, secondItem: false);
+        var first = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var second = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var results = await Task.WhenAll(
+            SafeCodeAsync(() => first.CreateAllocationAsync(FinanceContext("tenant.finance.allocation.create"), new FinanceAllocationCommand(seeded.DocumentId, seeded.FirstItemId, 40m, new DateOnly(2026, 1, 15), "allocation A", Guid.NewGuid(), "allocation-item-a", "allocation-item-a"))),
+            SafeCodeAsync(() => second.CreateAllocationAsync(FinanceContext("tenant.finance.allocation.create"), new FinanceAllocationCommand(seeded.DocumentId, seeded.FirstItemId, 40m, new DateOnly(2026, 1, 15), "allocation B", Guid.NewGuid(), "allocation-item-b", "allocation-item-b"))));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "allocation_exceeds_outstanding" or "source_effect_exists" or "concurrency_conflict" or "finance_conflict");
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        Assert.Equal(40m, await db.Allocations.Where(item => item.OpenItemId == seeded.FirstItemId && item.Status == FinanceAllocationStatus.Active).SumAsync(item => item.Amount));
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_same_settlement_concurrent_allocations_cannot_over_allocate_document()
+    {
+        var scenario = await CreatePaymentSettlementScenarioAsync("allocation-document-race");
+        var seeded = await SeedPayableSettlementAsync(scenario, secondItem: true);
+        var first = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var second = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var results = await Task.WhenAll(
+            SafeCodeAsync(() => first.CreateAllocationAsync(FinanceContext("tenant.finance.allocation.create"), new FinanceAllocationCommand(seeded.DocumentId, seeded.FirstItemId, 40m, new DateOnly(2026, 1, 15), "allocation A", Guid.NewGuid(), "allocation-document-a", "allocation-document-a"))),
+            SafeCodeAsync(() => second.CreateAllocationAsync(FinanceContext("tenant.finance.allocation.create"), new FinanceAllocationCommand(seeded.DocumentId, seeded.SecondItemId!.Value, 40m, new DateOnly(2026, 1, 15), "allocation B", Guid.NewGuid(), "allocation-document-b", "allocation-document-b"))));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "allocation_exceeds_unallocated" or "source_effect_exists" or "concurrency_conflict" or "finance_conflict");
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        Assert.Equal(40m, await db.Allocations.Where(item => item.SettlementDocumentId == seeded.DocumentId && item.Status == FinanceAllocationStatus.Active).SumAsync(item => item.Amount));
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_settlement_post_and_payment_method_lifecycle_have_one_consistent_order()
+    {
+        var scenario = await CreatePaymentSettlementScenarioAsync("post-lifecycle-race");
+        var postPersistence = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var lifecyclePersistence = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var results = await Task.WhenAll(
+            SafeCodeAsync(() => postPersistence.PostSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.post"), new FinanceSettlementActionCommand(scenario.Approved.Id, scenario.Approved.Version, null, "post-lifecycle-post", "post-lifecycle-post", FinancePaymentMethodDirection.Payment))),
+            SafeCodeAsync(() => lifecyclePersistence.SetPaymentMethodLifecycleAsync(FinanceContext("tenant.finance.settlement.configure"), scenario.Method.Id, scenario.CompanyId, FinancePaymentMethodLifecycle.Inactive, scenario.Method.Version, "post-lifecycle-method", "post-lifecycle-method")));
+
+        Assert.Contains(results, item => item.Succeeded);
+        Assert.All(results, item => Assert.True(item.Succeeded || item.Code is "settlement_configuration_invalid" or "cash_account_link_invalid" or "payment_method_in_use" or "concurrency_conflict" or "finance_conflict", item.Code));
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        var document = await db.SettlementDocuments.SingleAsync(item => item.Id == scenario.Approved.Id);
+        var method = await db.PaymentMethods.SingleAsync(item => item.Id == scenario.Method.Id);
+        Assert.True(document.Status == FinanceSettlementDocumentStatus.Posted && method.Lifecycle == FinancePaymentMethodLifecycle.Active || document.Status == FinanceSettlementDocumentStatus.Approved && method.Lifecycle == FinancePaymentMethodLifecycle.Inactive);
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_same_settlement_submit_version_race_has_one_transition()
+    {
+        var scenario = await CreatePaymentSettlementScenarioAsync("submit-race");
+        var draft = await SeedDraftSettlementAsync(scenario);
+        var first = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var second = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var results = await Task.WhenAll(
+            SafeCodeAsync(() => first.TransitionSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.submit"), new FinanceSettlementActionCommand(draft.Id, draft.Version, null, "submit-a", "submit-a", FinancePaymentMethodDirection.Payment), FinanceSettlementDocumentStatus.Submitted)),
+            SafeCodeAsync(() => second.TransitionSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.submit"), new FinanceSettlementActionCommand(draft.Id, draft.Version, null, "submit-b", "submit-b", FinancePaymentMethodDirection.Payment), FinanceSettlementDocumentStatus.Submitted)));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "concurrency_conflict" or "finance_conflict");
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        Assert.Equal(FinanceSettlementDocumentStatus.Submitted, (await db.SettlementDocuments.SingleAsync(item => item.Id == draft.Id)).Status);
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_same_payment_concurrent_post_has_one_authoritative_journal()
+    {
+        var scenario = await CreatePaymentSettlementScenarioAsync("payment-post-race");
+        var first = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var second = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var results = await Task.WhenAll(
+            SafeCodeAsync(() => first.PostSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.post"), new FinanceSettlementActionCommand(scenario.Approved.Id, scenario.Approved.Version, null, "payment-post-a", "payment-post-a", FinancePaymentMethodDirection.Payment))),
+            SafeCodeAsync(() => second.PostSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.post"), new FinanceSettlementActionCommand(scenario.Approved.Id, scenario.Approved.Version, null, "payment-post-b", "payment-post-b", FinancePaymentMethodDirection.Payment))));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "source_effect_exists" or "concurrency_conflict" or "finance_conflict");
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        var document = await db.SettlementDocuments.SingleAsync(item => item.Id == scenario.Approved.Id);
+        Assert.Equal(FinanceSettlementDocumentStatus.Posted, document.Status);
+        Assert.NotNull(document.PostedJournalId);
+        Assert.Equal(1, await db.Journals.CountAsync(item => item.SourceContract == "supplier-payment.v1" && item.SourceEvidenceId == document.Id));
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_same_receipt_concurrent_post_has_one_authoritative_journal()
+    {
+        var scenario = await CreateReceiptSettlementScenarioAsync("receipt-post-race");
+        var first = new FinanceSettlementPersistence(scenario.Options, scenario.Provider, new UnavailableMasterDataExchangeRatePersistence(), new UnavailableCustomerPersistence(), new UnavailableSupplierPersistence(), new UnavailableMasterDataCurrencyPaymentTermPersistence(), new UnavailableFinanceSupplierInvoiceSourceProvider(), new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required));
+        var second = new FinanceSettlementPersistence(scenario.Options, scenario.Provider, new UnavailableMasterDataExchangeRatePersistence(), new UnavailableCustomerPersistence(), new UnavailableSupplierPersistence(), new UnavailableMasterDataCurrencyPaymentTermPersistence(), new UnavailableFinanceSupplierInvoiceSourceProvider(), new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required));
+        var results = await Task.WhenAll(
+            SafeCodeAsync(() => first.PostSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.post"), new FinanceSettlementActionCommand(scenario.Approved.Id, scenario.Approved.Version, null, "receipt-post-a", "receipt-post-a", FinancePaymentMethodDirection.Receipt))),
+            SafeCodeAsync(() => second.PostSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.post"), new FinanceSettlementActionCommand(scenario.Approved.Id, scenario.Approved.Version, null, "receipt-post-b", "receipt-post-b", FinancePaymentMethodDirection.Receipt))));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "source_effect_exists" or "concurrency_conflict" or "finance_conflict");
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        var document = await db.SettlementDocuments.SingleAsync(item => item.Id == scenario.Approved.Id);
+        Assert.Equal(FinanceSettlementDocumentStatus.Posted, document.Status);
+        Assert.NotNull(document.PostedJournalId);
+        Assert.Equal(1, await db.Journals.CountAsync(item => item.SourceContract == "customer-receipt.v1" && item.SourceEvidenceId == document.Id));
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_same_posted_settlement_concurrent_reversal_has_one_reversal_lineage()
+    {
+        var scenario = await CreatePaymentSettlementScenarioAsync("reverse-race");
+        var persistence = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var posted = await persistence.PostSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.post"), new FinanceSettlementActionCommand(scenario.Approved.Id, scenario.Approved.Version, null, "reverse-race-post", "reverse-race-post", FinancePaymentMethodDirection.Payment));
+        Assert.True(posted.Succeeded, posted.Code);
+        Assert.NotNull(posted.Value);
+        var postedRecord = posted.Value!;
+        var first = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var second = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var results = await Task.WhenAll(
+            SafeCodeAsync(() => first.ReverseSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.reverse"), new FinanceSettlementReversalCommand(postedRecord.Id, new DateOnly(2026, 1, 20), "reverse A", Guid.NewGuid(), "reverse-a", "reverse-a", FinancePaymentMethodDirection.Payment))),
+            SafeCodeAsync(() => second.ReverseSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.reverse"), new FinanceSettlementReversalCommand(postedRecord.Id, new DateOnly(2026, 1, 20), "reverse B", Guid.NewGuid(), "reverse-b", "reverse-b", FinancePaymentMethodDirection.Payment))));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "document_already_reversed" or "concurrency_conflict" or "finance_conflict");
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        var document = await db.SettlementDocuments.SingleAsync(item => item.Id == postedRecord.Id);
+        Assert.Equal(FinanceSettlementDocumentStatus.Reversed, document.Status);
+        Assert.NotNull(document.ReversalJournalId);
+        Assert.Equal(1, await db.Journals.CountAsync(item => item.ReversalOfJournalId == document.PostedJournalId));
+    }
+
+    [Fact]
+    public async Task MESP133_sql_server_same_allocation_concurrent_reversal_has_one_active_state_transition()
+    {
+        var scenario = await CreatePaymentSettlementScenarioAsync("allocation-reverse-race");
+        var seeded = await SeedPayableSettlementAsync(scenario, secondItem: false);
+        var creator = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var allocation = await creator.CreateAllocationAsync(FinanceContext("tenant.finance.allocation.create"), new FinanceAllocationCommand(seeded.DocumentId, seeded.FirstItemId, 25m, new DateOnly(2026, 1, 15), "allocation", Guid.NewGuid(), "allocation-reverse-create", "allocation-reverse-create"));
+        Assert.True(allocation.Succeeded, allocation.Code);
+        Assert.NotNull(allocation.Value);
+        var allocationRecord = allocation.Value!;
+        var first = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var second = CreateFinanceSettlementPersistence(scenario.Options, scenario.CompanyId, scenario.Provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var results = await Task.WhenAll(
+            SafeCodeAsync(() => first.ReverseAllocationAsync(FinanceContext("tenant.finance.allocation.reverse"), new FinanceAllocationReversalCommand(allocationRecord.Id, allocationRecord.Version, "reverse allocation A", Guid.NewGuid(), "allocation-reverse-a", "allocation-reverse-a"))),
+            SafeCodeAsync(() => second.ReverseAllocationAsync(FinanceContext("tenant.finance.allocation.reverse"), new FinanceAllocationReversalCommand(allocationRecord.Id, allocationRecord.Version, "reverse allocation B", Guid.NewGuid(), "allocation-reverse-b", "allocation-reverse-b"))));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        Assert.Single(results, item => !item.Succeeded && item.Code is "allocation_already_reversed" or "concurrency_conflict" or "finance_conflict");
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        Assert.Equal(1, await db.Allocations.CountAsync(item => item.ReversalOfAllocationId == allocationRecord.Id));
+        Assert.Equal(FinanceAllocationStatus.Active, (await db.Allocations.SingleAsync(item => item.Id == allocationRecord.Id)).Status);
+    }
+
     private async Task<(DbContextOptions Options, Guid CompanyId)> CreateSettlementOptionsAsync()
     {
         var options = SqlServerMigrationConfiguration.Configure(await GetConnectionStringAsync(), SqlServerMigrationConfiguration.FinanceHistoryTable);
@@ -529,6 +738,212 @@ public sealed class SqlServerSafetyTests
             new UnavailableSupplierPersistence(),
             new UnavailableMasterDataCurrencyPaymentTermPersistence(),
             new UnavailableFinanceSupplierInvoiceSourceProvider());
+
+    private FinanceSettlementPersistence CreateFinanceSettlementPersistence(
+        DbContextOptions options,
+        Guid companyId,
+        IFinanceCompanyProvider provider,
+        IFinanceSourceApprovalPolicy approvalPolicy,
+        ISupplierPersistence suppliers,
+        IFinanceSupplierInvoiceSourceProvider? sourceProvider = null) =>
+        new(
+            options,
+            provider,
+            new UnavailableMasterDataExchangeRatePersistence(),
+            new UnavailableCustomerPersistence(),
+            suppliers,
+            new UnavailableMasterDataCurrencyPaymentTermPersistence(),
+            sourceProvider ?? new UnavailableFinanceSupplierInvoiceSourceProvider(),
+            approvalPolicy);
+
+    private static async Task CreateOpenPeriodAndRuleAsync(
+        DbContextOptions options,
+        IFinanceCompanyProvider provider,
+        FinanceRequestContext context,
+        Guid companyId,
+        Guid debitAccountId,
+        Guid creditAccountId,
+        string sourceContract,
+        string sourceEvent)
+    {
+        var persistence = new FinancePersistence(options, provider, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
+        var calendar = await persistence.CreateCalendarAsync(context, new FinanceFiscalCalendarCommand(companyId, "SQL Safety FY", Guid.NewGuid(), $"calendar-{Guid.NewGuid():N}", "calendar"));
+        Assert.True(calendar.Succeeded, calendar.Code);
+        var year = await persistence.CreateYearAsync(context, new FinanceFiscalYearCommand(calendar.Value!.Id, 2026, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), Guid.NewGuid(), $"year-{Guid.NewGuid():N}", "year"));
+        Assert.True(year.Succeeded, year.Code);
+        var period = await persistence.CreatePeriodAsync(context, new FinanceFiscalPeriodCommand(year.Value!.Id, 1, $"period-{Guid.NewGuid():N}", "2026", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), Guid.NewGuid(), $"period-{Guid.NewGuid():N}", "period"));
+        Assert.True(period.Succeeded, period.Code);
+        var opened = await persistence.SetPeriodStateAsync(context, new FinancePeriodStateCommand(period.Value!.Id, FinanceFiscalPeriodState.Open, null, period.Value.Version, $"open-{Guid.NewGuid():N}", "open"));
+        Assert.True(opened.Succeeded, opened.Code);
+        var rule = await persistence.CreatePostingRuleAsync(context, new FinancePostingRuleCommand(companyId, sourceContract, sourceEvent, debitAccountId, creditAccountId, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), $"rule-{Guid.NewGuid():N}", "rule"));
+        Assert.True(rule.Succeeded, rule.Code);
+        var allocationRule = await persistence.CreatePostingRuleAsync(context, new FinancePostingRuleCommand(companyId, sourceContract, "allocation", debitAccountId, creditAccountId, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), $"allocation-rule-{Guid.NewGuid():N}", "allocation rule"));
+        Assert.True(allocationRule.Succeeded, allocationRule.Code);
+    }
+
+    private async Task<SqlSettlementScenario> CreatePaymentSettlementScenarioAsync(string key)
+    {
+        var (options, companyId) = await CreateSettlementOptionsAsync();
+        var provider = new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(_fixture.TenantA.TenantId.Value, companyId, $"SQL {key} Company", "SAR")]);
+        var supplierId = Guid.NewGuid();
+        var suppliers = new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, supplierId);
+        var persistence = CreateFinanceSettlementPersistence(options, companyId, provider, new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required), suppliers);
+        var context = FinanceContext("tenant.finance.account.create");
+        var finance = new FinancePersistence(options, provider, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
+        var accounts = await CreateFinanceAccountsAsync(finance, context, companyId, $"sql-{key}");
+        await CreateOpenPeriodAndRuleAsync(options, provider, context, companyId, accounts.Debit.Id, accounts.Credit.Id, "supplier-payment.v1", "on-account");
+        var method = await persistence.CreatePaymentMethodAsync(context, new FinancePaymentMethodCommand(companyId, $"{key}-METHOD", $"{key} method", null, FinancePaymentMethodDirection.Payment, true, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, $"{key}-method", $"{key}-method"));
+        Assert.True(method.Succeeded, method.Code);
+        var cash = await persistence.CreateCashAccountAsync(context, new FinanceCashAccountCommand(companyId, $"{key}-CASH", $"{key} cash", null, FinanceCashAccountKind.Bank, "SAR", accounts.Credit.Id, null, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, $"{key}-cash", $"{key}-cash"));
+        Assert.True(cash.Succeeded, cash.Code);
+        var created = await persistence.CreateSettlementDocumentAsync(
+            context,
+            new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Payment, companyId, supplierId, null, cash.Value!.Id, method.Value!.Id, new DateOnly(2026, 1, 15), "SAR", 100m, null, null, null, null, null, $"{key}-reference", $"{key} settlement", Guid.NewGuid(), $"{key}-create", $"{key}-create"));
+        Assert.True(created.Succeeded, created.Code);
+        var submitted = await persistence.TransitionSettlementDocumentAsync(context, new FinanceSettlementActionCommand(created.Value!.Id, created.Value.Version, null, $"{key}-submit", $"{key}-submit", FinancePaymentMethodDirection.Payment), FinanceSettlementDocumentStatus.Submitted);
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await persistence.TransitionSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.approve", Guid.NewGuid()), new FinanceSettlementActionCommand(submitted.Value!.Id, submitted.Value.Version, null, $"{key}-approve", $"{key}-approve", FinancePaymentMethodDirection.Payment), FinanceSettlementDocumentStatus.Approved);
+        Assert.True(approved.Succeeded, approved.Code);
+        return new(options, companyId, provider, persistence, supplierId, method.Value!, cash.Value!, created.Value!, submitted.Value!, approved.Value!);
+    }
+
+    private sealed record SqlSettlementScenario(
+        DbContextOptions Options,
+        Guid CompanyId,
+        IFinanceCompanyProvider Provider,
+        FinanceSettlementPersistence Persistence,
+        Guid SupplierId,
+        FinancePaymentMethodRecord Method,
+        FinanceCashAccountRecord Cash,
+        FinanceSettlementDocumentRecord Created,
+        FinanceSettlementDocumentRecord Submitted,
+        FinanceSettlementDocumentRecord Approved);
+
+    private async Task<SqlReceiptSettlementScenario> CreateReceiptSettlementScenarioAsync(string key)
+    {
+        var (options, companyId) = await CreateSettlementOptionsAsync();
+        var provider = new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(_fixture.TenantA.TenantId.Value, companyId, $"SQL {key} Company", "SAR")]);
+        var persistence = new FinanceSettlementPersistence(options, provider, new UnavailableMasterDataExchangeRatePersistence(), new UnavailableCustomerPersistence(), new UnavailableSupplierPersistence(), new UnavailableMasterDataCurrencyPaymentTermPersistence(), new UnavailableFinanceSupplierInvoiceSourceProvider(), new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required));
+        var context = FinanceContext("tenant.finance.account.create");
+        var finance = new FinancePersistence(options, provider, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
+        var accounts = await CreateFinanceAccountsAsync(finance, context, companyId, $"sql-{key}");
+        await CreateOpenPeriodAndRuleAsync(options, provider, context, companyId, accounts.Debit.Id, accounts.Credit.Id, "customer-receipt.v1", "on-account");
+        var method = await persistence.CreatePaymentMethodAsync(context, new FinancePaymentMethodCommand(companyId, $"{key}-METHOD", $"{key} method", null, FinancePaymentMethodDirection.Receipt, true, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, $"{key}-method", $"{key}-method"));
+        Assert.True(method.Succeeded, method.Code);
+        var cash = await persistence.CreateCashAccountAsync(context, new FinanceCashAccountCommand(companyId, $"{key}-CASH", $"{key} cash", null, FinanceCashAccountKind.Bank, "SAR", accounts.Debit.Id, null, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, $"{key}-cash", $"{key}-cash"));
+        Assert.True(cash.Succeeded, cash.Code);
+        var customerId = Guid.NewGuid();
+        var documentId = Guid.NewGuid();
+        await using (var db = new FinanceDbContext(options, _fixture.TenantA))
+        {
+            var document = new FinanceSettlementDocumentEntity(
+                context.TenantId,
+                new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Receipt, companyId, null, customerId, cash.Value!.Id, method.Value!.Id, new DateOnly(2026, 1, 15), "SAR", 100m, null, null, null, null, null, $"{key}-reference", $"{key} receipt", documentId, $"{key}-create", $"{key}-create"),
+                "SAR",
+                "SAR",
+                100m,
+                context.ActorId,
+                DateTimeOffset.UtcNow);
+            document.SetStatus(FinanceSettlementDocumentStatus.Submitted, ActorId, DateTimeOffset.UtcNow);
+            document.SetStatus(FinanceSettlementDocumentStatus.Approved, ApproverId, DateTimeOffset.UtcNow);
+            db.SettlementDocuments.Add(document);
+            await db.SaveChangesAsync();
+        }
+
+        var approved = await persistence.GetSettlementDocumentAsync(context, documentId);
+        Assert.NotNull(approved);
+        return new(options, companyId, provider, customerId, approved!);
+    }
+
+    private sealed record SqlReceiptSettlementScenario(
+        DbContextOptions Options,
+        Guid CompanyId,
+        IFinanceCompanyProvider Provider,
+        Guid CustomerId,
+        FinanceSettlementDocumentRecord Approved);
+
+    private async Task<(Guid DocumentId, Guid FirstItemId, Guid? SecondItemId)> SeedPayableSettlementAsync(SqlSettlementScenario scenario, bool secondItem)
+    {
+        var context = FinanceContext("tenant.finance.settlement.post");
+        var documentId = Guid.NewGuid();
+        var firstItemId = Guid.NewGuid();
+        Guid? secondItemId = secondItem ? Guid.NewGuid() : null;
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        var document = new FinanceSettlementDocumentEntity(
+            context.TenantId,
+            new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Payment, scenario.CompanyId, scenario.SupplierId, null, scenario.Cash.Id, scenario.Method.Id, new DateOnly(2026, 1, 15), "SAR", 60m, null, null, null, null, null, "seeded payment", "seeded payment", documentId, $"seed-document-{documentId:N}", $"seed-document-{documentId:N}"),
+            "SAR",
+            "SAR",
+            60m,
+            context.ActorId,
+            DateTimeOffset.UtcNow);
+        document.SetStatus(FinanceSettlementDocumentStatus.Submitted, ActorId, DateTimeOffset.UtcNow);
+        document.SetStatus(FinanceSettlementDocumentStatus.Approved, ApproverId, DateTimeOffset.UtcNow);
+        document.SetStatus(FinanceSettlementDocumentStatus.Posted, ApproverId, DateTimeOffset.UtcNow);
+        db.SettlementDocuments.Add(document);
+        var firstItem = CreatePayableItem(context, scenario.CompanyId, firstItemId, scenario.SupplierId, "AP-ALLOC-1");
+        firstItem.SetRecognition(FinanceOpenItemRecognitionState.Recognized, Guid.NewGuid());
+        db.OpenItems.Add(firstItem);
+        if (secondItemId is { } value)
+        {
+            var secondOpenItem = CreatePayableItem(context, scenario.CompanyId, value, scenario.SupplierId, "AP-ALLOC-2");
+            secondOpenItem.SetRecognition(FinanceOpenItemRecognitionState.Recognized, Guid.NewGuid());
+            db.OpenItems.Add(secondOpenItem);
+        }
+        await db.SaveChangesAsync();
+        return (documentId, firstItemId, secondItemId);
+    }
+
+    private static FinanceOpenItemEntity CreatePayableItem(FinanceRequestContext context, Guid companyId, Guid id, Guid supplierId, string reference) =>
+        new(
+            context.TenantId,
+            id,
+            FinanceOpenItemKind.Payable,
+            companyId,
+            supplierId,
+            null,
+            "procurement-supplier-invoice.v1",
+            Guid.NewGuid(),
+            1,
+            Guid.NewGuid(),
+            1,
+            reference,
+            new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 2, 1),
+            "SAR",
+            100m,
+            "SAR",
+            100m,
+            1m,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+
+    private async Task<SqlSettlementTarget> SeedDraftSettlementAsync(SqlSettlementScenario scenario)
+    {
+        var context = FinanceContext("tenant.finance.settlement.create");
+        var id = Guid.NewGuid();
+        await using (var db = new FinanceDbContext(scenario.Options, _fixture.TenantA))
+        {
+            db.SettlementDocuments.Add(new FinanceSettlementDocumentEntity(
+                context.TenantId,
+                new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Payment, scenario.CompanyId, scenario.SupplierId, null, scenario.Cash.Id, scenario.Method.Id, new DateOnly(2026, 1, 15), "SAR", 100m, null, null, null, null, null, "draft", "draft", id, $"draft-{id:N}", $"draft-{id:N}"),
+                "SAR",
+                "SAR",
+                100m,
+                context.ActorId,
+                DateTimeOffset.UtcNow));
+            await db.SaveChangesAsync();
+        }
+        await using var readDb = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        return new(id, await readDb.SettlementDocuments.Where(item => item.Id == id).Select(item => item.Version).SingleAsync());
+    }
+
+    private sealed record SqlSettlementTarget(Guid Id, byte[] Version);
 
     private static FinancePaymentMethodCommand PaymentMethodCommand(Guid companyId, string code, Guid id, string key) =>
         new(companyId, code, code, null, FinancePaymentMethodDirection.Both, true, false, new DateOnly(2026, 1, 1), null, id, null, key, key);
@@ -2320,9 +2735,9 @@ public sealed class SqlServerSafetyTests
     private static FinanceJournalCommand SqlManualJournal(Guid companyId, (FinanceAccountRecord Debit, FinanceAccountRecord Credit) accounts, string key) =>
         new(companyId, new DateOnly(2026, 1, 15), new DateOnly(2026, 1, 15), null, 1m, null, null, null, "manual-journal.v1", "manual", null, null, null, "SQL sequence journal", [new FinanceJournalLineCommand(accounts.Debit.Id, 10m, 0m, null, "SAR", null, null), new FinanceJournalLineCommand(accounts.Credit.Id, 0m, 10m, null, "SAR", null, null)], Guid.NewGuid(), key, key);
 
-    private FinanceRequestContext FinanceContext(string permission)
+    private FinanceRequestContext FinanceContext(string permission, Guid actorId = default)
     {
-        var foundation = FoundationRequestContext.ForTenant(Guid.NewGuid(), Guid.NewGuid(), _fixture.TenantA, permission);
+        var foundation = FoundationRequestContext.ForTenant(actorId == Guid.Empty ? Guid.NewGuid() : actorId, Guid.NewGuid(), _fixture.TenantA, permission);
         Assert.True(FinanceRequestContext.TryCreate(foundation, out var context));
         return context!;
     }
@@ -2343,6 +2758,12 @@ public sealed class SqlServerSafetyTests
         }
     }
 
+    private static async Task<(bool Succeeded, string Code)> SafeCodeAsync<T>(Func<Task<FinanceOperationResult<T>>> action)
+    {
+        var result = await SafeFinanceOperationAsync(action);
+        return (result.Succeeded, result.Code);
+    }
+
     private static bool IsExpectedFinanceContention(Exception exception)
     {
         if (exception is DbUpdateConcurrencyException) return true;
@@ -2358,6 +2779,41 @@ public sealed class SqlServerSafetyTests
             string.Equals(sourceContract, "inventory-valuation-finance.v1", StringComparison.OrdinalIgnoreCase)
                 ? requirement
                 : FinanceApprovalRequirement.NotConfigured;
+    }
+
+    private sealed class SqlSettlementApprovalPolicy(FinanceApprovalRequirement requirement) : IFinanceSourceApprovalPolicy
+    {
+        public FinanceApprovalRequirement Resolve(string sourceContract, string sourceEvent) =>
+            sourceContract is "supplier-payment.v1" or "customer-receipt.v1"
+                ? requirement
+                : FinanceApprovalRequirement.NotConfigured;
+    }
+
+    private sealed class SqlStaticSupplierPersistence(Guid tenantId, Guid? supplierId = null) : ISupplierPersistence
+    {
+        private readonly UnavailableSupplierPersistence fallback = new();
+        private readonly Guid supplierId = supplierId ?? Guid.NewGuid();
+
+        public Task<IReadOnlyList<SupplierRecord>> ListSuppliersAsync(TenantContext tenantContext, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<SupplierRecord>>(supplierId == Guid.Empty ? [] : [Record(tenantContext)]);
+
+        public Task<SupplierRecord?> FindSupplierAsync(TenantContext tenantContext, Guid requestedSupplierId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<SupplierRecord?>(requestedSupplierId == supplierId && tenantContext.TenantId.Value == tenantId ? Record(tenantContext) : null);
+
+        public Task<MasterDataPersistenceResult<SupplierRecord>> CreateSupplierAsync(TenantContext tenantContext, Guid id, CreateSupplierCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => fallback.CreateSupplierAsync(tenantContext, id, command, evidence, cancellationToken);
+        public Task<MasterDataPersistenceResult<SupplierRecord>> EditSupplierAsync(TenantContext tenantContext, EditSupplierCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => fallback.EditSupplierAsync(tenantContext, command, evidence, cancellationToken);
+        public Task<MasterDataPersistenceResult<SupplierRecord>> SetSupplierLifecycleAsync(TenantContext tenantContext, Guid id, MasterDataLifecycleState lifecycleState, byte[] expectedVersion, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => fallback.SetSupplierLifecycleAsync(tenantContext, id, lifecycleState, expectedVersion, evidence, cancellationToken);
+        public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(TenantContext tenantContext, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => fallback.AppendAuditAsync(tenantContext, evidence, cancellationToken);
+        public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(TenantContext tenantContext, Guid id, CancellationToken cancellationToken = default) => fallback.ReadAuditHistoryAsync(tenantContext, id, cancellationToken);
+
+        private SupplierRecord Record(TenantContext tenantContext) =>
+            new(supplierId, new TenantId(tenantId), "SQL-SUPPLIER", new LocalizedName("SQL Supplier", null), null, null, MasterDataLifecycleState.Active, [1], []);
+    }
+
+    private sealed class SqlStaticSupplierInvoiceSourceProvider(FinanceSupplierInvoiceSourceRecord source) : IFinanceSupplierInvoiceSourceProvider
+    {
+        public Task<FinanceSupplierInvoiceSourceRecord?> FindAsync(FinanceRequestContext context, Guid sourceEvidenceId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<FinanceSupplierInvoiceSourceRecord?>(sourceEvidenceId == source.SourceEvidenceId ? source : null);
     }
 
     private sealed class SqlFinanceExchangeRatePersistence : IMasterDataExchangeRatePersistence

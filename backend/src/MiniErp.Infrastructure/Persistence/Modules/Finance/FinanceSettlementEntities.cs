@@ -167,6 +167,7 @@ internal sealed class FinanceSettlementDocumentEntity : FinanceEntity
         Status = status; if (status == FinanceSettlementDocumentStatus.Submitted) SubmittedBy = actorId; if (status == FinanceSettlementDocumentStatus.Approved) ApprovedBy = actorId;
         if (status == FinanceSettlementDocumentStatus.Posted) { PostedBy = actorId; PostedAt = at; } if (status == FinanceSettlementDocumentStatus.Reversed) ReversedBy = actorId; TouchVersion();
     }
+    internal void ReturnToDraft(Guid actorId, DateTimeOffset at) => SetStatus(FinanceSettlementDocumentStatus.Draft, actorId, at);
     internal void SetPostedJournal(Guid journalId) { PostedJournalId = journalId; TouchVersion(); }
     internal void SetReversal(Guid journalId) { ReversalJournalId = journalId; TouchVersion(); }
 }

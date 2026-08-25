@@ -110,6 +110,51 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     }
 
     [Fact]
+    public void Mesp133_settlement_operations_keep_tenant_and_mutation_security_contract()
+    {
+        var operationIds = new[]
+        {
+            "finance.ap.list", "finance.ap.detail", "finance.ap.source-ready", "finance.ap.recognize",
+            "finance.ap.aging", "finance.ap.reconciliation", "finance.ar.list", "finance.ar.detail",
+            "finance.ar.create", "finance.ar.aging", "finance.ar.exposure", "finance.ar.reconciliation",
+            "finance.payment-method.list", "finance.payment-method.create", "finance.payment-method.edit",
+            "finance.payment-method.lifecycle", "finance.cash-account.list", "finance.cash-account.create",
+            "finance.cash-account.edit", "finance.cash-account.lifecycle", "finance.payment.list",
+            "finance.payment.detail", "finance.payment.create", "finance.payment.edit", "finance.payment.submit",
+            "finance.payment.approve", "finance.payment.reject", "finance.payment.post", "finance.payment.reverse",
+            "finance.receipt.list", "finance.receipt.detail", "finance.receipt.create", "finance.receipt.edit",
+            "finance.receipt.submit", "finance.receipt.approve", "finance.receipt.reject", "finance.receipt.post",
+            "finance.receipt.reverse", "finance.allocation.list", "finance.allocation.create",
+            "finance.allocation.reverse", "finance.settlement.reconciliation"
+        };
+        var operations = operationIds.Select(FoundationOperationCatalog.GetRequired).ToArray();
+
+        Assert.All(operations, operation =>
+        {
+            Assert.Equal(FoundationOperationVisibility.Public, operation.Visibility);
+            Assert.Equal(FoundationScopePolicy.Tenant, operation.ScopePolicy);
+            Assert.Equal(FoundationSecurityProfile.OrdinaryMembership, operation.SecurityProfile);
+        });
+
+        Assert.All(operations.Where(operation => operation.IsUnsafe), operation =>
+        {
+            Assert.True(operation.RequiresAntiforgery, operation.OperationId);
+            Assert.True(operation.RequiresMandatoryAudit, operation.OperationId);
+            Assert.Equal(FoundationIdempotencyPolicy.Required, operation.Idempotency);
+        });
+
+        var concurrencyRequired = operations.Where(operation =>
+            operation.OperationId.EndsWith(".edit", StringComparison.Ordinal)
+            || operation.OperationId.EndsWith(".lifecycle", StringComparison.Ordinal)
+            || operation.OperationId.EndsWith(".submit", StringComparison.Ordinal)
+            || operation.OperationId.EndsWith(".approve", StringComparison.Ordinal)
+            || operation.OperationId.EndsWith(".reject", StringComparison.Ordinal)
+            || operation.OperationId.EndsWith(".post", StringComparison.Ordinal)).ToArray();
+        Assert.All(concurrencyRequired, operation =>
+            Assert.Equal(FoundationConcurrencyPolicy.IfMatch, operation.Concurrency));
+    }
+
+    [Fact]
     public async Task Scalar_reference_is_available_only_in_the_non_production_test_host()
     {
         using var client = factory.CreateClient();

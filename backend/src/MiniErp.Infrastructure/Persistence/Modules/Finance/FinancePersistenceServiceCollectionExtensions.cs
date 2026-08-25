@@ -29,11 +29,14 @@ public static class FinancePersistenceServiceCollectionExtensions
             provider.GetRequiredService<IBusinessCustomerReferenceReader>(),
             provider.GetRequiredService<ISupplierPersistence>(),
             provider.GetRequiredService<IMasterDataCurrencyPaymentTermPersistence>(),
-            provider.GetRequiredService<IFinanceSupplierInvoiceSourceProvider>()));
+            provider.GetRequiredService<IFinanceSupplierInvoiceSourceProvider>(),
+            provider.GetRequiredService<IFinanceSourceApprovalPolicy>()));
         services.AddSingleton<IFinanceSupplierInvoiceSourceProvider>(provider => new ProcurementFinanceSupplierInvoiceSourceProvider(
             provider.GetRequiredService<IPurchaseInvoiceHandoffPersistence>(),
             provider.GetRequiredService<IPurchaseInvoiceMatchPersistence>(),
-            provider.GetRequiredService<IFinanceCompanyProvider>()));
+            provider.GetRequiredService<IFinanceCompanyProvider>(),
+            provider.GetRequiredService<IPurchaseOrderPersistence>(),
+            provider.GetRequiredService<IMasterDataCurrencyPaymentTermPersistence>()));
         return services;
     }
 

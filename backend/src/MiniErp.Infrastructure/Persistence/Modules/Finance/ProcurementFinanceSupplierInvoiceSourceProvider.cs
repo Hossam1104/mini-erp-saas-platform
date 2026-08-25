@@ -2,15 +2,20 @@
 
 using System.Text.Json;
 using MiniErp.App.Modules.Finance;
+using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Procurement;
+using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Procurement;
+using MiniErp.Contracts.Modules.MasterData;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.Finance;
 
 internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
     IPurchaseInvoiceHandoffPersistence handoffs,
     IPurchaseInvoiceMatchPersistence matches,
-    IFinanceCompanyProvider companies) : IFinanceSupplierInvoiceSourceProvider
+    IFinanceCompanyProvider companies,
+    IPurchaseOrderPersistence purchaseOrders,
+    IMasterDataCurrencyPaymentTermPersistence paymentTerms) : IFinanceSupplierInvoiceSourceProvider
 {
     public async Task<FinanceSupplierInvoiceSourceRecord?> FindAsync(FinanceRequestContext context, Guid sourceEvidenceId, CancellationToken cancellationToken = default)
     {
@@ -20,6 +25,32 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
         if (handoff is null || handoff.TenantId != context.TenantId.Value || handoff.Status == PurchaseInvoiceHandoffStatus.Cancelled) return null;
         var company = companies.List(context.TenantId).SingleOrDefault(item => item.CompanyId == handoff.Scope.CompanyId && item.IsActive);
         if (company is null) return null;
+        var purchaseOrder = await purchaseOrders.FindAsync(context.TenantContext, handoff.PurchaseOrderId, cancellationToken);
+        var purchaseOrderTerm = purchaseOrder?.Source.PaymentTerm;
+        if (purchaseOrder is null
+            || purchaseOrder.TenantId != context.TenantId.Value
+            || purchaseOrder.Scope.CompanyId != handoff.Scope.CompanyId
+            || purchaseOrder.Status == PurchaseOrderStatus.Cancelled
+            || purchaseOrderTerm is null
+            || purchaseOrderTerm.Id == Guid.Empty
+            || purchaseOrderTerm.Version <= 0)
+        {
+            return null;
+        }
+
+        // The PO snapshot owns the historical version number. We deliberately
+        // resolve that exact version rather than the current master-data version;
+        // a later term edit must never change an already-issued PO's AP schedule.
+        var term = await paymentTerms.FindPaymentTermAsync(context.TenantContext, purchaseOrderTerm.Id, cancellationToken);
+        var termVersion = term?.Versions.SingleOrDefault(item => item.VersionNumber == purchaseOrderTerm.Version);
+        if (term is null
+            || term.TenantId.Value != context.TenantId.Value
+            || term.LifecycleState != MasterDataLifecycleState.Active
+            || termVersion is null
+            || !string.Equals(termVersion.Code, purchaseOrderTerm.Code, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
         var evidence = handoff.DeclaredEvidence;
         var amount = evidence?.GrossAmount ?? evidence?.Lines.Sum(line => line.GrossAmount ?? line.NetAmount ?? 0m) ?? handoff.Lines.Sum(line => line.LineAmount);
         if (amount <= 0m) return null;
@@ -29,6 +60,26 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
         var functionalAmount = string.Equals(currency, functionalCurrency, StringComparison.OrdinalIgnoreCase) ? amount : applied is null ? 0m : amount * applied.Rate;
         if (functionalAmount <= 0m) return null;
         var invoiceDate = evidence?.SupplierInvoiceDate ?? handoff.SupplierInvoiceDate ?? DateOnly.FromDateTime(handoff.CreatedAt.UtcDateTime);
+        var baseDate = termVersion.BaseDateRule switch
+        {
+            PaymentTermBaseDateRule.InvoiceDate or PaymentTermBaseDateRule.DocumentDate => invoiceDate,
+            // MESP-125/126 do not expose a trusted receipt/delivery date on the
+            // Finance source contract. Do not guess one from the current clock.
+            _ => (DateOnly?)null
+        };
+        if (baseDate is null) return null;
+        var dueDate = termVersion.ScheduleMode == PaymentTermScheduleMode.SingleDueDate
+            ? AddOffset(baseDate.Value, termVersion.DueOffset)
+            : termVersion.Installments.OrderBy(item => item.Sequence).Select(item => AddOffset(baseDate.Value, item.Offset)).LastOrDefault(baseDate.Value);
+        var paymentTerm = new FinancePaymentTermSnapshotRecord(
+            purchaseOrderTerm.Id,
+            purchaseOrderTerm.Code,
+            purchaseOrderTerm.Name,
+            null,
+            purchaseOrderTerm.Version,
+            termVersion.Id,
+            termVersion.EffectiveFrom,
+            dueDate);
         return new FinanceSupplierInvoiceSourceRecord(
             context.TenantId.Value,
             handoff.Scope.CompanyId,
@@ -48,13 +99,15 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
             string.Equals(currency, functionalCurrency, StringComparison.OrdinalIgnoreCase) ? null : applied?.ExchangeRateId,
             string.Equals(currency, functionalCurrency, StringComparison.OrdinalIgnoreCase) ? null : applied?.ExchangeRateVersionId,
             string.Equals(currency, functionalCurrency, StringComparison.OrdinalIgnoreCase) ? null : applied?.VersionNumber,
-            null,
-            null,
+            paymentTerm,
+            dueDate,
             match.Id,
             1,
-            JsonSerializer.Serialize(new { Handoff = handoff, Match = match }),
+            JsonSerializer.Serialize(new { Handoff = handoff, Match = match, PurchaseOrder = purchaseOrder.Id, PaymentTerm = paymentTerm, PaymentTermVersion = termVersion }),
             match.Id.ToString("N"));
     }
+
+    private static DateOnly AddOffset(DateOnly date, MasterDataPaymentTermOffset offset) => date.AddMonths(offset.Months).AddDays(offset.Days);
 }
 
 #pragma warning restore CS1591
