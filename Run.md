@@ -1,5 +1,13 @@
 # MiniERP Local Development & Integrated Runtime Guide
 
+## Current Finance capability
+
+MESP-133 is accepted and merged. MESP-134 (Tax, FX, Reporting Currency, and
+Revaluation) is the only active implementation capability and adds lazy Finance
+routes under `/app/finance`. MESP-135 is inactive. Follow the normal restart,
+HTTP probe, and protected-asset rules below; no external provider or production
+credential is part of this local workflow.
+
 Use the repository launcher for the normal Development flow. It selects a
 local API port, generates an ignored Angular proxy for that exact URL, seeds
 the Development account, waits for both applications, and prints the final

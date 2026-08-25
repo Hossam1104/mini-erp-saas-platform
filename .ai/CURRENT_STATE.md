@@ -1,6 +1,21 @@
 # Current State
 
-## MESP-133 AP / AR / Cash / Settlement verification-only HOLD 4 handoff - 25 August 2026
+## MESP-134 Tax / FX / Reporting Currency / Revaluation implementation handoff - 26 August 2026
+
+MESP-133 is Done and merged into `main`. Its accepted feature head is
+`6908c003a32be8a3a31782d855b8358f2a9505f5` and the squash merge is
+`3c616dd85b9cebb53990934321f1ae7d0d5410c9`. Sol closure is comment `12037`,
+Finance reconciliation is `12038`, and MESP-134 activation is `12039`.
+MESP-134 is the only active implementation capability under MESP-10. MESP-135
+remains To Do/inactive. Accepted fast-track is `17/26 = 65.4%`; production
+readiness remains approximately `47%` overall and `41%` Procurement/P2P.
+
+The current implementation branch is created from the reconciled merge baseline
+and must remain one Draft, Open, Unmerged PR for Sol acceptance. No Jira writes,
+Claude Opus review, Ready transition, merge, or MESP-135 activation is allowed
+in this bounded session.
+
+## Historical MESP-133 AP / AR / Cash / Settlement verification-only HOLD 4 handoff - 25 August 2026
 
 MESP-133 is the current bounded implementation capability under Finance Epic
 MESP-10. It is activated and remains In Progress in Jira (activation comments

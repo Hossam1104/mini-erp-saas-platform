@@ -9,10 +9,12 @@ reconciliation. It is implemented as a Company-scoped Finance capability
 inside the already authorized Tenant boundary. It does not create a separate
 Tenant, workspace, or operational authorization hierarchy.
 
-The capability starts from the exact merged-main baseline
+The capability started from the exact merged-main baseline
 `9ace42c7a830b5ef155a26b18d4a888676b8c188` and is delivered on
-`feat/MESP-133-ap-ar-cash-settlement` as one focused Draft PR. It remains
-unmerged pending GPT-5.6 Sol review and owner-controlled merge.
+`feat/MESP-133-ap-ar-cash-settlement` as one focused Draft PR. It was accepted
+and squash-merged into `main` at
+`3c616dd85b9cebb53990934321f1ae7d0d5410c9` from accepted feature head
+`6908c003a32be8a3a31782d855b8358f2a9505f5`.
 
 ## Scope and non-scope
 

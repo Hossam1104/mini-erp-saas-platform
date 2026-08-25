@@ -1,5 +1,13 @@
 @AGENTS.md
 
+## Current execution overlay - 26 August 2026 (MESP-134 active)
+
+MESP-133 is Done and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
+MESP-134 is the only active implementation capability under MESP-10; MESP-135
+remains inactive. Sol closure `12037`, Finance reconciliation `12038`, and
+MESP-134 activation `12039` are authoritative. Use one Draft/Open/Unmerged PR,
+no Jira writes, no Opus, no merge, and stop for GPT-5.6 Sol acceptance.
+
 ## Owner-Managed Asset Protection
 
 - Files manually supplied under `frontend/assets` are product source assets.

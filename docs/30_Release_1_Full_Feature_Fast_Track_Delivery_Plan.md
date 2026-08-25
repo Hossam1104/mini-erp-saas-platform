@@ -2,8 +2,10 @@
 
 ## Current execution reconciliation - 25 August 2026
 
-The current bounded capability is MESP-133 AP/AR/cash settlement verification-only HOLD 4
-micro-remediation, active/In Progress under MESP-10 on Draft PR #77. MESP-132 is
+The current bounded capability is MESP-134 Tax / FX / Reporting Currency /
+Revaluation, active/In Progress under MESP-10 on one Draft PR. MESP-133 is
+Done and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
+MESP-132 is
 Done/merged/closed; Sol HOLD `11892` / `11926` / `11963` / `11967` and MESP-10 progress
 comments `11893` / `11927` / `11964` / `11968`
 remain the acceptance authority. MESP-134 and MESP-135 are To Do and

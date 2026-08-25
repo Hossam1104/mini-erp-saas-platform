@@ -1,5 +1,13 @@
 # Mini ERP Tenant-Aware Shell
 
+<!-- MESP-134-CURRENT-START -->
+> **MESP-134 Tax / FX / Reporting Currency / Revaluation - 26 August 2026.**
+> MESP-133 is accepted and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
+> New Finance surfaces must remain lazy-loaded, bilingual EN/AR with RTL, and
+> server-authoritative for Company, Tax, Currency, Exchange Rate, posting, and
+> evidence. MESP-134 is the only active capability; MESP-135 remains inactive.
+<!-- MESP-134-CURRENT-END -->
+
 <!-- MESP-131-HISTORICAL-START -->
 > **Current MESP-131 workspace overlay â€” 23 August 2026; pending Sol acceptance.** The Inventory feature now includes lazy `/app/inventory/valuation` for valuation summary, explainable MWA history, Pending/Blocked states, Inventory reconciliation, In-Transit value, Finance handoff facts, correction history and authorized CSV export. The surface uses server-owned Warehouse context, preserves EN/AR and RTL, never accepts browser-authored cost/FX authority, and keeps `frontend/assets` untouched.
 >

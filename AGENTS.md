@@ -26,6 +26,18 @@ velocity, or forecast:
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
+## Current execution overlay - 26 August 2026 (MESP-134 active)
+
+MESP-133 is Done and squash-merged into `main` at
+`3c616dd85b9cebb53990934321f1ae7d0d5410c9` from accepted feature head
+`6908c003a32be8a3a31782d855b8358f2a9505f5`. Sol closure is `12037`, Finance
+reconciliation is `12038`, and MESP-134 activation is `12039`. MESP-134 is the
+only active implementation capability under MESP-10; MESP-135 remains inactive.
+Accepted fast-track is `17/26 = 65.4%`; production readiness remains roughly
+`47%` overall and `41%` Procurement/P2P. The bounded MESP-134 session must use
+one Draft/Open/Unmerged PR, write no Jira, invoke no Opus review, make no Ready
+transition, and must stop for Sol acceptance.
+
 ## Permanent Architecture Rules (ADR-019 / Tenant & Workspace Isolation)
 
 ### 1. Tenant != Workspace

@@ -9,6 +9,17 @@
 > **MESP-131 accepted validation.** Focused valuation `44/44`; combined Inventory regression `89/89`; SQL Server safety `40/40` against disposable LocalDB; canonical disposable-LocalDB backend `963/963` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `254/254` across 35 specs; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused Chromium `5/5`; full Chromium `32/32`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. PR #75 is merged into `main`; no Jira writes were performed.
 <!-- MESP-131-CURRENT-END -->
 
+<!-- MESP-134-CURRENT-START -->
+> **MESP-134 Tax / FX / Reporting Currency / Revaluation - 26 August 2026.**
+> MESP-133 is Done and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
+> MESP-134 is the only active Finance capability under MESP-10 and is being
+> delivered on one Draft, Open, Unmerged feature PR for Sol acceptance. The
+> implementation must reuse MESP-119 Tax, MESP-120 Exchange Rates, MESP-132
+> posting authority, and MESP-133 AP/AR/settlement history. No Jira writes,
+> Opus review, merge, Ready transition, external provider, ZATCA/FATOORA,
+> Sales lifecycle, or MESP-135 work is in scope.
+<!-- MESP-134-CURRENT-END -->
+
 <!-- MESP-133-CURRENT-START -->
 > **MESP-133 AP / AR / cash settlement verification-only HOLD 4 - 25 August 2026.** The
 > backend now consumes trusted MESP-126 Finance-ready evidence with an

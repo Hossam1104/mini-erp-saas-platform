@@ -1,39 +1,35 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
-<!-- MESP-133-JIRA-SYNC-START -->
-## Jira/documentation synchronization - 25 August 2026 (verification-only HOLD 4)
+<!-- MESP-134-JIRA-SYNC-START -->
+## Jira/documentation synchronization - 26 August 2026 (MESP-134 active)
 
-- MESP-133 is In Progress / activated; activation comment `11859`.
+- MESP-133 is Done/merged/closed; closure comment `12037`.
 - MESP-10 Finance and Accounting remains In Progress; activation comment
   `11860`.
-- Sol HOLD 2 comment `11926`, final HOLD 3 comment `11963`, verification-only
-  HOLD 4 comment `11967`, Finance Epic HOLD 2 reconciliation `11927`, final
-  HOLD 3 reconciliation `11964`, HOLD 4 reconciliation `11968`, and the
-  manual-AR supplemental finding `11928` remain acceptance authority.
+- MESP-10 Finance reconciliation comment `12038`; MESP-134 activation comment
+  `12039`. MESP-133 HOLD comments remain historical acceptance evidence.
 - No Jira writes were performed by this implementation session.
-- Draft PR #77 is open against `main` and remains intentionally unmerged for
-  GPT-5.6 Sol review.
-<!-- MESP-133-JIRA-SYNC-END -->
+- MESP-134 is the only active implementation capability and must remain one
+  Draft, Open, Unmerged PR for GPT-5.6 Sol review. MESP-135 remains inactive.
+<!-- MESP-134-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-25 16:56 +03:00
+**Last Updated:** 2026-08-26 00:00 +03:00
 
-## Current authoritative fast-track snapshot - 25 August 2026 (MESP-133 verification-only HOLD 4)
+## Current authoritative fast-track snapshot - 26 August 2026 (MESP-134 active)
 
 | Current repository control | Verified position |
 |---|---|
-| Starting main | Exact required SHA `9ace42c7a830b5ef155a26b18d4a888676b8c188` |
-| Current capability | MESP-133 AP / AR / Cash / Payment / Receipt / Settlement; activated under MESP-10 and In Progress |
-| Branch / PR | `feat/MESP-133-ap-ar-cash-settlement`; Draft PR #77; base `main`; intentionally open/unmerged |
-| Sol-reviewed head | `f30537d38106065891794a583b905a6fecd44d61` |
-| HOLD 4 starting SHA | `30ea4a04e5fb120a292083edc03073e37b278b11` |
-| Original implementation SHA | `3a579e3ad66378d3537e3f1bdb2b7d15954481c2` |
-| Remediation source/test SHA | `b9eba368922899165324086aa59298d054fec25d` |
-| HOLD 3 implementation SHA | `a9c46a27349cb617770277699ad74456262b81c4` |
-| HOLD 4 implementation/test SHA | `7cf177e8eaf694824a91b8b5b0cf3642d0f049f7` |
-| Accepted fast-track | 16/26 = 61.5%; MESP-133 remains Draft and does not add merged-capability credit |
+| Starting main | MESP-133 squash merge `3c616dd85b9cebb53990934321f1ae7d0d5410c9` |
+| Current capability | MESP-134 Tax / FX / Reporting Currency / Revaluation; activated under MESP-10 and In Progress |
+| Branch / PR | `feat/MESP-134-tax-fx-revaluation`; one Draft PR; base `main`; intentionally open/unmerged |
+| MESP-133 accepted feature head | `6908c003a32be8a3a31782d855b8358f2a9505f5`; closure `12037` |
+| Finance reconciliation | MESP-10 comment `12038` |
+| MESP-134 activation | comment `12039` |
+| Accepted fast-track | 17/26 = 65.4%; MESP-134 is not pre-counted until accepted and merged |
 | Production-readiness | ~47% overall; ~41% Procurement/P2P; headlines unchanged |
 
-HOLD 4 changes tests only. The real `ProcurementFinanceSupplierInvoiceSourceProvider`
+MESP-134 extends the accepted MESP-133 settlement spine. The real
+`ProcurementFinanceSupplierInvoiceSourceProvider`
 is directly exercised with bounded fakes for authoritative handoff, match,
 Company, Purchase Order, Payment Term, and Supplier persistence. The four
 provider tests prove active source readiness, missing/inactive/cross-Tenant

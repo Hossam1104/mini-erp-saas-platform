@@ -23,17 +23,19 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### Current acceptance stage: MESP-133 AP / AR / cash settlement verification-only HOLD 4 - 25 August 2026
+### Current acceptance stage: MESP-134 Tax / FX / Reporting Currency / Revaluation - 26 August 2026
 
-MESP-132 is Done/merged/closed at its accepted bounded scope. MESP-133 is the
-current active Finance capability under MESP-10. PR #77 is implemented on
-`feat/MESP-133-ap-ar-cash-settlement` but remains Open, Draft, and unmerged
-while GPT-5.6 Sol reviews the verification evidence. Sol HOLD comments `11892`
+MESP-132 and MESP-133 are Done/merged/closed at their accepted bounded scopes.
+MESP-133 merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9` from accepted
+feature head `6908c003a32be8a3a31782d855b8358f2a9505f5`. MESP-134 is the only
+active Finance capability under MESP-10 and is being delivered on one Draft,
+Open, Unmerged feature PR. Sol closure `12037`, Finance reconciliation `12038`,
+and MESP-134 activation `12039` are the current authority. Sol HOLD comments `11892`
 / `11926` / `11963` / `11967`, MESP-10 progress comments `11893` / `11927` /
 `11964` / `11968`, and the
-manual-AR supplemental finding `11928` remain the acceptance authority; MESP-10
-is still In Progress, MESP-134 and MESP-135 remain To Do, and no Jira writes
-were performed by this session.
+manual-AR supplemental finding `11928` remain historical MESP-133 evidence; MESP-10
+is still In Progress, MESP-135 remains inactive, and no Jira writes were
+performed by this session.
 
 HOLD 4 changes tests only. The real `ProcurementFinanceSupplierInvoiceSourceProvider`
 is directly exercised with bounded authoritative dependency fakes for active,
