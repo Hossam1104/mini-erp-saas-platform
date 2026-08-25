@@ -176,7 +176,8 @@ public sealed record FinanceSettlementDocumentRecord(
     Guid? ReversalJournalId,
     decimal AllocatedAmount,
     decimal UnallocatedAmount,
-    byte[] Version);
+    byte[] Version,
+    FinanceApprovalRequirement ApprovalRequirement = FinanceApprovalRequirement.NotConfigured);
 
 public sealed record FinanceAllocationRecord(
     Guid Id,

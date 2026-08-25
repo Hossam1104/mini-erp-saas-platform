@@ -9,6 +9,7 @@ using MiniErp.App.Modules.Finance;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.MasterData;
+using MiniErp.Contracts.Modules.Procurement;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.Finance;
 
@@ -113,6 +114,39 @@ internal sealed class FinanceSettlementPersistence(
         await using var db = CreateContext(context); var item = await db.OpenItems.AsNoTracking().SingleOrDefaultAsync(value => value.Id == itemId && (expectedKind == null || value.Kind == expectedKind), cancellationToken); return item is null || Company(context, item.CompanyId) is null ? null : await ToOpenItemAsync(db, item, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<FinanceApSourceReadyRecord>> ListApSourceReadyAsync(FinanceRequestContext context, Guid? companyId = null, CancellationToken cancellationToken = default)
+    {
+        if (companyId is { } requestedCompany && Company(context, requestedCompany) is null) return [];
+        var sources = await supplierInvoiceSources.ListAsync(context, companyId, cancellationToken);
+        if (sources.Count == 0) return [];
+        await using var db = CreateContext(context);
+        var evidenceIds = sources.Select(item => item.SourceEvidenceId).Distinct().ToArray();
+        var recognized = await db.OpenItems.AsNoTracking()
+            .Where(item => item.Kind == FinanceOpenItemKind.Payable && evidenceIds.Contains(item.SourceEvidenceId))
+            .Select(item => new { item.SourceEvidenceId, item.SourceEvidenceVersion })
+            .ToListAsync(cancellationToken);
+        var recognizedKeys = recognized.Select(item => (item.SourceEvidenceId, item.SourceEvidenceVersion)).ToHashSet();
+        return sources
+            .Where(source => Company(context, source.CompanyId) is not null && source.PaymentTerm is not null && source.DueDate is not null)
+            .Select(source => new FinanceApSourceReadyRecord(
+                source.SourceEvidenceId,
+                source.CompanyId,
+                source.SupplierId,
+                source.SupplierCode,
+                source.SupplierName,
+                source.Reference,
+                source.DocumentDate,
+                source.CurrencyCode,
+                source.Amount,
+                source.DueDate!.Value,
+                source.PaymentTerm!,
+                source.MatchResult,
+                recognizedKeys.Contains((source.SourceEvidenceId, source.SourceEvidenceVersion)),
+                source.SourceEvidenceVersion))
+            .Where(item => !item.AlreadyRecognized)
+            .ToArray();
+    }
+
     public async Task<FinanceOperationResult<FinanceOpenItemRecord>> RecognizeSupplierInvoiceAsync(FinanceRequestContext context, FinanceSupplierInvoiceRecognitionCommand command, CancellationToken cancellationToken = default)
     {
         await using var db = CreateContext(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var replay = await ReadReplayAsync<FinanceOpenItemRecord>(db, context, "finance.ap.recognize", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay is not null) return replay;
@@ -135,9 +169,9 @@ internal sealed class FinanceSettlementPersistence(
         if (Company(context, query.CompanyId) is null) return []; await using var db = CreateContext(context); var documents = db.SettlementDocuments.AsNoTracking().Where(item => item.CompanyId == query.CompanyId); if (query.Direction is { } direction) documents = documents.Where(item => item.Direction == direction); var values = await documents.OrderByDescending(item => item.DocumentDate).Take(1000).ToListAsync(cancellationToken); return await ToDocumentsAsync(db, values, cancellationToken);
     }
 
-    public async Task<FinanceSettlementDocumentRecord?> GetSettlementDocumentAsync(FinanceRequestContext context, Guid documentId, CancellationToken cancellationToken = default)
+    public async Task<FinanceSettlementDocumentRecord?> GetSettlementDocumentAsync(FinanceRequestContext context, Guid documentId, FinancePaymentMethodDirection? expectedDirection = null, CancellationToken cancellationToken = default)
     {
-        await using var db = CreateContext(context); var document = await db.SettlementDocuments.AsNoTracking().SingleOrDefaultAsync(item => item.Id == documentId, cancellationToken); return document is null || Company(context, document.CompanyId) is null ? null : await ToDocumentAsync(db, document, cancellationToken);
+        await using var db = CreateContext(context); var document = await db.SettlementDocuments.AsNoTracking().SingleOrDefaultAsync(item => item.Id == documentId && (expectedDirection == null || item.Direction == expectedDirection), cancellationToken); return document is null || Company(context, document.CompanyId) is null ? null : await ToDocumentAsync(db, document, cancellationToken);
     }
 
     public async Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> CreateSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementDocumentCommand command, CancellationToken cancellationToken = default)
@@ -176,12 +210,80 @@ internal sealed class FinanceSettlementPersistence(
 
     public async Task<FinanceOperationResult<FinanceAllocationRecord>> CreateAllocationAsync(FinanceRequestContext context, FinanceAllocationCommand command, CancellationToken cancellationToken = default)
     {
-        if (command.Amount <= 0m) return Failure<FinanceAllocationRecord>("invalid_amount"); await using var db = CreateContext(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var replay = await ReadReplayAsync<FinanceAllocationRecord>(db, context, "finance.allocation.create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay is not null) return replay; var document = await db.SettlementDocuments.SingleOrDefaultAsync(item => item.Id == command.SettlementDocumentId, cancellationToken); var item = await db.OpenItems.SingleOrDefaultAsync(value => value.Id == command.OpenItemId, cancellationToken); if (document is null || item is null || document.CompanyId != item.CompanyId || Company(context, document.CompanyId) is null) return Failure<FinanceAllocationRecord>("company_scope_denied"); if (document.Status != FinanceSettlementDocumentStatus.Posted) return Failure<FinanceAllocationRecord>("settlement_not_posted"); if (item.RecognitionState != FinanceOpenItemRecognitionState.Recognized) return Failure<FinanceAllocationRecord>("open_item_not_recognized"); if (document.Direction == FinancePaymentMethodDirection.Payment && item.Kind != FinanceOpenItemKind.Payable || document.Direction == FinancePaymentMethodDirection.Receipt && item.Kind != FinanceOpenItemKind.Receivable) return Failure<FinanceAllocationRecord>("allocation_direction_invalid"); if (document.SupplierId != item.SupplierId || document.CustomerId != item.CustomerId) return Failure<FinanceAllocationRecord>("party_scope_denied"); if (document.CurrencyCode != item.CurrencyCode) return Failure<FinanceAllocationRecord>("allocation_currency_mismatch"); var allocatedItem = await ActiveAllocations(db).Where(value => value.OpenItemId == item.Id).SumAsync(value => (decimal?)value.Amount, cancellationToken) ?? 0m; var allocatedDocument = await ActiveAllocations(db).Where(value => value.SettlementDocumentId == document.Id).SumAsync(value => (decimal?)value.Amount, cancellationToken) ?? 0m; if (command.Amount > item.OriginalAmount - allocatedItem) return Failure<FinanceAllocationRecord>("allocation_exceeds_outstanding"); if (command.Amount > document.Amount - allocatedDocument) return Failure<FinanceAllocationRecord>("allocation_exceeds_unallocated"); var itemFunctional = command.Amount * item.OriginalFunctionalAmount / item.OriginalAmount; var documentFunctional = command.Amount * document.FunctionalAmount / document.Amount; if (Math.Abs(itemFunctional - documentFunctional) > 0.00000001m) return Failure<FinanceAllocationRecord>("fx_settlement_not_configured"); var allocation = new FinanceAllocationEntity(context.TenantId, command, document.CompanyId, document.CurrencyCode, decimal.Round(itemFunctional, 8), context.ActorId); db.Allocations.Add(allocation); var rule = await FindRuleAsync(db, document.CompanyId, ContractFor(document.Direction), "allocation", command.AllocationDate, cancellationToken); if (rule.Code != "eligible") return Failure<FinanceAllocationRecord>(rule.Code); var journal = await CreatePostedJournalAsync(db, context, document.CompanyId, command.AllocationDate, document.CurrencyCode, command.Amount, itemFunctional, document.ExchangeRate, document.ExchangeRateId, document.ExchangeRateVersionId, document.ExchangeRateVersionNumber, ContractFor(document.Direction), "allocation", allocation.Id, 1, rule.Value!, false, command.Reason ?? "Settlement allocation", cancellationToken); if (!journal.Succeeded || journal.Value is null) return Failure<FinanceAllocationRecord>(journal.Code); allocation.SetJournal(journal.Value.Id); var now = DateTimeOffset.UtcNow; AddAudit(db, context, "finance.allocation.create", "allocation", allocation.Id, "Succeeded", command.Reason, command.IdempotencyKey, now); await db.SaveChangesAsync(cancellationToken); var result = FinanceOperationResult<FinanceAllocationRecord>.Success(ToAllocation(allocation)); AddReplay(db, context, "finance.allocation.create", command.IdempotencyKey, command.RequestFingerprint, "allocation", allocation.Id, result.Value!, now); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return result;
+        if (command.Amount <= 0m) return Failure<FinanceAllocationRecord>("invalid_amount");
+        await using var db = CreateContext(context);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var replay = await ReadReplayAsync<FinanceAllocationRecord>(db, context, "finance.allocation.create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken);
+        if (replay is not null) return replay;
+        var document = await db.SettlementDocuments.SingleOrDefaultAsync(item => item.Id == command.SettlementDocumentId, cancellationToken);
+        var item = await db.OpenItems.SingleOrDefaultAsync(value => value.Id == command.OpenItemId, cancellationToken);
+        if (document is null || item is null || document.CompanyId != item.CompanyId || Company(context, document.CompanyId) is null) return Failure<FinanceAllocationRecord>("company_scope_denied");
+        if (document.Status != FinanceSettlementDocumentStatus.Posted) return Failure<FinanceAllocationRecord>("settlement_not_posted");
+        if (item.RecognitionState != FinanceOpenItemRecognitionState.Recognized) return Failure<FinanceAllocationRecord>("open_item_not_recognized");
+        if (document.Direction == FinancePaymentMethodDirection.Payment && item.Kind != FinanceOpenItemKind.Payable || document.Direction == FinancePaymentMethodDirection.Receipt && item.Kind != FinanceOpenItemKind.Receivable) return Failure<FinanceAllocationRecord>("allocation_direction_invalid");
+        if (document.SupplierId != item.SupplierId || document.CustomerId != item.CustomerId) return Failure<FinanceAllocationRecord>("party_scope_denied");
+        if (document.CurrencyCode != item.CurrencyCode) return Failure<FinanceAllocationRecord>("allocation_currency_mismatch");
+        var recognition = item.RecognitionJournalId is { } recognitionId
+            ? await db.Journals.Include(value => value.Lines).SingleOrDefaultAsync(value => value.Id == recognitionId, cancellationToken)
+            : null;
+        var controlAccountId = ResolveControlAccountId(item.Kind, recognition);
+        if (controlAccountId is null) return Failure<FinanceAllocationRecord>("posting_lineage_missing");
+        var allocatedItem = await ActiveAllocations(db).Where(value => value.OpenItemId == item.Id).SumAsync(value => (decimal?)value.Amount, cancellationToken) ?? 0m;
+        var allocatedDocument = await ActiveAllocations(db).Where(value => value.SettlementDocumentId == document.Id).SumAsync(value => (decimal?)value.Amount, cancellationToken) ?? 0m;
+        if (command.Amount > item.OriginalAmount - allocatedItem) return Failure<FinanceAllocationRecord>("allocation_exceeds_outstanding");
+        if (command.Amount > document.Amount - allocatedDocument) return Failure<FinanceAllocationRecord>("allocation_exceeds_unallocated");
+        var itemFunctional = command.Amount * item.OriginalFunctionalAmount / item.OriginalAmount;
+        var documentFunctional = command.Amount * document.FunctionalAmount / document.Amount;
+        if (Math.Abs(itemFunctional - documentFunctional) > 0.00000001m) return Failure<FinanceAllocationRecord>("fx_settlement_not_configured");
+        var rule = await FindRuleAsync(db, document.CompanyId, ContractFor(document.Direction), "allocation", command.AllocationDate, cancellationToken);
+        if (rule.Code != "eligible") return Failure<FinanceAllocationRecord>(rule.Code);
+        var allocationControlAccountId = item.Kind == FinanceOpenItemKind.Payable ? rule.Value!.DebitAccountId : rule.Value!.CreditAccountId;
+        if (allocationControlAccountId != controlAccountId) return Failure<FinanceAllocationRecord>("posting_rule_control_account_mismatch");
+        var allocation = new FinanceAllocationEntity(context.TenantId, command, document.CompanyId, document.CurrencyCode, decimal.Round(itemFunctional, 8), context.ActorId);
+        db.Allocations.Add(allocation);
+        var journal = await CreatePostedJournalAsync(db, context, document.CompanyId, command.AllocationDate, document.CurrencyCode, command.Amount, itemFunctional, document.ExchangeRate, document.ExchangeRateId, document.ExchangeRateVersionId, document.ExchangeRateVersionNumber, ContractFor(document.Direction), "allocation", allocation.Id, 1, rule.Value!, false, command.Reason ?? "Settlement allocation", cancellationToken);
+        if (!journal.Succeeded || journal.Value is null) return Failure<FinanceAllocationRecord>(journal.Code);
+        allocation.SetJournal(journal.Value.Id);
+        var now = DateTimeOffset.UtcNow;
+        AddAudit(db, context, "finance.allocation.create", "allocation", allocation.Id, "Succeeded", command.Reason, command.IdempotencyKey, now);
+        await db.SaveChangesAsync(cancellationToken);
+        var result = FinanceOperationResult<FinanceAllocationRecord>.Success(ToAllocation(allocation));
+        AddReplay(db, context, "finance.allocation.create", command.IdempotencyKey, command.RequestFingerprint, "allocation", allocation.Id, result.Value!, now);
+        await db.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+        return result;
     }
 
     public async Task<FinanceOperationResult<FinanceAllocationRecord>> ReverseAllocationAsync(FinanceRequestContext context, FinanceAllocationReversalCommand command, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(command.Reason)) return Failure<FinanceAllocationRecord>("reason_required"); await using var db = CreateContext(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var replay = await ReadReplayAsync<FinanceAllocationRecord>(db, context, "finance.allocation.reverse", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay is not null) return replay; var original = await db.Allocations.SingleOrDefaultAsync(item => item.Id == command.AllocationId, cancellationToken); if (original is null || Company(context, original.CompanyId) is null) return Failure<FinanceAllocationRecord>("company_scope_denied"); if (!original.Version.SequenceEqual(command.ExpectedVersion)) return Failure<FinanceAllocationRecord>("concurrency_conflict"); if (original.Status != FinanceAllocationStatus.Active || original.ReversalOfAllocationId is not null || await db.Allocations.AnyAsync(item => item.ReversalOfAllocationId == original.Id, cancellationToken)) return Failure<FinanceAllocationRecord>("allocation_already_reversed"); var document = await db.SettlementDocuments.SingleOrDefaultAsync(item => item.Id == original.SettlementDocumentId, cancellationToken); if (document is null || document.Status == FinanceSettlementDocumentStatus.Reversed) return Failure<FinanceAllocationRecord>("settlement_reversed"); var rule = await FindRuleAsync(db, original.CompanyId, ContractFor(document.Direction), "allocation", DateOnly.FromDateTime(DateTime.UtcNow), cancellationToken); if (rule.Code != "eligible") return Failure<FinanceAllocationRecord>(rule.Code); var reversal = new FinanceAllocationEntity(context.TenantId, command, original, original.CompanyId, context.ActorId); db.Allocations.Add(reversal); var journal = await CreatePostedJournalAsync(db, context, original.CompanyId, reversal.AllocationDate, original.CurrencyCode, original.Amount, original.FunctionalAmount, document.ExchangeRate, document.ExchangeRateId, document.ExchangeRateVersionId, document.ExchangeRateVersionNumber, ContractFor(document.Direction), "allocation", reversal.Id, 1, rule.Value!, true, command.Reason, cancellationToken); if (!journal.Succeeded || journal.Value is null) return Failure<FinanceAllocationRecord>(journal.Code); reversal.SetJournal(journal.Value.Id); var now = DateTimeOffset.UtcNow; AddAudit(db, context, "finance.allocation.reverse", "allocation", original.Id, "Succeeded", command.Reason, command.IdempotencyKey, now); await db.SaveChangesAsync(cancellationToken); var result = FinanceOperationResult<FinanceAllocationRecord>.Success(ToAllocation(reversal)); AddReplay(db, context, "finance.allocation.reverse", command.IdempotencyKey, command.RequestFingerprint, "allocation", reversal.Id, result.Value!, now); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return result;
+        if (string.IsNullOrWhiteSpace(command.Reason)) return Failure<FinanceAllocationRecord>("reason_required");
+        await using var db = CreateContext(context);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var replay = await ReadReplayAsync<FinanceAllocationRecord>(db, context, "finance.allocation.reverse", command.IdempotencyKey, command.RequestFingerprint, cancellationToken);
+        if (replay is not null) return replay;
+        var original = await db.Allocations.SingleOrDefaultAsync(item => item.Id == command.AllocationId, cancellationToken);
+        if (original is null || Company(context, original.CompanyId) is null) return Failure<FinanceAllocationRecord>("company_scope_denied");
+        if (!original.Version.SequenceEqual(command.ExpectedVersion)) return Failure<FinanceAllocationRecord>("concurrency_conflict");
+        if (original.Status != FinanceAllocationStatus.Active || original.ReversalOfAllocationId is not null || await db.Allocations.AnyAsync(item => item.ReversalOfAllocationId == original.Id, cancellationToken)) return Failure<FinanceAllocationRecord>("allocation_already_reversed");
+        var document = await db.SettlementDocuments.SingleOrDefaultAsync(item => item.Id == original.SettlementDocumentId, cancellationToken);
+        if (document is null || document.Status == FinanceSettlementDocumentStatus.Reversed) return Failure<FinanceAllocationRecord>("settlement_reversed");
+        var originalJournal = original.JournalId is { } originalJournalId
+            ? await db.Journals.Include(value => value.Lines).SingleOrDefaultAsync(value => value.Id == originalJournalId, cancellationToken)
+            : null;
+        if (originalJournal is null) return Failure<FinanceAllocationRecord>("posting_lineage_missing");
+        var reversal = new FinanceAllocationEntity(context.TenantId, command, original, original.CompanyId, context.ActorId);
+        db.Allocations.Add(reversal);
+        var journal = await CreateReversalJournalAsync(db, context, originalJournal, reversal.AllocationDate, command.Reason, command.Id, cancellationToken);
+        if (!journal.Succeeded || journal.Value is null) return Failure<FinanceAllocationRecord>(journal.Code);
+        reversal.SetJournal(journal.Value.Id);
+        var now = DateTimeOffset.UtcNow;
+        AddAudit(db, context, "finance.allocation.reverse", "allocation", original.Id, "Succeeded", command.Reason, command.IdempotencyKey, now);
+        await db.SaveChangesAsync(cancellationToken);
+        var result = FinanceOperationResult<FinanceAllocationRecord>.Success(ToAllocation(reversal));
+        AddReplay(db, context, "finance.allocation.reverse", command.IdempotencyKey, command.RequestFingerprint, "allocation", reversal.Id, result.Value!, now);
+        await db.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+        return result;
     }
 
     public async Task<IReadOnlyList<FinanceAgingRecord>> GetAgingAsync(FinanceRequestContext context, FinanceAgingQuery query, CancellationToken cancellationToken = default)
@@ -220,8 +322,13 @@ internal sealed class FinanceSettlementPersistence(
             open += outstandingFunctional;
             if (item.DueDate < query.AsOfDate) overdue += outstandingFunctional;
         }
-        var receipts = await db.SettlementDocuments.AsNoTracking().Where(item => item.CompanyId == query.CompanyId && item.CustomerId == query.CustomerId && item.Direction == FinancePaymentMethodDirection.Receipt && item.Status == FinanceSettlementDocumentStatus.Posted && item.DocumentDate <= query.AsOfDate).ToListAsync(cancellationToken);
-        var unapplied = receipts.Sum(receipt => Math.Max(0m, receipt.FunctionalAmount - allocations.Where(value => value.SettlementDocumentId == receipt.Id).Sum(value => value.FunctionalAmount)));
+        var receipts = await db.SettlementDocuments.AsNoTracking()
+            .Where(item => item.CompanyId == query.CompanyId && item.CustomerId == query.CustomerId && item.Direction == FinancePaymentMethodDirection.Receipt && item.DocumentDate <= query.AsOfDate)
+            .ToListAsync(cancellationToken);
+        var receiptJournalIds = receipts.SelectMany(item => new[] { item.PostedJournalId, item.ReversalJournalId }).Where(item => item.HasValue).Select(item => item!.Value).Distinct().ToArray();
+        var receiptJournals = await db.Journals.AsNoTracking().Where(item => receiptJournalIds.Contains(item.Id)).ToDictionaryAsync(item => item.Id, cancellationToken);
+        var effectiveReceipts = receipts.Where(item => IsSettlementEffectEffective(item, receiptJournals, query.AsOfDate)).ToArray();
+        var unapplied = effectiveReceipts.Sum(receipt => Math.Max(0m, receipt.FunctionalAmount - allocations.Where(value => value.SettlementDocumentId == receipt.Id).Sum(value => value.FunctionalAmount)));
         return new(query.CompanyId, query.CustomerId, company.FunctionalCurrencyCode, open, overdue, unapplied, open - unapplied, query.AsOfDate, false, null);
     }
 
@@ -233,46 +340,65 @@ internal sealed class FinanceSettlementPersistence(
         var items = await db.OpenItems.AsNoTracking().Where(item => item.CompanyId == companyId && item.RecognitionState == FinanceOpenItemRecognitionState.Recognized && item.DocumentDate <= asOf).ToListAsync(cancellationToken);
         var documents = await db.SettlementDocuments.AsNoTracking().Where(item => item.CompanyId == companyId && item.DocumentDate <= asOf).ToListAsync(cancellationToken);
         var allocations = await EffectiveAllocations(db, asOf).AsNoTracking().Where(item => item.CompanyId == companyId).ToListAsync(cancellationToken);
+        var allocationHistory = await db.Allocations.AsNoTracking().Where(item => item.CompanyId == companyId && item.AllocationDate <= asOf).ToListAsync(cancellationToken);
         var journals = await db.Journals.AsNoTracking().Include(item => item.Lines).Where(item => item.CompanyId == companyId && item.PostingDate <= asOf && (item.Status == FinanceJournalStatus.Posted || item.Status == FinanceJournalStatus.Reversed)).ToListAsync(cancellationToken);
+        var journalById = journals.ToDictionary(item => item.Id);
         var output = new List<FinanceReconciliationRecord>();
         foreach (var kind in new[] { FinanceOpenItemKind.Payable, FinanceOpenItemKind.Receivable })
         {
             var subset = items.Where(item => item.Kind == kind).ToArray();
             var subledger = subset.Sum(item => item.OriginalFunctionalAmount - allocations.Where(value => value.OpenItemId == item.Id).Sum(value => value.FunctionalAmount));
-            var recognitionContract = kind == FinanceOpenItemKind.Payable ? ApContract : ManualArContract;
-            var settlementContract = kind == FinanceOpenItemKind.Payable ? "supplier-payment.v1" : "customer-receipt.v1";
-            var recognitionRule = await FindRuleAsync(db, companyId, recognitionContract, "recognition", asOf, cancellationToken);
-            var controlAccountId = kind == FinanceOpenItemKind.Payable ? recognitionRule.Value?.CreditAccountId : recognitionRule.Value?.DebitAccountId;
-            var mappingCode = recognitionRule.Code;
-            var allocationRows = allocations.Where(value => subset.Any(item => item.Id == value.OpenItemId)).ToArray();
-            if (allocationRows.Length > 0)
+            var missingRecognition = false;
+            var missingAllocation = false;
+            var mappingMismatch = false;
+            var posted = 0m;
+            foreach (var item in subset)
             {
-                var allocationRule = await FindRuleAsync(db, companyId, settlementContract, "allocation", asOf, cancellationToken);
-                var allocationControl = kind == FinanceOpenItemKind.Payable ? allocationRule.Value?.DebitAccountId : allocationRule.Value?.CreditAccountId;
-                if (allocationRule.Code != "eligible") mappingCode = allocationRule.Code;
-                else if (allocationControl != controlAccountId) mappingCode = "mapping_mismatch";
+                if (item.RecognitionJournalId is not { } recognitionId || !journalById.TryGetValue(recognitionId, out var recognitionJournal))
+                {
+                    missingRecognition = true;
+                    continue;
+                }
+
+                var controlAccountId = ResolveControlAccountId(kind, recognitionJournal);
+                if (controlAccountId is null)
+                {
+                    missingRecognition = true;
+                    continue;
+                }
+
+                posted += ControlEffect(kind, recognitionJournal, controlAccountId.Value);
+                foreach (var allocation in allocationHistory.Where(value => value.OpenItemId == item.Id))
+                {
+                    if (allocation.JournalId is not { } allocationJournalId || !journalById.TryGetValue(allocationJournalId, out var allocationJournal))
+                    {
+                        missingAllocation = true;
+                        continue;
+                    }
+
+                    if (!allocationJournal.Lines.Any(line => line.AccountId == controlAccountId)) mappingMismatch = true;
+                    posted += ControlEffect(kind, allocationJournal, controlAccountId.Value);
+                }
             }
-            var relatedJournals = journals.Where(item => item.SourceContract is not null && (item.SourceContract == recognitionContract || item.SourceContract == settlementContract));
-            var posted = controlAccountId is null ? 0m : relatedJournals.SelectMany(item => item.Lines).Where(line => line.AccountId == controlAccountId).Sum(line => line.FunctionalCredit - line.FunctionalDebit) * (kind == FinanceOpenItemKind.Payable ? 1m : -1m);
-            var missingRecognition = subset.Any(item => item.RecognitionJournalId is null || journals.All(journal => journal.Id != item.RecognitionJournalId));
-            var missingAllocation = allocationRows.Any(item => item.JournalId is null || journals.All(journal => journal.Id != item.JournalId));
-            var status = mappingCode switch
-            {
-                "pending_mapping" or "mapping_mismatch" => FinanceReconciliationStatus.PendingMapping,
-                "ambiguous_mapping" => FinanceReconciliationStatus.PendingMapping,
-                _ when missingRecognition || missingAllocation => FinanceReconciliationStatus.PendingPosting,
-                _ when SameAmount(subledger, posted) => FinanceReconciliationStatus.Reconciled,
-                _ => FinanceReconciliationStatus.AmountMismatch
-            };
+
+            var status = mappingMismatch
+                ? FinanceReconciliationStatus.PendingMapping
+                : missingRecognition || missingAllocation
+                    ? FinanceReconciliationStatus.PendingPosting
+                    : SameAmount(subledger, posted)
+                        ? FinanceReconciliationStatus.Reconciled
+                        : FinanceReconciliationStatus.AmountMismatch;
             output.Add(new(companyId, kind, kind == FinanceOpenItemKind.Payable ? "AP control account versus active AP outstanding" : "AR control account versus active AR outstanding", subledger, posted, subledger - posted, status, asOf));
         }
         foreach (var cash in await db.CashAccounts.AsNoTracking().Where(item => item.CompanyId == companyId).OrderBy(item => item.Code).ToListAsync(cancellationToken))
         {
             var linked = await db.Accounts.AsNoTracking().SingleOrDefaultAsync(item => item.CompanyId == companyId && item.Id == cash.LinkedAccountId, cancellationToken);
-            var cashDocuments = documents.Where(item => item.CashAccountId == cash.Id && (item.Status == FinanceSettlementDocumentStatus.Posted || item.Status == FinanceSettlementDocumentStatus.Reversed)).ToArray();
-            var expected = cashDocuments.Where(item => item.Status == FinanceSettlementDocumentStatus.Posted).Sum(item => item.Direction == FinancePaymentMethodDirection.Receipt ? item.FunctionalAmount : -item.FunctionalAmount);
+            var cashDocumentIds = documents.Where(item => item.CashAccountId == cash.Id).SelectMany(item => new[] { item.PostedJournalId, item.ReversalJournalId }).Where(item => item.HasValue).Select(item => item!.Value).Distinct().ToArray();
+            var cashJournals = cashDocumentIds.Where(journalById.ContainsKey).Select(id => journalById[id]).ToDictionary(item => item.Id);
+            var cashDocuments = documents.Where(item => item.CashAccountId == cash.Id && IsSettlementEffectEffective(item, journalById, asOf)).ToArray();
+            var expected = cashDocuments.Sum(item => item.Direction == FinancePaymentMethodDirection.Receipt ? item.FunctionalAmount : -item.FunctionalAmount);
             var journalIds = cashDocuments.SelectMany(item => new[] { item.PostedJournalId, item.ReversalJournalId }).Where(id => id.HasValue).Select(id => id!.Value).ToHashSet();
-            var actual = linked is null ? 0m : journals.Where(item => journalIds.Contains(item.Id)).SelectMany(item => item.Lines).Where(line => line.AccountId == cash.LinkedAccountId).Sum(line => line.FunctionalDebit - line.FunctionalCredit);
+            var actual = linked is null ? 0m : cashJournals.Values.Where(item => journalIds.Contains(item.Id)).SelectMany(item => item.Lines).Where(line => line.AccountId == cash.LinkedAccountId).Sum(line => line.FunctionalDebit - line.FunctionalCredit);
             var status = linked is null || linked.Lifecycle != FinanceAccountLifecycle.Active || !linked.IsPostingAccount ? FinanceReconciliationStatus.PendingMapping : SameAmount(expected, actual) ? FinanceReconciliationStatus.Reconciled : FinanceReconciliationStatus.AmountMismatch;
             output.Add(new(companyId, null, $"Cash/Bank {cash.Code} document movement versus linked GL account {cash.LinkedAccountCode}", expected, actual, expected - actual, status, asOf));
         }
@@ -287,8 +413,29 @@ internal sealed class FinanceSettlementPersistence(
 
     private async Task<(bool Succeeded, string Code, (DateOnly DueDate, FinancePaymentTermSnapshotRecord Snapshot)? Value)> ResolvePaymentTermAsync(FinanceRequestContext context, Guid? paymentTermId, DateOnly? dueDate, DateOnly documentDate, CancellationToken cancellationToken)
     {
-        if (paymentTermId is null) return dueDate is { } explicitDate ? (true, "eligible", (explicitDate, null!)) : (false, "payment_term_not_configured", null);
-        var term = await paymentTerms.FindPaymentTermAsync(context.TenantContext, paymentTermId.Value, cancellationToken); if (term is null || term.LifecycleState != MasterDataLifecycleState.Active) return (false, "payment_term_not_configured", null); var version = term.Versions.Where(item => item.EffectiveFrom <= documentDate && (item.EffectiveTo is null || item.EffectiveTo >= documentDate)).OrderByDescending(item => item.VersionNumber).FirstOrDefault(); if (version is null) return (false, "payment_term_not_configured", null); var baseDate = documentDate; var due = version.ScheduleMode == PaymentTermScheduleMode.SingleDueDate ? AddOffset(baseDate, version.DueOffset) : version.Installments.OrderBy(item => item.Sequence).Select(item => AddOffset(baseDate, item.Offset)).LastOrDefault(baseDate); if (dueDate is { } explicitDue && explicitDue != due) return (false, "payment_term_snapshot_mismatch", null); var snapshot = new FinancePaymentTermSnapshotRecord(term.Id, version.Code, version.Name.English, version.Name.Arabic, version.VersionNumber, version.Id, documentDate, due); return (true, "eligible", (due, snapshot));
+        if (paymentTermId is null) return (false, "payment_term_not_configured", null);
+        var term = await paymentTerms.FindPaymentTermAsync(context.TenantContext, paymentTermId.Value, cancellationToken);
+        if (term is null || term.LifecycleState != MasterDataLifecycleState.Active) return (false, "payment_term_not_configured", null);
+        var version = term.Versions
+            .Where(item => item.EffectiveFrom <= documentDate && (item.EffectiveTo is null || item.EffectiveTo >= documentDate))
+            .OrderByDescending(item => item.VersionNumber)
+            .FirstOrDefault();
+        if (version is null) return (false, "payment_term_not_configured", null);
+        var baseDate = version.BaseDateRule switch
+        {
+            PaymentTermBaseDateRule.DocumentDate => documentDate,
+            // Manual AR has no separately trusted invoice, receipt, or delivery
+            // date. It therefore fails closed for those term bases rather than
+            // silently treating the document date as another business fact.
+            _ => (DateOnly?)null
+        };
+        if (baseDate is null) return (false, "payment_term_not_configured", null);
+        var due = version.ScheduleMode == PaymentTermScheduleMode.SingleDueDate
+            ? AddOffset(baseDate.Value, version.DueOffset)
+            : version.Installments.OrderBy(item => item.Sequence).Select(item => AddOffset(baseDate.Value, item.Offset)).LastOrDefault(baseDate.Value);
+        if (dueDate is { } explicitDue && explicitDue != due) return (false, "payment_term_snapshot_mismatch", null);
+        var snapshot = new FinancePaymentTermSnapshotRecord(term.Id, version.Code, version.Name.English, version.Name.Arabic, version.VersionNumber, version.Id, documentDate, due);
+        return (true, "eligible", (due, snapshot));
     }
 
     private async Task<(string Code, FinancePostingRuleEntity? Value)> FindRuleAsync(FinanceDbContext db, Guid companyId, string contract, string eventName, DateOnly date, CancellationToken cancellationToken)
@@ -323,6 +470,31 @@ internal sealed class FinanceSettlementPersistence(
             && reversal.Status == FinanceAllocationStatus.Reversed));
     }
 
+    private static Guid? ResolveControlAccountId(FinanceOpenItemKind kind, FinanceJournalEntity? recognitionJournal)
+    {
+        if (recognitionJournal is null) return null;
+        var controlLines = kind == FinanceOpenItemKind.Payable
+            ? recognitionJournal.Lines.Where(line => line.FunctionalCredit > 0m).ToArray()
+            : recognitionJournal.Lines.Where(line => line.FunctionalDebit > 0m).ToArray();
+        return controlLines.Length == 1 ? controlLines[0].AccountId : null;
+    }
+
+    private static decimal ControlEffect(FinanceOpenItemKind kind, FinanceJournalEntity journal, Guid controlAccountId) =>
+        journal.Lines.Where(line => line.AccountId == controlAccountId).Sum(line => kind == FinanceOpenItemKind.Payable
+            ? line.FunctionalCredit - line.FunctionalDebit
+            : line.FunctionalDebit - line.FunctionalCredit);
+
+    private static bool IsSettlementEffectEffective(
+        FinanceSettlementDocumentEntity document,
+        IReadOnlyDictionary<Guid, FinanceJournalEntity> journals,
+        DateOnly asOf)
+    {
+        if (document.PostedJournalId is not { } postedId || !journals.TryGetValue(postedId, out var postedJournal) || postedJournal.PostingDate > asOf) return false;
+        return document.ReversalJournalId is not { } reversalId
+            || !journals.TryGetValue(reversalId, out var reversalJournal)
+            || reversalJournal.PostingDate > asOf;
+    }
+
     private IQueryable<FinanceAllocationEntity> ActiveAllocations(FinanceDbContext db) => EffectiveAllocations(db);
     private async Task<bool> SupplierIsActiveAsync(FinanceRequestContext context, Guid id, CancellationToken cancellationToken) { var value = await suppliers.FindSupplierAsync(context.TenantContext, id, cancellationToken); return value is not null && value.TenantId.Value == context.TenantId.Value && value.LifecycleState == MasterDataLifecycleState.Active; }
     private async Task<bool> CustomerIsActiveAsync(FinanceRequestContext context, Guid id, CancellationToken cancellationToken) { var value = await customers.FindCustomerReferenceAsync(context.TenantContext, id, cancellationToken); return value is not null && value.TenantId.Value == context.TenantId.Value && value.LifecycleState == MasterDataLifecycleState.Active; }
@@ -330,7 +502,7 @@ internal sealed class FinanceSettlementPersistence(
     private async Task<IReadOnlyList<FinanceOpenItemRecord>> ToOpenItemsAsync(FinanceDbContext db, IEnumerable<FinanceOpenItemEntity> entities, CancellationToken cancellationToken) { var result = new List<FinanceOpenItemRecord>(); foreach (var entity in entities) result.Add(await ToOpenItemAsync(db, entity, cancellationToken)); return result; }
     private async Task<FinanceOpenItemRecord> ToOpenItemAsync(FinanceDbContext db, FinanceOpenItemEntity entity, CancellationToken cancellationToken) { var allocated = await EffectiveAllocations(db).Where(item => item.OpenItemId == entity.Id).SumAsync(item => (decimal?)item.Amount, cancellationToken) ?? 0m; var outstanding = Math.Max(0m, entity.OriginalAmount - allocated); var status = entity.RecognitionState != FinanceOpenItemRecognitionState.Recognized ? FinanceOpenItemStatus.OnHold : outstanding == 0m ? FinanceOpenItemStatus.Settled : allocated > 0m ? FinanceOpenItemStatus.PartiallySettled : FinanceOpenItemStatus.Open; var term = entity.PaymentTermId is { } id ? new FinancePaymentTermSnapshotRecord(id, entity.PaymentTermCode ?? string.Empty, entity.PaymentTermEnglishName, entity.PaymentTermArabicName, entity.PaymentTermVersionNumber ?? 0, entity.PaymentTermVersionId ?? Guid.Empty, entity.PaymentTermEffectiveOn ?? entity.DocumentDate, entity.DueDate) : null; return new(entity.Id, entity.TenantId.Value, entity.CompanyId, entity.Kind, entity.SupplierId, entity.CustomerId, entity.SourceContract, entity.SourceDocumentId, entity.SourceDocumentVersion, entity.SourceEvidenceId, entity.SourceEvidenceVersion, entity.Reference, entity.DocumentDate, entity.DueDate, entity.CurrencyCode, entity.OriginalAmount, entity.FunctionalCurrencyCode, entity.OriginalFunctionalAmount, entity.ExchangeRate, entity.ExchangeRateId, entity.ExchangeRateVersionId, entity.ExchangeRateVersionNumber, term, entity.MatchEvidenceId, entity.MatchEvidenceVersion, entity.RecognitionState, entity.RecognitionJournalId, allocated, outstanding, status, entity.Version); }
     private async Task<IReadOnlyList<FinanceSettlementDocumentRecord>> ToDocumentsAsync(FinanceDbContext db, IEnumerable<FinanceSettlementDocumentEntity> entities, CancellationToken cancellationToken) { var result = new List<FinanceSettlementDocumentRecord>(); foreach (var entity in entities) result.Add(await ToDocumentAsync(db, entity, cancellationToken)); return result; }
-    private async Task<FinanceSettlementDocumentRecord> ToDocumentAsync(FinanceDbContext db, FinanceSettlementDocumentEntity entity, CancellationToken cancellationToken) { var allocated = await ActiveAllocations(db).Where(item => item.SettlementDocumentId == entity.Id).SumAsync(item => (decimal?)item.Amount, cancellationToken) ?? 0m; return new(entity.Id, entity.TenantId.Value, entity.CompanyId, entity.Status, entity.Direction, entity.SupplierId, entity.CustomerId, entity.CashAccountId, entity.PaymentMethodId, entity.DocumentDate, entity.CurrencyCode, entity.Amount, entity.FunctionalCurrencyCode, entity.FunctionalAmount, entity.ExchangeRate, entity.ExchangeRateId, entity.ExchangeRateVersionId, entity.ExchangeRateVersionNumber, entity.ExternalReference, entity.Description, entity.CreatedBy, entity.SubmittedBy, entity.ApprovedBy, entity.PostedBy, entity.ReversedBy, entity.PostedJournalId, entity.ReversalJournalId, allocated, Math.Max(0m, entity.Amount - allocated), entity.Version); }
+    private async Task<FinanceSettlementDocumentRecord> ToDocumentAsync(FinanceDbContext db, FinanceSettlementDocumentEntity entity, CancellationToken cancellationToken) { var allocated = await ActiveAllocations(db).Where(item => item.SettlementDocumentId == entity.Id).SumAsync(item => (decimal?)item.Amount, cancellationToken) ?? 0m; return new(entity.Id, entity.TenantId.Value, entity.CompanyId, entity.Status, entity.Direction, entity.SupplierId, entity.CustomerId, entity.CashAccountId, entity.PaymentMethodId, entity.DocumentDate, entity.CurrencyCode, entity.Amount, entity.FunctionalCurrencyCode, entity.FunctionalAmount, entity.ExchangeRate, entity.ExchangeRateId, entity.ExchangeRateVersionId, entity.ExchangeRateVersionNumber, entity.ExternalReference, entity.Description, entity.CreatedBy, entity.SubmittedBy, entity.ApprovedBy, entity.PostedBy, entity.ReversedBy, entity.PostedJournalId, entity.ReversalJournalId, allocated, Math.Max(0m, entity.Amount - allocated), entity.Version, SourceApprovalPolicy.Resolve(ContractFor(entity.Direction), "on-account")); }
     private static FinancePaymentMethodRecord ToMethod(FinancePaymentMethodEntity item) => new(item.Id, item.TenantId.Value, item.CompanyId, item.Code, item.EnglishName, item.ArabicName, item.Direction, item.Lifecycle, item.IsManual, item.RequiresReference, item.EffectiveFrom, item.EffectiveTo, item.Version);
     private static FinanceCashAccountRecord ToCash(FinanceCashAccountEntity item) => new(item.Id, item.TenantId.Value, item.CompanyId, item.Code, item.EnglishName, item.ArabicName, item.Kind, item.CurrencyCode, item.LinkedAccountId, item.LinkedAccountCode, item.BankReference, item.Lifecycle, item.EffectiveFrom, item.EffectiveTo, item.Version);
     private static FinanceAllocationRecord ToAllocation(FinanceAllocationEntity item) => new(item.Id, item.TenantId.Value, item.CompanyId, item.SettlementDocumentId, item.OpenItemId, item.Amount, item.CurrencyCode, item.FunctionalAmount, item.AllocationDate, item.Status, item.ReversalOfAllocationId, item.JournalId, item.CreatedBy, item.Reason, item.Version);

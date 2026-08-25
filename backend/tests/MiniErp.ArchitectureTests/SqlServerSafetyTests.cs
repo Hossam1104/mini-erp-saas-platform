@@ -723,6 +723,67 @@ public sealed class SqlServerSafetyTests
         Assert.Equal(FinanceAllocationStatus.Active, (await db.Allocations.SingleAsync(item => item.Id == allocationRecord.Id)).Status);
     }
 
+    [Fact]
+    public async Task MESP133_sql_server_allocation_vs_settlement_reversal_race_has_one_valid_serialization()
+    {
+        var scenario = await CreatePaymentSettlementScenarioAsync("allocation-settlement-reversal-race");
+        var posted = await scenario.Persistence.PostSettlementDocumentAsync(
+            FinanceContext("tenant.finance.settlement.post"),
+            new FinanceSettlementActionCommand(
+                scenario.Approved.Id,
+                scenario.Approved.Version,
+                null,
+                "allocation-settlement-race-post",
+                "allocation-settlement-race-post",
+                FinancePaymentMethodDirection.Payment));
+        Assert.True(posted.Succeeded, posted.Code);
+        var itemId = await SeedCompatiblePayableItemAsync(scenario, "allocation-settlement-race-item");
+
+        var first = CreateFinanceSettlementPersistence(
+            scenario.Options,
+            scenario.CompanyId,
+            scenario.Provider,
+            new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required),
+            new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+        var second = CreateFinanceSettlementPersistence(
+            scenario.Options,
+            scenario.CompanyId,
+            scenario.Provider,
+            new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required),
+            new SqlStaticSupplierPersistence(_fixture.TenantA.TenantId.Value, scenario.SupplierId));
+
+        var results = await Task.WhenAll(
+            SafeCodeAsync(() => first.CreateAllocationAsync(
+                FinanceContext("tenant.finance.allocation.create"),
+                new FinanceAllocationCommand(posted.Value!.Id, itemId, 25m, new DateOnly(2026, 1, 15), "allocate while reversing", Guid.NewGuid(), "allocation-settlement-race-a", "allocation-settlement-race-a"))),
+            SafeCodeAsync(() => second.ReverseSettlementDocumentAsync(
+                FinanceContext("tenant.finance.settlement.reverse"),
+                new FinanceSettlementReversalCommand(posted.Value!.Id, new DateOnly(2026, 1, 20), "reverse while allocating", Guid.NewGuid(), "allocation-settlement-race-b", "allocation-settlement-race-b", FinancePaymentMethodDirection.Payment))));
+
+        Assert.Equal(1, results.Count(item => item.Succeeded));
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        var document = await db.SettlementDocuments.SingleAsync(item => item.Id == posted.Value!.Id);
+        var activeAllocations = await db.Allocations.CountAsync(item => item.SettlementDocumentId == document.Id && item.Status == FinanceAllocationStatus.Active && item.ReversalOfAllocationId == null);
+        var reversalJournals = await db.Journals.CountAsync(item => item.ReversalOfJournalId == document.PostedJournalId);
+
+        if (document.Status == FinanceSettlementDocumentStatus.Posted)
+        {
+            Assert.Null(document.ReversalJournalId);
+            Assert.Equal(1, activeAllocations);
+            Assert.Equal(0, reversalJournals);
+            var allocation = await db.Allocations.SingleAsync(item => item.SettlementDocumentId == document.Id && item.Status == FinanceAllocationStatus.Active);
+            Assert.NotNull(allocation.JournalId);
+            Assert.True(await db.Journals.AnyAsync(item => item.Id == allocation.JournalId));
+        }
+        else
+        {
+            Assert.Equal(FinanceSettlementDocumentStatus.Reversed, document.Status);
+            Assert.NotNull(document.ReversalJournalId);
+            Assert.Equal(0, activeAllocations);
+            Assert.Equal(1, reversalJournals);
+        }
+    }
+
     private async Task<(DbContextOptions Options, Guid CompanyId)> CreateSettlementOptionsAsync()
     {
         var options = SqlServerMigrationConfiguration.Configure(await GetConnectionStringAsync(), SqlServerMigrationConfiguration.FinanceHistoryTable);
@@ -865,6 +926,7 @@ public sealed class SqlServerSafetyTests
     private async Task<(Guid DocumentId, Guid FirstItemId, Guid? SecondItemId)> SeedPayableSettlementAsync(SqlSettlementScenario scenario, bool secondItem)
     {
         var context = FinanceContext("tenant.finance.settlement.post");
+        var recognitionRule = await EnsurePayableRecognitionRuleAsync(scenario, context);
         var documentId = Guid.NewGuid();
         var firstItemId = Guid.NewGuid();
         Guid? secondItemId = secondItem ? Guid.NewGuid() : null;
@@ -882,16 +944,85 @@ public sealed class SqlServerSafetyTests
         document.SetStatus(FinanceSettlementDocumentStatus.Posted, ApproverId, DateTimeOffset.UtcNow);
         db.SettlementDocuments.Add(document);
         var firstItem = CreatePayableItem(context, scenario.CompanyId, firstItemId, scenario.SupplierId, "AP-ALLOC-1");
-        firstItem.SetRecognition(FinanceOpenItemRecognitionState.Recognized, Guid.NewGuid());
+        firstItem.SetRecognition(FinanceOpenItemRecognitionState.Recognized, await CreatePostedPayableRecognitionJournalAsync(scenario, context, recognitionRule.Id, recognitionRule.CreditAccountId, firstItemId));
         db.OpenItems.Add(firstItem);
         if (secondItemId is { } value)
         {
             var secondOpenItem = CreatePayableItem(context, scenario.CompanyId, value, scenario.SupplierId, "AP-ALLOC-2");
-            secondOpenItem.SetRecognition(FinanceOpenItemRecognitionState.Recognized, Guid.NewGuid());
+            secondOpenItem.SetRecognition(FinanceOpenItemRecognitionState.Recognized, await CreatePostedPayableRecognitionJournalAsync(scenario, context, recognitionRule.Id, recognitionRule.CreditAccountId, value));
             db.OpenItems.Add(secondOpenItem);
         }
         await db.SaveChangesAsync();
         return (documentId, firstItemId, secondItemId);
+    }
+
+    private async Task<Guid> SeedCompatiblePayableItemAsync(SqlSettlementScenario scenario, string reference)
+    {
+        var context = FinanceContext("tenant.finance.settlement.post");
+        var itemId = Guid.NewGuid();
+        var recognitionRule = await EnsurePayableRecognitionRuleAsync(scenario, context);
+        var recognitionJournalId = await CreatePostedPayableRecognitionJournalAsync(scenario, context, recognitionRule.Id, recognitionRule.CreditAccountId, itemId);
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        var item = CreatePayableItem(context, scenario.CompanyId, itemId, scenario.SupplierId, reference);
+        item.SetRecognition(FinanceOpenItemRecognitionState.Recognized, recognitionJournalId);
+        db.OpenItems.Add(item);
+        await db.SaveChangesAsync();
+        return itemId;
+    }
+
+    private async Task<FinancePostingRuleRecord> EnsurePayableRecognitionRuleAsync(SqlSettlementScenario scenario, FinanceRequestContext context)
+    {
+        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
+        var controlAccountId = await db.Accounts
+            .Where(item => item.CompanyId == scenario.CompanyId && item.Id != scenario.Cash.LinkedAccountId)
+            .Select(item => item.Id)
+            .SingleAsync();
+        var finance = new FinancePersistence(scenario.Options, scenario.Provider, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
+        var existing = await finance.ListPostingRulesAsync(context, scenario.CompanyId);
+        var found = existing.SingleOrDefault(item => item.SourceContract == "procurement-supplier-invoice.v1" && item.SourceEvent == "recognition");
+        if (found is not null) return found;
+        var created = await finance.CreatePostingRuleAsync(
+            context,
+            new FinancePostingRuleCommand(scenario.CompanyId, "procurement-supplier-invoice.v1", "recognition", scenario.Cash.LinkedAccountId, controlAccountId, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), "sql-ap-recognition-rule", "sql-ap-recognition-rule"));
+        Assert.True(created.Succeeded, created.Code);
+        return created.Value!;
+    }
+
+    private async Task<Guid> CreatePostedPayableRecognitionJournalAsync(SqlSettlementScenario scenario, FinanceRequestContext context, Guid ruleId, Guid controlAccountId, Guid evidenceId)
+    {
+        var finance = new FinancePersistence(scenario.Options, scenario.Provider, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
+        var created = await finance.CreateJournalAsync(
+            context,
+            new FinanceJournalCommand(
+                scenario.CompanyId,
+                new DateOnly(2026, 1, 1),
+                new DateOnly(2026, 1, 1),
+                "SAR",
+                1m,
+                null,
+                null,
+                null,
+                "procurement-supplier-invoice.v1",
+                "recognition",
+                evidenceId,
+                1,
+                ruleId,
+                "SQL AP recognition",
+                [
+                    new FinanceJournalLineCommand(scenario.Cash.LinkedAccountId, 100m, 0m, 100m, "SAR", null, "AP recognition debit"),
+                    new FinanceJournalLineCommand(controlAccountId, 0m, 100m, 100m, "SAR", null, "AP recognition credit")
+                ],
+                Guid.NewGuid(),
+                $"sql-ap-recognition-{evidenceId:N}",
+                $"sql-ap-recognition-{evidenceId:N}",
+                FinanceJournalAmountAuthority.ManualTransactionCurrency,
+                FinanceApprovalRequirement.NotRequired));
+        Assert.True(created.Succeeded, created.Code);
+        var posted = await finance.PostJournalAsync(
+            context,
+            new FinanceJournalActionCommand(created.Value!.Id, created.Value.Version, null, $"sql-ap-recognition-post-{evidenceId:N}", $"sql-ap-recognition-post-{evidenceId:N}"));
+        Assert.True(posted.Succeeded, posted.Code);
+        return posted.Value!.Id;
     }
 
     private static FinanceOpenItemEntity CreatePayableItem(FinanceRequestContext context, Guid companyId, Guid id, Guid supplierId, string reference) =>

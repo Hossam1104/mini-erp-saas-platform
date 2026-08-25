@@ -238,6 +238,56 @@ export interface FinanceSettlementDocument {
   unallocatedAmount: number;
   allocatedAmount: number;
   version: string;
+  approvalRequirement?: string;
+}
+
+export interface FinanceApSourceReady {
+  sourceEvidenceId: string;
+  companyId: string;
+  supplierId: string;
+  supplierCode: string | null;
+  supplierName: string | null;
+  supplierInvoiceReference: string | null;
+  invoiceDate: string;
+  currencyCode: string;
+  amount: number;
+  dueDate: string;
+  paymentTerm: { code: string; englishName: string | null; arabicName: string | null; versionNumber: number; dueDate: string };
+  matchResult: string;
+  alreadyRecognized: boolean;
+  sourceEvidenceVersion: number;
+}
+
+export interface FinanceManualReceivableRequest {
+  companyId: string;
+  customerId: string;
+  documentDate: string;
+  dueDate: string | null;
+  paymentTermId: string;
+  currencyCode: string;
+  amount: number;
+  exchangeRate: number | null;
+  exchangeRateId: string | null;
+  exchangeRateVersionId: string | null;
+  exchangeRateVersionNumber: number | null;
+  reference: string | null;
+  description: string | null;
+}
+
+export interface FinanceSettlementWriteRequest {
+  companyId: string;
+  partyId: string;
+  cashAccountId: string;
+  paymentMethodId: string;
+  documentDate: string;
+  currencyCode: string;
+  amount: number;
+  exchangeRate: number | null;
+  exchangeRateId: string | null;
+  exchangeRateVersionId: string | null;
+  exchangeRateVersionNumber: number | null;
+  externalReference: string | null;
+  description: string | null;
 }
 
 export interface FinanceAllocation {

@@ -124,6 +124,8 @@ public sealed class FinanceSettlementRemediationTests
 
         Assert.Null(await persistence.GetOpenItemAsync(context, openItemId, FinanceOpenItemKind.Payable));
         Assert.NotNull(await persistence.GetOpenItemAsync(context, openItemId, FinanceOpenItemKind.Receivable));
+        Assert.Null(await persistence.GetSettlementDocumentAsync(context, documentId, FinancePaymentMethodDirection.Payment));
+        Assert.NotNull(await persistence.GetSettlementDocumentAsync(context, documentId, FinancePaymentMethodDirection.Receipt));
 
         await using var readDb = new FinanceDbContext(options, context.TenantContext);
         var documentVersion = await readDb.SettlementDocuments
@@ -143,6 +145,76 @@ public sealed class FinanceSettlementRemediationTests
 
         Assert.False(wrongRoute.Succeeded);
         Assert.Equal("settlement_direction_mismatch", wrongRoute.Code);
+    }
+
+    [Fact]
+    public async Task Manual_ar_requires_a_server_payment_term_even_when_client_supplies_a_due_date()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        await EnsureCreatedAsync(options);
+        var persistence = CreatePersistence(options, customers: new ActiveCustomerReader());
+
+        var result = await persistence.CreateManualReceivableAsync(
+            Context("tenant.finance.ar.create"),
+            new FinanceManualReceivableCommand(
+                CompanyId,
+                CustomerId,
+                new DateOnly(2026, 1, 15),
+                new DateOnly(2026, 2, 15),
+                null,
+                "SAR",
+                100m,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "AR-TERM-REQUIRED",
+                "manual AR term assertion",
+                Guid.NewGuid(),
+                "manual-ar-term-required",
+                "manual-ar-term-required"));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("payment_term_not_configured", result.Code);
+    }
+
+    [Fact]
+    public async Task Receipt_exposure_uses_posted_and_reversal_journal_dates_for_as_of_truth()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        await EnsureCreatedAsync(options);
+        var context = Context("tenant.finance.settlement.create");
+        var cashAccount = await CreateAccountAsync(options, context, "RECEIPT-ASOF-CASH");
+        var controlAccount = await CreateAccountAsync(options, context, "RECEIPT-ASOF-CONTROL");
+        await OpenPeriodAndRuleAsync(options, context, cashAccount.Id, controlAccount.Id, "customer-receipt.v1", "on-account");
+        var persistence = CreatePersistence(options, new RequiredApprovalPolicy(), new ActiveCustomerReader());
+        var method = await persistence.CreatePaymentMethodAsync(context, PaymentMethodCommand("ASOF-RECEIPT-METHOD", Guid.NewGuid(), true, FinancePaymentMethodDirection.Receipt));
+        var cash = await persistence.CreateCashAccountAsync(context, CashAccountCommand("ASOF-RECEIPT-CASH", cashAccount.Id, Guid.NewGuid()));
+        Assert.True(method.Succeeded, method.Code);
+        Assert.True(cash.Succeeded, cash.Code);
+        var created = await persistence.CreateSettlementDocumentAsync(context, new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Receipt, CompanyId, null, CustomerId, cash.Value!.Id, method.Value!.Id, new DateOnly(2026, 1, 10), "SAR", 100m, null, null, null, null, null, "ASOF-RECEIPT", "as-of receipt", Guid.NewGuid(), "asof-receipt-create", "asof-receipt-create"));
+        Assert.True(created.Succeeded, created.Code);
+        var submitted = await persistence.TransitionSettlementDocumentAsync(context, new FinanceSettlementActionCommand(created.Value!.Id, created.Value.Version, null, "asof-receipt-submit", "asof-receipt-submit", FinancePaymentMethodDirection.Receipt), FinanceSettlementDocumentStatus.Submitted);
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await persistence.TransitionSettlementDocumentAsync(Context("tenant.finance.settlement.approve", ApproverId), new FinanceSettlementActionCommand(submitted.Value!.Id, submitted.Value.Version, null, "asof-receipt-approve", "asof-receipt-approve", FinancePaymentMethodDirection.Receipt), FinanceSettlementDocumentStatus.Approved);
+        Assert.True(approved.Succeeded, approved.Code);
+        var posted = await persistence.PostSettlementDocumentAsync(Context("tenant.finance.settlement.post", ApproverId), new FinanceSettlementActionCommand(approved.Value!.Id, approved.Value.Version, null, "asof-receipt-post", "asof-receipt-post", FinancePaymentMethodDirection.Receipt));
+        Assert.True(posted.Succeeded, posted.Code);
+
+        var beforePosting = await persistence.GetExposureAsync(context, new FinanceExposureQuery(CompanyId, CustomerId, new DateOnly(2026, 1, 5)));
+        var beforeReversal = await persistence.GetExposureAsync(context, new FinanceExposureQuery(CompanyId, CustomerId, new DateOnly(2026, 1, 15)));
+        Assert.Equal(0m, beforePosting!.UnappliedCredits);
+        Assert.Equal(100m, beforeReversal!.UnappliedCredits);
+
+        var reversed = await persistence.ReverseSettlementDocumentAsync(Context("tenant.finance.settlement.reverse", ApproverId), new FinanceSettlementReversalCommand(posted.Value!.Id, new DateOnly(2026, 1, 20), "as-of receipt reversal", Guid.NewGuid(), "asof-receipt-reverse", "asof-receipt-reverse", FinancePaymentMethodDirection.Receipt));
+        Assert.True(reversed.Succeeded, reversed.Code);
+        var afterReversal = await persistence.GetExposureAsync(context, new FinanceExposureQuery(CompanyId, CustomerId, new DateOnly(2026, 1, 20)));
+        Assert.Equal(0m, afterReversal!.UnappliedCredits);
     }
 
     [Fact]

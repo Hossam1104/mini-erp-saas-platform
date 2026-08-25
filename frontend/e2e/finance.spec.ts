@@ -14,6 +14,7 @@ const session = {
 
 async function setupFinanceRoutes(page: Page): Promise<void> {
   await page.route('**/api/v1/auth/development-bypass', (route) => route.fulfill({ json: { authenticated: false } }));
+  await page.route('**/api/v1/auth/antiforgery', (route) => route.fulfill({ headers: { 'X-CSRF-TOKEN': 'finance-playwright-token' }, json: { status: 'issued' } }));
   await page.route('**/api/v1/auth/session', (route) => route.fulfill({ json: session }));
   await page.route('**/api/v1/auth/contexts', (route) => route.fulfill({ json: { contexts: [] } }));
   await page.route('**/api/v1/auth/entry', (route) => route.fulfill({ json: {
@@ -39,6 +40,8 @@ async function setupFinanceRoutes(page: Page): Promise<void> {
   await page.route('**/api/v1/finance/gl**', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/v1/finance/inventory-handoffs**', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/v1/finance/ap/open-items**', (route) => route.fulfill({ json: [{ id: 'open-item-a', companyId: 'company-a', kind: 'Payable', partyId: 'supplier-a', reference: 'PI-1001', documentDate: '2026-08-01', dueDate: '2026-08-31', currencyCode: 'SAR', originalAmount: 1250, allocatedAmount: 0, outstandingAmount: 1250, sourceContract: 'procurement-supplier-invoice.v1', sourceIdentity: 'match-a', recognitionState: 'Recognized', status: 'Open', recognitionJournalId: 'journal-a', version: 'AQ==' }] }));
+  await page.route('**/api/v1/finance/ap/source-ready**', (route) => route.fulfill({ json: [{ sourceEvidenceId: 'source-a', companyId: 'company-a', supplierId: 'supplier-a', supplierCode: 'SUP-1', supplierName: 'Supplier One', supplierInvoiceReference: 'PI-READY-1', invoiceDate: '2026-08-01', currencyCode: 'SAR', amount: 1250, dueDate: '2026-08-31', paymentTerm: { code: 'NET30', englishName: 'Net 30', arabicName: null, versionNumber: 1, dueDate: '2026-08-31' }, matchResult: 'ExactMatch', alreadyRecognized: false, sourceEvidenceVersion: 1 }] }));
+  await page.route('**/api/v1/finance/ap/recognize', async (route) => { expect(route.request().method()).toBe('POST'); await route.fulfill({ json: { id: 'open-item-a', companyId: 'company-a', kind: 'Payable', reference: 'PI-READY-1', documentDate: '2026-08-01', dueDate: '2026-08-31', currencyCode: 'SAR', originalAmount: 1250, allocatedAmount: 0, outstandingAmount: 1250, status: 'Open', recognitionState: 'Recognized', recognitionJournalId: 'journal-a', version: 'AQ==' } }); });
   await page.route('**/api/v1/finance/ap/aging**', (route) => route.fulfill({ json: [{ openItemId: 'open-item-a', reference: 'PI-1001', dueDate: '2026-08-31', daysOverdue: 0, outstandingAmount: 1250, currencyCode: 'SAR', status: 'Open' }] }));
   await page.route('**/api/v1/finance/ar/open-items**', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/v1/finance/ar/aging**', (route) => route.fulfill({ json: [] }));
@@ -82,6 +85,16 @@ test('AP workspace renders source lineage and aging evidence', async ({ page }) 
   await expect(payable).toContainText('PI-1001');
   await expect(payable).toContainText('procurement-supplier-invoice.v1');
   await expect(payable).toContainText('Aging');
+});
+
+test('AP workspace executes the bounded source-ready recognition journey', async ({ page }) => {
+  await setupFinanceRoutes(page);
+  await page.goto('/app/finance/ap');
+
+  const payable = page.locator('[data-testid="finance-settlement-workspace"]');
+  await expect(payable.locator('[data-testid="ap-source-ready"]')).toContainText('PI-READY-1');
+  await payable.getByRole('button', { name: 'Recognize payable' }).click();
+  await expect(payable).toContainText('PI-READY-1');
 });
 
 test('settlements workspace presents configured methods and on-account reconciliation', async ({ page }) => {

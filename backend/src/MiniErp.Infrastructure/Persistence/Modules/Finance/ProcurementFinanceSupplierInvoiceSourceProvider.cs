@@ -104,7 +104,35 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
             match.Id,
             1,
             JsonSerializer.Serialize(new { Handoff = handoff, Match = match, PurchaseOrder = purchaseOrder.Id, PaymentTerm = paymentTerm, PaymentTermVersion = termVersion }),
-            match.Id.ToString("N"));
+            match.Id.ToString("N"),
+            handoff.SupplierCode,
+            handoff.SupplierName,
+            match.Result);
+    }
+
+    public async Task<IReadOnlyList<FinanceSupplierInvoiceSourceRecord>> ListAsync(
+        FinanceRequestContext context,
+        Guid? companyId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var matchRecords = await matches.ListAsync(context.TenantContext, null, null, cancellationToken);
+        var result = new List<FinanceSupplierInvoiceSourceRecord>();
+        foreach (var match in matchRecords
+            .Where(item => item.Lifecycle == PurchaseInvoiceMatchLifecycle.Current
+                && item.Result is (PurchaseInvoiceMatchResult.ExactMatch
+                    or PurchaseInvoiceMatchResult.WithinTolerance
+                    or PurchaseInvoiceMatchResult.ResolvedException))
+            .OrderByDescending(item => item.EvaluatedAt)
+            .Take(1000))
+        {
+            var source = await FindAsync(context, match.Id, cancellationToken);
+            if (source is not null && (companyId is null || source.CompanyId == companyId))
+            {
+                result.Add(source);
+            }
+        }
+
+        return result;
     }
 
     private static DateOnly AddOffset(DateOnly date, MasterDataPaymentTermOffset offset) => date.AddMonths(offset.Months).AddDays(offset.Days);
