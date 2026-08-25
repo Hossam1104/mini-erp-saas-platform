@@ -1,21 +1,18 @@
 # Current State
 
-## MESP-133 AP / AR / Cash / Settlement HOLD 3 handoff - 25 August 2026
+## MESP-133 AP / AR / Cash / Settlement verification-only HOLD 4 handoff - 25 August 2026
 
 MESP-133 is the current bounded implementation capability under Finance Epic
 MESP-10. It is activated and remains In Progress in Jira (activation comments
 `11859` and `11860` respectively). The exact synchronized main baseline was
-`9ace42c7a830b5ef155a26b18d4a888676b8c188`; the Sol-reviewed starting head is
-`f30537d38106065891794a583b905a6fecd44d61`; HOLD 3 starts at exact head
-`452441084a44d1a8a0a1d8db3a0d679aac5ff550`; remediation is on branch
-`feat/MESP-133-ap-ar-cash-settlement`, original implementation
-`3a579e3ad66378d3537e3f1bdb2b7d15954481c2`, remediation source/test commit
-`b9eba368922899165324086aa59298d054fec25d`, HOLD 3 implementation
-`a9c46a27349cb617770277699ad74456262b81c4`, Draft PR #77. The PR is open,
+`9ace42c7a830b5ef155a26b18d4a888676b8c188`; HOLD 4 starts at exact head
+`30ea4a04e5fb120a292083edc03073e37b278b11`; verification tests are on branch
+`feat/MESP-133-ap-ar-cash-settlement` in commit
+`7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`, Draft PR #77. The PR is open,
 Draft, and unmerged for GPT-5.6 Sol review. Sol HOLD `11892` / HOLD 2 `11926`
-/ HOLD 3 `11963`, MESP-10 progress comments `11893` / `11927` / `11964`, and the manual-AR
-supplemental finding `11928` already exist. No Jira writes or Claude Opus
-review were performed.
+/ HOLD 3 `11963` / HOLD 4 `11967`, MESP-10 progress comments `11893` /
+`11927` / `11964` / `11968`, and manual-AR supplemental finding `11928` remain
+the acceptance authority. No Jira writes or Claude Opus review were performed.
 
 HOLD 3 adds authoritative Supplier existence, Tenant, Active-lifecycle,
 candidate-Company, and handoff-identity validation to AP source readiness;
@@ -43,27 +40,34 @@ payment providers, statements, fixed assets, payroll, treasury, generic
 Reporting, production provider setup, migration/cutover, or Wafra-specific
 core behavior. `frontend/assets` is untouched.
 
-Validation is complete: Release build 0 warnings/0 errors; disposable SQL
-Server LocalDB backend 1009/1009 with 0 failures and 0 skips; REST/OpenAPI/host
-54/54; SQL safety 61/61;
+HOLD 4 adds no production code. The real
+`ProcurementFinanceSupplierInvoiceSourceProvider` is directly tested with
+bounded authoritative-dependency fakes. Validation is complete: Release build
+0 warnings/0 errors; disposable SQL Server LocalDB backend 1014/1014 with 0
+failures and 0 skips; REST/OpenAPI/host 54/54; SQL safety 61/61;
 Angular 274/274 across 38 spec files (focused settlement workspace 15/15);
 focused Finance Playwright 6/6; full
 Playwright 38/38; initial bundle
 496.44 kB, Finance/GL lazy 34.31 kB, settlement lazy 56.04 kB; both npm audits
 0 vulnerabilities; required backend/frontend/AP/AR/settlement HTTP probes
-returned 200. Overall production-ready completion remains approximately 47%,
-Procurement/P2P approximately 41%, and accepted fast-track remains 16/26 =
-61.5% because this capability is not merged. Runtime processes are backend
-PID `34964` and frontend PID `34380`.
+returned 200. Focused Finance remediation is 16/16. The new recognition
+history test proves February uses AP Control A and May uses AP Control B from
+the document-date-effective rule, with actual journal-line inspection,
+Reconciled status, and no PendingMapping. The four provider tests prove active
+source readiness, missing/inactive/cross-Tenant exclusion, no CreatedAt date
+fabrication, and unsupported date-basis fail-closed behavior. Overall
+production-ready completion remains approximately 47%, Procurement/P2P
+approximately 41%, and accepted fast-track remains 16/26 = 61.5% because this
+capability is not merged. Runtime processes are backend PID `32024` and
+frontend PID `1164`.
 
 The architecture record is
 `docs/36_MESP-133_AP_AR_Cash_Settlement_Architecture.md`. All 68 tracked
-Markdown files were read and historical content was preserved. The exact
-next action is independent GPT-5.6 Sol review of Draft PR #77, with special
-attention to AP source/terms fail-closed behavior, Tenant/Company isolation,
-Posting Rule/GL lineage, settlement/allocation/reversal invariants, races, and
-additive migration safety. Do not merge or activate the next capability
-automatically.
+Markdown files were read and historical content was preserved. The exact next
+action is independent GPT-5.6 Sol review of Draft PR #77 against HOLD 4
+comments `11967` and `11968`, with special attention to the real Procurement
+source-provider boundary and historical recognition-rule A→B evidence. Do not
+merge or activate the next capability automatically.
 
 ## Historical MESP-132 Finance foundation merged-main handoff - 24 August 2026
 

@@ -10,7 +10,7 @@
 <!-- MESP-131-CURRENT-END -->
 
 <!-- MESP-133-CURRENT-START -->
-> **MESP-133 AP / AR / cash settlement HOLD 3 micro-remediation - 25 August 2026.** The
+> **MESP-133 AP / AR / cash settlement verification-only HOLD 4 - 25 August 2026.** The
 > backend now consumes trusted MESP-126 Finance-ready evidence with an
 > authoritative historical payment-term/version snapshot and reproducible due
 > date, reuses `IFinanceSourceApprovalPolicy` for settlement SoD, enforces
@@ -23,19 +23,23 @@
 > Draft only through the server-side correction path. Realized FX and external
 > providers remain fail-closed/deferred to MESP-134 and later scope.
 >
-> **MESP-133 validation.** Focused remediation coverage includes 11 behavioral
-> tests, the `54/54` REST/OpenAPI/host contract suite, and 15 named MESP-133
-> SQL race tests; the complete SQL safety class is `61/61` against disposable
-> LocalDB, the canonical disposable-LocalDB backend is `1009/1009`
+> **MESP-133 validation.** HOLD 4 directly instantiates the real
+> `ProcurementFinanceSupplierInvoiceSourceProvider` with bounded authoritative
+> dependency fakes and adds four provider cases plus one historical recognition
+> rule A→B persistence regression. Focused remediation coverage is `16/16`, the
+> `54/54` REST/OpenAPI/host contract suite, and 15 named MESP-133 SQL race
+> tests; the complete SQL safety class is `61/61` against disposable LocalDB,
+> the canonical disposable-LocalDB backend is `1014/1014`
 > with 0 failed/0 skipped, and Release build is 0 warnings/0 errors. The
 > additive migration remains `20260824220208_MESP133ApArCashSettlement`; no
 > migration edit or Owner-managed asset change was made. PR #77 remains Open,
 > Draft, and unmerged on `feat/MESP-133-ap-ar-cash-settlement` for Sol HOLD
-> `11926`/`11963` re-review (with Finance Epic `11927`/`11964` and manual-AR
+> `11926`/`11963`/`11967` re-review (with Finance Epic `11927`/`11964`/`11968` and manual-AR
 > supplemental finding `11928`); MESP-132 is Done/merged/closed and no Jira writes were
 > performed. The focused source/test commit is
 > `b9eba368922899165324086aa59298d054fec25d`; HOLD 3 implementation commit is
-> `a9c46a27349cb617770277699ad74456262b81c4`.
+> `a9c46a27349cb617770277699ad74456262b81c4`; HOLD 4 test commit is
+> `7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`.
 <!-- MESP-133-CURRENT-END -->
 
 > **Historical MESP-129 runtime overlay - 22 August 2026.** The backend now

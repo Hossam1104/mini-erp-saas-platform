@@ -180,11 +180,11 @@ the full Foundation suite, use the dedicated safe runner:
 
 The current Finance runtime is available at `/app/finance` plus the lazy AP,
 AR, and settlement routes `/app/finance/ap`, `/app/finance/ar`, and
-`/app/finance/settlements`. The remediation keeps Company/Tenant scope,
+`/app/finance/settlements`. The HOLD 4 verification keeps Company/Tenant scope,
 server-owned source/direction/mapping authority, truthful approval and
 reconciliation states, manual-only settlement methods, and EN/AR RTL
 presentation. Runtime evidence is recorded in `docs/staticts.md`; the current
-owner-inspection processes are backend PID `34964` and frontend PID `34380`.
+owner-inspection processes are backend PID `32024` and frontend PID `1164`.
 PR #77 remains Open/Draft/Unmerged for Sol review. This is not a
 production-readiness claim.
 

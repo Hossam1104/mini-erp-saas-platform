@@ -23,18 +23,25 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### Current acceptance stage: MESP-133 AP / AR / cash settlement HOLD 3 micro-remediation - 25 August 2026
+### Current acceptance stage: MESP-133 AP / AR / cash settlement verification-only HOLD 4 - 25 August 2026
 
 MESP-132 is Done/merged/closed at its accepted bounded scope. MESP-133 is the
 current active Finance capability under MESP-10. PR #77 is implemented on
 `feat/MESP-133-ap-ar-cash-settlement` but remains Open, Draft, and unmerged
-while GPT-5.6 Sol reviews the remediation. Sol HOLD comments `11892` / `11926` /
-`11963`, MESP-10 progress comments `11893` / `11927` / `11964`, and the
+while GPT-5.6 Sol reviews the verification evidence. Sol HOLD comments `11892`
+/ `11926` / `11963` / `11967`, MESP-10 progress comments `11893` / `11927` /
+`11964` / `11968`, and the
 manual-AR supplemental finding `11928` remain the acceptance authority; MESP-10
 is still In Progress, MESP-134 and MESP-135 remain To Do, and no Jira writes
 were performed by this session.
 
-HOLD 3 adds authoritative Supplier existence, Tenant, Active-lifecycle,
+HOLD 4 changes tests only. The real `ProcurementFinanceSupplierInvoiceSourceProvider`
+is directly exercised with bounded authoritative dependency fakes for active,
+missing, inactive, cross-Tenant, missing-date/CreatedAt, and unsupported
+date-basis cases. A real Finance persistence regression recognizes February
+under recognition Posting Rule A and May under non-overlapping Rule B, inspects
+the actual AP Control A/B journal lines, and proves historical reconciliation
+does not reinterpret the earlier item. HOLD 3 adds authoritative Supplier existence, Tenant, Active-lifecycle,
 candidate-Company, and handoff-identity validation to AP source readiness;
 trusted AP dates are the Supplier Invoice Date/document date only, with no
 CreatedAt fallback. It also makes AP recognition consume trusted MESP-126 evidence with
@@ -52,16 +59,17 @@ out of scope.
 
 The focused source/test remediation commits are
 `b9eba368922899165324086aa59298d054fec25d` and
-`a9c46a27349cb617770277699ad74456262b81c4` (HOLD 3 implementation).
+`a9c46a27349cb617770277699ad74456262b81c4` (HOLD 3 implementation); HOLD 4
+test commit is `7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`.
 
 Verified remediation evidence is REST/OpenAPI/host `54/54`, SQL safety `61/61`,
-full backend `1009/1009`, Angular `274/274` across 38 spec files, focused
+full backend `1014/1014`, focused Finance `16/16`, Angular `274/274` across 38 spec files, focused
 Finance Chromium `6/6`, full Chromium `38/38`, Release build `0 warnings / 0
 errors`, initial bundle `496.44 kB`, Finance/GL lazy chunk `34.31 kB`,
 settlement lazy chunk `56.04 kB`, and both npm audits at `0 vulnerabilities`.
 The repository runtime is running for owner inspection at backend
-`http://localhost:5300` (PID `34964`) and frontend `http://localhost:4300`
-(PID `34380`). The backend health and the
+`http://localhost:5300` (PID `32024`) and frontend `http://localhost:4300`
+(PID `1164`). The backend health and the
 frontend `/`, `/main.js`, `/app/finance`, `/app/finance/ap`,
 `/app/finance/ar`, and `/app/finance/settlements` routes returned HTTP 200.
 

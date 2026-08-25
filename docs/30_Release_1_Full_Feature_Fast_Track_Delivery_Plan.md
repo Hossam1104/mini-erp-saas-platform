@@ -2,25 +2,28 @@
 
 ## Current execution reconciliation - 25 August 2026
 
-The current bounded capability is MESP-133 AP/AR/cash settlement HOLD 3
+The current bounded capability is MESP-133 AP/AR/cash settlement verification-only HOLD 4
 micro-remediation, active/In Progress under MESP-10 on Draft PR #77. MESP-132 is
-Done/merged/closed; Sol HOLD `11892` / `11926` / `11963` and MESP-10 progress
-comments `11893` / `11927` / `11964`
+Done/merged/closed; Sol HOLD `11892` / `11926` / `11963` / `11967` and MESP-10 progress
+comments `11893` / `11927` / `11964` / `11968`
 remain the acceptance authority. MESP-134 and MESP-135 are To Do and
 unactivated. Fast-track remains `16/26 = 61.5%`; production readiness remains
 approximately `47%` overall / `41%` Procurement/P2P. The older 24 August
 MESP-132 overlay below is historical and retained for traceability.
 
-HOLD 3 remediation is implemented at `a9c46a27349cb617770277699ad74456262b81c4`
-from exact starting SHA `452441084a44d1a8a0a1d8db3a0d679aac5ff550`. Final
-evidence is full backend `1009/1009`, SQL safety `61/61`, REST/OpenAPI/host
+HOLD 4 adds no production code. Its implementation/test commit is
+`7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`, from exact starting SHA
+`30ea4a04e5fb120a292083edc03073e37b278b11`. Final evidence is full backend
+`1014/1014`, focused Finance `16/16`, SQL safety `61/61`, REST/OpenAPI/host
 `54/54`, Angular `274/274` including focused settlement workspace `15/15`,
 focused/full Chromium `6/6` and `38/38`, Release
 `0 warnings/0 errors`, and 0-vulnerability audits. Sol HOLD 2 `11926`, Finance
-Epic reconciliation `11927`, and manual-AR supplemental finding `11928` remain
-the authority; PR #77 stays Open/Draft/Unmerged and no Jira write or merge was
-performed. The missing allocation-vs-settlement-reversal race is now present
-and passed against disposable LocalDB; it did not exist in the earlier evidence.
+Epic reconciliation `11927`, HOLD 3 `11963` / `11964`, HOLD 4 `11967` /
+`11968`, and manual-AR supplemental finding `11928` remain the authority; PR
+#77 stays Open/Draft/Unmerged and no Jira write or merge was performed. The
+real Procurement source-provider cases and historical recognition rule A→B
+regression are now present and passed; the existing allocation-vs-settlement-
+reversal race remains retained.
 
 <!-- MESP-132-EXECUTION-START -->
 ## Execution overlay â€” 24 August 2026

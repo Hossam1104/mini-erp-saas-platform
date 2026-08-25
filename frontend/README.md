@@ -21,7 +21,7 @@
 <!-- MESP-131-MERGED-CURRENT-END -->
 
 <!-- MESP-133-CURRENT-START -->
-> **MESP-133 Finance settlement workspaces HOLD 3 - 25 August 2026.** The shell
+> **MESP-133 Finance settlement workspaces verification-only HOLD 4 - 25 August 2026.** The shell
 > keeps the lazy routes `/app/finance/ap`, `/app/finance/ar`, and
 > `/app/finance/settlements`. The AP, AR, and settlement surfaces present
 > server-derived Company scope, source lineage, outstanding/unapplied
@@ -38,6 +38,8 @@
 > `15/15`, focused Finance Chromium is `6/6`, full
 > Chromium is `38/38`, and both npm audits report `0 vulnerabilities`. PR #77
 > remains Draft/unmerged for independent Sol review; MESP-132 is Done/merged.
+> HOLD 4 added no frontend production code; the focused backend additions prove
+> the real Procurement source-provider and historical recognition-rule boundary.
 <!-- MESP-133-CURRENT-END -->
 
 > **Historical MESP-129 workspace overlay - 22 August 2026.** The Inventory

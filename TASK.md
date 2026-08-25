@@ -1,61 +1,93 @@
-# MESP-133 HOLD 3 - FINAL GPT-5.6 SOL RE-REVIEW HANDOFF
+# MESP-133 GPT-5.6 SOL VERIFICATION-ONLY HOLD 4 HANDOFF
 
-This is the exact next bounded session: independently re-review the final
-HOLD 3 micro-remediation on Draft PR #77, then stop. Do not merge, mark Ready,
-write Jira, activate MESP-134/MESP-135, invoke Claude Opus, or start another
-capability.
+HOLD 4 adds acceptance regressions only, then stops for GPT-5.6 Sol. Do not
+merge, mark PR #77 Ready, write Jira, activate MESP-134/MESP-135, invoke Opus,
+create another PR, or start another capability.
 
-- Branch: `feat/MESP-133-ap-ar-cash-settlement`; PR #77; base `main`; branch
-  remains Open/Draft/Unmerged.
-- Required main baseline: `9ace42c7a830b5ef155a26b18d4a888676b8c188`.
-- HOLD 3 starting SHA: `452441084a44d1a8a0a1d8db3a0d679aac5ff550`.
-- HOLD 3 implementation SHA: `a9c46a27349cb617770277699ad74456262b81c4`.
-- The final documentation/tracker handoff SHA is the branch SHA returned by
-  `git rev-parse HEAD` after the documentation commit is pushed; do not
-  force-push or rebase.
+## Repository
 
-## HOLD 3 bounded fixes
+- Branch: `feat/MESP-133-ap-ar-cash-settlement`; PR #77; base `main`.
+- PR #77 remains Open, Draft, and Unmerged.
+- Original main baseline: `9ace42c7a830b5ef155a26b18d4a888676b8c188`.
+- HOLD 4 starting SHA: `30ea4a04e5fb120a292083edc03073e37b278b11`.
+- Implementation/test SHA: `7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`.
+- Final documentation/tracker handoff SHA: returned by `git rev-parse HEAD`
+  after the final documentation push and reported in the completion response.
+- Starting branch/origin heads matched the required HOLD 4 SHA; no rebase,
+  force-push, history rewrite, or new PR was used.
 
-1. AP source readiness now resolves the authoritative Supplier and requires
-   exact Tenant ownership, Active lifecycle, candidate Company authorization,
-   and Purchase Order/source handoff identity. Supplier Invoice Date or the
-   trusted document date is authoritative; missing dates and unsupported
-   ReceiptDate/DeliveryDate semantics fail closed. No `CreatedAt` fallback.
-2. Manual AR and Payment/Receipt UI journeys consume the MESP-120 configured
-   Exchange Rate list and exact document-date reference endpoint. Non-functional
-   transactions submit the authorized rate, rate ID, version ID, and version
-   number; functional-currency transactions submit no FX evidence. Date,
-   Company, and currency changes clear stale evidence and errors are localized.
-   No realized FX or MESP-134 behavior was added.
-3. Direct Finance persistence regressions cover historical AP/AR lineage after
-   rule changes, allocation mismatch, allocation reversal reconciliation, and
-   no-PendingMapping outcomes; supplier missing, inactive, and cross-Tenant
-   source cases fail closed.
+## HOLD 4 verification evidence
 
-## Verified evidence
+The real `ProcurementFinanceSupplierInvoiceSourceProvider` was instantiated
+directly with bounded fakes for its authoritative handoff, match, company,
+purchase-order, payment-term, and Supplier persistence dependencies. The exact
+focused tests are:
 
-- Release build: 0 warnings / 0 errors.
-- REST/OpenAPI/host: 54/54.
-- Full backend: 1009/1009, 0 failures, 0 skips; SQL safety 61/61 against
-  disposable LocalDB.
-- Focused backend remediation: 11/11; Angular: 274/274 across 38 specs,
-  focused settlement workspace 15/15.
-- Focused Finance Chromium: 6/6, including non-functional-currency Manual AR
-  creation payload evidence; full Chromium: 38/38.
-- Production bundle: initial 496.44 kB; Finance/GL lazy 34.31 kB; settlement
-  lazy 56.04 kB. Both npm audits: 0 vulnerabilities.
-- Retained runtime: backend `http://localhost:5300` PID `34964`; frontend
-  `http://localhost:4300` PID `34380`; required health, root, `main.js`, and
-  Finance route probes returned HTTP 200.
-- All 68 tracked Markdown files were read; current state, README files,
-  Run.md, architecture/plan overlays, tracker, AGENTS.md, and CLAUDE.md were
-  reconciled. `frontend/assets` remains untouched.
-- Jira acceptance authority remains Sol HOLD 3 `11963`, Finance Epic HOLD 3
-  reconciliation `11964`, prior HOLD `11926`/`11927`, and manual-AR finding
-  `11928`. No Jira writes were performed.
+- `Procurement_source_ready_returns_active_supplier_with_trusted_invoice_date`:
+  source and list both return the active Supplier; Tenant/Company, trusted
+  invoice date, exact PO Payment Term version, due date, and match identity are
+  asserted from authoritative evidence.
+- `Procurement_source_ready_excludes_missing_inactive_and_cross_tenant_suppliers`:
+  missing, inactive, and wrong-Tenant Suppliers each return `null` from
+  `FindAsync` and are absent from `ListAsync`.
+- `Procurement_source_ready_never_uses_handoff_created_at_as_invoice_date`:
+  missing SupplierInvoiceDate with a usable handoff `CreatedAt` fails closed.
+- `Procurement_source_ready_fails_closed_for_unsupported_payment_term_base_date`:
+  ReceiptDate basis fails closed without current-date, GR-date, or PO-date
+  substitution.
 
-Next action: GPT-5.6 Sol independently reviews PR #77 and decides acceptance
-or further bounded feedback. STOP after that handoff.
+The historical Finance regression is
+`Historical_recognition_uses_rule_effective_on_document_date_without_reinterpreting_prior_item`.
+Recognition Posting Rule A (`2026-01-01` through `2026-03-31`) posts the
+February item to AP Control A; Rule B (`2026-04-01` onward) posts the May item
+to AP Control B. The test inspects actual recognition journal lines, asserts
+both journal IDs, asserts reconciliation is `Reconciled`, and asserts no
+`PendingMapping`. The existing
+`Historical_reconciliation_preserves_ap_and_ar_lineage_after_rule_change_and_allocation_reversal`
+test remains retained and passing, including mismatch, correct allocation,
+reversal, outstanding restoration, and reconciliation assertions.
+
+Direct recognition fail-closed tests for missing, inactive, and cross-Tenant
+authoritative Suppliers remain present. Production code was unchanged.
+
+## Final validation
+
+- Focused Finance remediation: `16/16`.
+- REST/OpenAPI/host: `54/54`.
+- Full backend disposable LocalDB: `1014/1014`, `0` failed, `0` skipped.
+- SQL Server safety: `61/61`, `0` failed, `0` skipped; all 15 MESP-133 SQL
+  races retained.
+- Release build: `0` warnings / `0` errors.
+- Angular: `274/274` across 38 spec files; focused settlement workspace
+  `15/15`.
+- Production bundle: initial `496.44 kB`; Finance/GL lazy `34.31 kB`; settlement
+  lazy `56.04 kB`; initial remains under the 500 kB budget.
+- Both npm audits: `0 vulnerabilities`.
+- Playwright Chromium: focused Finance `6/6`; full `38/38`.
+- Runtime: backend PID `32024` and frontend PID `1164`; `/health`, `/`,
+  `/main.js`, `/app/finance`, `/app/finance/ap`, `/app/finance/ar`, and
+  `/app/finance/settlements` all returned HTTP `200`.
+- Markdown audit: all 68 tracked Markdown files were read; live current-state,
+  task, README, Run.md, architecture/plan, and tracker records were reconciled;
+  historical bodies were preserved; `frontend/assets` is untouched.
+
+## Governance and scope
+
+Sol HOLD 4 authority is MESP-133 comment `11967`; Finance reconciliation is
+MESP-10 comment `11968`. Previous HOLD 3 `11963` / `11964`, HOLD 2 `11926` /
+`11927`, and manual-AR supplemental finding `11928` remain valid. No Jira
+writes were performed by Luna. MESP-133 remains In Progress/activated and is
+not accepted by this handoff. Fast-track remains `16/26 = 61.5%`; production
+readiness remains approximately `47%` overall / `41%` Procurement/P2P.
+MESP-134 and MESP-135 were not started or activated. No realized/unrealized FX,
+revaluation, tax/VAT/ZATCA/FATOORA, Sales lifecycle, external provider, bank
+feed, portal, payroll, fixed asset, migration/cutover, or Wafra-specific core
+behavior was added. No Opus review, merge, or Ready transition occurred.
+
+## Next action
+
+STOP. GPT-5.6 Sol independently reviews the exact final branch head and Draft
+PR #77 for acceptance. Do not merge or activate MESP-134.
 
 # MESP-133 HOLD 2 - FINAL GPT-5.6 SOL HANDOFF
 

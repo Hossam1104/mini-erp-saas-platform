@@ -141,13 +141,21 @@ Tenant/workspace chooser.
 
 ## Verification evidence
 
-The remediation was validated from the exact required main base, original
-Sol-reviewed head, and HOLD 3 starting SHA
-`452441084a44d1a8a0a1d8db3a0d679aac5ff550`. The HOLD 3 implementation commit
-is `a9c46a27349cb617770277699ad74456262b81c4`:
+HOLD 4 is verification-only from the exact HOLD 4 starting SHA
+`30ea4a04e5fb120a292083edc03073e37b278b11`; the implementation/test commit is
+`7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`, and no production code changed.
+The real `ProcurementFinanceSupplierInvoiceSourceProvider` is directly
+instantiated with bounded authoritative dependency fakes. Its focused tests
+prove active source readiness, missing/inactive/cross-Tenant Supplier
+exclusion, no `CreatedAt` commercial-date fabrication, and unsupported
+ReceiptDate/DeliveryDate fail-closed behavior. The additional Finance
+persistence regression recognizes February under rule A and May under rule B,
+inspects the actual AP Control A/B journal lines, and proves historical
+reconciliation remains truthful:
 
 - Release backend build: 0 warnings, 0 errors;
-- disposable SQL Server LocalDB backend suite: 1009/1009 passed, 0 failed,
+- focused Finance remediation: 16/16 passed;
+- disposable SQL Server LocalDB backend suite: 1014/1014 passed, 0 failed,
   0 skipped;
 - SQL Server safety coverage: 61/61 passed, with the five retained MESP-133
   configuration races and ten financial races, including
@@ -165,7 +173,8 @@ is `a9c46a27349cb617770277699ad74456262b81c4`:
   and
 - `frontend/assets` was inspected and remains untouched.
 
-The overall production-ready headline remains approximately 47% and
+The existing historical allocation/reversal regression remains retained and
+passing. The overall production-ready headline remains approximately 47% and
 Procurement/P2P remains approximately 41%. A Draft PR is not merged
 capability credit, so the accepted fast-track headline remains 16/26 = 61.5%
 until the bounded review and merge decision is complete.
@@ -177,6 +186,7 @@ verify the validation evidence, inspect the AP term/source boundary, approval
 policy reuse, Posting Rule/GL lineage, reconciliation/as-of semantics,
 route/document integrity, reversal invariants, and additive migration safety.
 MESP-133 remains In Progress / activated in Jira; HOLD comments `11892`,
-`11926`, and `11963`, MESP-10 progress comments `11893`, `11927`, and `11964`,
-and manual-AR supplemental finding `11928` already exist. No Jira writes, merge, Ready
-transition, MESP-134/MESP-135 activation, or Opus review/prompt were performed.
+`11926`, `11963`, and `11967`, MESP-10 progress comments `11893`, `11927`,
+`11964`, and `11968`, and manual-AR supplemental finding `11928` remain
+authority. No Jira writes, merge, Ready transition, MESP-134/MESP-135
+activation, or Opus review/prompt were performed.
