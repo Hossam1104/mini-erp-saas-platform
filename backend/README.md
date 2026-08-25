@@ -23,17 +23,19 @@
 > Draft only through the server-side correction path. Realized FX and external
 > providers remain fail-closed/deferred to MESP-134 and later scope.
 >
-> **MESP-133 validation.** Focused remediation coverage includes 5 behavioral
-> tests, one explicit REST/OpenAPI/host security-contract test, and 14 SQL race
-> tests; the complete SQL safety class is `60/60` against disposable LocalDB,
-> the canonical disposable-LocalDB backend is `1002/1002`
+> **MESP-133 validation.** Focused remediation coverage includes 7 behavioral
+> tests, the `54/54` REST/OpenAPI/host contract suite, and 15 named MESP-133
+> SQL race tests; the complete SQL safety class is `61/61` against disposable
+> LocalDB, the canonical disposable-LocalDB backend is `1005/1005`
 > with 0 failed/0 skipped, and Release build is 0 warnings/0 errors. The
 > additive migration remains `20260824220208_MESP133ApArCashSettlement`; no
 > migration edit or Owner-managed asset change was made. PR #77 remains Open,
 > Draft, and unmerged on `feat/MESP-133-ap-ar-cash-settlement` for Sol HOLD
-> `11892` re-review; MESP-132 is Done/merged/closed and no Jira writes were
+> `11926` re-review (with Finance Epic `11927` and manual-AR supplemental
+> finding `11928`); MESP-132 is Done/merged/closed and no Jira writes were
 > performed. The focused source/test commit is
-> `b9eba368922899165324086aa59298d054fec25d`.
+> `b9eba368922899165324086aa59298d054fec25d`; final implementation commit is
+> `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`.
 <!-- MESP-133-CURRENT-END -->
 
 > **Historical MESP-129 runtime overlay - 22 August 2026.** The backend now

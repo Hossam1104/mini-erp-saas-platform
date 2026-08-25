@@ -112,10 +112,12 @@ semantics where competing identity, balance, period, or allocation decisions
 could race. Durable idempotency keys, version checks, source-to-GL uniqueness,
 audit records, and explicit conflict classification protect retry and
 concurrent-request behavior. SQL Server LocalDB tests retain the five earlier
-MESP-133 configuration races and add nine financial races for AP recognition,
+MESP-133 configuration races and add ten financial races, including the
+provider-realistic allocation-vs-settlement-reversal race, for AP recognition,
 open-item/cash-document over-allocation, settlement post/lifecycle ordering,
-submit-version ordering, posted-settlement reversal, allocation versus
-reversal, same-payment post, same-receipt post, and allocation reversal.
+submit-version ordering, same-payment post, same-receipt post,
+posted-settlement reversal, allocation reversal, and allocation-vs-settlement
+reversal serialization.
 
 ## API and UI surface
 
@@ -139,20 +141,21 @@ Tenant/workspace chooser.
 
 ## Verification evidence
 
-The remediation was validated from the exact required main base and original
-Sol-reviewed head. The focused source/test remediation commit is
-`b9eba368922899165324086aa59298d054fec25d`:
+The remediation was validated from the exact required main base, original
+Sol-reviewed head, and HOLD 2 starting SHA
+`29caa6594bc281c07aa2edd3b5dadc3e3a238e29`. The final implementation commit
+is `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`:
 
 - Release backend build: 0 warnings, 0 errors;
-- disposable SQL Server LocalDB backend suite: 1002/1002 passed, 0 failed,
+- disposable SQL Server LocalDB backend suite: 1005/1005 passed, 0 failed,
   0 skipped;
-- SQL Server safety coverage: 60/60 passed, with all seven required financial
-  races, the additional settlement-post/lifecycle and submit-version races,
-  and the five retained MESP-133 configuration races;
-- Angular unit tests: 261/261 passed across 38 spec files;
-- focused Finance Playwright: 4/4; full Playwright Chromium: 36/36;
+- SQL Server safety coverage: 61/61 passed, with the five retained MESP-133
+  configuration races and ten financial races, including
+  `MESP133_sql_server_allocation_vs_settlement_reversal_race_has_one_valid_serialization`;
+- Angular unit tests: 263/263 passed across 38 spec files;
+- focused Finance Playwright: 5/5; full Playwright Chromium: 37/37;
 - production build: 0 warnings/errors, 496.43 kB initial bundle, 34.31 kB
-  existing Finance/GL lazy chunk, and 23.95 kB settlement lazy chunk;
+  Finance/GL lazy chunk, and 47.13 kB settlement lazy chunk;
 - both npm audits: 0 vulnerabilities;
 - runtime health, frontend root, `main.js`, `/app/finance`,
   `/app/finance/ap`, `/app/finance/ar`, and `/app/finance/settlements` probes
@@ -172,6 +175,7 @@ GPT-5.6 Sol must independently review the complete remediation diff, rerun or
 verify the validation evidence, inspect the AP term/source boundary, approval
 policy reuse, Posting Rule/GL lineage, reconciliation/as-of semantics,
 route/document integrity, reversal invariants, and additive migration safety.
-MESP-133 remains In Progress / activated in Jira; HOLD comment `11892` and
-MESP-10 progress comment `11893` already exist. No Jira writes, merge, Ready
-transition, MESP-134 activation, or Opus review/prompt were performed.
+MESP-133 remains In Progress / activated in Jira; HOLD comments `11892` and
+`11926`, MESP-10 progress comments `11893` and `11927`, and manual-AR
+supplemental finding `11928` already exist. No Jira writes, merge, Ready
+transition, MESP-134/MESP-135 activation, or Opus review/prompt were performed.

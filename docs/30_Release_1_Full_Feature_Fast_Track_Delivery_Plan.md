@@ -10,6 +10,16 @@ unactivated. Fast-track remains `16/26 = 61.5%`; production readiness remains
 approximately `47%` overall / `41%` Procurement/P2P. The older 24 August
 MESP-132 overlay below is historical and retained for traceability.
 
+HOLD 2 remediation is implemented at `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`
+from exact starting SHA `29caa6594bc281c07aa2edd3b5dadc3e3a238e29`. Final
+evidence is full backend `1005/1005`, SQL safety `61/61`, REST/OpenAPI/host
+`54/54`, Angular `263/263`, focused/full Chromium `5/5` and `37/37`, Release
+`0 warnings/0 errors`, and 0-vulnerability audits. Sol HOLD 2 `11926`, Finance
+Epic reconciliation `11927`, and manual-AR supplemental finding `11928` remain
+the authority; PR #77 stays Open/Draft/Unmerged and no Jira write or merge was
+performed. The missing allocation-vs-settlement-reversal race is now present
+and passed against disposable LocalDB; it did not exist in the earlier evidence.
+
 <!-- MESP-132-EXECUTION-START -->
 ## Execution overlay â€” 24 August 2026
 
@@ -89,7 +99,8 @@ cross-module dependency map is
 | MESP-116 | Done at the bounded approval/unblock reconciliation; Jira comment `10957`, closure transition, final dependency map, PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e`, merge `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`, and post-merge synchronization `66183c1` are recorded. |
 | MESP-117–MESP-131 | Completed bounded capabilities at their accepted merged scopes. |
 | MESP-132 | Merged through PR #76 under MESP-10; Jira closure and Finance Epic reconciliation remain with Sol. |
-| MESP-133–MESP-142 | Capability backlog remains To Do / not activated. |
+| MESP-133 | In Progress / activated on Draft PR #77; awaiting Sol HOLD 2 review. |
+| MESP-134–MESP-142 | Capability backlog remains To Do / not activated. |
 | Product implementation | Existing bounded Category, UOM, Product, Supplier, and Customer slices remain evidence; the planned capability completion and shared Angular experience are not claimed complete. |
 | Current acceptance handoff | MESP-132 accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; PR #76 squash SHA `ccc52a892c8258778f57c55c12fa0032bd3e276b`; Sol Jira closure and MESP-10 reconciliation are the next governance actions. |
 | Production capability | No percentage increase is justified by this governance/Jira work. |

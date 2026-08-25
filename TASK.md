@@ -1,4 +1,177 @@
-# MESP-133 - AP / AR / CASH / PAYMENT / RECEIPT / SETTLEMENT IMPLEMENTATION HANDOFF
+# MESP-133 HOLD 2 - FINAL GPT-5.6 SOL HANDOFF
+
+This bounded final remediation is complete. STOP after this handoff for
+independent GPT-5.6 Sol re-review. Do not merge, mark PR #77 Ready, write Jira,
+activate MESP-134/MESP-135, or invoke Opus.
+
+## Repository
+
+- Original main baseline: `9ace42c7a830b5ef155a26b18d4a888676b8c188`.
+- HOLD 2 starting SHA: `29caa6594bc281c07aa2edd3b5dadc3e3a238e29`.
+- Final implementation SHA: `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`.
+- Branch: `feat/MESP-133-ap-ar-cash-settlement`.
+- Final branch/origin SHA: verify with `git rev-parse HEAD` and
+  `git rev-parse origin/feat/MESP-133-ap-ar-cash-settlement` after push.
+- Working tree: clean after the documentation/tracker handoff commit.
+- PR #77: Open / Draft / Unmerged, base `main`, head as above; no merge or
+  Ready transition was performed.
+
+## Sol HOLD 2 resolution A-G
+
+### A - allocation versus settlement reversal race
+
+The missing provider-realistic SQL race is implemented in
+`backend/tests/MiniErp.ArchitectureTests/SqlServerSafetyTests.cs` as
+`MESP133_sql_server_allocation_vs_settlement_reversal_race_has_one_valid_serialization`.
+It uses independent Finance persistence/DbContext paths, starts allocation and
+settlement reversal concurrently, and verifies the committed database state:
+either the allocation remains active and the settlement remains Posted, or the
+settlement is Reversed exactly once with zero active allocations. The full
+disposable SQL suite passes `61/61`.
+
+### B - historical Receipt reversal/as-of semantics
+
+`FinanceSettlementPersistence.GetExposureAsync` and its reusable effective
+settlement helper now use PostedJournalId/PostingDate and
+ReversalJournalId/PostingDate rather than current document status. The focused
+test `Receipt_exposure_uses_posted_and_reversal_journal_dates_for_as_of_truth`
+proves before-posting exclusion, between-posting-and-reversal inclusion, and
+on-reversal-date removal.
+
+### C - Payment/Receipt route integrity
+
+`IFinanceSettlementPersistence.GetSettlementDocumentAsync`,
+`FinanceSettlementPersistence`, and `FinanceSettlementEndpoints` accept and
+enforce `FinancePaymentMethodDirection? expectedDirection`; wrong-direction
+detail reads return the same not-found behavior as an absent resource. The
+focused direction test covers both wrong Payment-on-Receipt and wrong
+Receipt-on-Payment routes; REST/OpenAPI/host validation is `54/54`.
+
+### D - historical AP/AR reconciliation lineage
+
+`FinanceSettlementPersistence` now derives control accounts from each
+OpenItem.RecognitionJournalId and actual Journal lines, uses explicit
+allocation and reversal JournalIds, validates allocation Posting Rule sides
+against the historical account, and fails closed with
+`posting_rule_control_account_mismatch`. Reversal posts against the original
+allocation lineage. No current effective Posting Rule is used to reinterpret
+posted history. Focused Finance coverage is `7/7`; the SQL suite includes
+allocation over-allocation, allocation reversal, settlement reversal, and the
+new cross-operation race.
+
+### E - manual AR Payment Term fail-closed behavior
+
+`FinanceSettlementPersistence.ResolvePaymentTermAsync` requires a server-owned
+Payment Term, resolves the exact effective version, derives the due date only
+from supported trusted base-date semantics, and treats a client DueDate only as
+a consistency assertion. Missing term returns `payment_term_not_configured`;
+disagreement returns `payment_term_snapshot_mismatch`; unsupported bases fail
+closed. The focused suite covers missing term with explicit due date and
+historical due-date behavior.
+
+### F - AP source-ready contract
+
+`ProcurementFinanceSupplierInvoiceSourceProvider.ListAsync`,
+`FinanceSettlementPersistence.ListApSourceReadyAsync`, and
+`FinanceSettlementEndpoints` replace the empty source-ready stub with an
+authorized, Company-filtered query over trusted MESP-126 match/term evidence.
+Ineligible, cancelled, already-recognized, cross-Company, and unsupported-term
+candidates are excluded without exposing raw browser evidence IDs as discovery
+authority. The Angular AP source-ready table recognizes an eligible candidate
+and refreshes the resulting open-item evidence.
+
+### G - Angular operational journey
+
+`finance-settlement-workspace.component.ts`, `finance.service.ts`, and
+`finance.model.ts` add bounded AP source-ready recognition, manual AR creation
+with Customer/Payment Term selectors and derived due date, Payment/Receipt
+creation with Supplier/Customer, manual Payment Method, and Cash/Bank
+selectors, valid lifecycle actions, compatible allocation selection, partial
+allocation, explicit allocation reversal, deterministic backend error mapping,
+and EN/AR/RTL coverage. No raw GUID entry or Wafra branch was added. Focused
+Finance Playwright is `5/5`; the full Chromium suite is `37/37`.
+
+## Accounting and approval boundaries
+
+- AP remains MESP-126 trusted-source recognition with historical term/version
+  snapshots and no invented Net-30.
+- AR requires Payment Term and server-derived due date.
+- `IFinanceSourceApprovalPolicy` remains authoritative for Required,
+  NotRequired, and NotConfigured settlement behavior; SoD/self-approval stays
+  fail-closed.
+- Non-manual/provider-style methods fail with `payment_method_not_supported`.
+- Cash/Bank `LinkedAccountId` is authoritative and must match the selected
+  Posting Rule cash side.
+- Posted settlements and allocations are immutable; corrections use explicit
+  reversal lineage.
+- Accounting-date as-of aging/exposure excludes future effects and nets only
+  after the effective reversal posting date.
+
+## SQL Server safety
+
+The safe wrapper `scripts/Test-MiniErpBackend.ps1` ran against disposable
+LocalDB `MiniErpFoundation_*`: **61 passed, 0 failed, 0 skipped**. The exact
+MESP-133 race names are:
+
+- `MESP133_sql_server_payment_method_same_code_race_is_unique_or_safe_conflict`
+- `MESP133_sql_server_payment_method_lifecycle_race_has_one_committed_transition`
+- `MESP133_sql_server_cash_account_same_code_race_is_unique_or_safe_conflict`
+- `MESP133_sql_server_cash_account_lifecycle_race_has_one_committed_transition`
+- `MESP133_sql_server_payment_method_edit_same_version_race_has_one_authoritative_edit`
+- `MESP133_sql_server_same_ap_source_concurrent_recognition_has_one_source_effect`
+- `MESP133_sql_server_same_payable_open_item_concurrent_allocation_cannot_over_allocate`
+- `MESP133_sql_server_same_settlement_concurrent_allocations_cannot_over_allocate_document`
+- `MESP133_sql_server_settlement_post_and_payment_method_lifecycle_have_one_consistent_order`
+- `MESP133_sql_server_same_settlement_submit_version_race_has_one_transition`
+- `MESP133_sql_server_same_payment_concurrent_post_has_one_authoritative_journal`
+- `MESP133_sql_server_same_receipt_concurrent_post_has_one_authoritative_journal`
+- `MESP133_sql_server_same_posted_settlement_concurrent_reversal_has_one_reversal_lineage`
+- `MESP133_sql_server_same_allocation_concurrent_reversal_has_one_active_state_transition`
+- `MESP133_sql_server_allocation_vs_settlement_reversal_race_has_one_valid_serialization`
+
+The migration/model checks remain green in the full suite. Existing additive
+migration `20260824220208_MESP133ApArCashSettlement` was not edited; no
+cosmetic migration was created.
+
+## Validation
+
+- Release build: 0 warnings / 0 errors.
+- Focused `FinanceSettlementRemediationTests`: 7/7.
+- REST/OpenAPI/host: 54/54.
+- Full backend: 1005/1005, 0 failed, 0 skipped.
+- Angular: 263/263 across 38 spec files.
+- Production bundle: initial 496.43 kB; Finance/GL lazy 34.31 kB; settlement
+  lazy 47.13 kB; unchanged initial budget <=500 kB.
+- Playwright: focused Finance 5/5; full Chromium 37/37.
+- `npm audit --audit-level=high`: 0 vulnerabilities.
+- `npm audit --omit=dev --audit-level=high`: 0 vulnerabilities.
+- Tracked Markdown: 68 files; live records reconciled, approved/historical
+  bodies preserved.
+
+## Runtime
+
+Repository-owned processes remain running: API `http://localhost:5300` PID
+`39276`; Angular `http://localhost:4300` PID `26888`. HTTP 200 probes passed
+for `/health`, `/`, `/main.js`, `/app/finance`, `/app/finance/ap`,
+`/app/finance/ar`, and `/app/finance/settlements`. Development bypass,
+authenticated session, entry, and module-registration probes returned 200;
+the browser exercised the AP source-ready recognition journey against
+controlled Development data/routes.
+
+## Jira and boundaries
+
+No Jira writes by Luna. Sol HOLD 2: `11926`; Finance Epic reconciliation:
+`11927`; manual-AR supplemental finding: `11928`. MESP-133 remains In
+Progress/activated, accepted fast-track remains 16/26 = 61.5%, and production
+readiness remains approximately 47% overall / 41% Procurement/P2P. MESP-134
+and MESP-135 were not started. No Opus, no merge, no provider credentials,
+no Wafra-specific behavior, and `frontend/assets` is untouched.
+
+## Next Action
+
+STOP. Return the exact new branch head to GPT-5.6 Sol for independent review.
+
+# Historical pre-HOLD 2 MESP-133 handoff
 
 This bounded remediation session is complete. The original implementation and
 acceptance remediation are on the focused branch below; Draft PR #77 remains

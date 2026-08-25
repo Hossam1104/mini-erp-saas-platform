@@ -32,10 +32,10 @@
 > server-authoritative. No Wafra-specific branching or external provider UI
 > was added.
 >
-> **MESP-133 validation.** Angular passes `261/261` across 38 spec files;
-> production initial total is `496.43 kB`, Finance lazy chunk is `34.31 kB`,
-> settlement lazy chunk is `23.95 kB`, focused Finance Chromium is `4/4`, full
-> Chromium is `36/36`, and both npm audits report `0 vulnerabilities`. PR #77
+> **MESP-133 validation.** Angular passes `263/263` across 38 spec files;
+> production initial total is `496.43 kB`, Finance/GL lazy chunk is `34.31 kB`,
+> settlement lazy chunk is `47.13 kB`, focused Finance Chromium is `5/5`, full
+> Chromium is `37/37`, and both npm audits report `0 vulnerabilities`. PR #77
 > remains Draft/unmerged for independent Sol review; MESP-132 is Done/merged.
 <!-- MESP-133-CURRENT-END -->
 

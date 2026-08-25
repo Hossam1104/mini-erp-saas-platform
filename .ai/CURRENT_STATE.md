@@ -6,13 +6,16 @@ MESP-133 is the current bounded implementation capability under Finance Epic
 MESP-10. It is activated and remains In Progress in Jira (activation comments
 `11859` and `11860` respectively). The exact synchronized main baseline was
 `9ace42c7a830b5ef155a26b18d4a888676b8c188`; the Sol-reviewed starting head is
-`f30537d38106065891794a583b905a6fecd44d61`; remediation is on branch
+`f30537d38106065891794a583b905a6fecd44d61`; HOLD 2 starts at exact head
+`29caa6594bc281c07aa2edd3b5dadc3e3a238e29`; remediation is on branch
 `feat/MESP-133-ap-ar-cash-settlement`, original implementation
 `3a579e3ad66378d3537e3f1bdb2b7d15954481c2`, remediation source/test commit
-`b9eba368922899165324086aa59298d054fec25d`, Draft PR #77. The PR is open,
-Draft, and unmerged for GPT-5.6 Sol review. Sol HOLD `11892` and MESP-10
-progress comment `11893` already exist. No Jira writes or Claude Opus review
-were performed.
+`b9eba368922899165324086aa59298d054fec25d`, final implementation
+`536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`, Draft PR #77. The PR is open,
+Draft, and unmerged for GPT-5.6 Sol review. Sol HOLD `11892` / HOLD 2
+`11926`, MESP-10 progress comments `11893` / `11927`, and the manual-AR
+supplemental finding `11928` already exist. No Jira writes or Claude Opus
+review were performed.
 
 The remediation adds Company-scoped Finance payment methods,
 cash/bank accounts, AP open-item recognition from the MESP-126 Finance-ready
@@ -35,15 +38,16 @@ Reporting, production provider setup, migration/cutover, or Wafra-specific
 core behavior. `frontend/assets` is untouched.
 
 Validation is complete: Release build 0 warnings/0 errors; disposable SQL
-Server LocalDB backend 1002/1002 with 0 failures and 0 skips; REST/OpenAPI/host
-54/54; SQL safety 60/60;
-Angular 261/261 across 38 spec files; focused Finance Playwright 4/4; full
-Playwright 36/36; initial bundle
-496.43 kB, Finance/GL lazy 34.31 kB, settlement lazy 23.95 kB; both npm audits
+Server LocalDB backend 1005/1005 with 0 failures and 0 skips; REST/OpenAPI/host
+54/54; SQL safety 61/61;
+Angular 263/263 across 38 spec files; focused Finance Playwright 5/5; full
+Playwright 37/37; initial bundle
+496.43 kB, Finance/GL lazy 34.31 kB, settlement lazy 47.13 kB; both npm audits
 0 vulnerabilities; required backend/frontend/AP/AR/settlement HTTP probes
 returned 200. Overall production-ready completion remains approximately 47%,
 Procurement/P2P approximately 41%, and accepted fast-track remains 16/26 =
-61.5% because this capability is not merged.
+61.5% because this capability is not merged. Runtime processes are backend
+PID `39276` and frontend PID `26888`.
 
 The architecture record is
 `docs/36_MESP-133_AP_AR_Cash_Settlement_Architecture.md`. All 68 tracked

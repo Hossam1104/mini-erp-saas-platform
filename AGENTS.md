@@ -63,14 +63,16 @@ velocity, or forecast:
 PR #77 is Open/Draft/Unmerged on `feat/MESP-133-ap-ar-cash-settlement` from
 Sol-reviewed head `f30537d38106065891794a583b905a6fecd44d61`, based on main
 `9ace42c7a830b5ef155a26b18d4a888676b8c188`. MESP-132 is Done/merged/closed;
-MESP-133 remains In Progress/activated under MESP-10 while Sol HOLD `11892`
-and MESP-10 progress comment `11893` remain the acceptance authority. No Jira
+MESP-133 remains In Progress/activated under MESP-10 while Sol HOLD `11892` /
+HOLD 2 `11926`, MESP-10 progress comment `11893` / reconciliation `11927`,
+and manual-AR supplemental finding `11928` remain the acceptance authority. No Jira
 writes, merge, Ready transition, MESP-134/MESP-135 activation, or Opus review
 was performed.
 
 The focused source/test remediation commit is
-`b9eba368922899165324086aa59298d054fec25d`; the subsequent documentation and
-tracker handoff commit is the final branch head recorded after push.
+`b9eba368922899165324086aa59298d054fec25d`; the final implementation commit
+is `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`; the final documentation/tracker
+handoff SHA is recorded by `git rev-parse HEAD` after push.
 
 The remediation resolves AP trusted payment-term/version and due-date
 derivation, reuses `IFinanceSourceApprovalPolicy`, enforces manual-only
@@ -80,11 +82,12 @@ accounting-date as-of allocation/receipt semantics, and enforces AP/AR and
 Payment/Receipt route integrity plus rejected-to-Draft correction.
 
 Final validation is Release `0 warnings/0 errors`; REST/OpenAPI/host `54/54`;
-full backend `1002/1002` with 0 failures/0 skips; SQL safety `60/60` against disposable LocalDB;
-Angular `261/261` across 38 specs; focused Finance Chromium `4/4`; full
-Chromium `36/36`; initial bundle `496.43 kB`; Finance lazy `34.31 kB`;
-settlement lazy `23.95 kB`; and both npm audits `0 vulnerabilities`. Runtime
-backend PID `39624` and frontend PID `8508` are left running with required
+full backend `1005/1005` with 0 failures/0 skips; SQL safety `61/61` against
+disposable LocalDB; Angular `263/263` across 38 specs; focused Finance
+Chromium `5/5`; full Chromium `37/37`; initial bundle `496.43 kB`; Finance/GL
+lazy `34.31 kB`; settlement lazy `47.13 kB`; and both npm audits
+`0 vulnerabilities`. Runtime backend PID `39276` and frontend PID `26888` are
+left running with required
 HTTP 200 probes. `frontend/assets` is untouched. Accepted fast-track remains
 `16/26 = 61.5%`; production readiness remains approximately `47%` overall and
 `41%` Procurement/P2P. MESP-134 is planned but not activated.

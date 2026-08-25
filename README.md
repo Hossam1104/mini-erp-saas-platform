@@ -28,10 +28,11 @@ module-owned persistence are product rules—not customer-specific forks.
 MESP-132 is Done/merged/closed at its accepted bounded scope. MESP-133 is the
 current active Finance capability under MESP-10. PR #77 is implemented on
 `feat/MESP-133-ap-ar-cash-settlement` but remains Open, Draft, and unmerged
-while GPT-5.6 Sol reviews the remediation. Sol HOLD comment `11892` and
-MESP-10 progress comment `11893` remain the acceptance authority; MESP-10 is
-still In Progress, MESP-134 and MESP-135 remain To Do, and no Jira writes were
-performed by this session.
+while GPT-5.6 Sol reviews the remediation. Sol HOLD comments `11892` / `11926`,
+MESP-10 progress comments `11893` / `11927`, and the manual-AR supplemental
+finding `11928` remain the acceptance authority; MESP-10 is still In Progress,
+MESP-134 and MESP-135 remain To Do, and no Jira writes were performed by this
+session.
 
 The remediation makes AP recognition consume trusted MESP-126 evidence with
 historical payment-term snapshots and reproducible due dates, reuses the
@@ -44,15 +45,17 @@ No realized FX, provider, bank-feed, gateway, statutory, Sales, or Wafra-
 specific core behavior was added.
 
 The focused source/test remediation commit is
-`b9eba368922899165324086aa59298d054fec25d`.
+`b9eba368922899165324086aa59298d054fec25d`; the final implementation commit
+for this HOLD 2 session is `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`.
 
-Verified remediation evidence is REST/OpenAPI/host `54/54`, SQL safety `60/60`,
-full backend `1002/1002`, Angular `261/261` across 38 spec files, focused Finance Chromium `4/4`, full
-Chromium `36/36`, Release build `0 warnings / 0 errors`, initial bundle
-`496.43 kB`, Finance lazy chunk `34.31 kB`, settlement lazy chunk `23.95 kB`,
-and both npm audits at `0 vulnerabilities`. The repository runtime is running
-for owner inspection at backend `http://localhost:5300` (PID `39624`) and
-frontend `http://localhost:4300` (PID `8508`). The backend health and the
+Verified remediation evidence is REST/OpenAPI/host `54/54`, SQL safety `61/61`,
+full backend `1005/1005`, Angular `263/263` across 38 spec files, focused
+Finance Chromium `5/5`, full Chromium `37/37`, Release build `0 warnings / 0
+errors`, initial bundle `496.43 kB`, Finance/GL lazy chunk `34.31 kB`,
+settlement lazy chunk `47.13 kB`, and both npm audits at `0 vulnerabilities`.
+The repository runtime is running for owner inspection at backend
+`http://localhost:5300` (PID `39276`) and frontend `http://localhost:4300`
+(PID `26888`). The backend health and the
 frontend `/`, `/main.js`, `/app/finance`, `/app/finance/ap`,
 `/app/finance/ar`, and `/app/finance/settlements` routes returned HTTP 200.
 
