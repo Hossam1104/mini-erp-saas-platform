@@ -13,7 +13,8 @@ MESP-132 overlay below is historical and retained for traceability.
 HOLD 2 remediation is implemented at `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`
 from exact starting SHA `29caa6594bc281c07aa2edd3b5dadc3e3a238e29`. Final
 evidence is full backend `1005/1005`, SQL safety `61/61`, REST/OpenAPI/host
-`54/54`, Angular `263/263`, focused/full Chromium `5/5` and `37/37`, Release
+`54/54`, Angular `270/270` including focused settlement workspace `11/11`,
+focused/full Chromium `5/5` and `37/37`, Release
 `0 warnings/0 errors`, and 0-vulnerability audits. Sol HOLD 2 `11926`, Finance
 Epic reconciliation `11927`, and manual-AR supplemental finding `11928` remain
 the authority; PR #77 stays Open/Draft/Unmerged and no Jira write or merge was

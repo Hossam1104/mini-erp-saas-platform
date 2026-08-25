@@ -30,7 +30,8 @@ methods, binds cash/bank posting to linked GL mappings, implements actual
 subledger/GL reconciliation and accounting-date as-of semantics, and enforces
 AP/AR and Payment/Receipt route integrity with rejected-to-Draft correction.
 Final validation is REST/OpenAPI/host `54/54`, full backend `1005/1005`, SQL
-safety `61/61`, Angular `263/263`, focused/full Chromium `5/5` and `37/37`,
+safety `61/61`, Angular `270/270` (focused settlement workspace `11/11`),
+focused/full Chromium `5/5` and `37/37`,
 Release `0/0`, initial `496.43 kB`, Finance/GL lazy `34.31 kB`, settlement
 lazy `47.13 kB`, both audits clean; runtime PIDs `39276`/`26888` remain
 running.

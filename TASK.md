@@ -139,7 +139,8 @@ cosmetic migration was created.
 - Focused `FinanceSettlementRemediationTests`: 7/7.
 - REST/OpenAPI/host: 54/54.
 - Full backend: 1005/1005, 0 failed, 0 skipped.
-- Angular: 263/263 across 38 spec files.
+- Angular: 270/270 across 38 spec files, including focused settlement workspace
+  coverage 11/11.
 - Production bundle: initial 496.43 kB; Finance/GL lazy 34.31 kB; settlement
   lazy 47.13 kB; unchanged initial budget <=500 kB.
 - Playwright: focused Finance 5/5; full Chromium 37/37.

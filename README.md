@@ -49,7 +49,7 @@ The focused source/test remediation commit is
 for this HOLD 2 session is `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`.
 
 Verified remediation evidence is REST/OpenAPI/host `54/54`, SQL safety `61/61`,
-full backend `1005/1005`, Angular `263/263` across 38 spec files, focused
+full backend `1005/1005`, Angular `270/270` across 38 spec files, focused
 Finance Chromium `5/5`, full Chromium `37/37`, Release build `0 warnings / 0
 errors`, initial bundle `496.43 kB`, Finance/GL lazy chunk `34.31 kB`,
 settlement lazy chunk `47.13 kB`, and both npm audits at `0 vulnerabilities`.

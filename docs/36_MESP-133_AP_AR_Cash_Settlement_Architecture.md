@@ -152,7 +152,8 @@ is `536cd40984d58c3f61ae814ac4efb0d48c6aa8d8`:
 - SQL Server safety coverage: 61/61 passed, with the five retained MESP-133
   configuration races and ten financial races, including
   `MESP133_sql_server_allocation_vs_settlement_reversal_race_has_one_valid_serialization`;
-- Angular unit tests: 263/263 passed across 38 spec files;
+- Angular unit tests: 270/270 passed across 38 spec files, including 11/11
+  focused Finance settlement-workspace tests;
 - focused Finance Playwright: 5/5; full Playwright Chromium: 37/37;
 - production build: 0 warnings/errors, 496.43 kB initial bundle, 34.31 kB
   Finance/GL lazy chunk, and 47.13 kB settlement lazy chunk;

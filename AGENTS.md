@@ -83,8 +83,9 @@ Payment/Receipt route integrity plus rejected-to-Draft correction.
 
 Final validation is Release `0 warnings/0 errors`; REST/OpenAPI/host `54/54`;
 full backend `1005/1005` with 0 failures/0 skips; SQL safety `61/61` against
-disposable LocalDB; Angular `263/263` across 38 specs; focused Finance
-Chromium `5/5`; full Chromium `37/37`; initial bundle `496.43 kB`; Finance/GL
+disposable LocalDB; Angular `270/270` across 38 specs (focused settlement
+workspace `11/11`); focused Finance Chromium `5/5`; full Chromium `37/37`;
+initial bundle `496.43 kB`; Finance/GL
 lazy `34.31 kB`; settlement lazy `47.13 kB`; and both npm audits
 `0 vulnerabilities`. Runtime backend PID `39276` and frontend PID `26888` are
 left running with required

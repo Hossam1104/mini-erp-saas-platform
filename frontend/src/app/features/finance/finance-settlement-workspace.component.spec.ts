@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
@@ -22,7 +23,10 @@ describe('FinanceSettlementWorkspaceComponent', () => {
     id: 'open-item-a',
     companyId: 'company-a',
     kind: 'Payable',
+    supplierId: 'supplier-a',
+    customerId: null,
     partyId: 'supplier-a',
+    sourceEvidenceId: 'source-a',
     reference: 'PI-1001',
     documentDate: '2026-08-01',
     dueDate: '2026-08-31',
@@ -35,7 +39,29 @@ describe('FinanceSettlementWorkspaceComponent', () => {
     recognitionState: 'Recognized',
     status: 'Open',
     recognitionJournalId: 'journal-a',
+    paymentTerm: { code: 'NET30', versionNumber: 1, dueDate: '2026-08-31' },
     version: 'AQ==',
+  };
+
+  const term = {
+    id: 'term-a',
+    code: 'NET30',
+    lifecycleState: 'Active',
+    currentVersionNumber: 1,
+    versions: [{ effectiveFrom: '2026-08-01', effectiveTo: null, baseDateRule: 'DocumentDate', scheduleMode: 'Offset', dueOffsetDays: 30, dueOffsetMonths: 0, installments: [] }],
+  };
+
+  const postedPayment = {
+    id: 'payment-a', companyId: 'company-a', status: 'Posted', direction: 'Payment', supplierId: 'supplier-a', customerId: null,
+    cashAccountId: 'cash-a', paymentMethodId: 'method-a', documentDate: '2026-08-10', currencyCode: 'SAR', amount: 500,
+    functionalCurrencyCode: 'SAR', functionalAmount: 500, externalReference: 'PAY-1', postedJournalId: 'journal-payment',
+    unallocatedAmount: 500, allocatedAmount: 0, version: 'AQ==', approvalRequirement: 'NotRequired',
+  };
+
+  const allocation = {
+    id: 'allocation-a', companyId: 'company-a', settlementDocumentId: 'payment-a', openItemId: 'open-item-a', amount: 250,
+    currencyCode: 'SAR', functionalAmount: 250, allocationDate: '2026-08-11', status: 'Active', reversalOfAllocationId: null,
+    journalId: 'allocation-journal', version: 'AQ==',
   };
 
   beforeEach(() => {
@@ -55,12 +81,23 @@ describe('FinanceSettlementWorkspaceComponent', () => {
             apAging: () => of([{ openItemId: 'open-item-a', reference: 'PI-1001', dueDate: '2026-08-31', daysOverdue: 0, outstandingAmount: 1250, currencyCode: 'SAR', status: 'Open' }]),
             arOpenItems: empty,
             arAging: empty,
-            paymentMethods: empty,
-            cashAccounts: empty,
+            customers: () => of([{ id: 'customer-a', code: 'CUST-1', lifecycleState: 'Active' }]),
+            suppliers: () => of([{ id: 'supplier-a', code: 'SUP-1', lifecycleState: 'Active' }]),
+            paymentTerms: () => of([term]),
+            paymentMethods: () => of([{ id: 'method-a', companyId: 'company-a', code: 'MANUAL', englishName: 'Manual', arabicName: null, direction: 'Both', lifecycle: 'Active', isManual: true, requiresReference: true, version: 'AQ==' }]),
+            cashAccounts: () => of([{ id: 'cash-a', companyId: 'company-a', code: 'CASH', englishName: 'Cash', arabicName: null, kind: 'Cash', currencyCode: 'SAR', linkedAccountId: 'account-a', linkedAccountCode: '1000', lifecycle: 'Active', version: 'AQ==' }]),
             payments: empty,
             receipts: empty,
             allocations: empty,
             reconciliation: empty,
+            createManualReceivable: vi.fn().mockResolvedValue(openItem),
+            createPayment: vi.fn().mockResolvedValue(postedPayment),
+            createReceipt: vi.fn().mockResolvedValue({ ...postedPayment, id: 'receipt-a', direction: 'Receipt', supplierId: null, customerId: 'customer-a' }),
+            settlementAction: vi.fn().mockResolvedValue({}),
+            postSettlement: vi.fn().mockResolvedValue({}),
+            reverseSettlement: vi.fn().mockResolvedValue({}),
+            createAllocation: vi.fn().mockResolvedValue(allocation),
+            reverseAllocation: vi.fn().mockResolvedValue({ ...allocation, status: 'Reversed' }),
           },
         },
       ],
@@ -108,5 +145,100 @@ describe('FinanceSettlementWorkspaceComponent', () => {
     expect(element.querySelector('[data-testid="ar-customer-select"]')).not.toBeNull();
     expect(element.querySelector('[data-testid="ar-payment-term-select"]')).not.toBeNull();
     expect(element.querySelector('input[readonly]')).not.toBeNull();
+  });
+
+  it('recognizes an AP source-ready candidate and refreshes without optimistic success', async () => {
+    const component = fixture.componentInstance;
+    const service = TestBed.inject(FinanceService);
+    await component.recognize(fixture.componentInstance.sourceReady()[0]);
+    expect(service.recognizeAp).toHaveBeenCalledWith('source-a');
+    expect(component.actionError()).toBeNull();
+  });
+
+  it('shows the deterministic AP blocked state when recognition fails', async () => {
+    const component = fixture.componentInstance;
+    const service = TestBed.inject(FinanceService);
+    vi.mocked(service.recognizeAp).mockRejectedValueOnce(new HttpErrorResponse({ status: 400, error: { code: 'payment_term_not_configured' } }));
+    await component.recognize(component.sourceReady()[0]);
+    expect(component.actionError()).toContain('Payment Term is required');
+  });
+
+  it('creates manual AR only with a selected Payment Term and server-derived due date', async () => {
+    const component = fixture.componentInstance;
+    const service = TestBed.inject(FinanceService);
+    component.view.set('ar');
+    component.load();
+    await fixture.whenStable();
+    component.setAr('customerId', 'customer-a');
+    component.setAr('paymentTermId', 'term-a');
+    component.setAr('documentDate', '2026-08-01');
+    component.setAr('amount', 1250);
+    expect(component.canCreateAr()).toBe(true);
+    expect(component.derivedArDueDate()).toBe('2026-08-31');
+    await component.createReceivable();
+    expect(service.createManualReceivable).toHaveBeenCalledWith(expect.objectContaining({ customerId: 'customer-a', paymentTermId: 'term-a', dueDate: '2026-08-31', amount: 1250 }));
+  });
+
+  it('creates Payment and Receipt through configured selector-backed flows', async () => {
+    const component = fixture.componentInstance;
+    const service = TestBed.inject(FinanceService);
+    component.view.set('settlements');
+    component.load();
+    await fixture.whenStable();
+    component.setSettlement('partyId', 'supplier-a');
+    component.setSettlement('cashAccountId', 'cash-a');
+    component.setSettlement('paymentMethodId', 'method-a');
+    component.setSettlement('amount', 500);
+    component.setSettlement('externalReference', 'PAY-1');
+    expect(component.canCreateSettlement()).toBe(true);
+    await component.createSettlement();
+    expect(service.createPayment).toHaveBeenCalledWith(expect.objectContaining({ partyId: 'supplier-a', cashAccountId: 'cash-a', paymentMethodId: 'method-a', externalReference: 'PAY-1' }));
+    component.setSettlement('direction', 'Receipt');
+    component.setSettlement('partyId', 'customer-a');
+    component.setSettlement('externalReference', 'REC-1');
+    await component.createSettlement();
+    expect(service.createReceipt).toHaveBeenCalledWith(expect.objectContaining({ partyId: 'customer-a', externalReference: 'REC-1' }));
+  });
+
+  it('renders lifecycle actions according to Required, NotRequired, Approved, and Posted states', () => {
+    const component = fixture.componentInstance;
+    component.view.set('settlements');
+    component.loading.set(false);
+    component.payments.set([
+      { ...postedPayment, id: 'submitted-required', status: 'Submitted', approvalRequirement: 'Required' },
+      { ...postedPayment, id: 'submitted-direct', status: 'Submitted', approvalRequirement: 'NotRequired' },
+      { ...postedPayment, id: 'approved', status: 'Approved', approvalRequirement: 'Required' },
+      postedPayment,
+    ]);
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Approve');
+    expect(text).toContain('Post');
+    expect(text).toContain('Reverse');
+  });
+
+  it('creates a partial compatible allocation and exposes explicit allocation reversal', async () => {
+    const component = fixture.componentInstance;
+    const service = TestBed.inject(FinanceService);
+    component.view.set('settlements');
+    component.loading.set(false);
+    component.payments.set([postedPayment]);
+    component.apItems.set([openItem]);
+    component.setAllocation('documentId', 'payment-a');
+    component.setAllocation('itemId', 'open-item-a');
+    component.setAllocation('amount', 250);
+    expect(component.compatibleAllocationItems()).toHaveLength(1);
+    await component.createAllocation();
+    expect(service.createAllocation).toHaveBeenCalledWith(expect.objectContaining({ settlementDocumentId: 'payment-a', openItemId: 'open-item-a', amount: 250 }));
+    await component.reverseAllocation(allocation);
+    expect(service.reverseAllocation).toHaveBeenCalledWith('allocation-a', 'AQ==', expect.any(String));
+  });
+
+  it('maps a control-account posting failure to a human-readable error', async () => {
+    const component = fixture.componentInstance;
+    const service = TestBed.inject(FinanceService);
+    vi.mocked(service.postSettlement).mockRejectedValueOnce(new HttpErrorResponse({ status: 400, error: { code: 'posting_rule_control_account_mismatch' } }));
+    await component.settlementAction(postedPayment, 'post');
+    expect(component.actionError()).toContain('historical control account');
   });
 });

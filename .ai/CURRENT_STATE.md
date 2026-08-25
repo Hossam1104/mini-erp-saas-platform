@@ -40,7 +40,8 @@ core behavior. `frontend/assets` is untouched.
 Validation is complete: Release build 0 warnings/0 errors; disposable SQL
 Server LocalDB backend 1005/1005 with 0 failures and 0 skips; REST/OpenAPI/host
 54/54; SQL safety 61/61;
-Angular 263/263 across 38 spec files; focused Finance Playwright 5/5; full
+Angular 270/270 across 38 spec files (focused settlement workspace 11/11);
+focused Finance Playwright 5/5; full
 Playwright 37/37; initial bundle
 496.43 kB, Finance/GL lazy 34.31 kB, settlement lazy 47.13 kB; both npm audits
 0 vulnerabilities; required backend/frontend/AP/AR/settlement HTTP probes
