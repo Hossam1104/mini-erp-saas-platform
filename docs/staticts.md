@@ -21,7 +21,7 @@
 |---|---|
 | Starting main | MESP-133 squash merge `3c616dd85b9cebb53990934321f1ae7d0d5410c9` |
 | Current capability | MESP-134 Tax / FX / Reporting Currency / Revaluation; activated under MESP-10 and In Progress |
-| Branch / PR | `feat/MESP-134-tax-fx-revaluation`; one Draft PR; base `main`; intentionally open/unmerged |
+| Branch / PR | `feat/MESP-134-tax-fx-revaluation`; Draft PR #78; base `main`; intentionally open/unmerged |
 | MESP-133 accepted feature head | `6908c003a32be8a3a31782d855b8358f2a9505f5`; closure `12037` |
 | Finance reconciliation | MESP-10 comment `12038` |
 | MESP-134 activation | comment `12039` |
@@ -87,7 +87,7 @@ Wafra-specific core behavior remain outside this bounded capability.
 
 | Current control | Verified position |
 |---|---|
-| Branch / PR | `feat/MESP-134-tax-fx-revaluation`; one Draft, Open, Unmerged PR against `main`; awaiting GPT-5.6 Sol review. |
+| Branch / PR | `feat/MESP-134-tax-fx-revaluation`; Draft PR #78 is Open and Unmerged against `main`; awaiting GPT-5.6 Sol review. |
 | Validation | Release build 0 warnings/0 errors; disposable LocalDB backend 1019/1019 with 0 failures and 0 skips; SQL safety 61/61 including migration application and allocation-vs-settlement-reversal contention; Angular 276/276 across 39 specs; full Chromium 38/38; EF model-change detection clean; initial 496.44 kB; Finance/GL lazy 34.52 kB; Tax/FX lazy 27.73 kB; settlement 56.04 kB; both npm audits 0 vulnerabilities. |
 | Runtime | Backend `http://localhost:5300` PID `24080` and frontend `http://localhost:4300` PID `46468`; backend `/health` HTTP 200; frontend `/`, `main.js`, `/app/finance`, and `/app/finance/tax-fx` returned HTTP 200. |
 | REST/OpenAPI/host | Focused REST/OpenAPI/host-security MESP-134 contract suite 36/36; full backend includes the route catalogue, exact antiforgery/idempotency/If-Match seams, and Tenant-ownership verification. |

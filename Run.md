@@ -3,8 +3,9 @@
 ## Current Finance capability
 
 MESP-133 is accepted and merged. MESP-134 (Tax, FX, Reporting Currency, and
-Revaluation) is the only active implementation capability and adds lazy Finance
-routes under `/app/finance`. MESP-135 is inactive. Follow the normal restart,
+Revaluation) is the only active implementation capability and is held in Draft
+PR #78 for Sol review; it adds lazy Finance routes under `/app/finance`.
+MESP-135 is inactive. Follow the normal restart,
 HTTP probe, and protected-asset rules below; no external provider or production
 credential is part of this local workflow.
 

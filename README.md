@@ -28,8 +28,8 @@ module-owned persistence are product rules—not customer-specific forks.
 MESP-132 and MESP-133 are Done/merged/closed at their accepted bounded scopes.
 MESP-133 merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9` from accepted
 feature head `6908c003a32be8a3a31782d855b8358f2a9505f5`. MESP-134 is the only
-active Finance capability under MESP-10 and is being delivered on one Draft,
-Open, Unmerged feature PR. Sol closure `12037`, Finance reconciliation `12038`,
+active Finance capability under MESP-10 and is being delivered on Draft PR #78,
+which remains Open and Unmerged. Sol closure `12037`, Finance reconciliation `12038`,
 and MESP-134 activation `12039` are the current authority. Sol HOLD comments `11892`
 / `11926` / `11963` / `11967`, MESP-10 progress comments `11893` / `11927` /
 `11964` / `11968`, and the

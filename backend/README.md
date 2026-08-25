@@ -13,7 +13,7 @@
 > **MESP-134 Tax / FX / Reporting Currency / Revaluation - 26 August 2026.**
 > MESP-133 is Done and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
 > MESP-134 is implemented on the only active Finance branch under MESP-10,
-> pending one Draft/Open/Unmerged PR and GPT-5.6 Sol acceptance. The backend
+> pending Draft PR #78, which remains Open/Unmerged for GPT-5.6 Sol acceptance. The backend
 > reuses MESP-119 Tax, MESP-120 Exchange Rates, MESP-132 posting authority,
 > and MESP-133 AP/AR/settlement history for monetary policy, exact Reporting
 > evidence, tax effects, realized FX, revaluation, and reconciliation. Final

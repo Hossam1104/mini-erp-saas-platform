@@ -9,9 +9,8 @@ different capability.
 
 - Branch: `feat/MESP-134-tax-fx-revaluation`; base `main`.
 - Starting reconciled main: `e8437e978defb2caa868eb014178e1033fe20664`.
-- One Draft PR is required; it remains open and unmerged.
-- Final documentation/tracker handoff SHA is the value of `git rev-parse HEAD`
-  after the final push.
+- Draft PR #78 is open and unmerged for GPT-5.6 Sol review.
+- Final documentation/tracker handoff SHA is recorded after the final push.
 - `frontend/assets` is owner-managed and must remain untouched.
 
 ## Final validation checkpoint

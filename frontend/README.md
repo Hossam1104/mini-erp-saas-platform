@@ -7,7 +7,8 @@
 > exact Tax/FX/Reporting evidence, revaluation lifecycle, reconciliation, and
 > blocked/evidence states. It remains bilingual EN/AR with RTL and
 > server-authoritative for Company, Tax, Currency, Exchange Rate, posting, and
-> evidence. MESP-134 is the only active capability; MESP-135 remains inactive.
+> evidence. Draft PR #78 remains Open/Unmerged for Sol review. MESP-134 is the
+> only active capability; MESP-135 remains inactive.
 <!-- MESP-134-CURRENT-END -->
 
 <!-- MESP-131-HISTORICAL-START -->

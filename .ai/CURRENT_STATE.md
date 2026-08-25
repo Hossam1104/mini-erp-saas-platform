@@ -11,7 +11,7 @@ remains To Do/inactive. Accepted fast-track is `17/26 = 65.4%`; production
 readiness remains approximately `47%` overall and `41%` Procurement/P2P.
 
 The current implementation branch is created from the reconciled merge baseline
-and must remain one Draft, Open, Unmerged PR for Sol acceptance. No Jira writes,
+and Draft PR #78 must remain Open and Unmerged for Sol acceptance. No Jira writes,
 Claude Opus review, Ready transition, merge, or MESP-135 activation is allowed
 in this bounded session.
 
