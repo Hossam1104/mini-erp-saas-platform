@@ -5,21 +5,26 @@
 MESP-133 is the current bounded implementation capability under Finance Epic
 MESP-10. It is activated and remains In Progress in Jira (activation comments
 `11859` and `11860` respectively). The exact synchronized main baseline was
-`9ace42c7a830b5ef155a26b18d4a888676b8c188`; implementation is on branch
-`feat/MESP-133-ap-ar-cash-settlement`, source/test commit
-`3a579e3ad66378d3537e3f1bdb2b7d15954481c2`, Draft PR #77. The PR is open,
-Draft, and unmerged for GPT-5.6 Sol review. No Jira writes or Claude Opus
-review were performed.
+`9ace42c7a830b5ef155a26b18d4a888676b8c188`; the Sol-reviewed starting head is
+`f30537d38106065891794a583b905a6fecd44d61`; remediation is on branch
+`feat/MESP-133-ap-ar-cash-settlement`, original implementation
+`3a579e3ad66378d3537e3f1bdb2b7d15954481c2`, remediation source/test commit
+`b9eba368922899165324086aa59298d054fec25d`, Draft PR #77. The PR is open,
+Draft, and unmerged for GPT-5.6 Sol review. Sol HOLD `11892` and MESP-10
+progress comment `11893` already exist. No Jira writes or Claude Opus review
+were performed.
 
-The bounded capability adds Company-scoped Finance payment methods,
+The remediation adds Company-scoped Finance payment methods,
 cash/bank accounts, AP open-item recognition from the MESP-126 Finance-ready
-supplier-invoice handoff, bounded manual AR open items, payments, receipts,
+supplier-invoice handoff with trusted historical payment-term snapshots and
+reproducible due dates, bounded manual AR open items, payments, receipts,
 partial/multiple and on-account allocations, explicit reversals, aging,
-customer exposure, reconciliation, source-to-subledger-to-GL lineage, and
-Angular EN/AR/RTL AP, AR, and settlement workspaces. AP payment terms and
-due-date evidence are snapshotted; there is no Net-30 default, and the current
-upstream handoff fails closed with `payment_terms_not_configured` until trusted
-term evidence exists. Posting Rules and GL authority remain server-owned.
+customer exposure, reconciliation against actual GL lines,
+source-to-subledger-to-GL lineage, and Angular EN/AR/RTL AP, AR, and
+settlement workspaces. It reuses `IFinanceSourceApprovalPolicy`, rejects
+non-manual methods, enforces linked cash/GL mappings, applies historical as-of
+semantics, and preserves fail-closed FX/provider boundaries. Posting Rules and
+GL authority remain server-owned.
 
 The additive migration is
 `20260824220208_MESP133ApArCashSettlement`. Tenant ownership filters and
@@ -30,8 +35,10 @@ Reporting, production provider setup, migration/cutover, or Wafra-specific
 core behavior. `frontend/assets` is untouched.
 
 Validation is complete: Release build 0 warnings/0 errors; disposable SQL
-Server LocalDB backend 987/987 with 0 failures and 0 skips; SQL safety 51/51;
-Angular 261/261 across 38 spec files; Playwright 36/36; initial bundle
+Server LocalDB backend 1002/1002 with 0 failures and 0 skips; REST/OpenAPI/host
+54/54; SQL safety 60/60;
+Angular 261/261 across 38 spec files; focused Finance Playwright 4/4; full
+Playwright 36/36; initial bundle
 496.43 kB, Finance/GL lazy 34.31 kB, settlement lazy 23.95 kB; both npm audits
 0 vulnerabilities; required backend/frontend/AP/AR/settlement HTTP probes
 returned 200. Overall production-ready completion remains approximately 47%,
@@ -39,15 +46,15 @@ Procurement/P2P approximately 41%, and accepted fast-track remains 16/26 =
 61.5% because this capability is not merged.
 
 The architecture record is
-`docs/36_MESP-133_AP_AR_Cash_Settlement_Architecture.md`. All 67 tracked
-Markdown files were audited and historical content was preserved. The exact
+`docs/36_MESP-133_AP_AR_Cash_Settlement_Architecture.md`. All 68 tracked
+Markdown files were read and historical content was preserved. The exact
 next action is independent GPT-5.6 Sol review of Draft PR #77, with special
 attention to AP source/terms fail-closed behavior, Tenant/Company isolation,
 Posting Rule/GL lineage, settlement/allocation/reversal invariants, races, and
 additive migration safety. Do not merge or activate the next capability
 automatically.
 
-## MESP-132 Finance foundation merged-main handoff - 24 August 2026
+## Historical MESP-132 Finance foundation merged-main handoff - 24 August 2026
 
 MESP-132 is the active bounded implementation capability under Finance Epic
 MESP-10. Jira activation is already recorded (`MESP-132` comment `11845`,

@@ -1,8 +1,9 @@
 # MESP-133 - AP / AR / CASH / PAYMENT / RECEIPT / SETTLEMENT IMPLEMENTATION HANDOFF
 
-This bounded session is complete. The implementation is on the focused branch
-below and Draft PR #77 remains open and unmerged for GPT-5.6 Sol review. Do
-not start MESP-134 or merge this branch automatically.
+This bounded remediation session is complete. The original implementation and
+acceptance remediation are on the focused branch below; Draft PR #77 remains
+Open/Draft/Unmerged for GPT-5.6 Sol's independent re-review. Do not merge,
+mark Ready, start MESP-134/MESP-135, write Jira, or invoke Opus automatically.
 
 ## Starting Main SHA
 
@@ -13,10 +14,23 @@ not start MESP-134 or merge this branch automatically.
 
 `feat/MESP-133-ap-ar-cash-settlement`
 
-## Implementation SHA
+## Original Implementation SHA
 
-`3a579e3ad66378d3537e3f1bdb2b7d15954481c2` - source and test
+`3a579e3ad66378d3537e3f1bdb2b7d15954481c2` - original source and test
 implementation commit.
+
+## Sol-Reviewed Starting Head
+
+`f30537d38106065891794a583b905a6fecd44d61` - exact Sol-reviewed head from
+which this remediation was started.
+
+## Remediation Implementation SHA
+
+The source/test remediation commit is
+`b9eba368922899165324086aa59298d054fec25d`, created from the Sol-reviewed
+head. The final branch SHA is the subsequent
+documentation/tracker handoff commit, verified with `git rev-parse HEAD` and
+`origin/feat/MESP-133-ap-ar-cash-settlement` after push.
 
 ## Final Branch SHA
 
@@ -44,30 +58,60 @@ existing trusted-context, authorization, anti-forgery, idempotency, audit,
 optimistic-concurrency, and OpenAPI foundations. Angular adds lazy AP, AR, and
 settlement routes under `/app/finance` with EN/AR/RTL presentation.
 
+## Sol blockers 1-7
+
+1. **AP recognition:** `ProcurementFinanceSupplierInvoiceSourceProvider` now
+   resolves the exact Purchase Order payment-term identity/code/version using
+   trusted Procurement and Payment Term persistence, validates the historical
+   term version, and derives/snapshots the due date. Missing, cancelled,
+   unsupported, or ineligible MESP-126 evidence fails closed.
+2. **Approval:** settlement approval/posting consumes the existing
+   `IFinanceSourceApprovalPolicy`; Required, NotRequired, and NotConfigured
+   behavior is explicit, and self-approval remains forbidden.
+3. **Methods:** create/edit/use rejects `IsManual=false` with deterministic
+   `payment_method_not_supported`; only internal Company-owned manual methods
+   are usable.
+4. **Cash/GL:** payment/receipt posting verifies the selected Cash/Bank
+   `LinkedAccountId` against the correct side of the configured Posting Rule,
+   with lifecycle/effective-date/currency revalidation and fail-closed mismatch.
+5. **Reconciliation:** AP/AR compares active subledger outstanding balances
+   with actual posted/reversed control-account journal lines; Cash/Bank compares
+   settlement movement with the configured linked GL account. Missing or
+   inconsistent mappings are PendingMapping; no balancing plug is created.
+6. **As-of reporting:** reusable effective-allocation filtering applies
+   accounting dates and later reversal dates to aging and customer exposure;
+   future allocations/receipts are excluded.
+7. **Integrity:** AP/AR detail and payment/receipt actions enforce kind and
+   direction; rejected edits return to Draft through the supported resubmission
+   path.
+
 ## Accounts Payable
 
 AP recognizes only the existing MESP-126 Finance-ready supplier-invoice
 handoff. Held, unresolved, non-comparable, rejected, or pending evidence is
-not recognized. Payment-term and due-date evidence is snapshotted; there is no
-hardcoded Net-30 fallback. Because the current upstream handoff does not
-provide trusted terms, recognition fails closed with
-`payment_terms_not_configured` until the upstream contract is complete.
+not recognized. Payment-term and due-date evidence is snapshotted from the
+authoritative historical Purchase Order/Payment Term version; there is no
+hardcoded Net-30 fallback. A legitimate Finance-ready source can become an AP
+open item, while missing/untrusted/ineligible term or matching evidence fails
+closed with deterministic domain errors.
 
 ## docs/staticts.md
 
 The tracked statistics file was read and updated directly. The production
 headline remains approximately 47%, Procurement/P2P approximately 41%, and
 accepted fast-track remains 16/26 = 61.5% because this PR is Draft and
-unmerged. The 25 August progress row records the exact base, implementation
-commit, PR, validation counts, runtime probes, and unchanged boundaries.
+unmerged. The 25 August progress row records the exact base, Sol-reviewed
+head, remediation validation counts, runtime/API probes, and unchanged
+boundaries.
 
 ## Documentation
 
-Added `docs/36_MESP-133_AP_AR_Cash_Settlement_Architecture.md` covering scope,
-authorization, AP/AR source contracts, payment and allocation invariants,
-posting/GL lineage, persistence, API/UI routes, validation, and deferred
-scope. All 67 tracked Markdown files were audited; approved and historical
-content was preserved. `frontend/assets` is untouched.
+`docs/36_MESP-133_AP_AR_Cash_Settlement_Architecture.md` records the bounded
+scope, remediation contracts, authorization, AP/AR source terms, approval,
+payment/allocation/reversal invariants, posting/GL lineage, persistence,
+API/UI routes, validation, and deferred scope. All 68 tracked Markdown files
+were read; live files were reconciled while approved and historical content
+was preserved. `frontend/assets` is untouched.
 
 ## TASK.md
 
@@ -81,6 +125,34 @@ capability.
 Draft PR #77 describes the reusable AP/AR/cash/payment/receipt/settlement
 spine, its fail-closed boundaries, MESP-132 Posting Rule/journal lineage,
 additive migration, and validation evidence. It remains open and Draft.
+
+## Validation Evidence
+
+- Focused backend remediation: `5/5` `FinanceSettlementRemediationTests`.
+- REST/OpenAPI/host validation: `54/54`; the remediation adds an explicit
+  settlement-operation security-contract test plus route and direction
+  assertions in the focused backend suite and full validation.
+- SQL Server safety: `60/60`, using disposable `MiniErpFoundation_*` LocalDB
+  databases via `MESP_SQLSERVER_SAFETY_CONNECTION_STRING`; the five retained
+  MESP-133 configuration races remain, plus nine financial races: AP source
+  recognition, open-item over-allocation, cash-document over-allocation,
+  settlement post/lifecycle ordering, submit-version ordering, same-payment
+  post, same-receipt post, posted-settlement reversal, and allocation-reversal
+  lineage.
+- Full backend: `1002/1002`, failed `0`, skipped `0`; Release build `0 warnings /
+  0 errors`.
+- Angular: `261/261` across 38 spec files; production initial bundle
+  `496.43 kB`, Finance/GL lazy `34.31 kB`, settlement lazy `23.95 kB`.
+- Playwright: focused Finance `4/4`; full Chromium `36/36`; both npm audits
+  report `0 vulnerabilities`.
+- Runtime: backend health `http://localhost:5300/health`, frontend root,
+  `main.js`, `/app/finance`, `/app/finance/ap`, `/app/finance/ar`, and
+  `/app/finance/settlements` returned HTTP 200. Development-authenticated
+  `GET /api/v1/finance/companies` returned HTTP 200. Repository-owned runtime
+  PIDs are backend `39624` and frontend `8508`.
+- Migration/model drift: existing additive migration
+  `20260824220208_MESP133ApArCashSettlement` was not edited or replaced; no
+  new migration was required and Release model/build validation is clean.
 
 ## Jira
 

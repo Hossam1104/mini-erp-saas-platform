@@ -20,27 +20,24 @@
 > untouched.
 <!-- MESP-131-MERGED-CURRENT-END -->
 
-<!-- MESP-132-CURRENT-START -->
-> **MESP-132 Finance workspace - 24 August 2026.** The shell now lazy-loads
-> `/app/finance` with server-populated Company context and bounded tabs for
-> Chart of Accounts, Fiscal Periods, Journals, Posting Rules, Inventory
-> Finance Handoff, and GL inquiry. Manual journal UX shows debit, credit, and
-> difference while the backend remains authoritative for balance, period,
-> account, dimension, FX, mapping, authorization, and source uniqueness.
-> The new surface preserves EN/AR, RTL/LTR, safe errors, responsive forms,
-> accessible labels, and no raw GUID entry.
+<!-- MESP-133-CURRENT-START -->
+> **MESP-133 Finance settlement workspaces - 25 August 2026.** The shell
+> keeps the lazy routes `/app/finance/ap`, `/app/finance/ar`, and
+> `/app/finance/settlements`. The AP, AR, and settlement surfaces present
+> server-derived Company scope, source lineage, outstanding/unapplied
+> balances, approval and mapping failures, reversal constraints, and
+> reconciliation status without claiming success for blocked backend states.
+> The presentation remains bilingual EN/AR with RTL support; settlement
+> source identity, direction, payment method, GL account, and evidence remain
+> server-authoritative. No Wafra-specific branching or external provider UI
+> was added.
 >
-> **MESP-132 validation.** Angular passes `259/259` across 37 spec files and
-> the Manual Journal payload test proves no source-owned authority fields are
-> submitted; production initial total is `496.34 kB`, Finance lazy chunk is
-> `36.45 kB`, focused Finance Chromium is `2/2`, full Chromium is `34/34`, and
-> both npm audits report `0 vulnerabilities`. The implementation branch is
-> `feat/MESP-132-finance-foundation`, source-authority/SQL implementation
-> The retained feature branch carries accepted feature head
-> `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`, from implementation commit
-> `dcae7e2` and exact base `fcec241dfedb529fef89d4336adf1e571917c52a`.
-> PR #76 is squash-merged into `main`; Sol still owns Jira closure.
-<!-- MESP-132-CURRENT-END -->
+> **MESP-133 validation.** Angular passes `261/261` across 38 spec files;
+> production initial total is `496.43 kB`, Finance lazy chunk is `34.31 kB`,
+> settlement lazy chunk is `23.95 kB`, focused Finance Chromium is `4/4`, full
+> Chromium is `36/36`, and both npm audits report `0 vulnerabilities`. PR #77
+> remains Draft/unmerged for independent Sol review; MESP-132 is Done/merged.
+<!-- MESP-133-CURRENT-END -->
 
 > **Historical MESP-129 workspace overlay - 22 August 2026.** The Inventory
 > workspace now exposes server-authorized Warehouse Transfers with direct and

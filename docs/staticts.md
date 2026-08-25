@@ -11,42 +11,44 @@
   GPT-5.6 Sol review.
 <!-- MESP-133-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-25 00:00 +03:00
+**Last Updated:** 2026-08-25 11:16 +03:00
 
-## Current authoritative fast-track snapshot - 25 August 2026 (MESP-133 Draft)
+## Current authoritative fast-track snapshot - 25 August 2026 (MESP-133 Draft remediation)
 
 | Current repository control | Verified position |
 |---|---|
 | Starting main | Exact required SHA `9ace42c7a830b5ef155a26b18d4a888676b8c188` |
 | Current capability | MESP-133 AP / AR / Cash / Payment / Receipt / Settlement; activated under MESP-10 and In Progress |
 | Branch / PR | `feat/MESP-133-ap-ar-cash-settlement`; Draft PR #77; base `main`; intentionally open/unmerged |
-| Implementation SHA | `3a579e3ad66378d3537e3f1bdb2b7d15954481c2` |
+| Sol-reviewed head | `f30537d38106065891794a583b905a6fecd44d61` |
+| Original implementation SHA | `3a579e3ad66378d3537e3f1bdb2b7d15954481c2` |
+| Remediation source/test SHA | `b9eba368922899165324086aa59298d054fec25d` |
 | Accepted fast-track | 16/26 = 61.5%; MESP-133 remains Draft and does not add merged-capability credit |
 | Production-readiness | ~47% overall; ~41% Procurement/P2P; headlines unchanged |
 
-MESP-133 adds the bounded reusable Finance settlement spine: AP recognition
-from the MESP-126 Finance-ready supplier-invoice handoff, bounded manual AR,
-Company-scoped payment methods and cash/bank accounts, payments, receipts,
-partial/multiple and on-account allocations, explicit reversals, aging,
-customer exposure, reconciliation, source-to-subledger-to-GL lineage, and
-Angular EN/AR/RTL AP, AR, and settlements workspaces. Missing trusted payment
-terms fail closed; Posting Rules remain server-owned; realized FX fails closed
-pending MESP-134. The additive migration is
+MESP-133 remediation closes the AP payment-term/due-date path from trusted
+MESP-126/Procurement evidence, reuses the MESP-132 approval policy, enforces
+manual-only methods, binds cash/bank settlement posting to the selected linked
+GL account, reconciles actual subledger and journal movement, applies
+accounting-date as-of semantics, and makes route/document direction and
+rejected correction behavior coherent. Realized FX and external providers
+remain outside scope and fail closed. The additive migration remains
 `20260824220208_MESP133ApArCashSettlement`.
 
 | Current control | Verified position |
 |---|---|
-| Validation | Release build 0 warnings/0 errors; disposable LocalDB backend 987/987 with 0 failures and 0 skips; SQL safety 51/51; Angular 261/261 across 38 specs; Playwright 36/36; initial 496.43 kB; Finance/GL lazy 34.31 kB; settlement lazy 23.95 kB; both npm audits 0 vulnerabilities. |
-| Runtime | Backend `http://localhost:5300` PID `27188` and frontend `http://localhost:4300` PID `12564`; health, root, `main.js`, `/app/finance`, `/app/finance/ap`, `/app/finance/ar`, and `/app/finance/settlements` probes returned HTTP 200. |
-| Markdown reconciliation | 67 tracked Markdown files inspected after adding the MESP-133 architecture record; approved/historical content preserved; `frontend/assets` untouched. |
+| Validation | Release build 0 warnings/0 errors; REST/OpenAPI/host 54/54; disposable LocalDB backend 1002/1002 with 0 failures and 0 skips; SQL safety 60/60; Angular 261/261 across 38 specs; focused Finance Playwright 4/4; full Chromium 36/36; initial 496.43 kB; Finance/GL lazy 34.31 kB; settlement 23.95 kB; both npm audits 0 vulnerabilities. |
+| Runtime | Backend `http://localhost:5300` PID `39624` and frontend `http://localhost:4300` PID `8508`; health, frontend root, `main.js`, `/app/finance`, `/app/finance/ap`, `/app/finance/ar`, and `/app/finance/settlements` returned HTTP 200; authenticated `/api/v1/finance/companies` returned HTTP 200. |
+| REST/OpenAPI/host | `54/54`; the remediation adds an explicit settlement-operation security-contract test; route/document integrity remains covered by the generated OpenAPI and host-security suite. |
+| Markdown reconciliation | 68 tracked Markdown files read; live current-state files updated; approved/historical/session bodies preserved; `frontend/assets` untouched. |
 | Delivery boundaries | No MESP-134 FX, tax/VAT/ZATCA/FATOORA, Sales lifecycle, external bank/provider integration, statements, fixed assets, payroll, treasury, generic Reporting, migration/cutover, or Wafra-specific core behavior. |
-| Next exact session | GPT-5.6 Sol reviews Draft PR #77, validates the AP term/source boundary, posting/reversal/settlement invariants, migration, API, Angular, and concurrency evidence, then decides on merge and Jira reconciliation. Do not merge automatically. |
+| Next exact session | GPT-5.6 Sol independently re-reviews Draft PR #77 and decides acceptance/merge; do not merge, mark Ready, activate MESP-134, write Jira, or invoke Opus automatically. |
 
 The full architecture and handoff record is
 `docs/36_MESP-133_AP_AR_Cash_Settlement_Architecture.md`.
 
 <!-- MESP-132-JIRA-SYNC-START -->
-## Jira/documentation synchronization â€” 24 August 2026
+## Historical MESP-132 Jira/documentation synchronization - 24 August 2026
 
 Jira traceability is current for the MESP-132 acceptance stage:
 
@@ -72,12 +74,12 @@ is preserved. No Jira writes were performed by this session.
 
 **File:** `staticts.md`  
 **Purpose:** Single living source for project progress, phase percentages, delivery velocity, forecasts, and production-readiness tracking.  
-**Last Updated:** 2026-08-24 21:43 +03:00
+**Historical snapshot date:** 2026-08-24 21:43 +03:00
 **Project:** Mini ERP SaaS Platform  
 **Release:** Release 1  
 **Overall Production-Ready Completion:** **~47%**
 
-## Current authoritative fast-track snapshot - 24 August 2026 (MESP-132 merged; Sol Jira closure pending)
+## Historical MESP-132 merged snapshot - 24 August 2026
 
 | Current repository control | Verified position |
 |---|---|
@@ -115,7 +117,7 @@ and no Opus review was requested.
 | Delivery boundaries | Finance foundation only; no AP/AR, cash/bank, tax/VAT/ZATCA/FATOORA, financial statements, generic Reporting, Sales, production migration/cutover, external providers, statutory certification, or Wafra-specific Finance behavior. `frontend/assets` untouched. |
 | Next exact session | Sol verifies the final main/PR merge SHA, closes MESP-132 in Jira, reconciles MESP-10, determines and activates the next approved capability, and issues the next Luna prompt. Do not start MESP-133 automatically. |
 
-## Current module / capability matrix — 24 August 2026
+## Current module / capability matrix - 25 August 2026
 
 | Area / capability | Current status | Evidence / boundary |
 |---|---|---|
@@ -123,9 +125,14 @@ and no Opus review was requested.
 | Master Data and Business Parties | Done / merged at bounded slices | Reusable bounded source capability; SQL/provider and full Release 1 gates remain distinct. |
 | Procurement / P2P through MESP-124 | Done / merged at bounded capabilities | MESP-125+ downstream receiving/invoice effects are separate capabilities. |
 | Inventory MESP-128–MESP-131 | Done / merged | Physical ledger, movement, stock control, MWA valuation, reconciliation, and Finance handoff evidence; no accounting journal ownership. |
-| MESP-132 Finance / GL foundation | Merged / Jira In Progress | Accepted through PR #76; Sol Jira closure and MESP-10 Finance Epic reconciliation remain. |
+| MESP-132 Finance / GL foundation | Done / merged / closed | Accepted through PR #76; retained historical evidence remains below. |
 | MESP-133–MESP-142 | To Do / not activated | No next capability is inferred from the current Draft PR. |
 | Production / provider / cutover gates | Production Gate | MESP-48, MESP-50, SQL/provider, backup/restore, capacity, legal/specialist, migration/cutover, and external/statutory validation remain open or deferred. |
+
+> **Current-row reconciliation:** The older `MESP-133–MESP-142 To Do` row
+> above is superseded by the current snapshot at the top of this file.
+> MESP-133 is activated/In Progress on Draft PR #77 and awaits Sol HOLD
+> re-review; MESP-134 and MESP-135 remain To Do and unactivated.
 
 ## Historical MESP-131 guarded merge snapshot - 24 August 2026
 
@@ -191,7 +198,7 @@ production readiness. `frontend/assets` remains untouched.
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
-| 2026-08-25 | MESP-133 bounded AP / AR / cash / payment / receipt / settlement implementation is complete on Draft PR #77 from exact main `9ace42c7a830b5ef155a26b18d4a888676b8c188`; branch head implementation `3a579e3ad66378d3537e3f1bdb2b7d15954481c2`. | ~47% | ~41% | No headline increase before review/merge; backend 987/987, SQL safety 51/51, Angular 261/261, Playwright 36/36, build/audits clean, required runtime probes HTTP 200; no Jira writes or Opus review; assets untouched. |
+| 2026-08-25 | MESP-133 AP / AR / cash / payment / receipt / settlement remediation is complete on Draft PR #77 from exact main `9ace42c7a830b5ef155a26b18d4a888676b8c188` and Sol-reviewed head `f30537d38106065891794a583b905a6fecd44d61`; original implementation `3a579e3ad66378d3537e3f1bdb2b7d15954481c2`, focused remediation `b9eba368922899165324086aa59298d054fec25d`. | ~47% | ~41% | No headline increase before review/merge; REST/OpenAPI/host 54/54; backend 1002/1002, SQL safety 60/60, Angular 261/261, focused Finance Chromium 4/4, full Chromium 36/36, build/audits clean, runtime/API probes HTTP 200; no Jira writes, merge, Ready transition, MESP-134 activation, or Opus review; assets untouched. |
 | 2026-08-24 | MESP-132 guarded squash merge and post-merge reconciliation: PR #76 merged at `ccc52a892c8258778f57c55c12fa0032bd3e276b` from accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; Jira remains In Progress pending Sol closure. | ~47% | ~41% | Accepted fast-track completion is now **16/26 = 61.5%**; merged-main Release build 0/0; focused Finance 12/12; bounded Inventory 89/89; accepted exact-head SQL 46/46; REST/host 53/53, backend 982/982, Angular 259/259, Playwright 2/2 + 34/34, bundle 496.34 kB / Finance lazy 36.45 kB, audits clean; final runtime backend 5300 PID 21112 and frontend 4300 PID 39640 with required HTTP 200 probes; no Jira writes or Opus review. |
 | 2026-08-24 | MESP-132 final Sol acceptance remediation completed on the existing Draft PR branch: public manual Journal input is server-forced to `manual-journal.v1` / `manual` with no browser-controlled source identity, evidence, Posting Rule, or amount authority; trusted Inventory lineage remains source-owned; and SQL Server provider-realistic concurrency evidence covers period close/post, account restriction/post, same-Journal post, same-source Inventory handoff processing, and first-company JournalSequence allocation. | ~47% | ~41% | No production-capability increase; source/test implementation `dcae7e231bd264580c33e60c35f5cc8436c4f050`; Finance 12/12; REST/host 53/53; Inventory 89/89; SQL 46/46; backend 982/982; Release 0/0; Angular 259/259; bundle 496.34 kB / Finance lazy 36.45 kB; Chromium 2/2 and 34/34; audits clean; runtime PIDs 23772/28656 with HTTP 200 probes; PR #76 remains Open/Draft/unmerged; latest Sol hold `11852`; no Jira or Opus. |
 | 2026-08-24 | MESP-132 Sol Finance correctness remediation and repository-wide Markdown reconciliation completed on the existing Draft PR branch. Company authorization is resource-resolved for ID routes; manual amounts are server-derived; FX direction is source/transaction → Company functional; approval/SoD and Inventory handoff policy seams fail closed; directional mapping and additive migration are validated. | ~47% | ~41% | No production-capability increase; implementation commit `2eb5b9db30e625eacbf72e1f6610e9e4210b288f`; focused Finance 9/9; full backend 973/973; SQL safety 41/41; Release 0/0; Angular 258/258; bundle 496.34 kB / Finance lazy 36.50 kB; Chromium 2/2 and 34/34; audits clean; runtime 5300/4300 HTTP 200; PR #76 remains Draft/unmerged; no Jira or Opus. |

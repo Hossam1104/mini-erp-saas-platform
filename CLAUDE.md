@@ -9,7 +9,31 @@
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 24 August 2026 (MESP-132 final Sol acceptance remediation)
+## Current execution overlay - 25 August 2026 (MESP-133 Sol acceptance remediation)
+
+PR #77 is Open/Draft/Unmerged on `feat/MESP-133-ap-ar-cash-settlement` from
+Sol-reviewed head `f30537d38106065891794a583b905a6fecd44d61`, based on main
+`9ace42c7a830b5ef155a26b18d4a888676b8c188`. MESP-132 is Done/merged/closed;
+MESP-133 remains In Progress/activated under MESP-10 while Sol HOLD `11892`
+and MESP-10 progress comment `11893` remain authoritative. No Jira writes,
+merge, Ready transition, next-capability activation, or Opus review occurred.
+
+The focused source/test remediation commit is
+`b9eba368922899165324086aa59298d054fec25d`; the subsequent documentation and
+tracker handoff commit is the final branch head recorded after push.
+
+The remediation closes trusted AP payment-term/version and due-date handling,
+reuses `IFinanceSourceApprovalPolicy`, enforces manual-only settlement
+methods, binds cash/bank posting to linked GL mappings, implements actual
+subledger/GL reconciliation and accounting-date as-of semantics, and enforces
+AP/AR and Payment/Receipt route integrity with rejected-to-Draft correction.
+Final validation is REST/OpenAPI/host `54/54`, full backend `1002/1002`, SQL safety `60/60`, Angular
+`261/261`, focused/full Chromium `4/4` and `36/36`, Release `0/0`, initial
+`496.43 kB`, both audits clean; runtime PIDs `39624`/`8508` remain running.
+Fast-track remains `16/26 = 61.5%`; production readiness remains `~47%`
+overall / `~41%` Procurement/P2P; MESP-134 is not activated.
+
+## Historical execution overlay - 24 August 2026 (MESP-132 final Sol acceptance remediation)
 
 The current merged capability is **MESP-132 Finance / General Ledger
 foundation** under Epic MESP-10. PR #76 is squash-merged into `main` at

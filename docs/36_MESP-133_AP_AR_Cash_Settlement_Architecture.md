@@ -62,10 +62,12 @@ preserves source document and match evidence rather than fabricating an
 invoice.
 
 Payment terms and the due-date basis are snapshots on the recognized open
-item. No Net-30 default is invented. The current upstream handoff does not
-provide a trusted term snapshot, so AP recognition fails closed with
-`payment_terms_not_configured` until valid term evidence is present. This
-preserves due-date reproducibility and prevents hidden aging drift.
+item. The adapter resolves the exact upstream Purchase Order payment-term
+identity, code, and version through trusted Procurement persistence seams,
+verifies the historical active term version, and derives the due date from the
+invoice document date and that version. No Net-30 default is invented.
+Missing, untrusted, cancelled, or unsupported term evidence fails closed with
+`payment_term_not_configured`.
 
 AR manual creation is deliberately distinct from Sales. The request records
 server-owned source identity and the same explicit term/due-date snapshot
@@ -74,11 +76,15 @@ workflow is implied by this slice.
 
 ## Settlement model
 
-Payment methods and cash/bank accounts are internal configurable resources.
-Their direction, active lifecycle, and Company ownership are validated before
-use. Account selection and posting are resolved through versioned Finance
-Posting Rules; the API never accepts a browser-selected GL account as
-authority.
+Payment methods and cash/bank accounts are internal configurable resources;
+non-manual/provider-style methods fail closed. Their direction, active
+lifecycle, and Company ownership are validated before use. Account selection
+and posting are resolved through versioned Finance Posting Rules, and the
+cash/bank side must equal the selected account's Company-owned
+`LinkedAccountId`; the API never accepts a browser-selected GL account as
+authority. MESP-132's `IFinanceSourceApprovalPolicy` supplies Required,
+NotRequired, and NotConfigured settlement approval behavior, including
+server-side SoD/self-approval enforcement.
 
 Cash movement posts first as an unapplied/on-account settlement document.
 Allocations are a separate, auditable subledger action that reduces the
@@ -105,9 +111,11 @@ mutations use the Finance persistence boundary with serializable transaction
 semantics where competing identity, balance, period, or allocation decisions
 could race. Durable idempotency keys, version checks, source-to-GL uniqueness,
 audit records, and explicit conflict classification protect retry and
-concurrent-request behavior. SQL Server LocalDB tests exercise five provider-
-realistic races for payment-method uniqueness/lifecycle, cash-account
-uniqueness/lifecycle, and same-version payment-method editing.
+concurrent-request behavior. SQL Server LocalDB tests retain the five earlier
+MESP-133 configuration races and add nine financial races for AP recognition,
+open-item/cash-document over-allocation, settlement post/lifecycle ordering,
+submit-version ordering, posted-settlement reversal, allocation versus
+reversal, same-payment post, same-receipt post, and allocation reversal.
 
 ## API and UI surface
 
@@ -131,20 +139,25 @@ Tenant/workspace chooser.
 
 ## Verification evidence
 
-The bounded implementation was validated from the exact required main base:
+The remediation was validated from the exact required main base and original
+Sol-reviewed head. The focused source/test remediation commit is
+`b9eba368922899165324086aa59298d054fec25d`:
 
 - Release backend build: 0 warnings, 0 errors;
-- disposable SQL Server LocalDB backend suite: 987/987 passed, 0 failed,
+- disposable SQL Server LocalDB backend suite: 1002/1002 passed, 0 failed,
   0 skipped;
-- SQL Server safety coverage: 51/51 passed, including five new MESP-133
-  races;
+- SQL Server safety coverage: 60/60 passed, with all seven required financial
+  races, the additional settlement-post/lifecycle and submit-version races,
+  and the five retained MESP-133 configuration races;
 - Angular unit tests: 261/261 passed across 38 spec files;
-- Playwright Chromium: 36/36 passed, including two MESP-133 flows;
+- focused Finance Playwright: 4/4; full Playwright Chromium: 36/36;
 - production build: 0 warnings/errors, 496.43 kB initial bundle, 34.31 kB
   existing Finance/GL lazy chunk, and 23.95 kB settlement lazy chunk;
 - both npm audits: 0 vulnerabilities;
-- runtime health, root, `main.js`, `/app/finance`, `/app/finance/ap`,
-  `/app/finance/ar`, and `/app/finance/settlements` probes returned HTTP 200;
+- runtime health, frontend root, `main.js`, `/app/finance`,
+  `/app/finance/ap`, `/app/finance/ar`, and `/app/finance/settlements` probes
+  returned HTTP 200; a Development-authenticated request to
+  `/api/v1/finance/companies` returned HTTP 200;
   and
 - `frontend/assets` was inspected and remains untouched.
 
@@ -155,9 +168,10 @@ until the bounded review and merge decision is complete.
 
 ## Deferred handoff
 
-GPT-5.6 Sol must review the complete focused diff, rerun or verify the
-validation evidence, inspect the AP term fail-closed and MESP-126 source
-boundary, inspect Posting Rule/GL lineage and reversal invariants, confirm the
-SQL migration is additive, and decide whether the Draft PR can be merged.
-MESP-133 remains In Progress / activated in Jira; no Jira writes were made by
-this implementation session and no Opus review or Opus prompt was requested.
+GPT-5.6 Sol must independently review the complete remediation diff, rerun or
+verify the validation evidence, inspect the AP term/source boundary, approval
+policy reuse, Posting Rule/GL lineage, reconciliation/as-of semantics,
+route/document integrity, reversal invariants, and additive migration safety.
+MESP-133 remains In Progress / activated in Jira; HOLD comment `11892` and
+MESP-10 progress comment `11893` already exist. No Jira writes, merge, Ready
+transition, MESP-134 activation, or Opus review/prompt were performed.
