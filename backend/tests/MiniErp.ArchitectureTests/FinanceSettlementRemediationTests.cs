@@ -8,6 +8,8 @@ using MiniErp.App.Modules.Inventory;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.MasterData;
+using MiniErp.Contracts.Modules.Procurement;
+using MiniErp.App.Modules.Procurement;
 using MiniErp.Infrastructure.Persistence.Modules.Finance;
 using Xunit;
 
@@ -534,6 +536,137 @@ public sealed class FinanceSettlementRemediationTests
         Assert.Equal("party_scope_denied", result.Code);
     }
 
+    [Fact]
+    public async Task Procurement_source_ready_returns_active_supplier_with_trusted_invoice_date()
+    {
+        var fixture = ProcurementProviderFixture.Create();
+
+        var source = await fixture.Provider.FindAsync(fixture.Context, fixture.MatchId);
+        Assert.NotNull(source);
+        Assert.Equal(fixture.SupplierId, source!.SupplierId);
+        Assert.Equal(fixture.CompanyId, source.CompanyId);
+        Assert.Equal(fixture.InvoiceDate, source.DocumentDate);
+        Assert.Equal(fixture.TermVersion, source.PaymentTerm!.VersionNumber);
+        Assert.Equal(fixture.DueDate, source.DueDate);
+        Assert.Equal(fixture.MatchId, source.MatchEvidenceId);
+        Assert.Equal(fixture.MatchId, source.SourceEvidenceId);
+
+        var listed = await fixture.Provider.ListAsync(fixture.Context);
+        var listedSource = Assert.Single(listed);
+        Assert.Equal(fixture.MatchId, listedSource.MatchEvidenceId);
+        Assert.Equal(fixture.SupplierId, listedSource.SupplierId);
+    }
+
+    [Fact]
+    public async Task Procurement_source_ready_excludes_missing_inactive_and_cross_tenant_suppliers()
+    {
+        var fixtures = new[]
+        {
+            ProcurementProviderFixture.Create(includeSupplier: false),
+            ProcurementProviderFixture.Create(supplier: ProcurementProviderFixture.Supplier(lifecycle: MasterDataLifecycleState.Inactive)),
+            ProcurementProviderFixture.Create(supplier: ProcurementProviderFixture.Supplier(tenantId: Guid.NewGuid()))
+        };
+
+        foreach (var fixture in fixtures)
+        {
+            Assert.Null(await fixture.Provider.FindAsync(fixture.Context, fixture.MatchId));
+            Assert.Empty(await fixture.Provider.ListAsync(fixture.Context));
+        }
+    }
+
+    [Fact]
+    public async Task Procurement_source_ready_never_uses_handoff_created_at_as_invoice_date()
+    {
+        var fixture = ProcurementProviderFixture.Create(includeInvoiceDate: false);
+
+        Assert.Null(await fixture.Provider.FindAsync(fixture.Context, fixture.MatchId));
+        Assert.Empty(await fixture.Provider.ListAsync(fixture.Context));
+    }
+
+    [Fact]
+    public async Task Procurement_source_ready_fails_closed_for_unsupported_payment_term_base_date()
+    {
+        var fixture = ProcurementProviderFixture.Create(baseDateRule: PaymentTermBaseDateRule.ReceiptDate);
+
+        Assert.Null(await fixture.Provider.FindAsync(fixture.Context, fixture.MatchId));
+        Assert.Empty(await fixture.Provider.ListAsync(fixture.Context));
+    }
+
+    [Fact]
+    public async Task Historical_recognition_uses_rule_effective_on_document_date_without_reinterpreting_prior_item()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        await EnsureCreatedAsync(options);
+        var context = Context("tenant.finance.recognition.rule-history");
+        var expense = await CreateAccountAsync(options, context, "HISTORY-EXPENSE");
+        var controlA = await CreateAccountAsync(options, context, "HISTORY-AP-A");
+        var controlB = await CreateAccountAsync(options, context, "HISTORY-AP-B");
+
+        await OpenFullYearAndRulesAsync(options, context, [
+            ("procurement-supplier-invoice.v1", "recognition", expense.Id, controlA.Id, new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 31)),
+            ("procurement-supplier-invoice.v1", "recognition", expense.Id, controlB.Id, new DateOnly(2026, 4, 1), null)
+        ]);
+
+        var sourceA = SourceForTest() with
+        {
+            SourceDocumentId = Guid.NewGuid(),
+            SourceEvidenceId = Guid.NewGuid(),
+            MatchEvidenceId = Guid.NewGuid(),
+            Reference = "HISTORY-AP-A-ITEM",
+            DocumentDate = new DateOnly(2026, 2, 15),
+            DueDate = new DateOnly(2026, 3, 17)
+        };
+        var sourceB = SourceForTest() with
+        {
+            SourceDocumentId = Guid.NewGuid(),
+            SourceEvidenceId = Guid.NewGuid(),
+            MatchEvidenceId = Guid.NewGuid(),
+            Reference = "HISTORY-AP-B-ITEM",
+            DocumentDate = new DateOnly(2026, 5, 15),
+            DueDate = new DateOnly(2026, 6, 14)
+        };
+        var persistence = CreatePersistence(
+            options,
+            suppliers: new ActiveSupplierReader(SupplierId),
+            sourceProvider: new StaticSupplierInvoiceSourceProvider([sourceA, sourceB]));
+
+        var recognizedA = await persistence.RecognizeSupplierInvoiceAsync(
+            context,
+            new FinanceSupplierInvoiceRecognitionCommand(sourceA.SourceEvidenceId, "history-recognize-a", "history-recognize-a"));
+        Assert.True(recognizedA.Succeeded, recognizedA.Code);
+        Assert.NotNull(recognizedA.Value!.RecognitionJournalId);
+
+        var recognizedB = await persistence.RecognizeSupplierInvoiceAsync(
+            context,
+            new FinanceSupplierInvoiceRecognitionCommand(sourceB.SourceEvidenceId, "history-recognize-b", "history-recognize-b"));
+        Assert.True(recognizedB.Succeeded, recognizedB.Code);
+        Assert.NotNull(recognizedB.Value!.RecognitionJournalId);
+
+        await using (var db = new FinanceDbContext(options, context.TenantContext))
+        {
+            var openA = await db.OpenItems.SingleAsync(item => item.SourceEvidenceId == sourceA.SourceEvidenceId);
+            var openB = await db.OpenItems.SingleAsync(item => item.SourceEvidenceId == sourceB.SourceEvidenceId);
+            Assert.Equal(recognizedA.Value.RecognitionJournalId, openA.RecognitionJournalId);
+            Assert.Equal(recognizedB.Value.RecognitionJournalId, openB.RecognitionJournalId);
+
+            var journalA = await db.Journals.Include(item => item.Lines).SingleAsync(item => item.Id == openA.RecognitionJournalId);
+            var journalB = await db.Journals.Include(item => item.Lines).SingleAsync(item => item.Id == openB.RecognitionJournalId);
+            var controlLineA = Assert.Single(journalA.Lines, line => line.AccountId == controlA.Id);
+            var controlLineB = Assert.Single(journalB.Lines, line => line.AccountId == controlB.Id);
+            Assert.Equal(100m, controlLineA.Credit);
+            Assert.Equal(100m, controlLineB.Credit);
+            Assert.DoesNotContain(journalA.Lines, line => line.AccountId == controlB.Id);
+            Assert.DoesNotContain(journalB.Lines, line => line.AccountId == controlA.Id);
+        }
+
+        var reconciliation = await persistence.GetReconciliationAsync(context, CompanyId);
+        var payable = Assert.Single(reconciliation, row => row.Kind == FinanceOpenItemKind.Payable);
+        Assert.Equal(FinanceReconciliationStatus.Reconciled, payable.Status);
+        Assert.DoesNotContain(reconciliation, row => row.Status == FinanceReconciliationStatus.PendingMapping);
+    }
+
     private static FinanceSettlementPersistence CreatePersistence(
         DbContextOptions options,
         IFinanceSourceApprovalPolicy? policy = null,
@@ -729,9 +862,253 @@ public sealed class FinanceSettlementRemediationTests
         private static Task<T> Unavailable<T>() => Task.FromException<T>(new InvalidOperationException("test persistence unavailable"));
     }
 
-    private sealed class StaticSupplierInvoiceSourceProvider(FinanceSupplierInvoiceSourceRecord source) : IFinanceSupplierInvoiceSourceProvider
+    private sealed class StaticSupplierInvoiceSourceProvider(IReadOnlyList<FinanceSupplierInvoiceSourceRecord> sources) : IFinanceSupplierInvoiceSourceProvider
     {
-        public Task<FinanceSupplierInvoiceSourceRecord?> FindAsync(FinanceRequestContext context, Guid sourceEvidenceId, CancellationToken cancellationToken = default) => Task.FromResult<FinanceSupplierInvoiceSourceRecord?>(source.SourceEvidenceId == sourceEvidenceId ? source : null);
-        public Task<IReadOnlyList<FinanceSupplierInvoiceSourceRecord>> ListAsync(FinanceRequestContext context, Guid? companyId = null, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<FinanceSupplierInvoiceSourceRecord>>(companyId is null || companyId == source.CompanyId ? [source] : []);
+        public Task<FinanceSupplierInvoiceSourceRecord?> FindAsync(FinanceRequestContext context, Guid sourceEvidenceId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(sources.SingleOrDefault(source => source.SourceEvidenceId == sourceEvidenceId));
+
+        public Task<IReadOnlyList<FinanceSupplierInvoiceSourceRecord>> ListAsync(FinanceRequestContext context, Guid? companyId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<FinanceSupplierInvoiceSourceRecord>>(sources.Where(source => companyId is null || source.CompanyId == companyId).ToArray());
+
+        public StaticSupplierInvoiceSourceProvider(FinanceSupplierInvoiceSourceRecord source) : this([source]) { }
     }
+
+    private sealed class ProcurementProviderFixture
+    {
+        public Guid SupplierId { get; } = Guid.Parse("99999999-9999-9999-9999-999999999999");
+        public Guid CompanyId { get; } = FinanceSettlementRemediationTests.CompanyId;
+        public Guid MatchId { get; }
+        public DateOnly InvoiceDate { get; }
+        public DateOnly DueDate { get; }
+        public int TermVersion { get; } = 7;
+        public FinanceRequestContext Context { get; }
+        public ProcurementFinanceSupplierInvoiceSourceProvider Provider { get; }
+
+        private ProcurementProviderFixture(
+            SupplierRecord? supplier,
+            DateOnly? invoiceDate,
+            PaymentTermBaseDateRule baseDateRule)
+        {
+            var tenantContext = TenantContext.ForOrdinaryMembership(new TenantId(TenantId), new MembershipReference(Guid.NewGuid()), correlationId: new CorrelationId("provider-test"));
+            var foundation = FoundationRequestContext.ForTenant(ActorId, Guid.NewGuid(), tenantContext, "tenant.finance.ap.source");
+            Assert.True(FinanceRequestContext.TryCreate(foundation, out var context));
+            Context = context!;
+            InvoiceDate = invoiceDate ?? new DateOnly(2026, 2, 15);
+            DueDate = InvoiceDate.AddDays(30);
+            MatchId = Guid.NewGuid();
+            var handoffId = Guid.NewGuid();
+            var purchaseOrderId = Guid.NewGuid();
+            var termId = Guid.NewGuid();
+            var scope = new PurchaseRequestScope(TenantId, CompanyId, null);
+            var now = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            var evidence = new PurchaseInvoiceDeclaredEvidenceRecord(
+                Guid.NewGuid(),
+                3,
+                "SUPPLIER-INV-7",
+                invoiceDate,
+                "SAR",
+                100m,
+                null,
+                null,
+                100m,
+                now,
+                ActorId,
+                []);
+            var handoff = new PurchaseInvoiceHandoffRecord(
+                handoffId,
+                TenantId,
+                scope,
+                purchaseOrderId,
+                ActorId,
+                PurchaseInvoiceHandoffStatus.Recorded,
+                SupplierId,
+                "SUP-7",
+                "Authoritative Supplier",
+                "SAR",
+                "SUPPLIER-INV-7",
+                invoiceDate,
+                "provider fixture",
+                now,
+                now,
+                null,
+                null,
+                [new PurchaseInvoiceHandoffLineRecord(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "SKU-7", "Item 7", "EA", 1m, 100m, null, null, 100m)],
+                [],
+                [1],
+                evidence);
+            var purchaseOrder = new PurchaseOrderRecord(
+                purchaseOrderId,
+                TenantId,
+                ActorId,
+                scope,
+                PurchaseOrderStatus.Issued,
+                new PurchaseOrderSourceResponse(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    "PR-7",
+                    "provider fixture",
+                    "QUOT-7",
+                    new PurchaseOrderSupplierResponse(SupplierId, "SUP-7", "Authoritative Supplier"),
+                    new PurchaseOrderCurrencyResponse(Guid.NewGuid(), "SAR", "Saudi Riyal"),
+                    new PurchaseOrderPaymentTermResponse(termId, "NET7", "Net 7", TermVersion),
+                    "selected",
+                    now),
+                null,
+                now,
+                now,
+                now,
+                now,
+                now,
+                null,
+                null,
+                null,
+                null,
+                null,
+                [],
+                [],
+                [1]);
+            var match = new PurchaseInvoiceMatchRecord(
+                MatchId,
+                TenantId,
+                scope,
+                handoffId,
+                purchaseOrderId,
+                PurchaseInvoiceMatchLifecycle.Current,
+                PurchaseInvoiceMatchResult.ExactMatch,
+                now,
+                ActorId,
+                null,
+                null,
+                null,
+                "provider-match",
+                [1],
+                [1],
+                evidence.Id,
+                evidence.VersionNumber,
+                PurchaseInvoiceMatchingToleranceDefinition.ExactSafe(now),
+                null,
+                null,
+                [],
+                "provider snapshot",
+                [1]);
+            var term = new MasterDataPaymentTermRecord(
+                termId,
+                new TenantId(TenantId),
+                "NET7",
+                new LocalizedName("Net 7"),
+                MasterDataLifecycleState.Active,
+                TermVersion,
+                [new MasterDataPaymentTermVersionRecord(
+                    Guid.NewGuid(),
+                    TermVersion,
+                    new DateOnly(2026, 1, 1),
+                    null,
+                    baseDateRule,
+                    PaymentTermScheduleMode.SingleDueDate,
+                    new MasterDataPaymentTermOffset(30, 0),
+                    [],
+                    MasterDataEarlySettlementDiscount.Disabled(),
+                    "NET7",
+                    new LocalizedName("Net 7"))],
+                [1]);
+            Provider = new ProcurementFinanceSupplierInvoiceSourceProvider(
+                new ProviderHandoffPersistence(handoff),
+                new ProviderMatchPersistence(match),
+                new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(TenantId, CompanyId, "Provider Company", "SAR")]),
+                new ProviderPurchaseOrderPersistence(purchaseOrder),
+                new ProviderPaymentTermPersistence(term),
+                new ProviderSupplierPersistence(supplier));
+        }
+
+        public static ProcurementProviderFixture Create(
+            SupplierRecord? supplier = null,
+            DateOnly? invoiceDate = null,
+            PaymentTermBaseDateRule baseDateRule = PaymentTermBaseDateRule.InvoiceDate,
+            bool includeSupplier = true,
+            bool includeInvoiceDate = true) =>
+            new(includeSupplier ? supplier ?? Supplier() : null, includeInvoiceDate ? invoiceDate ?? new DateOnly(2026, 2, 15) : null, baseDateRule);
+
+        public static SupplierRecord Supplier(
+            Guid? tenantId = null,
+            MasterDataLifecycleState lifecycle = MasterDataLifecycleState.Active) =>
+            new(Guid.Parse("99999999-9999-9999-9999-999999999999"), new TenantId(tenantId ?? TenantId), "SUP-7", new LocalizedName("Authoritative Supplier"), null, null, lifecycle, [1], []);
+
+        private sealed class ProviderHandoffPersistence(PurchaseInvoiceHandoffRecord record) : IPurchaseInvoiceHandoffPersistence
+        {
+            public Task<IReadOnlyList<PurchaseInvoiceHandoffListRecord>> ListAsync(TenantContext tenantContext, PurchaseInvoiceHandoffStatus? status, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseInvoiceHandoffListRecord>>([]);
+            public Task<IReadOnlyList<PurchaseInvoiceHandoffEligibleSourceRecord>> ListEligibleSourcesAsync(TenantContext tenantContext, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseInvoiceHandoffEligibleSourceRecord>>([]);
+            public Task<PurchaseInvoiceHandoffEligibleSourceRecord?> FindEligibleSourceAsync(TenantContext tenantContext, Guid purchaseOrderId, CancellationToken cancellationToken = default) => Task.FromResult<PurchaseInvoiceHandoffEligibleSourceRecord?>(null);
+            public Task<PurchaseInvoiceHandoffReplayProbe> ProbeReplayAsync(TenantContext tenantContext, PurchaseInvoiceHandoffReplayQuery query, CancellationToken cancellationToken = default) => Task.FromResult(PurchaseInvoiceHandoffReplayProbe.NotFound);
+            public Task<PurchaseInvoiceHandoffRecord?> FindAsync(TenantContext tenantContext, Guid purchaseInvoiceHandoffId, CancellationToken cancellationToken = default) => Task.FromResult<PurchaseInvoiceHandoffRecord?>(purchaseInvoiceHandoffId == record.Id ? record : null);
+            public Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CreateAsync(TenantContext tenantContext, PurchaseInvoiceHandoffCreateCommand command, PurchaseInvoiceHandoffAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>>();
+            public Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CaptureDeclaredEvidenceAsync(TenantContext tenantContext, PurchaseInvoiceDeclaredEvidenceCaptureCommand command, PurchaseInvoiceHandoffAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>>();
+            public Task<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>> CancelAsync(TenantContext tenantContext, PurchaseInvoiceHandoffActionCommand command, PurchaseInvoiceHandoffAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseInvoiceHandoffPersistenceResult<PurchaseInvoiceHandoffRecord>>();
+            public Task<IReadOnlyList<PurchaseInvoiceHandoffHistoryRecord>> ReadHistoryAsync(TenantContext tenantContext, Guid purchaseInvoiceHandoffId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseInvoiceHandoffHistoryRecord>>([]);
+            public Task<IReadOnlyList<PurchaseInvoiceHandoffAuditRecord>> ReadAuditAsync(TenantContext tenantContext, Guid purchaseInvoiceHandoffId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseInvoiceHandoffAuditRecord>>([]);
+        }
+
+        private sealed class ProviderMatchPersistence(PurchaseInvoiceMatchRecord record) : IPurchaseInvoiceMatchPersistence
+        {
+            public Task<IReadOnlyList<PurchaseInvoiceMatchListRecord>> ListAsync(TenantContext tenantContext, Guid? handoffId, PurchaseInvoiceMatchResult? result, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseInvoiceMatchListRecord>>([new(record.Id, record.Scope, record.PurchaseInvoiceHandoffId, record.PurchaseOrderId, record.Lifecycle, record.Result, record.EvaluatedAt, record.ResolvedByActorId, record.Variances.Count, record.Version)]);
+            public Task<PurchaseInvoiceMatchRecord?> FindAsync(TenantContext tenantContext, Guid matchEvaluationId, CancellationToken cancellationToken = default) => Task.FromResult<PurchaseInvoiceMatchRecord?>(matchEvaluationId == record.Id ? record : null);
+            public Task<PurchaseInvoiceMatchRecord?> FindCurrentForHandoffAsync(TenantContext tenantContext, Guid handoffId, CancellationToken cancellationToken = default) => Task.FromResult<PurchaseInvoiceMatchRecord?>(handoffId == record.PurchaseInvoiceHandoffId ? record : null);
+            public Task<PurchaseInvoiceMatchPersistenceResult<PurchaseInvoiceMatchRecord>> EvaluateAsync(TenantContext tenantContext, PurchaseInvoiceMatchEvaluateCommand command, PurchaseInvoiceMatchAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseInvoiceMatchPersistenceResult<PurchaseInvoiceMatchRecord>>();
+            public Task<PurchaseInvoiceMatchPersistenceResult<PurchaseInvoiceMatchRecord>> ResolveAsync(TenantContext tenantContext, PurchaseInvoiceMatchResolveCommand command, PurchaseInvoiceMatchAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseInvoiceMatchPersistenceResult<PurchaseInvoiceMatchRecord>>();
+            public Task<IReadOnlyList<PurchaseInvoiceMatchHistoryRecord>> ReadHistoryAsync(TenantContext tenantContext, Guid matchEvaluationId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseInvoiceMatchHistoryRecord>>([]);
+            public Task<IReadOnlyList<PurchaseInvoiceMatchAuditRecord>> ReadAuditAsync(TenantContext tenantContext, Guid matchEvaluationId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseInvoiceMatchAuditRecord>>([]);
+        }
+
+        private sealed class ProviderPurchaseOrderPersistence(PurchaseOrderRecord record) : IPurchaseOrderPersistence
+        {
+            public Task<IReadOnlyList<PurchaseOrderListRecord>> ListAsync(TenantContext tenantContext, PurchaseOrderStatus? status, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseOrderListRecord>>([]);
+            public Task<bool> SourceDecisionConsumedAsync(TenantContext tenantContext, Guid sourceDecisionId, CancellationToken cancellationToken = default) => Task.FromResult(false);
+            public Task<PurchaseOrderReplayProbe> ProbeReplayAsync(TenantContext tenantContext, PurchaseOrderReplayQuery query, CancellationToken cancellationToken = default) => Task.FromResult(PurchaseOrderReplayProbe.NotFound);
+            public Task<PurchaseOrderRecord?> FindAsync(TenantContext tenantContext, Guid purchaseOrderId, CancellationToken cancellationToken = default) => Task.FromResult<PurchaseOrderRecord?>(purchaseOrderId == record.Id ? record : null);
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> CreateAsync(TenantContext tenantContext, PurchaseOrderCreateCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> EditAsync(TenantContext tenantContext, PurchaseOrderEditCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> SubmitAsync(TenantContext tenantContext, PurchaseOrderSubmitCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> ApproveAsync(TenantContext tenantContext, PurchaseOrderApprovalCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> RejectAsync(TenantContext tenantContext, PurchaseOrderActionCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> ReturnForChangeAsync(TenantContext tenantContext, PurchaseOrderActionCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> IssueAsync(TenantContext tenantContext, PurchaseOrderActionCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> CancelAsync(TenantContext tenantContext, PurchaseOrderActionCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> RecordConfirmationAsync(TenantContext tenantContext, PurchaseOrderConfirmationCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> ApproveSupplierChangeAsync(TenantContext tenantContext, PurchaseOrderApprovalCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<PurchaseOrderPersistenceResult<PurchaseOrderRecord>> RejectSupplierChangeAsync(TenantContext tenantContext, PurchaseOrderActionCommand command, PurchaseOrderAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<PurchaseOrderPersistenceResult<PurchaseOrderRecord>>();
+            public Task<IReadOnlyList<PurchaseOrderConfirmationRecord>> ReadConfirmationsAsync(TenantContext tenantContext, Guid purchaseOrderId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseOrderConfirmationRecord>>([]);
+            public Task<IReadOnlyList<PurchaseOrderHistoryRecord>> ReadHistoryAsync(TenantContext tenantContext, Guid purchaseOrderId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseOrderHistoryRecord>>([]);
+            public Task<IReadOnlyList<PurchaseOrderAuditRecord>> ReadAuditAsync(TenantContext tenantContext, Guid purchaseOrderId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PurchaseOrderAuditRecord>>([]);
+        }
+
+        private sealed class ProviderPaymentTermPersistence(MasterDataPaymentTermRecord record) : IMasterDataCurrencyPaymentTermPersistence
+        {
+            public Task<IReadOnlyList<MasterDataCurrencyRecord>> ListCurrenciesAsync(TenantContext tenantContext, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataCurrencyRecord>>([]);
+            public Task<MasterDataCurrencyRecord?> FindCurrencyAsync(TenantContext tenantContext, Guid currencyId, CancellationToken cancellationToken = default) => Task.FromResult<MasterDataCurrencyRecord?>(null);
+            public Task<MasterDataPersistenceResult<MasterDataCurrencyRecord>> CreateCurrencyAsync(TenantContext tenantContext, Guid currencyId, CreateMasterDataCurrencyCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<MasterDataCurrencyRecord>>();
+            public Task<MasterDataPersistenceResult<MasterDataCurrencyRecord>> EditCurrencyAsync(TenantContext tenantContext, EditMasterDataCurrencyCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<MasterDataCurrencyRecord>>();
+            public Task<MasterDataPersistenceResult<MasterDataCurrencyRecord>> SetCurrencyLifecycleAsync(TenantContext tenantContext, Guid currencyId, MasterDataLifecycleState lifecycleState, byte[] expectedVersion, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<MasterDataCurrencyRecord>>();
+            public Task<IReadOnlyList<MasterDataPaymentTermRecord>> ListPaymentTermsAsync(TenantContext tenantContext, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataPaymentTermRecord>>([record]);
+            public Task<MasterDataPaymentTermRecord?> FindPaymentTermAsync(TenantContext tenantContext, Guid paymentTermId, CancellationToken cancellationToken = default) => Task.FromResult<MasterDataPaymentTermRecord?>(paymentTermId == record.Id ? record : null);
+            public Task<MasterDataPersistenceResult<MasterDataPaymentTermRecord>> CreatePaymentTermAsync(TenantContext tenantContext, Guid paymentTermId, CreateMasterDataPaymentTermCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<MasterDataPaymentTermRecord>>();
+            public Task<MasterDataPersistenceResult<MasterDataPaymentTermRecord>> EditPaymentTermAsync(TenantContext tenantContext, EditMasterDataPaymentTermCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<MasterDataPaymentTermRecord>>();
+            public Task<MasterDataPersistenceResult<MasterDataPaymentTermRecord>> SetPaymentTermLifecycleAsync(TenantContext tenantContext, Guid paymentTermId, MasterDataLifecycleState lifecycleState, byte[] expectedVersion, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<MasterDataPaymentTermRecord>>();
+            public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(TenantContext tenantContext, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<MasterDataAuditRecord>>();
+            public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(TenantContext tenantContext, MasterDataResourceKind resourceKind, Guid? resourceId = null, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataAuditRecord>>([]);
+        }
+
+        private sealed class ProviderSupplierPersistence(SupplierRecord? record) : ISupplierPersistence
+        {
+            public Task<IReadOnlyList<SupplierRecord>> ListSuppliersAsync(TenantContext tenantContext, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<SupplierRecord>>(record is null ? [] : [record]);
+            public Task<SupplierRecord?> FindSupplierAsync(TenantContext tenantContext, Guid supplierId, CancellationToken cancellationToken = default) => Task.FromResult<SupplierRecord?>(record?.Id == supplierId ? record : null);
+            public Task<MasterDataPersistenceResult<SupplierRecord>> CreateSupplierAsync(TenantContext tenantContext, Guid supplierId, CreateSupplierCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<SupplierRecord>>();
+            public Task<MasterDataPersistenceResult<SupplierRecord>> EditSupplierAsync(TenantContext tenantContext, EditSupplierCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<SupplierRecord>>();
+            public Task<MasterDataPersistenceResult<SupplierRecord>> SetSupplierLifecycleAsync(TenantContext tenantContext, Guid supplierId, MasterDataLifecycleState lifecycleState, byte[] expectedVersion, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<SupplierRecord>>();
+            public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(TenantContext tenantContext, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Unavailable<MasterDataPersistenceResult<MasterDataAuditRecord>>();
+            public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(TenantContext tenantContext, Guid supplierId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataAuditRecord>>([]);
+        }
+
+        private static Task<T> Unavailable<T>() => Task.FromException<T>(new InvalidOperationException("provider fixture operation unavailable"));
+    }
+
 }
