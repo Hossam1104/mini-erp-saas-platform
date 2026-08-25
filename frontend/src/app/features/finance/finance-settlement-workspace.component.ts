@@ -2,8 +2,10 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, firstValueFrom, forkJoin, map, Observable, of } from 'rxjs';
 import { LanguageService } from '../../core/i18n/language.service';
+import { MasterDataService } from '../master-data/master-data.service';
+import { CurrencyRecord, ExchangeRateRecord, ExchangeRateReferenceResponse } from '../master-data/master-data.models';
 import { FinanceService } from './finance.service';
 import { FinanceAgingRow, FinanceApSourceReady, FinanceCashAccount, FinanceCompany, FinanceOpenItem, FinancePaymentMethod, FinanceReconciliation, FinanceSettlementDocument, FinanceAllocation, FinanceManualReceivableRequest } from './finance.model';
 
@@ -15,8 +17,18 @@ type PaymentTermOption = ReferenceOption & { currentVersionNumber?: number; vers
 type ArDraft = { customerId: string; paymentTermId: string; documentDate: string; currencyCode: string; amount: number; reference: string; description: string };
 type SettlementDraft = { direction: 'Payment' | 'Receipt'; partyId: string; cashAccountId: string; paymentMethodId: string; documentDate: string; currencyCode: string; amount: number; externalReference: string; description: string };
 type AllocationDraft = { documentId: string; itemId: string; amount: number; date: string; reason: string };
+type FxDraftKind = 'ar' | 'settlement';
+type ExchangeRateOption = ExchangeRateRecord & { code?: string };
 
 const copy: Record<string, Bilingual> = {
+  exchangeRate: { en: 'Exchange Rate', ar: '\u0633\u0639\u0631 \u0627\u0644\u0635\u0631\u0641' },
+  rate: { en: 'Rate', ar: '\u0627\u0644\u0633\u0639\u0631' },
+  rateVersion: { en: 'Rate version', ar: '\u0646\u0633\u062e\u0629 \u0627\u0644\u0633\u0639\u0631' },
+  effectiveDate: { en: 'Effective date', ar: '\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0633\u0631\u064a\u0627\u0646' },
+  noExactExchangeRate: { en: 'No exact MESP-120 Exchange Rate evidence is available for this currency and document date.', ar: '\u0644\u0627 \u062a\u062a\u0648\u0641\u0631 \u0623\u062f\u0644\u0629 \u0633\u0639\u0631 \u0635\u0631\u0641 MESP-120 \u062f\u0642\u064a\u0642\u0629 \u0644\u0647\u0630\u0647 \u0627\u0644\u0639\u0645\u0644\u0629 \u0648\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0645\u0633\u062a\u0646\u062f.' },
+  fxEvidenceRequired: { en: 'Select an authorized Exchange Rate and resolve the exact document-date reference before creating this transaction.', ar: '\u0627\u062e\u062a\u0631 \u0633\u0639\u0631 \u0635\u0631\u0641 \u0645\u0635\u0631\u062d\u0627\u064b \u0648\u0627\u0633\u062a\u0639\u0644\u0645 \u0627\u0644\u0645\u0631\u062c\u0639 \u0627\u0644\u062f\u0642\u064a\u0642 \u0644\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0645\u0633\u062a\u0646\u062f \u0642\u0628\u0644 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0645\u0639\u0627\u0645\u0644\u0629.' },
+  fxSettlementNotConfigured: { en: 'Allocation across different functional values is not configured in this release.', ar: '\u0627\u0644\u062a\u062e\u0635\u064a\u0635 \u0628\u064a\u0646 \u0642\u064a\u0645 \u0648\u0638\u064a\u0641\u064a\u0629 \u0645\u062e\u062a\u0644\u0641\u0629 \u063a\u064a\u0631 \u0645\u0647\u064a\u0623 \u0641\u064a \u0647\u0630\u0627 \u0627\u0644\u0625\u0635\u062f\u0627\u0631.' },
+  functionalCurrencyRateExplicitOne: { en: 'Functional-currency transactions must not carry non-functional FX evidence.', ar: '\u064a\u062c\u0628 \u0623\u0644\u0627 \u062a\u062d\u0645\u0644 \u0627\u0644\u0645\u0639\u0627\u0645\u0644\u0627\u062a \u0628\u0627\u0644\u0639\u0645\u0644\u0629 \u0627\u0644\u0648\u0638\u064a\u0641\u064a\u0629 \u0623\u062f\u0644\u0629 \u0635\u0631\u0641 \u063a\u064a\u0631 \u0648\u0638\u064a\u0641\u064a\u0629.' },
   kicker: { en: 'Finance / subledgers and settlement', ar: 'المالية / الدفاتر الفرعية والتسوية' },
   apTitle: { en: 'Accounts Payable', ar: 'الحسابات الدائنة' },
   arTitle: { en: 'Accounts Receivable', ar: 'الحسابات المدينة' },
@@ -120,6 +132,8 @@ const copy: Record<string, Bilingual> = {
         <section class="settlement-panel"><div class="panel-heading"><div><p class="eyebrow">{{ text('allocations') }}</p><h2>{{ text('reconciliation') }}</h2></div><span class="count">{{ allocations().length }}</span></div><div class="table-wrap"><table><thead><tr><th>{{ text('allocations') }}</th><th>{{ text('currency') }}</th><th>{{ text('original') }}</th><th>{{ text('status') }}</th><th>{{ text('journal') }}</th></tr></thead><tbody>@for (allocation of allocations(); track allocation.id) { <tr><td>{{ allocation.status === 'Reversed' ? text('pending') : text('allocations') }}</td><td>{{ allocation.currencyCode }}</td><td class="numeric">{{ allocation.amount | number:'1.2-2' }}</td><td>{{ allocation.status }}</td><td>{{ allocation.journalId ? text('postedJournal') : text('pending') }}</td></tr> }</tbody></table></div></section>
         <section class="settlement-panel"><div class="panel-heading"><div><p class="eyebrow">{{ text('reconciliation') }}</p><h2>{{ text('subledger') }} / {{ text('postedJournal') }}</h2></div></div><div class="table-wrap"><table><thead><tr><th>{{ text('reconciliation') }}</th><th>{{ text('subledger') }}</th><th>{{ text('postedJournal') }}</th><th>{{ text('difference') }}</th><th>{{ text('status') }}</th></tr></thead><tbody>@for (row of reconciliation(); track row.scope) { <tr><td>{{ row.scope }}</td><td class="numeric">{{ row.subledgerAmount | number:'1.2-2' }}</td><td class="numeric">{{ row.postedJournalAmount | number:'1.2-2' }}</td><td class="numeric">{{ row.difference | number:'1.2-2' }}</td><td>{{ row.status }}</td></tr> }</tbody></table></div></section>
       }
+      @if (view() === 'ar' && requiresArFx()) { <section class="settlement-panel fx-evidence-panel" data-testid="ar-fx-evidence"><div class="panel-heading"><div><p class="eyebrow">{{ text('exchangeRate') }}</p><h2>{{ text('fxEvidenceRequired') }}</h2></div></div><label><span>{{ text('exchangeRate') }}</span><select [value]="arExchangeRateId()" (change)="selectExchangeRate('ar', $any($event.target).value)" data-testid="ar-exchange-rate-select"><option value="">{{ text('exchangeRate') }}</option>@for (rate of exchangeRateOptions('ar'); track rate.id) { <option [value]="rate.id">{{ rate.sourceCurrencyCode }} → {{ rate.targetCurrencyCode }} · {{ rate.code || rate.id }}</option> }</select></label>@if (arExchangeRateReference(); as reference) { <p class="term-hint" data-testid="ar-fx-reference">{{ text('rate') }} {{ reference.rate }} · {{ text('rateVersion') }} v{{ reference.versionNumber }} · {{ text('effectiveDate') }} {{ reference.effectiveOn }}</p> } @else if (fxError()) { <p class="form-error" role="alert">{{ fxError() }}</p> }</section> }
+      @if (view() === 'settlements' && requiresSettlementFx()) { <section class="settlement-panel fx-evidence-panel" data-testid="settlement-fx-evidence"><div class="panel-heading"><div><p class="eyebrow">{{ text('exchangeRate') }}</p><h2>{{ text('fxEvidenceRequired') }}</h2></div></div><label><span>{{ text('exchangeRate') }}</span><select [value]="settlementExchangeRateId()" (change)="selectExchangeRate('settlement', $any($event.target).value)" data-testid="settlement-exchange-rate-select"><option value="">{{ text('exchangeRate') }}</option>@for (rate of exchangeRateOptions('settlement'); track rate.id) { <option [value]="rate.id">{{ rate.sourceCurrencyCode }} → {{ rate.targetCurrencyCode }} · {{ rate.code || rate.id }}</option> }</select></label>@if (settlementExchangeRateReference(); as reference) { <p class="term-hint" data-testid="settlement-fx-reference">{{ text('rate') }} {{ reference.rate }} · {{ text('rateVersion') }} v{{ reference.versionNumber }} · {{ text('effectiveDate') }} {{ reference.effectiveOn }}</p> } @else if (fxError()) { <p class="form-error" role="alert">{{ fxError() }}</p> }</section> }
     </section>
   `,
   styles: [`
@@ -129,6 +143,7 @@ const copy: Record<string, Bilingual> = {
 export class FinanceSettlementWorkspaceComponent implements OnInit {
   readonly language = inject(LanguageService);
   private readonly finance = inject(FinanceService);
+  private readonly masterData = inject(MasterDataService, { optional: true });
   private readonly route = inject(ActivatedRoute);
   readonly view = signal<SettlementView>((this.route.snapshot.url[0]?.path as SettlementView) || 'settlements');
   readonly loading = signal(true);
@@ -149,10 +164,18 @@ export class FinanceSettlementWorkspaceComponent implements OnInit {
   readonly customers = signal<ReferenceOption[]>([]);
   readonly suppliers = signal<ReferenceOption[]>([]);
   readonly paymentTerms = signal<PaymentTermOption[]>([]);
+  readonly currencies = signal<CurrencyRecord[]>([]);
+  readonly exchangeRates = signal<ExchangeRateOption[]>([]);
+  readonly arExchangeRateId = signal('');
+  readonly settlementExchangeRateId = signal('');
+  readonly arExchangeRateReference = signal<ExchangeRateReferenceResponse | null>(null);
+  readonly settlementExchangeRateReference = signal<ExchangeRateReferenceResponse | null>(null);
+  readonly fxLoading = signal<FxDraftKind | null>(null);
+  readonly fxError = signal<string | null>(null);
   readonly actionBusy = signal(false);
   readonly actionError = signal<string | null>(null);
-  readonly arDraft: ArDraft = { customerId: '', paymentTermId: '', documentDate: new Date().toISOString().slice(0, 10), currencyCode: 'SAR', amount: 0, reference: '', description: '' };
-  readonly settlementDraft: SettlementDraft = { direction: 'Payment', partyId: '', cashAccountId: '', paymentMethodId: '', documentDate: new Date().toISOString().slice(0, 10), currencyCode: 'SAR', amount: 0, externalReference: '', description: '' };
+  readonly arDraft: ArDraft = { customerId: '', paymentTermId: '', documentDate: new Date().toISOString().slice(0, 10), currencyCode: '', amount: 0, reference: '', description: '' };
+  readonly settlementDraft: SettlementDraft = { direction: 'Payment', partyId: '', cashAccountId: '', paymentMethodId: '', documentDate: new Date().toISOString().slice(0, 10), currencyCode: '', amount: 0, externalReference: '', description: '' };
   readonly allocationDraft: AllocationDraft = { documentId: '', itemId: '', amount: 0, date: new Date().toISOString().slice(0, 10), reason: '' };
 
   ngOnInit(): void { this.load(); }
@@ -161,9 +184,9 @@ export class FinanceSettlementWorkspaceComponent implements OnInit {
   lead(): string { return this.text(this.view() === 'ap' ? 'apLead' : this.view() === 'ar' ? 'arLead' : 'settlementLead'); }
   selectedCurrency(): string { return this.companies().find(company => company.companyId === this.companyId())?.functionalCurrencyCode ?? '—'; }
   allDocuments(): FinanceSettlementDocument[] { return [...this.payments(), ...this.receipts()].sort((a, b) => b.documentDate.localeCompare(a.documentDate)); }
-  selectCompany(id: string): void { this.companyId.set(id); this.actionError.set(null); this.loadView(); }
+  selectCompany(id: string): void { this.companyId.set(id); this.resetDraftCurrencies(); this.actionError.set(null); this.loadView(); }
 
-  load(): void { this.loading.set(true); this.error.set(null); this.finance.companies().subscribe({ next: companies => { this.companies.set(companies); if (!this.companyId() || !companies.some(company => company.companyId === this.companyId())) this.companyId.set(companies[0]?.companyId ?? ''); this.loadView(); }, error: () => { this.loading.set(false); this.error.set(this.text('unavailable')); } }); }
+  load(): void { this.loading.set(true); this.error.set(null); this.finance.companies().subscribe({ next: companies => { const currentCompany = this.companyId(); const nextCompany = currentCompany && companies.some(company => company.companyId === currentCompany) ? currentCompany : companies[0]?.companyId ?? ''; this.companies.set(companies); this.companyId.set(nextCompany); if (nextCompany !== currentCompany || !this.arDraft.currencyCode || !this.settlementDraft.currencyCode) this.resetDraftCurrencies(); this.loadView(); }, error: () => { this.loading.set(false); this.error.set(this.text('unavailable')); } }); }
   private loadView(): void {
     const companyId = this.companyId(); if (!companyId) { this.loading.set(false); return; } this.loading.set(true);
     if (this.view() === 'ap') {
@@ -173,27 +196,159 @@ export class FinanceSettlementWorkspaceComponent implements OnInit {
     if (this.view() === 'ar') {
       const customers$ = this.finance.customers?.().pipe(catchError(() => of([]))) ?? of([]);
       const terms$ = this.finance.paymentTerms?.().pipe(catchError(() => of([]))) ?? of([]);
-      forkJoin({ items: this.finance.arOpenItems(companyId), aging: this.finance.arAging(companyId), customers: customers$, paymentTerms: terms$ }).subscribe({ next: result => { this.openItems.set(result.items); this.arItems.set(result.items); this.customers.set(this.activeOptions(result.customers)); this.paymentTerms.set(this.activeOptions(result.paymentTerms) as PaymentTermOption[]); this.aging.set(result.aging); this.loading.set(false); }, error: () => this.failed() }); return;
+      const { currencies$, exchangeRates$ } = this.masterDataReferences();
+      forkJoin({ items: this.finance.arOpenItems(companyId), aging: this.finance.arAging(companyId), customers: customers$, paymentTerms: terms$, currencies: currencies$, exchangeRates: exchangeRates$ }).subscribe({ next: result => { this.openItems.set(result.items); this.arItems.set(result.items); this.customers.set(this.activeOptions(result.customers)); this.paymentTerms.set(this.activeOptions(result.paymentTerms) as PaymentTermOption[]); this.currencies.set(result.currencies); this.exchangeRates.set(result.exchangeRates); this.aging.set(result.aging); this.loading.set(false); }, error: () => this.failed() }); return;
     }
     const customers$ = this.finance.customers?.().pipe(catchError(() => of([]))) ?? of([]);
     const suppliers$ = this.finance.suppliers?.().pipe(catchError(() => of([]))) ?? of([]);
-    forkJoin({ methods: this.finance.paymentMethods(companyId), cashAccounts: this.finance.cashAccounts(companyId), payments: this.finance.payments(companyId), receipts: this.finance.receipts(companyId), allocations: this.finance.allocations(companyId), reconciliation: this.finance.reconciliation(companyId), apItems: this.finance.apOpenItems(companyId), arItems: this.finance.arOpenItems(companyId), customers: customers$, suppliers: suppliers$ }).subscribe({ next: result => { this.methods.set(result.methods); this.cashAccounts.set(result.cashAccounts); this.payments.set(result.payments); this.receipts.set(result.receipts); this.allocations.set(result.allocations); this.reconciliation.set(result.reconciliation); this.apItems.set(result.apItems); this.arItems.set(result.arItems); this.customers.set(this.activeOptions(result.customers)); this.suppliers.set(this.activeOptions(result.suppliers)); this.loading.set(false); }, error: () => this.failed() });
+    const { currencies$, exchangeRates$ } = this.masterDataReferences();
+    forkJoin({ methods: this.finance.paymentMethods(companyId), cashAccounts: this.finance.cashAccounts(companyId), payments: this.finance.payments(companyId), receipts: this.finance.receipts(companyId), allocations: this.finance.allocations(companyId), reconciliation: this.finance.reconciliation(companyId), apItems: this.finance.apOpenItems(companyId), arItems: this.finance.arOpenItems(companyId), customers: customers$, suppliers: suppliers$, currencies: currencies$, exchangeRates: exchangeRates$ }).subscribe({ next: result => { this.methods.set(result.methods); this.cashAccounts.set(result.cashAccounts); this.payments.set(result.payments); this.receipts.set(result.receipts); this.allocations.set(result.allocations); this.reconciliation.set(result.reconciliation); this.apItems.set(result.apItems); this.arItems.set(result.arItems); this.customers.set(this.activeOptions(result.customers)); this.suppliers.set(this.activeOptions(result.suppliers)); this.currencies.set(result.currencies); this.exchangeRates.set(result.exchangeRates); this.loading.set(false); }, error: () => this.failed() });
+  }
+  private masterDataReferences(): { currencies$: Observable<CurrencyRecord[]>; exchangeRates$: Observable<ExchangeRateOption[]> } {
+    const currencies$: Observable<CurrencyRecord[]> = this.masterData ? this.masterData.list('currencies').pipe(catchError(() => of([])), map(items => items as CurrencyRecord[])) : of([]);
+    const exchangeRates$: Observable<ExchangeRateOption[]> = this.masterData ? this.masterData.list('exchange-rates').pipe(catchError(() => of([])), map(items => items as ExchangeRateOption[])) : of([]);
+    return { currencies$, exchangeRates$ };
   }
   private failed(): void { this.loading.set(false); this.error.set(this.text('unavailable')); }
 
-  setAr(field: keyof ArDraft, value: string | number): void { (this.arDraft as unknown as Record<string, string | number>)[field] = value; this.actionError.set(null); }
-  setSettlement(field: keyof SettlementDraft, value: string | number): void { (this.settlementDraft as unknown as Record<string, string | number>)[field] = value; if (field === 'direction') { this.settlementDraft.partyId = ''; } this.actionError.set(null); }
+  private resetDraftCurrencies(): void {
+    const currency = this.selectedCurrency();
+    if (!currency) return;
+    this.arDraft.currencyCode = currency;
+    this.settlementDraft.currencyCode = currency;
+    this.clearExchangeRate('ar');
+    this.clearExchangeRate('settlement');
+  }
+
+  transactionCurrencyCodes(): string[] {
+    const configured = this.currencies().filter(item => !item.lifecycleState || item.lifecycleState === 'Active').map(item => item.code.trim().toUpperCase()).filter(Boolean);
+    const functional = this.selectedCurrency();
+    return [...new Set([functional, ...configured].filter(Boolean))];
+  }
+
+  exchangeRateOptions(kind: FxDraftKind): ExchangeRateOption[] {
+    const currency = kind === 'ar' ? this.arDraft.currencyCode : this.settlementDraft.currencyCode;
+    const functional = this.selectedCurrency();
+    if (!currency || !functional || currency.trim().toUpperCase() === functional) return [];
+    return this.exchangeRates().filter(rate => rate.lifecycleState === 'Active'
+      && rate.sourceCurrencyCode.trim().toUpperCase() === currency.trim().toUpperCase()
+      && rate.targetCurrencyCode.trim().toUpperCase() === functional);
+  }
+
+  requiresArFx(): boolean { return this.requiresFx('ar'); }
+  requiresSettlementFx(): boolean { return this.requiresFx('settlement'); }
+  private requiresFx(kind: FxDraftKind): boolean {
+    const currency = kind === 'ar' ? this.arDraft.currencyCode : this.settlementDraft.currencyCode;
+    const functional = this.selectedCurrency();
+    return !!currency && !!functional && currency.trim().toUpperCase() !== functional;
+  }
+
+  private fxReference(kind: FxDraftKind): ExchangeRateReferenceResponse | null {
+    return kind === 'ar' ? this.arExchangeRateReference() : this.settlementExchangeRateReference();
+  }
+
+  private fxId(kind: FxDraftKind): string {
+    return kind === 'ar' ? this.arExchangeRateId() : this.settlementExchangeRateId();
+  }
+
+  private setFxId(kind: FxDraftKind, id: string): void {
+    if (kind === 'ar') this.arExchangeRateId.set(id); else this.settlementExchangeRateId.set(id);
+  }
+
+  private setFxReference(kind: FxDraftKind, reference: ExchangeRateReferenceResponse | null): void {
+    if (kind === 'ar') this.arExchangeRateReference.set(reference); else this.settlementExchangeRateReference.set(reference);
+  }
+
+  private clearExchangeRate(kind: FxDraftKind): void {
+    this.setFxId(kind, '');
+    this.setFxReference(kind, null);
+    this.fxError.set(null);
+  }
+
+  selectExchangeRate(kind: FxDraftKind, id: string): void {
+    this.setFxId(kind, id);
+    this.setFxReference(kind, null);
+    this.fxError.set(null);
+    void this.resolveExchangeRate(kind, id);
+  }
+
+  private async resolveSelectedExchangeRate(kind: FxDraftKind): Promise<void> {
+    const id = this.fxId(kind);
+    if (id) await this.resolveExchangeRate(kind, id);
+  }
+
+  private async resolveExchangeRate(kind: FxDraftKind, id: string): Promise<void> {
+    if (!id || !this.requiresFx(kind)) {
+      this.setFxReference(kind, null);
+      return;
+    }
+    if (!this.exchangeRateOptions(kind).some(rate => rate.id === id) || !this.masterData) {
+      this.setFxReference(kind, null);
+      this.fxError.set(this.text('noExactExchangeRate'));
+      return;
+    }
+    const date = kind === 'ar' ? this.arDraft.documentDate : this.settlementDraft.documentDate;
+    this.fxLoading.set(kind);
+    this.fxError.set(null);
+    try {
+      const reference = await firstValueFrom(this.masterData.referenceExchangeRate(id, date));
+      const currency = kind === 'ar' ? this.arDraft.currencyCode.trim().toUpperCase() : this.settlementDraft.currencyCode.trim().toUpperCase();
+      if (reference.id !== id || reference.lifecycleState !== 'Active' || reference.effectiveOn !== date || reference.sourceCurrencyCode.trim().toUpperCase() !== currency || reference.targetCurrencyCode.trim().toUpperCase() !== this.selectedCurrency() || reference.rate <= 0) {
+        throw new Error('exchange-rate-reference-invalid');
+      }
+      this.setFxReference(kind, reference);
+    } catch {
+      this.setFxReference(kind, null);
+      this.fxError.set(this.text('noExactExchangeRate'));
+    } finally {
+      this.fxLoading.set(null);
+    }
+  }
+
+  private exchangeRateReady(kind: FxDraftKind): boolean {
+    if (!this.requiresFx(kind)) return true;
+    const reference = this.fxReference(kind);
+    const date = kind === 'ar' ? this.arDraft.documentDate : this.settlementDraft.documentDate;
+    return !!reference && reference.id === this.fxId(kind) && reference.effectiveOn === date;
+  }
+
+  private fxFields(kind: FxDraftKind): Pick<FinanceManualReceivableRequest, 'exchangeRate' | 'exchangeRateId' | 'exchangeRateVersionId' | 'exchangeRateVersionNumber'> {
+    const reference = this.fxReference(kind);
+    return {
+      exchangeRate: this.requiresFx(kind) ? reference?.rate ?? null : null,
+      exchangeRateId: this.requiresFx(kind) ? reference?.id ?? null : null,
+      exchangeRateVersionId: this.requiresFx(kind) ? reference?.versionId ?? null : null,
+      exchangeRateVersionNumber: this.requiresFx(kind) ? reference?.versionNumber ?? null : null,
+    };
+  }
+
+  setAr(field: keyof ArDraft, value: string | number): void {
+    const normalized = field === 'currencyCode' ? String(value).trim().toUpperCase() : value;
+    (this.arDraft as unknown as Record<string, string | number>)[field] = normalized;
+    if (field === 'currencyCode') this.clearExchangeRate('ar');
+    if (field === 'documentDate') void this.resolveSelectedExchangeRate('ar');
+    this.actionError.set(null);
+  }
+
+  setSettlement(field: keyof SettlementDraft, value: string | number): void {
+    const normalized = field === 'currencyCode' ? String(value).trim().toUpperCase() : value;
+    (this.settlementDraft as unknown as Record<string, string | number>)[field] = normalized;
+    if (field === 'direction') this.settlementDraft.partyId = '';
+    if (field === 'currencyCode') this.clearExchangeRate('settlement');
+    if (field === 'documentDate') void this.resolveSelectedExchangeRate('settlement');
+    this.actionError.set(null);
+  }
   setAllocation(field: keyof AllocationDraft, value: string | number): void { (this.allocationDraft as unknown as Record<string, string | number>)[field] = value; if (field === 'documentId') this.allocationDraft.itemId = ''; this.actionError.set(null); }
 
   derivedArDueDate(): string { const term = this.paymentTerms().find(item => item.id === this.arDraft.paymentTermId); const version = this.termVersion(term, this.arDraft.documentDate); if (!version || version.baseDateRule !== 'DocumentDate') return ''; const installment = version.scheduleMode === 'Installments' ? version.installments.at(-1) : undefined; const months = installment?.months ?? version.dueOffsetMonths; const days = installment?.days ?? version.dueOffsetDays; const date = new Date(`${this.arDraft.documentDate}T00:00:00Z`); date.setUTCMonth(date.getUTCMonth() + (months || 0)); date.setUTCDate(date.getUTCDate() + (days || 0)); return date.toISOString().slice(0, 10); }
-  canCreateAr(): boolean { return !!this.companyId() && !!this.arDraft.customerId && !!this.arDraft.paymentTermId && !!this.derivedArDueDate() && !!this.arDraft.currencyCode.trim() && this.arDraft.amount > 0; }
-  canCreateSettlement(): boolean { return !!this.companyId() && !!this.settlementDraft.partyId && !!this.settlementDraft.cashAccountId && !!this.settlementDraft.paymentMethodId && !!this.settlementDraft.externalReference.trim() && !!this.settlementDraft.currencyCode.trim() && this.settlementDraft.amount > 0; }
+  canCreateAr(): boolean { return !!this.companyId() && !!this.arDraft.customerId && !!this.arDraft.paymentTermId && !!this.derivedArDueDate() && !!this.arDraft.currencyCode.trim() && this.arDraft.amount > 0 && this.exchangeRateReady('ar'); }
+  canCreateSettlement(): boolean { return !!this.companyId() && !!this.settlementDraft.partyId && !!this.settlementDraft.cashAccountId && !!this.settlementDraft.paymentMethodId && !!this.settlementDraft.externalReference.trim() && !!this.settlementDraft.currencyCode.trim() && this.settlementDraft.amount > 0 && this.exchangeRateReady('settlement'); }
   activeOptions(value: unknown[]): ReferenceOption[] { return (value as ReferenceOption[]).filter(item => !item.lifecycleState || item.lifecycleState === 'Active'); }
   private termVersion(term: PaymentTermOption | undefined, date: string): PaymentTermVersionOption | undefined { return term?.versions?.filter(version => version.effectiveFrom <= date && (!version.effectiveTo || version.effectiveTo >= date)).sort((left, right) => right.effectiveFrom.localeCompare(left.effectiveFrom))[0]; }
 
   async recognize(candidate: FinanceApSourceReady): Promise<void> { await this.runAction(() => this.finance.recognizeAp(candidate.sourceEvidenceId)); }
-  async createReceivable(): Promise<void> { if (!this.canCreateAr()) return; const payload: FinanceManualReceivableRequest = { companyId: this.companyId(), customerId: this.arDraft.customerId, documentDate: this.arDraft.documentDate, dueDate: this.derivedArDueDate(), paymentTermId: this.arDraft.paymentTermId, currencyCode: this.arDraft.currencyCode.trim().toUpperCase(), amount: Number(this.arDraft.amount), exchangeRate: null, exchangeRateId: null, exchangeRateVersionId: null, exchangeRateVersionNumber: null, reference: this.arDraft.reference.trim() || null, description: this.arDraft.description.trim() || null }; await this.runAction(() => this.finance.createManualReceivable(payload)); }
-  async createSettlement(): Promise<void> { if (!this.canCreateSettlement()) return; const payload = { companyId: this.companyId(), partyId: this.settlementDraft.partyId, cashAccountId: this.settlementDraft.cashAccountId, paymentMethodId: this.settlementDraft.paymentMethodId, documentDate: this.settlementDraft.documentDate, currencyCode: this.settlementDraft.currencyCode.trim().toUpperCase(), amount: Number(this.settlementDraft.amount), exchangeRate: null, exchangeRateId: null, exchangeRateVersionId: null, exchangeRateVersionNumber: null, externalReference: this.settlementDraft.externalReference.trim(), description: this.settlementDraft.description.trim() || null }; await this.runAction(() => this.settlementDraft.direction === 'Payment' ? this.finance.createPayment(payload) : this.finance.createReceipt(payload)); }
+  async createReceivable(): Promise<void> { if (!this.canCreateAr()) return; const payload: FinanceManualReceivableRequest = { companyId: this.companyId(), customerId: this.arDraft.customerId, documentDate: this.arDraft.documentDate, dueDate: this.derivedArDueDate(), paymentTermId: this.arDraft.paymentTermId, currencyCode: this.arDraft.currencyCode.trim().toUpperCase(), amount: Number(this.arDraft.amount), ...this.fxFields('ar'), reference: this.arDraft.reference.trim() || null, description: this.arDraft.description.trim() || null }; await this.runAction(() => this.finance.createManualReceivable(payload)); }
+  async createSettlement(): Promise<void> { if (!this.canCreateSettlement()) return; const payload = { companyId: this.companyId(), partyId: this.settlementDraft.partyId, cashAccountId: this.settlementDraft.cashAccountId, paymentMethodId: this.settlementDraft.paymentMethodId, documentDate: this.settlementDraft.documentDate, currencyCode: this.settlementDraft.currencyCode.trim().toUpperCase(), amount: Number(this.settlementDraft.amount), ...this.fxFields('settlement'), externalReference: this.settlementDraft.externalReference.trim(), description: this.settlementDraft.description.trim() || null }; await this.runAction(() => this.settlementDraft.direction === 'Payment' ? this.finance.createPayment(payload) : this.finance.createReceipt(payload)); }
   async settlementAction(document: FinanceSettlementDocument, action: 'submit' | 'approve' | 'reject' | 'post' | 'reverse'): Promise<void> { const direction = document.direction as 'Payment' | 'Receipt'; const promise = action === 'post' ? this.finance.postSettlement(direction, document.id, document.version) : action === 'reverse' ? this.finance.reverseSettlement(direction, document.id, 'Operator requested settlement reversal') : this.finance.settlementAction(direction, document.id, action, document.version, action === 'reject' ? 'Operator rejected settlement' : null); await this.runAction(() => promise); }
   postedDocuments(): FinanceSettlementDocument[] { return this.allDocuments().filter(document => document.status === 'Posted'); }
   settlementParties(): ReferenceOption[] { return this.settlementDraft.direction === 'Payment' ? this.suppliers() : this.customers(); }
@@ -203,6 +358,7 @@ export class FinanceSettlementWorkspaceComponent implements OnInit {
   canCreateAllocation(): boolean { return !!this.allocationDraft.documentId && !!this.allocationDraft.itemId && this.allocationDraft.amount > 0 && !!this.allocationDraft.date; }
   async createAllocation(): Promise<void> { if (!this.canCreateAllocation()) return; await this.runAction(() => this.finance.createAllocation({ settlementDocumentId: this.allocationDraft.documentId, openItemId: this.allocationDraft.itemId, amount: Number(this.allocationDraft.amount), allocationDate: this.allocationDraft.date, reason: this.allocationDraft.reason.trim() || null })); }
   async reverseAllocation(allocation: FinanceAllocation): Promise<void> { await this.runAction(() => this.finance.reverseAllocation(allocation.id, allocation.version, this.allocationDraft.reason.trim() || 'Operator requested allocation reversal')); }
-  private async runAction<T>(action: () => Promise<T>): Promise<void> { this.actionBusy.set(true); this.actionError.set(null); try { await action(); this.loadView(); } catch (error) { this.actionError.set(this.errorMessage(error)); } finally { this.actionBusy.set(false); } }
+  private async runAction<T>(action: () => Promise<T>): Promise<void> { this.actionBusy.set(true); this.actionError.set(null); try { await action(); this.loadView(); } catch (error) { this.actionError.set(this.fxErrorMessage(error) ?? this.errorMessage(error)); } finally { this.actionBusy.set(false); } }
+  private fxErrorMessage(error: unknown): string | null { const code = error instanceof HttpErrorResponse ? error.error?.code : null; const messages: Record<string, string> = { exact_exchange_rate_evidence_required: this.text('fxEvidenceRequired'), exchange_rate_evidence_mismatch: this.text('noExactExchangeRate'), fx_settlement_not_configured: this.text('fxSettlementNotConfigured'), functional_currency_rate_must_be_explicit_one: this.text('functionalCurrencyRateExplicitOne') }; return code && messages[code] ? messages[code] : null; }
   private errorMessage(error: unknown): string { const code = error instanceof HttpErrorResponse ? error.error?.code : null; const messages: Record<string, string> = { payment_method_not_supported: 'Only configured manual payment methods can be used.', payment_method_not_configured: 'No compatible active manual payment method is configured.', cash_account_not_configured: 'No compatible active Cash / Bank account is configured.', posting_rule_cash_account_mismatch: 'The selected Cash / Bank account is not the configured posting account.', posting_rule_control_account_mismatch: 'The allocation rule does not clear this item’s historical control account.', approval_policy_not_configured: 'Approval policy is not configured for this settlement.', approval_required: 'An authorized approval is required before posting.', self_approval_forbidden: 'The creator cannot approve this settlement.', pending_mapping: 'Finance posting mapping is pending.', ambiguous_mapping: 'Finance posting mapping is ambiguous.', payment_term_not_configured: 'A valid Payment Term is required and must be effective on the document date.', payment_term_snapshot_mismatch: 'The supplied due date does not match the server-derived Payment Term snapshot.', allocation_exceeds_outstanding: 'The allocation exceeds the open item balance.', allocation_exceeds_unallocated: 'The allocation exceeds the settlement balance.', active_allocations_require_reversal: 'Reverse active allocations before reversing this settlement.', concurrency_conflict: 'The record changed. Refresh the evidence and try again.', settlement_not_posted: 'Only a Posted settlement can be allocated.' }; return code && messages[code] ? messages[code] : 'The Finance operation was not completed. Refresh the evidence and try again.'; }
 }

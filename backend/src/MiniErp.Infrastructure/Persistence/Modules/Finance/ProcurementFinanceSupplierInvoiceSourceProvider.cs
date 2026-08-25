@@ -4,6 +4,7 @@ using System.Text.Json;
 using MiniErp.App.Modules.Finance;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Procurement;
+using MiniErp.App.Modules.BusinessParties;
 using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Procurement;
 using MiniErp.Contracts.Modules.MasterData;
@@ -15,7 +16,8 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
     IPurchaseInvoiceMatchPersistence matches,
     IFinanceCompanyProvider companies,
     IPurchaseOrderPersistence purchaseOrders,
-    IMasterDataCurrencyPaymentTermPersistence paymentTerms) : IFinanceSupplierInvoiceSourceProvider
+    IMasterDataCurrencyPaymentTermPersistence paymentTerms,
+    ISupplierPersistence suppliers) : IFinanceSupplierInvoiceSourceProvider
 {
     public async Task<FinanceSupplierInvoiceSourceRecord?> FindAsync(FinanceRequestContext context, Guid sourceEvidenceId, CancellationToken cancellationToken = default)
     {
@@ -31,9 +33,30 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
             || purchaseOrder.TenantId != context.TenantId.Value
             || purchaseOrder.Scope.CompanyId != handoff.Scope.CompanyId
             || purchaseOrder.Status == PurchaseOrderStatus.Cancelled
+            || purchaseOrder.Source.Supplier.Id != handoff.SupplierId
             || purchaseOrderTerm is null
             || purchaseOrderTerm.Id == Guid.Empty
             || purchaseOrderTerm.Version <= 0)
+        {
+            return null;
+        }
+
+        // The handoff's supplier code/name are historical invoice evidence.
+        // Current source readiness is owned by the Supplier master, and the
+        // master is resolved through its Tenant-authorized reference seam.
+        SupplierRecord? supplier;
+        try
+        {
+            supplier = await suppliers.FindSupplierAsync(context.TenantContext, handoff.SupplierId, cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
+
+        if (supplier is null
+            || supplier.TenantId.Value != context.TenantId.Value
+            || supplier.LifecycleState != MasterDataLifecycleState.Active)
         {
             return null;
         }
@@ -59,10 +82,16 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
         var functionalCurrency = company.FunctionalCurrencyCode.Trim().ToUpperInvariant();
         var functionalAmount = string.Equals(currency, functionalCurrency, StringComparison.OrdinalIgnoreCase) ? amount : applied is null ? 0m : amount * applied.Rate;
         if (functionalAmount <= 0m) return null;
-        var invoiceDate = evidence?.SupplierInvoiceDate ?? handoff.SupplierInvoiceDate ?? DateOnly.FromDateTime(handoff.CreatedAt.UtcDateTime);
+        // CreatedAt is persistence metadata, never commercial evidence. The
+        // MESP-126 upstream contract currently exposes SupplierInvoiceDate as
+        // its only trusted commercial document date, so both InvoiceDate and
+        // DocumentDate terms use that value and fail closed when it is absent.
+        var invoiceDate = evidence?.SupplierInvoiceDate ?? handoff.SupplierInvoiceDate;
+        if (invoiceDate is null) return null;
+        var trustedInvoiceDate = invoiceDate.Value;
         var baseDate = termVersion.BaseDateRule switch
         {
-            PaymentTermBaseDateRule.InvoiceDate or PaymentTermBaseDateRule.DocumentDate => invoiceDate,
+            PaymentTermBaseDateRule.InvoiceDate or PaymentTermBaseDateRule.DocumentDate => trustedInvoiceDate,
             // MESP-125/126 do not expose a trusted receipt/delivery date on the
             // Finance source contract. Do not guess one from the current clock.
             _ => (DateOnly?)null
@@ -90,7 +119,7 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
             match.Id,
             1,
             evidence?.SupplierInvoiceReference ?? handoff.SupplierInvoiceReference,
-            invoiceDate,
+            trustedInvoiceDate,
             currency,
             amount,
             functionalCurrency,
