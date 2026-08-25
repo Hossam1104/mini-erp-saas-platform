@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Finance;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Finance;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Finance
 {
     [DbContext(typeof(FinanceDbContext))]
-    partial class FinanceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260825225409_MESP134TaxFxReportingRevaluation")]
+    partial class MESP134TaxFxReportingRevaluation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1187,13 +1190,7 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Finance
                     b.Property<int>("Direction")
                         .HasColumnType("int");
 
-                    b.Property<DateOnly?>("ExchangeEffectiveFrom")
-                        .HasColumnType("date");
-
                     b.Property<DateOnly>("ExchangeEffectiveOn")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly?>("ExchangeEffectiveTo")
                         .HasColumnType("date");
 
                     b.Property<string>("ExchangeProvenance")
@@ -1485,11 +1482,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Finance
 
                     b.Property<int>("Kind")
                         .HasColumnType("int");
-
-                    b.Property<string>("MonetaryEvidenceJson")
-                        .IsRequired()
-                        .HasMaxLength(16384)
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("OpenItemId")
                         .HasColumnType("uniqueidentifier");

@@ -12,12 +12,15 @@
 <!-- MESP-134-CURRENT-START -->
 > **MESP-134 Tax / FX / Reporting Currency / Revaluation - 26 August 2026.**
 > MESP-133 is Done and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
-> MESP-134 is the only active Finance capability under MESP-10 and is being
-> delivered on one Draft, Open, Unmerged feature PR for Sol acceptance. The
-> implementation must reuse MESP-119 Tax, MESP-120 Exchange Rates, MESP-132
-> posting authority, and MESP-133 AP/AR/settlement history. No Jira writes,
-> Opus review, merge, Ready transition, external provider, ZATCA/FATOORA,
-> Sales lifecycle, or MESP-135 work is in scope.
+> MESP-134 is implemented on the only active Finance branch under MESP-10,
+> pending one Draft/Open/Unmerged PR and GPT-5.6 Sol acceptance. The backend
+> reuses MESP-119 Tax, MESP-120 Exchange Rates, MESP-132 posting authority,
+> and MESP-133 AP/AR/settlement history for monetary policy, exact Reporting
+> evidence, tax effects, realized FX, revaluation, and reconciliation. Final
+> validation is Release 0/0, backend 1019/1019, SQL safety 61/61, and clean
+> EF model-change detection. No Jira writes, Opus review, merge, Ready
+> transition, external provider, ZATCA/FATOORA, Sales lifecycle, or MESP-135
+> work is in scope.
 <!-- MESP-134-CURRENT-END -->
 
 <!-- MESP-133-CURRENT-START -->

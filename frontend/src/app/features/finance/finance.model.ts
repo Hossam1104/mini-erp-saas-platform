@@ -241,6 +241,109 @@ export interface FinanceSettlementDocument {
   approvalRequirement?: string;
 }
 
+export interface FinanceMonetaryPolicy {
+  id: string;
+  companyId: string;
+  functionalCurrencyCode: string;
+  reportingCurrencyId: string | null;
+  reportingCurrencyCode: string | null;
+  roundingScale: number;
+  roundingMode: string;
+  revaluationEnabled: boolean;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  versionNumber: number;
+  version: string;
+}
+
+export interface FinanceExchangeRateEvidence {
+  exchangeRateId: string;
+  exchangeRateVersionId: string;
+  versionNumber: number;
+  sourceCurrencyCode: string;
+  targetCurrencyCode: string;
+  effectiveOn: string;
+  rate: number;
+  rateScale: number;
+  provenance: string;
+  sourceNotes: string | null;
+  referenceValue: string;
+}
+
+export interface FinanceMonetaryEvidence {
+  transactionCurrencyCode: string;
+  transactionAmount: number;
+  functionalCurrencyCode: string;
+  functionalAmount: number;
+  transactionToFunctionalRate: FinanceExchangeRateEvidence | null;
+  reportingCurrencyCode: string | null;
+  reportingAmount: number | null;
+  functionalToReportingRate: FinanceExchangeRateEvidence | null;
+  sourceUnroundedFunctionalAmount: number;
+  sourceUnroundedReportingAmount: number | null;
+  roundingScale: number;
+  roundingMode: string;
+  functionalRoundingDifference: number;
+  reportingRoundingDifference: number | null;
+  reportingEvidenceStatus: string;
+}
+
+export interface FinanceTaxEffect {
+  id: string;
+  companyId: string;
+  openItemId: string;
+  kind: string;
+  taxId: string;
+  taxCode: string;
+  taxRateVersionId: string;
+  taxRateVersionNumber: number;
+  taxEffectiveOn: string;
+  taxRatePercentage: number;
+  taxableBase: number;
+  taxAmount: number;
+  transactionCurrencyCode: string;
+  functionalAmount: number;
+  functionalCurrencyCode: string;
+  journalId: string;
+  reversalJournalId: string | null;
+  postingRuleId: string;
+  postingRuleVersionNumber: number;
+  monetaryEvidence: FinanceMonetaryEvidence;
+  status: string;
+  createdAt: string;
+  version: string;
+}
+
+export interface FinanceRevaluationLine {
+  id: string;
+  batchId: string;
+  companyId: string;
+  sourceId: string;
+  sourceType: string;
+  asOfDate: string;
+  transactionCurrencyCode: string;
+  outstandingTransactionAmount: number;
+  historicalFunctionalAmount: number;
+  revaluedFunctionalAmount: number;
+  difference: number;
+  direction: string;
+  exchangeRateEvidence: FinanceExchangeRateEvidence;
+  journalId: string | null;
+  reversalJournalId: string | null;
+  status: string;
+  version: string;
+}
+
+export interface FinanceRevaluationBatch {
+  id: string;
+  companyId: string;
+  asOfDate: string;
+  scope: string;
+  status: string;
+  lines: FinanceRevaluationLine[];
+  version: string;
+}
+
 export interface FinanceApSourceReady {
   sourceEvidenceId: string;
   companyId: string;

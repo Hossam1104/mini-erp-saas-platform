@@ -1,4 +1,86 @@
-# MESP-133 GPT-5.6 SOL VERIFICATION-ONLY HOLD 4 HANDOFF
+# MESP-134 — GPT-5.6 Sol review handoff
+
+MESP-134 implementation is bounded and complete on the single Draft PR
+branch. Stop for GPT-5.6 Sol review. Do not merge, mark the PR Ready, write
+Jira, invoke Claude Opus, activate MESP-135, create another PR, or start a
+different capability.
+
+## Repository
+
+- Branch: `feat/MESP-134-tax-fx-revaluation`; base `main`.
+- Starting reconciled main: `e8437e978defb2caa868eb014178e1033fe20664`.
+- One Draft PR is required; it remains open and unmerged.
+- Final documentation/tracker handoff SHA is the value of `git rev-parse HEAD`
+  after the final push.
+- `frontend/assets` is owner-managed and must remain untouched.
+
+## Final validation checkpoint
+
+- Release backend build: 0 warnings / 0 errors.
+- Disposable LocalDB backend: 1019/1019; SQL safety: 61/61; EF model-change
+  detection: clean.
+- Angular: 276/276 across 39 spec files; production build initial 496.44 kB,
+  Finance/GL lazy 34.52 kB, Tax/FX lazy 27.73 kB, settlement lazy 56.04 kB.
+- Full Chromium: 38/38; focused MESP-134 REST/OpenAPI/host contract suite:
+  36/36; both npm audits: 0 vulnerabilities.
+- Runtime: backend PID 24080 and frontend PID 46468; required health and
+  `/app/finance/tax-fx` HTTP 200 probes passed.
+
+## Delivered scope
+
+- Company-scoped, effective-dated monetary policy with functional/reporting
+  currency authority, rounding policy, overlap validation, audit, and
+  idempotent replay.
+- MESP-119 tax preview and Finance tax-accounting reclassification for
+  recognized AP/AR open items, exact tax rate-version evidence, configured
+  posting-rule validation, reconciliation, and exact reversal.
+- MESP-120 exact direct-pair exchange-rate evidence with effective bounds,
+  provenance, source notes, reference values, and fail-closed ambiguity or
+  missing-rate behavior.
+- Realized FX on settlement allocation for all AP/AR sign cases, using actual
+  recognition and linked cash/bank accounts, with historical/settlement
+  functional snapshots, rule evidence, reconciliation, and exact allocation
+  reversal.
+- Draft/calculated/posted/reversed unrealized revaluation batches covering
+  outstanding AP/AR and posted unallocated settlement sources as of an
+  accounting date, active-revaluation blocking, exact rate evidence, posting,
+  and reversal.
+- Tenant/Company-authorized REST/OpenAPI catalogue operations, antiforgery,
+  idempotency, audit, `If-Match` concurrency, explicit failure codes, and a
+  lazy EN/AR RTL Finance Tax/FX/Revaluation workspace at
+  `/app/finance/tax-fx`.
+- Architecture record:
+  `docs/37_MESP-134_Tax_FX_Reporting_Currency_Revaluation_Architecture.md`.
+
+## Review focus
+
+Sol should independently inspect the final branch and Draft PR for:
+
+1. exact MESP-119/MESP-120 evidence preservation and no client-controlled
+   accounting authority;
+2. Company/Tenant isolation and protected REST mutation boundaries;
+3. realized FX signs and account lineage for payable/receivable allocations;
+4. revaluation as-of semantics, active-batch blocking, and exact reversals;
+5. policy/tax/revaluation idempotency, audit, concurrency, and migration;
+6. the Angular workflow’s real loading, empty, blocked, evidence, and RTL
+   behavior; and
+7. the explicit boundary around supplier-declared tax, statutory returns,
+   external providers, and production gates.
+
+## Governance
+
+- No Jira writes were performed by this implementation session.
+- MESP-134 remains the only active capability under MESP-10.
+- MESP-135 remains inactive and is not activated by this handoff.
+- Accepted fast-track completion remains `17/26 = 65.4%` until Sol acceptance
+  and merge; production readiness remains approximately `47%` overall and
+  `41%` Procurement/P2P.
+- GPT-5.6 Sol decides acceptance, any follow-up remediation, merge readiness,
+  Jira closure/reconciliation, and the next exact session.
+
+---
+
+## Historical MESP-133 GPT-5.6 Sol verification-only HOLD 4 handoff
 
 HOLD 4 adds acceptance regressions only, then stops for GPT-5.6 Sol. Do not
 merge, mark PR #77 Ready, write Jira, activate MESP-134/MESP-135, invoke Opus,

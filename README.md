@@ -37,6 +37,25 @@ manual-AR supplemental finding `11928` remain historical MESP-133 evidence; MESP
 is still In Progress, MESP-135 remains inactive, and no Jira writes were
 performed by this session.
 
+MESP-134 is implemented on this branch at its bounded Finance scope. It adds
+Company-owned monetary policy, exact MESP-120 transaction/functional/Reporting
+currency evidence and rounding, MESP-119 tax reclassification, realized FX
+allocation/reversal, controlled AP/AR/unallocated revaluation batches,
+reconciliation, protected REST/OpenAPI operations, and the lazy bilingual
+EN/AR RTL Tax/FX workspace at `/app/finance/tax-fx`. Complete tax evidence
+snapshots and revaluation rate validity bounds are persisted. External
+providers, bank feeds, statutory VAT/ZATCA/FATOORA, generic Reporting, and
+Wafra-specific core behavior remain outside scope.
+
+Final bounded validation is Release 0 warnings/0 errors, disposable LocalDB
+backend 1019/1019, SQL safety 61/61, Angular 276/276 across 39 specs, full
+Chromium 38/38, EF model-change detection clean, initial 496.44 kB, Tax/FX
+lazy 27.73 kB, and both npm audits at 0 vulnerabilities. Fast-track remains
+17/26 = 65.4% and production readiness remains approximately 47% overall /
+41% Procurement/P2P pending Sol acceptance and merge.
+
+### Historical MESP-133 acceptance snapshot
+
 HOLD 4 changes tests only. The real `ProcurementFinanceSupplierInvoiceSourceProvider`
 is directly exercised with bounded authoritative dependency fakes for active,
 missing, inactive, cross-Tenant, missing-date/CreatedAt, and unsupported

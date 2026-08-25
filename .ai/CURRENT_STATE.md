@@ -15,6 +15,20 @@ and must remain one Draft, Open, Unmerged PR for Sol acceptance. No Jira writes,
 Claude Opus review, Ready transition, merge, or MESP-135 activation is allowed
 in this bounded session.
 
+MESP-134 implementation is complete at bounded scope on this branch. It adds
+Company-owned monetary policy, exact MESP-120 transaction/functional/Reporting
+evidence and rounding, MESP-119 tax reclassification, realized FX allocation
+and exact reversal, controlled AP/AR/unallocated revaluation batches, Finance
+reconciliation, protected REST/OpenAPI operations, and a lazy bilingual EN/AR
+RTL Tax/FX workspace. Complete tax evidence snapshots and revaluation rate
+validity bounds are persisted; no current-rate backfill or external/statutory
+provider behavior is introduced. Final validation is Release 0/0, backend
+1019/1019, SQL safety 61/61, Angular 276/276 across 39 specs, Chromium 38/38,
+EF model-change detection clean, and both npm audits at 0 vulnerabilities.
+Runtime backend PID is `24080` and frontend PID is `46468`; required health and
+Tax/FX route probes returned HTTP 200. The architecture record is
+`docs/37_MESP-134_Tax_FX_Reporting_Currency_Revaluation_Architecture.md`.
+
 ## Historical MESP-133 AP / AR / Cash / Settlement verification-only HOLD 4 handoff - 25 August 2026
 
 MESP-133 is the current bounded implementation capability under Finance Epic

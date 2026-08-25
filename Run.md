@@ -8,6 +8,14 @@ routes under `/app/finance`. MESP-135 is inactive. Follow the normal restart,
 HTTP probe, and protected-asset rules below; no external provider or production
 credential is part of this local workflow.
 
+The implemented Tax/FX workspace is `/app/finance/tax-fx`; it is bilingual
+EN/AR with RTL support and consumes server-authoritative Tax, Currency,
+Exchange Rate, Company, Posting Rule, and evidence contracts. The bounded
+implementation was validated with Release 0/0, backend 1019/1019, SQL safety
+61/61, Angular 276/276, Chromium 38/38, clean EF model-change detection, and
+both npm audits at 0 vulnerabilities. The local runtime validated here is
+backend `5300` and frontend `4300`.
+
 Use the repository launcher for the normal Development flow. It selects a
 local API port, generates an ignored Angular proxy for that exact URL, seeds
 the Development account, waits for both applications, and prints the final

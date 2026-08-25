@@ -194,7 +194,14 @@ public sealed record FinanceAllocationRecord(
     Guid? JournalId,
     Guid CreatedBy,
     string? Reason,
-    byte[] Version);
+    byte[] Version,
+    decimal HistoricalFunctionalAmount = 0m,
+    decimal SettlementFunctionalAmount = 0m,
+    decimal RealizedFxAmount = 0m,
+    string? RealizedFxDirection = null,
+    Guid? RealizedFxJournalId = null,
+    Guid? RealizedFxRuleId = null,
+    int? RealizedFxRuleVersionNumber = null);
 
 public sealed record FinanceAgingRecord(
     Guid OpenItemId,

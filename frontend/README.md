@@ -3,7 +3,9 @@
 <!-- MESP-134-CURRENT-START -->
 > **MESP-134 Tax / FX / Reporting Currency / Revaluation - 26 August 2026.**
 > MESP-133 is accepted and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
-> New Finance surfaces must remain lazy-loaded, bilingual EN/AR with RTL, and
+> MESP-134 adds the lazy `/app/finance/tax-fx` workspace for monetary policy,
+> exact Tax/FX/Reporting evidence, revaluation lifecycle, reconciliation, and
+> blocked/evidence states. It remains bilingual EN/AR with RTL and
 > server-authoritative for Company, Tax, Currency, Exchange Rate, posting, and
 > evidence. MESP-134 is the only active capability; MESP-135 remains inactive.
 <!-- MESP-134-CURRENT-END -->

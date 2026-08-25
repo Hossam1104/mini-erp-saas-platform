@@ -58,7 +58,7 @@ public sealed class MasterDataRequestContext
     public TenantContext TenantContext => FoundationContext.TenantContext
         ?? throw new InvalidOperationException("A Master Data context must carry a trusted Tenant context.");
 
-    internal static MasterDataRequestContext FromFoundationContext(
+    public static MasterDataRequestContext FromFoundationContext(
         FoundationRequestContext foundationContext)
     {
         ArgumentNullException.ThrowIfNull(foundationContext);

@@ -31,6 +31,42 @@ public sealed class FinanceSettlementRemediationTests
     private static readonly Guid SupplierId = Guid.Parse("88888888-8888-8888-8888-888888888888");
 
     [Fact]
+    public void Payable_settlement_above_historical_carrying_value_is_realized_loss()
+    {
+        var result = FinanceSettlementPersistence.ResolveRealizedFx(FinanceOpenItemKind.Payable, 100m, 110m);
+
+        Assert.Equal(10m, result.Difference);
+        Assert.Equal("Loss", result.Direction);
+    }
+
+    [Fact]
+    public void Payable_settlement_below_historical_carrying_value_is_realized_gain()
+    {
+        var result = FinanceSettlementPersistence.ResolveRealizedFx(FinanceOpenItemKind.Payable, 100m, 90m);
+
+        Assert.Equal(-10m, result.Difference);
+        Assert.Equal("Gain", result.Direction);
+    }
+
+    [Fact]
+    public void Receivable_receipt_above_historical_carrying_value_is_realized_gain()
+    {
+        var result = FinanceSettlementPersistence.ResolveRealizedFx(FinanceOpenItemKind.Receivable, 100m, 110m);
+
+        Assert.Equal(10m, result.Difference);
+        Assert.Equal("Gain", result.Direction);
+    }
+
+    [Fact]
+    public void Receivable_receipt_below_historical_carrying_value_is_realized_loss()
+    {
+        var result = FinanceSettlementPersistence.ResolveRealizedFx(FinanceOpenItemKind.Receivable, 100m, 90m);
+
+        Assert.Equal(-10m, result.Difference);
+        Assert.Equal("Loss", result.Direction);
+    }
+
+    [Fact]
     public async Task Settlement_configuration_is_manual_only_and_preserves_manual_identity_on_edit()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

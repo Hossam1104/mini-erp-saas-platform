@@ -361,7 +361,9 @@ public sealed class SqlServerSafetyTests
                 [
                     "20260824125115_MESP132FinanceFoundation",
                     "20260824152331_MESP132SolFinanceCorrectnessRemediation",
-                    "20260824220208_MESP133ApArCashSettlement"
+                    "20260824220208_MESP133ApArCashSettlement",
+                    "20260825225409_MESP134TaxFxReportingRevaluation",
+                    "20260825232242_MESP134EvidenceSnapshots"
                 ],
                 (await finance.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await finance.Database.GetPendingMigrationsAsync());
@@ -941,7 +943,6 @@ public sealed class SqlServerSafetyTests
             DateTimeOffset.UtcNow);
         document.SetStatus(FinanceSettlementDocumentStatus.Submitted, ActorId, DateTimeOffset.UtcNow);
         document.SetStatus(FinanceSettlementDocumentStatus.Approved, ApproverId, DateTimeOffset.UtcNow);
-        document.SetStatus(FinanceSettlementDocumentStatus.Posted, ApproverId, DateTimeOffset.UtcNow);
         db.SettlementDocuments.Add(document);
         var firstItem = CreatePayableItem(context, scenario.CompanyId, firstItemId, scenario.SupplierId, "AP-ALLOC-1");
         firstItem.SetRecognition(FinanceOpenItemRecognitionState.Recognized, await CreatePostedPayableRecognitionJournalAsync(scenario, context, recognitionRule.Id, recognitionRule.CreditAccountId, firstItemId));
@@ -953,6 +954,16 @@ public sealed class SqlServerSafetyTests
             db.OpenItems.Add(secondOpenItem);
         }
         await db.SaveChangesAsync();
+        var posted = await scenario.Persistence.PostSettlementDocumentAsync(
+            context,
+            new FinanceSettlementActionCommand(
+                documentId,
+                document.Version,
+                null,
+                $"seed-post-{documentId:N}",
+                $"seed-post-{documentId:N}",
+                FinancePaymentMethodDirection.Payment));
+        Assert.True(posted.Succeeded, posted.Code);
         return (documentId, firstItemId, secondItemId);
     }
 
@@ -2898,6 +2909,7 @@ public sealed class SqlServerSafetyTests
     private static bool IsExpectedFinanceContention(Exception exception)
     {
         if (exception is DbUpdateConcurrencyException) return true;
+        if (exception is SqlException directSql && directSql.Number is 1205 or 2601 or 2627 or 3960) return true;
         if (exception is DbUpdateException dbUpdate
             && dbUpdate.InnerException is SqlException sql
             && sql.Errors.Cast<SqlError>().Any(error => error.Number is 1205 or 2601 or 2627 or 3960)) return true;
