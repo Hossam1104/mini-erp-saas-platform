@@ -51,6 +51,7 @@ public static class FinanceEndpoints
         endpoints.MapPost("/api/v1/finance/inventory-handoffs/{handoffId:guid}/process", async (Guid handoffId, HttpContext http, ITrustedRequestContextResolver resolver, FinanceAuthorizationService auth, IFinancePersistence persistence) => await ExecuteMutationAsync(http, resolver, auth, "finance.handoff.process", null, (context, key) => persistence.ProcessHandoffAsync(context, new FinanceHandoffProcessCommand(handoffId, key, Fingerprint(handoffId)), http.RequestAborted), FinanceResourceType.InventoryHandoff, handoffId)).WithName("finance.handoff.process").WithTags("Finance / Inventory Handoff").WithMetadata(new FoundationOperationMetadata(FoundationOperationCatalog.GetRequired("finance.handoff.process")));
 
         endpoints.MapFinanceSettlementEndpoints();
+        endpoints.MapFinanceMesp134Endpoints();
         return endpoints;
     }
 

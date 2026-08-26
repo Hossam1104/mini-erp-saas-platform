@@ -13,6 +13,7 @@ public static class FinanceModuleRegistration
         services.AddSingleton<IFinanceSourceApprovalPolicy, UnconfiguredFinanceSourceApprovalPolicy>();
         services.AddSingleton<IFinancePersistence, UnavailableFinancePersistence>();
         services.AddSingleton<IFinanceSettlementPersistence, UnavailableFinanceSettlementPersistence>();
+        services.AddSingleton<IFinanceMesp134Persistence, UnavailableFinanceMesp134Persistence>();
         services.AddSingleton<IFinanceSupplierInvoiceSourceProvider, UnavailableFinanceSupplierInvoiceSourceProvider>();
         services.AddSingleton<FinanceAuthorizationService>();
         return services;

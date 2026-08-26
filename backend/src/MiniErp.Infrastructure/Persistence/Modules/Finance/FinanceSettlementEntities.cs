@@ -183,7 +183,7 @@ internal sealed class FinanceAllocationEntity : FinanceEntity
     internal FinanceAllocationEntity(TenantId tenantId, FinanceAllocationReversalCommand command, FinanceAllocationEntity original, Guid companyId, Guid actorId) : base(tenantId, command.Id)
     {
         CompanyId = companyId; SettlementDocumentId = original.SettlementDocumentId; OpenItemId = original.OpenItemId; Amount = original.Amount; CurrencyCode = original.CurrencyCode;
-        FunctionalAmount = original.FunctionalAmount; AllocationDate = DateOnly.FromDateTime(DateTime.UtcNow); Status = FinanceAllocationStatus.Reversed; ReversalOfAllocationId = original.Id; CreatedBy = actorId; Reason = command.Reason;
+        FunctionalAmount = original.FunctionalAmount; HistoricalFunctionalAmount = original.HistoricalFunctionalAmount; SettlementFunctionalAmount = original.SettlementFunctionalAmount; RealizedFxAmount = original.RealizedFxAmount; RealizedFxDirection = original.RealizedFxDirection; RealizedFxRuleId = original.RealizedFxRuleId; RealizedFxRuleVersionNumber = original.RealizedFxRuleVersionNumber; AllocationDate = DateOnly.FromDateTime(DateTime.UtcNow); Status = FinanceAllocationStatus.Reversed; ReversalOfAllocationId = original.Id; CreatedBy = actorId; Reason = command.Reason;
     }
     internal Guid CompanyId { get; private set; }
     internal Guid SettlementDocumentId { get; private set; }
@@ -195,9 +195,18 @@ internal sealed class FinanceAllocationEntity : FinanceEntity
     internal FinanceAllocationStatus Status { get; private set; }
     internal Guid? ReversalOfAllocationId { get; private set; }
     internal Guid? JournalId { get; private set; }
+    internal decimal HistoricalFunctionalAmount { get; private set; }
+    internal decimal SettlementFunctionalAmount { get; private set; }
+    internal decimal RealizedFxAmount { get; private set; }
+    internal string? RealizedFxDirection { get; private set; }
+    internal Guid? RealizedFxJournalId { get; private set; }
+    internal Guid? RealizedFxRuleId { get; private set; }
+    internal int? RealizedFxRuleVersionNumber { get; private set; }
     internal Guid CreatedBy { get; private set; }
     internal string? Reason { get; private set; }
     internal void SetJournal(Guid journalId) { JournalId = journalId; TouchVersion(); }
+    internal void SetRealizedFx(decimal historicalFunctionalAmount, decimal settlementFunctionalAmount, decimal realizedFxAmount, string? direction, Guid? journalId, Guid? ruleId, int? ruleVersionNumber)
+    { HistoricalFunctionalAmount = historicalFunctionalAmount; SettlementFunctionalAmount = settlementFunctionalAmount; RealizedFxAmount = realizedFxAmount; RealizedFxDirection = direction; RealizedFxJournalId = journalId; RealizedFxRuleId = ruleId; RealizedFxRuleVersionNumber = ruleVersionNumber; TouchVersion(); }
 }
 
 #pragma warning restore CS1591

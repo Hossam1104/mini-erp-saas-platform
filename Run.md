@@ -3,10 +3,27 @@
 ## Current Finance capability
 
 MESP-133 is accepted and merged. MESP-134 (Tax, FX, Reporting Currency, and
-Revaluation) is the only active implementation capability and adds lazy Finance
-routes under `/app/finance`. MESP-135 is inactive. Follow the normal restart,
+Revaluation) is the only active implementation capability and is held in Draft
+PR #78 for Sol review; HOLD 2 authority is Sol `12080` with Finance
+reconciliation `12081` (HOLD 1 `12044` remains historical evidence). It adds
+lazy Finance routes under `/app/finance`.
+MESP-135 is inactive. Follow the normal restart,
 HTTP probe, and protected-asset rules below; no external provider or production
 credential is part of this local workflow.
+
+The implemented Tax/FX workspace is `/app/finance/tax-fx`; it is bilingual
+EN/AR with RTL support and consumes server-authoritative Tax, Currency,
+Exchange Rate, Company, Posting Rule, and evidence contracts. HOLD 1 adds
+immutable journal monetary evidence, source snapshots, posting-rule lineage,
+supplier-declared-tax fail-closed validation, and visible realized/unrealized/
+reporting reconciliation feeds. HOLD 2 corrects one-sided allocation monetary
+evidence, uses a real SQL revaluation-versus-allocation race, adds direct
+production-persistence regressions, and maps current Finance errors in EN/AR.
+The bounded implementation was validated with Release 0/0, backend 1052/1052,
+SQL safety 70/70, REST/OpenAPI/host 55/55, Angular 283/283, focused/full
+Chromium 10/10 and 42/42, clean EF model-change detection, and both npm audits
+at 0 vulnerabilities. The owner runtime validated here is backend `5300` and
+frontend `4300`.
 
 Use the repository launcher for the normal Development flow. It selects a
 local API port, generates an ignored Angular proxy for that exact URL, seeds

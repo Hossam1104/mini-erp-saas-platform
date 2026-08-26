@@ -241,6 +241,114 @@ export interface FinanceSettlementDocument {
   approvalRequirement?: string;
 }
 
+export interface FinanceMonetaryPolicy {
+  id: string;
+  companyId: string;
+  functionalCurrencyCode: string;
+  reportingCurrencyId: string | null;
+  reportingCurrencyCode: string | null;
+  roundingScale: number;
+  roundingMode: string;
+  revaluationEnabled: boolean;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  versionNumber: number;
+  version: string;
+}
+
+export interface FinanceExchangeRateEvidence {
+  exchangeRateId: string;
+  exchangeRateVersionId: string;
+  versionNumber: number;
+  sourceCurrencyCode: string;
+  targetCurrencyCode: string;
+  effectiveOn: string;
+  rate: number;
+  rateScale: number;
+  provenance: string;
+  sourceNotes: string | null;
+  referenceValue: string;
+}
+
+export interface FinanceMonetaryEvidence {
+  transactionCurrencyCode: string;
+  transactionAmount: number;
+  functionalCurrencyCode: string;
+  functionalAmount: number;
+  transactionToFunctionalRate: FinanceExchangeRateEvidence | null;
+  reportingCurrencyCode: string | null;
+  reportingAmount: number | null;
+  functionalToReportingRate: FinanceExchangeRateEvidence | null;
+  sourceUnroundedFunctionalAmount: number;
+  sourceUnroundedReportingAmount: number | null;
+  roundingScale: number;
+  roundingMode: string;
+  functionalRoundingDifference: number;
+  reportingRoundingDifference: number | null;
+  reportingEvidenceStatus: string;
+}
+
+export interface FinanceTaxEffect {
+  id: string;
+  companyId: string;
+  openItemId: string;
+  kind: string;
+  taxId: string;
+  taxCode: string;
+  taxRateVersionId: string;
+  taxRateVersionNumber: number;
+  taxEffectiveOn: string;
+  taxRatePercentage: number;
+  taxableBase: number;
+  taxAmount: number;
+  transactionCurrencyCode: string;
+  functionalAmount: number;
+  functionalCurrencyCode: string;
+  journalId: string;
+  reversalJournalId: string | null;
+  postingRuleId: string;
+  postingRuleVersionNumber: number;
+  monetaryEvidence: FinanceMonetaryEvidence;
+  status: string;
+  createdAt: string;
+  version: string;
+}
+
+export interface FinanceRevaluationLine {
+  id: string;
+  batchId: string;
+  companyId: string;
+  sourceId: string;
+  sourceType: string;
+  asOfDate: string;
+  transactionCurrencyCode: string;
+  outstandingTransactionAmount: number;
+  historicalFunctionalAmount: number;
+  revaluedFunctionalAmount: number;
+  difference: number;
+  direction: string;
+  exchangeRateEvidence: FinanceExchangeRateEvidence;
+  journalId: string | null;
+  reversalJournalId: string | null;
+  status: string;
+  version: string;
+  monetaryEvidence: FinanceMonetaryEvidence | null;
+  sourceSnapshotFingerprint: string | null;
+  postingRuleId: string | null;
+  postingRuleVersionNumber: number | null;
+  reconciliationStatus: string;
+}
+
+export interface FinanceRevaluationBatch {
+  id: string;
+  companyId: string;
+  asOfDate: string;
+  scope: string;
+  status: string;
+  lines: FinanceRevaluationLine[];
+  version: string;
+}
+
 export interface FinanceApSourceReady {
   sourceEvidenceId: string;
   companyId: string;
@@ -303,6 +411,64 @@ export interface FinanceAllocation {
   reversalOfAllocationId: string | null;
   journalId: string | null;
   version: string;
+  historicalFunctionalAmount?: number;
+  settlementFunctionalAmount?: number;
+  realizedFxAmount?: number;
+  realizedFxDirection?: string | null;
+  realizedFxJournalId?: string | null;
+  realizedFxRuleId?: string | null;
+  realizedFxRuleVersionNumber?: number | null;
+}
+
+export interface FinanceFxReconciliation {
+  allocationId: string;
+  companyId: string;
+  realizedDifference: number;
+  postedDifference: number;
+  direction: string;
+  status: string;
+  journalId: string | null;
+  openItemId: string | null;
+  settlementDocumentId: string | null;
+  reversalJournalId: string | null;
+  expectedAccountId: string | null;
+  ruleId: string | null;
+  ruleVersionNumber: number | null;
+  statusReason: string | null;
+}
+
+export interface FinanceUnrealizedFxReconciliation {
+  lineId: string;
+  batchId: string;
+  companyId: string;
+  sourceId: string;
+  sourceType: string;
+  expectedAmount: number;
+  postedAmount: number;
+  direction: string;
+  status: string;
+  journalId: string | null;
+  reversalJournalId: string | null;
+  expectedAccountId: string | null;
+  postingRuleId: string | null;
+  postingRuleVersionNumber: number | null;
+  statusReason: string | null;
+}
+
+export interface FinanceReportingCurrencyReconciliation {
+  journalId: string;
+  companyId: string;
+  functionalCurrencyCode: string;
+  functionalAmount: number;
+  reportingCurrencyCode: string | null;
+  reportingAmount: number | null;
+  expectedReportingAmount: number | null;
+  exchangeRateId: string | null;
+  exchangeRateVersionId: string | null;
+  exchangeRateVersionNumber: number | null;
+  status: string;
+  effectId: string | null;
+  statusReason: string | null;
 }
 
 export interface FinanceAgingRow {

@@ -31,6 +31,13 @@ public static class FinancePersistenceServiceCollectionExtensions
             provider.GetRequiredService<IMasterDataCurrencyPaymentTermPersistence>(),
             provider.GetRequiredService<IFinanceSupplierInvoiceSourceProvider>(),
             provider.GetRequiredService<IFinanceSourceApprovalPolicy>()));
+        services.AddSingleton<IFinanceMesp134Persistence>(provider => new FinanceMesp134Persistence(
+            optionsBuilder.Options,
+            provider.GetRequiredService<IFinanceCompanyProvider>(),
+            provider.GetRequiredService<IMasterDataCurrencyPaymentTermPersistence>(),
+            provider.GetRequiredService<IMasterDataExchangeRatePersistence>(),
+            provider.GetRequiredService<MasterDataTaxService>(),
+            provider.GetRequiredService<IFinanceSupplierInvoiceSourceProvider>()));
         services.AddSingleton<IFinanceSupplierInvoiceSourceProvider>(provider => new ProcurementFinanceSupplierInvoiceSourceProvider(
             provider.GetRequiredService<IPurchaseInvoiceHandoffPersistence>(),
             provider.GetRequiredService<IPurchaseInvoiceMatchPersistence>(),

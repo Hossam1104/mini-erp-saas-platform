@@ -155,6 +155,33 @@ public sealed class RestFoundationTests : IClassFixture<RestFoundationTests.ApiF
     }
 
     [Fact]
+    public void Mesp134_tax_fx_and_revaluation_operations_are_catalogued_and_tenant_scoped()
+    {
+        var operationIds = new[]
+        {
+            "finance.monetary-policy.list", "finance.monetary-policy.create",
+            "finance.tax-accounting.list", "finance.tax-accounting.preview", "finance.tax-accounting.post",
+            "finance.tax-accounting.reverse", "finance.tax-accounting.reconciliation",
+            "finance.revaluation.list", "finance.revaluation.detail", "finance.revaluation.create",
+            "finance.revaluation.calculate", "finance.revaluation.post", "finance.revaluation.reverse",
+            "finance.revaluation.reconciliation"
+        };
+        var operations = operationIds.Select(FoundationOperationCatalog.GetRequired).ToArray();
+        Assert.All(operations, operation =>
+        {
+            Assert.Equal(FoundationOperationVisibility.Public, operation.Visibility);
+            Assert.Equal(FoundationScopePolicy.Tenant, operation.ScopePolicy);
+            Assert.Equal(FoundationSecurityProfile.OrdinaryMembership, operation.SecurityProfile);
+        });
+        Assert.All(operations.Where(operation => operation.IsUnsafe), operation =>
+        {
+            Assert.True(operation.RequiresAntiforgery, operation.OperationId);
+            Assert.True(operation.RequiresMandatoryAudit, operation.OperationId);
+            Assert.Equal(FoundationIdempotencyPolicy.Required, operation.Idempotency);
+        });
+    }
+
+    [Fact]
     public async Task Scalar_reference_is_available_only_in_the_non_production_test_host()
     {
         using var client = factory.CreateClient();

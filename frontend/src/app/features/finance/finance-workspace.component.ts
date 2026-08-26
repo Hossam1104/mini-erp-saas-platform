@@ -73,7 +73,7 @@ const copy: Record<string, Bilingual> = {
     <section class="finance-page" data-testid="finance-workspace">
       <header class="finance-header">
         <div><p class="eyebrow">{{ text('kicker') }}</p><h1>{{ text('title') }}</h1><p class="lede">{{ text('lead') }}</p></div>
-        <div class="header-actions"><a class="button button--secondary" routerLink="/app/inventory/valuation">{{ text('handoffs') }}</a><button class="button button--primary" type="button" (click)="load()" [disabled]="loading()">{{ text('refresh') }}</button></div>
+        <div class="header-actions"><a class="button button--secondary" routerLink="/app/inventory/valuation">{{ text('handoffs') }}</a><a class="button button--secondary" routerLink="/app/finance/tax-fx">{{ language.language() === 'ar' ? 'الضريبة / العملات' : 'Tax / FX' }}</a><button class="button button--primary" type="button" (click)="load()" [disabled]="loading()">{{ text('refresh') }}</button></div>
       </header>
 
       @if (companies().length === 0 && !loading()) { <section class="finance-empty" data-testid="finance-no-company"><h2>{{ text('noCompany') }}</h2><p>{{ text('lead') }}</p></section> }

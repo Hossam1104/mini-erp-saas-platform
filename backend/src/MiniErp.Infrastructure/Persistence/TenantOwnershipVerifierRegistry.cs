@@ -227,6 +227,7 @@ internal sealed class TenantOwnershipVerifierRegistry
             FinanceTenantOwnershipVerifier.For<FinancePostingRuleEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceJournalEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceJournalLineEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceJournalMonetaryEvidenceEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceAuditEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceIdempotencyEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceSourceEffectEntity>(),
@@ -234,7 +235,11 @@ internal sealed class TenantOwnershipVerifierRegistry
             FinanceTenantOwnershipVerifier.For<FinanceCashAccountEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceOpenItemEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceSettlementDocumentEntity>(),
-            FinanceTenantOwnershipVerifier.For<FinanceAllocationEntity>()
+            FinanceTenantOwnershipVerifier.For<FinanceAllocationEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceMonetaryPolicyEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceTaxAccountingEffectEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceRevaluationBatchEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceRevaluationLineEntity>()
         ]);
     }
 

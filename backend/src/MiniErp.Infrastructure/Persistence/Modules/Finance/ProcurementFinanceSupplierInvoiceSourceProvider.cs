@@ -75,6 +75,10 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
             return null;
         }
         var evidence = handoff.DeclaredEvidence;
+        var declaredTaxes = evidence?.Lines
+            .Where(line => line.TaxCode is not null || line.TaxRatePercentage is not null || line.TaxAmount is not null || line.NetAmount is not null)
+            .Select(line => new FinanceSupplierDeclaredTaxRecord(line.TaxCode, line.TaxRatePercentage, line.TaxAmount, line.NetAmount))
+            .ToArray();
         var amount = evidence?.GrossAmount ?? evidence?.Lines.Sum(line => line.GrossAmount ?? line.NetAmount ?? 0m) ?? handoff.Lines.Sum(line => line.LineAmount);
         if (amount <= 0m) return null;
         var currency = evidence?.CurrencyCode ?? handoff.CurrencyCode;
@@ -136,7 +140,11 @@ internal sealed class ProcurementFinanceSupplierInvoiceSourceProvider(
             match.Id.ToString("N"),
             handoff.SupplierCode,
             handoff.SupplierName,
-            match.Result);
+            match.Result,
+            evidence?.CurrencyCode,
+            evidence?.SupplierInvoiceDate,
+            evidence?.TaxAmount,
+            declaredTaxes);
     }
 
     public async Task<IReadOnlyList<FinanceSupplierInvoiceSourceRecord>> ListAsync(
