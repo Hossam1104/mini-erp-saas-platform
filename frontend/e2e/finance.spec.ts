@@ -75,6 +75,40 @@ async function setupFinanceRoutes(page: Page): Promise<void> {
   await page.route('**/api/v1/finance/settlement/reconciliation**', (route) => route.fulfill({ json: [{ scope: 'Settlement', subledgerAmount: 0, postedJournalAmount: 0, difference: 0, status: 'Reconciled' }] }));
 }
 
+async function setupTaxFxRoutes(page: Page): Promise<{ requests: Record<string, Record<string, unknown> | undefined> }> {
+  await setupFinanceRoutes(page);
+  const requests: Record<string, Record<string, unknown> | undefined> = {};
+  const taxEffect = {
+    id: 'tax-effect-a', companyId: 'company-a', openItemId: 'open-item-a', kind: 'Payable', taxId: 'tax-a', taxCode: 'VAT15',
+    taxRateVersionId: 'tax-rate-a', taxRateVersionNumber: 1, taxEffectiveOn: '2026-01-01', taxRatePercentage: 15,
+    taxableBase: 1000, taxAmount: 150, transactionCurrencyCode: 'SAR', functionalAmount: 150, functionalCurrencyCode: 'SAR',
+    journalId: 'journal-tax-a', reversalJournalId: null, postingRuleId: 'rule-tax-a', postingRuleVersionNumber: 1,
+    monetaryEvidence: { transactionCurrencyCode: 'SAR', transactionAmount: 150, functionalCurrencyCode: 'SAR', functionalAmount: 150, reportingCurrencyCode: 'USD', reportingAmount: 40, transactionToFunctionalRate: null, functionalToReportingRate: { id: 'rate-usd-sar', versionId: 'rate-version-3', versionNumber: 3, rate: 3.75 }, sourceUnroundedFunctionalAmount: 150, sourceUnroundedReportingAmount: 40, roundingScale: 2, roundingMode: 'AwayFromZero', functionalRoundingDifference: 0, reportingRoundingDifference: 0, reportingEvidenceStatus: 'Captured' },
+    status: 'Posted', createdAt: '2026-08-26T00:00:00Z', version: 'AQ==',
+  };
+  const batch = { id: 'batch-a', companyId: 'company-a', asOfDate: '2026-08-25', scope: 'AP_AR_AND_UNALLOCATED_SETTLEMENTS', status: 'Draft', lines: [], version: 'AQ==' };
+  let batchStatus = 'Draft';
+
+  await page.route('**/api/v1/master-data/taxes**', (route) => route.fulfill({ json: [{ id: 'tax-a', tenantId: 'tenant-a', lifecycleState: 'Active', version: 'AQ==', code: 'VAT15', englishName: 'VAT 15%', arabicName: 'ضريبة 15%', currentVersionNumber: 1, versions: [{ id: 'tax-rate-a', versionNumber: 1, effectiveFrom: '2026-01-01', effectiveTo: null, ratePercentage: 15 }] }] }));
+  await page.route('**/api/v1/finance/monetary-policy**', (route) => route.fulfill({ json: [{ id: 'policy-a', tenantId: 'tenant-a', companyId: 'company-a', functionalCurrencyCode: 'SAR', reportingCurrencyId: 'currency-usd', reportingCurrencyCode: 'USD', roundingScale: 2, roundingMode: 'AwayFromZero', revaluationEnabled: true, effectiveFrom: '2026-01-01', effectiveTo: null, versionNumber: 1, version: 'AQ==' }] }));
+  await page.route('**/api/v1/finance/tax-accounting/preview', async (route) => { requests.taxPreview = route.request().postDataJSON() as Record<string, unknown>; await route.fulfill({ json: taxEffect }); });
+  await page.route(/\/api\/v1\/finance\/tax-accounting(?:\?.*)?$/, async (route) => { if (route.request().method() === 'GET') return route.fulfill({ json: [taxEffect] }); requests.taxPost = route.request().postDataJSON() as Record<string, unknown>; await route.fulfill({ json: taxEffect }); });
+  await page.route('**/api/v1/finance/tax-accounting/*/reverse', async (route) => { requests.taxReverse = route.request().postDataJSON() as Record<string, unknown>; await route.fulfill({ json: { ...taxEffect, reversalJournalId: 'journal-tax-reversal' } }); });
+  await page.route('**/api/v1/finance/revaluation**', async (route) => {
+    const method = route.request().method();
+    if (method === 'GET') return route.fulfill({ json: [{ ...batch, status: batchStatus }] });
+    if (method === 'POST') { requests.revaluationCreate = route.request().postDataJSON() as Record<string, unknown>; batchStatus = 'Draft'; return route.fulfill({ json: { ...batch, status: batchStatus } }); }
+    return route.continue();
+  });
+  await page.route(/\/api\/v1\/finance\/revaluation\/[^/]+\/calculate$/, async (route) => { requests.revaluationCalculate = route.request().postDataJSON() as Record<string, unknown>; batchStatus = 'Calculated'; await route.fulfill({ json: { ...batch, status: batchStatus } }); });
+  await page.route(/\/api\/v1\/finance\/revaluation\/[^/]+\/post$/, async (route) => { requests.revaluationPost = route.request().postDataJSON() as Record<string, unknown>; batchStatus = 'Posted'; await route.fulfill({ json: { ...batch, status: batchStatus } }); });
+  await page.route(/\/api\/v1\/finance\/revaluation\/[^/]+\/reverse$/, async (route) => { requests.revaluationReverse = route.request().postDataJSON() as Record<string, unknown>; batchStatus = 'Reversed'; await route.fulfill({ json: { ...batch, status: batchStatus } }); });
+  await page.route('**/api/v1/finance/fx-reconciliation**', (route) => route.fulfill({ json: [{ allocationId: 'allocation-a', companyId: 'company-a', realizedDifference: 12.5, postedDifference: 12.5, direction: 'Gain', status: 'Reconciled', journalId: 'journal-fx-a', openItemId: 'open-item-a', settlementDocumentId: null, reversalJournalId: null, expectedAccountId: 'account-fx', ruleId: 'rule-fx', ruleVersionNumber: 1, statusReason: null }] }));
+  await page.route('**/api/v1/finance/unrealized-fx-reconciliation**', (route) => route.fulfill({ json: [{ lineId: 'line-a', batchId: 'batch-a', companyId: 'company-a', sourceId: 'open-item-a', sourceType: 'AR', expectedAmount: 8.25, postedAmount: 8.25, direction: 'Loss', status: 'Reconciled', journalId: 'journal-unrealized-a', reversalJournalId: null, expectedAccountId: 'account-fx', postingRuleId: 'rule-fx', postingRuleVersionNumber: 1, statusReason: null }] }));
+  await page.route('**/api/v1/finance/reporting-currency-reconciliation**', (route) => route.fulfill({ json: [{ journalId: 'journal-tax-a', companyId: 'company-a', functionalCurrencyCode: 'SAR', functionalAmount: 150, reportingCurrencyCode: 'USD', reportingAmount: 40, expectedReportingAmount: 40, exchangeRateId: 'rate-usd-sar', exchangeRateVersionId: 'rate-version-3', exchangeRateVersionNumber: 3, status: 'Reconciled', effectId: 'tax-effect-a', statusReason: null }] }));
+  return { requests };
+}
+
 test('Finance workspace renders Company books, periods, and bounded GL evidence', async ({ page }) => {
   await setupFinanceRoutes(page);
   await page.goto('/app/finance');
@@ -159,4 +193,65 @@ test('Manual AR resolves exact MESP-120 non-functional currency evidence before 
     companyId: 'company-a', customerId: 'customer-a', paymentTermId: 'term-a', currencyCode: 'USD', amount: 100,
     exchangeRate: 3.75, exchangeRateId: 'rate-usd-sar', exchangeRateVersionId: 'rate-version-3', exchangeRateVersionNumber: 3,
   });
+});
+
+test('Tax workspace previews, posts, and reverses with source and reason evidence', async ({ page }) => {
+  const { requests } = await setupTaxFxRoutes(page);
+  await page.goto('/app/finance/tax-fx');
+  const workspace = page.locator('[data-testid="finance-tax-fx-workspace"]');
+  await expect(workspace).toBeVisible();
+  await workspace.getByRole('button', { name: 'Tax accounting' }).click();
+  await workspace.locator('select[name="source"]').selectOption('open-item-a');
+  await workspace.locator('select[name="tax"]').selectOption('tax-a');
+  await workspace.locator('input[name="base"]').fill('1000');
+  await workspace.getByRole('button', { name: 'Calculate preview' }).click();
+  await expect(workspace).toContainText('40 USD');
+  await workspace.getByRole('button', { name: 'Post' }).click();
+  await workspace.locator('input[name="taxReverseReason"]').fill('Corrected declared tax evidence');
+  await workspace.getByRole('button', { name: 'Reverse' }).click();
+  await expect.poll(() => requests.taxPreview).toMatchObject({ companyId: 'company-a', openItemId: 'open-item-a', taxId: 'tax-a', taxableBase: 1000, sourceLineage: 'finance-tax-workspace' });
+  expect(requests.taxPost).toMatchObject({ companyId: 'company-a', openItemId: 'open-item-a', taxId: 'tax-a', taxableBase: 1000, sourceLineage: 'finance-tax-workspace' });
+  expect(requests.taxReverse).toEqual({ reason: 'Corrected declared tax evidence' });
+});
+
+test('Tax/FX workspace exposes realized, unrealized, and reporting reconciliation evidence', async ({ page }) => {
+  await setupTaxFxRoutes(page);
+  await page.goto('/app/finance/tax-fx');
+  const workspace = page.locator('[data-testid="finance-tax-fx-workspace"]');
+  await workspace.getByRole('button', { name: 'Revaluation' }).click();
+  await expect(workspace.locator('[data-testid="realized-fx-reconciliation"]')).toContainText('12.50');
+  await expect(workspace.locator('[data-testid="realized-fx-reconciliation"]')).toContainText('journal-fx-a');
+  await expect(workspace.locator('[data-testid="unrealized-fx-reconciliation"]')).toContainText('8.25');
+  await expect(workspace.locator('[data-testid="reporting-currency-reconciliation"]')).toContainText('40 USD');
+  await expect(workspace).toContainText('Reconciled');
+});
+
+test('Revaluation workspace runs the controlled draft, calculate, post, and reverse journey', async ({ page }) => {
+  const { requests } = await setupTaxFxRoutes(page);
+  await page.goto('/app/finance/tax-fx');
+  const workspace = page.locator('[data-testid="finance-tax-fx-workspace"]');
+  await workspace.getByRole('button', { name: 'Revaluation' }).click();
+  await expect(workspace.locator('select[name="scope"]')).toBeDisabled();
+  await expect(workspace.locator('select[name="scope"]')).toHaveValue('AP_AR_AND_UNALLOCATED_SETTLEMENTS');
+  await workspace.locator('input[name="asOfDate"]').fill('2026-08-25');
+  await workspace.getByRole('button', { name: 'Create draft' }).click();
+  await expect.poll(() => requests.revaluationCreate).toEqual({ companyId: 'company-a', asOfDate: '2026-08-25', scope: 'AP_AR_AND_UNALLOCATED_SETTLEMENTS' });
+  await workspace.getByRole('button', { name: 'Calculate' }).click();
+  await expect.poll(() => requests.revaluationCalculate).toEqual({});
+  await workspace.getByRole('button', { name: 'Post' }).click();
+  await expect.poll(() => requests.revaluationPost).toEqual({});
+  await workspace.locator('input[name="revaluationReverseReason"]').fill('Re-run after source correction');
+  await workspace.getByRole('button', { name: 'Reverse' }).click();
+  await expect.poll(() => requests.revaluationReverse).toEqual({ reason: 'Re-run after source correction' });
+});
+
+test('Tax/FX workspace renders meaningful Arabic labels and RTL direction', async ({ page }) => {
+  await setupTaxFxRoutes(page);
+  await page.goto('/app/finance/tax-fx');
+  const workspace = page.locator('[data-testid="finance-tax-fx-workspace"]');
+  await page.locator('.language-button').click();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(workspace.getByRole('heading', { level: 1 })).toContainText('الضرائب');
+  await workspace.getByRole('button', { name: 'إعادة التقييم' }).click();
+  await expect(workspace).toContainText('تسوية فروق العملة المحققة');
 });

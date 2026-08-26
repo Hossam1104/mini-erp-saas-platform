@@ -20,13 +20,18 @@ Company-owned monetary policy, exact MESP-120 transaction/functional/Reporting
 evidence and rounding, MESP-119 tax reclassification, realized FX allocation
 and exact reversal, controlled AP/AR/unallocated revaluation batches, Finance
 reconciliation, protected REST/OpenAPI operations, and a lazy bilingual EN/AR
-RTL Tax/FX workspace. Complete tax evidence snapshots and revaluation rate
-validity bounds are persisted; no current-rate backfill or external/statutory
-provider behavior is introduced. Final validation is Release 0/0, backend
-1019/1019, SQL safety 61/61, Angular 276/276 across 39 specs, Chromium 38/38,
-EF model-change detection clean, and both npm audits at 0 vulnerabilities.
-Runtime backend PID is `24080` and frontend PID is `46468`; required health and
-Tax/FX route probes returned HTTP 200. The architecture record is
+RTL Tax/FX workspace. HOLD 1 remediation additionally persists immutable
+journal monetary evidence, source snapshots, posting-rule lineage, supplier-
+declared-tax evidence, and visible realized/unrealized/reporting reconciliation
+feeds, with provider-realistic SQL concurrency coverage. Complete tax evidence
+snapshots and revaluation rate validity bounds are persisted; no current-rate
+backfill or external/statutory provider behavior is introduced. Final
+validation is Release 0/0, backend 1036/1036, SQL safety 70/70, Angular
+283/283 across 39 specs, focused Finance Chromium 10/10, full Chromium 42/42,
+REST/OpenAPI/host 55/55, EF model-change detection clean, and both npm audits
+at 0 vulnerabilities. Isolated loopback SQLite runtime backend PID is `46764`
+on port 5301 and frontend PID is `19960` on port 4301; health, OpenAPI, root,
+`main.js`, and Tax/FX route probes returned HTTP 200. The architecture record is
 `docs/37_MESP-134_Tax_FX_Reporting_Currency_Revaluation_Architecture.md`.
 
 ## Historical MESP-133 AP / AR / Cash / Settlement verification-only HOLD 4 handoff - 25 August 2026

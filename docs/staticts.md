@@ -13,7 +13,7 @@
   Draft, Open, Unmerged PR for GPT-5.6 Sol review. MESP-135 remains inactive.
 <!-- MESP-134-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-26 02:34 +03:00
+**Last Updated:** 2026-08-26 10:37 +03:00
 
 ## Current authoritative fast-track snapshot - 26 August 2026 (MESP-134 active)
 
@@ -76,7 +76,10 @@ Reporting evidence and rounding, reclassifies tax through configured Finance
 Posting Rules, removes the bounded realized-FX settlement limitation using
 historical AP/AR and actual posted settlement lineage, and provides Draft →
 Calculated → Posted → Reversed revaluation batches for eligible foreign AP,
-AR, and unallocated settlement balances. Complete tax evidence snapshots and
+AR, and unallocated settlement balances. HOLD 1 additionally persists
+immutable journal monetary evidence, source snapshots, posting-rule lineage,
+supplier-declared-tax evidence, and visible realized/unrealized/reporting
+reconciliation feeds. Complete tax evidence snapshots and
 rate validity bounds are persisted; historical values are never recomputed
 from current rates. Mutations have Tenant/Company authorization, optimistic
 concurrency, idempotency, audit, exact reversal, reconciliation, and explicit
@@ -88,10 +91,10 @@ Wafra-specific core behavior remain outside this bounded capability.
 | Current control | Verified position |
 |---|---|
 | Branch / PR | `feat/MESP-134-tax-fx-revaluation`; Draft PR #78 is Open and Unmerged against `main`; awaiting GPT-5.6 Sol review. |
-| Validation | Release build 0 warnings/0 errors; disposable LocalDB backend 1019/1019 with 0 failures and 0 skips; SQL safety 61/61 including migration application and allocation-vs-settlement-reversal contention; Angular 276/276 across 39 specs; full Chromium 38/38; EF model-change detection clean; initial 496.44 kB; Finance/GL lazy 34.52 kB; Tax/FX lazy 27.73 kB; settlement 56.04 kB; both npm audits 0 vulnerabilities. |
-| Runtime | Backend `http://localhost:5300` PID `24080` and frontend `http://localhost:4300` PID `46468`; backend `/health` HTTP 200; frontend `/`, `main.js`, `/app/finance`, and `/app/finance/tax-fx` returned HTTP 200. |
-| REST/OpenAPI/host | Focused REST/OpenAPI/host-security MESP-134 contract suite 36/36; full backend includes the route catalogue, exact antiforgery/idempotency/If-Match seams, and Tenant-ownership verification. |
-| EF migrations | `20260825225409_MESP134TaxFxReportingRevaluation`; `20260825232242_MESP134EvidenceSnapshots`; no pending model changes. |
+| Validation | Release build 0 warnings/0 errors; disposable LocalDB backend 1036/1036 with 0 failures and 0 skips; SQL safety 70/70 including migration application and nine MESP-134 provider-realistic races; Angular 283/283 across 39 specs; focused Finance Chromium 10/10; full Chromium 42/42; EF model-change detection clean; initial 496.44 kB; Finance/GL lazy 34.52 kB; Tax/FX lazy 37.39 kB; settlement 56.04 kB; both npm audits 0 vulnerabilities. |
+| Runtime | Isolated loopback SQLite backend `http://localhost:5301` PID `46764` and frontend `http://localhost:4301` PID `19960`; backend health/OpenAPI and frontend `/`, `main.js`, and `/app/finance/tax-fx` returned HTTP 200. |
+| REST/OpenAPI/host | Focused REST/OpenAPI/host-security MESP-134 contract suite 55/55; full backend includes the route catalogue, exact antiforgery/idempotency/If-Match seams, and Tenant-ownership verification. |
+| EF migrations | `20260825225409_MESP134TaxFxReportingRevaluation`; `20260825232242_MESP134EvidenceSnapshots`; `20260826001524_MESP134Hold1CorrectiveEvidence`; no pending model changes. |
 | Delivery boundaries | No external bank/provider integration, bank-feed balance, statutory VAT/ZATCA/FATOORA, Sales lifecycle, statements, fixed assets, payroll, treasury, generic Reporting, migration/cutover, or Wafra-specific core behavior. Fast-track 17/26 = 65.4% and production-readiness ~47% overall / ~41% Procurement/P2P remain unchanged pending acceptance/merge. |
 | Next exact session | GPT-5.6 Sol independently reviews the single Draft MESP-134 PR and decides acceptance; do not merge, mark Ready, activate MESP-135, write Jira, or invoke Opus automatically. |
 
@@ -249,6 +252,7 @@ production readiness. `frontend/assets` remains untouched.
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
+| 2026-08-26 | MESP-134 GPT-5.6 Sol HOLD 1 remediation completed on Draft PR #78: immutable journal monetary evidence, source snapshots, posting-rule lineage, supplier-declared-tax fail-closed validation, visible realized/unrealized/reporting reconciliation feeds, and nine provider-realistic SQL concurrency scenarios were added within the bounded capability. | ~47% | ~41% | Release 0/0; disposable LocalDB backend 1036/1036 with 0 failures/0 skips; SQL safety 70/70; REST/OpenAPI/host 55/55; Angular 283/283 across 39 specs; focused/full Chromium 10/10 and 42/42; initial 496.44 kB / Finance 34.52 kB / Tax-FX 37.39 kB / settlement 56.04 kB; EF model-change detection clean; npm audit 0 vulnerabilities; isolated SQLite runtime backend/frontend 46764/19960 on 5301/4301 with required probes HTTP 200; fast-track remains 17/26 = 65.4%; no Jira writes, merge, Ready transition, MESP-135 activation, or Opus review; assets untouched; stop for Sol acceptance. |
 | 2026-08-26 | MESP-134 bounded implementation completed on `feat/MESP-134-tax-fx-revaluation`: Finance monetary policy and exact MESP-120 Reporting Currency evidence, MESP-119 tax reclassification, realized FX allocation/reversal, controlled AP/AR/unallocated revaluation, reconciliation, REST/OpenAPI, migrations, and bilingual EN/AR RTL Tax/FX workspace. | ~47% | ~41% | Release 0/0; disposable LocalDB backend 1019/1019; SQL safety 61/61; Angular 276/276 across 39 specs; full Chromium 38/38; initial 496.44 kB / Finance 34.52 kB / Tax-FX 27.73 kB / settlement 56.04 kB; EF model-change detection clean; both npm audits 0 vulnerabilities; runtime backend/frontend 24080/46468 with required HTTP 200 probes; fast-track remains 17/26 = 65.4%; no Jira writes, merge, Ready transition, MESP-135 activation, or Opus review; assets untouched. |
 | 2026-08-25 | MESP-133 verification-only HOLD 4 completed on Draft PR #77 from exact start `30ea4a04e5fb120a292083edc03073e37b278b11`; no production code changed. The real `ProcurementFinanceSupplierInvoiceSourceProvider` now has direct active/missing/inactive/cross-Tenant/date-basis regressions, and Finance persistence proves recognition Posting Rule A→B history from actual AP Control A/B journal lines. | ~47% | ~41% | Test commit `7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`; focused Finance 16/16; REST/OpenAPI/host 54/54; backend 1014/1014, 0 failed/0 skipped; SQL 61/61; Angular 274/274; focused/full Chromium 6/6 and 38/38; Release 0/0; initial 496.44 kB / Finance 34.31 kB / settlement 56.04 kB; audits 0 vulnerabilities; runtime backend/frontend 32024/1164 with required HTTP 200 probes; Sol authority HOLD 4 `11967` / `11968`; no Jira writes, merge, Ready transition, MESP-134/MESP-135 activation, or Opus; assets untouched. |
 | 2026-08-25 | MESP-133 Sol HOLD 3 final micro-remediation completed on Draft PR #77 from exact HOLD 3 start `452441084a44d1a8a0a1d8db3a0d679aac5ff550`; HOLD 3 implementation `a9c46a27349cb617770277699ad74456262b81c4`. AP source readiness now validates authoritative Supplier Tenant/lifecycle/Company/source identity and fails closed without CreatedAt fallback; Manual AR and settlements resolve exact MESP-120 document-date Exchange Rate evidence and omit FX fields for functional currency; direct historical AP/AR reconciliation, allocation/reversal, and supplier fail-closed regressions are present. | ~47% | ~41% | No headline increase before review/merge; REST/OpenAPI/host 54/54; backend 1009/1009; SQL safety 61/61; Angular 274/274 with focused workspace 15/15; focused Finance Chromium 6/6, full Chromium 38/38; build/audits clean; bundle 496.44 kB initial / 34.31 kB Finance/GL lazy / 56.04 kB settlement lazy; runtime/API probes HTTP 200; Jira authority HOLD 3 `11963` / Finance Epic `11964` plus prior `11926`/`11927`/`11928`; no Jira writes, merge, Ready transition, MESP-134/MESP-135 activation, or Opus review; assets untouched. |

@@ -20,6 +20,8 @@ public interface IFinanceMesp134Persistence
     Task<FinanceOperationResult<FinanceRevaluationBatchRecord>> ReverseRevaluationBatchAsync(FinanceRequestContext context, FinanceRevaluationActionCommand command, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FinanceTaxAccountingReconciliationRecord>> ReconcileTaxAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FinanceFxReconciliationRecord>> ReconcileFxAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<FinanceUnrealizedFxReconciliationRecord>> ReconcileUnrealizedFxAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<FinanceReportingCurrencyReconciliationRecord>> ReconcileReportingCurrencyAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default);
 }
 
 public sealed class UnavailableFinanceMesp134Persistence : IFinanceMesp134Persistence
@@ -41,6 +43,8 @@ public sealed class UnavailableFinanceMesp134Persistence : IFinanceMesp134Persis
     public Task<FinanceOperationResult<FinanceRevaluationBatchRecord>> ReverseRevaluationBatchAsync(FinanceRequestContext c, FinanceRevaluationActionCommand x, CancellationToken t = default) => Task.FromResult(Failure<FinanceRevaluationBatchRecord>());
     public Task<IReadOnlyList<FinanceTaxAccountingReconciliationRecord>> ReconcileTaxAsync(FinanceRequestContext c, Guid x, CancellationToken t = default) => EmptyList<FinanceTaxAccountingReconciliationRecord>();
     public Task<IReadOnlyList<FinanceFxReconciliationRecord>> ReconcileFxAsync(FinanceRequestContext c, Guid x, CancellationToken t = default) => EmptyList<FinanceFxReconciliationRecord>();
+    public Task<IReadOnlyList<FinanceUnrealizedFxReconciliationRecord>> ReconcileUnrealizedFxAsync(FinanceRequestContext c, Guid x, CancellationToken t = default) => EmptyList<FinanceUnrealizedFxReconciliationRecord>();
+    public Task<IReadOnlyList<FinanceReportingCurrencyReconciliationRecord>> ReconcileReportingCurrencyAsync(FinanceRequestContext c, Guid x, CancellationToken t = default) => EmptyList<FinanceReportingCurrencyReconciliationRecord>();
 }
 
 #pragma warning restore CS1591

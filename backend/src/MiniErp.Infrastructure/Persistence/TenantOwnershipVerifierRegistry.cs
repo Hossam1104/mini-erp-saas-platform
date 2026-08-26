@@ -227,6 +227,7 @@ internal sealed class TenantOwnershipVerifierRegistry
             FinanceTenantOwnershipVerifier.For<FinancePostingRuleEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceJournalEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceJournalLineEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceJournalMonetaryEvidenceEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceAuditEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceIdempotencyEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceSourceEffectEntity>(),

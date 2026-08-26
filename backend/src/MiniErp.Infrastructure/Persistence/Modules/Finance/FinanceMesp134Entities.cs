@@ -131,10 +131,10 @@ internal sealed class FinanceRevaluationBatchEntity : FinanceEntity
 
 internal sealed class FinanceRevaluationLineEntity : FinanceEntity
 {
-    private FinanceRevaluationLineEntity() { SourceType = TransactionCurrencyCode = ExchangeSourceCurrencyCode = ExchangeTargetCurrencyCode = ExchangeProvenance = string.Empty; }
-    internal FinanceRevaluationLineEntity(TenantId tenantId, Guid id, FinanceRevaluationBatchEntity batch, Guid sourceId, string sourceType, string currency, decimal outstanding, decimal historical, decimal revalued, decimal difference, FinanceFxDirection direction, FinanceExchangeRateEvidence rate)
+    private FinanceRevaluationLineEntity() { SourceType = TransactionCurrencyCode = ExchangeSourceCurrencyCode = ExchangeTargetCurrencyCode = ExchangeProvenance = SourceSnapshotJson = string.Empty; }
+    internal FinanceRevaluationLineEntity(TenantId tenantId, Guid id, FinanceRevaluationBatchEntity batch, Guid sourceId, string sourceType, string currency, decimal outstanding, decimal historical, decimal revalued, decimal difference, FinanceFxDirection direction, FinanceExchangeRateEvidence rate, FinanceMonetaryEvidence? monetaryEvidence = null, string? sourceSnapshotJson = null)
         : base(tenantId, id)
-    { BatchId = batch.Id; CompanyId = batch.CompanyId; SourceId = sourceId; SourceType = sourceType; AsOfDate = batch.AsOfDate; TransactionCurrencyCode = currency; OutstandingTransactionAmount = outstanding; HistoricalFunctionalAmount = historical; RevaluedFunctionalAmount = revalued; Difference = difference; Direction = direction; ExchangeRateId = rate.ExchangeRateId; ExchangeRateVersionId = rate.ExchangeRateVersionId; ExchangeRateVersionNumber = rate.VersionNumber; ExchangeSourceCurrencyCode = rate.SourceCurrencyCode; ExchangeTargetCurrencyCode = rate.TargetCurrencyCode; ExchangeEffectiveOn = rate.EffectiveOn; ExchangeEffectiveFrom = rate.EffectiveFrom; ExchangeEffectiveTo = rate.EffectiveTo; ExchangeRate = rate.Rate; ExchangeRateScale = rate.RateScale; ExchangeProvenance = rate.Provenance; ExchangeSourceNotes = rate.SourceNotes; }
+    { BatchId = batch.Id; CompanyId = batch.CompanyId; SourceId = sourceId; SourceType = sourceType; AsOfDate = batch.AsOfDate; TransactionCurrencyCode = currency; OutstandingTransactionAmount = outstanding; HistoricalFunctionalAmount = historical; RevaluedFunctionalAmount = revalued; Difference = difference; Direction = direction; ExchangeRateId = rate.ExchangeRateId; ExchangeRateVersionId = rate.ExchangeRateVersionId; ExchangeRateVersionNumber = rate.VersionNumber; ExchangeSourceCurrencyCode = rate.SourceCurrencyCode; ExchangeTargetCurrencyCode = rate.TargetCurrencyCode; ExchangeEffectiveOn = rate.EffectiveOn; ExchangeEffectiveFrom = rate.EffectiveFrom; ExchangeEffectiveTo = rate.EffectiveTo; ExchangeRate = rate.Rate; ExchangeRateScale = rate.RateScale; ExchangeProvenance = rate.Provenance; ExchangeSourceNotes = rate.SourceNotes; MonetaryEvidenceJson = monetaryEvidence is null ? null : JsonSerializer.Serialize(monetaryEvidence); SourceSnapshotJson = sourceSnapshotJson ?? string.Empty; }
     internal Guid BatchId { get; private set; }
     internal Guid CompanyId { get; private set; }
     internal Guid SourceId { get; private set; }
@@ -158,10 +158,15 @@ internal sealed class FinanceRevaluationLineEntity : FinanceEntity
     internal int ExchangeRateScale { get; private set; }
     internal string ExchangeProvenance { get; private set; }
     internal string? ExchangeSourceNotes { get; private set; }
+    internal string? MonetaryEvidenceJson { get; private set; }
+    internal string SourceSnapshotJson { get; private set; }
     internal Guid? JournalId { get; private set; }
     internal Guid? ReversalJournalId { get; private set; }
+    internal Guid? PostingRuleId { get; private set; }
+    internal int? PostingRuleVersionNumber { get; private set; }
     internal FinanceEvidenceStatus Status { get; private set; } = FinanceEvidenceStatus.Captured;
     internal void SetJournal(Guid journalId) { JournalId = journalId; TouchVersion(); }
+    internal void SetPostingRule(Guid ruleId, int versionNumber) { PostingRuleId = ruleId; PostingRuleVersionNumber = versionNumber; TouchVersion(); }
     internal void SetReversal(Guid journalId) { ReversalJournalId = journalId; Status = FinanceEvidenceStatus.Reversed; TouchVersion(); }
 }
 

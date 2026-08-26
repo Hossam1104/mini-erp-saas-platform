@@ -16,14 +16,16 @@ different capability.
 ## Final validation checkpoint
 
 - Release backend build: 0 warnings / 0 errors.
-- Disposable LocalDB backend: 1019/1019; SQL safety: 61/61; EF model-change
+- Disposable LocalDB backend: 1036/1036; SQL safety: 70/70; EF model-change
   detection: clean.
-- Angular: 276/276 across 39 spec files; production build initial 496.44 kB,
-  Finance/GL lazy 34.52 kB, Tax/FX lazy 27.73 kB, settlement lazy 56.04 kB.
-- Full Chromium: 38/38; focused MESP-134 REST/OpenAPI/host contract suite:
-  36/36; both npm audits: 0 vulnerabilities.
-- Runtime: backend PID 24080 and frontend PID 46468; required health and
-  `/app/finance/tax-fx` HTTP 200 probes passed.
+- Angular: 283/283 across 39 spec files; production build initial 496.44 kB,
+  Finance/GL lazy 34.52 kB, Tax/FX lazy 37.39 kB, settlement lazy 56.04 kB.
+- Focused Finance browser journeys: 10/10; full Chromium: 42/42; focused
+  MESP-134 REST/OpenAPI/host contract suite: 55/55; both npm audits:
+  0 vulnerabilities.
+- Isolated loopback SQLite runtime: backend PID 46764 on port 5301 and
+  frontend PID 19960 on port 4301; backend health/OpenAPI and frontend
+  root, `main.js`, and `/app/finance/tax-fx` HTTP 200 probes passed.
 
 ## Delivered scope
 
@@ -44,6 +46,10 @@ different capability.
   outstanding AP/AR and posted unallocated settlement sources as of an
   accounting date, active-revaluation blocking, exact rate evidence, posting,
   and reversal.
+- HOLD 1 remediation persists immutable journal monetary evidence, source
+  snapshots, posting-rule lineage, realized/unrealized/reporting reconciliation
+  feeds, supplier-declared-tax fail-closed evidence, and provider-realistic SQL
+  concurrency coverage for allocation, tax posting, and revaluation races.
 - Tenant/Company-authorized REST/OpenAPI catalogue operations, antiforgery,
   idempotency, audit, `If-Match` concurrency, explicit failure codes, and a
   lazy EN/AR RTL Finance Tax/FX/Revaluation workspace at

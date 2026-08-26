@@ -515,7 +515,7 @@ public sealed class FinanceSettlementRemediationTests
         Assert.True(reversed.Succeeded, reversed.Code);
         var afterReversal = await persistence.GetReconciliationAsync(context, CompanyId);
         Assert.Equal(FinanceReconciliationStatus.Reconciled, Assert.Single(afterReversal, row => row.Kind == FinanceOpenItemKind.Payable).Status);
-        var aging = await persistence.GetAgingAsync(context, new FinanceAgingQuery(CompanyId, new DateOnly(2026, 8, 25), FinanceOpenItemKind.Payable));
+        var aging = await persistence.GetAgingAsync(context, new FinanceAgingQuery(CompanyId, DateOnly.FromDateTime(DateTime.UtcNow), FinanceOpenItemKind.Payable));
         Assert.Equal(100m, Assert.Single(aging).OutstandingAmount);
 
         await SeedRecognizedItemAndJournalAsync(options, context, FinanceOpenItemKind.Receivable, Guid.NewGuid(), CustomerId, arControl.Id, revenue.Id, "hold3-ar");

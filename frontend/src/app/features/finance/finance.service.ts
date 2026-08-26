@@ -32,6 +32,9 @@ import {
   FinanceMonetaryPolicy,
   FinanceTaxEffect,
   FinanceRevaluationBatch,
+  FinanceFxReconciliation,
+  FinanceUnrealizedFxReconciliation,
+  FinanceReportingCurrencyReconciliation,
 } from './finance.model';
 
 @Injectable({ providedIn: 'root' })
@@ -97,6 +100,9 @@ export class FinanceService {
   postTax(payload: { companyId: string; openItemId: string; taxId: string; taxableBase: number; sourceLineage: string | null }): Promise<FinanceTaxEffect> { return this.mutate('/finance/tax-accounting', payload); }
   reverseTax(id: string, version: string, reason: string): Promise<FinanceTaxEffect> { return this.mutate(`/finance/tax-accounting/${id}/reverse`, { reason }, version); }
   revaluationBatches(companyId: string): Observable<FinanceRevaluationBatch[]> { return this.http.get<FinanceRevaluationBatch[]>('/api/v1/finance/revaluation', { params: new HttpParams().set('companyId', companyId) }); }
+  fxReconciliation(companyId: string): Observable<FinanceFxReconciliation[]> { return this.http.get<FinanceFxReconciliation[]>('/api/v1/finance/fx-reconciliation', { params: new HttpParams().set('companyId', companyId) }); }
+  unrealizedFxReconciliation(companyId: string): Observable<FinanceUnrealizedFxReconciliation[]> { return this.http.get<FinanceUnrealizedFxReconciliation[]>('/api/v1/finance/unrealized-fx-reconciliation', { params: new HttpParams().set('companyId', companyId) }); }
+  reportingCurrencyReconciliation(companyId: string): Observable<FinanceReportingCurrencyReconciliation[]> { return this.http.get<FinanceReportingCurrencyReconciliation[]>('/api/v1/finance/reporting-currency-reconciliation', { params: new HttpParams().set('companyId', companyId) }); }
   createRevaluation(payload: { companyId: string; asOfDate: string; scope: string }): Promise<FinanceRevaluationBatch> { return this.mutate('/finance/revaluation', payload); }
   calculateRevaluation(id: string, version: string): Promise<FinanceRevaluationBatch> { return this.mutate(`/finance/revaluation/${id}/calculate`, {}, version); }
   postRevaluation(id: string, version: string): Promise<FinanceRevaluationBatch> { return this.mutate(`/finance/revaluation/${id}/post`, {}, version); }

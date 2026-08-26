@@ -332,6 +332,11 @@ export interface FinanceRevaluationLine {
   reversalJournalId: string | null;
   status: string;
   version: string;
+  monetaryEvidence: FinanceMonetaryEvidence | null;
+  sourceSnapshotFingerprint: string | null;
+  postingRuleId: string | null;
+  postingRuleVersionNumber: number | null;
+  reconciliationStatus: string;
 }
 
 export interface FinanceRevaluationBatch {
@@ -406,6 +411,64 @@ export interface FinanceAllocation {
   reversalOfAllocationId: string | null;
   journalId: string | null;
   version: string;
+  historicalFunctionalAmount?: number;
+  settlementFunctionalAmount?: number;
+  realizedFxAmount?: number;
+  realizedFxDirection?: string | null;
+  realizedFxJournalId?: string | null;
+  realizedFxRuleId?: string | null;
+  realizedFxRuleVersionNumber?: number | null;
+}
+
+export interface FinanceFxReconciliation {
+  allocationId: string;
+  companyId: string;
+  realizedDifference: number;
+  postedDifference: number;
+  direction: string;
+  status: string;
+  journalId: string | null;
+  openItemId: string | null;
+  settlementDocumentId: string | null;
+  reversalJournalId: string | null;
+  expectedAccountId: string | null;
+  ruleId: string | null;
+  ruleVersionNumber: number | null;
+  statusReason: string | null;
+}
+
+export interface FinanceUnrealizedFxReconciliation {
+  lineId: string;
+  batchId: string;
+  companyId: string;
+  sourceId: string;
+  sourceType: string;
+  expectedAmount: number;
+  postedAmount: number;
+  direction: string;
+  status: string;
+  journalId: string | null;
+  reversalJournalId: string | null;
+  expectedAccountId: string | null;
+  postingRuleId: string | null;
+  postingRuleVersionNumber: number | null;
+  statusReason: string | null;
+}
+
+export interface FinanceReportingCurrencyReconciliation {
+  journalId: string;
+  companyId: string;
+  functionalCurrencyCode: string;
+  functionalAmount: number;
+  reportingCurrencyCode: string | null;
+  reportingAmount: number | null;
+  expectedReportingAmount: number | null;
+  exchangeRateId: string | null;
+  exchangeRateVersionId: string | null;
+  exchangeRateVersionNumber: number | null;
+  status: string;
+  effectId: string | null;
+  statusReason: string | null;
 }
 
 export interface FinanceAgingRow {

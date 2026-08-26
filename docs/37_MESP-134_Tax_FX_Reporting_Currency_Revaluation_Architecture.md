@@ -111,3 +111,43 @@ financial statements, generic Reporting, Sales lifecycle, payroll, fixed
 assets, treasury, production DNS/TLS, migration/cutover, or Wafra-specific
 core behavior. Production/provider, capacity, backup/restore, legal,
 specialist, and external/statutory gates remain open.
+
+## HOLD 1 corrective hardening - 26 August 2026
+
+The bounded HOLD 1 remediation closes the evidence and provider-realistic
+concurrency gaps identified for Sol review without widening MESP-134. Finance
+now persists immutable monetary evidence for generic journals, allocations,
+settlement journals, tax effects, revaluation journals, and exact reversals.
+The evidence retains transaction/functional/reporting currency amounts,
+unrounded source values, rounding policy, exact MESP-120 rate identity/version,
+and source lineage. Revaluation lines also retain the immutable source snapshot,
+snapshot fingerprint, and the posting-rule identity/version used at posting.
+
+Tax posting remains server-authoritative. Supplier-declared tax is accepted only
+when the trusted source provides one unambiguous tax identity, invoice date,
+currency, taxable base, rate, and amount matching the server calculation;
+missing, ambiguous, or mismatched declarations fail closed. Preview and Post
+share the same effective-date tax and monetary evidence path.
+
+The REST surface now exposes realized-FX, unrealized-FX, and Reporting Currency
+reconciliation feeds. These feeds compare persisted journal/effect evidence and
+actual journal lines; they never recompute historical values from a current rate.
+The Angular Tax/FX workspace renders all three feeds with loading, empty,
+blocked, evidence, and EN/AR RTL states while preserving the disabled exact
+revaluation scope `AP_AR_AND_UNALLOCATED_SETTLEMENTS`.
+
+Provider-realistic SQL Server LocalDB races cover allocation capacity and
+allocation/reversal serialization, duplicate allocation reversal, concurrent
+tax post and reversal lineage, same-batch and same-source revaluation posting,
+source mutation during revaluation post, and reversal versus later
+revaluation. The completed validation is Release 0 warnings/0 errors; backend
+1036/1036 with 0 failures and 0 skips; SQL safety 70/70; REST/OpenAPI/host
+55/55; Angular 283/283 across 39 spec files; focused Finance Chromium 10/10;
+full Chromium 42/42; EF model-change detection clean; initial bundle
+496.44 kB; Finance/GL lazy 34.52 kB; Tax/FX lazy 37.39 kB; settlement lazy
+56.04 kB; and npm audit 0 vulnerabilities.
+
+This remediation remains a Draft PR #78 handoff for GPT-5.6 Sol acceptance.
+No Jira write, Ready transition, merge, Opus review, MESP-135 activation,
+external provider, statutory submission, production cutover, or
+Wafra-specific core behavior is part of this bounded session.

@@ -16,11 +16,14 @@
 > pending Draft PR #78, which remains Open/Unmerged for GPT-5.6 Sol acceptance. The backend
 > reuses MESP-119 Tax, MESP-120 Exchange Rates, MESP-132 posting authority,
 > and MESP-133 AP/AR/settlement history for monetary policy, exact Reporting
-> evidence, tax effects, realized FX, revaluation, and reconciliation. Final
-> validation is Release 0/0, backend 1019/1019, SQL safety 61/61, and clean
-> EF model-change detection. No Jira writes, Opus review, merge, Ready
-> transition, external provider, ZATCA/FATOORA, Sales lifecycle, or MESP-135
-> work is in scope.
+> evidence, tax effects, realized FX, revaluation, and reconciliation. HOLD 1
+> adds immutable journal monetary evidence, source snapshots, posting-rule
+> lineage, supplier-declared-tax evidence, reconciliation feeds, and provider-
+> realistic SQL concurrency coverage. Final validation is Release 0/0, backend
+> 1036/1036, SQL safety 70/70, REST/OpenAPI/host 55/55, and clean EF
+> model-change detection. No Jira writes, Opus review, merge, Ready transition,
+> external provider, ZATCA/FATOORA, Sales lifecycle, or MESP-135 work is in
+> scope.
 <!-- MESP-134-CURRENT-END -->
 
 <!-- MESP-133-CURRENT-START -->

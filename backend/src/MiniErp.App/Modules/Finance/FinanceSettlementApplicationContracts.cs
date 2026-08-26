@@ -150,7 +150,17 @@ public sealed record FinanceSupplierInvoiceSourceRecord(
     string CorrelationId,
     string? SupplierCode = null,
     string? SupplierName = null,
-    PurchaseInvoiceMatchResult MatchResult = PurchaseInvoiceMatchResult.ExactMatch);
+    PurchaseInvoiceMatchResult MatchResult = PurchaseInvoiceMatchResult.ExactMatch,
+    string? DeclaredCurrencyCode = null,
+    DateOnly? DeclaredInvoiceDate = null,
+    decimal? DeclaredTaxAmount = null,
+    IReadOnlyList<FinanceSupplierDeclaredTaxRecord>? DeclaredTaxes = null);
+
+public sealed record FinanceSupplierDeclaredTaxRecord(
+    string? TaxCode,
+    decimal? TaxRatePercentage,
+    decimal? TaxAmount,
+    decimal? TaxableBase);
 
 public sealed record FinanceApSourceReadyRecord(
     Guid SourceEvidenceId,

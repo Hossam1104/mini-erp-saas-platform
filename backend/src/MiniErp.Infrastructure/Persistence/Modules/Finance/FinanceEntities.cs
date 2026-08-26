@@ -3,6 +3,7 @@
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.Finance;
 using MiniErp.Contracts.Modules.Finance;
+using System.Text.Json;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.Finance;
 
@@ -251,6 +252,81 @@ internal sealed class FinanceSourceEffectEntity : FinanceEntity
     internal Guid SourceEvidenceId { get; private set; }
     internal int SourceEvidenceVersion { get; private set; }
     internal Guid JournalId { get; private set; }
+    internal DateTimeOffset CreatedAt { get; private set; }
+}
+
+/// <summary>
+/// Immutable monetary evidence captured with a Finance journal. This is kept
+/// separate from the journal header so legacy journals remain distinguishable
+/// from journals created after the MESP-134 monetary policy became effective.
+/// </summary>
+internal sealed class FinanceJournalMonetaryEvidenceEntity : FinanceEntity
+{
+    private FinanceJournalMonetaryEvidenceEntity()
+    {
+        TransactionCurrencyCode = FunctionalCurrencyCode = RoundingMode = string.Empty;
+        MonetaryEvidenceJson = string.Empty;
+    }
+
+    internal FinanceJournalMonetaryEvidenceEntity(
+        TenantId tenantId,
+        Guid id,
+        Guid journalId,
+        Guid companyId,
+        Guid? effectId,
+        FinanceMonetaryEvidence evidence,
+        DateTimeOffset at)
+        : base(tenantId, id)
+    {
+        JournalId = journalId;
+        CompanyId = companyId;
+        EffectId = effectId;
+        TransactionCurrencyCode = evidence.TransactionCurrencyCode;
+        TransactionAmount = evidence.TransactionAmount;
+        FunctionalCurrencyCode = evidence.FunctionalCurrencyCode;
+        FunctionalAmount = evidence.FunctionalAmount;
+        ReportingCurrencyCode = evidence.ReportingCurrencyCode;
+        ReportingAmount = evidence.ReportingAmount;
+        TransactionToFunctionalRateId = evidence.TransactionToFunctionalRate?.ExchangeRateId;
+        TransactionToFunctionalRateVersionId = evidence.TransactionToFunctionalRate?.ExchangeRateVersionId;
+        TransactionToFunctionalRateVersionNumber = evidence.TransactionToFunctionalRate?.VersionNumber;
+        FunctionalToReportingRateId = evidence.FunctionalToReportingRate?.ExchangeRateId;
+        FunctionalToReportingRateVersionId = evidence.FunctionalToReportingRate?.ExchangeRateVersionId;
+        FunctionalToReportingRateVersionNumber = evidence.FunctionalToReportingRate?.VersionNumber;
+        SourceUnroundedFunctionalAmount = evidence.SourceUnroundedFunctionalAmount;
+        SourceUnroundedReportingAmount = evidence.SourceUnroundedReportingAmount;
+        RoundingScale = evidence.RoundingScale;
+        RoundingMode = evidence.RoundingMode;
+        FunctionalRoundingDifference = evidence.FunctionalRoundingDifference;
+        ReportingRoundingDifference = evidence.ReportingRoundingDifference;
+        ReportingEvidenceStatus = evidence.ReportingEvidenceStatus;
+        MonetaryEvidenceJson = JsonSerializer.Serialize(evidence);
+        CreatedAt = at;
+    }
+
+    internal Guid JournalId { get; private set; }
+    internal Guid CompanyId { get; private set; }
+    internal Guid? EffectId { get; private set; }
+    internal string TransactionCurrencyCode { get; private set; }
+    internal decimal TransactionAmount { get; private set; }
+    internal string FunctionalCurrencyCode { get; private set; }
+    internal decimal FunctionalAmount { get; private set; }
+    internal string? ReportingCurrencyCode { get; private set; }
+    internal decimal? ReportingAmount { get; private set; }
+    internal Guid? TransactionToFunctionalRateId { get; private set; }
+    internal Guid? TransactionToFunctionalRateVersionId { get; private set; }
+    internal int? TransactionToFunctionalRateVersionNumber { get; private set; }
+    internal Guid? FunctionalToReportingRateId { get; private set; }
+    internal Guid? FunctionalToReportingRateVersionId { get; private set; }
+    internal int? FunctionalToReportingRateVersionNumber { get; private set; }
+    internal decimal SourceUnroundedFunctionalAmount { get; private set; }
+    internal decimal? SourceUnroundedReportingAmount { get; private set; }
+    internal int RoundingScale { get; private set; }
+    internal string RoundingMode { get; private set; }
+    internal decimal FunctionalRoundingDifference { get; private set; }
+    internal decimal? ReportingRoundingDifference { get; private set; }
+    internal FinanceEvidenceStatus ReportingEvidenceStatus { get; private set; }
+    internal string MonetaryEvidenceJson { get; private set; }
     internal DateTimeOffset CreatedAt { get; private set; }
 }
 

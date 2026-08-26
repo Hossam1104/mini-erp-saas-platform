@@ -11,11 +11,14 @@ credential is part of this local workflow.
 
 The implemented Tax/FX workspace is `/app/finance/tax-fx`; it is bilingual
 EN/AR with RTL support and consumes server-authoritative Tax, Currency,
-Exchange Rate, Company, Posting Rule, and evidence contracts. The bounded
-implementation was validated with Release 0/0, backend 1019/1019, SQL safety
-61/61, Angular 276/276, Chromium 38/38, clean EF model-change detection, and
-both npm audits at 0 vulnerabilities. The local runtime validated here is
-backend `5300` and frontend `4300`.
+Exchange Rate, Company, Posting Rule, and evidence contracts. HOLD 1 adds
+immutable journal monetary evidence, source snapshots, posting-rule lineage,
+supplier-declared-tax fail-closed validation, and visible realized/unrealized/
+reporting reconciliation feeds. The bounded implementation was validated with
+Release 0/0, backend 1036/1036, SQL safety 70/70, REST/OpenAPI/host 55/55,
+Angular 283/283, focused/full Chromium 10/10 and 42/42, clean EF model-change
+detection, and both npm audits at 0 vulnerabilities. The isolated local
+runtime validated here is backend `5301` and frontend `4301`.
 
 Use the repository launcher for the normal Development flow. It selects a
 local API port, generates an ignored Angular proxy for that exact URL, seeds

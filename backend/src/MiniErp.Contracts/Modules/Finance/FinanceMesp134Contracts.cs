@@ -29,6 +29,11 @@ public enum FinanceEvidenceStatus
     Reversed = 8
 }
 
+public static class FinanceRevaluationScopes
+{
+    public const string ApArAndUnallocatedSettlements = "AP_AR_AND_UNALLOCATED_SETTLEMENTS";
+}
+
 public sealed record FinanceExchangeRateEvidence(
     Guid ExchangeRateId,
     Guid ExchangeRateVersionId,
@@ -120,7 +125,14 @@ public sealed record FinanceRevaluationLineRecord(
     Guid? JournalId,
     Guid? ReversalJournalId,
     FinanceEvidenceStatus Status,
-    byte[] Version);
+    byte[] Version,
+    FinanceMonetaryEvidence? MonetaryEvidence = null,
+    string? SourceSnapshotFingerprint = null,
+    Guid? PostingRuleId = null,
+    int? PostingRuleVersionNumber = null,
+    Guid? ExpectedGainAccountId = null,
+    Guid? ExpectedLossAccountId = null,
+    FinanceEvidenceStatus ReconciliationStatus = FinanceEvidenceStatus.PendingMapping);
 
 public sealed record FinanceRevaluationBatchRecord(
     Guid Id,
@@ -202,6 +214,45 @@ public sealed record FinanceFxReconciliationRecord(
     decimal PostedDifference,
     FinanceFxDirection Direction,
     FinanceEvidenceStatus Status,
-    Guid? JournalId);
+    Guid? JournalId,
+    Guid? OpenItemId = null,
+    Guid? SettlementDocumentId = null,
+    Guid? ReversalJournalId = null,
+    Guid? ExpectedAccountId = null,
+    Guid? RuleId = null,
+    int? RuleVersionNumber = null,
+    string? StatusReason = null);
+
+public sealed record FinanceUnrealizedFxReconciliationRecord(
+    Guid LineId,
+    Guid BatchId,
+    Guid CompanyId,
+    Guid SourceId,
+    string SourceType,
+    decimal ExpectedAmount,
+    decimal PostedAmount,
+    FinanceFxDirection Direction,
+    FinanceEvidenceStatus Status,
+    Guid? JournalId,
+    Guid? ReversalJournalId,
+    Guid? ExpectedAccountId,
+    Guid? PostingRuleId,
+    int? PostingRuleVersionNumber,
+    string? StatusReason = null);
+
+public sealed record FinanceReportingCurrencyReconciliationRecord(
+    Guid JournalId,
+    Guid CompanyId,
+    string FunctionalCurrencyCode,
+    decimal FunctionalAmount,
+    string? ReportingCurrencyCode,
+    decimal? ReportingAmount,
+    decimal? ExpectedReportingAmount,
+    Guid? ExchangeRateId,
+    Guid? ExchangeRateVersionId,
+    int? ExchangeRateVersionNumber,
+    FinanceEvidenceStatus Status,
+    Guid? EffectId = null,
+    string? StatusReason = null);
 
 #pragma warning restore CS1591
