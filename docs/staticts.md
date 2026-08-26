@@ -22,6 +22,7 @@
 |---|---|
 | Starting feature head | `6835e9aad52e9162e0dbe9722679b563920b3374` |
 | Reconciled base | `841a777af1622cb4de9c3708cd4a2b389b7ef9e9` |
+| Implementation head | `f6af7dd` (`fix(MESP-135): close HOLD 3 persistence gaps`); final branch tip follows with documentation-only synchronization |
 | Current capability | MESP-135 Finance close, corrections, reconciliation and core reports; In Progress under MESP-10; HOLD 3 bounded remediation complete on the same branch/PR |
 | Branch / PR | `feat/MESP-135-finance-close-reports`; Draft PR #79 remains Open/Draft/Unmerged for Sol re-review |
 | HOLD 3 SQL races | `Close04` ReopenPeriodAsync vs PostJournalAsync; `Year03` PostYearEndAsync vs PostJournalAsync; `Corr03` CorrectJournalAsync vs ClosePeriodAsync; all three required production-operation races passed against disposable LocalDB |

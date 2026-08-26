@@ -48,9 +48,11 @@ independent Sol re-review.
   unchanged. No Jira writes, Opus review, Ready transition, or merge.
 - Tracked Markdown count: **70**; `docs/statistics.md` was not created.
 
-**Final handoff:** the exact implementation and documentation synchronization
-heads will be recorded after commit/push below. Draft PR #79 remains
-Open/Draft/Unmerged for Sol's independent HOLD 3 review.
+**Final handoff:** the exact HOLD 3 implementation head is
+`f6af7dd` (`fix(MESP-135): close HOLD 3 persistence gaps`). The final
+documentation-only synchronization commit will be pushed on the same branch
+and the resulting branch tip is reported in the executor handoff. Draft PR
+#79 remains Open/Draft/Unmerged for Sol's independent HOLD 3 review.
 
 ---
 

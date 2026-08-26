@@ -8,6 +8,9 @@ MESP-10, In Progress/activated, on branch
 Open/Draft/Unmerged. The exact pre-remediation feature and origin head was
 `6835e9aad52e9162e0dbe9722679b563920b3374`; the reconciled base was
 `841a777af1622cb4de9c3708cd4a2b389b7ef9e9`.
+The bounded implementation/test commit is `f6af7dd` (`fix(MESP-135): close
+HOLD 3 persistence gaps`); a final documentation-only synchronization commit
+follows on this same branch.
 
 This bounded HOLD 3 correction added the three missing production-operation
 SQL races: `Close04_Concurrent_reopen_and_post_preserve_one_coherent_period_state`
