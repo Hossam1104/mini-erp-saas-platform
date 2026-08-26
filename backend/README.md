@@ -1,15 +1,34 @@
 # Mini ERP backend foundation
 
-<!-- MESP-131-CURRENT-START -->
+<!-- MESP-135-CURRENT-START -->
+> **MESP-135 Finance close, corrections, reconciliation and core reports - 26 August 2026.**
+> MESP-134 is Done and merged into `main` at
+> `1e49814172843c2ec2279b8dcc5fc0a41e5da372` (PR #78, closure `12122`).
+> MESP-135 is the only active Finance implementation capability under MESP-10,
+> In Progress/activated by `12123`, with Finance reconciliation `12124`.
+> The bounded branch is `feat/MESP-135-finance-close-reports`; it must remain
+> one Draft/Open/Unmerged PR for Sol acceptance.
+>
+> The backend scope extends the existing MESP-132/133/134 fiscal, posting,
+> subledger, monetary-evidence, revaluation, and reconciliation authorities
+> with controlled period close/reopen/reclose, year-end, exact corrections and
+> reversals, Finance reconciliation, Trial Balance, General Ledger, AP/AR
+> aging, valid account-classified statements, and deterministic authorized
+> export. Generic Reporting/MESP-139, scheduling, consolidation, statutory or
+> provider work, and Wafra-specific behavior remain outside scope. No Jira,
+> Opus, merge, or Ready transition is permitted.
+<!-- MESP-135-CURRENT-END -->
+
+<!-- MESP-131-MERGED-CURRENT-START -->
 > **MESP-131 Opus P1 financial-correctness remediation - 24 August 2026.** Drifted-average corrections fail closed as Blocked evidence with `correction_would_orphan_residual_value`, stop only the affected valuation scope, and never persist an impossible zero-quantity/non-zero-value state. Physical quantity arithmetic preserves Stock Ledger `decimal(28,8)` precision; `AmountScale` remains monetary-only and reconciliation compares exact stored quantities. No schema migration was required.
 >
 > **Final validation.** Final P1 correction-quantity commit `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`; focused valuation `44/44`; combined Inventory regression `89/89`; SQL safety `40/40`; canonical disposable-LocalDB backend `963/963` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `254/254`; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused/full Chromium `5/5` and `32/32`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. The final correction regression proves `1.005 - 0.001 = 1.004` without monetary quantity rounding. PR #75 is merged into `main`; no Jira writes were performed.
 > **Current MESP-131 merged-main overlay â€” 24 August 2026; MESP-131 and MESP-8 are Done in Jira.** Inventory now contains a deterministic Company-scoped `LedgerSequence` for movement ordering, versioned decimal Moving Weighted Average valuation policy/state/evidence, exact MESP-120 Exchange Rate snapshots, Pending/Blocked predecessor handling, append-only correction/reversal history, Warehouse Transfer/In-Transit value lineage, Inventory reconciliation, Finance handoff facts, and bounded valuation/report/export REST surfaces. Finance posting remains downstream: no Journal, GL, AP, AR, tax, payment, fiscal-period, Sales, generic Reporting, statutory, migration/cutover, external-provider, or Wafra-specific reusable core behavior is introduced.
 >
 > **MESP-131 accepted validation.** Focused valuation `44/44`; combined Inventory regression `89/89`; SQL Server safety `40/40` against disposable LocalDB; canonical disposable-LocalDB backend `963/963` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `254/254` across 35 specs; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused Chromium `5/5`; full Chromium `32/32`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. PR #75 is merged into `main`; no Jira writes were performed.
-<!-- MESP-131-CURRENT-END -->
+<!-- MESP-131-MERGED-CURRENT-END -->
 
-<!-- MESP-134-CURRENT-START -->
+<!-- MESP-134-HISTORICAL-START -->
 > **MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026.**
 > MESP-133 is Done and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
 > MESP-134 is implemented on the only active Finance branch under MESP-10,
@@ -27,9 +46,9 @@
 > model-change detection. No Jira writes, Opus review, merge, Ready transition,
 > external provider, ZATCA/FATOORA, Sales lifecycle, or MESP-135 work is in
 > scope.
-<!-- MESP-134-CURRENT-END -->
+<!-- MESP-134-HISTORICAL-END -->
 
-<!-- MESP-133-CURRENT-START -->
+<!-- MESP-133-HISTORICAL-START -->
 > **MESP-133 AP / AR / cash settlement verification-only HOLD 4 - 25 August 2026.** The
 > backend now consumes trusted MESP-126 Finance-ready evidence with an
 > authoritative historical payment-term/version snapshot and reproducible due
@@ -60,7 +79,7 @@
 > `b9eba368922899165324086aa59298d054fec25d`; HOLD 3 implementation commit is
 > `a9c46a27349cb617770277699ad74456262b81c4`; HOLD 4 test commit is
 > `7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`.
-<!-- MESP-133-CURRENT-END -->
+<!-- MESP-133-HISTORICAL-END -->
 
 > **Historical MESP-129 runtime overlay - 22 August 2026.** The backend now
 > consumes authoritative Procurement Goods Receipt lines for one-time accepted

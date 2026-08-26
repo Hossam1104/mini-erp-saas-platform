@@ -2,6 +2,24 @@
 
 ## Current Finance capability
 
+MESP-134 is Done and squash-merged to `main` at
+`1e49814172843c2ec2279b8dcc5fc0a41e5da372` through PR #78 (closure `12122`).
+MESP-135 is the only active Finance implementation capability under MESP-10,
+In Progress/activated by `12123`, with Finance reconciliation `12124`. The
+implementation branch is `feat/MESP-135-finance-close-reports` and must end as
+one Draft/Open/Unmerged PR for Sol review. The bounded workspace will add
+Finance close/year-end, corrections, reconciliation, core reports, and
+authorized export while preserving Tenant/Company server authority and the
+MESP-132/133/134 accounting evidence model.
+
+No Jira writes, Claude Opus review, merge, Ready transition, next-capability
+activation, external provider/production credential setup, generic Reporting,
+scheduled distribution, consolidation, statutory filing, or Wafra-specific
+Finance behavior is in scope. Fast-track remains `18/26 = 69.2%` and production
+readiness remains approximately `47%` overall / `41%` Procurement/P2P.
+
+### Historical MESP-134 runtime snapshot
+
 MESP-133 is accepted and merged. MESP-134 (Tax, FX, Reporting Currency, and
 Revaluation) is the only active implementation capability and is held in Draft
 PR #78 for Sol review; HOLD 2 authority is Sol `12080` with Finance

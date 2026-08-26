@@ -1,4 +1,50 @@
-# MESP-134 — GPT-5.6 Sol review handoff
+
+# MESP-135 — GPT-5.6 Luna implementation handoff
+
+MESP-135 is the single active Finance implementation capability under MESP-10
+and is In Progress/activated. MESP-134 is Done and squash-merged to `main` at
+`1e49814172843c2ec2279b8dcc5fc0a41e5da372`.
+
+## Repository baseline
+
+- Exact starting main: `1e49814172843c2ec2279b8dcc5fc0a41e5da372`.
+- MESP-134 closure comment: `12122`.
+- MESP-135 activation comment: `12123`.
+- MESP-10 Finance reconciliation: `12124`.
+- Implementation branch: `feat/MESP-135-finance-close-reports`.
+- This session must leave one Draft/Open/Unmerged PR for Sol review.
+- `frontend/assets` is Owner-managed and must remain untouched.
+
+## Governance and bounded scope
+
+- No Jira writes, Claude Opus review, next-capability activation, merge, or
+  Ready transition.
+- Fast-track remains `18/26 = 69.2%` until Sol acceptance and merge.
+- Production readiness remains approximately `47%` overall and `41%`
+  Procurement/P2P; MESP-48 and MESP-50 remain open production gates.
+- Implement Finance-owned period lifecycle/close/reopen/reclose, readiness,
+  year-end, exact corrections/reversals, reconciliation, Trial Balance,
+  General Ledger, AP/AR aging, and valid account-classified P&L/Balance Sheet
+  reporting with bounded export. Do not activate MESP-139 generic Reporting,
+  scheduling, consolidation, statutory filing, external distribution, provider
+  setup, or Wafra-specific behavior.
+- Reuse the MESP-132/133/134 fiscal, posting, subledger, monetary-evidence,
+  revaluation, and reconciliation authorities. The server remains authoritative
+  for Tenant/Company scope, permissions, accounting state, concurrency, and
+  idempotency.
+
+## Sol acceptance handoff requirement
+
+At completion this file must contain the reconciled-main SHA, final feature SHA,
+Draft PR number/state, architecture and migrations, REST operations and routes,
+permissions, the seven named SQL races, focused/full test totals, Angular and
+Playwright totals, bundle sizes, runtime PIDs/probes, known limitations, and
+the complete independent-review boundary. Do not claim MESP-135 Done or set
+fast-track to `19/26`; stop after the single Draft PR is ready for Sol.
+
+---
+
+## Historical MESP-134 Sol handoff
 
 MESP-134 HOLD 2 remediation is bounded and complete on the single Draft PR
 branch. Stop for GPT-5.6 Sol acceptance. Do not merge, mark the PR Ready, write

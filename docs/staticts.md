@@ -1,6 +1,44 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
-<!-- MESP-134-JIRA-SYNC-START -->
+<!-- MESP-135-JIRA-SYNC-START -->
+## Jira/documentation synchronization - 26 August 2026 (MESP-135 active)
+
+- MESP-134 is Done and squash-merged to `main` through PR #78 at
+  `1e49814172843c2ec2279b8dcc5fc0a41e5da372`; closure comment `12122`.
+- MESP-135 is In Progress/activated under MESP-10; activation comment is
+  `12123` and Finance reconciliation is `12124`.
+- MESP-135 is the only active Finance implementation capability. No Jira
+  writes were performed by this session; the supplied Jira evidence is recorded
+  for traceability only.
+- One Draft/Open/Unmerged implementation PR is required. MESP-139 remains
+  inactive; MESP-48 and MESP-50 remain open production gates.
+<!-- MESP-135-JIRA-SYNC-END -->
+
+**Last Updated:** 2026-08-26 16:03 +03:00
+
+## Current authoritative fast-track snapshot - 26 August 2026 (MESP-135 active)
+
+| Current repository control | Verified position |
+|---|---|
+| Starting/reconciled main | `1e49814172843c2ec2279b8dcc5fc0a41e5da372` |
+| Completed capability | MESP-134 Tax / FX / Reporting Currency / Revaluation; Done through PR #78 |
+| Current capability | MESP-135 Finance close, corrections, reconciliation and core reports; activated under MESP-10 and In Progress |
+| Branch / PR | `feat/MESP-135-finance-close-reports`; implementation PR to be created as Draft/Open/Unmerged |
+| MESP-134 closure | comment `12122` |
+| MESP-135 activation | comment `12123` |
+| Finance reconciliation | comment `12124` |
+| Accepted fast-track | 18/26 = 69.2%; MESP-135 is not pre-counted until Sol acceptance and merge |
+| Production-readiness | ~47% overall; ~41% Procurement/P2P; headlines unchanged |
+
+MESP-135 is bounded to Finance-owned close/year-end, corrections/reversals,
+reconciliation, Trial Balance, General Ledger, AP/AR aging, valid classified
+statements, and authorized deterministic export. Generic Reporting/MESP-139,
+scheduling, consolidation, statutory/provider work, and Wafra-specific behavior
+remain outside scope. `frontend/assets` remains Owner-managed and untouched.
+
+### Historical tracker synchronization snapshot
+
+<!-- MESP-134-HISTORICAL-JIRA-SYNC-START -->
 ## Jira/documentation synchronization - 26 August 2026 (MESP-134 active)
 
 - MESP-133 is Done/merged/closed; closure comment `12037`.
@@ -12,11 +50,11 @@
 - No Jira writes were performed by this implementation session.
 - MESP-134 is the only active implementation capability and must remain one
   Draft, Open, Unmerged PR for GPT-5.6 Sol review. MESP-135 remains inactive.
-<!-- MESP-134-JIRA-SYNC-END -->
+<!-- MESP-134-HISTORICAL-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-26 13:15 +03:00
+**Historical snapshot timestamp:** 2026-08-26 13:15 +03:00
 
-## Current authoritative fast-track snapshot - 26 August 2026 (MESP-134 active)
+## Historical authoritative fast-track snapshot - 26 August 2026 (MESP-134 active)
 
 | Current repository control | Verified position |
 |---|---|
@@ -255,6 +293,7 @@ production readiness. `frontend/assets` remains untouched.
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
+| 2026-08-26 | MESP-134 accepted as Done on merged `main` and MESP-135 activated as the single current Finance implementation capability under MESP-10. | ~47% | ~41% | Main is `1e49814172843c2ec2279b8dcc5fc0a41e5da372`; MESP-134 closure `12122`; MESP-135 activation `12123`; Finance reconciliation `12124`; fast-track is 18/26 = 69.2%; no production-readiness increase, Jira write, merge, Ready transition, or Opus review. |
 | 2026-08-26 | MESP-134 GPT-5.6 Sol HOLD 2 final bounded remediation completed on Draft PR #78 from HOLD 1 head `4ee5b39e47f514178ffb40a5add5facce4c32b28`; allocation evidence is now one-sided and balanced, SQL REV03 races real revaluation posting against allocation, and direct Tax, historical FX, realized FX, revaluation, and bilingual error regressions are present. | ~47% | ~41% | HOLD 2 commit `550c9a7ccf1a7d5d3115efc495a289d80a63bb4c`; focused MESP-134 24/24; REST/OpenAPI/host 55/55; disposable LocalDB backend 1052/1052, 0 failed/0 skipped; SQL safety 70/70; Angular 283/283 across 39 specs with focused Tax/FX 9/9; focused/full Chromium 10/10 and 42/42; Release 0/0; EF model clean; initial 496.44 kB / Finance 34.52 kB / Tax-FX 40.38 kB / settlement 56.04 kB; audits 0 vulnerabilities; runtime API/frontend 5300/4300 PIDs 25840/35964 with required HTTP 200 probes; Sol HOLD 1 `12044`, HOLD 2 `12080`, Finance reconciliation `12081`; fast-track remains 17/26 = 65.4%; no Jira writes, merge, Ready transition, MESP-135 activation, or Opus review; assets untouched; stop for Sol acceptance. |
 | 2026-08-26 | MESP-134 GPT-5.6 Sol HOLD 1 remediation completed on Draft PR #78: immutable journal monetary evidence, source snapshots, posting-rule lineage, supplier-declared-tax fail-closed validation, visible realized/unrealized/reporting reconciliation feeds, and nine provider-realistic SQL concurrency scenarios were added within the bounded capability. | ~47% | ~41% | Release 0/0; disposable LocalDB backend 1036/1036 with 0 failures/0 skips; SQL safety 70/70; REST/OpenAPI/host 55/55; Angular 283/283 across 39 specs; focused/full Chromium 10/10 and 42/42; initial 496.44 kB / Finance 34.52 kB / Tax-FX 37.39 kB / settlement 56.04 kB; EF model-change detection clean; npm audit 0 vulnerabilities; isolated SQLite runtime backend/frontend 46764/19960 on 5301/4301 with required probes HTTP 200; fast-track remains 17/26 = 65.4%; no Jira writes, merge, Ready transition, MESP-135 activation, or Opus review; assets untouched; stop for Sol acceptance. |
 | 2026-08-26 | MESP-134 bounded implementation completed on `feat/MESP-134-tax-fx-revaluation`: Finance monetary policy and exact MESP-120 Reporting Currency evidence, MESP-119 tax reclassification, realized FX allocation/reversal, controlled AP/AR/unallocated revaluation, reconciliation, REST/OpenAPI, migrations, and bilingual EN/AR RTL Tax/FX workspace. | ~47% | ~41% | Release 0/0; disposable LocalDB backend 1019/1019; SQL safety 61/61; Angular 276/276 across 39 specs; full Chromium 38/38; initial 496.44 kB / Finance 34.52 kB / Tax-FX 27.73 kB / settlement 56.04 kB; EF model-change detection clean; both npm audits 0 vulnerabilities; runtime backend/frontend 24080/46468 with required HTTP 200 probes; fast-track remains 17/26 = 65.4%; no Jira writes, merge, Ready transition, MESP-135 activation, or Opus review; assets untouched. |

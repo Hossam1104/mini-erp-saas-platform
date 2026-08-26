@@ -1,6 +1,24 @@
 # Mini ERP Tenant-Aware Shell
 
-<!-- MESP-134-CURRENT-START -->
+<!-- MESP-135-CURRENT-START -->
+> **MESP-135 Finance close, corrections, reconciliation and core reports - 26 August 2026.**
+> MESP-134 is Done and merged into `main` at
+> `1e49814172843c2ec2279b8dcc5fc0a41e5da372` (PR #78, closure `12122`).
+> MESP-135 is the only active Finance capability under MESP-10,
+> In Progress/activated by `12123`, with Finance reconciliation `12124`.
+> The bounded branch is `feat/MESP-135-finance-close-reports` and must end in
+> one Draft/Open/Unmerged PR for Sol acceptance.
+>
+> The Angular scope is lazy Finance close/year-end and reports workspaces with
+> EN/AR, RTL-safe loading/empty/blocked/error/authorization states, server error
+> mappings, filters, and bounded export for the Finance-owned reports. It
+> reuses server-authoritative Tenant/Company, fiscal, posting, subledger, and
+> monetary-evidence contracts. MESP-139 generic Reporting, scheduling,
+> consolidation, statutory/provider work, and Wafra-specific behavior remain
+> outside scope. No Jira, Opus, merge, or Ready transition is permitted.
+<!-- MESP-135-CURRENT-END -->
+
+<!-- MESP-134-HISTORICAL-START -->
 > **MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026.**
 > MESP-133 is accepted and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
 > MESP-134 adds the lazy `/app/finance/tax-fx` workspace for monetary policy,
@@ -14,7 +32,7 @@
 > 40.38 kB, and settlement 56.04 kB lazy chunks. Draft PR #78 remains
 > Open/Unmerged for Sol review. MESP-134 is the only active capability;
 > MESP-135 remains inactive.
-<!-- MESP-134-CURRENT-END -->
+<!-- MESP-134-HISTORICAL-END -->
 
 <!-- MESP-131-HISTORICAL-START -->
 > **Current MESP-131 workspace overlay â€” 23 August 2026; pending Sol acceptance.** The Inventory feature now includes lazy `/app/inventory/valuation` for valuation summary, explainable MWA history, Pending/Blocked states, Inventory reconciliation, In-Transit value, Finance handoff facts, correction history and authorized CSV export. The surface uses server-owned Warehouse context, preserves EN/AR and RTL, never accepts browser-authored cost/FX authority, and keeps `frontend/assets` untouched.
@@ -36,7 +54,7 @@
 > untouched.
 <!-- MESP-131-MERGED-CURRENT-END -->
 
-<!-- MESP-133-CURRENT-START -->
+<!-- MESP-133-HISTORICAL-START -->
 > **MESP-133 Finance settlement workspaces verification-only HOLD 4 - 25 August 2026.** The shell
 > keeps the lazy routes `/app/finance/ap`, `/app/finance/ar`, and
 > `/app/finance/settlements`. The AP, AR, and settlement surfaces present
@@ -56,7 +74,7 @@
 > remains Draft/unmerged for independent Sol review; MESP-132 is Done/merged.
 > HOLD 4 added no frontend production code; the focused backend additions prove
 > the real Procurement source-provider and historical recognition-rule boundary.
-<!-- MESP-133-CURRENT-END -->
+<!-- MESP-133-HISTORICAL-END -->
 
 > **Historical MESP-129 workspace overlay - 22 August 2026.** The Inventory
 > workspace now exposes server-authorized Warehouse Transfers with direct and

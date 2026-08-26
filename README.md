@@ -23,7 +23,28 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### Current acceptance stage: MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026
+### Current capability: MESP-135 Finance close, corrections, reconciliation and reports - 26 August 2026
+
+MESP-134 is Done and squash-merged to `main` at
+`1e49814172843c2ec2279b8dcc5fc0a41e5da372` through PR #78; closure comment is
+`12122`. MESP-135 is the only active Finance implementation capability under
+MESP-10, In Progress/activated by `12123`, with Finance reconciliation `12124`.
+The bounded implementation branch is `feat/MESP-135-finance-close-reports`.
+
+MESP-135 covers Finance-owned period lifecycle and durable close readiness,
+controlled reopen/reclose, year-end, exact corrections/reversals,
+reconciliation, Trial Balance, General Ledger, AP/AR aging, valid
+account-classified P&L/Balance Sheet reports, and authorized deterministic
+export. It reuses the MESP-132/133/134 authorities. MESP-139 generic Reporting,
+scheduling, consolidation, statutory/provider work, and Wafra-specific core
+behavior remain outside scope. No Jira writes, Opus review, merge, or Ready
+transition is permitted in this bounded session.
+
+Fast-track remains `18/26 = 69.2%`; production readiness remains approximately
+`47%` overall and `41%` Procurement/P2P. MESP-48 and MESP-50 remain open
+production gates.
+
+### Historical MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026
 
 MESP-132 and MESP-133 are Done/merged/closed at their accepted bounded scopes.
 MESP-133 merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9` from accepted

@@ -1,6 +1,29 @@
 # Current State
 
-## MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 handoff - 26 August 2026
+## MESP-135 Finance close, corrections, reconciliation and reports - 26 August 2026
+
+MESP-134 is Done and squash-merged into `main` at
+`1e49814172843c2ec2279b8dcc5fc0a41e5da372` (PR #78); closure comment is
+`12122`. MESP-135 is the only active Finance implementation capability under
+MESP-10, In Progress/activated by comment `12123`, with Finance reconciliation
+`12124`. The verified starting main is the same SHA and the implementation
+branch is `feat/MESP-135-finance-close-reports`.
+
+The bounded scope is Finance-owned period lifecycle, close readiness with
+durable evidence, controlled reopen/reclose, year-end close, exact corrections
+and reversals, reconciliation, Trial Balance, General Ledger, AP/AR aging,
+valid account-classified P&L/Balance Sheet, and deterministic authorized
+export. It reuses MESP-132/133/134 authorities and does not activate generic
+Reporting/MESP-139, scheduling, consolidation, statutory/provider work, or
+Wafra-specific behavior. No Jira writes, Opus review, merge, or Ready
+transition is permitted. Fast-track remains `18/26 = 69.2%`; production
+readiness remains approximately `47%` overall and `41%` Procurement/P2P.
+
+The final handoff must record implementation evidence, migrations, APIs,
+permissions, seven SQL races, all test/build/runtime totals, limitations, and
+the single Draft/Open/Unmerged PR for independent Sol acceptance.
+
+## Historical MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 handoff - 26 August 2026
 
 MESP-133 is Done and merged into `main` at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`;
 Sol closure is `12037`, Finance reconciliation is `12038`, and MESP-134
