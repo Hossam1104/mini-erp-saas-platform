@@ -32,7 +32,7 @@
 | Validation | Release 0 warnings/0 errors; focused MESP-135 persistence 3/3; REST/OpenAPI/host 55/55; SQL safety 77/77; disposable LocalDB backend 1,062/1,062 with 0 failures and 0 skips; Angular 283/283 across 39 specs; focused Chromium 5/5; full Chromium 47/47; EF model-change detection clean; both npm audits 0 vulnerabilities; initial 496.45 kB; Finance/GL 34.52 kB; close 16.28 kB; reports 16.59 kB; settlement 56.04 kB. |
 | Runtime | Backend `http://localhost:5300` PID `46612` and frontend `http://localhost:4300` PID `43716`; health, OpenAPI, root, `main.js`, Finance, AP, AR, settlements, tax-fx, close, and reports returned HTTP 200. |
 | Implementation | Additive migration `20260826133441_MESP135FinanceCloseReports`; 22 public operations; five new Finance tables; seven named provider-realistic MESP-135 SQL races; architecture record `docs/38_MESP-135_Finance_Close_Corrections_Reconciliation_and_Core_Reports_Architecture.md`. |
-| Documentation | 69 tracked Markdown files; live current-state files updated; historical/approved bodies preserved; `frontend/assets` untouched. |
+| Documentation | 70 tracked Markdown files; live current-state files updated; historical/approved bodies preserved; `frontend/assets` untouched. |
 
 MESP-135 is bounded to Finance-owned close/year-end, corrections/reversals,
 reconciliation, Trial Balance, General Ledger, AP/AR aging, valid classified

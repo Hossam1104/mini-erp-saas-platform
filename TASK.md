@@ -84,6 +84,9 @@ and is In Progress/activated. MESP-134 is Done and squash-merged to `main` at
   `http://localhost:4300` PID `43716`. HTTP 200 probes passed for health,
   OpenAPI, root, `main.js`, `/app/finance`, AP, AR, settlements, tax-fx,
   `/app/finance/close`, and `/app/finance/reports`.
+- Documentation: 70 tracked Markdown files were read/classified; live
+  current-state files and `docs/staticts.md` were updated while historical and
+  approved bodies were preserved. `frontend/assets` is untouched.
 - Known limitations: generic Reporting/MESP-139, scheduling, consolidation,
   PDF/Excel/email distribution, statutory filing/ZATCA/FATOORA, external
   providers/bank feeds, production infrastructure, backup/restore, capacity,
