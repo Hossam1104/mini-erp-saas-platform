@@ -52,6 +52,7 @@ public static class FinanceEndpoints
 
         endpoints.MapFinanceSettlementEndpoints();
         endpoints.MapFinanceMesp134Endpoints();
+        endpoints.MapFinanceMesp135Endpoints();
         return endpoints;
     }
 

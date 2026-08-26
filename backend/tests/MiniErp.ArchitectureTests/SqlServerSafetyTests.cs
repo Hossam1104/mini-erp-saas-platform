@@ -364,7 +364,8 @@ public sealed class SqlServerSafetyTests
                     "20260824220208_MESP133ApArCashSettlement",
                     "20260825225409_MESP134TaxFxReportingRevaluation",
                     "20260825232242_MESP134EvidenceSnapshots",
-                    "20260826001524_MESP134Hold1CorrectiveEvidence"
+                    "20260826001524_MESP134Hold1CorrectiveEvidence",
+                    "20260826133441_MESP135FinanceCloseReports"
                 ],
                 (await finance.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await finance.Database.GetPendingMigrationsAsync());

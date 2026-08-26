@@ -74,6 +74,7 @@ internal sealed class FinanceFiscalYearEntity : FinanceEntity
     internal DateOnly StartDate { get; private set; }
     internal DateOnly EndDate { get; private set; }
     internal FinanceFiscalYearState State { get; private set; }
+    internal void SetState(FinanceFiscalYearState state) { State = state; TouchVersion(); }
 }
 
 internal sealed class FinanceFiscalPeriodEntity : FinanceEntity

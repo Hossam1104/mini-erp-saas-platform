@@ -35,6 +35,15 @@ import {
   FinanceFxReconciliation,
   FinanceUnrealizedFxReconciliation,
   FinanceReportingCurrencyReconciliation,
+  FinanceCloseReadiness,
+  FinancePeriodCloseRun,
+  FinancePeriodHistory,
+  FinanceYearEndRun,
+  FinanceTrialBalanceReport,
+  FinanceGeneralLedgerLine,
+  FinanceAgingReportRow,
+  FinanceCloseReconciliation,
+  FinanceStatementReport,
 } from './finance.model';
 
 @Injectable({ providedIn: 'root' })
@@ -103,6 +112,20 @@ export class FinanceService {
   fxReconciliation(companyId: string): Observable<FinanceFxReconciliation[]> { return this.http.get<FinanceFxReconciliation[]>('/api/v1/finance/fx-reconciliation', { params: new HttpParams().set('companyId', companyId) }); }
   unrealizedFxReconciliation(companyId: string): Observable<FinanceUnrealizedFxReconciliation[]> { return this.http.get<FinanceUnrealizedFxReconciliation[]>('/api/v1/finance/unrealized-fx-reconciliation', { params: new HttpParams().set('companyId', companyId) }); }
   reportingCurrencyReconciliation(companyId: string): Observable<FinanceReportingCurrencyReconciliation[]> { return this.http.get<FinanceReportingCurrencyReconciliation[]>('/api/v1/finance/reporting-currency-reconciliation', { params: new HttpParams().set('companyId', companyId) }); }
+  closeReadiness(companyId: string, periodId: string): Observable<FinanceCloseReadiness> { return this.http.get<FinanceCloseReadiness>(`/api/v1/finance/periods/${periodId}/close-readiness`, { params: new HttpParams().set('companyId', companyId) }); }
+  closeRuns(companyId: string, periodId?: string): Observable<FinancePeriodCloseRun[]> { let params = new HttpParams().set('companyId', companyId); if (periodId) params = params.set('periodId', periodId); return this.http.get<FinancePeriodCloseRun[]>('/api/v1/finance/period-close-runs', { params }); }
+  closeHistory(companyId: string, periodId: string): Observable<FinancePeriodHistory[]> { return this.http.get<FinancePeriodHistory[]>(`/api/v1/finance/periods/${periodId}/close-history`, { params: new HttpParams().set('companyId', companyId) }); }
+  closePeriod(companyId: string, periodId: string, version: string, reason: string): Promise<FinancePeriodCloseRun> { return this.mutate(`/finance/periods/${periodId}/close`, { companyId, reason }, version); }
+  reopenPeriod(companyId: string, periodId: string, version: string, reason: string): Promise<FinancePeriodCloseRun> { return this.mutate(`/finance/periods/${periodId}/reopen`, { companyId, reason }, version); }
+  yearEndRuns(companyId: string, fiscalYearId?: string): Observable<FinanceYearEndRun[]> { let params = new HttpParams().set('companyId', companyId); if (fiscalYearId) params = params.set('fiscalYearId', fiscalYearId); return this.http.get<FinanceYearEndRun[]>('/api/v1/finance/year-end', { params }); }
+  calculateYearEnd(payload: { companyId: string; fiscalYearId: string; asOfDate: string; reason: string }): Promise<FinanceYearEndRun> { return this.mutate('/finance/year-end/calculate', payload); }
+  postYearEnd(companyId: string, runId: string, version: string, reason: string): Promise<FinanceYearEndRun> { return this.mutate(`/finance/year-end/${runId}/post`, { companyId, reason }, version); }
+  reverseYearEnd(companyId: string, runId: string, version: string, reason: string): Promise<FinanceYearEndRun> { return this.mutate(`/finance/year-end/${runId}/reverse`, { companyId, reason }, version); }
+  closeReconciliation(companyId: string, asOfDate: string, periodId?: string): Observable<FinanceCloseReconciliation> { let params = new HttpParams().set('companyId', companyId).set('asOfDate', asOfDate); if (periodId) params = params.set('periodId', periodId); return this.http.get<FinanceCloseReconciliation>('/api/v1/finance/reconciliation/close', { params }); }
+  trialBalance(companyId: string, asOfDate: string, fiscalPeriodId?: string): Observable<FinanceTrialBalanceReport> { let params = new HttpParams().set('companyId', companyId).set('asOfDate', asOfDate); if (fiscalPeriodId) params = params.set('fiscalPeriodId', fiscalPeriodId); return this.http.get<FinanceTrialBalanceReport>('/api/v1/finance/reports/trial-balance', { params }); }
+  generalLedger(companyId: string, fromDate?: string, toDate?: string): Observable<FinanceGeneralLedgerLine[]> { let params = new HttpParams().set('companyId', companyId); if (fromDate) params = params.set('fromDate', fromDate); if (toDate) params = params.set('toDate', toDate); return this.http.get<FinanceGeneralLedgerLine[]>('/api/v1/finance/reports/general-ledger', { params }); }
+  reportAging(companyId: string, asOfDate: string, kind: 'Payable' | 'Receivable'): Observable<FinanceAgingReportRow[]> { return this.http.get<FinanceAgingReportRow[]>(`/api/v1/finance/reports/${kind === 'Payable' ? 'ap' : 'ar'}-aging`, { params: new HttpParams().set('companyId', companyId).set('asOfDate', asOfDate) }); }
+  statement(companyId: string, fromDate: string, toDate: string, kind: 'profit-loss' | 'balance-sheet'): Observable<FinanceStatementReport> { return this.http.get<FinanceStatementReport>(`/api/v1/finance/reports/${kind}`, { params: new HttpParams().set('companyId', companyId).set('fromDate', fromDate).set('toDate', toDate) }); }
   createRevaluation(payload: { companyId: string; asOfDate: string; scope: string }): Promise<FinanceRevaluationBatch> { return this.mutate('/finance/revaluation', payload); }
   calculateRevaluation(id: string, version: string): Promise<FinanceRevaluationBatch> { return this.mutate(`/finance/revaluation/${id}/calculate`, {}, version); }
   postRevaluation(id: string, version: string): Promise<FinanceRevaluationBatch> { return this.mutate(`/finance/revaluation/${id}/post`, {}, version); }

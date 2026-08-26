@@ -6,5 +6,7 @@ export const financeRoutes: Routes = [
   { path: 'ar', loadComponent: () => import('./finance-settlement-workspace.component').then((module) => module.FinanceSettlementWorkspaceComponent) },
   { path: 'settlements', loadComponent: () => import('./finance-settlement-workspace.component').then((module) => module.FinanceSettlementWorkspaceComponent) },
   { path: 'tax-fx', loadComponent: () => import('./finance-tax-fx-workspace.component').then((module) => module.FinanceTaxFxWorkspaceComponent) },
+  { path: 'close', loadComponent: () => import('./finance-close-workspace.component').then((module) => module.FinanceCloseWorkspaceComponent) },
+  { path: 'reports', loadComponent: () => import('./finance-reports-workspace.component').then((module) => module.FinanceReportsWorkspaceComponent) },
   { path: 'revaluation', redirectTo: 'tax-fx' },
 ];

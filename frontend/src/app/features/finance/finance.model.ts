@@ -507,3 +507,197 @@ export interface FinanceReconciliation {
   status: string;
   asOfDate: string;
 }
+
+export interface FinanceCloseCheck {
+  code: string;
+  status: string;
+  message: string;
+  expectedAmount: number | null;
+  actualAmount: number | null;
+}
+
+export interface FinanceCloseReadiness {
+  periodId: string;
+  fiscalYearId: string;
+  companyId: string;
+  status: string;
+  checks: FinanceCloseCheck[];
+  snapshotFingerprint: string;
+  evaluatedAt: string;
+  periodVersion: string;
+}
+
+export interface FinancePeriodCloseRun {
+  id: string;
+  companyId: string;
+  fiscalYearId: string;
+  periodId: string;
+  sequence: number;
+  status: string;
+  readinessStatus: string;
+  snapshotFingerprint: string;
+  checks: FinanceCloseCheck[];
+  reason: string;
+  createdAt: string;
+  reopenedAt: string | null;
+  version: string;
+}
+
+export interface FinancePeriodHistory {
+  id: string;
+  companyId: string;
+  fiscalYearId: string;
+  periodId: string;
+  action: string;
+  fromState: string;
+  toState: string;
+  reason: string;
+  occurredAt: string;
+}
+
+export interface FinanceYearEndLine {
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  debit: number;
+  credit: number;
+  netBalance: number;
+  closingJournalLineId: string | null;
+}
+
+export interface FinanceYearEndRun {
+  id: string;
+  companyId: string;
+  fiscalYearId: string;
+  asOfDate: string;
+  status: string;
+  snapshotFingerprint: string;
+  lines: FinanceYearEndLine[];
+  closingJournalId: string | null;
+  reversalJournalId: string | null;
+  retainedEarningsAccountId: string | null;
+  retainedEarningsAccountCode: string | null;
+  postingRuleId: string | null;
+  postingRuleVersionNumber: number | null;
+  reason: string;
+  createdAt: string;
+  postedAt: string | null;
+  reversedAt: string | null;
+  version: string;
+}
+
+export interface FinanceTrialBalanceRow {
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  openingBalance: number;
+  periodDebit: number;
+  periodCredit: number;
+  closingBalance: number;
+  functionalCurrencyCode: string;
+  reportingCurrencyCode: string | null;
+  reportingClosingBalance: number | null;
+  reportingEvidenceStatus: string;
+}
+
+export interface FinanceTrialBalanceReport {
+  companyId: string;
+  asOfDate: string;
+  fromDate: string | null;
+  toDate: string | null;
+  rows: FinanceTrialBalanceRow[];
+  totalDebit: number;
+  totalCredit: number;
+  totalClosingBalance: number;
+  functionalCurrencyCode: string;
+  reportingCurrencyCode: string | null;
+  reportingEvidenceStatus: string;
+}
+
+export interface FinanceGeneralLedgerLine {
+  journalId: string;
+  journalNumber: string;
+  journalSequence: number;
+  postingDate: string;
+  accountCode: string;
+  accountName: string;
+  sourceContract: string;
+  debit: number;
+  credit: number;
+  functionalDebit: number;
+  functionalCredit: number;
+  runningBalance: number;
+  functionalCurrencyCode: string;
+  reportingAmount: number | null;
+  reportingEvidenceStatus: string;
+  isReversal: boolean;
+}
+
+export interface FinanceAgingReportRow {
+  openItemId: string;
+  kind: string;
+  supplierId: string | null;
+  customerId: string | null;
+  sourceReference: string | null;
+  documentDate: string;
+  dueDate: string;
+  daysOverdue: number;
+  agingBucket: string;
+  currencyCode: string;
+  originalAmount: number;
+  allocatedAmount: number;
+  outstandingAmount: number;
+  functionalCurrencyCode: string;
+  outstandingFunctionalAmount: number;
+  status: string;
+}
+
+export interface FinanceReconciliationView {
+  companyId: string;
+  asOfDate: string;
+  scope: string;
+  status: string;
+  expectedAmount: number | null;
+  actualAmount: number | null;
+  difference: number | null;
+  sourceReference: string | null;
+  detail: string | null;
+  hasDurableEvidence: boolean;
+}
+
+export interface FinanceCloseReconciliation {
+  companyId: string;
+  periodId: string | null;
+  asOfDate: string;
+  overallStatus: string;
+  items: FinanceReconciliationView[];
+  closeHistory: FinancePeriodCloseRun[];
+  yearEndRuns: FinanceYearEndRun[];
+}
+
+export interface FinanceStatementRow {
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  openingBalance: number;
+  debit: number;
+  credit: number;
+  closingBalance: number;
+  functionalCurrencyCode: string;
+}
+
+export interface FinanceStatementReport {
+  kind: string;
+  companyId: string;
+  fromDate: string;
+  toDate: string;
+  rows: FinanceStatementRow[];
+  totalDebit: number;
+  totalCredit: number;
+  totalClosingBalance: number;
+  functionalCurrencyCode: string;
+  finding: string | null;
+}

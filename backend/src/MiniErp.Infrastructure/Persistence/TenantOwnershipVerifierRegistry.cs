@@ -239,7 +239,12 @@ internal sealed class TenantOwnershipVerifierRegistry
             FinanceTenantOwnershipVerifier.For<FinanceMonetaryPolicyEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceTaxAccountingEffectEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceRevaluationBatchEntity>(),
-            FinanceTenantOwnershipVerifier.For<FinanceRevaluationLineEntity>()
+            FinanceTenantOwnershipVerifier.For<FinanceRevaluationLineEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinancePeriodCloseEvidenceEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinancePeriodCloseRunEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinancePeriodHistoryEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceYearEndRunEntity>(),
+            FinanceTenantOwnershipVerifier.For<FinanceYearEndLineEntity>()
         ]);
     }
 
