@@ -13,8 +13,8 @@ and is In Progress/activated. MESP-134 is Done and squash-merged to `main` at
 - MESP-10 Finance reconciliation: `12124`.
 - Implementation branch: `feat/MESP-135-finance-close-reports`.
 - Final feature implementation SHA: `6dca68888c4300dff2575d99b3edf919e965d783`.
-- One Draft/Open/Unmerged PR is created for Sol review; its number is recorded
-  in the final handoff after PR creation.
+- Draft PR #79 is Open/Draft/Unmerged for Sol review:
+  `https://github.com/Hossam1104/mini-erp-saas-platform/pull/79`.
 - `frontend/assets` is Owner-managed and must remain untouched.
 
 ## Governance and bounded scope
@@ -39,8 +39,8 @@ and is In Progress/activated. MESP-134 is Done and squash-merged to `main` at
 
 - Exact starting/reconciled main: `1e49814172843c2ec2279b8dcc5fc0a41e5da372`.
 - Final feature implementation: `6dca68888c4300dff2575d99b3edf919e965d783`.
-- Draft PR: one Open/Draft/Unmerged PR on this branch; the PR number and URL
-  are added below immediately after creation.
+- Draft PR #79 is Open/Draft/Unmerged on this branch:
+  `https://github.com/Hossam1104/mini-erp-saas-platform/pull/79`.
 - Activation/reconciliation: MESP-135 `12123`; Finance reconciliation `12124`.
 - Architecture: Company-scoped period close/readiness with immutable evidence,
   controlled reopen/reclose, year-end calculation/post/reversal, exact posted

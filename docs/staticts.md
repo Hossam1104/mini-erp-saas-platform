@@ -23,7 +23,7 @@
 | Starting/reconciled main | `1e49814172843c2ec2279b8dcc5fc0a41e5da372` |
 | Completed capability | MESP-134 Tax / FX / Reporting Currency / Revaluation; Done through PR #78 |
 | Current capability | MESP-135 Finance close, corrections, reconciliation and core reports; activated under MESP-10 and In Progress |
-| Branch / PR | `feat/MESP-135-finance-close-reports`; feature `6dca68888c4300dff2575d99b3edf919e965d783`; one Draft/Open/Unmerged PR for Sol acceptance, number recorded after creation |
+| Branch / PR | `feat/MESP-135-finance-close-reports`; feature `6dca68888c4300dff2575d99b3edf919e965d783`; Draft PR #79 Open/Draft/Unmerged for Sol acceptance: `https://github.com/Hossam1104/mini-erp-saas-platform/pull/79` |
 | MESP-134 closure | comment `12122` |
 | MESP-135 activation | comment `12123` |
 | Finance reconciliation | comment `12124` |
