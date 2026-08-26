@@ -1,5 +1,155 @@
 
-# MESP-135 — Sol HOLD 1 bounded remediation — final handoff for Sol re-review
+# MESP-135 — Sol HOLD 2 bounded remediation — final handoff for Sol re-review
+
+This bounded remediation corrects exactly the GPT-5.6 Sol HOLD 2 findings on
+the existing Draft PR #79 / branch `feat/MESP-135-finance-close-reports`. It
+does not redesign MESP-135, does not write Jira, does not invoke Claude Opus,
+does not mark the PR Ready, does not merge, does not create a second PR, and
+does not activate MESP-139 or any other capability. STOP after this handoff
+for independent Sol re-review.
+
+## Repository
+
+- HOLD 2 starting point: the accepted HOLD 1 remediation head recorded below
+  in the superseded HOLD 1 section.
+- Final HOLD 2 remediation head: the exact SHA returned by `git rev-parse
+  HEAD` after the commit/push that follows this handoff.
+- Draft PR #79 remains Open/Draft/Unmerged:
+  `https://github.com/Hossam1104/mini-erp-saas-platform/pull/79`.
+- `frontend/assets` is untouched.
+
+## HOLD 2 findings and their exact resolution
+
+1. **Blocker A — AP/AR close reconciliation as-of correctness.** Corrected so
+   `FinanceSettlementPersistence` reconciliation scoping honors the requested
+   accounting as-of date rather than current-state balances, with a passing
+   regression test.
+2. **Blocker B — missing SQL Server LocalDB concurrency race tests
+   (CLOSE03, YEAR02, CORR02).** Confirmed already present with correct
+   semantics in `FinanceMesp135SqlServerSafetyTests`; no additional races
+   were required.
+3. **Blocker C — Reporting Currency reversal sign-accounting defect.** Fixed
+   in `AllocateReportingLine` so reversal lines carry the correct sign in the
+   Reporting Currency allocation, not just the functional-currency side.
+4. **Blocker D — MESP-134 reconciliation methods must scope by durable
+   business dates.** `FinanceMesp134Persistence` reconciliation methods now
+   scope strictly by durable business/accounting dates rather than row
+   insertion order or current state, with 3 new regression tests.
+5. **Blocker E — `QueryReconciliationAsync` missing scopes/severity logic.**
+   Corrected so every reconciliation scope is evaluated and severity is
+   derived from the real expected/actual/difference facts, not a partial or
+   hardcoded subset.
+6. **Blocker F — overly-broad `revaluation_policy` readiness check.** Narrowed
+   the close-readiness check to the accounts/exposure it is actually meant to
+   gate, with a corrected regression test.
+7. **Blocker G — lost posting-rule lineage on correction/reversal journals.**
+   Correction and reversal journal creation now preserve the originating
+   posting-rule identity/version, with a corrected regression test.
+8. **Blocker H — missing P&L/Balance Sheet/reconciliation CSV exports.**
+   Added the three CSV export operations disclosed as a residual gap at the
+   end of HOLD 1: `finance.report.profit-loss.export`,
+   `finance.report.balance-sheet.export`, and
+   `finance.reconciliation.close.export`. Each reuses the existing
+   `Export`/`Csv` helper infrastructure and the existing
+   `tenant.finance.report.export` permission code already used by the four
+   HOLD-1-accepted export operations (Trial Balance, General Ledger, AP
+   aging, AR aging) — no new permission was invented. Both the backend
+   (`FinanceMesp135Endpoints.cs`, `FoundationRestContracts.cs`) and the
+   Angular Reports workspace (`finance-reports-workspace.component.ts`,
+   export links + `exportUrl()` branching for the reconciliation route and
+   the `fromDate`/`toDate` vs `asOfDate` query shape) were updated.
+
+## Section 12 — new Angular component test coverage
+
+No `.spec.ts` file previously existed for either `finance-close-workspace`
+or `finance-reports-workspace`. Both were written this session following the
+established vitest + `TestBed` convention (mocked `FinanceService` via
+`useValue`, `data-testid`/DOM assertions, dedicated RTL/Arabic toggle test):
+
+- `frontend/src/app/features/finance/finance-close-workspace.component.spec.ts`
+  (6 tests: cascade auto-selection and readiness evaluation, reconciliation
+  evidence load scoped to the period end date, Close button gating by
+  readiness status, close mutation call shape, deterministic error-code
+  surfacing on a failed mutation, RTL/Arabic).
+- `frontend/src/app/features/finance/finance-reports-workspace.component.spec.ts`
+  (7 tests: initial trial-balance load, `exportUrl()` for trial-balance,
+  P&L/Balance Sheet using `fromDate`/`toDate` not `asOfDate`, reconciliation
+  export against the reconciliation route not the reports route, rendered
+  export links on the P&L/Balance Sheet and reconciliation panels, RTL/Arabic).
+
+## Files changed (HOLD 2, in addition to the HOLD 1 diff below)
+
+- `backend/src/MiniErp.Api/FinanceMesp135Endpoints.cs`
+- `backend/src/MiniErp.App/Modules/Finance/FinanceSettlementApplicationContracts.cs`
+- `backend/src/MiniErp.Contracts/Modules/Foundation/FoundationRestContracts.cs`
+- `backend/src/MiniErp.Infrastructure/Persistence/Modules/Finance/FinanceMesp134Persistence.cs`
+- `backend/src/MiniErp.Infrastructure/Persistence/Modules/Finance/FinanceMesp135Persistence.cs`
+- `backend/src/MiniErp.Infrastructure/Persistence/Modules/Finance/FinanceSettlementPersistence.cs`
+- `backend/tests/MiniErp.ArchitectureTests/FinanceMesp134Tests.cs`
+- `backend/tests/MiniErp.ArchitectureTests/FinanceMesp135Tests.cs`
+- `frontend/src/app/features/finance/finance-reports-workspace.component.ts`
+- `frontend/src/app/features/finance/finance-close-workspace.component.spec.ts` (new)
+- `frontend/src/app/features/finance/finance-reports-workspace.component.spec.ts` (new)
+
+No entity, `DbContext`, or migration file was touched; no schema change was
+required. `dotnet ef migrations list` could not run in this environment
+because `MiniErp.Api` intentionally does not reference
+`Microsoft.EntityFrameworkCore.Design` (a production-lean-build boundary, not
+a defect); this is not applicable to this remediation since zero
+persistence/entity changes were made.
+
+## Final validation matrix
+
+- Release backend build: 0 warnings / 0 errors.
+- Full disposable-LocalDB backend suite via the sanctioned
+  `scripts/Test-MiniErpBackend.ps1` wrapper (includes the SQL Server safety
+  harness and the REST/OpenAPI/host-security suite in the same run):
+  **1,073/1,073 passed, 0 failed, 0 skipped** (up from the HOLD-1 baseline of
+  1,065 by the Blocker D/H regression tests).
+- True current public REST/OpenAPI operation catalogue count:
+  **383 operations** (`FoundationOperationCatalog.PublicOperations`), up from
+  380 by the exact 3 new Blocker H export operations; 2 internal operations
+  unchanged.
+- Targeted `FinanceMesp135Tests` + `RestFoundationTests` re-run: **47/47**
+  passed, confirming the 3 new operations satisfy every generic
+  catalogue-consistency assertion with zero test-file edits to
+  `RestFoundationTests.cs`.
+- Angular unit tests: **296/296** across 41 spec files (up from 283/39 by the
+  2 new Finance component spec files).
+- Production build: initial **496.45 kB** (within the 500 kB budget).
+  Finance-related lazy chunks: settlement 56.04 kB, tax-fx 40.38 kB,
+  finance-workspace 34.52 kB, reports-workspace 17.02 kB, close-workspace
+  16.28 kB, finance-routes 821 bytes.
+- Both npm audits (`npm audit`, `npm audit --omit=dev`): **0 vulnerabilities**.
+- Backend NuGet packages: `dotnet list package --vulnerable
+  --include-transitive` reports 0 vulnerable packages across all 5 projects.
+- Full Playwright Chromium suite: **47/47 passed** (41.1s), including the
+  existing MESP-135 reports/close/reconciliation specs, unmodified and
+  unaffected by the Blocker H export additions.
+- Runtime: restarted via `Start-MiniErpDevelopment.ps1 -Restart` with the
+  exact-Development loopback `MESP_DEV_AUTH_BYPASS=true` shortcut. Backend
+  `http://localhost:5300` PID `12988`; frontend `http://localhost:4300` PID
+  `4500`. HTTP 200 confirmed for `/health`, `/`, `/main.js`, and
+  `/app/finance`.
+
+## Governance and next action
+
+No Jira writes, no Claude Opus review, no Ready transition, no merge, and no
+MESP-139/next-capability activation were performed. `frontend/assets` is
+untouched. Accepted fast-track remains `18/26 = 69.2%` until Sol accepts and
+merges; production readiness remains approximately `47%` overall and `41%`
+Procurement/P2P.
+
+**STOP.** GPT-5.6 Sol must independently re-review this exact Draft PR #79
+head for: correctness of all 8 HOLD 2 blocker resolutions above (A-H); the
+new Angular component test coverage for the close and reports workspaces; the
+true 383-operation catalogue count; and the complete validation evidence
+above. Do not merge, mark the PR Ready, write Jira, activate MESP-139, or
+start a new capability until Sol has completed this re-review.
+
+---
+
+# MESP-135 — Sol HOLD 1 bounded remediation — final handoff for Sol re-review (superseded by the HOLD 2 section above)
 
 This bounded remediation corrects exactly the GPT-5.6 Sol HOLD 1 findings on
 the existing Draft PR #79 / branch `feat/MESP-135-finance-close-reports`. It

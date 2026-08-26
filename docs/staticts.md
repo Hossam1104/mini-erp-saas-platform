@@ -14,9 +14,31 @@
   MESP-139 remains inactive; MESP-48 and MESP-50 remain open production gates.
 <!-- MESP-135-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-26 20:55 +03:00
+**Last Updated:** 2026-08-27 01:35 +03:00
 
-## Current authoritative fast-track snapshot - 26 August 2026 (MESP-135 Sol HOLD 1 remediation)
+## Current authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 2 remediation)
+
+| Current repository control | Verified position |
+|---|---|
+| Starting/reconciled main | `1e49814172843c2ec2279b8dcc5fc0a41e5da372` |
+| Completed capability | MESP-134 Tax / FX / Reporting Currency / Revaluation; Done through PR #78 |
+| Current capability | MESP-135 Finance close, corrections, reconciliation and core reports; In Progress under MESP-10; Sol HOLD 2 bounded remediation complete on the same branch/PR |
+| Branch / PR | `feat/MESP-135-finance-close-reports`; HOLD 2 remediation head recorded after push; Draft PR #79 remains Open/Draft/Unmerged for Sol re-review: `https://github.com/Hossam1104/mini-erp-saas-platform/pull/79` |
+| Accepted fast-track | 18/26 = 69.2%; MESP-135 is not pre-counted until Sol accepts HOLD 2 and merges |
+| Production-readiness | ~47% overall; ~41% Procurement/P2P; headlines unchanged |
+| HOLD 2 closure | 8 lettered Sol HOLD 2 blockers addressed: (A) AP/AR close reconciliation as-of correctness; (B) confirmed the 3 flagged SQL Server LocalDB races (CLOSE03/YEAR02/CORR02) already present with correct semantics; (C) fixed a Reporting Currency reversal sign-accounting defect in `AllocateReportingLine`; (D) MESP-134 reconciliation methods now scope strictly by durable business/accounting dates, with 3 new regression tests; (E) corrected `QueryReconciliationAsync` missing scopes/severity logic; (F) narrowed an overly-broad `revaluation_policy` close-readiness check; (G) restored lost posting-rule lineage on correction/reversal journals; (H) added the three CSV export operations disclosed as a residual HOLD 1 gap — `finance.report.profit-loss.export`, `finance.report.balance-sheet.export`, `finance.reconciliation.close.export` — reusing existing export infrastructure and the existing `tenant.finance.report.export` permission on both backend and the Angular Reports workspace. |
+| Section 12 closure | Added the two previously-missing Angular component spec files: `finance-close-workspace.component.spec.ts` (6 tests) and `finance-reports-workspace.component.spec.ts` (7 tests), following the established vitest + TestBed convention. |
+| Validation | Release build 0 warnings/0 errors; full disposable-LocalDB backend suite (includes all SQL Server safety races) **1,073/1,073** with 0 failures/0 skips (up from the HOLD-1 baseline of 1,065 by the Blocker D/H regression tests); true current public REST/OpenAPI operation catalogue is **383** operations system-wide (up from 380 by the exact 3 new Blocker H export operations; 2 internal operations unchanged); targeted `FinanceMesp135Tests`+`RestFoundationTests` re-run **47/47**, confirming zero test-file edits were needed to `RestFoundationTests.cs` for the new operations; Angular **296/296** across 41 specs (up from 283/39 by the 2 new Finance component spec files); production build initial **496.45 kB** (within the 500 kB budget); both npm audits (`npm audit`, `npm audit --omit=dev`) report **0 vulnerabilities**; backend NuGet `dotnet list package --vulnerable --include-transitive` reports 0 vulnerable packages; full Chromium Playwright suite **47/47**, including the unmodified existing MESP-135 reports/close/reconciliation specs. |
+| Runtime | Backend `http://localhost:5300` PID `12988` and frontend `http://localhost:4300` PID `4500`, restarted via the sanctioned `Start-MiniErpDevelopment.ps1 -Restart` launcher with the exact-Development loopback `MESP_DEV_AUTH_BYPASS=true` shortcut; `/health`, `/`, `/main.js`, and `/app/finance` all returned HTTP 200. |
+| Implementation | No new migration required — HOLD 2 fixes are logic/endpoint-only (query/read-model corrections plus 3 new export operations reusing existing infrastructure); existing additive migration `20260826133441_MESP135FinanceCloseReports` was not edited. `frontend/assets` is untouched. |
+| Documentation | This tracker, `TASK.md`, and `.ai/CURRENT_STATE.md` were updated with the HOLD 2 remediation evidence. |
+
+MESP-135 HOLD 2 remediation is a bounded bug-fix pass only: no new capability
+scope, no Jira writes, no Claude Opus review, no Ready transition, no merge,
+and no MESP-139 activation were performed. GPT-5.6 Sol must independently
+re-review this exact Draft PR #79 head before any further action.
+
+## Historical MESP-135 Sol HOLD 1 remediation snapshot - 26 August 2026 (superseded by the HOLD 2 section above)
 
 | Current repository control | Verified position |
 |---|---|

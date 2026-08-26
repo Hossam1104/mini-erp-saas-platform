@@ -1,6 +1,55 @@
 # Current State
 
-## MESP-135 Finance close, corrections, reconciliation and reports - 26 August 2026
+## MESP-135 Sol HOLD 2 bounded remediation - 27 August 2026
+
+MESP-134 is Done and squash-merged into `main` at
+`1e49814172843c2ec2279b8dcc5fc0a41e5da372` (PR #78). MESP-135 is the only
+active Finance implementation capability under MESP-10, In Progress/activated,
+on branch `feat/MESP-135-finance-close-reports`, Draft PR #79 Open/Draft/
+Unmerged: `https://github.com/Hossam1104/mini-erp-saas-platform/pull/79`.
+
+This bounded HOLD 2 session corrects the 8 GPT-5.6 Sol HOLD 2 findings
+(Blockers A-H) on top of the already-accepted HOLD 1 remediation: (A) AP/AR
+close reconciliation as-of correctness; (B) confirmed the 3 previously-flagged
+SQL Server LocalDB races (CLOSE03/YEAR02/CORR02) were already present with
+correct semantics; (C) fixed a Reporting Currency reversal sign-accounting
+defect in `AllocateReportingLine`; (D) scoped MESP-134 reconciliation methods
+by durable business/accounting dates instead of current state; (E) corrected
+`QueryReconciliationAsync` missing scopes/severity logic; (F) narrowed an
+overly-broad `revaluation_policy` close-readiness check; (G) restored lost
+posting-rule lineage on correction/reversal journals; and (H) added the three
+CSV export operations disclosed as a residual HOLD 1 gap
+(`finance.report.profit-loss.export`, `finance.report.balance-sheet.export`,
+`finance.reconciliation.close.export`), reusing existing export
+infrastructure and the existing `tenant.finance.report.export` permission, on
+both backend and the Angular Reports workspace. Two new Angular component
+spec files were added (`finance-close-workspace.component.spec.ts`,
+`finance-reports-workspace.component.spec.ts`) — neither existed before this
+session.
+
+Final validation: Release backend build 0 warnings/0 errors; full disposable
+LocalDB backend suite via `scripts/Test-MiniErpBackend.ps1`
+**1,073/1,073 passed, 0 failed, 0 skipped**; public REST/OpenAPI operation
+catalogue **383 operations** (up from 380 by the exact 3 new export
+operations), 2 internal operations unchanged; targeted
+`FinanceMesp135Tests`+`RestFoundationTests` re-run 47/47; Angular unit tests
+**296/296 across 41 spec files** (up from 283/39); production build initial
+**496.45 kB** within budget, reports-workspace lazy 17.02 kB, close-workspace
+lazy 16.28 kB; both npm audits 0 vulnerabilities; backend NuGet 0 vulnerable
+packages; full Playwright Chromium **47/47 passed**. Runtime restarted via
+`Start-MiniErpDevelopment.ps1 -Restart` with the exact-Development loopback
+`MESP_DEV_AUTH_BYPASS=true` shortcut: backend `http://localhost:5300` PID
+`12988`, frontend `http://localhost:4300` PID `4500`, HTTP 200 confirmed for
+`/health`, `/`, `/main.js`, `/app/finance`. `frontend/assets` is untouched.
+
+No Jira writes, Claude Opus review, Ready transition, merge, second PR, or
+MESP-139/next-capability activation occurred. Accepted fast-track remains
+`18/26 = 69.2%`; production readiness remains approximately `47%` overall and
+`41%` Procurement/P2P. **STOP** for independent GPT-5.6 Sol HOLD 2
+re-review of this exact Draft PR #79 head. See root `TASK.md` for the
+complete HOLD 2 handoff.
+
+## Historical MESP-135 Finance close, corrections, reconciliation and reports - 26 August 2026 (superseded by the HOLD 2 section above)
 
 MESP-134 is Done and squash-merged into `main` at
 `1e49814172843c2ec2279b8dcc5fc0a41e5da372` (PR #78); closure comment is

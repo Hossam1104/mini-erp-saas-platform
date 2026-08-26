@@ -26,9 +26,11 @@ public sealed class FinanceMesp135Tests
         {
             "finance.close.readiness", "finance.close.runs", "finance.close.history", "finance.close.period", "finance.close.reopen",
             "finance.year-end.list", "finance.year-end.calculate", "finance.year-end.post", "finance.year-end.reverse",
-            "finance.correction.create", "finance.reconciliation.close", "finance.report.trial-balance", "finance.report.trial-balance.export",
+            "finance.correction.create", "finance.reconciliation.close", "finance.reconciliation.close.export",
+            "finance.report.trial-balance", "finance.report.trial-balance.export",
             "finance.report.general-ledger", "finance.report.general-ledger.export", "finance.report.ap-aging", "finance.report.ap-aging.export",
-            "finance.report.ar-aging", "finance.report.ar-aging.export", "finance.report.profit-loss", "finance.report.balance-sheet"
+            "finance.report.ar-aging", "finance.report.ar-aging.export", "finance.report.profit-loss", "finance.report.profit-loss.export",
+            "finance.report.balance-sheet", "finance.report.balance-sheet.export"
         };
 
         foreach (var operationId in operationIds)
@@ -239,6 +241,232 @@ public sealed class FinanceMesp135Tests
         }
     }
 
+    [Fact]
+    public async Task Close_readiness_and_reconciliation_thread_the_durable_asOf_date_into_subledger_reconciliation()
+    {
+        var spy = new SpySettlementPersistence();
+        await using var fixture = await SqliteFixture.CreateAsync(settlement: spy);
+        var period = await fixture.CreateOpenPeriodAsync();
+
+        var requestedAsOfDate = new DateOnly(2026, 1, 20);
+        await fixture.Persistence.QueryReconciliationAsync(fixture.Context("tenant.finance.reconciliation.close"), fixture.CompanyId, requestedAsOfDate);
+        Assert.Contains(requestedAsOfDate, spy.RequestedAsOfDates);
+
+        spy.RequestedAsOfDates.Clear();
+        var readiness = await fixture.Persistence.EvaluateCloseReadinessAsync(fixture.Context("tenant.finance.close.readiness"), new FinanceCloseReadinessQuery(fixture.CompanyId, period.Id));
+        Assert.True(readiness.Succeeded, readiness.Code);
+        Assert.Contains(period.EndDate, spy.RequestedAsOfDates);
+        Assert.All(spy.RequestedAsOfDates, date => Assert.Equal(period.EndDate, date));
+    }
+
+    [Fact]
+    public async Task QueryReconciliation_covers_all_five_evidence_scopes_and_uses_worst_status_severity()
+    {
+        var settlementSpy = new SpySettlementPersistence();
+        var mesp134Spy = new SpyMesp134Persistence();
+        await using var fixture = await SqliteFixture.CreateAsync(settlement: settlementSpy, mesp134: mesp134Spy);
+        var asOfDate = new DateOnly(2026, 1, 31);
+
+        settlementSpy.OnReconciliation = (_, _) => [];
+        mesp134Spy.OnTax = (_, _) => [];
+        mesp134Spy.OnFx = (_, _) => [];
+        mesp134Spy.OnUnrealizedFx = (_, _) => [new FinanceUnrealizedFxReconciliationRecord(Guid.NewGuid(), Guid.NewGuid(), fixture.CompanyId, Guid.NewGuid(), "OpenItem", 10m, 10m, FinanceFxDirection.Gain, FinanceEvidenceStatus.Reconciled, Guid.NewGuid(), null, null, null, null)];
+        mesp134Spy.OnReportingCurrency = (_, _) => [new FinanceReportingCurrencyReconciliationRecord(Guid.NewGuid(), fixture.CompanyId, "SAR", 10m, "USD", 20m, 20m, null, null, null, FinanceEvidenceStatus.Reconciled)];
+
+        var reconciled = await fixture.Persistence.QueryReconciliationAsync(fixture.Context("tenant.finance.reconciliation.close"), fixture.CompanyId, asOfDate);
+        Assert.Contains(reconciled.Items, item => item.Scope == "Unrealized FX");
+        Assert.Contains(reconciled.Items, item => item.Scope == "Reporting Currency");
+        Assert.Equal(FinanceReconciliationViewStatus.Reconciled, reconciled.OverallStatus);
+
+        mesp134Spy.OnUnrealizedFx = (_, _) => [new FinanceUnrealizedFxReconciliationRecord(Guid.NewGuid(), Guid.NewGuid(), fixture.CompanyId, Guid.NewGuid(), "OpenItem", 10m, 5m, FinanceFxDirection.Gain, FinanceEvidenceStatus.NotCaptured, null, null, null, null, null)];
+        var legacy = await fixture.Persistence.QueryReconciliationAsync(fixture.Context("tenant.finance.reconciliation.close"), fixture.CompanyId, asOfDate);
+        Assert.Equal(FinanceReconciliationViewStatus.LegacyWithoutEvidence, legacy.OverallStatus);
+
+        mesp134Spy.OnUnrealizedFx = (_, _) => [new FinanceUnrealizedFxReconciliationRecord(Guid.NewGuid(), Guid.NewGuid(), fixture.CompanyId, Guid.NewGuid(), "OpenItem", 10m, 5m, FinanceFxDirection.Gain, FinanceEvidenceStatus.PendingMapping, null, null, null, null, null)];
+        var pending = await fixture.Persistence.QueryReconciliationAsync(fixture.Context("tenant.finance.reconciliation.close"), fixture.CompanyId, asOfDate);
+        Assert.Equal(FinanceReconciliationViewStatus.Pending, pending.OverallStatus);
+    }
+
+    [Fact]
+    public async Task Revaluation_readiness_check_nets_allocations_against_foreign_open_item_exposure()
+    {
+        await using var fixture = await SqliteFixture.CreateAsync();
+        var period = await fixture.CreateOpenPeriodAsync();
+        var journal = await fixture.CreatePostedJournalAsync(period);
+        var linkedAccountId = journal.Lines.Single(item => item.Debit > 0m).AccountId;
+        var openItemId = Guid.NewGuid();
+        var settlementDocumentId = Guid.NewGuid();
+        var tenantId = new TenantId(TenantId);
+
+        await using (var db = new FinanceDbContext(fixture.Options, fixture.TenantContext))
+        {
+            var paymentMethod = new FinancePaymentMethodEntity(tenantId, new FinancePaymentMethodCommand(fixture.CompanyId, "BLOCKER-F-PM", "Blocker F payment method", null, FinancePaymentMethodDirection.Receipt, true, false, new DateOnly(2025, 1, 1), null, Guid.NewGuid(), null, "pm-key", "pm-key"));
+            db.PaymentMethods.Add(paymentMethod);
+            var cashAccount = new FinanceCashAccountEntity(tenantId, new FinanceCashAccountCommand(fixture.CompanyId, "BLOCKER-F-CASH", "Blocker F cash account", null, FinanceCashAccountKind.Bank, "USD", linkedAccountId, null, new DateOnly(2025, 1, 1), null, Guid.NewGuid(), null, "cash-key", "cash-key"), "USD");
+            db.CashAccounts.Add(cashAccount);
+            db.MonetaryPolicies.Add(new FinanceMonetaryPolicyEntity(tenantId, new FinanceMonetaryPolicyCommand(fixture.CompanyId, null, 2, "AwayFromZero", true, new DateOnly(2025, 1, 1), null, Guid.NewGuid(), "policy-key", "policy-key"), "SAR", null, 1));
+            var openItem = new FinanceOpenItemEntity(tenantId, openItemId, FinanceOpenItemKind.Receivable, fixture.CompanyId, null, null, "manual-ar.v1", openItemId, 1, openItemId, 1, "BLOCKER-F", new DateOnly(2026, 1, 10), new DateOnly(2026, 2, 10), "USD", 100m, "SAR", 375m, 3.75m, null, null, null, null, null, null, null);
+            openItem.SetRecognition(FinanceOpenItemRecognitionState.Recognized, Guid.NewGuid());
+            db.OpenItems.Add(openItem);
+            var settlementDocument = new FinanceSettlementDocumentEntity(tenantId, new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Receipt, fixture.CompanyId, null, null, cashAccount.Id, paymentMethod.Id, new DateOnly(2026, 1, 25), "USD", 100m, 375m, 3.75m, null, null, null, null, null, settlementDocumentId, "doc-key", "doc-key"), "USD", "SAR", 375m, ActorId, DateTimeOffset.UtcNow);
+            db.SettlementDocuments.Add(settlementDocument);
+            await db.SaveChangesAsync();
+        }
+
+        var blocked = await fixture.Persistence.EvaluateCloseReadinessAsync(fixture.Context("tenant.finance.close.readiness"), new FinanceCloseReadinessQuery(fixture.CompanyId, period.Id));
+        Assert.True(blocked.Succeeded, blocked.Code);
+        Assert.Equal(FinanceCloseCheckStatus.Blocked, blocked.Value!.Checks.Single(item => item.Code == "revaluation_policy").Status);
+
+        await using (var db = new FinanceDbContext(fixture.Options, fixture.TenantContext))
+        {
+            db.Allocations.Add(new FinanceAllocationEntity(tenantId, new FinanceAllocationCommand(settlementDocumentId, openItemId, 100m, new DateOnly(2026, 1, 25), "full settlement", Guid.NewGuid(), "alloc-key", "alloc-key"), fixture.CompanyId, "USD", 375m, ActorId));
+            await db.SaveChangesAsync();
+        }
+
+        var settled = await fixture.Persistence.EvaluateCloseReadinessAsync(fixture.Context("tenant.finance.close.readiness"), new FinanceCloseReadinessQuery(fixture.CompanyId, period.Id));
+        Assert.True(settled.Succeeded, settled.Code);
+        Assert.Equal(FinanceCloseCheckStatus.Ready, settled.Value!.Checks.Single(item => item.Code == "revaluation_policy").Status);
+    }
+
+    [Fact]
+    public async Task Correction_reversal_preserves_original_posting_rule_lineage()
+    {
+        await using var fixture = await SqliteFixture.CreateAsync();
+        var period = await fixture.CreateOpenPeriodAsync();
+        var journal = await fixture.CreatePostedJournalAsync(period);
+        await fixture.CreateYearEndPostingRuleAsync();
+
+        Guid ruleId; int ruleVersion; byte[] currentVersion;
+        await using (var db = new FinanceDbContext(fixture.Options, fixture.TenantContext))
+        {
+            var rule = await db.PostingRules.SingleAsync(item => item.CompanyId == fixture.CompanyId && item.SourceContract == "finance-year-end.v1");
+            ruleId = rule.Id; ruleVersion = rule.VersionNumber;
+            var entity = await db.Journals.SingleAsync(item => item.Id == journal.Id);
+            entity.SetRule(ruleId, ruleVersion);
+            await db.SaveChangesAsync();
+            currentVersion = await db.Journals.Where(item => item.Id == journal.Id).Select(item => item.Version).SingleAsync();
+        }
+
+        var correction = await fixture.Persistence.CorrectJournalAsync(
+            fixture.Context("tenant.finance.correction.create"),
+            new FinanceCorrectionCommand(fixture.CompanyId, journal.Id, new DateOnly(2026, 1, 20), currentVersion, "Blocker G regression", Guid.NewGuid(), "blocker-g", "blocker-g"));
+        Assert.True(correction.Succeeded, correction.Code);
+        Assert.Equal(ruleId, correction.Value!.PostingRuleId);
+        Assert.Equal(ruleVersion, correction.Value.PostingRuleVersionNumber);
+    }
+
+    [Fact]
+    public async Task Reporting_currency_allocation_zeroes_out_per_account_across_original_and_exact_reversal()
+    {
+        await using var fixture = await SqliteFixture.CreateAsync();
+        var period = await fixture.CreateOpenPeriodAsync();
+        var journal = await fixture.CreatePostedJournalAsync(period);
+
+        var evidence = new FinanceMonetaryEvidence("SAR", 100m, "SAR", 100m, null, "USD", 27m, null, 100m, 27m, 2, "AwayFromZero", 0m, 0m, FinanceEvidenceStatus.Captured);
+        await using (var db = new FinanceDbContext(fixture.Options, fixture.TenantContext))
+        {
+            db.JournalMonetaryEvidence.Add(new FinanceJournalMonetaryEvidenceEntity(new TenantId(TenantId), Guid.NewGuid(), journal.Id, fixture.CompanyId, null, evidence, DateTimeOffset.UtcNow));
+            await db.SaveChangesAsync();
+        }
+
+        var correction = await fixture.Persistence.CorrectJournalAsync(
+            fixture.Context("tenant.finance.correction.create"),
+            new FinanceCorrectionCommand(fixture.CompanyId, journal.Id, new DateOnly(2026, 1, 20), journal.Version, "Blocker C regression", Guid.NewGuid(), "blocker-c", "blocker-c"));
+        Assert.True(correction.Succeeded, correction.Code);
+
+        var lines = await fixture.Persistence.QueryGeneralLedgerAsync(
+            fixture.Context("tenant.finance.report.general-ledger"),
+            new FinanceGeneralLedgerQuery(fixture.CompanyId, PresentationCurrencyCode: "USD"));
+
+        var assetAccountId = journal.Lines.Single(item => item.Debit > 0m).AccountId;
+        var revenueAccountId = journal.Lines.Single(item => item.Credit > 0m).AccountId;
+        var originalAssetLine = lines.Single(item => item.JournalId == journal.Id && item.AccountId == assetAccountId);
+        var reversalAssetLine = lines.Single(item => item.JournalId == correction.Value!.Id && item.AccountId == assetAccountId);
+        var originalRevenueLine = lines.Single(item => item.JournalId == journal.Id && item.AccountId == revenueAccountId);
+        var reversalRevenueLine = lines.Single(item => item.JournalId == correction.Value!.Id && item.AccountId == revenueAccountId);
+
+        Assert.Equal(FinanceEvidenceStatus.Reconciled, originalAssetLine.ReportingEvidenceStatus);
+        Assert.Equal(FinanceEvidenceStatus.Reconciled, reversalAssetLine.ReportingEvidenceStatus);
+        Assert.Equal(0m, (originalAssetLine.ReportingAmount ?? 0m) + (reversalAssetLine.ReportingAmount ?? 0m));
+        Assert.Equal(0m, (originalRevenueLine.ReportingAmount ?? 0m) + (reversalRevenueLine.ReportingAmount ?? 0m));
+        Assert.Equal(0m, (reversalAssetLine.ReportingAmount ?? 0m) + (reversalRevenueLine.ReportingAmount ?? 0m));
+    }
+
+    private sealed class SpySettlementPersistence : IFinanceSettlementPersistence
+    {
+        private readonly UnavailableFinanceSettlementPersistence fallback = new();
+        internal List<DateOnly> RequestedAsOfDates { get; } = [];
+        internal Func<Guid, DateOnly, IReadOnlyList<FinanceReconciliationRecord>>? OnReconciliation;
+
+        public Task<IReadOnlyList<FinanceReconciliationRecord>> GetReconciliationAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.GetReconciliationAsync(context, companyId, cancellationToken);
+        public Task<IReadOnlyList<FinanceReconciliationRecord>> GetReconciliationAsync(FinanceRequestContext context, Guid companyId, DateOnly asOfDate, CancellationToken cancellationToken = default)
+        {
+            RequestedAsOfDates.Add(asOfDate);
+            IReadOnlyList<FinanceReconciliationRecord> result = OnReconciliation?.Invoke(companyId, asOfDate) ?? [];
+            return Task.FromResult(result);
+        }
+        public Task<IReadOnlyList<FinancePaymentMethodRecord>> ListPaymentMethodsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListPaymentMethodsAsync(context, companyId, cancellationToken);
+        public Task<FinanceOperationResult<FinancePaymentMethodRecord>> CreatePaymentMethodAsync(FinanceRequestContext context, FinancePaymentMethodCommand command, CancellationToken cancellationToken = default) => fallback.CreatePaymentMethodAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinancePaymentMethodRecord>> EditPaymentMethodAsync(FinanceRequestContext context, FinancePaymentMethodCommand command, CancellationToken cancellationToken = default) => fallback.EditPaymentMethodAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinancePaymentMethodRecord>> SetPaymentMethodLifecycleAsync(FinanceRequestContext context, Guid methodId, Guid companyId, FinancePaymentMethodLifecycle lifecycle, byte[] expectedVersion, string idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) => fallback.SetPaymentMethodLifecycleAsync(context, methodId, companyId, lifecycle, expectedVersion, idempotencyKey, fingerprint, cancellationToken);
+        public Task<IReadOnlyList<FinanceCashAccountRecord>> ListCashAccountsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListCashAccountsAsync(context, companyId, cancellationToken);
+        public Task<FinanceOperationResult<FinanceCashAccountRecord>> CreateCashAccountAsync(FinanceRequestContext context, FinanceCashAccountCommand command, CancellationToken cancellationToken = default) => fallback.CreateCashAccountAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceCashAccountRecord>> EditCashAccountAsync(FinanceRequestContext context, FinanceCashAccountCommand command, byte[] expectedVersion, CancellationToken cancellationToken = default) => fallback.EditCashAccountAsync(context, command, expectedVersion, cancellationToken);
+        public Task<FinanceOperationResult<FinanceCashAccountRecord>> SetCashAccountLifecycleAsync(FinanceRequestContext context, Guid accountId, Guid companyId, FinancePaymentMethodLifecycle lifecycle, byte[] expectedVersion, string idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) => fallback.SetCashAccountLifecycleAsync(context, accountId, companyId, lifecycle, expectedVersion, idempotencyKey, fingerprint, cancellationToken);
+        public Task<Guid?> ResolveCompanyIdAsync(FinanceRequestContext context, string resource, Guid resourceId, CancellationToken cancellationToken = default) => fallback.ResolveCompanyIdAsync(context, resource, resourceId, cancellationToken);
+        public Task<IReadOnlyList<FinanceOpenItemRecord>> ListOpenItemsAsync(FinanceRequestContext context, FinanceOpenItemKind kind, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListOpenItemsAsync(context, kind, companyId, cancellationToken);
+        public Task<FinanceOpenItemRecord?> GetOpenItemAsync(FinanceRequestContext context, Guid itemId, FinanceOpenItemKind? expectedKind = null, CancellationToken cancellationToken = default) => fallback.GetOpenItemAsync(context, itemId, expectedKind, cancellationToken);
+        public Task<IReadOnlyList<FinanceApSourceReadyRecord>> ListApSourceReadyAsync(FinanceRequestContext context, Guid? companyId = null, CancellationToken cancellationToken = default) => fallback.ListApSourceReadyAsync(context, companyId, cancellationToken);
+        public Task<FinanceOperationResult<FinanceOpenItemRecord>> RecognizeSupplierInvoiceAsync(FinanceRequestContext context, FinanceSupplierInvoiceRecognitionCommand command, CancellationToken cancellationToken = default) => fallback.RecognizeSupplierInvoiceAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateManualReceivableAsync(FinanceRequestContext context, FinanceManualReceivableCommand command, CancellationToken cancellationToken = default) => fallback.CreateManualReceivableAsync(context, command, cancellationToken);
+        public Task<IReadOnlyList<FinanceSettlementDocumentRecord>> ListSettlementDocumentsAsync(FinanceRequestContext context, FinanceSettlementQuery query, CancellationToken cancellationToken = default) => fallback.ListSettlementDocumentsAsync(context, query, cancellationToken);
+        public Task<FinanceSettlementDocumentRecord?> GetSettlementDocumentAsync(FinanceRequestContext context, Guid documentId, FinancePaymentMethodDirection? expectedDirection = null, CancellationToken cancellationToken = default) => fallback.GetSettlementDocumentAsync(context, documentId, expectedDirection, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> CreateSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementDocumentCommand command, CancellationToken cancellationToken = default) => fallback.CreateSettlementDocumentAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> EditSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementDocumentCommand command, byte[] expectedVersion, CancellationToken cancellationToken = default) => fallback.EditSettlementDocumentAsync(context, command, expectedVersion, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> TransitionSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementActionCommand command, FinanceSettlementDocumentStatus target, CancellationToken cancellationToken = default) => fallback.TransitionSettlementDocumentAsync(context, command, target, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> PostSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementActionCommand command, CancellationToken cancellationToken = default) => fallback.PostSettlementDocumentAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> ReverseSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementReversalCommand command, CancellationToken cancellationToken = default) => fallback.ReverseSettlementDocumentAsync(context, command, cancellationToken);
+        public Task<IReadOnlyList<FinanceAllocationRecord>> ListAllocationsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListAllocationsAsync(context, companyId, cancellationToken);
+        public Task<FinanceOperationResult<FinanceAllocationRecord>> CreateAllocationAsync(FinanceRequestContext context, FinanceAllocationCommand command, CancellationToken cancellationToken = default) => fallback.CreateAllocationAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceAllocationRecord>> ReverseAllocationAsync(FinanceRequestContext context, FinanceAllocationReversalCommand command, CancellationToken cancellationToken = default) => fallback.ReverseAllocationAsync(context, command, cancellationToken);
+        public Task<IReadOnlyList<FinanceAgingRecord>> GetAgingAsync(FinanceRequestContext context, FinanceAgingQuery query, CancellationToken cancellationToken = default) => fallback.GetAgingAsync(context, query, cancellationToken);
+        public Task<FinanceCustomerExposureRecord?> GetExposureAsync(FinanceRequestContext context, FinanceExposureQuery query, CancellationToken cancellationToken = default) => fallback.GetExposureAsync(context, query, cancellationToken);
+    }
+
+    private sealed class SpyMesp134Persistence : IFinanceMesp134Persistence
+    {
+        private readonly UnavailableFinanceMesp134Persistence fallback = new();
+        internal Func<Guid, DateOnly?, IReadOnlyList<FinanceTaxAccountingReconciliationRecord>>? OnTax;
+        internal Func<Guid, DateOnly?, IReadOnlyList<FinanceFxReconciliationRecord>>? OnFx;
+        internal Func<Guid, DateOnly?, IReadOnlyList<FinanceUnrealizedFxReconciliationRecord>>? OnUnrealizedFx;
+        internal Func<Guid, DateOnly?, IReadOnlyList<FinanceReportingCurrencyReconciliationRecord>>? OnReportingCurrency;
+
+        public Task<IReadOnlyList<FinanceMonetaryPolicyRecord>> ListMonetaryPoliciesAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListMonetaryPoliciesAsync(context, companyId, cancellationToken);
+        public Task<FinanceOperationResult<FinanceMonetaryPolicyRecord>> CreateMonetaryPolicyAsync(FinanceRequestContext context, FinanceMonetaryPolicyCommand command, CancellationToken cancellationToken = default) => fallback.CreateMonetaryPolicyAsync(context, command, cancellationToken);
+        public Task<IReadOnlyList<FinanceTaxAccountingEffectRecord>> ListTaxEffectsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListTaxEffectsAsync(context, companyId, cancellationToken);
+        public Task<FinanceTaxAccountingEffectRecord?> PreviewTaxAsync(FinanceRequestContext context, FinanceTaxAccountingCommand command, CancellationToken cancellationToken = default) => fallback.PreviewTaxAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceTaxAccountingEffectRecord>> PostTaxAsync(FinanceRequestContext context, FinanceTaxAccountingCommand command, CancellationToken cancellationToken = default) => fallback.PostTaxAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceTaxAccountingEffectRecord>> ReverseTaxAsync(FinanceRequestContext context, FinanceTaxAccountingReversalCommand command, CancellationToken cancellationToken = default) => fallback.ReverseTaxAsync(context, command, cancellationToken);
+        public Task<IReadOnlyList<FinanceRevaluationBatchRecord>> ListRevaluationBatchesAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListRevaluationBatchesAsync(context, companyId, cancellationToken);
+        public Task<FinanceRevaluationBatchRecord?> GetRevaluationBatchAsync(FinanceRequestContext context, Guid batchId, CancellationToken cancellationToken = default) => fallback.GetRevaluationBatchAsync(context, batchId, cancellationToken);
+        public Task<FinanceOperationResult<FinanceRevaluationBatchRecord>> CreateRevaluationBatchAsync(FinanceRequestContext context, FinanceRevaluationBatchCommand command, CancellationToken cancellationToken = default) => fallback.CreateRevaluationBatchAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceRevaluationBatchRecord>> CalculateRevaluationBatchAsync(FinanceRequestContext context, FinanceRevaluationActionCommand command, CancellationToken cancellationToken = default) => fallback.CalculateRevaluationBatchAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceRevaluationBatchRecord>> PostRevaluationBatchAsync(FinanceRequestContext context, FinanceRevaluationActionCommand command, CancellationToken cancellationToken = default) => fallback.PostRevaluationBatchAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceRevaluationBatchRecord>> ReverseRevaluationBatchAsync(FinanceRequestContext context, FinanceRevaluationActionCommand command, CancellationToken cancellationToken = default) => fallback.ReverseRevaluationBatchAsync(context, command, cancellationToken);
+        public Task<IReadOnlyList<FinanceTaxAccountingReconciliationRecord>> ReconcileTaxAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ReconcileTaxAsync(context, companyId, cancellationToken);
+        public Task<IReadOnlyList<FinanceTaxAccountingReconciliationRecord>> ReconcileTaxAsync(FinanceRequestContext context, Guid companyId, DateOnly? asOfDate, CancellationToken cancellationToken = default)
+        { IReadOnlyList<FinanceTaxAccountingReconciliationRecord> result = OnTax?.Invoke(companyId, asOfDate) ?? []; return Task.FromResult(result); }
+        public Task<IReadOnlyList<FinanceFxReconciliationRecord>> ReconcileFxAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ReconcileFxAsync(context, companyId, cancellationToken);
+        public Task<IReadOnlyList<FinanceFxReconciliationRecord>> ReconcileFxAsync(FinanceRequestContext context, Guid companyId, DateOnly? asOfDate, CancellationToken cancellationToken = default)
+        { IReadOnlyList<FinanceFxReconciliationRecord> result = OnFx?.Invoke(companyId, asOfDate) ?? []; return Task.FromResult(result); }
+        public Task<IReadOnlyList<FinanceUnrealizedFxReconciliationRecord>> ReconcileUnrealizedFxAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ReconcileUnrealizedFxAsync(context, companyId, cancellationToken);
+        public Task<IReadOnlyList<FinanceUnrealizedFxReconciliationRecord>> ReconcileUnrealizedFxAsync(FinanceRequestContext context, Guid companyId, DateOnly? asOfDate, CancellationToken cancellationToken = default)
+        { IReadOnlyList<FinanceUnrealizedFxReconciliationRecord> result = OnUnrealizedFx?.Invoke(companyId, asOfDate) ?? []; return Task.FromResult(result); }
+        public Task<IReadOnlyList<FinanceReportingCurrencyReconciliationRecord>> ReconcileReportingCurrencyAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ReconcileReportingCurrencyAsync(context, companyId, cancellationToken);
+        public Task<IReadOnlyList<FinanceReportingCurrencyReconciliationRecord>> ReconcileReportingCurrencyAsync(FinanceRequestContext context, Guid companyId, DateOnly? asOfDate, CancellationToken cancellationToken = default)
+        { IReadOnlyList<FinanceReportingCurrencyReconciliationRecord> result = OnReportingCurrency?.Invoke(companyId, asOfDate) ?? []; return Task.FromResult(result); }
+    }
+
     private sealed class SqliteFixture : IAsyncDisposable
     {
         private readonly SqliteConnection connection;
@@ -280,7 +508,7 @@ public sealed class FinanceMesp135Tests
             return context!;
         }
 
-        internal static async Task<SqliteFixture> CreateAsync()
+        internal static async Task<SqliteFixture> CreateAsync(IFinanceSettlementPersistence? settlement = null, IFinanceMesp134Persistence? mesp134 = null)
         {
             var connection = new SqliteConnection("Data Source=:memory:");
             await connection.OpenAsync();
@@ -290,7 +518,7 @@ public sealed class FinanceMesp135Tests
             var companyId = Guid.Parse("11111111-1111-1111-1111-111111111111");
             var companies = new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(TenantId, companyId, "MESP-135 Test Company", "SAR")]);
             var setup = new FinancePersistence(options, companies, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
-            var persistence = new FinanceMesp135Persistence(options, companies, new UnavailableFinanceSettlementPersistence(), new UnavailableFinanceMesp134Persistence(), new UnavailableMasterDataExchangeRatePersistence());
+            var persistence = new FinanceMesp135Persistence(options, companies, settlement ?? new UnavailableFinanceSettlementPersistence(), mesp134 ?? new UnavailableFinanceMesp134Persistence(), new UnavailableMasterDataExchangeRatePersistence());
             var foundation = FoundationRequestContext.ForTenant(ActorId, Guid.NewGuid(), tenantContext, "tenant.finance.period.close");
             Assert.True(FinanceRequestContext.TryCreate(foundation, out var context));
             return new SqliteFixture(connection, options, tenantContext, context!, companies, setup, persistence, companyId);
