@@ -553,7 +553,7 @@ internal sealed class FinanceSettlementPersistence(
             ? line.FunctionalCredit - line.FunctionalDebit
             : line.FunctionalDebit - line.FunctionalCredit);
 
-    private static bool IsSettlementEffectEffective(
+    internal static bool IsSettlementEffectEffective(
         FinanceSettlementDocumentEntity document,
         IReadOnlyDictionary<Guid, FinanceJournalEntity> journals,
         DateOnly asOf)

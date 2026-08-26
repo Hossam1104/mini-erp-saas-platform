@@ -14,7 +14,36 @@
   MESP-139 remains inactive; MESP-48 and MESP-50 remain open production gates.
 <!-- MESP-135-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-27 01:35 +03:00
+**Last Updated:** 2026-08-27 02:40 +03:00
+
+## Current authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 3 remediation)
+
+| Current repository control | Verified position |
+|---|---|
+| Starting feature head | `6835e9aad52e9162e0dbe9722679b563920b3374` |
+| Reconciled base | `841a777af1622cb4de9c3708cd4a2b389b7ef9e9` |
+| Current capability | MESP-135 Finance close, corrections, reconciliation and core reports; In Progress under MESP-10; HOLD 3 bounded remediation complete on the same branch/PR |
+| Branch / PR | `feat/MESP-135-finance-close-reports`; Draft PR #79 remains Open/Draft/Unmerged for Sol re-review |
+| HOLD 3 SQL races | `Close04` ReopenPeriodAsync vs PostJournalAsync; `Year03` PostYearEndAsync vs PostJournalAsync; `Corr03` CorrectJournalAsync vs ClosePeriodAsync; all three required production-operation races passed against disposable LocalDB |
+| Historical semantics | Settlement/revaluation exposure uses durable posted/reversal journal identities and posting dates plus as-of allocations; valid Tax/realized-FX/unrealized-FX reversals map to reconciled view status, while missing/invalid evidence remains pending/blocked |
+| AP/AR as-of | Actual `FinanceSettlementPersistence.GetReconciliationAsync(context, companyId, asOfDate)` regressions cover control-account chronology, settlement/reversal dates, allocations, amounts, differences, statuses, and `AsOfDate` |
+| Validation | Release 0 warnings/0 errors; focused MESP-133 `16/16`, MESP-134 `27/27`, MESP-135 direct `16/16`, MESP-135 SQL `10/10`; full backend `1,081/1,081` passed, 0 failed, 0 skipped; complete SQL safety `80/80`; REST/OpenAPI/host `55/55` |
+| REST/OpenAPI | Public operation catalogue remains `383`; no HOLD 3 public operation was added |
+| Angular / browser | Angular `296/296` across 41 specs; focused Finance Chromium `15/15`; full Chromium `47/47` |
+| Production bundle / security | Initial `496.45 kB`; Finance/GL `34.52 kB`, close `16.28 kB`, reports `17.02 kB`, tax-fx `40.38 kB`, settlements `56.04 kB`; both npm audits 0 vulnerabilities; NuGet vulnerable-package scan clear |
+| Runtime | Backend `http://localhost:5300` PID `38404`; frontend `http://localhost:4300` PID `18268`; all 11 required route probes HTTP 200; repository-owned processes remain alive; `LEFT RUNNING = YES` |
+| Governance | MESP-135 remains In Progress; MESP-139 inactive; fast-track `18/26 = 69.2%`; production readiness unchanged; no Jira writes, Opus review, Ready transition, or merge |
+| Scope / persistence | No entity, DbContext, migration, or `frontend/assets` file changed; no migration needed |
+
+The exact implementation and final documentation synchronization heads are
+recorded in the commit/push handoff for this session. STOP for independent
+GPT-5.6 Sol HOLD 3 acceptance; do not merge or mark PR #79 Ready.
+
+Runtime probe detail: `5300/health` 200; `5300/openapi/v1.json` 200;
+`4300/` 200; `4300/main.js` 200; `4300/app/finance` 200;
+`4300/app/finance/ap` 200; `4300/app/finance/ar` 200;
+`4300/app/finance/settlements` 200; `4300/app/finance/tax-fx` 200;
+`4300/app/finance/close` 200; `4300/app/finance/reports` 200.
 
 ## Current authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 2 remediation)
 

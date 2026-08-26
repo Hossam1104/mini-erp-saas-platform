@@ -1,5 +1,60 @@
 
-# MESP-135 — Sol HOLD 2 bounded remediation — final handoff for Sol re-review
+# MESP-135 - Sol HOLD 3 bounded remediation - final handoff for Sol re-review
+
+This bounded remediation corrects the four remaining GPT-5.6 Sol HOLD 3
+blockers on the existing Draft PR #79 / branch
+`feat/MESP-135-finance-close-reports`. It does not redesign MESP-135, write
+Jira, invoke Claude Opus, mark the PR Ready, merge, create a second PR, or
+activate MESP-139 or any other capability. STOP after this handoff for
+independent Sol re-review.
+
+## HOLD 3 closure
+
+1. **Actual SQL business races.** Added and executed `Close04_Concurrent_reopen_and_post_preserve_one_coherent_period_state` (`ReopenPeriodAsync` versus `PostJournalAsync`), `Year03_Concurrent_year_end_post_and_late_journal_cannot_commit_stale_year_end` (`PostYearEndAsync` versus `PostJournalAsync`), and `Corr03_Concurrent_correction_and_period_close_preserve_close_snapshot` (`CorrectJournalAsync` versus `ClosePeriodAsync`) with independent production persistence contexts and disposable LocalDB. Each asserts the allowed serialized outcomes and final persisted state.
+2. **Historical settlement/revaluation exposure.** Settlement effects now use durable posted/reversal journal identities and posting dates plus as-of allocation history; current settlement status is not historical truth. Revaluation settlement candidates use the same durable effective-date rule.
+3. **Reversed evidence mapping.** Tax, realized-FX, and unrealized-FX reconciliation require effective original/reversal journals, correct reversal lineage, and inverse monetary evidence. Valid reversals remain reconciled in the MESP-135 view; missing or invalid reversal evidence remains pending/blocked.
+4. **Production AP/AR as-of regressions.** Added actual `FinanceSettlementPersistence.GetReconciliationAsync(context, companyId, asOfDate)` regressions for AP and AR control-account journal chronology, settlement posting/reversal dates, allocation dates, allocation reversals, subledger amount, posted-journal amount, difference, status, and `AsOfDate`.
+
+## HOLD 3 validation handoff
+
+- Starting feature head: `6835e9aad52e9162e0dbe9722679b563920b3374`; base:
+  `841a777af1622cb4de9c3708cd4a2b389b7ef9e9`.
+- Release backend build: 0 warnings / 0 errors.
+- Focused backend: MESP-133 `16/16`, MESP-134 `27/27`, MESP-135 direct
+  persistence `16/16`; MESP-135 SQL class `10/10`.
+- Full disposable-LocalDB backend runner:
+  **1,081/1,081 passed, 0 failed, 0 skipped**. The complete SQL safety
+  catalogue contains **80/80** executed cases in that successful run.
+- REST/OpenAPI/host-security: **55/55**. Public operation catalogue remains
+  **383**; HOLD 3 required no new public operation.
+- Angular: **296/296** across 41 specs. Production initial bundle:
+  **496.45 kB**; Finance/GL **34.52 kB**, close **16.28 kB**, reports
+  **17.02 kB**, tax-fx **40.38 kB**, settlements **56.04 kB**. Both npm
+  audits report 0 vulnerabilities; NuGet vulnerable-package scan reports no
+  vulnerable packages across all five projects.
+- Focused Finance Chromium: **15/15**; full Chromium: **47/47**.
+- Runtime restarted through `scripts/Start-MiniErpDevelopment.ps1 -Restart`
+  with Development loopback auth bypass. Backend is
+  `http://localhost:5300`, PID `38404`; frontend is
+  `http://localhost:4300`, PID `18268`. All 11 required probes returned
+  HTTP 200: `/health`, `/openapi/v1.json`, `/`, `/main.js`,
+  `/app/finance`, `/app/finance/ap`, `/app/finance/ar`,
+  `/app/finance/settlements`, `/app/finance/tax-fx`, `/app/finance/close`,
+  and `/app/finance/reports`. Both processes are alive and the web shell is
+  normal/non-degraded. `LEFT RUNNING = YES`.
+- No entity, DbContext, migration, or `frontend/assets` file changed; no
+  migration was needed. MESP-135 remains In Progress, MESP-139 remains
+  inactive, fast-track remains `18/26 = 69.2%`, and production readiness is
+  unchanged. No Jira writes, Opus review, Ready transition, or merge.
+- Tracked Markdown count: **70**; `docs/statistics.md` was not created.
+
+**Final handoff:** the exact implementation and documentation synchronization
+heads will be recorded after commit/push below. Draft PR #79 remains
+Open/Draft/Unmerged for Sol's independent HOLD 3 review.
+
+---
+
+## Historical MESP-135 — Sol HOLD 2 bounded remediation — final handoff for Sol re-review
 
 This bounded remediation corrects exactly the GPT-5.6 Sol HOLD 2 findings on
 the existing Draft PR #79 / branch `feat/MESP-135-finance-close-reports`. It

@@ -7,6 +7,29 @@ reconciled MESP-134 main SHA `1e49814172843c2ec2279b8dcc5fc0a41e5da372`.
 This document records the implementation boundary for independent Sol review;
 it does not mark the capability Done, authorize merge, or activate MESP-139.
 
+### HOLD 3 corrective semantics - 27 August 2026
+
+The HOLD 3 remediation preserves the existing Finance boundary and adds no
+schema or public-operation change. The close/reopen, year-end-post, and
+correction/close SQL safety checks now exercise opposing production
+operations through independent contexts and disposable LocalDB databases:
+`ReopenPeriodAsync` versus `PostJournalAsync`, `PostYearEndAsync` versus
+`PostJournalAsync`, and `CorrectJournalAsync` versus `ClosePeriodAsync`.
+Their assertions cover the final persisted period/year state, close history,
+close snapshot/fingerprint, year-end closing journal, and correction lineage.
+
+Historical settlement and revaluation exposure is determined from durable
+`PostedJournalId`/`PostingDate` and `ReversalJournalId`/reversal `PostingDate`
+evidence, together with accounting-date allocations. A settlement row's
+current status is not treated as historical truth. MESP-134 Tax, realized-FX,
+and unrealized-FX reconciliation similarly requires effective journal dates,
+valid reversal lineage, and exact inverse monetary evidence before reporting
+`Reversed`; missing or invalid reversal evidence remains pending/blocked.
+Production AP/AR reconciliation is covered through the actual
+`FinanceSettlementPersistence.GetReconciliationAsync(context, companyId,
+asOfDate)` implementation, including control-account journal chronology and
+allocation-reversal history.
+
 The capability extends the existing Finance authorities with Company-scoped
 period close and reopen/reclose, year-end retained-earnings processing, exact
 posted-journal corrections, Finance reconciliation, Trial Balance, General
