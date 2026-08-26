@@ -12,7 +12,9 @@ and is In Progress/activated. MESP-134 is Done and squash-merged to `main` at
 - MESP-135 activation comment: `12123`.
 - MESP-10 Finance reconciliation: `12124`.
 - Implementation branch: `feat/MESP-135-finance-close-reports`.
-- This session must leave one Draft/Open/Unmerged PR for Sol review.
+- Final feature implementation SHA: `6dca68888c4300dff2575d99b3edf919e965d783`.
+- One Draft/Open/Unmerged PR is created for Sol review; its number is recorded
+  in the final handoff after PR creation.
 - `frontend/assets` is Owner-managed and must remain untouched.
 
 ## Governance and bounded scope
@@ -33,14 +35,67 @@ and is In Progress/activated. MESP-134 is Done and squash-merged to `main` at
   for Tenant/Company scope, permissions, accounting state, concurrency, and
   idempotency.
 
-## Sol acceptance handoff requirement
+## Final bounded implementation handoff
 
-At completion this file must contain the reconciled-main SHA, final feature SHA,
-Draft PR number/state, architecture and migrations, REST operations and routes,
-permissions, the seven named SQL races, focused/full test totals, Angular and
-Playwright totals, bundle sizes, runtime PIDs/probes, known limitations, and
-the complete independent-review boundary. Do not claim MESP-135 Done or set
-fast-track to `19/26`; stop after the single Draft PR is ready for Sol.
+- Exact starting/reconciled main: `1e49814172843c2ec2279b8dcc5fc0a41e5da372`.
+- Final feature implementation: `6dca68888c4300dff2575d99b3edf919e965d783`.
+- Draft PR: one Open/Draft/Unmerged PR on this branch; the PR number and URL
+  are added below immediately after creation.
+- Activation/reconciliation: MESP-135 `12123`; Finance reconciliation `12124`.
+- Architecture: Company-scoped period close/readiness with immutable evidence,
+  controlled reopen/reclose, year-end calculation/post/reversal, exact posted
+  journal correction/reversal, close reconciliation, Trial Balance, General
+  Ledger, AP/AR aging, account-classified P&L/Balance Sheet, and deterministic
+  authorized CSV export. Existing MESP-132/133/134 authorities remain the
+  source of truth for fiscal state, posting, subledgers, FX/tax evidence, and
+  Tenant/Company authorization.
+- Migration: `20260826133441_MESP135FinanceCloseReports`; five additive tables:
+  `finance.PeriodCloseEvidence`, `finance.PeriodCloseRuns`,
+  `finance.PeriodHistory`, `finance.YearEndRuns`, and `finance.YearEndLines`.
+- REST: 22 public operation-catalogue/OpenAPI operations under
+  `/api/v1/finance/periods`, `/api/v1/finance/period-close-runs`,
+  `/api/v1/finance/year-end`, `/api/v1/finance/journals/{journalId}/correction`,
+  `/api/v1/finance/reconciliation/close`, and
+  `/api/v1/finance/reports/{trial-balance,general-ledger,ap-aging,ar-aging,
+  profit-loss,balance-sheet}` plus report exports. Read permissions are
+  `tenant.finance.close.view` and `tenant.finance.report.view`; mutations use
+  `tenant.finance.close.manage`, `tenant.finance.close.post`,
+  `tenant.finance.correction.create`, and `tenant.finance.report.export`.
+  Mutations use antiforgery, mandatory audit, required idempotency, and
+  If-Match on state-changing actions.
+- SQL safety: 77/77, 0 failures, 0 skips. The seven MESP-135 races are
+  `Close01_Concurrent_period_close_has_one_committed_winner`,
+  `Close02_Concurrent_reopen_has_one_committed_winner`,
+  `Close03_Concurrent_close_and_post_reject_closed_period_journal`,
+  `Year01_Concurrent_year_end_calculation_has_one_durable_snapshot`,
+  `Year02_Concurrent_year_end_post_has_one_committed_journal`,
+  `Corr01_Concurrent_correction_has_one_committed_reversal`, and
+  `Corr02_correction_and_reversal_are_exact_and_linked`; prior MESP-133/134
+  SQL coverage remains retained.
+- Validation: focused MESP-135 persistence 3/3; REST/OpenAPI/host 55/55;
+  disposable LocalDB full backend 1,062/1,062 with 0 failures and 0 skips;
+  Angular 283/283 across 39 spec files; focused MESP-135 Playwright 5/5;
+  full Chromium 47/47; EF model-change detection clean; both npm audits
+  report 0 vulnerabilities.
+- Build: Release 0 warnings / 0 errors; Angular initial 496.45 kB; lazy
+  Finance/GL 34.52 kB, close 16.28 kB, reports 16.59 kB, and settlement
+  56.04 kB.
+- Runtime: backend `http://localhost:5300` PID `46612`; frontend
+  `http://localhost:4300` PID `43716`. HTTP 200 probes passed for health,
+  OpenAPI, root, `main.js`, `/app/finance`, AP, AR, settlements, tax-fx,
+  `/app/finance/close`, and `/app/finance/reports`.
+- Known limitations: generic Reporting/MESP-139, scheduling, consolidation,
+  PDF/Excel/email distribution, statutory filing/ZATCA/FATOORA, external
+  providers/bank feeds, production infrastructure, backup/restore, capacity,
+  legal/specialist validation, migration/cutover, and Wafra-specific core
+  behavior remain outside this bounded capability.
+
+Sol must independently review this exact Draft PR and feature head for Tenant
+and Company isolation, authoritative fiscal/posting/account classification,
+period as-of semantics, year-end destination configuration, exact reversal
+lineage, reconciliation truthfulness, export scope, migration safety, all seven
+provider-realistic races, and the Angular EN/AR/RTL/error/authorization states.
+Do not claim MESP-135 Done or set fast-track to `19/26`; stop for Sol.
 
 ---
 

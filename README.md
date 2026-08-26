@@ -44,6 +44,21 @@ Fast-track remains `18/26 = 69.2%`; production readiness remains approximately
 `47%` overall and `41%` Procurement/P2P. MESP-48 and MESP-50 remain open
 production gates.
 
+The implementation feature SHA is
+`6dca68888c4300dff2575d99b3edf919e965d783`, with additive migration
+`20260826133441_MESP135FinanceCloseReports`. It exposes 22 public Finance
+operations and lazy `/app/finance/close` and `/app/finance/reports` workspaces.
+Final evidence is Release 0 warnings/0 errors, focused MESP-135 persistence
+3/3, REST/OpenAPI/host 55/55, SQL safety 77/77, full backend 1,062/1,062 with
+0 failures and 0 skips, Angular 283/283, focused Chromium 5/5, full Chromium
+47/47, clean EF model-change detection, and both npm audits at 0
+vulnerabilities. The production bundle is 496.45 kB initial; Finance/GL,
+close, reports, and settlement lazy chunks are 34.52 kB, 16.28 kB, 16.59 kB,
+and 56.04 kB. The runtime is API 5300 PID 46612 and frontend 4300 PID 43716;
+all required probes returned HTTP 200. One Draft/Open/Unmerged PR remains for
+Sol acceptance; MESP-135 is not marked Done and no Jira, Opus, merge, or Ready
+transition occurred.
+
 ### Historical MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026
 
 MESP-132 and MESP-133 are Done/merged/closed at their accepted bounded scopes.

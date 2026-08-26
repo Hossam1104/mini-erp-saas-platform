@@ -6,17 +6,27 @@ MESP-134 is Done and squash-merged to `main` at
 `1e49814172843c2ec2279b8dcc5fc0a41e5da372` through PR #78 (closure `12122`).
 MESP-135 is the only active Finance implementation capability under MESP-10,
 In Progress/activated by `12123`, with Finance reconciliation `12124`. The
-implementation branch is `feat/MESP-135-finance-close-reports` and must end as
-one Draft/Open/Unmerged PR for Sol review. The bounded workspace will add
-Finance close/year-end, corrections, reconciliation, core reports, and
-authorized export while preserving Tenant/Company server authority and the
-MESP-132/133/134 accounting evidence model.
+implementation branch is `feat/MESP-135-finance-close-reports`; feature SHA
+`6dca68888c4300dff2575d99b3edf919e965d783` is ready in one Draft/Open/Unmerged
+PR for Sol review. The bounded workspace implements Finance close/year-end,
+corrections, reconciliation, core reports, and authorized export while
+preserving Tenant/Company server authority and the MESP-132/133/134 accounting
+evidence model. New lazy routes are `/app/finance/close` and
+`/app/finance/reports`.
 
 No Jira writes, Claude Opus review, merge, Ready transition, next-capability
 activation, external provider/production credential setup, generic Reporting,
 scheduled distribution, consolidation, statutory filing, or Wafra-specific
 Finance behavior is in scope. Fast-track remains `18/26 = 69.2%` and production
 readiness remains approximately `47%` overall / `41%` Procurement/P2P.
+
+Final validation is Release 0/0; focused MESP-135 persistence 3/3;
+REST/OpenAPI/host 55/55; SQL safety 77/77; full backend 1,062/1,062 with 0
+failures and 0 skips; Angular 283/283; focused Chromium 5/5; full Chromium
+47/47; EF model-change detection clean; and both npm audits at 0
+vulnerabilities. The initial Angular bundle is 496.45 kB, with Finance/GL
+34.52 kB, close 16.28 kB, reports 16.59 kB, and settlement 56.04 kB lazy
+chunks.
 
 ### Historical MESP-134 runtime snapshot
 

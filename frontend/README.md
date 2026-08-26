@@ -16,6 +16,16 @@
 > monetary-evidence contracts. MESP-139 generic Reporting, scheduling,
 > consolidation, statutory/provider work, and Wafra-specific behavior remain
 > outside scope. No Jira, Opus, merge, or Ready transition is permitted.
+>
+> Implementation feature SHA is
+> `6dca68888c4300dff2575d99b3edf919e965d783`. The lazy routes are
+> `/app/finance/close` and `/app/finance/reports`; both preserve EN/AR, RTL,
+> loading/empty/blocked/error/authorization states, server-error mappings,
+> filters, and report-specific export links. Angular passes 283/283 across 39
+> spec files; focused MESP-135 Chromium is 5/5 and full Chromium is 47/47.
+> The initial bundle is 496.45 kB; close is 16.28 kB, reports 16.59 kB,
+> Finance/GL 34.52 kB, and settlement 56.04 kB lazy. Both npm audits report
+> 0 vulnerabilities. `frontend/assets` remains untouched.
 <!-- MESP-135-CURRENT-END -->
 
 <!-- MESP-134-HISTORICAL-START -->

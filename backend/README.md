@@ -17,6 +17,16 @@
 > export. Generic Reporting/MESP-139, scheduling, consolidation, statutory or
 > provider work, and Wafra-specific behavior remain outside scope. No Jira,
 > Opus, merge, or Ready transition is permitted.
+>
+> Implementation is at feature SHA
+> `6dca68888c4300dff2575d99b3edf919e965d783`, with additive migration
+> `20260826133441_MESP135FinanceCloseReports` and five new Tenant-owned tables.
+> The public catalogue contains 22 Finance operations. Focused persistence is
+> 3/3, REST/OpenAPI/host is 55/55, SQL safety is 77/77, and the full backend is
+> 1,062/1,062 with 0 failures and 0 skips. Release build is 0 warnings/0
+> errors. The seven new provider-realistic SQL races and retained prior Finance
+> races are documented in the architecture record; no existing migration was
+> edited.
 <!-- MESP-135-CURRENT-END -->
 
 <!-- MESP-131-MERGED-CURRENT-START -->
