@@ -922,13 +922,52 @@ public sealed class SqlServerSafetyTests
         var calculated = await scenario.First.CalculateRevaluationBatchAsync(scenario.FirstContext, new FinanceRevaluationActionCommand(batch.Value!.Id, batch.Value.Version, null, Guid.NewGuid(), "mesp134-rev03-calculate", "mesp134-rev03-calculate"));
         Assert.True(calculated.Succeeded, calculated.Code);
         var post = SafeFinanceOperationAsync(() => scenario.First.PostRevaluationBatchAsync(scenario.FirstContext, new FinanceRevaluationActionCommand(calculated.Value!.Id, calculated.Value.Version, null, Guid.NewGuid(), "mesp134-rev03-post", "mesp134-rev03-post")));
-        var mutate = MutateMesp134SourceAsync(scenario);
-        await Task.WhenAll(post, mutate);
+        var allocation = SafeFinanceOperationAsync(() => CreateMesp134AllocationAsync(scenario));
+        await Task.WhenAll(post, allocation);
         var result = await post;
-        Assert.True(result.Succeeded || result.Code is "revaluation_source_changed" or "concurrency_conflict" or "finance_conflict", result.Code);
+        var allocationResult = await allocation;
+        Assert.True(result.Succeeded || result.Code is "revaluation_source_changed" or "concurrency_conflict", result.Code);
+        Assert.True(allocationResult.Succeeded || allocationResult.Code is "concurrency_conflict", allocationResult.Code);
         await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
         var persisted = await db.RevaluationBatches.SingleAsync(item => item.Id == batch.Value!.Id);
-        Assert.True(persisted.Status is FinanceRevaluationBatchStatus.Calculated or FinanceRevaluationBatchStatus.Posted);
+        var source = await db.OpenItems.SingleAsync(item => item.Id == scenario.OpenItemId);
+        var activeAllocations = await db.Allocations.Where(item => item.OpenItemId == scenario.OpenItemId && item.Status == FinanceAllocationStatus.Active && item.ReversalOfAllocationId == null).ToListAsync();
+        var revaluationLines = await db.RevaluationLines.Where(item => item.BatchId == persisted.Id).ToListAsync();
+        var revaluationJournals = await db.Journals.Include(item => item.Lines).Where(item => item.CompanyId == scenario.CompanyId && item.SourceContract == "finance-revaluation.v1" && item.SourceEvent == "unrealized").ToListAsync();
+        var allocationJournals = await db.Journals.Include(item => item.Lines).Where(item => item.CompanyId == scenario.CompanyId && item.SourceContract == "customer-receipt.v1" && item.SourceEvent == "allocation").ToListAsync();
+        var allJournals = await db.Journals.Include(item => item.Lines).Where(item => item.CompanyId == scenario.CompanyId && (item.Status == FinanceJournalStatus.Posted || item.Status == FinanceJournalStatus.Reversed)).ToListAsync();
+
+        Assert.Equal(100m, source.OriginalAmount);
+        Assert.Equal(allocationResult.Succeeded ? 25m : 0m, activeAllocations.Sum(item => item.Amount));
+        Assert.Equal(100m - activeAllocations.Sum(item => item.Amount), source.OriginalAmount - activeAllocations.Sum(item => item.Amount));
+        var line = Assert.Single(revaluationLines);
+        Assert.False(string.IsNullOrWhiteSpace(line.SourceSnapshotJson));
+        using var snapshot = System.Text.Json.JsonDocument.Parse(line.SourceSnapshotJson);
+        Assert.Equal(0, snapshot.RootElement.GetProperty("Allocations").GetArrayLength());
+        Assert.Equal(result.Succeeded ? FinanceRevaluationBatchStatus.Posted : FinanceRevaluationBatchStatus.Calculated, persisted.Status);
+        Assert.Equal(result.Succeeded ? 1 : 0, revaluationJournals.Count);
+        Assert.Equal(allocationResult.Succeeded ? 1 : 0, allocationJournals.Count);
+        Assert.All(allJournals, journal =>
+        {
+            Assert.Equal(journal.Lines.Sum(item => item.Debit), journal.Lines.Sum(item => item.Credit));
+            Assert.Equal(journal.Lines.Sum(item => item.FunctionalDebit), journal.Lines.Sum(item => item.FunctionalCredit));
+        });
+
+        if (result.Succeeded)
+        {
+            Assert.Equal(FinanceRevaluationBatchStatus.Posted, persisted.Status);
+            Assert.NotNull(line.JournalId);
+            if (allocationResult.Succeeded)
+            {
+                Assert.True(revaluationJournals.Single().CreatedAt <= allocationJournals.Single().CreatedAt);
+            }
+        }
+        else
+        {
+            Assert.Contains(result.Code, new[] { "revaluation_source_changed", "concurrency_conflict" });
+            Assert.Null(line.JournalId);
+            Assert.Empty(revaluationJournals);
+        }
     }
 
     [Fact]
@@ -1046,8 +1085,17 @@ public sealed class SqlServerSafetyTests
         Assert.True(taxRule.Succeeded, taxRule.Code);
         var fxRule = await finance.CreatePostingRuleAsync(setupContext, new FinancePostingRuleCommand(companyId, "finance-fx.v1", "unrealized", accounts.Debit.Id, accounts.Credit.Id, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), $"{key}-fx-rule", $"{key}-fx-rule"));
         Assert.True(fxRule.Succeeded, fxRule.Code);
+        var receiptOnAccount = await finance.CreatePostingRuleAsync(setupContext, new FinancePostingRuleCommand(companyId, "customer-receipt.v1", "on-account", accounts.Debit.Id, accounts.Credit.Id, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), $"{key}-receipt-on-account", $"{key}-receipt-on-account"));
+        Assert.True(receiptOnAccount.Succeeded, receiptOnAccount.Code);
+        var receiptAllocation = await finance.CreatePostingRuleAsync(setupContext, new FinancePostingRuleCommand(companyId, "customer-receipt.v1", "allocation", accounts.Debit.Id, accounts.Credit.Id, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), $"{key}-receipt-allocation", $"{key}-receipt-allocation"));
+        Assert.True(receiptAllocation.Succeeded, receiptAllocation.Code);
+        var realizedGain = await finance.CreateAccountAsync(setupContext, new FinanceAccountCommand(companyId, $"{key}-FX-GAIN", "SQL realized FX gain", null, null, FinanceAccountType.Revenue, true, FinanceCurrencyBehavior.TransactionCurrencyAllowed, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, $"{key}-realized-gain", $"{key}-realized-gain"));
+        Assert.True(realizedGain.Succeeded, realizedGain.Code);
+        var realizedRule = await finance.CreatePostingRuleAsync(setupContext, new FinancePostingRuleCommand(companyId, "finance-fx.v1", "realized", accounts.Credit.Id, realizedGain.Value!.Id, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), $"{key}-realized-rule", $"{key}-realized-rule"));
+        Assert.True(realizedRule.Succeeded, realizedRule.Code);
 
         var openItemId = Guid.NewGuid();
+        var customerId = Guid.NewGuid();
         var recognitionJournalId = Guid.NewGuid();
         await using (var db = new FinanceDbContext(options, _fixture.TenantA))
         {
@@ -1058,28 +1106,56 @@ public sealed class SqlServerSafetyTests
             recognition.SetStatus(FinanceJournalStatus.Posted, Guid.NewGuid(), DateTimeOffset.UtcNow);
             recognition.Lines.Add(new FinanceJournalLineEntity(_fixture.TenantA.TenantId, Guid.NewGuid(), recognition.Id, 1, credit, new FinanceJournalLineCommand(credit.Id, 100m, 0m, 350m, "USD", null, "Revenue"), null, 350m, 0m, FinanceJournalAmountAuthority.ManualTransactionCurrency));
             recognition.Lines.Add(new FinanceJournalLineEntity(_fixture.TenantA.TenantId, Guid.NewGuid(), recognition.Id, 2, debit, new FinanceJournalLineCommand(debit.Id, 0m, 100m, 350m, "USD", null, "AR"), null, 0m, 350m, FinanceJournalAmountAuthority.ManualTransactionCurrency));
-            var item = new FinanceOpenItemEntity(_fixture.TenantA.TenantId, openItemId, FinanceOpenItemKind.Receivable, companyId, null, Guid.NewGuid(), "manual-ar.v1", openItemId, 1, openItemId, 1, $"{key}-AR", new DateOnly(2026, 1, 15), new DateOnly(2026, 2, 15), "USD", 100m, "SAR", 350m, 3.5m, rates.RateId, rates.HistoricalRateVersionId, 1, null, null, null, $"{key}-source");
+            var item = new FinanceOpenItemEntity(_fixture.TenantA.TenantId, openItemId, FinanceOpenItemKind.Receivable, companyId, null, customerId, "manual-ar.v1", openItemId, 1, openItemId, 1, $"{key}-AR", new DateOnly(2026, 1, 15), new DateOnly(2026, 2, 15), "USD", 100m, "SAR", 350m, 3.5m, rates.RateId, rates.HistoricalRateVersionId, 1, null, null, null, $"{key}-source");
             item.SetRecognition(FinanceOpenItemRecognitionState.Recognized, recognition.Id);
             db.Journals.Add(recognition);
             db.OpenItems.Add(item);
             await db.SaveChangesAsync();
         }
 
+        var settlement = new FinanceSettlementPersistence(
+            options,
+            provider,
+            rates,
+            new SqlStaticCustomerPersistence(_fixture.TenantA.TenantId.Value, customerId),
+            new UnavailableSupplierPersistence(),
+            currencies,
+            new UnavailableFinanceSupplierInvoiceSourceProvider(),
+            new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required));
+        var settlementRace = new FinanceSettlementPersistence(
+            options,
+            provider,
+            rates,
+            new SqlStaticCustomerPersistence(_fixture.TenantA.TenantId.Value, customerId),
+            new UnavailableSupplierPersistence(),
+            currencies,
+            new UnavailableFinanceSupplierInvoiceSourceProvider(),
+            new SqlSettlementApprovalPolicy(FinanceApprovalRequirement.Required));
         var first = new FinanceMesp134Persistence(options, provider, currencies, rates, taxService, new UnavailableFinanceSupplierInvoiceSourceProvider());
         var second = new FinanceMesp134Persistence(options, provider, currencies, rates, taxService, new UnavailableFinanceSupplierInvoiceSourceProvider());
         var firstContext = FinanceContext("tenant.finance.tax.post");
         var secondContext = FinanceContext("tenant.finance.tax.post");
         var policy = await first.CreateMonetaryPolicyAsync(firstContext, new FinanceMonetaryPolicyCommand(companyId, null, 2, "AwayFromZero", true, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), $"{key}-policy", $"{key}-policy"));
         Assert.True(policy.Succeeded, policy.Code);
-        return new SqlMesp134Scenario(options, companyId, first, second, firstContext, secondContext, tax.Value!.Id, openItemId);
+        return new SqlMesp134Scenario(options, companyId, first, second, firstContext, secondContext, tax.Value!.Id, openItemId, rates, settlement, settlementRace, customerId, accounts.Debit, accounts.Credit);
     }
 
-    private async Task MutateMesp134SourceAsync(SqlMesp134Scenario scenario)
+    private async Task<FinanceOperationResult<FinanceAllocationRecord>> CreateMesp134AllocationAsync(SqlMesp134Scenario scenario)
     {
-        await using var db = new FinanceDbContext(scenario.Options, _fixture.TenantA);
-        var item = await db.OpenItems.SingleAsync(value => value.Id == scenario.OpenItemId);
-        item.SetRecognition(FinanceOpenItemRecognitionState.Recognized, item.RecognitionJournalId);
-        await db.SaveChangesAsync();
+        var context = FinanceContext("tenant.finance.settlement.create");
+        var method = await scenario.Settlement.CreatePaymentMethodAsync(context, new FinancePaymentMethodCommand(scenario.CompanyId, "REV03-METHOD", "REV03 method", null, FinancePaymentMethodDirection.Receipt, true, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, "mesp134-rev03-method", "mesp134-rev03-method"));
+        Assert.True(method.Succeeded, method.Code);
+        var cash = await scenario.Settlement.CreateCashAccountAsync(context, new FinanceCashAccountCommand(scenario.CompanyId, "REV03-CASH", "REV03 cash", null, FinanceCashAccountKind.Bank, "USD", scenario.DebitAccount.Id, null, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, "mesp134-rev03-cash", "mesp134-rev03-cash"));
+        Assert.True(cash.Succeeded, cash.Code);
+        var created = await scenario.Settlement.CreateSettlementDocumentAsync(context, new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Receipt, scenario.CompanyId, null, scenario.CustomerId, cash.Value!.Id, method.Value!.Id, new DateOnly(2026, 8, 25), "USD", 25m, null, 3.75m, scenario.Rates.RateId, scenario.Rates.CurrentRateVersionId, 2, "REV03 receipt", "REV03 race receipt", Guid.NewGuid(), "mesp134-rev03-settlement", "mesp134-rev03-settlement"));
+        Assert.True(created.Succeeded, created.Code);
+        var submitted = await scenario.Settlement.TransitionSettlementDocumentAsync(context, new FinanceSettlementActionCommand(created.Value!.Id, created.Value.Version, null, "mesp134-rev03-submit", "mesp134-rev03-submit", FinancePaymentMethodDirection.Receipt), FinanceSettlementDocumentStatus.Submitted);
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await scenario.Settlement.TransitionSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.approve"), new FinanceSettlementActionCommand(submitted.Value!.Id, submitted.Value.Version, null, "mesp134-rev03-approve", "mesp134-rev03-approve", FinancePaymentMethodDirection.Receipt), FinanceSettlementDocumentStatus.Approved);
+        Assert.True(approved.Succeeded, approved.Code);
+        var posted = await scenario.Settlement.PostSettlementDocumentAsync(FinanceContext("tenant.finance.settlement.post"), new FinanceSettlementActionCommand(approved.Value!.Id, approved.Value.Version, null, "mesp134-rev03-post-settlement", "mesp134-rev03-post-settlement", FinancePaymentMethodDirection.Receipt));
+        Assert.True(posted.Succeeded, posted.Code);
+        return await scenario.SettlementRace.CreateAllocationAsync(FinanceContext("tenant.finance.allocation.create"), new FinanceAllocationCommand(posted.Value!.Id, scenario.OpenItemId, 25m, new DateOnly(2026, 8, 25), "REV03 real allocation race", Guid.NewGuid(), "mesp134-rev03-allocation", "mesp134-rev03-allocation"));
     }
 
     private sealed record SqlMesp134Scenario(
@@ -1090,7 +1166,13 @@ public sealed class SqlServerSafetyTests
         FinanceRequestContext FirstContext,
         FinanceRequestContext SecondContext,
         Guid TaxId,
-        Guid OpenItemId)
+        Guid OpenItemId,
+        SqlMesp134ExchangeRatePersistence Rates,
+        FinanceSettlementPersistence Settlement,
+        FinanceSettlementPersistence SettlementRace,
+        Guid CustomerId,
+        FinanceAccountRecord DebitAccount,
+        FinanceAccountRecord CreditAccount)
     {
         internal FinanceTaxAccountingCommand TaxCommand(string key) => new(CompanyId, OpenItemId, TaxId, 100m, "sql-mesp134", Guid.NewGuid(), key, key);
         internal FinanceRevaluationBatchCommand RevaluationCommand(string key) => new(CompanyId, new DateOnly(2026, 8, 25), FinanceRevaluationScopes.ApArAndUnallocatedSettlements, Guid.NewGuid(), key, key);
@@ -3182,6 +3264,14 @@ public sealed class SqlServerSafetyTests
             sourceContract is "supplier-payment.v1" or "customer-receipt.v1"
                 ? requirement
                 : FinanceApprovalRequirement.NotConfigured;
+    }
+
+    private sealed class SqlStaticCustomerPersistence(Guid tenantId, Guid customerId) : IBusinessCustomerReferenceReader
+    {
+        public Task<BusinessCustomerReference?> FindCustomerReferenceAsync(TenantContext tenantContext, Guid requestedCustomerId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<BusinessCustomerReference?>(requestedCustomerId == customerId && tenantContext.TenantId.Value == tenantId
+                ? new BusinessCustomerReference(customerId, new TenantId(tenantId), "SQL-CUSTOMER", MasterDataLifecycleState.Active)
+                : null);
     }
 
     private sealed class SqlStaticSupplierPersistence(Guid tenantId, Guid? supplierId = null) : ISupplierPersistence

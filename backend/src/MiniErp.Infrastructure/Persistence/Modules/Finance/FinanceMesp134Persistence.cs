@@ -233,6 +233,14 @@ public sealed class FinanceMesp134Persistence : IFinanceMesp134Persistence
         var transactionIsFunctional = string.Equals(item.CurrencyCode, item.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase);
         if (!transactionIsFunctional)
         {
+            if (item.ExchangeRate is not > 0m
+                || item.ExchangeRateId is null
+                || item.ExchangeRateVersionId is null
+                || item.ExchangeRateVersionNumber is not > 0)
+            {
+                return null;
+            }
+
             txRate = await ResolveRateEvidenceAsync(context, item.CurrencyCode, item.FunctionalCurrencyCode, date, cancellationToken, item.ExchangeRateId, item.ExchangeRateVersionId, item.ExchangeRateVersionNumber, item.ExchangeRate);
             if (txRate is null) return null;
         }
@@ -276,7 +284,8 @@ public sealed class FinanceMesp134Persistence : IFinanceMesp134Persistence
         var taxes = source.DeclaredTaxes.Where(value => value.TaxCode is not null || value.TaxRatePercentage is not null || value.TaxAmount is not null).ToArray();
         if (taxes.Length != 1) return "tax_evidence_ambiguous";
         var declared = taxes[0];
-        if (string.IsNullOrWhiteSpace(declared.TaxCode) || !string.Equals(declared.TaxCode, calculation.Code, StringComparison.OrdinalIgnoreCase) || declared.TaxRatePercentage is null || declared.TaxAmount is null || declared.TaxableBase is null) return "tax_evidence_not_authoritative";
+        if (string.IsNullOrWhiteSpace(declared.TaxCode) || declared.TaxRatePercentage is null || declared.TaxAmount is null || declared.TaxableBase is null) return "tax_evidence_not_authoritative";
+        if (!string.Equals(declared.TaxCode, calculation.Code, StringComparison.OrdinalIgnoreCase)) return "tax_evidence_mismatch";
         if (declared.TaxRatePercentage.Value != calculation.RatePercentage || Math.Abs(declared.TaxAmount.Value - calculation.TaxAmount) > 0.00000001m || Math.Abs(declared.TaxableBase.Value - taxableBase) > 0.00000001m) return "tax_evidence_mismatch";
         return null;
     }
@@ -387,6 +396,8 @@ public sealed class FinanceMesp134Persistence : IFinanceMesp134Persistence
             evidence,
             cancellationToken);
         if (!reversal.Succeeded || reversal.Value is null) return Failure<FinanceJournalRecord>(reversal.Code);
+        var reversalEntity = db.Journals.Local.Single(item => item.Id == reversal.Value.Id);
+        reversalEntity.LinkOriginal(original.Id);
         original.LinkReversal(reversal.Value.Id);
         original.SetStatus(FinanceJournalStatus.Reversed, context.ActorId, DateTimeOffset.UtcNow);
         return FinanceOperationResult<FinanceJournalRecord>.Success(reversal.Value);

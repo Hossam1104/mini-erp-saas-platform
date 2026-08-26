@@ -145,12 +145,43 @@ describe('FinanceTaxFxWorkspaceComponent', () => {
     expect(service.reverseRevaluation).toHaveBeenCalledWith('batch-a', 'AQ==', 'Re-run after source correction');
   });
 
-  it('maps server evidence failures to actionable bilingual-safe messages', () => {
+  it('maps production evidence failures to meaningful English and Arabic messages', () => {
     const component = fixture.componentInstance as any;
-    expect(component.errorCode({ error: { code: 'reporting_exchange_rate_required' } })).toContain('exact historical');
-    expect(component.errorCode({ error: { code: 'tax_evidence_ambiguous' } })).toContain('ambiguous');
-    expect(component.errorCode({ error: { code: 'revaluation_source_changed' } })).toContain('calculate again');
-    expect(component.errorCode({ error: { code: 'reporting_evidence_invalid' } })).toContain('invalid');
+    const language = TestBed.inject(LanguageService);
+    const codes = [
+      'exact_exchange_rate_evidence_required',
+      'reporting_exchange_rate_required',
+      'tax_evidence_mismatch',
+      'tax_evidence_ambiguous',
+      'realized_fx_mapping_ambiguous',
+      'revaluation_source_changed',
+      'active_revaluation_requires_reversal',
+      'unsupported_revaluation_scope',
+      'concurrency_conflict',
+      'idempotency_conflict',
+    ];
+
+    language.setLanguage('en');
+    const english = codes.map((code) => component.errorCode({ error: { code } }));
+    expect(english[0]).toContain('exact exchange-rate');
+    expect(english[1]).toContain('exact historical');
+    expect(english[2]).toContain('declared tax evidence');
+    expect(english[3]).toContain('ambiguous tax');
+    expect(english[4]).toContain('realized FX');
+    expect(english[5]).toContain('calculate again');
+    expect(english[6]).toContain('Reverse');
+    expect(english[7]).toContain('approved AP/AR');
+    expect(english[8]).toContain('record changed');
+    expect(english[9]).toContain('idempotency key');
+    expect(english.every((message: string) => !message.includes('unavailable'))).toBe(true);
+
+    language.setLanguage('ar');
+    const arabic = codes.map((code) => component.errorCode({ error: { code } }));
+    expect(arabic.every((message: string) => /[\u0600-\u06ff]/u.test(message))).toBe(true);
+    expect(arabic.every((message: string, index: number) => message !== english[index])).toBe(true);
+    expect(arabic[5]).toContain('\u0627\u0644\u062d\u0633\u0627\u0628');
+    expect(arabic[7]).toContain('\u0646\u0637\u0627\u0642');
+    language.setLanguage('en');
   });
 
   it('keeps the tax and FX workspace RTL-safe in Arabic', () => {
