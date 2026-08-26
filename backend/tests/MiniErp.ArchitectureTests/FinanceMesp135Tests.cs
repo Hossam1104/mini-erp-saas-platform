@@ -139,6 +139,106 @@ public sealed class FinanceMesp135Tests
         Assert.Equal(correction.Value.Id, storedOriginal.ReversalJournalId);
     }
 
+    [Fact]
+    public async Task Close_readiness_is_read_only_and_does_not_create_evidence_or_history()
+    {
+        await using var fixture = await SqliteFixture.CreateAsync();
+        var period = await fixture.CreateOpenPeriodAsync();
+        var query = new FinanceCloseReadinessQuery(fixture.CompanyId, period.Id);
+
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var readiness = await fixture.Persistence.EvaluateCloseReadinessAsync(fixture.Context("tenant.finance.period.close"), query);
+            Assert.True(readiness.Succeeded, readiness.Code);
+        }
+
+        await using var db = new FinanceDbContext(fixture.Options, fixture.TenantContext);
+        Assert.Equal(0, await db.PeriodCloseEvidence.CountAsync(item => item.PeriodId == period.Id));
+        Assert.Equal(0, await db.PeriodCloseRuns.CountAsync(item => item.PeriodId == period.Id));
+        Assert.Equal(0, await db.PeriodHistory.CountAsync(item => item.PeriodId == period.Id));
+        Assert.Equal(period.Version, await fixture.CurrentPeriodVersionAsync(period.Id));
+    }
+
+    [Fact]
+    public async Task Profit_and_loss_has_zero_opening_while_balance_sheet_carries_prior_period_closing()
+    {
+        await using var fixture = await SqliteFixture.CreateAsync();
+        var januaryPeriod = await fixture.CreateOpenPeriodAsync();
+        var januaryJournal = await fixture.CreatePostedJournalAsync(januaryPeriod);
+
+        var profitAndLoss = await fixture.Persistence.QueryStatementAsync(
+            fixture.Context("tenant.finance.report.view"), fixture.CompanyId, FinanceStatementKind.ProfitAndLoss,
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31));
+        var revenueRow = Assert.Single(profitAndLoss.Rows, row => row.AccountType == FinanceAccountType.Revenue);
+        Assert.Equal(0m, revenueRow.OpeningBalance);
+        Assert.Equal(100m, revenueRow.Credit);
+        Assert.Equal(-100m, revenueRow.ClosingBalance);
+
+        var balanceSheetJanuary = await fixture.Persistence.QueryStatementAsync(
+            fixture.Context("tenant.finance.report.view"), fixture.CompanyId, FinanceStatementKind.BalanceSheet,
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31));
+        var assetRowJanuary = Assert.Single(balanceSheetJanuary.Rows, row => row.AccountType == FinanceAccountType.Asset);
+        Assert.Equal(0m, assetRowJanuary.OpeningBalance);
+        Assert.Equal(100m, assetRowJanuary.ClosingBalance);
+
+        var balanceSheetFebruary = await fixture.Persistence.QueryStatementAsync(
+            fixture.Context("tenant.finance.report.view"), fixture.CompanyId, FinanceStatementKind.BalanceSheet,
+            new DateOnly(2026, 2, 1), new DateOnly(2026, 2, 28));
+        var assetRowFebruary = Assert.Single(balanceSheetFebruary.Rows, row => row.AccountType == FinanceAccountType.Asset);
+        Assert.Equal(100m, assetRowFebruary.OpeningBalance);
+        Assert.Equal(0m, assetRowFebruary.Debit);
+        Assert.Equal(100m, assetRowFebruary.ClosingBalance);
+    }
+
+    [Fact]
+    public async Task Year_end_post_establishes_closing_line_lineage_and_reverse_reopens_period_for_correction()
+    {
+        await using var fixture = await SqliteFixture.CreateAsync();
+        var period = await fixture.CreateOpenYearPeriodAsync();
+        var journal = await fixture.CreatePostedJournalAsync(period);
+        await fixture.CreateYearEndPostingRuleAsync();
+
+        var closed = await fixture.Persistence.ClosePeriodAsync(
+            fixture.Context("tenant.finance.period.close"),
+            new FinancePeriodCloseCommand(fixture.CompanyId, period.Id, period.Version, "MESP-135 year-end close", Guid.NewGuid(), "yearend-close", "yearend-close"));
+        Assert.True(closed.Succeeded, closed.Code);
+
+        var calculated = await fixture.Persistence.CalculateYearEndAsync(
+            fixture.Context("tenant.finance.year-end.calculate"),
+            new FinanceYearEndCommand(fixture.CompanyId, fixture.YearId, new DateOnly(2026, 12, 31), "MESP-135 year end", Guid.NewGuid(), "yearend-calc", "yearend-calc"));
+        Assert.True(calculated.Succeeded, calculated.Code);
+        Assert.NotEmpty(calculated.Value!.Lines);
+        Assert.All(calculated.Value.Lines, line => Assert.Null(line.ClosingJournalLineId));
+
+        var posted = await fixture.Persistence.PostYearEndAsync(
+            fixture.Context("tenant.finance.year-end.post"),
+            new FinanceYearEndActionCommand(fixture.CompanyId, calculated.Value.Id, calculated.Value.Version, "MESP-135 year end post", Guid.NewGuid(), "yearend-post", "yearend-post"));
+        Assert.True(posted.Succeeded, posted.Code);
+        Assert.NotNull(posted.Value!.ClosingJournalId);
+        Assert.All(posted.Value.Lines, line => Assert.NotNull(line.ClosingJournalLineId));
+
+        await using (var db = new FinanceDbContext(fixture.Options, fixture.TenantContext))
+        {
+            var closingLineIds = await db.Journals.Where(item => item.Id == posted.Value.ClosingJournalId).SelectMany(item => item.Lines).Select(item => item.Id).ToListAsync();
+            Assert.Equal(closingLineIds.OrderBy(item => item).ToArray(), posted.Value.Lines.Select(item => item.ClosingJournalLineId!.Value).OrderBy(item => item).ToArray());
+        }
+
+        var reversed = await fixture.Persistence.ReverseYearEndAsync(
+            fixture.Context("tenant.finance.year-end.reverse"),
+            new FinanceYearEndActionCommand(fixture.CompanyId, posted.Value.Id, posted.Value.Version, "MESP-135 year end reverse", Guid.NewGuid(), "yearend-reverse", "yearend-reverse"));
+        Assert.True(reversed.Succeeded, reversed.Code);
+        Assert.NotNull(reversed.Value!.ReversalJournalId);
+
+        await using (var db = new FinanceDbContext(fixture.Options, fixture.TenantContext))
+        {
+            var reopenedPeriod = await db.FiscalPeriods.SingleAsync(item => item.Id == period.Id);
+            Assert.Equal(FinanceFiscalPeriodState.Open, reopenedPeriod.State);
+            var reversalJournal = await db.Journals.SingleAsync(item => item.Id == reversed.Value.ReversalJournalId);
+            Assert.Equal(FinanceJournalStatus.Posted, reversalJournal.Status);
+            Assert.Equal(posted.Value.ClosingJournalId, reversalJournal.ReversalOfJournalId);
+        }
+    }
+
     private sealed class SqliteFixture : IAsyncDisposable
     {
         private readonly SqliteConnection connection;
@@ -169,6 +269,7 @@ public sealed class FinanceMesp135Tests
         internal TenantContext TenantContext { get; }
         internal FinanceMesp135Persistence Persistence { get; }
         internal Guid CompanyId { get; }
+        internal Guid YearId { get; private set; }
         private FinanceRequestContext ContextValue { get; }
 
         internal FinanceRequestContext Context(string permission, Guid actorId = default)
@@ -202,11 +303,38 @@ public sealed class FinanceMesp135Tests
             Assert.True(calendar.Succeeded, calendar.Code);
             var year = await setup.CreateYearAsync(context, new FinanceFiscalYearCommand(calendar.Value!.Id, 2026, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), Guid.NewGuid(), "m135-year", "m135-year"));
             Assert.True(year.Succeeded, year.Code);
+            YearId = year.Value!.Id;
             var period = await setup.CreatePeriodAsync(context, new FinanceFiscalPeriodCommand(year.Value!.Id, 1, "MESP-135", "January", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.NewGuid(), "m135-period", "m135-period"));
             Assert.True(period.Succeeded, period.Code);
             var opened = await setup.SetPeriodStateAsync(context, new FinancePeriodStateCommand(period.Value!.Id, FinanceFiscalPeriodState.Open, null, period.Value.Version, Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N")));
             Assert.True(opened.Succeeded, opened.Code);
             return opened.Value!;
+        }
+
+        internal async Task<FinanceFiscalPeriodRecord> CreateOpenYearPeriodAsync()
+        {
+            var context = Context("tenant.finance.calendar.create");
+            var calendar = await setup.CreateCalendarAsync(context, new FinanceFiscalCalendarCommand(CompanyId, "MESP-135 Year FY", Guid.NewGuid(), "m135-year-calendar", "m135-year-calendar"));
+            Assert.True(calendar.Succeeded, calendar.Code);
+            var year = await setup.CreateYearAsync(context, new FinanceFiscalYearCommand(calendar.Value!.Id, 2026, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), Guid.NewGuid(), "m135-year-year", "m135-year-year"));
+            Assert.True(year.Succeeded, year.Code);
+            YearId = year.Value!.Id;
+            var period = await setup.CreatePeriodAsync(context, new FinanceFiscalPeriodCommand(year.Value!.Id, 1, "MESP-135-FULL-YEAR", "FY2026", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), Guid.NewGuid(), "m135-year-period", "m135-year-period"));
+            Assert.True(period.Succeeded, period.Code);
+            var opened = await setup.SetPeriodStateAsync(context, new FinancePeriodStateCommand(period.Value!.Id, FinanceFiscalPeriodState.Open, null, period.Value.Version, Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N")));
+            Assert.True(opened.Succeeded, opened.Code);
+            return opened.Value!;
+        }
+
+        internal async Task CreateYearEndPostingRuleAsync()
+        {
+            var context = Context("tenant.finance.postingrule.create");
+            await using var db = new FinanceDbContext(Options, TenantContext);
+            var revenueAccountId = await db.Accounts.Where(item => item.CompanyId == CompanyId && item.Code == "M135-REVENUE").Select(item => item.Id).SingleAsync();
+            var equity = await setup.CreateAccountAsync(context, Account("M135-EQUITY", FinanceAccountType.Equity));
+            Assert.True(equity.Succeeded, equity.Code);
+            var rule = await setup.CreatePostingRuleAsync(context, new FinancePostingRuleCommand(CompanyId, "finance-year-end.v1", "close", revenueAccountId, equity.Value!.Id, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), Guid.NewGuid().ToString("N"), "year-end-rule"));
+            Assert.True(rule.Succeeded, rule.Code);
         }
 
         internal async Task<FinanceJournalRecord> CreatePostedJournalAsync(FinanceFiscalPeriodRecord period)

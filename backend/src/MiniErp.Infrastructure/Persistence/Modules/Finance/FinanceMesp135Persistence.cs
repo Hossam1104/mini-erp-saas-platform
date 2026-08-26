@@ -32,14 +32,7 @@ internal sealed class FinanceMesp135Persistence(
     {
         if (Company(context, query.CompanyId) is null) return Failure<FinanceCloseReadinessRecord>("company_scope_denied");
         await using var db = CreateContext(context);
-        var evaluation = await EvaluateReadinessAsync(db, context, query.CompanyId, query.PeriodId, cancellationToken);
-        if (!evaluation.Succeeded || evaluation.Value is null) return Failure<FinanceCloseReadinessRecord>(evaluation.Code);
-        if (!await db.PeriodCloseEvidence.AnyAsync(item => item.PeriodId == query.PeriodId && item.SnapshotFingerprint == evaluation.Value.SnapshotFingerprint, cancellationToken))
-        {
-            db.PeriodCloseEvidence.Add(new FinancePeriodCloseEvidenceEntity(context.TenantId, Guid.NewGuid(), query.CompanyId, evaluation.Value.FiscalYearId, query.PeriodId, evaluation.Value.Status, evaluation.Value.Checks, evaluation.Value.SnapshotFingerprint, evaluation.Value.EvaluatedAt, evaluation.Value.PeriodVersion));
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        return evaluation;
+        return await EvaluateReadinessAsync(db, context, query.CompanyId, query.PeriodId, cancellationToken);
     }
 
     public async Task<FinanceOperationResult<FinancePeriodCloseRunRecord>> ClosePeriodAsync(FinanceRequestContext context, FinancePeriodCloseCommand command, CancellationToken cancellationToken = default)
@@ -225,10 +218,13 @@ internal sealed class FinanceMesp135Persistence(
         foreach (var group in grouped.OrderBy(item => accounts.TryGetValue(item.Key, out var account) ? account.Code : string.Empty))
         {
             if (!accounts.TryGetValue(group.Key, out var account)) continue;
-            var opening = facts.Where(item => item.Line.AccountId == group.Key && item.Journal.PostingDate < from).Sum(item => item.Line.FunctionalDebit - item.Line.FunctionalCredit);
-            var debit = group.Sum(item => item.Journal.PostingDate >= from ? item.Line.FunctionalDebit : 0m);
-            var credit = group.Sum(item => item.Journal.PostingDate >= from ? item.Line.FunctionalCredit : 0m);
-            var report = ReportingAmounts(group, query.PresentationCurrencyCode);
+            var groupArray = group.ToArray();
+            var priorFacts = groupArray.Where(item => item.Journal.PostingDate < from).ToArray();
+            var periodFacts = groupArray.Where(item => item.Journal.PostingDate >= from).ToArray();
+            var opening = priorFacts.Sum(item => item.Line.FunctionalDebit - item.Line.FunctionalCredit);
+            var debit = periodFacts.Sum(item => item.Line.FunctionalDebit);
+            var credit = periodFacts.Sum(item => item.Line.FunctionalCredit);
+            var report = ReportingRowAmounts(priorFacts, periodFacts, query.PresentationCurrencyCode);
             rows.Add(new FinanceTrialBalanceRow(account.Id, account.Code, account.EnglishName, account.ArabicName, account.AccountType, opening, debit, credit, opening + debit - credit, company.FunctionalCurrencyCode, query.PresentationCurrencyCode, report.Opening, report.Debit, report.Credit, report.Closing, report.Status));
         }
         var reportingStatus = rows.Count == 0 ? FinanceEvidenceStatus.NotCaptured : rows.Select(item => item.ReportingEvidenceStatus).Aggregate(WorstEvidence);
@@ -274,8 +270,8 @@ internal sealed class FinanceMesp135Persistence(
         var items = new List<FinanceReconciliationViewRecord>();
         if (Company(context, companyId) is null) return new FinanceCloseReconciliationRecord(companyId, periodId, asOfDate, FinanceReconciliationViewStatus.Blocked, items, [], []);
         foreach (var item in await settlements.GetReconciliationAsync(context, companyId, cancellationToken)) items.Add(new FinanceReconciliationViewRecord(companyId, asOfDate, item.Scope, MapStatus(item.Status), item.SubledgerAmount, item.PostedJournalAmount, item.Difference, null, $"{item.Status}", true));
-        foreach (var item in await mesp134.ReconcileTaxAsync(context, companyId, cancellationToken)) items.Add(new FinanceReconciliationViewRecord(companyId, asOfDate, "Tax", MapStatus(item.Status), item.TaxAmount, item.PostedTaxAmount, item.TaxAmount - item.PostedTaxAmount, item.JournalId.ToString("D"), $"Tax effect {item.EffectId}", true));
-        foreach (var item in await mesp134.ReconcileFxAsync(context, companyId, cancellationToken)) items.Add(new FinanceReconciliationViewRecord(companyId, asOfDate, "Realized FX", MapStatus(item.Status), item.RealizedDifference, item.PostedDifference, item.RealizedDifference - item.PostedDifference, item.JournalId?.ToString("D"), item.StatusReason, true));
+        foreach (var item in await mesp134.ReconcileTaxAsync(context, companyId, asOfDate, cancellationToken)) items.Add(new FinanceReconciliationViewRecord(companyId, asOfDate, "Tax", MapStatus(item.Status), item.TaxAmount, item.PostedTaxAmount, item.TaxAmount - item.PostedTaxAmount, item.JournalId.ToString("D"), $"Tax effect {item.EffectId}", true));
+        foreach (var item in await mesp134.ReconcileFxAsync(context, companyId, asOfDate, cancellationToken)) items.Add(new FinanceReconciliationViewRecord(companyId, asOfDate, "Realized FX", MapStatus(item.Status), item.RealizedDifference, item.PostedDifference, item.RealizedDifference - item.PostedDifference, item.JournalId?.ToString("D"), item.StatusReason, true));
         await using var db = CreateContext(context);
         var runs = (await db.PeriodCloseRuns.AsNoTracking().Where(item => item.CompanyId == companyId && (!periodId.HasValue || item.PeriodId == periodId)).ToListAsync(cancellationToken)).OrderByDescending(item => item.CreatedAt).ToArray();
         var yearRuns = (await db.YearEndRuns.AsNoTracking().Include(item => item.Lines).Where(item => item.CompanyId == companyId).ToListAsync(cancellationToken)).OrderByDescending(item => item.CreatedAt).ToArray();
@@ -288,12 +284,19 @@ internal sealed class FinanceMesp135Persistence(
         if (Company(context, companyId) is not { } company) return new FinanceStatementReport(kind, companyId, fromDate, toDate, [], 0m, 0m, 0m, "", "company_scope_denied");
         await using var db = CreateContext(context);
         var facts = await JournalFactsAsync(db, companyId, fromDate, toDate, cancellationToken);
-        var before = await JournalFactsAsync(db, companyId, null, fromDate.AddDays(-1), cancellationToken);
+        var isBalanceSheet = kind == FinanceStatementKind.BalanceSheet;
+        var before = isBalanceSheet ? await JournalFactsAsync(db, companyId, null, fromDate.AddDays(-1), cancellationToken) : [];
         var accounts = await db.Accounts.AsNoTracking().Where(item => item.CompanyId == companyId).ToDictionaryAsync(item => item.Id, cancellationToken);
         var allowed = kind == FinanceStatementKind.ProfitAndLoss ? new[] { FinanceAccountType.Revenue, FinanceAccountType.Expense } : new[] { FinanceAccountType.Asset, FinanceAccountType.Liability, FinanceAccountType.Equity };
-        var rows = facts.Where(item => accounts.TryGetValue(item.Line.AccountId, out var account) && allowed.Contains(account.AccountType)).GroupBy(item => item.Line.AccountId).Select(group =>
+        var relevantAccountIds = facts.Select(item => item.Line.AccountId).Concat(before.Select(item => item.Line.AccountId)).Where(id => accounts.TryGetValue(id, out var account) && allowed.Contains(account.AccountType)).Distinct();
+        var rows = relevantAccountIds.Select(accountId =>
         {
-            var account = accounts[group.Key]; var opening = before.Where(item => item.Line.AccountId == group.Key).Sum(item => item.Line.FunctionalDebit - item.Line.FunctionalCredit); var debit = group.Sum(item => item.Line.FunctionalDebit); var credit = group.Sum(item => item.Line.FunctionalCredit); return new FinanceStatementRow(account.Id, account.Code, account.EnglishName, account.ArabicName, account.AccountType, opening, debit, credit, opening + debit - credit, company.FunctionalCurrencyCode);
+            var account = accounts[accountId];
+            var debit = facts.Where(item => item.Line.AccountId == accountId).Sum(item => item.Line.FunctionalDebit);
+            var credit = facts.Where(item => item.Line.AccountId == accountId).Sum(item => item.Line.FunctionalCredit);
+            var opening = isBalanceSheet ? before.Where(item => item.Line.AccountId == accountId).Sum(item => item.Line.FunctionalDebit - item.Line.FunctionalCredit) : 0m;
+            var closing = isBalanceSheet ? opening + debit - credit : debit - credit;
+            return new FinanceStatementRow(account.Id, account.Code, account.EnglishName, account.ArabicName, account.AccountType, opening, debit, credit, closing, company.FunctionalCurrencyCode);
         }).OrderBy(item => item.AccountCode).ToArray();
         return new FinanceStatementReport(kind, companyId, fromDate, toDate, rows, rows.Sum(item => item.Debit), rows.Sum(item => item.Credit), rows.Sum(item => item.ClosingBalance), company.FunctionalCurrencyCode, null);
     }
@@ -317,7 +320,7 @@ internal sealed class FinanceMesp135Persistence(
         var settlementBlocked = settlement.Any(item => item.Status is FinanceReconciliationStatus.AmountMismatch or FinanceReconciliationStatus.Unreconciled);
         var settlementPending = settlement.Any(item => item.Status is not FinanceReconciliationStatus.Reconciled);
         Check("subledger_reconciliation", settlementBlocked ? FinanceCloseCheckStatus.Blocked : settlementPending ? FinanceCloseCheckStatus.Warning : FinanceCloseCheckStatus.Ready, settlementBlocked ? "AP/AR subledgers contain a mismatch." : settlementPending ? "AP/AR subledger evidence is pending." : "AP/AR subledgers reconcile to posted journals.");
-        var tax = await mesp134.ReconcileTaxAsync(context, companyId, cancellationToken); var fx = await mesp134.ReconcileFxAsync(context, companyId, cancellationToken); var unrealized = await mesp134.ReconcileUnrealizedFxAsync(context, companyId, cancellationToken); var reporting = await mesp134.ReconcileReportingCurrencyAsync(context, companyId, cancellationToken);
+        var tax = await mesp134.ReconcileTaxAsync(context, companyId, period.EndDate, cancellationToken); var fx = await mesp134.ReconcileFxAsync(context, companyId, period.EndDate, cancellationToken); var unrealized = await mesp134.ReconcileUnrealizedFxAsync(context, companyId, period.EndDate, cancellationToken); var reporting = await mesp134.ReconcileReportingCurrencyAsync(context, companyId, period.EndDate, cancellationToken);
         CheckEvidence("tax_reconciliation", tax.Select(item => item.Status), checks, "Tax accounting evidence is reconciled."); CheckEvidence("realized_fx_reconciliation", fx.Select(item => item.Status), checks, "Realized FX evidence is reconciled."); CheckEvidence("unrealized_fx_reconciliation", unrealized.Select(item => item.Status), checks, "Unrealized FX evidence is reconciled."); CheckEvidence("reporting_currency_reconciliation", reporting.Select(item => item.Status), checks, "Reporting-currency evidence is reconciled.");
         var policy = await db.MonetaryPolicies.AsNoTracking().Where(item => item.CompanyId == companyId && item.EffectiveFrom <= period.EndDate && (item.EffectiveTo == null || item.EffectiveTo >= period.EndDate)).OrderByDescending(item => item.VersionNumber).FirstOrDefaultAsync(cancellationToken);
         var foreign = await db.OpenItems.AsNoTracking().AnyAsync(item => item.CompanyId == companyId && item.DocumentDate <= period.EndDate && item.CurrencyCode != item.FunctionalCurrencyCode, cancellationToken);
@@ -341,7 +344,16 @@ internal sealed class FinanceMesp135Persistence(
         {
             if (run.Status != FinanceYearEndRunStatus.Posted || run.ClosingJournalId is null) return Failure<FinanceYearEndRunRecord>("year_end_not_posted");
             var original = await db.Journals.Include(item => item.Lines).SingleOrDefaultAsync(item => item.Id == run.ClosingJournalId, cancellationToken); if (original is null) return Failure<FinanceYearEndRunRecord>("posting_lineage_missing");
-            var reversal = await CreateExactJournalReversalAsync(db, context, original, year.EndDate, command.Reason.Trim(), command.Id, YearEndContract, "reverse", cancellationToken); if (!reversal.Succeeded || reversal.Value is null) return Failure<FinanceYearEndRunRecord>(reversal.Code);
+            var closingPeriod = await db.FiscalPeriods.SingleOrDefaultAsync(item => item.CompanyId == run.CompanyId && item.FiscalYearId == year.Id && item.StartDate <= year.EndDate && item.EndDate >= year.EndDate, cancellationToken);
+            if (closingPeriod is null) return Failure<FinanceYearEndRunRecord>("period_not_configured");
+            if (closingPeriod.State != FinanceFiscalPeriodState.Closed) return Failure<FinanceYearEndRunRecord>("period_not_closed");
+            var closeRun = await db.PeriodCloseRuns.Where(item => item.PeriodId == closingPeriod.Id && item.Status == FinanceCloseRunStatus.Closed).OrderByDescending(item => item.Sequence).FirstOrDefaultAsync(cancellationToken);
+            if (closeRun is null) return Failure<FinanceYearEndRunRecord>("close_history_missing");
+            var reopenedAt = DateTimeOffset.UtcNow;
+            closeRun.MarkReopened(context.ActorId, reopenedAt);
+            closingPeriod.SetState(FinanceFiscalPeriodState.Open);
+            db.PeriodHistory.Add(new FinancePeriodHistoryEntity(context.TenantId, Guid.NewGuid(), run.CompanyId, year.Id, closingPeriod.Id, FinancePeriodHistoryAction.Reopened, FinanceFiscalPeriodState.Closed, FinanceFiscalPeriodState.Open, closeRun.Id, context.ActorId, context.SessionId, context.CorrelationId, command.Reason.Trim(), reopenedAt));
+            var reversal = await CreateExactJournalReversalAsync(db, context, original, closingPeriod, year.EndDate, command.Reason.Trim(), command.Id, YearEndContract, "reverse", cancellationToken); if (!reversal.Succeeded || reversal.Value is null) return Failure<FinanceYearEndRunRecord>(reversal.Code);
             run.MarkReversed(reversal.Value.Id, DateTimeOffset.UtcNow); year.SetState(FinanceFiscalYearState.Open); AddAudit(db, context, operation, "year-end-run", run.Id, "Succeeded", command.Reason, command.IdempotencyKey, DateTimeOffset.UtcNow); await db.SaveChangesAsync(cancellationToken); var result = FinanceOperationResult<FinanceYearEndRunRecord>.Success(ToYearEnd(run)); AddReplay(db, context, operation, command.IdempotencyKey, command.RequestFingerprint, "year-end-run", run.Id, result.Value!, DateTimeOffset.UtcNow); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return result;
         }
         if (run.Status != FinanceYearEndRunStatus.Calculated) return Failure<FinanceYearEndRunRecord>("year_end_not_calculated");
@@ -357,14 +369,14 @@ internal sealed class FinanceMesp135Persistence(
         var accounts = await db.Accounts.Where(item => item.CompanyId == run.CompanyId && run.Lines.Select(line => line.AccountId).Contains(item.Id)).ToDictionaryAsync(item => item.Id, cancellationToken); if (accounts.Count != run.Lines.Select(item => item.AccountId).Distinct().Count()) return (false, "posting_lineage_missing", null);
         var values = run.Lines.Where(item => item.Debit != 0m || item.Credit != 0m).OrderBy(item => item.AccountCode).ToArray(); var command = new FinanceJournalCommand(run.CompanyId, period.EndDate, period.EndDate, functionalCurrency, null, null, null, null, YearEndContract, "close", run.Id, 1, rule.Id, "Year-end retained earnings close", values.Select(item => new FinanceJournalLineCommand(item.AccountId, item.Debit, item.Credit, Math.Max(item.Debit, item.Credit), functionalCurrency, null, "Year-end close")).ToArray(), Guid.NewGuid(), Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"), FinanceJournalAmountAuthority.ManualTransactionCurrency, FinanceApprovalRequirement.NotRequired);
         var journal = new FinanceJournalEntity(context.TenantId, command.Id, command, (await db.Journals.Where(item => item.CompanyId == run.CompanyId).Select(item => (long?)item.JournalSequence).MaxAsync(cancellationToken) ?? 0L) + 1L, functionalCurrency, context.ActorId, DateTimeOffset.UtcNow); journal.SetCorrelation(context.CorrelationId); journal.SetPeriod(period.FiscalYearId, period.Id); journal.SetRule(rule.Id, rule.VersionNumber);
-        var number = 1; foreach (var item in values) journal.Lines.Add(new FinanceJournalLineEntity(context.TenantId, Guid.NewGuid(), journal.Id, number++, accounts[item.AccountId], command.Lines[number - 2], null, item.Debit, item.Credit, FinanceJournalAmountAuthority.ManualTransactionCurrency)); journal.SetStatus(FinanceJournalStatus.Posted, context.ActorId, DateTimeOffset.UtcNow); db.Journals.Add(journal);
+        var number = 1; foreach (var item in values) { var lineId = Guid.NewGuid(); var lineNumber = number; journal.Lines.Add(new FinanceJournalLineEntity(context.TenantId, lineId, journal.Id, lineNumber, accounts[item.AccountId], command.Lines[lineNumber - 1], null, item.Debit, item.Credit, FinanceJournalAmountAuthority.ManualTransactionCurrency)); item.SetClosingJournalLine(lineId); number++; } journal.SetStatus(FinanceJournalStatus.Posted, context.ActorId, DateTimeOffset.UtcNow); db.Journals.Add(journal);
         var evidence = await FinanceJournalMonetaryEvidenceFactory.BuildAsync(db, context.TenantContext, exchangeRates, run.CompanyId, period.EndDate, functionalCurrency, values.Sum(item => item.Debit), functionalCurrency, values.Sum(item => item.Debit), null, null, null, null, cancellationToken); if (!evidence.Succeeded) return (false, evidence.Code, null); if (evidence.Evidence is not null) db.JournalMonetaryEvidence.Add(new FinanceJournalMonetaryEvidenceEntity(context.TenantId, Guid.NewGuid(), journal.Id, run.CompanyId, run.Id, evidence.Evidence, DateTimeOffset.UtcNow));
         return (true, "succeeded", ToJournal(journal));
     }
 
-    private async Task<FinanceOperationResult<FinanceJournalRecord>> CreateExactJournalReversalAsync(FinanceDbContext db, FinanceRequestContext context, FinanceJournalEntity original, DateOnly date, string reason, Guid id, string sourceContract, string sourceEvent, CancellationToken cancellationToken)
+    private async Task<FinanceOperationResult<FinanceJournalRecord>> CreateExactJournalReversalAsync(FinanceDbContext db, FinanceRequestContext context, FinanceJournalEntity original, FinanceFiscalPeriodEntity period, DateOnly date, string reason, Guid id, string sourceContract, string sourceEvent, CancellationToken cancellationToken)
     {
-        var period = await db.FiscalPeriods.SingleOrDefaultAsync(item => item.CompanyId == original.CompanyId && item.StartDate <= date && item.EndDate >= date, cancellationToken); if (period is null || period.State != FinanceFiscalPeriodState.Closed) return Failure<FinanceJournalRecord>("period_not_closed");
+        if (period.State != FinanceFiscalPeriodState.Open) return Failure<FinanceJournalRecord>("period_not_open");
         var company = Company(context, original.CompanyId)!; var command = new FinanceJournalCommand(original.CompanyId, original.JournalDate, date, original.TransactionCurrencyCode, original.ExchangeRate, original.ExchangeRateId, original.ExchangeRateVersionId, original.ExchangeRateVersionNumber, sourceContract, sourceEvent, null, null, original.PostingRuleId, reason, original.Lines.OrderBy(item => item.LineNumber).Select(item => new FinanceJournalLineCommand(item.AccountId, item.Credit, item.Debit, item.TransactionAmount, item.TransactionCurrencyCode, item.CostCenterId, reason)).ToArray(), id, Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"), original.AmountAuthority, FinanceApprovalRequirement.NotRequired);
         var reversal = new FinanceJournalEntity(context.TenantId, Guid.NewGuid(), command, (await db.Journals.Where(item => item.CompanyId == original.CompanyId).Select(item => (long?)item.JournalSequence).MaxAsync(cancellationToken) ?? 0L) + 1L, company.FunctionalCurrencyCode, context.ActorId, DateTimeOffset.UtcNow); reversal.SetCorrelation(context.CorrelationId); reversal.LinkOriginal(original.Id); reversal.SetPeriod(period.FiscalYearId, period.Id); foreach (var line in original.Lines.OrderBy(item => item.LineNumber)) { var account = await db.Accounts.SingleAsync(item => item.Id == line.AccountId && item.CompanyId == original.CompanyId, cancellationToken); reversal.Lines.Add(new FinanceJournalLineEntity(context.TenantId, Guid.NewGuid(), reversal.Id, line.LineNumber, account, new FinanceJournalLineCommand(line.AccountId, line.Credit, line.Debit, line.TransactionAmount, line.TransactionCurrencyCode, line.CostCenterId, reason), null, line.FunctionalCredit, line.FunctionalDebit, original.AmountAuthority)); } reversal.SetStatus(FinanceJournalStatus.Posted, context.ActorId, DateTimeOffset.UtcNow); db.Journals.Add(reversal); await CopyEvidenceAsync(db, context, original, reversal.Id, cancellationToken); original.LinkReversal(reversal.Id); original.SetStatus(FinanceJournalStatus.Reversed, context.ActorId, DateTimeOffset.UtcNow); return FinanceOperationResult<FinanceJournalRecord>.Success(ToJournal(reversal));
     }
@@ -388,12 +400,57 @@ internal sealed class FinanceMesp135Persistence(
 
     private static (decimal? Opening, decimal? Debit, decimal? Credit, decimal? Closing, FinanceEvidenceStatus Status) ReportingAmounts(IEnumerable<JournalFact> facts, string? currency)
     {
-        if (currency is null) return (null, null, null, null, FinanceEvidenceStatus.NotCaptured); var values = facts.ToArray(); if (values.Length == 0) return (null, null, null, null, FinanceEvidenceStatus.NotCaptured); if (values.Any(item => item.Evidence is null || item.Evidence.ReportingCurrencyCode != currency || item.Evidence.ReportingAmount is null || item.Evidence.ReportingEvidenceStatus is not (FinanceEvidenceStatus.Captured or FinanceEvidenceStatus.Reconciled))) return (null, null, null, null, FinanceEvidenceStatus.LegacyWithoutReportingEvidence); var debit = values.Sum(ReportDebit); var credit = values.Sum(ReportCredit); return (0m, debit, credit, debit - credit, FinanceEvidenceStatus.Reconciled);
-        decimal ReportDebit(JournalFact item) => item.Evidence!.ReportingAmount!.Value * (item.Line.FunctionalDebit / Math.Max(0.00000001m, item.Journal.Lines.Sum(line => line.FunctionalDebit + line.FunctionalCredit)));
-        decimal ReportCredit(JournalFact item) => item.Evidence!.ReportingAmount!.Value * (item.Line.FunctionalCredit / Math.Max(0.00000001m, item.Journal.Lines.Sum(line => line.FunctionalDebit + line.FunctionalCredit)));
+        if (currency is null) return (null, null, null, null, FinanceEvidenceStatus.NotCaptured);
+        var values = facts.ToArray();
+        if (values.Length == 0) return (null, null, null, null, FinanceEvidenceStatus.NotCaptured);
+        if (values.Any(item => item.Evidence is null || item.Evidence.ReportingCurrencyCode != currency || item.Evidence.ReportingAmount is null || item.Evidence.ReportingEvidenceStatus is not (FinanceEvidenceStatus.Captured or FinanceEvidenceStatus.Reconciled)))
+            return (null, null, null, null, FinanceEvidenceStatus.LegacyWithoutReportingEvidence);
+        var allocations = values.Select(AllocateReportingLine).ToArray();
+        if (allocations.Any(item => item is null)) return (null, null, null, null, FinanceEvidenceStatus.PendingMapping);
+        var debit = allocations.Sum(item => item!.Value.Debit);
+        var credit = allocations.Sum(item => item!.Value.Credit);
+        return (0m, debit, credit, debit - credit, FinanceEvidenceStatus.Reconciled);
     }
 
-    private static (decimal? Amount, FinanceEvidenceStatus Status) ReportLineAmount(JournalFact fact, string? currency) => currency is null ? (null, FinanceEvidenceStatus.NotCaptured) : fact.Evidence is { ReportingCurrencyCode: var code, ReportingAmount: not null } evidence && string.Equals(code, currency, StringComparison.OrdinalIgnoreCase) && evidence.ReportingEvidenceStatus is FinanceEvidenceStatus.Captured or FinanceEvidenceStatus.Reconciled ? (evidence.ReportingAmount.Value * ((fact.Line.FunctionalDebit - fact.Line.FunctionalCredit) / Math.Max(0.00000001m, fact.Journal.Lines.Sum(line => line.FunctionalDebit + line.FunctionalCredit))), FinanceEvidenceStatus.Reconciled) : (null, FinanceEvidenceStatus.LegacyWithoutReportingEvidence);
+    private static (decimal? Opening, decimal? Debit, decimal? Credit, decimal? Closing, FinanceEvidenceStatus Status) ReportingRowAmounts(JournalFact[] priorFacts, JournalFact[] periodFacts, string? currency)
+    {
+        if (currency is null) return (null, null, null, null, FinanceEvidenceStatus.NotCaptured);
+        var opening = 0m;
+        if (priorFacts.Length > 0)
+        {
+            var priorReport = ReportingAmounts(priorFacts, currency);
+            if (priorReport.Status != FinanceEvidenceStatus.Reconciled) return (null, null, null, null, priorReport.Status);
+            opening = priorReport.Closing!.Value;
+        }
+        var debit = 0m; var credit = 0m;
+        if (periodFacts.Length > 0)
+        {
+            var periodReport = ReportingAmounts(periodFacts, currency);
+            if (periodReport.Status != FinanceEvidenceStatus.Reconciled) return (null, null, null, null, periodReport.Status);
+            debit = periodReport.Debit!.Value; credit = periodReport.Credit!.Value;
+        }
+        return (opening, debit, credit, opening + debit - credit, FinanceEvidenceStatus.Reconciled);
+    }
+
+    private static (decimal? Amount, FinanceEvidenceStatus Status) ReportLineAmount(JournalFact fact, string? currency)
+    {
+        if (currency is null) return (null, FinanceEvidenceStatus.NotCaptured);
+        if (fact.Evidence is not { ReportingCurrencyCode: var code, ReportingAmount: not null } evidence || !string.Equals(code, currency, StringComparison.OrdinalIgnoreCase) || evidence.ReportingEvidenceStatus is not (FinanceEvidenceStatus.Captured or FinanceEvidenceStatus.Reconciled))
+            return (null, FinanceEvidenceStatus.LegacyWithoutReportingEvidence);
+        var allocation = AllocateReportingLine(fact);
+        return allocation is null ? (null, FinanceEvidenceStatus.PendingMapping) : (allocation.Value.Debit - allocation.Value.Credit, FinanceEvidenceStatus.Reconciled);
+    }
+
+    private static (decimal Debit, decimal Credit)? AllocateReportingLine(JournalFact fact)
+    {
+        if (fact.Evidence is not { ReportingAmount: { } amount }) return null;
+        var debitTotal = fact.Journal.Lines.Sum(line => line.FunctionalDebit);
+        var creditTotal = fact.Journal.Lines.Sum(line => line.FunctionalCredit);
+        if (Math.Abs(debitTotal - creditTotal) > 0.01m) return null;
+        var debit = fact.Line.FunctionalDebit == 0m ? 0m : amount * (fact.Line.FunctionalDebit / Math.Max(0.00000001m, debitTotal));
+        var credit = fact.Line.FunctionalCredit == 0m ? 0m : amount * (fact.Line.FunctionalCredit / Math.Max(0.00000001m, creditTotal));
+        return (debit, credit);
+    }
 
     private static async Task<(DateOnly From, DateOnly To)> ResolveRangeAsync(FinanceDbContext db, Guid companyId, Guid? periodId, DateOnly asOf, CancellationToken cancellationToken) { if (periodId is { } id) { var period = await db.FiscalPeriods.AsNoTracking().SingleOrDefaultAsync(item => item.Id == id && item.CompanyId == companyId, cancellationToken); if (period is not null) return (period.StartDate, asOf < period.EndDate ? asOf : period.EndDate); } return (DateOnly.MinValue, asOf); }
     private static FinanceEvidenceStatus WorstEvidence(FinanceEvidenceStatus left, FinanceEvidenceStatus right) => left == FinanceEvidenceStatus.PendingMapping || right == FinanceEvidenceStatus.PendingMapping ? FinanceEvidenceStatus.PendingMapping : left == FinanceEvidenceStatus.LegacyWithoutReportingEvidence || right == FinanceEvidenceStatus.LegacyWithoutReportingEvidence ? FinanceEvidenceStatus.LegacyWithoutReportingEvidence : left == FinanceEvidenceStatus.NotCaptured || right == FinanceEvidenceStatus.NotCaptured ? FinanceEvidenceStatus.NotCaptured : FinanceEvidenceStatus.Reconciled;
