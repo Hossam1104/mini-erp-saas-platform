@@ -1,14 +1,19 @@
 # Mini ERP Tenant-Aware Shell
 
 <!-- MESP-134-CURRENT-START -->
-> **MESP-134 Tax / FX / Reporting Currency / Revaluation - 26 August 2026.**
+> **MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026.**
 > MESP-133 is accepted and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
 > MESP-134 adds the lazy `/app/finance/tax-fx` workspace for monetary policy,
 > exact Tax/FX/Reporting evidence, revaluation lifecycle, reconciliation, and
 > blocked/evidence states. It remains bilingual EN/AR with RTL and
 > server-authoritative for Company, Tax, Currency, Exchange Rate, posting, and
-> evidence. Draft PR #78 remains Open/Unmerged for Sol review. MESP-134 is the
-> only active capability; MESP-135 remains inactive.
+> evidence. HOLD 2 adds bilingual mappings for exact server error codes,
+> including `unsupported_revaluation_scope`, while preserving EN/AR/RTL.
+> Angular passes 283/283 across 39 spec files, focused Tax/FX is 9/9, and the
+> production bundle is 496.44 kB initial with Finance/GL 34.52 kB, Tax/FX
+> 40.38 kB, and settlement 56.04 kB lazy chunks. Draft PR #78 remains
+> Open/Unmerged for Sol review. MESP-134 is the only active capability;
+> MESP-135 remains inactive.
 <!-- MESP-134-CURRENT-END -->
 
 <!-- MESP-131-HISTORICAL-START -->

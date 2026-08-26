@@ -1,7 +1,7 @@
 # MESP-134 — GPT-5.6 Sol review handoff
 
-MESP-134 implementation is bounded and complete on the single Draft PR
-branch. Stop for GPT-5.6 Sol review. Do not merge, mark the PR Ready, write
+MESP-134 HOLD 2 remediation is bounded and complete on the single Draft PR
+branch. Stop for GPT-5.6 Sol acceptance. Do not merge, mark the PR Ready, write
 Jira, invoke Claude Opus, activate MESP-135, create another PR, or start a
 different capability.
 
@@ -9,6 +9,9 @@ different capability.
 
 - Branch: `feat/MESP-134-tax-fx-revaluation`; base `main`.
 - Starting reconciled main: `e8437e978defb2caa868eb014178e1033fe20664`.
+- Original MESP-134 implementation head: `13d35dc09a4d938f5bbcc0631599feefd61b5112`.
+- HOLD 1 remediation head / HOLD 2 starting head: `4ee5b39e47f514178ffb40a5add5facce4c32b28`.
+- HOLD 2 source/test commit: `550c9a7ccf1a7d5d3115efc495a289d80a63bb4c`.
 - Draft PR #78 is open and unmerged for GPT-5.6 Sol review.
 - Final documentation/tracker handoff SHA is recorded after the final push.
 - `frontend/assets` is owner-managed and must remain untouched.
@@ -16,16 +19,18 @@ different capability.
 ## Final validation checkpoint
 
 - Release backend build: 0 warnings / 0 errors.
-- Disposable LocalDB backend: 1036/1036; SQL safety: 70/70; EF model-change
+- Focused MESP-134 persistence: 24/24; disposable LocalDB backend: 1052/1052;
+  SQL safety: 70/70; EF model-change
   detection: clean.
-- Angular: 283/283 across 39 spec files; production build initial 496.44 kB,
-  Finance/GL lazy 34.52 kB, Tax/FX lazy 37.39 kB, settlement lazy 56.04 kB.
+- Angular: 283/283 across 39 spec files; focused Tax/FX: 9/9; production
+  build initial 496.44 kB, Finance/GL lazy 34.52 kB, Tax/FX lazy 40.38 kB,
+  settlement lazy 56.04 kB.
 - Focused Finance browser journeys: 10/10; full Chromium: 42/42; focused
   MESP-134 REST/OpenAPI/host contract suite: 55/55; both npm audits:
   0 vulnerabilities.
-- Isolated loopback SQLite runtime: backend PID 46764 on port 5301 and
-  frontend PID 19960 on port 4301; backend health/OpenAPI and frontend
-  root, `main.js`, and `/app/finance/tax-fx` HTTP 200 probes passed.
+- Isolated loopback SQLite runtime: backend PID 25840 on port 5300 and
+  frontend PID 35964 on port 4300; health, OpenAPI, frontend root, `main.js`,
+  Finance, AP, AR, settlements, and Tax/FX HTTP 200 probes passed.
 
 ## Delivered scope
 
@@ -82,6 +87,66 @@ Sol should independently inspect the final branch and Draft PR for:
   `41%` Procurement/P2P.
 - GPT-5.6 Sol decides acceptance, any follow-up remediation, merge readiness,
   Jira closure/reconciliation, and the next exact session.
+
+## HOLD 2 final remediation evidence
+
+### Allocation monetary evidence
+
+The old defective calculation summed debit transaction values but summed every
+absolute functional line magnitude. The corrected allocation journal derives
+functional debit and credit totals independently, asserts transaction and
+functional balance with the approved precision helper, and stores one balanced
+functional side as both the functional-currency transaction amount and
+functional amount. The rate evidence is null because the journal is already in
+Company functional currency. Payable realized-FX loss, payable realized-FX
+gain, receivable direction, exact allocation reversal, reporting derivation,
+and `ReconcileFxAsync` coverage inspect the persisted evidence and actual lines.
+
+### SQL REV03
+
+`MESP134_sql_server_REV03_revaluation_post_vs_source_mutation_fails_closed_or_commits_consistently`
+now races production `PostRevaluationBatchAsync` against production
+`CreateAllocationAsync` for the same OpenItem, through independent Finance
+persistence instances, DbContexts, and SQL connections. The final assertions
+correlate original amount, active allocation and outstanding balance, batch
+status, immutable source snapshot/fingerprint, revaluation and allocation
+journal counts, realized-FX effect, and balanced GL lines. Revaluation-first
+and allocation-first serializations are both checked; allocation-first cannot
+leave a stale Posted revaluation or duplicate source effect.
+
+### Direct regressions
+
+The focused direct suite uses real `FinanceMesp134Persistence` and
+`FinanceSettlementPersistence` behavior against disposable module stores. It
+contains TAX-EVIDENCE-01 through 06 for exact, mismatch, ambiguous,
+insufficient, and date/currency cases; HIST-FX-01 through 06 for exact
+historical identity, missing identity, wrong version ID, wrong version number,
+wrong pair, wrong rate, and later-current-version preservation; realized gain
+and loss allocation/reconciliation/reversal persistence tests; and revaluation
+calculate/post, real source change after calculation, and exact reversal tests.
+Focused total is `24/24`.
+
+### Bilingual Finance errors
+
+The Tax/FX workspace maps exact production codes to `[English, Arabic]` pairs
+through the existing `LanguageService`, including
+`unsupported_revaluation_scope` rather than the stale
+`revaluation_scope_invalid` key. Angular assertions cover exact-rate,
+reporting-rate, supplier-tax, realized-FX mapping, stale-source, active prior
+revaluation, scope, concurrency, and idempotency outcomes in both languages,
+including meaningful Arabic text and RTL restoration.
+
+### Markdown and final handoff
+
+All `69` tracked Markdown files were read and classified as A live/current
+control records, B active-capability records, C approved architecture/BRD or
+contract records, or D historical/deprecated/supporting records. Live records
+were reconciled while historical HOLD 1 evidence was preserved. The final
+branch head is the exact SHA returned by `git rev-parse HEAD` after the final
+documentation/tracker push; the source/test commit is
+`550c9a7ccf1a7d5d3115efc495a289d80a63bb4c`. PR #78 description is updated with
+the final evidence and remains Draft/Open/Unmerged. No Jira writes, Opus,
+Ready transition, merge, or MESP-135 activation occurred.
 
 ---
 

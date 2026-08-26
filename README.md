@@ -23,21 +23,19 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### Current acceptance stage: MESP-134 Tax / FX / Reporting Currency / Revaluation - 26 August 2026
+### Current acceptance stage: MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026
 
 MESP-132 and MESP-133 are Done/merged/closed at their accepted bounded scopes.
 MESP-133 merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9` from accepted
 feature head `6908c003a32be8a3a31782d855b8358f2a9505f5`. MESP-134 is the only
 active Finance capability under MESP-10 and is being delivered on Draft PR #78,
-which remains Open and Unmerged. Sol closure `12037`, Finance reconciliation `12038`,
-and MESP-134 activation `12039` are the current authority. Sol HOLD comments `11892`
-/ `11926` / `11963` / `11967`, MESP-10 progress comments `11893` / `11927` /
-`11964` / `11968`, and the
-manual-AR supplemental finding `11928` remain historical MESP-133 evidence; MESP-10
-is still In Progress, MESP-135 remains inactive, and no Jira writes were
-performed by this session.
+which remains Open, Draft, and Unmerged. Sol closure `12037`, Finance
+reconciliation `12038`, and MESP-134 activation `12039` are historical/current
+activation authority; Sol HOLD 1 `12044`, HOLD 2 `12080`, and MESP-10 HOLD 2
+reconciliation `12081` govern this remediation. MESP-10 is still In Progress,
+MESP-135 remains inactive, and no Jira writes were performed by this session.
 
-MESP-134 is implemented on this branch at its bounded Finance scope. It adds
+MESP-134 HOLD 2 is implemented on this branch at its bounded Finance scope. It adds
 Company-owned monetary policy, exact MESP-120 transaction/functional/Reporting
 currency evidence and rounding, MESP-119 tax reclassification, realized FX
 allocation/reversal, controlled AP/AR/unallocated revaluation batches,
@@ -47,19 +45,24 @@ persists immutable journal monetary evidence, source snapshots, posting-rule
 lineage, supplier-declared-tax evidence, and visible realized/unrealized/
 reporting reconciliation feeds, with provider-realistic SQL concurrency races.
 Complete tax evidence snapshots and revaluation rate validity bounds are
-persisted. External providers, bank feeds, statutory VAT/ZATCA/FATOORA, generic
-Reporting, and Wafra-specific core behavior remain outside scope.
+persisted. HOLD 2 additionally corrects one-sided allocation monetary evidence,
+replaces SQL REV03 with a real revaluation-versus-allocation race, adds direct
+Tax/historical-FX/realized-FX/revaluation persistence regressions, and provides
+exact EN/AR mappings for current Finance error codes. External providers, bank
+feeds, statutory VAT/ZATCA/FATOORA, generic Reporting, and Wafra-specific core
+behavior remain outside scope.
 
 Final bounded validation is Release 0 warnings/0 errors, disposable LocalDB
-backend 1036/1036, SQL safety 70/70, Angular 283/283 across 39 specs, focused
-Finance Chromium 10/10, full Chromium 42/42, REST/OpenAPI/host 55/55, EF
-model-change detection clean, initial 496.44 kB, Finance/GL lazy 34.52 kB,
-Tax/FX lazy 37.39 kB, and both npm audits at 0 vulnerabilities. An isolated
-loopback SQLite runtime is available on backend 5301 (PID 46764) and frontend
-4301 (PID 19960); health, OpenAPI, root, `main.js`, and Tax/FX route probes
-returned HTTP 200. Fast-track remains 17/26 = 65.4% and production readiness
-remains approximately 47% overall / 41% Procurement/P2P pending Sol acceptance
-and merge.
+backend 1052/1052, SQL safety 70/70, focused MESP-134 persistence 24/24,
+Angular 283/283 across 39 specs, focused Tax/FX 9/9, focused Finance Chromium
+10/10, full Chromium 42/42, REST/OpenAPI/host 55/55, EF model-change detection
+clean, initial 496.44 kB, Finance/GL lazy 34.52 kB, Tax/FX lazy 40.38 kB,
+settlement lazy 56.04 kB, and both npm audits at 0 vulnerabilities. The
+repository-owned loopback SQLite runtime is API 5300 (PID 25840) and frontend
+4300 (PID 35964); health, OpenAPI, root, `main.js`, Finance, AP, AR, settlements,
+and Tax/FX route probes returned HTTP 200. Fast-track remains 17/26 = 65.4%
+and production readiness remains approximately 47% overall / 41% Procurement/P2P
+pending Sol acceptance and merge.
 
 ### Historical MESP-133 acceptance snapshot
 

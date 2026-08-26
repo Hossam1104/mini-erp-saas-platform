@@ -1,37 +1,42 @@
 # Current State
 
-## MESP-134 Tax / FX / Reporting Currency / Revaluation implementation handoff - 26 August 2026
+## MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 handoff - 26 August 2026
 
-MESP-133 is Done and merged into `main`. Its accepted feature head is
-`6908c003a32be8a3a31782d855b8358f2a9505f5` and the squash merge is
-`3c616dd85b9cebb53990934321f1ae7d0d5410c9`. Sol closure is comment `12037`,
-Finance reconciliation is `12038`, and MESP-134 activation is `12039`.
+MESP-133 is Done and merged into `main` at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`;
+Sol closure is `12037`, Finance reconciliation is `12038`, and MESP-134
+activation is `12039`.
 MESP-134 is the only active implementation capability under MESP-10. MESP-135
 remains To Do/inactive. Accepted fast-track is `17/26 = 65.4%`; production
 readiness remains approximately `47%` overall and `41%` Procurement/P2P.
 
-The current implementation branch is created from the reconciled merge baseline
-and Draft PR #78 must remain Open and Unmerged for Sol acceptance. No Jira writes,
-Claude Opus review, Ready transition, merge, or MESP-135 activation is allowed
-in this bounded session.
+The bounded HOLD 2 remediation started from HOLD 1 head
+`4ee5b39e47f514178ffb40a5add5facce4c32b28` on branch
+`feat/MESP-134-tax-fx-revaluation`, based on reconciled main
+`e8437e978defb2caa868eb014178e1033fe20664`, and is committed in
+`550c9a7ccf1a7d5d3115efc495a289d80a63bb4c`. Draft PR #78 remains Open, Draft,
+and Unmerged for Sol acceptance. Sol HOLD 1 is `12044`, current HOLD 2 is
+`12080`, and MESP-10 Finance reconciliation is `12081`. No Jira writes, Claude
+Opus review, Ready transition, merge, or MESP-135 activation is allowed in this
+bounded session.
 
-MESP-134 implementation is complete at bounded scope on this branch. It adds
-Company-owned monetary policy, exact MESP-120 transaction/functional/Reporting
-evidence and rounding, MESP-119 tax reclassification, realized FX allocation
-and exact reversal, controlled AP/AR/unallocated revaluation batches, Finance
-reconciliation, protected REST/OpenAPI operations, and a lazy bilingual EN/AR
-RTL Tax/FX workspace. HOLD 1 remediation additionally persists immutable
-journal monetary evidence, source snapshots, posting-rule lineage, supplier-
-declared-tax evidence, and visible realized/unrealized/reporting reconciliation
-feeds, with provider-realistic SQL concurrency coverage. Complete tax evidence
-snapshots and revaluation rate validity bounds are persisted; no current-rate
-backfill or external/statutory provider behavior is introduced. Final
-validation is Release 0/0, backend 1036/1036, SQL safety 70/70, Angular
-283/283 across 39 specs, focused Finance Chromium 10/10, full Chromium 42/42,
-REST/OpenAPI/host 55/55, EF model-change detection clean, and both npm audits
-at 0 vulnerabilities. Isolated loopback SQLite runtime backend PID is `46764`
-on port 5301 and frontend PID is `19960` on port 4301; health, OpenAPI, root,
-`main.js`, and Tax/FX route probes returned HTTP 200. The architecture record is
+HOLD 2 corrects allocation journal monetary evidence to use one balanced
+functional debit/credit side with an explicit balance assertion; adds direct
+payable gain/loss and exact reversal persistence regressions; replaces SQL REV03
+synthetic OpenItem mutation with a real concurrent `PostRevaluationBatchAsync`
+versus `CreateAllocationAsync` race on the same source using independent
+contexts; adds direct Procurement Tax, historical MESP-120 FX, realized-FX,
+and revaluation persistence coverage; and maps exact Finance error codes to
+English/Arabic messages, including `unsupported_revaluation_scope`.
+
+Final validation is Release 0 warnings/0 errors; disposable LocalDB backend
+`1052/1052`, 0 failures/0 skips; SQL safety `70/70`; REST/OpenAPI/host `55/55`;
+focused MESP-134 persistence `24/24`; Angular `283/283` across 39 specs with
+focused Tax/FX `9/9`; focused/full Chromium `10/10` and `42/42`; EF model-change
+detection clean; initial bundle `496.44 kB`, Finance/GL lazy `34.52 kB`, Tax/FX
+lazy `40.38 kB`, settlement lazy `56.04 kB`; and both npm audits at 0
+vulnerabilities. The owner runtime is SQLite on API `5300` PID `25840` and
+Angular `4300` PID `35964`; health, OpenAPI, root, `main.js`, Finance, AP, AR,
+settlements, and Tax/FX probes returned HTTP 200. The architecture record is
 `docs/37_MESP-134_Tax_FX_Reporting_Currency_Revaluation_Architecture.md`.
 
 ## Historical MESP-133 AP / AR / Cash / Settlement verification-only HOLD 4 handoff - 25 August 2026

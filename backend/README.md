@@ -10,7 +10,7 @@
 <!-- MESP-131-CURRENT-END -->
 
 <!-- MESP-134-CURRENT-START -->
-> **MESP-134 Tax / FX / Reporting Currency / Revaluation - 26 August 2026.**
+> **MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026.**
 > MESP-133 is Done and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
 > MESP-134 is implemented on the only active Finance branch under MESP-10,
 > pending Draft PR #78, which remains Open/Unmerged for GPT-5.6 Sol acceptance. The backend
@@ -19,8 +19,11 @@
 > evidence, tax effects, realized FX, revaluation, and reconciliation. HOLD 1
 > adds immutable journal monetary evidence, source snapshots, posting-rule
 > lineage, supplier-declared-tax evidence, reconciliation feeds, and provider-
-> realistic SQL concurrency coverage. Final validation is Release 0/0, backend
-> 1036/1036, SQL safety 70/70, REST/OpenAPI/host 55/55, and clean EF
+> realistic SQL concurrency coverage. HOLD 2 corrects one-sided allocation
+> monetary evidence, replaces SQL REV03 with the real revaluation/allocation
+> race, and adds direct Tax, historical FX, realized FX, revaluation, and EN/AR
+> error regressions. Final validation is Release 0/0, focused MESP-134 24/24,
+> backend 1052/1052, SQL safety 70/70, REST/OpenAPI/host 55/55, and clean EF
 > model-change detection. No Jira writes, Opus review, merge, Ready transition,
 > external provider, ZATCA/FATOORA, Sales lifecycle, or MESP-135 work is in
 > scope.
