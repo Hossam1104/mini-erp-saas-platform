@@ -23,7 +23,7 @@ independent Sol re-review.
 - Focused backend: MESP-133 `16/16`, MESP-134 `27/27`, MESP-135 direct
   persistence `16/16`; MESP-135 SQL class `10/10`.
 - Full disposable-LocalDB backend runner:
-  **1,081/1,081 passed, 0 failed, 0 skipped**. The complete SQL safety
+  **1,083/1,083 passed, 0 failed, 0 skipped**. The complete SQL safety
   catalogue contains **80/80** executed cases in that successful run.
 - REST/OpenAPI/host-security: **55/55**. Public operation catalogue remains
   **383**; HOLD 3 required no new public operation.
@@ -35,8 +35,8 @@ independent Sol re-review.
 - Focused Finance Chromium: **15/15**; full Chromium: **47/47**.
 - Runtime restarted through `scripts/Start-MiniErpDevelopment.ps1 -Restart`
   with Development loopback auth bypass. Backend is
-  `http://localhost:5300`, PID `38404`; frontend is
-  `http://localhost:4300`, PID `18268`. All 11 required probes returned
+  `http://localhost:5300`, PID `7328`; frontend is
+  `http://localhost:4300`, PID `36224`. All 11 required probes returned
   HTTP 200: `/health`, `/openapi/v1.json`, `/`, `/main.js`,
   `/app/finance`, `/app/finance/ap`, `/app/finance/ar`,
   `/app/finance/settlements`, `/app/finance/tax-fx`, `/app/finance/close`,
@@ -49,7 +49,9 @@ independent Sol re-review.
 - Tracked Markdown count: **70**; `docs/statistics.md` was not created.
 
 **Final handoff:** the exact HOLD 3 implementation head is
-`f6af7dd` (`fix(MESP-135): close HOLD 3 persistence gaps`). The final
+`6463d46` (`test(MESP-135): strengthen Close04 reopen/post race with
+PeriodHistory assertion`), following the bounded implementation commit
+`f6af7dd`. The final
 documentation-only synchronization commit will be pushed on the same branch
 and the resulting branch tip is reported in the executor handoff. Draft PR
 #79 remains Open/Draft/Unmerged for Sol's independent HOLD 3 review.

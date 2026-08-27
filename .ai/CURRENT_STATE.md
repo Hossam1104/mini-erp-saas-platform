@@ -8,9 +8,10 @@ MESP-10, In Progress/activated, on branch
 Open/Draft/Unmerged. The exact pre-remediation feature and origin head was
 `6835e9aad52e9162e0dbe9722679b563920b3374`; the reconciled base was
 `841a777af1622cb4de9c3708cd4a2b389b7ef9e9`.
-The bounded implementation/test commit is `f6af7dd` (`fix(MESP-135): close
-HOLD 3 persistence gaps`); a final documentation-only synchronization commit
-follows on this same branch.
+The bounded implementation commit is `f6af7dd` (`fix(MESP-135): close HOLD 3
+persistence gaps`), followed by test-hardening commit `6463d46` (`test(MESP-135):
+strengthen Close04 reopen/post race with PeriodHistory assertion`). A final
+documentation-only synchronization commit follows on this same branch.
 
 This bounded HOLD 3 correction added the three missing production-operation
 SQL races: `Close04_Concurrent_reopen_and_post_preserve_one_coherent_period_state`
@@ -36,7 +37,7 @@ and requested `AsOfDate`.
 
 Validation is complete for this bounded source state: Release build 0/0;
 focused MESP-133 `16/16`, MESP-134 `27/27`, MESP-135 direct `16/16`, and
-MESP-135 SQL `10/10`; full disposable-LocalDB backend `1,081/1,081`, 0
+MESP-135 SQL `10/10`; full disposable-LocalDB backend `1,083/1,083`, 0
 failed/0 skipped; complete SQL safety catalogue `80/80`; REST/OpenAPI/host
 `55/55`; Angular `296/296` across 41 specs; focused Finance Chromium `15/15`;
 full Chromium `47/47`; npm audits 0 vulnerabilities; NuGet vulnerable-package
@@ -46,8 +47,8 @@ reports 17.02 kB, tax-fx 40.38 kB, and settlements 56.04 kB.
 
 The required runtime was restarted via
 `Start-MiniErpDevelopment.ps1 -Restart` and remains running: backend
-`http://localhost:5300` PID `38404`, frontend `http://localhost:4300` PID
-`18268`. `/health`, `/openapi/v1.json`, `/`, `/main.js`, `/app/finance`,
+`http://localhost:5300` PID `7328`, frontend `http://localhost:4300` PID
+`36224`. `/health`, `/openapi/v1.json`, `/`, `/main.js`, `/app/finance`,
 `/app/finance/ap`, `/app/finance/ar`, `/app/finance/settlements`,
 `/app/finance/tax-fx`, `/app/finance/close`, and `/app/finance/reports` each
 returned HTTP 200. Both are repository-owned, alive, and the web shell is
