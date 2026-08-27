@@ -23,7 +23,41 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### Current capability: MESP-135 Finance close, corrections, reconciliation and reports - 26 August 2026
+### Current capability: MESP-135 Finance close, corrections, reconciliation and reports - 27 August 2026
+
+MESP-135 is the only active Finance implementation capability under MESP-10,
+with HOLD 5 authority MESP-135 `12182` and MESP-10 `12183`. The feature branch
+is `feat/MESP-135-finance-close-reports` and Draft PR #79 remains
+Open/Draft/Unmerged for GPT-5.6 Sol acceptance.
+
+HOLD 5 adds one shared read-only MESP-134 revaluation-scope evaluator used by
+both `CalculateRevaluationBatchAsync` and Finance Close readiness at the same
+AsOfDate. Zero-effect foreign sources are evaluated without requiring a
+journal; every non-zero source requires exactly one matching period-end line,
+valid source/rate evidence, and one reconciled journal evidence row. Missing,
+stale, duplicate, extra, invalid, and late source evidence blocks. As-of
+allocation/reversal semantics and a deterministic scope fingerprint protect
+historical readiness. No public endpoint, schema, migration, or
+`frontend/assets` file changed.
+
+The approved post-recovery source head was
+`fd07414e1a68870aa6230a764185073bb7cb28c8`; the HOLD 5 implementation commit
+is `c20b2d3499c2bd4134c1bf89d6a9344fa79e4142`, followed by documentation-only
+tracker synchronization. The accidental PPT-only commit
+`0099a9a02eff490753f7c4565651fc54e1368453` is preserved on local and remote
+`archive/mesp-presentation-ppt-0099`; the PPTX remains untracked locally and
+is absent from MESP-135 commits.
+
+Fast-track remains `18/26 = 69.2%`; production readiness remains approximately
+`47%` overall and `41%` Procurement/P2P. Validation is Release `0/0`, full
+backend `1,092/1,092`, SQL safety `80/80`, REST/OpenAPI/host `55/55`, Angular
+`296/296`, focused/full Chromium `15/15` and `47/47`, both npm audits at 0
+vulnerabilities, and a clear five-project NuGet vulnerable-package scan. The
+repository-owned runtime is API `5300` PID `32012` and frontend `4300` PID
+`37812`; required API and Finance routes return HTTP 200. No Jira write, Opus
+review, Ready transition, merge, or next-capability activation occurred.
+
+### Historical MESP-135 Finance close, corrections, reconciliation and reports - 26 August 2026
 
 MESP-134 is Done and squash-merged to `main` at
 `1e49814172843c2ec2279b8dcc5fc0a41e5da372` through PR #78; closure comment is

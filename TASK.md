@@ -1,5 +1,37 @@
 
-# MESP-135 - Sol HOLD 4 final bounded remediation - final handoff for Sol re-review
+# MESP-135 - Sol HOLD 5 recovery, completeness remediation, and final handoff
+
+This bounded session recovered the accidental PPT-only remote commit and
+completed the already-authorized MESP-135 Sol HOLD 5 remediation on the same
+Draft PR #79 / branch `feat/MESP-135-finance-close-reports`. The approved
+source head was `fd07414e1a68870aa6230a764185073bb7cb28c8`; the implementation
+commit is `c20b2d3499c2bd4134c1bf89d6a9344fa79e4142`, followed by the final
+documentation/tracker synchronization commit.
+
+Recovery preserved accidental commit
+`0099a9a02eff490753f7c4565651fc54e1368453` on local and remote
+`archive/mesp-presentation-ppt-0099`, then restored the feature branch with the
+exact expected-SHA `--force-with-lease`. The PPTX is the only untracked local
+artifact and is not in any MESP-135 commit.
+
+HOLD 5 adds one shared read-only MESP-134 revaluation-scope evaluator used by
+batch calculation and Close readiness at the same AsOfDate. Zero-effect
+sources are evaluated without requiring a journal; every non-zero source must
+have exactly one matching period-end line, valid source/rate evidence, and one
+reconciled journal evidence row. Missing, stale, duplicate, extra, invalid,
+and late sources block. As-of allocation/reversal semantics and deterministic
+scope fingerprinting are preserved. No public endpoint, schema, migration, or
+`frontend/assets` file changed.
+
+Validation: Release `0 warnings/0 errors`; full disposable-LocalDB backend
+`1,092/1,092`; SQL safety `80/80`; REST/OpenAPI/host `55/55`; Angular
+`296/296`; focused/full Chromium `15/15` and `47/47`; both npm audits report
+0 vulnerabilities; NuGet vulnerable-package scan clear; live API and Finance
+route probes all HTTP 200. MESP-135 remains In Progress, PR #79 remains
+Open/Draft/Unmerged, no Jira write/Opus review/Ready transition/merge occurred,
+and work stops for GPT-5.6 Sol acceptance.
+
+# Historical MESP-135 - Sol HOLD 4 final bounded remediation - final handoff for Sol re-review
 
 This bounded remediation closes the single remaining GPT-5.6 Sol HOLD 4
 blocker on the existing Draft PR #79 / branch

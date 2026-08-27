@@ -1,15 +1,49 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
+## Current authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 5)
+
+- MESP-135 remains the only active Finance implementation capability under
+  MESP-10, with HOLD 5 authority MESP-135 `12182` and MESP-10 `12183`.
+- The approved feature source head after guarded recovery was
+  `fd07414e1a68870aa6230a764185073bb7cb28c8`; the HOLD 5 implementation commit
+  is `c20b2d3499c2bd4134c1bf89d6a9344fa79e4142` and the final branch tip is the
+  documentation/tracker synchronization commit that follows it.
+- One shared read-only MESP-134 revaluation-scope evaluator now drives both
+  Close readiness and batch calculation at the same AsOfDate. It evaluates
+  zero-effect sources without requiring journals, while requiring exactly one
+  matching period-end line, valid source/rate evidence, and one reconciled
+  journal evidence row for every non-zero source. Missing, stale, duplicate,
+  extra, invalid, and late source evidence blocks; allocation and reversal
+  semantics remain historical/as-of and a deterministic scope fingerprint is
+  part of Close readiness.
+- HOLD 5 adds no public endpoint, schema, migration, or `frontend/assets`
+  change. Fast-track remains `18/26 = 69.2%`; production readiness remains
+  approximately `47%` overall and `41%` Procurement/P2P.
+- Validation: Release `0/0`; focused MESP-133 `22/22`, MESP-134 `27/27`, and
+  MESP-135 `25/25`; full disposable-LocalDB backend `1,092/1,092` passed with
+  0 failures and 0 skips; SQL safety `80/80`; REST/OpenAPI/host `55/55`;
+  Angular `296/296`; focused Finance Chromium `15/15`; full Chromium `47/47`;
+  both npm audits 0 vulnerabilities; NuGet vulnerable-package scan clear.
+- Runtime left running: backend `http://localhost:5300` PID `32012`, frontend
+  `http://localhost:4300` PID `37812`; all required API and Finance route
+  probes returned HTTP 200.
+- Recovery: accidental PPT-only commit `0099a9a02eff490753f7c4565651fc54e1368453`
+  is preserved at local and remote `archive/mesp-presentation-ppt-0099`; the
+  feature branch was restored to `fd07414e1a68870aa6230a764185073bb7cb28c8`
+  with the exact expected-SHA `--force-with-lease`. The PPTX remains the only
+  untracked local artifact and is absent from MESP-135 commits.
+- PR #79 remains Open/Draft/Unmerged. No Jira write, Opus review, Ready
+  transition, merge, rebase, or second PR was performed. Stop for GPT-5.6 Sol
+  acceptance.
+
 <!-- MESP-135-JIRA-SYNC-START -->
-## Jira/documentation synchronization - 27 August 2026 (MESP-135 active, Sol HOLD 4)
+## Jira/documentation synchronization - 27 August 2026 (MESP-135 active, Sol HOLD 5)
 
 - MESP-134 is Done and squash-merged to `main` through PR #78 at
   `1e49814172843c2ec2279b8dcc5fc0a41e5da372`; closure comment `12122`.
-- MESP-135 is In Progress/activated under MESP-10; activation comment is
-  `12123` and Finance reconciliation is `12124`.
-- Sol acceptance trail: HOLD 1 `12130`, HOLD 1 supplemental `12132`, HOLD 2
-  `12135`, HOLD 3 `12140`, HOLD 4 `12174`, and MESP-10 HOLD 4 reconciliation
-  `12175`.
+- MESP-135 is In Progress/activated under MESP-10. HOLD 5 authority is
+  MESP-135 `12182` and MESP-10 `12183`; prior activation and HOLD evidence is
+  retained in the historical sections below.
 - MESP-135 is the only active Finance implementation capability. No Jira
   writes were performed by this session; the supplied Jira evidence is recorded
   for traceability only.
@@ -17,9 +51,9 @@
   MESP-139 remains inactive; MESP-48 and MESP-50 remain open production gates.
 <!-- MESP-135-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-27 16:20 +03:00
+**Last Updated:** 2026-08-27 20:37 +03:00
 
-## Current authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 4 final remediation)
+## Historical authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 4 final remediation)
 
 | Current repository control | Verified position |
 |---|---|
@@ -51,12 +85,12 @@ Runtime probe detail: `5300/health` 200; `5300/openapi/v1.json` 200;
 
 ## Progress history addendum - 27 August 2026
 
-HOLD 4 is a bounded correctness remediation inside the already-counted
+HOLD 5 is a bounded correctness remediation inside the already-counted
 MESP-135 capability. It adds no new capability, no new public operation, and
-no schema change, so accepted fast-track completion remains `18/26 = 69.2%`
-and production readiness remains approximately `47%` overall and `41%`
-Procurement/P2P. The only movement is backend test depth, from `1,083` to
-`1,087` executed cases.
+no schema or migration change, so accepted fast-track completion remains
+`18/26 = 69.2%` and production readiness remains approximately `47%` overall
+and `41%` Procurement/P2P. Backend test depth moved from `1,087` to `1,092`
+executed cases through five production-persistence coverage regressions.
 
 ## Historical authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 3 remediation)
 

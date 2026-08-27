@@ -1,6 +1,49 @@
 # Current State
 
-## MESP-135 Sol HOLD 4 final bounded remediation - 27 August 2026
+## MESP-135 Sol HOLD 5 bounded remediation and guarded recovery - 27 August 2026
+
+MESP-135 remains the only active Finance implementation capability under
+MESP-10, In Progress/activated, on branch
+`feat/MESP-135-finance-close-reports`, with Draft PR #79 still
+Open/Draft/Unmerged. HOLD 5 authority is MESP-135 `12182` and MESP-10 `12183`;
+no Jira writes, Opus review, Ready transition, merge, or second PR occurred.
+
+The accidental PPT-only commit `0099a9a02eff490753f7c4565651fc54e1368453`
+was preserved on local and remote `archive/mesp-presentation-ppt-0099`. The
+feature was restored from approved source head
+`fd07414e1a68870aa6230a764185073bb7cb28c8` with the exact expected-SHA
+`--force-with-lease`. The recovered PPTX remains the only untracked local
+artifact and is absent from all MESP-135 commits.
+
+The HOLD 5 correction adds one shared read-only
+`IFinanceMesp134Persistence.EvaluateRevaluationScopeAsync` evaluator. It is
+the same calculation authority used by `CalculateRevaluationBatchAsync` and
+by Close readiness at the identical AsOfDate. AP/AR open items and effective
+Payment/Receipt sources are evaluated with as-of allocation and reversal
+semantics. Zero-effect sources are included in the scope but do not require a
+journal; each non-zero source requires exactly one matching period-end
+revaluation line, posted or historically reversed batch, exact source/rate
+evidence, and one reconciled journal evidence row. Missing, stale, duplicate,
+extra, invalid, and late sources fail closed. A deterministic scope fingerprint
+is included in Close readiness. No public endpoint, schema, migration, or
+`frontend/assets` file changed.
+
+Five production-persistence regressions cover zero-effect readiness, complete
+multi-source coverage and duplicate rejection, late-source blocking, stale
+settlement evidence, and historical stability after a later settlement
+reversal. Validation is Release `0 warnings/0 errors`; focused MESP-133
+settlement `22/22`, MESP-134 `27/27`, MESP-135 `25/25`; full disposable-LocalDB
+backend `1,092/1,092` passed with 0 failures and 0 skips; SQL safety `80/80`;
+REST/OpenAPI/host-security `55/55`; Angular `296/296`; focused Finance
+Chromium `15/15`; full Chromium `47/47`; both npm audits report 0
+vulnerabilities; and the five-project NuGet vulnerable-package scan is clear.
+Runtime is left running with backend PID `32012` on `http://localhost:5300`
+and frontend PID `37812` on `http://localhost:4300`; all required probes are
+HTTP 200. The HOLD 5 source commit is
+`c20b2d3499c2bd4134c1bf89d6a9344fa79e4142`; the final branch tip follows with
+the documentation/tracker synchronization commit.
+
+## Historical MESP-135 Sol HOLD 4 final bounded remediation - 27 August 2026
 
 MESP-135 remains the only active Finance implementation capability under
 MESP-10, In Progress/activated, on branch
