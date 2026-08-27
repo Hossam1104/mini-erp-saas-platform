@@ -116,19 +116,159 @@ public sealed class FinanceMesp134Persistence : IFinanceMesp134Persistence
     public async Task<FinanceOperationResult<FinanceRevaluationBatchRecord>> CreateRevaluationBatchAsync(FinanceRequestContext context, FinanceRevaluationBatchCommand command, CancellationToken cancellationToken = default)
     { if (Company(context, command.CompanyId) is null) return Failure<FinanceRevaluationBatchRecord>("company_scope_denied"); if (command.AsOfDate == default || !string.Equals(command.Scope, FinanceRevaluationScopes.ApArAndUnallocatedSettlements, StringComparison.Ordinal)) return Failure<FinanceRevaluationBatchRecord>("unsupported_revaluation_scope"); await using var db = Create(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var replay = await ReadReplayAsync<FinanceRevaluationBatchRecord>(db, context, "finance.revaluation.create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay is not null) return replay; var policy = await PolicyAtAsync(db, command.CompanyId, command.AsOfDate, cancellationToken); if (policy is null || !policy.RevaluationEnabled) return Failure<FinanceRevaluationBatchRecord>("monetary_policy_not_configured"); var batch = new FinanceRevaluationBatchEntity(context.TenantId, command with { Scope = FinanceRevaluationScopes.ApArAndUnallocatedSettlements }, context.ActorId, DateTimeOffset.UtcNow); db.RevaluationBatches.Add(batch); var now = DateTimeOffset.UtcNow; AddAudit(db, context, "finance.revaluation.create", "revaluation-batch", batch.Id, "Succeeded", null, command.IdempotencyKey, now); await db.SaveChangesAsync(cancellationToken); var result = FinanceOperationResult<FinanceRevaluationBatchRecord>.Success(ToBatch(batch)); AddReplay(db, context, "finance.revaluation.create", command.IdempotencyKey, command.RequestFingerprint, "revaluation-batch", batch.Id, result.Value!, now); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return result; }
 
+    public async Task<FinanceOperationResult<FinanceRevaluationScopeEvaluation>> EvaluateRevaluationScopeAsync(FinanceRequestContext context, Guid companyId, DateOnly asOfDate, CancellationToken cancellationToken = default)
+    {
+        if (Company(context, companyId) is null) return Failure<FinanceRevaluationScopeEvaluation>("company_scope_denied");
+        if (asOfDate == default) return Failure<FinanceRevaluationScopeEvaluation>("unsupported_revaluation_scope");
+        await using var db = Create(context);
+        return await EvaluateRevaluationScopeAsync(db, context, companyId, asOfDate, cancellationToken);
+    }
+
+    private async Task<FinanceOperationResult<FinanceRevaluationScopeEvaluation>> EvaluateRevaluationScopeAsync(FinanceDbContext db, FinanceRequestContext context, Guid companyId, DateOnly asOfDate, CancellationToken cancellationToken)
+    {
+        var company = Company(context, companyId);
+        if (company is null) return Failure<FinanceRevaluationScopeEvaluation>("company_scope_denied");
+        var policy = await PolicyAtAsync(db, companyId, asOfDate, cancellationToken);
+        if (policy is null || !policy.RevaluationEnabled) return Failure<FinanceRevaluationScopeEvaluation>("monetary_policy_not_configured");
+
+        var allocations = await db.Allocations.AsNoTracking()
+            .Where(item => item.CompanyId == companyId && item.AllocationDate <= asOfDate)
+            .ToListAsync(cancellationToken);
+        var active = allocations
+            .Where(item => item.Status == FinanceAllocationStatus.Active
+                && item.ReversalOfAllocationId is null
+                && !allocations.Any(reversal => reversal.ReversalOfAllocationId == item.Id
+                    && reversal.Status == FinanceAllocationStatus.Reversed
+                    && reversal.AllocationDate <= asOfDate))
+            .ToArray();
+
+        var sources = new List<FinanceRevaluationScopeSourceRecord>();
+        var items = await db.OpenItems.AsNoTracking()
+            .Where(item => item.CompanyId == companyId
+                && item.RecognitionState == FinanceOpenItemRecognitionState.Recognized
+                && item.DocumentDate <= asOfDate
+                && item.CurrencyCode != item.FunctionalCurrencyCode)
+            .ToListAsync(cancellationToken);
+        foreach (var item in items)
+        {
+            var allocated = active.Where(value => value.OpenItemId == item.Id).Sum(value => value.Amount);
+            var outstanding = Math.Max(0m, item.OriginalAmount - allocated);
+            if (outstanding != 0m && item.OriginalAmount == 0m) return Failure<FinanceRevaluationScopeEvaluation>("revaluation_source_invalid");
+            var historical = outstanding == 0m
+                ? 0m
+                : outstanding * item.OriginalFunctionalAmount / item.OriginalAmount;
+            FinanceExchangeRateEvidence? rate = null;
+            var revalued = 0m;
+            if (outstanding != 0m)
+            {
+                try { rate = await ResolveRateEvidenceAsync(context, item.CurrencyCode, item.FunctionalCurrencyCode, asOfDate, cancellationToken); }
+                catch (InvalidOperationException) { return Failure<FinanceRevaluationScopeEvaluation>("revaluation_rate_unavailable"); }
+                if (rate is null) return Failure<FinanceRevaluationScopeEvaluation>("revaluation_rate_not_configured");
+                revalued = decimal.Round(outstanding * rate.Rate, policy.RoundingScale, Rounding(policy.RoundingMode));
+            }
+            var difference = revalued - historical;
+            var direction = difference == 0m
+                ? FinanceFxDirection.Zero
+                : item.Kind == FinanceOpenItemKind.Payable
+                    ? difference > 0m ? FinanceFxDirection.Loss : FinanceFxDirection.Gain
+                    : difference > 0m ? FinanceFxDirection.Gain : FinanceFxDirection.Loss;
+            var snapshot = OpenItemSnapshot(item, active.Where(value => value.OpenItemId == item.Id), asOfDate);
+            sources.Add(new FinanceRevaluationScopeSourceRecord(item.Id, item.Kind == FinanceOpenItemKind.Payable ? "AP" : "AR", asOfDate, item.CurrencyCode, outstanding, historical, revalued, difference, direction, rate, SnapshotFingerprint(snapshot)));
+        }
+
+        var candidateDocuments = await db.SettlementDocuments.AsNoTracking()
+            .Where(item => item.CompanyId == companyId && item.DocumentDate <= asOfDate && item.CurrencyCode != item.FunctionalCurrencyCode)
+            .ToListAsync(cancellationToken);
+        var settlementJournalIds = candidateDocuments
+            .SelectMany(item => new[] { item.PostedJournalId, item.ReversalJournalId })
+            .Where(item => item.HasValue)
+            .Select(item => item!.Value)
+            .Distinct()
+            .ToArray();
+        var settlementJournals = await db.Journals.AsNoTracking()
+            .Where(item => settlementJournalIds.Contains(item.Id))
+            .ToDictionaryAsync(item => item.Id, cancellationToken);
+        var documents = candidateDocuments
+            .Where(item => FinanceSettlementPersistence.IsSettlementEffectEffective(item, settlementJournals, asOfDate))
+            .ToArray();
+        foreach (var document in documents)
+        {
+            var allocated = active.Where(value => value.SettlementDocumentId == document.Id).Sum(value => value.Amount);
+            var outstanding = Math.Max(0m, document.Amount - allocated);
+            if (outstanding != 0m && document.Amount == 0m) return Failure<FinanceRevaluationScopeEvaluation>("revaluation_source_invalid");
+            var historical = outstanding == 0m
+                ? 0m
+                : outstanding * document.FunctionalAmount / document.Amount;
+            FinanceExchangeRateEvidence? rate = null;
+            var revalued = 0m;
+            if (outstanding != 0m)
+            {
+                try { rate = await ResolveRateEvidenceAsync(context, document.CurrencyCode, document.FunctionalCurrencyCode, asOfDate, cancellationToken); }
+                catch (InvalidOperationException) { return Failure<FinanceRevaluationScopeEvaluation>("revaluation_rate_unavailable"); }
+                if (rate is null) return Failure<FinanceRevaluationScopeEvaluation>("revaluation_rate_not_configured");
+                revalued = decimal.Round(outstanding * rate.Rate, policy.RoundingScale, Rounding(policy.RoundingMode));
+            }
+            var difference = revalued - historical;
+            var direction = difference == 0m
+                ? FinanceFxDirection.Zero
+                : document.Direction == FinancePaymentMethodDirection.Receipt
+                    ? difference > 0m ? FinanceFxDirection.Gain : FinanceFxDirection.Loss
+                    : difference > 0m ? FinanceFxDirection.Loss : FinanceFxDirection.Gain;
+            var effectiveReversalId = document.ReversalJournalId is { } reversalId
+                && settlementJournals.TryGetValue(reversalId, out var reversalJournal)
+                && IsJournalEffective(reversalJournal, asOfDate)
+                ? (Guid?)reversalId
+                : null;
+            var snapshot = SettlementSnapshot(document, active.Where(value => value.SettlementDocumentId == document.Id), asOfDate, effectiveReversalId);
+            sources.Add(new FinanceRevaluationScopeSourceRecord(document.Id, document.Direction == FinancePaymentMethodDirection.Receipt ? "Receipt" : "Payment", asOfDate, document.CurrencyCode, outstanding, historical, revalued, difference, direction, rate, SnapshotFingerprint(snapshot)));
+        }
+
+        var ordered = sources.OrderBy(item => item.SourceType).ThenBy(item => item.SourceId).ToArray();
+        var fingerprint = Fingerprint(new
+        {
+            CompanyId = companyId,
+            AsOfDate = asOfDate,
+            Scope = FinanceRevaluationScopes.ApArAndUnallocatedSettlements,
+            PolicyId = policy.Id,
+            PolicyVersion = policy.VersionNumber,
+            PolicyRevision = policy.Version,
+            policy.FunctionalCurrencyCode,
+            policy.RoundingScale,
+            policy.RoundingMode,
+            Sources = ordered.Select(item => new
+            {
+                item.SourceId,
+                item.SourceType,
+                item.AsOfDate,
+                item.TransactionCurrencyCode,
+                item.OutstandingTransactionAmount,
+                item.HistoricalFunctionalAmount,
+                item.RevaluedFunctionalAmount,
+                item.Difference,
+                item.Direction,
+                item.SourceSnapshotFingerprint,
+                Rate = item.ExchangeRateEvidence
+            })
+        });
+        return FinanceOperationResult<FinanceRevaluationScopeEvaluation>.Success(new FinanceRevaluationScopeEvaluation(companyId, asOfDate, FinanceRevaluationScopes.ApArAndUnallocatedSettlements, ordered, fingerprint));
+    }
+
     public async Task<FinanceOperationResult<FinanceRevaluationBatchRecord>> CalculateRevaluationBatchAsync(FinanceRequestContext context, FinanceRevaluationActionCommand command, CancellationToken cancellationToken = default)
     {
         await using var db = Create(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var replay = await ReadReplayAsync<FinanceRevaluationBatchRecord>(db, context, "finance.revaluation.calculate", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay is not null) return replay; var batch = await db.RevaluationBatches.Include(item => item.Lines).SingleOrDefaultAsync(item => item.Id == command.BatchId, cancellationToken); if (batch is null || Company(context, batch.CompanyId) is null) return Failure<FinanceRevaluationBatchRecord>("company_scope_denied"); if (!batch.Version.SequenceEqual(command.ExpectedVersion)) return Failure<FinanceRevaluationBatchRecord>("concurrency_conflict"); if (batch.Status != FinanceRevaluationBatchStatus.Draft) return Failure<FinanceRevaluationBatchRecord>("revaluation_already_calculated"); var policy = await PolicyAtAsync(db, batch.CompanyId, batch.AsOfDate, cancellationToken); if (policy is null || !policy.RevaluationEnabled) return Failure<FinanceRevaluationBatchRecord>("monetary_policy_not_configured");
         if (!string.Equals(batch.Scope, FinanceRevaluationScopes.ApArAndUnallocatedSettlements, StringComparison.Ordinal)) return Failure<FinanceRevaluationBatchRecord>("unsupported_revaluation_scope");
-        var items = await db.OpenItems.Where(item => item.CompanyId == batch.CompanyId && item.RecognitionState == FinanceOpenItemRecognitionState.Recognized && item.DocumentDate <= batch.AsOfDate && item.CurrencyCode != item.FunctionalCurrencyCode).ToListAsync(cancellationToken); var allocations = await db.Allocations.Where(item => item.CompanyId == batch.CompanyId && item.AllocationDate <= batch.AsOfDate).ToListAsync(cancellationToken); var active = allocations.Where(item => item.Status == FinanceAllocationStatus.Active && item.ReversalOfAllocationId == null && !allocations.Any(reversal => reversal.ReversalOfAllocationId == item.Id && reversal.Status == FinanceAllocationStatus.Reversed && reversal.AllocationDate <= batch.AsOfDate)).ToArray();
-        foreach (var item in items)
-         { var allocated = active.Where(value => value.OpenItemId == item.Id).Sum(value => value.Amount); var outstanding = Math.Max(0m, item.OriginalAmount - allocated); if (outstanding == 0m) continue; var historical = outstanding * item.OriginalFunctionalAmount / item.OriginalAmount; var evidence = await ResolveRateEvidenceAsync(context, item.CurrencyCode, item.FunctionalCurrencyCode, batch.AsOfDate, cancellationToken); if (evidence is null) return Failure<FinanceRevaluationBatchRecord>("revaluation_rate_not_configured"); var revalued = decimal.Round(outstanding * evidence.Rate, policy.RoundingScale, Rounding(policy.RoundingMode)); var difference = revalued - historical; if (difference == 0m) continue; var direction = item.Kind == FinanceOpenItemKind.Payable ? (difference > 0m ? FinanceFxDirection.Loss : FinanceFxDirection.Gain) : (difference > 0m ? FinanceFxDirection.Gain : FinanceFxDirection.Loss); var snapshot = OpenItemSnapshot(item, active.Where(value => value.OpenItemId == item.Id), batch.AsOfDate); var monetary = await BuildFunctionalReportingEvidenceAsync(context, policy, revalued, batch.AsOfDate, cancellationToken); if (monetary is null) return Failure<FinanceRevaluationBatchRecord>("reporting_exchange_rate_required"); batch.Lines.Add(new FinanceRevaluationLineEntity(context.TenantId, Guid.NewGuid(), batch, item.Id, item.Kind == FinanceOpenItemKind.Payable ? "AP" : "AR", item.CurrencyCode, outstanding, historical, revalued, difference, direction, evidence, monetary, snapshot)); }
-         var candidateDocuments = await db.SettlementDocuments.Where(item => item.CompanyId == batch.CompanyId && item.DocumentDate <= batch.AsOfDate && item.CurrencyCode != item.FunctionalCurrencyCode).ToListAsync(cancellationToken);
-         var settlementJournalIds = candidateDocuments.SelectMany(item => new[] { item.PostedJournalId, item.ReversalJournalId }).Where(item => item.HasValue).Select(item => item!.Value).Distinct().ToArray();
-         var settlementJournals = await db.Journals.AsNoTracking().Where(item => settlementJournalIds.Contains(item.Id)).ToDictionaryAsync(item => item.Id, cancellationToken);
-         var documents = candidateDocuments.Where(item => FinanceSettlementPersistence.IsSettlementEffectEffective(item, settlementJournals, batch.AsOfDate)).ToArray();
-         foreach (var document in documents) { var allocated = active.Where(value => value.SettlementDocumentId == document.Id).Sum(value => value.Amount); var outstanding = Math.Max(0m, document.Amount - allocated); if (outstanding == 0m) continue; var historical = outstanding * document.FunctionalAmount / document.Amount; var evidence = await ResolveRateEvidenceAsync(context, document.CurrencyCode, document.FunctionalCurrencyCode, batch.AsOfDate, cancellationToken); if (evidence is null) return Failure<FinanceRevaluationBatchRecord>("revaluation_rate_not_configured"); var revalued = decimal.Round(outstanding * evidence.Rate, policy.RoundingScale, Rounding(policy.RoundingMode)); var difference = revalued - historical; if (difference == 0m) continue; var direction = document.Direction == FinancePaymentMethodDirection.Receipt ? (difference > 0m ? FinanceFxDirection.Gain : FinanceFxDirection.Loss) : (difference > 0m ? FinanceFxDirection.Loss : FinanceFxDirection.Gain); var snapshot = SettlementSnapshot(document, active.Where(value => value.SettlementDocumentId == document.Id), batch.AsOfDate); var monetary = await BuildFunctionalReportingEvidenceAsync(context, policy, revalued, batch.AsOfDate, cancellationToken); if (monetary is null) return Failure<FinanceRevaluationBatchRecord>("reporting_exchange_rate_required"); batch.Lines.Add(new FinanceRevaluationLineEntity(context.TenantId, Guid.NewGuid(), batch, document.Id, document.Direction == FinancePaymentMethodDirection.Receipt ? "Receipt" : "Payment", document.CurrencyCode, outstanding, historical, revalued, difference, direction, evidence, monetary, snapshot)); }
-        batch.SetStatus(FinanceRevaluationBatchStatus.Calculated, context.ActorId, DateTimeOffset.UtcNow); var now = DateTimeOffset.UtcNow; AddAudit(db, context, "finance.revaluation.calculate", "revaluation-batch", batch.Id, "Succeeded", null, command.IdempotencyKey, now); await db.SaveChangesAsync(cancellationToken); var result = FinanceOperationResult<FinanceRevaluationBatchRecord>.Success(ToBatch(batch)); AddReplay(db, context, "finance.revaluation.calculate", command.IdempotencyKey, command.RequestFingerprint, "revaluation-batch", batch.Id, result.Value!, now); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return result;
+        var scope = await EvaluateRevaluationScopeAsync(db, context, batch.CompanyId, batch.AsOfDate, cancellationToken);
+        if (!scope.Succeeded || scope.Value is null) return Failure<FinanceRevaluationBatchRecord>(scope.Code);
+        foreach (var source in scope.Value.Sources.Where(item => item.Difference != 0m))
+        {
+            if (source.ExchangeRateEvidence is null) return Failure<FinanceRevaluationBatchRecord>("revaluation_rate_not_configured");
+            var snapshot = await SourceSnapshotAsync(db, batch.CompanyId, source.SourceType, source.SourceId, batch.AsOfDate, cancellationToken);
+            if (snapshot is null || !string.Equals(SnapshotFingerprint(snapshot), source.SourceSnapshotFingerprint, StringComparison.Ordinal)) return Failure<FinanceRevaluationBatchRecord>("revaluation_source_changed");
+            var monetary = await BuildFunctionalReportingEvidenceAsync(context, policy, source.RevaluedFunctionalAmount, batch.AsOfDate, cancellationToken);
+            if (monetary is null) return Failure<FinanceRevaluationBatchRecord>("reporting_exchange_rate_required");
+            batch.Lines.Add(new FinanceRevaluationLineEntity(context.TenantId, Guid.NewGuid(), batch, source.SourceId, source.SourceType, source.TransactionCurrencyCode, source.OutstandingTransactionAmount, source.HistoricalFunctionalAmount, source.RevaluedFunctionalAmount, source.Difference, source.Direction, source.ExchangeRateEvidence, monetary, snapshot));
+        }
+         batch.SetStatus(FinanceRevaluationBatchStatus.Calculated, context.ActorId, DateTimeOffset.UtcNow); var now = DateTimeOffset.UtcNow; AddAudit(db, context, "finance.revaluation.calculate", "revaluation-batch", batch.Id, "Succeeded", null, command.IdempotencyKey, now); await db.SaveChangesAsync(cancellationToken); var result = FinanceOperationResult<FinanceRevaluationBatchRecord>.Success(ToBatch(batch)); AddReplay(db, context, "finance.revaluation.calculate", command.IdempotencyKey, command.RequestFingerprint, "revaluation-batch", batch.Id, result.Value!, now); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return result;
     }
 
     public async Task<FinanceOperationResult<FinanceRevaluationBatchRecord>> PostRevaluationBatchAsync(FinanceRequestContext context, FinanceRevaluationActionCommand command, CancellationToken cancellationToken = default)
@@ -405,14 +545,30 @@ public sealed class FinanceMesp134Persistence : IFinanceMesp134Persistence
     }
 
     private static string OpenItemSnapshot(FinanceOpenItemEntity item, IEnumerable<FinanceAllocationEntity> allocations, DateOnly asOfDate) => JsonSerializer.Serialize(new { item.Id, item.Version, item.OriginalAmount, item.OriginalFunctionalAmount, item.RecognitionJournalId, item.DocumentDate, item.CurrencyCode, item.FunctionalCurrencyCode, AsOfDate = asOfDate, Allocations = allocations.OrderBy(value => value.Id).Select(value => new { value.Id, value.Status, value.ReversalOfAllocationId, value.Amount, value.FunctionalAmount, value.HistoricalFunctionalAmount, value.SettlementFunctionalAmount, value.RealizedFxAmount, value.RealizedFxDirection, value.JournalId, value.AllocationDate }) });
-    private static string SettlementSnapshot(FinanceSettlementDocumentEntity document, IEnumerable<FinanceAllocationEntity> allocations, DateOnly asOfDate) => JsonSerializer.Serialize(new { document.Id, document.Version, document.Status, document.DocumentDate, document.Amount, document.FunctionalAmount, document.FunctionalCurrencyCode, document.CurrencyCode, document.PostedJournalId, document.ReversalJournalId, AsOfDate = asOfDate, Allocations = allocations.OrderBy(value => value.Id).Select(value => new { value.Id, value.Status, value.ReversalOfAllocationId, value.Amount, value.FunctionalAmount, value.HistoricalFunctionalAmount, value.SettlementFunctionalAmount, value.RealizedFxAmount, value.RealizedFxDirection, value.JournalId, value.AllocationDate }) });
+    private static string SettlementSnapshot(FinanceSettlementDocumentEntity document, IEnumerable<FinanceAllocationEntity> allocations, DateOnly asOfDate, Guid? effectiveReversalJournalId) => JsonSerializer.Serialize(new { document.Id, Version = Array.Empty<byte>(), Status = effectiveReversalJournalId is null ? FinanceSettlementDocumentStatus.Posted : FinanceSettlementDocumentStatus.Reversed, document.DocumentDate, document.Amount, document.FunctionalAmount, document.FunctionalCurrencyCode, document.CurrencyCode, document.PostedJournalId, ReversalJournalId = effectiveReversalJournalId, AsOfDate = asOfDate, Allocations = allocations.OrderBy(value => value.Id).Select(value => new { value.Id, value.Status, value.ReversalOfAllocationId, value.Amount, value.FunctionalAmount, value.HistoricalFunctionalAmount, value.SettlementFunctionalAmount, value.RealizedFxAmount, value.RealizedFxDirection, value.JournalId, value.AllocationDate }) });
     private async Task<string?> CurrentSourceSnapshotAsync(FinanceDbContext db, FinanceRevaluationLineEntity line, DateOnly asOfDate, CancellationToken cancellationToken)
     {
-        var isOpenItem = line.SourceType is "AP" or "AR";
-        var allocations = await db.Allocations.Where(value => value.CompanyId == line.CompanyId && value.AllocationDate <= asOfDate && (isOpenItem ? value.OpenItemId == line.SourceId : value.SettlementDocumentId == line.SourceId)).OrderBy(value => value.Id).ToArrayAsync(cancellationToken);
-        if (line.SourceType is "AP" or "AR") { var item = await db.OpenItems.SingleOrDefaultAsync(value => value.Id == line.SourceId, cancellationToken); return item is null ? null : OpenItemSnapshot(item, allocations, asOfDate); }
-        var document = await db.SettlementDocuments.SingleOrDefaultAsync(value => value.Id == line.SourceId, cancellationToken); return document is null ? null : SettlementSnapshot(document, allocations, asOfDate);
+        return await SourceSnapshotAsync(db, line.CompanyId, line.SourceType, line.SourceId, asOfDate, cancellationToken);
     }
+
+    private static async Task<string?> SourceSnapshotAsync(FinanceDbContext db, Guid companyId, string sourceType, Guid sourceId, DateOnly asOfDate, CancellationToken cancellationToken)
+    {
+        var isOpenItem = sourceType is "AP" or "AR";
+        var allocations = await db.Allocations.Where(value => value.CompanyId == companyId && value.AllocationDate <= asOfDate && (isOpenItem ? value.OpenItemId == sourceId : value.SettlementDocumentId == sourceId)).OrderBy(value => value.Id).ToArrayAsync(cancellationToken);
+        if (isOpenItem) { var item = await db.OpenItems.SingleOrDefaultAsync(value => value.Id == sourceId && value.CompanyId == companyId, cancellationToken); return item is null ? null : OpenItemSnapshot(item, allocations, asOfDate); }
+        var document = await db.SettlementDocuments.SingleOrDefaultAsync(value => value.Id == sourceId && value.CompanyId == companyId, cancellationToken);
+        if (document is null) return null;
+        var effectiveReversalId = (Guid?)null;
+        if (document.ReversalJournalId is { } reversalId)
+        {
+            var reversal = await db.Journals.AsNoTracking().SingleOrDefaultAsync(value => value.Id == reversalId && value.CompanyId == companyId, cancellationToken);
+            if (reversal is not null && IsJournalEffective(reversal, asOfDate)) effectiveReversalId = reversalId;
+        }
+        return SettlementSnapshot(document, allocations, asOfDate, effectiveReversalId);
+    }
+
+    private static string SnapshotFingerprint(string snapshot) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)));
+    private static string Fingerprint(object value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value))));
 
     private static FinanceMonetaryEvidence? DeserializeEvidence(string? json)
     {

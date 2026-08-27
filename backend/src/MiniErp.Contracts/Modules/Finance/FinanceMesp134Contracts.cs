@@ -134,6 +134,26 @@ public sealed record FinanceRevaluationLineRecord(
     Guid? ExpectedLossAccountId = null,
     FinanceEvidenceStatus ReconciliationStatus = FinanceEvidenceStatus.PendingMapping);
 
+public sealed record FinanceRevaluationScopeSourceRecord(
+    Guid SourceId,
+    string SourceType,
+    DateOnly AsOfDate,
+    string TransactionCurrencyCode,
+    decimal OutstandingTransactionAmount,
+    decimal HistoricalFunctionalAmount,
+    decimal RevaluedFunctionalAmount,
+    decimal Difference,
+    FinanceFxDirection Direction,
+    FinanceExchangeRateEvidence? ExchangeRateEvidence,
+    string SourceSnapshotFingerprint);
+
+public sealed record FinanceRevaluationScopeEvaluation(
+    Guid CompanyId,
+    DateOnly AsOfDate,
+    string Scope,
+    IReadOnlyList<FinanceRevaluationScopeSourceRecord> Sources,
+    string Fingerprint);
+
 public sealed record FinanceRevaluationBatchRecord(
     Guid Id,
     Guid TenantId,

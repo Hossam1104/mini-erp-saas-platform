@@ -332,20 +332,38 @@ internal sealed class FinanceMesp135Persistence(
         var tax = await mesp134.ReconcileTaxAsync(context, companyId, period.EndDate, cancellationToken); var fx = await mesp134.ReconcileFxAsync(context, companyId, period.EndDate, cancellationToken); var unrealized = await mesp134.ReconcileUnrealizedFxAsync(context, companyId, period.EndDate, cancellationToken); var reporting = await mesp134.ReconcileReportingCurrencyAsync(context, companyId, period.EndDate, cancellationToken);
         CheckEvidence("tax_reconciliation", tax.Select(item => item.Status), checks, "Tax accounting evidence is reconciled."); CheckEvidence("realized_fx_reconciliation", fx.Select(item => item.Status), checks, "Realized FX evidence is reconciled."); CheckEvidence("unrealized_fx_reconciliation", unrealized.Select(item => item.Status), checks, "Unrealized FX evidence is reconciled."); CheckEvidence("reporting_currency_reconciliation", reporting.Select(item => item.Status), checks, "Reporting-currency evidence is reconciled.");
         var policy = await db.MonetaryPolicies.AsNoTracking().Where(item => item.CompanyId == companyId && item.EffectiveFrom <= period.EndDate && (item.EffectiveTo == null || item.EffectiveTo >= period.EndDate)).OrderByDescending(item => item.VersionNumber).FirstOrDefaultAsync(cancellationToken);
-        var exposedOpenItems = await db.OpenItems.AsNoTracking().Where(item => item.CompanyId == companyId && item.RecognitionState == FinanceOpenItemRecognitionState.Recognized && item.DocumentDate <= period.EndDate && item.CurrencyCode != item.FunctionalCurrencyCode).ToListAsync(cancellationToken);
-        var candidateSettlements = await db.SettlementDocuments.AsNoTracking().Where(item => item.CompanyId == companyId && item.DocumentDate <= period.EndDate && item.CurrencyCode != item.FunctionalCurrencyCode).ToListAsync(cancellationToken);
-        var settlementJournalIds = candidateSettlements.SelectMany(item => new[] { item.PostedJournalId, item.ReversalJournalId }).Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToArray();
-        var settlementJournals = await db.Journals.AsNoTracking().Where(item => settlementJournalIds.Contains(item.Id)).ToDictionaryAsync(item => item.Id, cancellationToken);
-        var exposedSettlements = candidateSettlements.Where(item => FinanceSettlementPersistence.IsSettlementEffectEffective(item, settlementJournals, period.EndDate)).ToList();
-        var exposureAllocations = await db.Allocations.AsNoTracking().Where(item => item.CompanyId == companyId && item.AllocationDate <= period.EndDate).ToListAsync(cancellationToken);
-        var activeExposureAllocations = exposureAllocations.Where(item => item.Status == FinanceAllocationStatus.Active && item.ReversalOfAllocationId == null && !exposureAllocations.Any(reversal => reversal.ReversalOfAllocationId == item.Id && reversal.Status == FinanceAllocationStatus.Reversed && reversal.AllocationDate <= period.EndDate)).ToArray();
-        var foreign = exposedOpenItems.Any(item => Math.Max(0m, item.OriginalAmount - activeExposureAllocations.Where(value => value.OpenItemId == item.Id).Sum(value => value.Amount)) != 0m)
-            || exposedSettlements.Any(document => Math.Max(0m, document.Amount - activeExposureAllocations.Where(value => value.SettlementDocumentId == document.Id).Sum(value => value.Amount)) != 0m);
-        var periodEndRevaluationLineIds = await db.RevaluationLines.AsNoTracking().Where(item => item.CompanyId == companyId && item.AsOfDate == period.EndDate).Select(item => item.Id).ToListAsync(cancellationToken);
-        var revaluation = unrealized.Any(item => item.Status == FinanceEvidenceStatus.Reconciled && periodEndRevaluationLineIds.Contains(item.LineId));
-        Check("revaluation_policy", policy?.RevaluationEnabled != true || !foreign || revaluation ? FinanceCloseCheckStatus.Ready : FinanceCloseCheckStatus.Blocked, policy?.RevaluationEnabled == true && foreign && !revaluation ? "A configured revaluation policy requires a posted period-end revaluation that remains effective at the period end date." : "Revaluation policy is satisfied or not applicable.");
+        FinanceOperationResult<FinanceRevaluationScopeEvaluation>? scope = null;
+        var revaluationScopeFingerprint = policy?.RevaluationEnabled == true ? "unavailable" : "not_applicable";
+        if (policy?.RevaluationEnabled == true)
+        {
+            scope = await mesp134.EvaluateRevaluationScopeAsync(context, companyId, period.EndDate, cancellationToken);
+            revaluationScopeFingerprint = scope.Succeeded && scope.Value is not null ? scope.Value.Fingerprint : $"unavailable:{scope.Code}";
+        }
+        var revaluationStatus = FinanceCloseCheckStatus.Ready;
+        var revaluationMessage = "Revaluation policy is satisfied or not applicable.";
+        if (policy?.RevaluationEnabled == true)
+        {
+            if (scope is null || !scope.Succeeded || scope.Value is null)
+            {
+                revaluationStatus = FinanceCloseCheckStatus.Blocked;
+                revaluationMessage = "The configured revaluation scope could not be evaluated authoritatively.";
+            }
+            else
+            {
+                var periodEndLines = await db.RevaluationLines.AsNoTracking()
+                    .Where(item => item.CompanyId == companyId && item.AsOfDate == period.EndDate)
+                    .ToListAsync(cancellationToken);
+                var batchStatuses = await db.RevaluationBatches.AsNoTracking()
+                    .Where(item => periodEndLines.Select(line => line.BatchId).Contains(item.Id))
+                    .ToDictionaryAsync(item => item.Id, item => item.Status, cancellationToken);
+                var coverage = EvaluateRevaluationCoverage(scope.Value, periodEndLines, batchStatuses, unrealized);
+                revaluationStatus = coverage.Status;
+                revaluationMessage = coverage.Message;
+            }
+        }
+        Check("revaluation_policy", revaluationStatus, revaluationMessage);
         var status = checks.Any(item => item.Status == FinanceCloseCheckStatus.Blocked) ? FinanceCloseCheckStatus.Blocked : checks.Any(item => item.Status == FinanceCloseCheckStatus.Warning) ? FinanceCloseCheckStatus.Warning : FinanceCloseCheckStatus.Ready;
-        var evaluatedAt = DateTimeOffset.UtcNow; var fingerprint = Fingerprint(new { PeriodId = period.Id, PeriodVersion = period.Version, FiscalYearId = year.Id, FiscalYearVersion = year.Version, Checks = checks });
+        var evaluatedAt = DateTimeOffset.UtcNow; var fingerprint = Fingerprint(new { PeriodId = period.Id, PeriodVersion = period.Version, FiscalYearId = year.Id, FiscalYearVersion = year.Version, RevaluationScopeFingerprint = revaluationScopeFingerprint, Checks = checks });
         return FinanceOperationResult<FinanceCloseReadinessRecord>.Success(new FinanceCloseReadinessRecord(period.Id, year.Id, context.TenantId.Value, companyId, status, checks, fingerprint, evaluatedAt, period.Version));
     }
 
@@ -475,6 +493,74 @@ internal sealed class FinanceMesp135Persistence(
     private static FinanceEvidenceStatus WorstEvidence(FinanceEvidenceStatus left, FinanceEvidenceStatus right) => left == FinanceEvidenceStatus.PendingMapping || right == FinanceEvidenceStatus.PendingMapping ? FinanceEvidenceStatus.PendingMapping : left == FinanceEvidenceStatus.LegacyWithoutReportingEvidence || right == FinanceEvidenceStatus.LegacyWithoutReportingEvidence ? FinanceEvidenceStatus.LegacyWithoutReportingEvidence : left == FinanceEvidenceStatus.NotCaptured || right == FinanceEvidenceStatus.NotCaptured ? FinanceEvidenceStatus.NotCaptured : FinanceEvidenceStatus.Reconciled;
     private static FinanceReconciliationViewStatus MapStatus(FinanceReconciliationStatus status) => status switch { FinanceReconciliationStatus.Reconciled => FinanceReconciliationViewStatus.Reconciled, FinanceReconciliationStatus.PendingPosting or FinanceReconciliationStatus.PendingApproval or FinanceReconciliationStatus.PendingMapping or FinanceReconciliationStatus.PendingFxRecognition => FinanceReconciliationViewStatus.Pending, FinanceReconciliationStatus.AmountMismatch or FinanceReconciliationStatus.Unreconciled => FinanceReconciliationViewStatus.Mismatch, _ => FinanceReconciliationViewStatus.Blocked };
     private static FinanceReconciliationViewStatus MapStatus(FinanceEvidenceStatus status) => status switch { FinanceEvidenceStatus.Reconciled or FinanceEvidenceStatus.Captured or FinanceEvidenceStatus.Reversed => FinanceReconciliationViewStatus.Reconciled, FinanceEvidenceStatus.LegacyWithoutReportingEvidence or FinanceEvidenceStatus.NotCaptured => FinanceReconciliationViewStatus.LegacyWithoutEvidence, FinanceEvidenceStatus.PendingMapping or FinanceEvidenceStatus.MissingRate or FinanceEvidenceStatus.AmbiguousMapping => FinanceReconciliationViewStatus.Pending, _ => FinanceReconciliationViewStatus.Blocked };
+    private sealed record RevaluationCoverageResult(FinanceCloseCheckStatus Status, string Message);
+
+    private static RevaluationCoverageResult EvaluateRevaluationCoverage(
+        FinanceRevaluationScopeEvaluation scope,
+        IReadOnlyList<FinanceRevaluationLineEntity> periodEndLines,
+        IReadOnlyDictionary<Guid, FinanceRevaluationBatchStatus> batchStatuses,
+        IReadOnlyList<FinanceUnrealizedFxReconciliationRecord> reconciliation)
+    {
+        var expected = scope.Sources
+            .Where(item => item.Difference != 0m)
+            .ToDictionary(item => RevaluationSourceKey(item.SourceType, item.SourceId), StringComparer.Ordinal);
+        var grouped = periodEndLines
+            .GroupBy(item => RevaluationSourceKey(item.SourceType, item.SourceId), StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
+        if (periodEndLines.Any(item => !expected.ContainsKey(RevaluationSourceKey(item.SourceType, item.SourceId))))
+            return new(FinanceCloseCheckStatus.Blocked, "Period-end revaluation evidence contains a source outside the authoritative revaluation scope.");
+        if (grouped.Any(item => item.Value.Length != 1))
+            return new(FinanceCloseCheckStatus.Blocked, "Every non-zero revaluation source must have exactly one period-end evidence line.");
+        if (expected.Keys.Any(key => !grouped.ContainsKey(key)))
+            return new(FinanceCloseCheckStatus.Blocked, "Every non-zero foreign source must be covered by period-end revaluation evidence.");
+
+        foreach (var expectedSource in expected)
+        {
+            var line = grouped[expectedSource.Key][0];
+            var source = expectedSource.Value;
+            if (!batchStatuses.TryGetValue(line.BatchId, out var batchStatus)
+                || batchStatus is not (FinanceRevaluationBatchStatus.Posted or FinanceRevaluationBatchStatus.Reversed))
+                return new(FinanceCloseCheckStatus.Blocked, "Every period-end revaluation evidence line must belong to a posted or historically reversed batch.");
+            if (!LineMatchesScope(line, source))
+                return new(FinanceCloseCheckStatus.Blocked, "Period-end revaluation evidence is stale or does not match the authoritative source calculation.");
+            var rows = reconciliation.Where(item => item.LineId == line.Id).ToArray();
+            if (rows.Length != 1 || rows[0].Status != FinanceEvidenceStatus.Reconciled || rows[0].JournalId != line.JournalId)
+                return new(FinanceCloseCheckStatus.Blocked, "Every non-zero revaluation source requires one reconciled period-end journal evidence line.");
+        }
+        return new(FinanceCloseCheckStatus.Ready, "Revaluation scope is fully covered: zero-effect sources require no journal and every non-zero source has one reconciled period-end line.");
+    }
+
+    private static bool LineMatchesScope(FinanceRevaluationLineEntity line, FinanceRevaluationScopeSourceRecord source)
+    {
+        var rate = source.ExchangeRateEvidence;
+        return line.SourceId == source.SourceId
+            && string.Equals(line.SourceType, source.SourceType, StringComparison.Ordinal)
+            && line.AsOfDate == source.AsOfDate
+            && string.Equals(line.TransactionCurrencyCode, source.TransactionCurrencyCode, StringComparison.OrdinalIgnoreCase)
+            && line.OutstandingTransactionAmount == source.OutstandingTransactionAmount
+            && line.HistoricalFunctionalAmount == source.HistoricalFunctionalAmount
+            && line.RevaluedFunctionalAmount == source.RevaluedFunctionalAmount
+            && line.Difference == source.Difference
+            && line.Direction == source.Direction
+            && !string.IsNullOrWhiteSpace(line.SourceSnapshotJson)
+            && SnapshotFingerprint(line.SourceSnapshotJson) == source.SourceSnapshotFingerprint
+            && rate is not null
+            && line.ExchangeRateId == rate.ExchangeRateId
+            && line.ExchangeRateVersionId == rate.ExchangeRateVersionId
+            && line.ExchangeRateVersionNumber == rate.VersionNumber
+            && string.Equals(line.ExchangeSourceCurrencyCode, rate.SourceCurrencyCode, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(line.ExchangeTargetCurrencyCode, rate.TargetCurrencyCode, StringComparison.OrdinalIgnoreCase)
+            && line.ExchangeEffectiveOn == rate.EffectiveOn
+            && line.ExchangeRate == rate.Rate
+            && line.ExchangeRateScale == rate.RateScale
+            && string.Equals(line.ExchangeProvenance, rate.Provenance, StringComparison.Ordinal)
+            && string.Equals(line.ExchangeSourceNotes, rate.SourceNotes, StringComparison.Ordinal)
+            && line.ExchangeEffectiveFrom == rate.EffectiveFrom
+            && line.ExchangeEffectiveTo == rate.EffectiveTo;
+    }
+
+    private static string RevaluationSourceKey(string sourceType, Guid sourceId) => $"{sourceType}:{sourceId:D}";
+    private static string SnapshotFingerprint(string snapshot) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)));
     private static void CheckEvidence(string code, IEnumerable<FinanceEvidenceStatus> values, ICollection<FinanceCloseCheckRecord> checks, string message) { var statuses = values.ToArray(); var status = statuses.Any(item => item is FinanceEvidenceStatus.PendingMapping or FinanceEvidenceStatus.AmbiguousMapping or FinanceEvidenceStatus.MissingRate) ? FinanceCloseCheckStatus.Blocked : statuses.Any(item => item is FinanceEvidenceStatus.NotCaptured or FinanceEvidenceStatus.LegacyWithoutReportingEvidence) ? FinanceCloseCheckStatus.Warning : FinanceCloseCheckStatus.Ready; checks.Add(new FinanceCloseCheckRecord(code, status, message)); }
 
     private FinanceCompanyOption? Company(FinanceRequestContext context, Guid companyId) { var matches = companies.List(context.TenantId).Where(item => item.CompanyId == companyId && item.IsActive).ToArray(); if (matches.Length == 0 || matches.Select(item => item.FunctionalCurrencyCode).Distinct(StringComparer.OrdinalIgnoreCase).Count() != 1) return null; if (context.TenantContext.Scope is { } scope) { var value = scope.Value; if (value.StartsWith("Company:", StringComparison.OrdinalIgnoreCase) && (!Guid.TryParse(value["Company:".Length..], out var scoped) || scoped != companyId)) return null; if (value.StartsWith("Branch:", StringComparison.OrdinalIgnoreCase) && (!Guid.TryParse(value["Branch:".Length..], out var branch) || !matches.Any(item => item.BranchId == branch))) return null; } return matches.OrderBy(item => item.BranchId.HasValue).ThenBy(item => item.BranchId).First(); }
