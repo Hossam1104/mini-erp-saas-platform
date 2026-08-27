@@ -1,6 +1,38 @@
 # Current State
 
-## MESP-135 Sol HOLD 6 final bounded remediation - 27 August 2026
+## MESP-135 closed - 28 August 2026
+
+MESP-135 is **Done** in Jira and its accounting acceptance is final. PR #79
+is **MERGED/CLOSED** and non-Draft, with accepted feature head
+`dbc239d6bd1ef948bb8505d4360208f4a3470dda` squash-merged into `main` at
+`8238ce562ee165def8ecdbfa07b285aeb3f1a2ef`. The Jira closure comment is
+`12200`; the latest MESP-10 reconciliation is `12201`.
+
+The post-merge integration gate recovered from the repository-owned
+`MiniErp.Api.exe` Release DLL lock. After the lock was safely released, the
+bounded Release retry passed with **0 warnings / 0 errors**. This was an
+operational integration-gate recovery only: no source or accounting correction
+was made and MESP-135 acceptance was not reopened.
+
+The validated runtime was left running: backend port `5300`, PID `45016`;
+frontend port `4300`, PID `19140`. The required probes all returned HTTP 200
+(`11/11`): `/health`, `/openapi/v1.json`, `/`, `/main.js`, `/app/finance`,
+`/app/finance/ap`, `/app/finance/ar`, `/app/finance/settlements`,
+`/app/finance/tax-fx`, `/app/finance/close`, and `/app/finance/reports`.
+
+Fast-track capability completion is **19/26 = 73.1%**. Production readiness
+remains separate from fast-track completion; the last accepted estimate remains
+approximately **47% overall** and **41% Procurement/P2P**, with no increase
+inferred from this documentation-only reconciliation. MESP-10 remains **In Progress**.
+MESP-48 and MESP-50 remain open production gates.
+
+MESP-139 remains **inactive**, and there is **NO currently active
+implementation capability**. The next capability requires GPT-5.6 Sol to
+perform dependency analysis on the live Jira graph and explicit activation.
+No executor may infer that MESP-139 or any other ticket is next. No Jira writes
+were performed by Luna.
+
+## Historical MESP-135 Sol HOLD 6 final bounded remediation - 27 August 2026
 
 MESP-135 remains the only active Finance implementation capability under
 MESP-10, In Progress/activated, on branch

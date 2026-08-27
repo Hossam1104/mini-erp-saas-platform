@@ -1,6 +1,51 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
-## Current authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 6)
+## Current authoritative fast-track snapshot - 28 August 2026 (MESP-135 Done)
+
+- MESP-132, MESP-133, and MESP-134 are Done and merged. MESP-135 is Done in
+  Jira after final accounting acceptance; its accepted feature head is
+  `dbc239d6bd1ef948bb8505d4360208f4a3470dda`.
+- PR #79 is merged and closed, non-Draft, at squash commit
+  `8238ce562ee165def8ecdbfa07b285aeb3f1a2ef`. MESP-135 closure is Jira
+  comment `12200`; the latest MESP-10 reconciliation is comment `12201`.
+- The post-merge integration gate passed after the repository-owned backend DLL
+  lock was safely released and the Release build was retried: `0 warnings / 0
+  errors`. This operational retry did not reopen MESP-135 accounting
+  acceptance.
+- Runtime was left running: backend port `5300` PID `45016`; frontend port
+  `4300` PID `19140`. The required route probes returned HTTP 200 for `11/11`:
+  `/health`, `/openapi/v1.json`, `/`, `/main.js`, `/app/finance`,
+  `/app/finance/ap`, `/app/finance/ar`, `/app/finance/settlements`,
+  `/app/finance/tax-fx`, `/app/finance/close`, and `/app/finance/reports`.
+- The authoritative fast-track capability completion is **19/26 = 73.1%**.
+  Production readiness remains separate from fast-track completion; retain the
+  last accepted estimate of approximately **47% overall** and **41%
+  Procurement/P2P**. No new production-readiness percentage is inferred from
+  this closure.
+- MESP-10 remains **In Progress**. MESP-48 and MESP-50 remain open production
+  gates. MESP-139 remains **inactive**. There is **NO active implementation
+  capability**; GPT-5.6 Sol must perform dependency analysis and explicitly
+  activate exactly one eligible next capability. No executor may infer that
+  MESP-139 or any other ticket is next.
+- No Jira writes were performed by Luna. The presentation remains preserved on
+  `main`, and `frontend/assets` remains untouched.
+
+<!-- MESP-135-JIRA-SYNC-START -->
+## Jira/documentation synchronization - 28 August 2026 (MESP-135 Done; no capability active)
+
+- MESP-135 is Done; final accounting acceptance and closure are recorded in
+  comment `12200`.
+- MESP-10 Finance and Accounting remains In Progress; its latest reconciliation
+  is comment `12201`.
+- MESP-139 remains To Do and inactive. No next capability was activated.
+- MESP-48 and MESP-50 remain open production gates; production readiness is
+  tracked separately from fast-track completion.
+- No Jira writes were performed by Luna during this repository reconciliation.
+<!-- MESP-135-JIRA-SYNC-END -->
+
+**Last Updated:** 2026-08-28 02:25 +03:00
+
+## Historical authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 6)
 
 - MESP-135 remains the only active Finance implementation capability under
   MESP-10, with HOLD 6 authority MESP-135 `12186` and MESP-10 `12187`.
@@ -37,7 +82,7 @@
   GPT-5.6 Sol HOLD 6 acceptance.
 
 <!-- MESP-135-JIRA-SYNC-START -->
-## Jira/documentation synchronization - 27 August 2026 (MESP-135 active, Sol HOLD 6)
+### Historical Jira/documentation synchronization - 27 August 2026 (MESP-135 active, Sol HOLD 6)
 
 - MESP-134 is Done and squash-merged to `main` through PR #78 at
   `1e49814172843c2ec2279b8dcc5fc0a41e5da372`; closure comment `12122`.
@@ -51,7 +96,7 @@
   MESP-139 remains inactive; MESP-48 and MESP-50 remain open production gates.
 <!-- MESP-135-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-27 23:53 +03:00
+**Historical Last Updated:** 2026-08-27 23:53 +03:00
 
 ## Historical authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 4 final remediation)
 
@@ -83,7 +128,13 @@ Runtime probe detail: `5300/health` 200; `5300/openapi/v1.json` 200;
 `4300/app/finance/settlements` 200; `4300/app/finance/tax-fx` 200;
 `4300/app/finance/close` 200; `4300/app/finance/reports` 200.
 
-## Progress history addendum - 27 August 2026
+## Progress history - 28 August 2026 (MESP-135 closed)
+
+| Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
+|---|---|---:|---:|---|
+| 2026-08-28 | MESP-135 reached Done after final accounting acceptance, verified squash merge, and post-merge integration-gate recovery. | ~47% | ~41% | Accepted feature `dbc239d6bd1ef948bb8505d4360208f4a3470dda`; merged main `8238ce562ee165def8ecdbfa07b285aeb3f1a2ef`; closure `12200`; MESP-10 reconciliation `12201`; Release retry 0 warnings / 0 errors after safely releasing the repository-owned DLL lock; runtime left running on backend/frontend 5300/4300, PIDs 45016/19140; 11/11 HTTP 200 probes; fast-track `19/26 = 73.1%`; production readiness unchanged and separate; no active capability; MESP-139 inactive; MESP-48/MESP-50 open; no Jira writes by Luna; assets and presentation preserved. |
+
+## Historical progress history addendum - 27 August 2026
 
 HOLD 6 is a bounded correctness remediation inside the already-counted
 MESP-135 capability. It adds no new capability, no new public operation, and

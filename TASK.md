@@ -1,5 +1,43 @@
 
-# MESP-135 - Sol HOLD 6 final bounded remediation and handoff
+# MESP-135 closed - GPT-5.6 Sol next-capability selection handoff
+
+This is the complete current post-closure repository handoff. MESP-135 is
+**Done** in Jira and its accounting acceptance is final. PR #79 is
+**MERGED/CLOSED** and non-Draft at the verified squash merge on `main`:
+
+- Accepted feature head: `dbc239d6bd1ef948bb8505d4360208f4a3470dda`
+- Squash merge: `8238ce562ee165def8ecdbfa07b285aeb3f1a2ef`
+- Jira closure comment: `12200`
+- MESP-10 reconciliation comment: `12201`
+
+The post-merge integration gate recovered from an operational repository-owned
+backend DLL lock. After the lock was safely released, the bounded Release
+retry passed with **0 warnings / 0 errors**; no source or accounting correction
+was made and MESP-135 acceptance was not reopened. The validated runtime was
+left running with backend port `5300` PID `45016` and frontend port `4300` PID
+`19140`. All 11 required probes returned HTTP 200:
+`/health`, `/openapi/v1.json`, `/`, `/main.js`, `/app/finance`,
+`/app/finance/ap`, `/app/finance/ar`, `/app/finance/settlements`,
+`/app/finance/tax-fx`, `/app/finance/close`, and `/app/finance/reports`.
+
+The authoritative fast-track capability completion is **19/26 = 73.1%**.
+Production readiness remains separate from fast-track completion; the last
+accepted estimate remains approximately **47% overall** and **41%
+Procurement/P2P**, with no percentage increase inferred from this
+documentation reconciliation. MESP-10 remains **In Progress**. MESP-48 and
+MESP-50 remain open production gates. MESP-139 remains **inactive**.
+
+There is **NO active implementation capability** at this moment. The next
+action belongs to GPT-5.6 Sol: inspect the live Jira dependency graph,
+reconcile remaining MESP-10 Finance work and cross-Epic prerequisites, and
+choose/explicitly activate exactly one eligible next capability. No executor
+may infer that MESP-139 or any other ticket is next, and no Jira writes were
+performed by Luna in this reconciliation.
+
+**DO NOT IMPLEMENT A NEXT CAPABILITY FROM THIS TASK.md UNTIL GPT-5.6 SOL HAS
+COMPLETED DEPENDENCY ANALYSIS AND WRITTEN A NEW ACTIVATION HANDOFF.**
+
+## Historical MESP-135 Sol HOLD 6 final bounded remediation and handoff
 
 This bounded session completed only the already-authorized MESP-135 Sol HOLD 6
 remediation on the existing Draft PR #79 / branch
