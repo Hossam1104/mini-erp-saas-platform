@@ -1052,6 +1052,8 @@ public sealed class FinanceMesp135SqlServerSafetyTests
 
         Assert.True(reopenResult.Succeeded, reopenResult.Code);
         var finalPeriod = await CurrentPeriodAsync(scenario);
+        await using var historyDb = new FinanceDbContext(scenario.Options, fixture.TenantA);
+        Assert.Equal(1, await historyDb.PeriodHistory.CountAsync(item => item.PeriodId == scenario.Period.Id && item.Action == FinancePeriodHistoryAction.Reopened));
         if (postResult.Succeeded)
         {
             Assert.Equal(FinanceFiscalPeriodState.Open, finalPeriod.State);
