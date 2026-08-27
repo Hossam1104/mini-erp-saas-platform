@@ -1,37 +1,39 @@
 # MiniERP Local Development & Integrated Runtime Guide
 
-## Current Finance capability - MESP-135 HOLD 5
+## Current Finance capability - MESP-135 HOLD 6
 
-MESP-135 is the only active Finance capability under MESP-10. HOLD 5 authority
-is MESP-135 `12182` and MESP-10 `12183`; the implementation branch is
+MESP-135 is the only active Finance capability under MESP-10. HOLD 6 authority
+is MESP-135 `12186` and MESP-10 `12187`; the implementation branch is
 `feat/MESP-135-finance-close-reports`, and Draft PR #79 remains
 Open/Draft/Unmerged for Sol acceptance.
 
-The approved post-recovery source head is
-`fd07414e1a68870aa6230a764185073bb7cb28c8`; the HOLD 5 implementation commit
-is `c20b2d3499c2bd4134c1bf89d6a9344fa79e4142`, followed by the final
-documentation/tracker synchronization commit. The accidental PPT-only commit
-`0099a9a02eff490753f7c4565651fc54e1368453` is preserved on local and remote
-`archive/mesp-presentation-ppt-0099`; the restored PPTX is the only untracked
-local artifact and is not in any MESP-135 commit.
+HOLD 6 makes Close readiness consume effective MESP-134 unrealized-FX
+reconciliation at the exact period-end as-of date. Valid reversed evidence is
+historical but inactive, replacement evidence must be the sole active
+reconciled candidate for a non-zero source, valid reversed evidence is allowed
+for a current zero-effect source, and unexpected active zero-effect,
+missing, broken, duplicate, stale, extra, cross-Company, or cross-Tenant
+evidence blocks. The deterministic readiness fingerprint includes effective
+active and unresolved evidence. No public endpoint, entity, DbContext,
+configuration, schema, migration, or `frontend/assets` file changed.
 
-HOLD 5 uses one shared read-only MESP-134 revaluation-scope evaluator for
-batch calculation and Close readiness at the same AsOfDate. Zero-effect
-sources require no journal, while each non-zero source requires exactly one
-matching period-end line, valid source/rate evidence, and one reconciled
-journal evidence row. Missing, stale, duplicate, extra, invalid, and late
-sources block. As-of allocation/reversal semantics and a deterministic scope
-fingerprint protect historical readiness. No public endpoint, schema,
-migration, or `frontend/assets` file changed.
+The exact HOLD 6 source/test commit is
+`69b20b3c0dbba2a7f3b6c5ade2a19f63ad7fb9bb`, from feature start and remote
+head `243199b22b1762f0797d19702577b874429dabaf`. Finance merge-base remains
+`841a777af1622cb4de9c3708cd4a2b389b7ef9e9`; current `origin/main`
+`0d1485d4a2197f23250b1d5acc1a00ddf26dc4c9` is intentionally one PPT-only
+commit ahead and the presentation is not in this feature tree.
 
-Validation is Release `0/0`; full backend `1,092/1,092`; SQL safety `80/80`;
-REST/OpenAPI/host `55/55`; Angular `296/296`; focused/full Chromium `15/15`
-and `47/47`; both npm audits report 0 vulnerabilities; and the five-project
-NuGet vulnerable-package scan is clear. Runtime is left running on API `5300`
-PID `32012` and frontend `4300` PID `37812`; required routes return HTTP 200.
-No Jira write, Opus review, Ready transition, merge, or next-capability
-activation occurred. Fast-track remains `18/26 = 69.2%` and production
-readiness remains approximately `47%` overall / `41%` Procurement/P2P.
+Validation is Release `0/0`; focused MESP-133 `22/22`, MESP-134 `27/27`,
+MESP-135 `31/31`; full backend `1,098/1,098`; SQL safety `80/80`; focused
+HOLD6/MESP-134 SQL `14/14`; REST/OpenAPI/host `55/55`; catalogue `383` public
+and `2` internal; EF model clean; Angular `296/296`; focused/full Chromium
+`15/15` and `47/47`; both npm audits 0 vulnerabilities; and NuGet scan clear.
+Runtime is left running on API `5300` PID `38772` and frontend `4300` PID
+`8036`; all 11 required probes return HTTP 200. No Jira write, Opus review,
+Ready transition, merge, rebase, force-push, or next-capability activation
+occurred. Fast-track remains `18/26 = 69.2%` and production readiness remains
+approximately `47%` overall / `41%` Procurement/P2P.
 
 ### Historical MESP-135 Finance capability snapshot
 

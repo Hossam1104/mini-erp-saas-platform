@@ -3,9 +3,44 @@
 ## Status and bounded intent
 
 MESP-135 is implemented on `feat/MESP-135-finance-close-reports` from the
-reconciled MESP-134 main SHA `1e49814172843c2ec2279b8dcc5fc0a41e5da372`.
-This document records the implementation boundary for independent Sol review;
-it does not mark the capability Done, authorize merge, or activate MESP-139.
+reconciled Finance merge-base `841a777af1622cb4de9c3708cd4a2b389b7ef9e9`.
+The current `origin/main` is intentionally one PPT-only commit ahead at
+`0d1485d4a2197f23250b1d5acc1a00ddf26dc4c9`; that presentation remains
+main-only and is not part of this feature branch. This document records the
+implementation boundary for independent Sol review; it does not mark the
+capability Done, authorize merge, or activate MESP-139.
+
+### HOLD 6 effective revaluation evidence - 27 August 2026
+
+HOLD 6 keeps the MESP-135 boundary unchanged and corrects the interpretation
+of persisted period-end revaluation lines. Close readiness now evaluates the
+authoritative MESP-134 `ReconcileUnrealizedFxAsync` result at the exact period
+end and builds effective candidates only from uniquely identified,
+`Reconciled` rows. A `Reversed` row is retained as valid historical evidence
+but is inactive for current coverage; a replacement must be the sole active
+candidate for that source. A valid reversed line may remain when the current
+authoritative source has zero effect, but an unexpected active line for a
+zero-effect source is extra evidence and blocks.
+
+The reconciliation identity is bound to Tenant-filtered Company, source type
+and ID, batch, line, original journal, and exact reversal lineage. Reconciled
+evidence cannot carry reversal lineage; reversed evidence must carry the exact
+persisted reversal journal. Missing, broken, duplicate, stale, extra,
+unresolved, cross-Company, and cross-Tenant evidence fails closed. The
+deterministic Close readiness fingerprint includes the authoritative scope,
+effective active candidates, and unresolved evidence while excluding valid
+reversed historical rows from current coverage. This preserves the MESP-134
+historical/as-of rule: a later reversal cannot rewrite an earlier period-end
+snapshot, and no second revaluation engine, endpoint, entity, migration, or
+public operation is introduced.
+
+The implementation/test commit is
+`69b20b3c0dbba2a7f3b6c5ade2a19f63ad7fb9bb`. HOLD 6 regression coverage uses
+real Finance persistence and genuine journal reversal operations for
+replacement-only active evidence, zero-effect reversed evidence, broken
+reversal fail-closed behavior, duplicate active candidates, extra active
+zero-effect evidence, Tenant/Company isolation, and later-reversal fingerprint
+stability.
 
 ### HOLD 3 corrective semantics - 27 August 2026
 

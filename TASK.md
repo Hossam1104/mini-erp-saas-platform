@@ -1,35 +1,46 @@
 
-# MESP-135 - Sol HOLD 5 recovery, completeness remediation, and final handoff
+# MESP-135 - Sol HOLD 6 final bounded remediation and handoff
 
-This bounded session recovered the accidental PPT-only remote commit and
-completed the already-authorized MESP-135 Sol HOLD 5 remediation on the same
-Draft PR #79 / branch `feat/MESP-135-finance-close-reports`. The approved
-source head was `fd07414e1a68870aa6230a764185073bb7cb28c8`; the implementation
-commit is `c20b2d3499c2bd4134c1bf89d6a9344fa79e4142`, followed by the final
-documentation/tracker synchronization commit.
+This bounded session completed only the already-authorized MESP-135 Sol HOLD 6
+remediation on the existing Draft PR #79 / branch
+`feat/MESP-135-finance-close-reports`. Mandatory preflight was exact: starting
+feature and remote feature `243199b22b1762f0797d19702577b874429dabaf`, live
+`origin/main` `0d1485d4a2197f23250b1d5acc1a00ddf26dc4c9`, legitimate merge-base
+`841a777af1622cb4de9c3708cd4a2b389b7ef9e9`, and the only main-only drift was
+the expected presentation PPTX. The presentation remains main-only and was
+not copied, edited, restored, or committed on this feature branch.
 
-Recovery preserved accidental commit
-`0099a9a02eff490753f7c4565651fc54e1368453` on local and remote
-`archive/mesp-presentation-ppt-0099`, then restored the feature branch with the
-exact expected-SHA `--force-with-lease`. The PPTX is the only untracked local
-artifact and is not in any MESP-135 commit.
+HOLD 6 makes Close readiness consume effective MESP-134 unrealized-FX
+reconciliation records rather than treating persisted period-end lines as
+active merely because they exist. A valid reversed line remains historical
+evidence but is inactive for current coverage; the replacement line must be the
+sole active reconciled candidate. Zero-effect sources tolerate valid reversed
+historical evidence but reject unexpected active evidence. Missing, broken,
+duplicate, stale, extra, invalid, cross-Company, and cross-Tenant evidence
+fails closed. Deterministic coverage fingerprinting includes the authoritative
+scope, effective active candidates, and unresolved evidence, while preserving
+the later-reversal historical snapshot behavior. No public endpoint, entity,
+DbContext, configuration, schema, migration, or `frontend/assets` file changed.
 
-HOLD 5 adds one shared read-only MESP-134 revaluation-scope evaluator used by
-batch calculation and Close readiness at the same AsOfDate. Zero-effect
-sources are evaluated without requiring a journal; every non-zero source must
-have exactly one matching period-end line, valid source/rate evidence, and one
-reconciled journal evidence row. Missing, stale, duplicate, extra, invalid,
-and late sources block. As-of allocation/reversal semantics and deterministic
-scope fingerprinting are preserved. No public endpoint, schema, migration, or
-`frontend/assets` file changed.
+The focused implementation/test commit is
+`69b20b3c0dbba2a7f3b6c5ade2a19f63ad7fb9bb`. Validation is Release
+`0 warnings/0 errors`; focused MESP-133 `22/22`, MESP-134 `27/27`, and
+MESP-135 `31/31`; full disposable-LocalDB backend `1,098/1,098`; complete SQL
+safety `80/80`; focused HOLD6/MESP-134 SQL contention `14/14`; REST/OpenAPI/
+host `55/55`; catalogue `383` public and `2` internal; EF reports no pending
+model changes; Angular `296/296` across 41 specs; focused/full Chromium
+`15/15` and `47/47`; both npm audits report 0 vulnerabilities; and the NuGet
+vulnerable-package scan is clear. MESP-135 remains In Progress, MESP-139
+remains inactive, fast-track remains `18/26 = 69.2%`, and production
+readiness remains approximately `47%` overall / `41%` Procurement/P2P.
 
-Validation: Release `0 warnings/0 errors`; full disposable-LocalDB backend
-`1,092/1,092`; SQL safety `80/80`; REST/OpenAPI/host `55/55`; Angular
-`296/296`; focused/full Chromium `15/15` and `47/47`; both npm audits report
-0 vulnerabilities; NuGet vulnerable-package scan clear; live API and Finance
-route probes all HTTP 200. MESP-135 remains In Progress, PR #79 remains
-Open/Draft/Unmerged, no Jira write/Opus review/Ready transition/merge occurred,
-and work stops for GPT-5.6 Sol acceptance.
+The official runtime was restarted through
+`scripts/Start-MiniErpDevelopment.ps1 -Restart` with the explicit loopback
+Development bypass: API PID `38772` on `http://localhost:5300` and Angular PID
+`8036` on `http://localhost:4300`. All 11 required probes returned HTTP 200;
+both repository-owned processes remain running. No Jira write, Opus review,
+Ready transition, merge, rebase, force-push, or second PR occurred. Stop for
+GPT-5.6 Sol HOLD 6 acceptance.
 
 # Historical MESP-135 - Sol HOLD 4 final bounded remediation - final handoff for Sol re-review
 
@@ -2289,3 +2300,100 @@ Sol verifies the exact final branch SHA and the single Draft PR, then accepts
 or returns the bounded MESP-132 implementation. Do not merge, mark Ready,
 rebase, force-push, create another PR, invoke Opus, or start MESP-133+ or
 downstream Finance/Sales/Reporting work automatically.
+
+---
+
+# MESP-135 - Sol HOLD 6 final bounded handoff - 27 August 2026
+
+This is the complete bounded handoff for the final HOLD 6 remediation on the
+existing `feat/MESP-135-finance-close-reports` branch and Draft PR #79. The
+exact mandatory preflight was preserved: feature start and remote feature
+`243199b22b1762f0797d19702577b874429dabaf`; `origin/main`
+`0d1485d4a2197f23250b1d5acc1a00ddf26dc4c9`; merge-base
+`841a777af1622cb4de9c3708cd4a2b389b7ef9e9`; and the only main-only change was
+`A docs/Mini_ERP_SaaS_Platform_Project_Presentation.pptx` with blob
+`cce3723f374dc5ffe3ff872f73efae247a90b886`. The remote archive remains
+`0099a9a02eff490753f7c4565651fc54e1368453`, the local recovery archive remains
+`284e59661e159cf2a14ea802f7e18e3fadb8d384`, and the PPTX is absent from the
+feature tree. No rebase, main merge, copy, restore, or force-push occurred.
+
+## HOLD 6 implementation
+
+The source/test commit is
+`69b20b3c0dbba2a7f3b6c5ade2a19f63ad7fb9bb`.
+`FinanceMesp135Persistence` now consumes the effective MESP-134 unrealized-FX
+reconciliation result at the exact period-end as-of date. Persisted
+period-end lines are not active merely because they exist. A uniquely
+identified `Reconciled` row is active; a valid `Reversed` row remains
+historical evidence but is inactive for current coverage. A replacement must
+be the only active reconciled candidate for a non-zero source. A valid
+reversed line may remain for a current zero-effect source, but unexpected
+active zero-effect evidence blocks. Missing, broken, duplicate, stale, extra,
+unresolved, cross-Company, and cross-Tenant evidence fails closed.
+
+Reconciliation identity binds Tenant-filtered Company, source type and ID,
+batch, line, original journal, and exact reversal lineage. Reconciled evidence
+cannot carry reversal lineage; reversed evidence must carry the exact persisted
+reversal journal. The deterministic Close fingerprint includes the
+authoritative scope, effective active candidates, and unresolved evidence,
+while excluding valid reversed historical rows from current coverage. No
+public endpoint, entity, DbContext, configuration, schema, migration, or
+`frontend/assets` file changed.
+
+## HOLD 6 regressions
+
+- `Hold6_REPLACE01_valid_reversed_revaluation_is_inactive_while_replacement_is_the_only_active_candidate` proves real reversal plus replacement leaves exactly one active candidate and changes the readiness fingerprint deterministically.
+- `Hold6_ZERO_REV01_valid_reversed_stale_evidence_is_allowed_when_the_authoritative_source_is_zero_effect` proves a valid reversed historical line is allowed after the current source becomes zero-effect and no fake revaluation journal is created.
+- `Hold6_BROKEN_REV01_unresolved_reversal_evidence_remains_fail_closed` proves missing reversal journal lineage maps to unresolved MESP-134 evidence and blocks readiness.
+- `Hold6_DUP_ACTIVE01_two_active_reconciled_candidates_for_one_source_block_readiness` proves duplicate active candidates block.
+- `Hold6_EXTRA_ACTIVE01_active_evidence_for_a_current_zero_effect_source_is_extra_and_blocks` proves active evidence for a zero-effect source blocks.
+- `Hold6_TENANT_COMPANY_ISOLATION_effective_candidates_cannot_cross_tenant_or_company_boundaries` proves out-of-scope Company/Tenant evidence cannot satisfy the authorized source.
+- `Revaluation_readiness_snapshot_at_period_end_is_stable_across_a_later_revaluation_reversal` now directly asserts the MESP-134 period-end reconciliation remains `Reconciled` with the original journal and no reversal ID after a later reversal.
+
+## Final validation evidence
+
+- Release build: **0 warnings / 0 errors**.
+- Focused backend: MESP-133 settlement **22/22**; MESP-134 **27/27**;
+  MESP-135 **31/31**.
+- Full canonical disposable-LocalDB backend runner:
+  **1,098/1,098 passed, 0 failed, 0 skipped**. The persistent
+  `MESP_SQLSERVER_CONNECTION_STRING` was not used for destructive tests; the
+  disposable database was removed and the orphan proof passed.
+- SQL safety: **80/80**, including the three MESP-135 races
+  `Close04_Concurrent_reopen_and_post_preserve_one_coherent_period_state`,
+  `Year03_Concurrent_year_end_post_and_late_journal_cannot_commit_stale_year_end`,
+  `Corr03_Concurrent_correction_and_period_close_preserve_close_snapshot`,
+  and the MESP-134 revaluation contention cases. Focused HOLD6/MESP-134 SQL
+  filter: **14/14**.
+- REST/OpenAPI/host security: **55/55**. Public operation catalogue remains
+  **383 public / 2 internal**; HOLD 6 adds no operation.
+- EF Core: Infrastructure design-time `has-pending-model-changes` reports
+  **No changes have been made to the model since the last migration**; no
+  migration was generated or edited.
+- Angular: **296/296** across 41 spec files; production initial bundle
+  **496.45 kB**, Finance/GL **34.52 kB**, settlements **56.04 kB**, tax-fx
+  **40.38 kB**, reports **17.02 kB**, close **16.28 kB**.
+- Browser: focused Finance Chromium **15/15**; full Chromium **47/47**.
+- Security: `npm audit` **0 vulnerabilities**;
+  `npm audit --omit=dev` **0 vulnerabilities**; NuGet vulnerable-package scan
+  clear for all five projects.
+- Runtime: official `scripts/Start-MiniErpDevelopment.ps1 -Restart` left API
+  PID **38772** on `http://localhost:5300` and Angular PID **8036** on
+  `http://localhost:4300`. `/health`, `/openapi/v1.json`, `/`, `/main.js`,
+  `/app/finance`, `/app/finance/ap`, `/app/finance/ar`,
+  `/app/finance/settlements`, `/app/finance/tax-fx`, `/app/finance/close`,
+  and `/app/finance/reports` all returned HTTP 200. **LEFT RUNNING = YES**.
+- `frontend/assets` is untouched; `docs/statistics.md` was not created.
+
+## Governance and stop condition
+
+MESP-135 remains **In Progress** and is still the only active Finance
+capability. MESP-139 remains inactive; MESP-48 and MESP-50 remain open
+production gates; accepted fast-track remains **18/26 = 69.2%**; and
+production readiness remains approximately **47% overall / 41% Procurement/P2P**.
+No Jira write, Opus review, Ready transition, merge, rebase, force-push, or
+second PR occurred. The final feature head is the pushed documentation-sync
+head containing this handoff, with the exact SHA reported by
+`git rev-parse HEAD` after the documentation commit. Stop for independent
+GPT-5.6 Sol HOLD 6 acceptance; do not mark PR #79 Ready, merge, or start
+MESP-139 or another capability.

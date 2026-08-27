@@ -1,47 +1,60 @@
 # Current State
 
-## MESP-135 Sol HOLD 5 bounded remediation and guarded recovery - 27 August 2026
+## MESP-135 Sol HOLD 6 final bounded remediation - 27 August 2026
 
 MESP-135 remains the only active Finance implementation capability under
 MESP-10, In Progress/activated, on branch
 `feat/MESP-135-finance-close-reports`, with Draft PR #79 still
-Open/Draft/Unmerged. HOLD 5 authority is MESP-135 `12182` and MESP-10 `12183`;
-no Jira writes, Opus review, Ready transition, merge, or second PR occurred.
+Open/Draft/Unmerged. HOLD 6 governance authority is MESP-135 `12186` and
+MESP-10 `12187`; those Jira references are recorded for traceability only and
+no Jira writes were performed.
 
-The accidental PPT-only commit `0099a9a02eff490753f7c4565651fc54e1368453`
-was preserved on local and remote `archive/mesp-presentation-ppt-0099`. The
-feature was restored from approved source head
-`fd07414e1a68870aa6230a764185073bb7cb28c8` with the exact expected-SHA
-`--force-with-lease`. The recovered PPTX remains the only untracked local
-artifact and is absent from all MESP-135 commits.
+Mandatory preflight was exact: feature start and remote feature
+`243199b22b1762f0797d19702577b874429dabaf`; current `origin/main`
+`0d1485d4a2197f23250b1d5acc1a00ddf26dc4c9`; merge-base
+`841a777af1622cb4de9c3708cd4a2b389b7ef9e9`; and the only main-only delta was
+the expected presentation PPTX. The PPTX remains main-only and was not copied,
+edited, restored, or committed on the Finance branch. The remote archive
+remains `0099a9a02eff490753f7c4565651fc54e1368453`; the local recovery archive
+remains `284e59661e159cf2a14ea802f7e18e3fadb8d384`.
 
-The HOLD 5 correction adds one shared read-only
-`IFinanceMesp134Persistence.EvaluateRevaluationScopeAsync` evaluator. It is
-the same calculation authority used by `CalculateRevaluationBatchAsync` and
-by Close readiness at the identical AsOfDate. AP/AR open items and effective
-Payment/Receipt sources are evaluated with as-of allocation and reversal
-semantics. Zero-effect sources are included in the scope but do not require a
-journal; each non-zero source requires exactly one matching period-end
-revaluation line, posted or historically reversed batch, exact source/rate
-evidence, and one reconciled journal evidence row. Missing, stale, duplicate,
-extra, invalid, and late sources fail closed. A deterministic scope fingerprint
-is included in Close readiness. No public endpoint, schema, migration, or
-`frontend/assets` file changed.
+HOLD 6 makes Close readiness consume effective MESP-134 unrealized-FX
+reconciliation evidence at the exact period-end as-of date. Persisted lines
+are not active solely because they exist: `Reconciled` rows are active
+candidates, valid `Reversed` rows remain historical but inactive, and missing,
+broken, duplicate, stale, extra, unresolved, cross-Company, or cross-Tenant
+evidence fails closed. A replacement must be the only active candidate for a
+non-zero source; valid reversed evidence is allowed for a current zero-effect
+source, while an unexpected active zero-effect line blocks. Reconciliation
+identity binds Tenant-filtered Company, source, batch, line, original journal,
+and exact reversal lineage. The Close fingerprint includes the authoritative
+scope, effective active candidates, and unresolved evidence, preserving later
+reversal stability. No public endpoint, entity, DbContext, configuration,
+schema, migration, or `frontend/assets` file changed.
 
-Five production-persistence regressions cover zero-effect readiness, complete
-multi-source coverage and duplicate rejection, late-source blocking, stale
-settlement evidence, and historical stability after a later settlement
-reversal. Validation is Release `0 warnings/0 errors`; focused MESP-133
-settlement `22/22`, MESP-134 `27/27`, MESP-135 `25/25`; full disposable-LocalDB
-backend `1,092/1,092` passed with 0 failures and 0 skips; SQL safety `80/80`;
-REST/OpenAPI/host-security `55/55`; Angular `296/296`; focused Finance
-Chromium `15/15`; full Chromium `47/47`; both npm audits report 0
-vulnerabilities; and the five-project NuGet vulnerable-package scan is clear.
-Runtime is left running with backend PID `32012` on `http://localhost:5300`
-and frontend PID `37812` on `http://localhost:4300`; all required probes are
-HTTP 200. The HOLD 5 source commit is
-`c20b2d3499c2bd4134c1bf89d6a9344fa79e4142`; the final branch tip follows with
-the documentation/tracker synchronization commit.
+The source/test commit is
+`69b20b3c0dbba2a7f3b6c5ade2a19f63ad7fb9bb`. HOLD6 coverage adds six real
+production-persistence regressions and strengthens the existing later-
+reversal snapshot assertion. Validation is Release `0 warnings/0 errors`;
+focused MESP-133 `22/22`, MESP-134 `27/27`, MESP-135 `31/31`; full disposable-
+LocalDB backend `1,098/1,098` with 0 failures and 0 skips; SQL safety `80/80`
+including Close04, Year03, Corr03, and MESP-134 REV04; focused HOLD6/MESP-134
+SQL `14/14`; REST/OpenAPI/host `55/55`; catalogue `383` public / `2` internal;
+EF pending-model check clean; Angular `296/296` across 41 specs; focused/full
+Chromium `15/15` and `47/47`; both npm audits 0 vulnerabilities; and NuGet
+vulnerable-package scan clear across all five projects. Bundle evidence is
+initial `496.45 kB`, Finance/GL `34.52 kB`, settlements `56.04 kB`, tax-fx
+`40.38 kB`, reports `17.02 kB`, and close `16.28 kB`.
+
+The official runtime was restarted through
+`scripts/Start-MiniErpDevelopment.ps1 -Restart` with loopback Development
+auth bypass: backend PID `38772` at `http://localhost:5300` and frontend PID
+`8036` at `http://localhost:4300`. All 11 required probes returned HTTP 200;
+both repository-owned processes remain alive. Fast-track remains
+`18/26 = 69.2%`; production readiness remains approximately `47%` overall /
+`41%` Procurement/P2P; MESP-139 remains inactive; and MESP-48/MESP-50 remain
+open production gates. No Opus review, Ready transition, merge, rebase,
+force-push, or second PR occurred. STOP for GPT-5.6 Sol HOLD 6 acceptance.
 
 ## Historical MESP-135 Sol HOLD 4 final bounded remediation - 27 August 2026
 
