@@ -359,6 +359,7 @@ internal sealed class FinanceMesp135Persistence(
                 var coverage = EvaluateRevaluationCoverage(scope.Value, periodEndLines, batchStatuses, unrealized);
                 revaluationStatus = coverage.Status;
                 revaluationMessage = coverage.Message;
+                revaluationScopeFingerprint = coverage.Fingerprint;
             }
         }
         Check("revaluation_policy", revaluationStatus, revaluationMessage);
@@ -493,7 +494,7 @@ internal sealed class FinanceMesp135Persistence(
     private static FinanceEvidenceStatus WorstEvidence(FinanceEvidenceStatus left, FinanceEvidenceStatus right) => left == FinanceEvidenceStatus.PendingMapping || right == FinanceEvidenceStatus.PendingMapping ? FinanceEvidenceStatus.PendingMapping : left == FinanceEvidenceStatus.LegacyWithoutReportingEvidence || right == FinanceEvidenceStatus.LegacyWithoutReportingEvidence ? FinanceEvidenceStatus.LegacyWithoutReportingEvidence : left == FinanceEvidenceStatus.NotCaptured || right == FinanceEvidenceStatus.NotCaptured ? FinanceEvidenceStatus.NotCaptured : FinanceEvidenceStatus.Reconciled;
     private static FinanceReconciliationViewStatus MapStatus(FinanceReconciliationStatus status) => status switch { FinanceReconciliationStatus.Reconciled => FinanceReconciliationViewStatus.Reconciled, FinanceReconciliationStatus.PendingPosting or FinanceReconciliationStatus.PendingApproval or FinanceReconciliationStatus.PendingMapping or FinanceReconciliationStatus.PendingFxRecognition => FinanceReconciliationViewStatus.Pending, FinanceReconciliationStatus.AmountMismatch or FinanceReconciliationStatus.Unreconciled => FinanceReconciliationViewStatus.Mismatch, _ => FinanceReconciliationViewStatus.Blocked };
     private static FinanceReconciliationViewStatus MapStatus(FinanceEvidenceStatus status) => status switch { FinanceEvidenceStatus.Reconciled or FinanceEvidenceStatus.Captured or FinanceEvidenceStatus.Reversed => FinanceReconciliationViewStatus.Reconciled, FinanceEvidenceStatus.LegacyWithoutReportingEvidence or FinanceEvidenceStatus.NotCaptured => FinanceReconciliationViewStatus.LegacyWithoutEvidence, FinanceEvidenceStatus.PendingMapping or FinanceEvidenceStatus.MissingRate or FinanceEvidenceStatus.AmbiguousMapping => FinanceReconciliationViewStatus.Pending, _ => FinanceReconciliationViewStatus.Blocked };
-    private sealed record RevaluationCoverageResult(FinanceCloseCheckStatus Status, string Message);
+    private sealed record RevaluationCoverageResult(FinanceCloseCheckStatus Status, string Message, string Fingerprint);
 
     private static RevaluationCoverageResult EvaluateRevaluationCoverage(
         FinanceRevaluationScopeEvaluation scope,
@@ -501,34 +502,145 @@ internal sealed class FinanceMesp135Persistence(
         IReadOnlyDictionary<Guid, FinanceRevaluationBatchStatus> batchStatuses,
         IReadOnlyList<FinanceUnrealizedFxReconciliationRecord> reconciliation)
     {
-        var expected = scope.Sources
-            .Where(item => item.Difference != 0m)
+        var allSources = scope.Sources
             .ToDictionary(item => RevaluationSourceKey(item.SourceType, item.SourceId), StringComparer.Ordinal);
-        var grouped = periodEndLines
-            .GroupBy(item => RevaluationSourceKey(item.SourceType, item.SourceId), StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
-        if (periodEndLines.Any(item => !expected.ContainsKey(RevaluationSourceKey(item.SourceType, item.SourceId))))
-            return new(FinanceCloseCheckStatus.Blocked, "Period-end revaluation evidence contains a source outside the authoritative revaluation scope.");
-        if (grouped.Any(item => item.Value.Length != 1))
-            return new(FinanceCloseCheckStatus.Blocked, "Every non-zero revaluation source must have exactly one period-end evidence line.");
-        if (expected.Keys.Any(key => !grouped.ContainsKey(key)))
-            return new(FinanceCloseCheckStatus.Blocked, "Every non-zero foreign source must be covered by period-end revaluation evidence.");
+        var requiredSources = allSources
+            .Where(item => item.Value.Difference != 0m)
+            .ToDictionary(item => item.Key, item => item.Value, StringComparer.Ordinal);
+        var active = new List<EffectiveRevaluationCandidate>();
+        var unresolved = new List<UnresolvedRevaluationEvidence>();
 
-        foreach (var expectedSource in expected)
+        foreach (var line in periodEndLines)
         {
-            var line = grouped[expectedSource.Key][0];
-            var source = expectedSource.Value;
+            var key = RevaluationSourceKey(line.SourceType, line.SourceId);
+            var rows = reconciliation.Where(item => item.LineId == line.Id).ToArray();
+            var row = rows.Length == 1 ? rows[0] : null;
+
             if (!batchStatuses.TryGetValue(line.BatchId, out var batchStatus)
                 || batchStatus is not (FinanceRevaluationBatchStatus.Posted or FinanceRevaluationBatchStatus.Reversed))
-                return new(FinanceCloseCheckStatus.Blocked, "Every period-end revaluation evidence line must belong to a posted or historically reversed batch.");
-            if (!LineMatchesScope(line, source))
-                return new(FinanceCloseCheckStatus.Blocked, "Period-end revaluation evidence is stale or does not match the authoritative source calculation.");
-            var rows = reconciliation.Where(item => item.LineId == line.Id).ToArray();
-            if (rows.Length != 1 || rows[0].Status != FinanceEvidenceStatus.Reconciled || rows[0].JournalId != line.JournalId)
-                return new(FinanceCloseCheckStatus.Blocked, "Every non-zero revaluation source requires one reconciled period-end journal evidence line.");
+            {
+                unresolved.Add(new(line, row, "batch_status"));
+                continue;
+            }
+
+            if (row is null || !ReconciliationIdentifiesLine(line, row))
+            {
+                unresolved.Add(new(line, row, rows.Length == 0 ? "missing_reconciliation" : rows.Length > 1 ? "duplicate_reconciliation" : "reconciliation_identity"));
+                continue;
+            }
+
+            switch (row.Status)
+            {
+                case FinanceEvidenceStatus.Reconciled:
+                    active.Add(new(line, row));
+                    break;
+                case FinanceEvidenceStatus.Reversed:
+                    // MESP-134 has proven the original journal, exact reversal
+                    // lineage, reversal chronology, and monetary inverse at
+                    // this AsOfDate. Keep the line in history, but do not let
+                    // it participate in current coverage matching.
+                    break;
+                default:
+                    unresolved.Add(new(line, row, row.Status.ToString()));
+                    break;
+            }
         }
-        return new(FinanceCloseCheckStatus.Ready, "Revaluation scope is fully covered: zero-effect sources require no journal and every non-zero source has one reconciled period-end line.");
+
+        var fingerprint = RevaluationCoverageFingerprint(scope, active, unresolved);
+        RevaluationCoverageResult Blocked(string message) => new(FinanceCloseCheckStatus.Blocked, message, fingerprint);
+
+        if (unresolved.Count != 0)
+            return Blocked("Period-end revaluation evidence contains unresolved or invalid MESP-134 reconciliation evidence.");
+
+        var activeByKey = active
+            .GroupBy(item => RevaluationSourceKey(item.Line.SourceType, item.Line.SourceId), StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
+        if (active.Any(item => !allSources.TryGetValue(RevaluationSourceKey(item.Line.SourceType, item.Line.SourceId), out var source) || source.Difference == 0m))
+            return Blocked("Period-end revaluation evidence contains an active source outside the authoritative non-zero revaluation scope.");
+        if (activeByKey.Any(item => item.Value.Length != 1))
+            return Blocked("Every non-zero revaluation source must have exactly one active reconciled period-end evidence line.");
+        if (requiredSources.Keys.Any(key => !activeByKey.ContainsKey(key)))
+            return Blocked("Every non-zero foreign source must be covered by one active reconciled period-end evidence line.");
+
+        foreach (var expectedSource in requiredSources)
+        {
+            var candidate = activeByKey[expectedSource.Key][0];
+            if (!LineMatchesScope(candidate.Line, expectedSource.Value))
+                return Blocked("Period-end revaluation evidence is stale or does not match the authoritative source calculation.");
+        }
+
+        return new(FinanceCloseCheckStatus.Ready, "Revaluation scope is fully covered: zero-effect sources require no active journal and every non-zero source has one active reconciled period-end line.", fingerprint);
     }
+
+    private static bool ReconciliationIdentifiesLine(FinanceRevaluationLineEntity line, FinanceUnrealizedFxReconciliationRecord reconciliation) =>
+        reconciliation.LineId == line.Id
+        && reconciliation.BatchId == line.BatchId
+        && reconciliation.CompanyId == line.CompanyId
+        && reconciliation.SourceId == line.SourceId
+        && string.Equals(reconciliation.SourceType, line.SourceType, StringComparison.Ordinal)
+        && reconciliation.JournalId == line.JournalId
+        && reconciliation.Status switch
+        {
+            FinanceEvidenceStatus.Reconciled => reconciliation.ReversalJournalId is null,
+            FinanceEvidenceStatus.Reversed => line.ReversalJournalId is not null
+                && reconciliation.ReversalJournalId == line.ReversalJournalId,
+            _ => true
+        };
+
+    private static string RevaluationCoverageFingerprint(
+        FinanceRevaluationScopeEvaluation scope,
+        IEnumerable<EffectiveRevaluationCandidate> active,
+        IEnumerable<UnresolvedRevaluationEvidence> unresolved) =>
+        Fingerprint(new
+        {
+            ScopeFingerprint = scope.Fingerprint,
+            Active = active
+                .OrderBy(item => item.Line.SourceType, StringComparer.Ordinal)
+                .ThenBy(item => item.Line.SourceId)
+                .ThenBy(item => item.Line.Id)
+                .Select(item => new
+                {
+                    item.Line.Id,
+                    item.Line.BatchId,
+                    item.Line.CompanyId,
+                    item.Line.SourceId,
+                    item.Line.SourceType,
+                    item.Line.AsOfDate,
+                    item.Line.TransactionCurrencyCode,
+                    item.Line.OutstandingTransactionAmount,
+                    item.Line.HistoricalFunctionalAmount,
+                    item.Line.RevaluedFunctionalAmount,
+                    item.Line.Difference,
+                    item.Line.Direction,
+                    item.Line.JournalId,
+                    EffectiveReversalJournalId = item.Reconciliation.ReversalJournalId,
+                    item.Line.ExchangeRateId,
+                    item.Line.ExchangeRateVersionId,
+                    item.Line.ExchangeRateVersionNumber,
+                    SourceSnapshot = SnapshotFingerprint(item.Line.SourceSnapshotJson),
+                    Reconciliation = item.Reconciliation.Status
+                }),
+            Unresolved = unresolved
+                .OrderBy(item => item.Line.SourceType, StringComparer.Ordinal)
+                .ThenBy(item => item.Line.SourceId)
+                .ThenBy(item => item.Line.Id)
+                .Select(item => new
+                {
+                    item.Line.Id,
+                    item.Line.BatchId,
+                    item.Line.CompanyId,
+                    item.Line.SourceId,
+                    item.Line.SourceType,
+                    item.Line.AsOfDate,
+                    Reason = item.Reason,
+                    ReconciliationStatus = item.Reconciliation?.Status,
+                    ReconciliationJournalId = item.Reconciliation?.JournalId,
+                    ReconciliationReversalJournalId = item.Reconciliation?.ReversalJournalId
+                })
+        });
+
+    private sealed record EffectiveRevaluationCandidate(FinanceRevaluationLineEntity Line, FinanceUnrealizedFxReconciliationRecord Reconciliation);
+    private sealed record UnresolvedRevaluationEvidence(FinanceRevaluationLineEntity Line, FinanceUnrealizedFxReconciliationRecord? Reconciliation, string Reason);
 
     private static bool LineMatchesScope(FinanceRevaluationLineEntity line, FinanceRevaluationScopeSourceRecord source)
     {
