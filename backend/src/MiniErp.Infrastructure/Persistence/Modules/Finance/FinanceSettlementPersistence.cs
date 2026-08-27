@@ -348,11 +348,14 @@ internal sealed class FinanceSettlementPersistence(
         return new(query.CompanyId, query.CustomerId, company.FunctionalCurrencyCode, open, overdue, unapplied, open - unapplied, query.AsOfDate, false, null);
     }
 
-    public async Task<IReadOnlyList<FinanceReconciliationRecord>> GetReconciliationAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<FinanceReconciliationRecord>> GetReconciliationAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) =>
+        GetReconciliationAsync(context, companyId, DateOnly.FromDateTime(DateTime.UtcNow), cancellationToken);
+
+    public async Task<IReadOnlyList<FinanceReconciliationRecord>> GetReconciliationAsync(FinanceRequestContext context, Guid companyId, DateOnly asOfDate, CancellationToken cancellationToken = default)
     {
         var company = Company(context, companyId); if (company is null) return [];
         await using var db = CreateContext(context);
-        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+        var asOf = asOfDate;
         var items = await db.OpenItems.AsNoTracking().Where(item => item.CompanyId == companyId && item.RecognitionState == FinanceOpenItemRecognitionState.Recognized && item.DocumentDate <= asOf).ToListAsync(cancellationToken);
         var documents = await db.SettlementDocuments.AsNoTracking().Where(item => item.CompanyId == companyId && item.DocumentDate <= asOf).ToListAsync(cancellationToken);
         var allocations = await EffectiveAllocations(db, asOf).AsNoTracking().Where(item => item.CompanyId == companyId).ToListAsync(cancellationToken);
@@ -550,7 +553,7 @@ internal sealed class FinanceSettlementPersistence(
             ? line.FunctionalCredit - line.FunctionalDebit
             : line.FunctionalDebit - line.FunctionalCredit);
 
-    private static bool IsSettlementEffectEffective(
+    internal static bool IsSettlementEffectEffective(
         FinanceSettlementDocumentEntity document,
         IReadOnlyDictionary<Guid, FinanceJournalEntity> journals,
         DateOnly asOf)

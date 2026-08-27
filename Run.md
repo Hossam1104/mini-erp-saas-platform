@@ -1,22 +1,67 @@
 # MiniERP Local Development & Integrated Runtime Guide
 
-## Current Finance capability
+## Current Finance capability - MESP-135 HOLD 6
+
+MESP-135 is the only active Finance capability under MESP-10. HOLD 6 authority
+is MESP-135 `12186` and MESP-10 `12187`; the implementation branch is
+`feat/MESP-135-finance-close-reports`, and Draft PR #79 remains
+Open/Draft/Unmerged for Sol acceptance.
+
+HOLD 6 makes Close readiness consume effective MESP-134 unrealized-FX
+reconciliation at the exact period-end as-of date. Valid reversed evidence is
+historical but inactive, replacement evidence must be the sole active
+reconciled candidate for a non-zero source, valid reversed evidence is allowed
+for a current zero-effect source, and unexpected active zero-effect,
+missing, broken, duplicate, stale, extra, cross-Company, or cross-Tenant
+evidence blocks. The deterministic readiness fingerprint includes effective
+active and unresolved evidence. No public endpoint, entity, DbContext,
+configuration, schema, migration, or `frontend/assets` file changed.
+
+The exact HOLD 6 source/test commit is
+`69b20b3c0dbba2a7f3b6c5ade2a19f63ad7fb9bb`, from feature start and remote
+head `243199b22b1762f0797d19702577b874429dabaf`. Finance merge-base remains
+`841a777af1622cb4de9c3708cd4a2b389b7ef9e9`; current `origin/main`
+`0d1485d4a2197f23250b1d5acc1a00ddf26dc4c9` is intentionally one PPT-only
+commit ahead and the presentation is not in this feature tree.
+
+Validation is Release `0/0`; focused MESP-133 `22/22`, MESP-134 `27/27`,
+MESP-135 `31/31`; full backend `1,098/1,098`; SQL safety `80/80`; focused
+HOLD6/MESP-134 SQL `14/14`; REST/OpenAPI/host `55/55`; catalogue `383` public
+and `2` internal; EF model clean; Angular `296/296`; focused/full Chromium
+`15/15` and `47/47`; both npm audits 0 vulnerabilities; and NuGet scan clear.
+Runtime is left running on API `5300` PID `38772` and frontend `4300` PID
+`8036`; all 11 required probes return HTTP 200. No Jira write, Opus review,
+Ready transition, merge, rebase, force-push, or next-capability activation
+occurred. Fast-track remains `18/26 = 69.2%` and production readiness remains
+approximately `47%` overall / `41%` Procurement/P2P.
+
+### Historical MESP-135 Finance capability snapshot
 
 MESP-134 is Done and squash-merged to `main` at
 `1e49814172843c2ec2279b8dcc5fc0a41e5da372` through PR #78 (closure `12122`).
 MESP-135 is the only active Finance implementation capability under MESP-10,
 In Progress/activated by `12123`, with Finance reconciliation `12124`. The
-implementation branch is `feat/MESP-135-finance-close-reports` and must end as
-one Draft/Open/Unmerged PR for Sol review. The bounded workspace will add
-Finance close/year-end, corrections, reconciliation, core reports, and
-authorized export while preserving Tenant/Company server authority and the
-MESP-132/133/134 accounting evidence model.
+implementation branch is `feat/MESP-135-finance-close-reports`; feature SHA
+`6dca68888c4300dff2575d99b3edf919e965d783` is ready in one Draft/Open/Unmerged
+PR for Sol review. The bounded workspace implements Finance close/year-end,
+corrections, reconciliation, core reports, and authorized export while
+preserving Tenant/Company server authority and the MESP-132/133/134 accounting
+evidence model. New lazy routes are `/app/finance/close` and
+`/app/finance/reports`.
 
 No Jira writes, Claude Opus review, merge, Ready transition, next-capability
 activation, external provider/production credential setup, generic Reporting,
 scheduled distribution, consolidation, statutory filing, or Wafra-specific
 Finance behavior is in scope. Fast-track remains `18/26 = 69.2%` and production
 readiness remains approximately `47%` overall / `41%` Procurement/P2P.
+
+Final validation is Release 0/0; focused MESP-135 persistence 3/3;
+REST/OpenAPI/host 55/55; SQL safety 77/77; full backend 1,062/1,062 with 0
+failures and 0 skips; Angular 283/283; focused Chromium 5/5; full Chromium
+47/47; EF model-change detection clean; and both npm audits at 0
+vulnerabilities. The initial Angular bundle is 496.45 kB, with Finance/GL
+34.52 kB, close 16.28 kB, reports 16.59 kB, and settlement 56.04 kB lazy
+chunks.
 
 ### Historical MESP-134 runtime snapshot
 

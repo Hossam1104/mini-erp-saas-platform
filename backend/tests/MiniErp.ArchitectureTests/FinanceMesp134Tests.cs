@@ -416,6 +416,59 @@ public sealed class FinanceMesp134Tests
         Assert.Equal(0, await db.Journals.CountAsync(item => item.SourceContract == "finance-revaluation.v1"));
     }
 
+    [Fact]
+    public async Task ReconcileTax_scopes_by_the_effect_durable_tax_effective_date_not_journal_existence()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        await fixture.CreatePolicyAsync(null, 2, "AwayFromZero");
+        var posted = await fixture.PostTaxAsync(10m);
+        Assert.True(posted.Succeeded, posted.Code);
+        var effectiveOn = posted.Value!.TaxEffectiveOn;
+
+        var before = await fixture.Persistence.ReconcileTaxAsync(fixture.Context, Fixture.CompanyId, effectiveOn.AddDays(-1));
+        Assert.Empty(before);
+
+        var onOrAfter = await fixture.Persistence.ReconcileTaxAsync(fixture.Context, Fixture.CompanyId, effectiveOn);
+        Assert.Equal(FinanceEvidenceStatus.Reconciled, Assert.Single(onOrAfter).Status);
+    }
+
+    [Fact]
+    public async Task ReconcileFx_scopes_realized_allocations_by_the_durable_allocation_date_not_journal_existence()
+    {
+        await using var fixture = await Fixture.CreateAsync(includeReportingRate: true);
+        var source = await fixture.AddForeignReceivableAsync(currentRate: 3.75m, settlementCompatible: true);
+        await fixture.CreatePolicyAsync(Fixture.UsdCurrencyId, 2, "AwayFromZero");
+        var allocation = await fixture.CreatePostedReceiptAndAllocateAsync(source, 25m);
+        var allocationDate = new DateOnly(2026, 1, 15);
+
+        var before = await fixture.Persistence.ReconcileFxAsync(fixture.Context, Fixture.CompanyId, allocationDate.AddDays(-1));
+        Assert.Empty(before);
+
+        var onOrAfter = await fixture.Persistence.ReconcileFxAsync(fixture.Context, Fixture.CompanyId, allocationDate);
+        Assert.Equal(FinanceEvidenceStatus.Reconciled, Assert.Single(onOrAfter).Status);
+        Assert.Equal(allocation.Id, Assert.Single(onOrAfter).AllocationId);
+    }
+
+    [Fact]
+    public async Task ReconcileUnrealizedFx_scopes_revaluation_lines_by_the_durable_asOf_date_not_journal_existence()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var source = await fixture.AddForeignReceivableAsync(settlementCompatible: true);
+        await fixture.CreatePolicyAsync(null, 2, "AwayFromZero", revaluationEnabled: true);
+        var batch = await fixture.CreateRevaluationAsync(source.OpenItemId);
+        var calculated = await fixture.Persistence.CalculateRevaluationBatchAsync(fixture.Context, new FinanceRevaluationActionCommand(batch.Id, batch.Version, null, Guid.NewGuid(), "asof-revaluation-calculate", "asof-revaluation-calculate"));
+        Assert.True(calculated.Succeeded, calculated.Code);
+        var posted = await fixture.Persistence.PostRevaluationBatchAsync(fixture.Context, new FinanceRevaluationActionCommand(calculated.Value!.Id, calculated.Value.Version, null, Guid.NewGuid(), "asof-revaluation-post", "asof-revaluation-post"));
+        Assert.True(posted.Succeeded, posted.Code);
+        var asOfDate = batch.AsOfDate;
+
+        var before = await fixture.Persistence.ReconcileUnrealizedFxAsync(fixture.Context, Fixture.CompanyId, asOfDate.AddDays(-1));
+        Assert.Empty(before);
+
+        var onOrAfter = await fixture.Persistence.ReconcileUnrealizedFxAsync(fixture.Context, Fixture.CompanyId, asOfDate);
+        Assert.Equal(FinanceEvidenceStatus.Reconciled, Assert.Single(onOrAfter).Status);
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         internal static readonly Guid TenantId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");

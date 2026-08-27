@@ -526,6 +526,134 @@ public sealed class FinanceSettlementRemediationTests
     }
 
     [Fact]
+    public async Task GetReconciliationAsync_asOf_reflects_ap_allocation_and_reversal_history_without_rewriting_the_past()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        await EnsureCreatedAsync(options);
+        var context = Context("tenant.finance.reconciliation");
+        var expense = await CreateAccountAsync(options, context, "ASOF-AP-EXPENSE");
+        var apControl = await CreateAccountAsync(options, context, "ASOF-AP-CONTROL");
+        var cashAccount = await CreateAccountAsync(options, context, "ASOF-AP-CASH");
+        await OpenFullYearAndRulesAsync(options, context, [
+            ("procurement-supplier-invoice.v1", "recognition", expense.Id, apControl.Id, new DateOnly(2026, 1, 1), null),
+            ("supplier-payment.v1", "on-account", apControl.Id, cashAccount.Id, new DateOnly(2026, 1, 1), null),
+            ("supplier-payment.v1", "allocation", apControl.Id, cashAccount.Id, new DateOnly(2026, 1, 1), null),
+        ]);
+        var source = SourceForTest();
+        var persistence = CreatePersistence(options, new RequiredApprovalPolicy(), suppliers: new ActiveSupplierReader(SupplierId), sourceProvider: new StaticSupplierInvoiceSourceProvider(source));
+
+        var recognized = await persistence.RecognizeSupplierInvoiceAsync(context, new FinanceSupplierInvoiceRecognitionCommand(source.SourceEvidenceId, "asof-ap-recognize", "asof-ap-recognize"));
+        Assert.True(recognized.Succeeded, recognized.Code);
+        var method = await persistence.CreatePaymentMethodAsync(context, PaymentMethodCommand("ASOF-AP-METHOD", Guid.NewGuid(), true, FinancePaymentMethodDirection.Payment));
+        var cash = await persistence.CreateCashAccountAsync(context, CashAccountCommand("ASOF-AP-CASH", cashAccount.Id, Guid.NewGuid()));
+        Assert.True(method.Succeeded, method.Code);
+        Assert.True(cash.Succeeded, cash.Code);
+        var created = await persistence.CreateSettlementDocumentAsync(context, new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Payment, CompanyId, SupplierId, null, cash.Value!.Id, method.Value!.Id, new DateOnly(2026, 1, 15), "SAR", 100m, null, null, null, null, null, "ASOF-AP-PAY", "asof ap payment", Guid.NewGuid(), "asof-ap-payment-create", "asof-ap-payment-create"));
+        Assert.True(created.Succeeded, created.Code);
+        var submitted = await persistence.TransitionSettlementDocumentAsync(context, new FinanceSettlementActionCommand(created.Value!.Id, created.Value.Version, null, "asof-ap-payment-submit", "asof-ap-payment-submit", FinancePaymentMethodDirection.Payment), FinanceSettlementDocumentStatus.Submitted);
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await persistence.TransitionSettlementDocumentAsync(Context("tenant.finance.settlement.approve", ApproverId), new FinanceSettlementActionCommand(submitted.Value!.Id, submitted.Value.Version, null, "asof-ap-payment-approve", "asof-ap-payment-approve", FinancePaymentMethodDirection.Payment), FinanceSettlementDocumentStatus.Approved);
+        Assert.True(approved.Succeeded, approved.Code);
+        var posted = await persistence.PostSettlementDocumentAsync(Context("tenant.finance.settlement.post", ApproverId), new FinanceSettlementActionCommand(approved.Value!.Id, approved.Value.Version, null, "asof-ap-payment-post", "asof-ap-payment-post", FinancePaymentMethodDirection.Payment));
+        Assert.True(posted.Succeeded, posted.Code);
+
+        var allocated = await persistence.CreateAllocationAsync(context, new FinanceAllocationCommand(posted.Value!.Id, recognized.Value!.Id, 40m, new DateOnly(2026, 2, 1), "asof allocation", Guid.NewGuid(), "asof-ap-allocation-create", "asof-ap-allocation-create"));
+        Assert.True(allocated.Succeeded, allocated.Code);
+
+        var beforeAllocation = await persistence.GetReconciliationAsync(context, CompanyId, new DateOnly(2026, 1, 20));
+        var beforeRow = Assert.Single(beforeAllocation, row => row.Kind == FinanceOpenItemKind.Payable);
+        Assert.Equal(100m, beforeRow.SubledgerAmount);
+        Assert.Equal(100m, beforeRow.PostedJournalAmount);
+        Assert.Equal(FinanceReconciliationStatus.Reconciled, beforeRow.Status);
+
+        var afterAllocation = await persistence.GetReconciliationAsync(context, CompanyId, new DateOnly(2026, 2, 5));
+        var afterRow = Assert.Single(afterAllocation, row => row.Kind == FinanceOpenItemKind.Payable);
+        Assert.Equal(60m, afterRow.SubledgerAmount);
+        Assert.Equal(60m, afterRow.PostedJournalAmount);
+        Assert.Equal(FinanceReconciliationStatus.Reconciled, afterRow.Status);
+
+        var reversed = await persistence.ReverseAllocationAsync(context, new FinanceAllocationReversalCommand(allocated.Value!.Id, allocated.Value.Version, "restore AP outstanding for asOf proof", Guid.NewGuid(), "asof-ap-allocation-reverse", "asof-ap-allocation-reverse"));
+        Assert.True(reversed.Succeeded, reversed.Code);
+
+        var stillBeforeReversal = await persistence.GetReconciliationAsync(context, CompanyId, new DateOnly(2026, 2, 5));
+        var stillBeforeRow = Assert.Single(stillBeforeReversal, row => row.Kind == FinanceOpenItemKind.Payable);
+        Assert.Equal(60m, stillBeforeRow.SubledgerAmount);
+        Assert.Equal(60m, stillBeforeRow.PostedJournalAmount);
+        Assert.Equal(FinanceReconciliationStatus.Reconciled, stillBeforeRow.Status);
+
+        var afterReversal = await persistence.GetReconciliationAsync(context, CompanyId, DateOnly.FromDateTime(DateTime.UtcNow));
+        var afterReversalRow = Assert.Single(afterReversal, row => row.Kind == FinanceOpenItemKind.Payable);
+        Assert.Equal(100m, afterReversalRow.SubledgerAmount);
+        Assert.Equal(100m, afterReversalRow.PostedJournalAmount);
+        Assert.Equal(FinanceReconciliationStatus.Reconciled, afterReversalRow.Status);
+    }
+
+    [Fact]
+    public async Task GetReconciliationAsync_asOf_reflects_ar_allocation_and_reversal_history_without_rewriting_the_past()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        await EnsureCreatedAsync(options);
+        var context = Context("tenant.finance.reconciliation");
+        var arControl = await CreateAccountAsync(options, context, "ASOF-AR-CONTROL");
+        var revenue = await CreateAccountAsync(options, context, "ASOF-AR-REVENUE");
+        var cashAccount = await CreateAccountAsync(options, context, "ASOF-AR-CASH");
+        await OpenFullYearAndRulesAsync(options, context, [
+            ("customer-receipt.v1", "on-account", cashAccount.Id, arControl.Id, new DateOnly(2026, 1, 1), null),
+            ("customer-receipt.v1", "allocation", cashAccount.Id, arControl.Id, new DateOnly(2026, 1, 1), null),
+        ]);
+        var itemId = Guid.NewGuid();
+        await SeedRecognizedItemAndJournalAsync(options, context, FinanceOpenItemKind.Receivable, itemId, CustomerId, arControl.Id, revenue.Id, "ASOF-AR-1");
+        var persistence = CreatePersistence(options, new RequiredApprovalPolicy(), customers: new ActiveCustomerReader());
+
+        var method = await persistence.CreatePaymentMethodAsync(context, PaymentMethodCommand("ASOF-AR-METHOD", Guid.NewGuid(), true, FinancePaymentMethodDirection.Receipt));
+        var cash = await persistence.CreateCashAccountAsync(context, CashAccountCommand("ASOF-AR-CASH", cashAccount.Id, Guid.NewGuid()));
+        Assert.True(method.Succeeded, method.Code);
+        Assert.True(cash.Succeeded, cash.Code);
+        var created = await persistence.CreateSettlementDocumentAsync(context, new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Receipt, CompanyId, null, CustomerId, cash.Value!.Id, method.Value!.Id, new DateOnly(2026, 1, 15), "SAR", 100m, null, null, null, null, null, "ASOF-AR-REC", "asof ar receipt", Guid.NewGuid(), "asof-ar-receipt-create", "asof-ar-receipt-create"));
+        Assert.True(created.Succeeded, created.Code);
+        var submitted = await persistence.TransitionSettlementDocumentAsync(context, new FinanceSettlementActionCommand(created.Value!.Id, created.Value.Version, null, "asof-ar-receipt-submit", "asof-ar-receipt-submit", FinancePaymentMethodDirection.Receipt), FinanceSettlementDocumentStatus.Submitted);
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await persistence.TransitionSettlementDocumentAsync(Context("tenant.finance.settlement.approve", ApproverId), new FinanceSettlementActionCommand(submitted.Value!.Id, submitted.Value.Version, null, "asof-ar-receipt-approve", "asof-ar-receipt-approve", FinancePaymentMethodDirection.Receipt), FinanceSettlementDocumentStatus.Approved);
+        Assert.True(approved.Succeeded, approved.Code);
+        var posted = await persistence.PostSettlementDocumentAsync(Context("tenant.finance.settlement.post", ApproverId), new FinanceSettlementActionCommand(approved.Value!.Id, approved.Value.Version, null, "asof-ar-receipt-post", "asof-ar-receipt-post", FinancePaymentMethodDirection.Receipt));
+        Assert.True(posted.Succeeded, posted.Code);
+
+        var allocated = await persistence.CreateAllocationAsync(context, new FinanceAllocationCommand(posted.Value!.Id, itemId, 40m, new DateOnly(2026, 2, 1), "asof ar allocation", Guid.NewGuid(), "asof-ar-allocation-create", "asof-ar-allocation-create"));
+        Assert.True(allocated.Succeeded, allocated.Code);
+
+        var beforeAllocation = await persistence.GetReconciliationAsync(context, CompanyId, new DateOnly(2026, 1, 20));
+        var beforeRow = Assert.Single(beforeAllocation, row => row.Kind == FinanceOpenItemKind.Receivable);
+        Assert.Equal(100m, beforeRow.SubledgerAmount);
+        Assert.Equal(100m, beforeRow.PostedJournalAmount);
+        Assert.Equal(FinanceReconciliationStatus.Reconciled, beforeRow.Status);
+
+        var afterAllocation = await persistence.GetReconciliationAsync(context, CompanyId, new DateOnly(2026, 2, 5));
+        var afterRow = Assert.Single(afterAllocation, row => row.Kind == FinanceOpenItemKind.Receivable);
+        Assert.Equal(60m, afterRow.SubledgerAmount);
+        Assert.Equal(60m, afterRow.PostedJournalAmount);
+        Assert.Equal(FinanceReconciliationStatus.Reconciled, afterRow.Status);
+
+        var reversed = await persistence.ReverseAllocationAsync(context, new FinanceAllocationReversalCommand(allocated.Value!.Id, allocated.Value.Version, "restore AR outstanding for asOf proof", Guid.NewGuid(), "asof-ar-allocation-reverse", "asof-ar-allocation-reverse"));
+        Assert.True(reversed.Succeeded, reversed.Code);
+
+        var stillBeforeReversal = await persistence.GetReconciliationAsync(context, CompanyId, new DateOnly(2026, 2, 5));
+        var stillBeforeRow = Assert.Single(stillBeforeReversal, row => row.Kind == FinanceOpenItemKind.Receivable);
+        Assert.Equal(60m, stillBeforeRow.SubledgerAmount);
+        Assert.Equal(60m, stillBeforeRow.PostedJournalAmount);
+        Assert.Equal(FinanceReconciliationStatus.Reconciled, stillBeforeRow.Status);
+
+        var afterReversal = await persistence.GetReconciliationAsync(context, CompanyId, DateOnly.FromDateTime(DateTime.UtcNow));
+        var afterReversalRow = Assert.Single(afterReversal, row => row.Kind == FinanceOpenItemKind.Receivable);
+        Assert.Equal(100m, afterReversalRow.SubledgerAmount);
+        Assert.Equal(100m, afterReversalRow.PostedJournalAmount);
+        Assert.Equal(FinanceReconciliationStatus.Reconciled, afterReversalRow.Status);
+    }
+
+    [Fact]
     public async Task Supplier_invoice_recognition_fails_closed_when_authoritative_supplier_is_missing_or_inactive()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

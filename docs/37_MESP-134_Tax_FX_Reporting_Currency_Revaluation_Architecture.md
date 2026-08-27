@@ -158,3 +158,22 @@ for GPT-5.6 Sol acceptance.
 No Jira write, Ready transition, merge, Opus review, MESP-135 activation,
 external provider, statutory submission, production cutover, or
 Wafra-specific core behavior is part of this bounded session.
+
+## HOLD 6 shared historical/effective reconciliation clarification - 27 August 2026
+
+The downstream MESP-135 Close readiness gate consumes this module's
+`ReconcileUnrealizedFxAsync` result at the requested accounting as-of date; it
+does not infer active evidence from the existence of a persisted
+`FinanceRevaluationLineEntity`. MESP-134 remains the authority for effective
+original/reversal journal chronology, exact reversal lineage, monetary inverse
+evidence, and Tenant/Company/source identity.
+
+At a period end, `Reconciled` is an active candidate, `Reversed` is valid
+historical evidence but not active coverage, and missing/broken/ambiguous
+evidence remains unresolved. This lets a correctly reversed line coexist with
+one replacement active line, permits valid reversed historical evidence for a
+current zero-effect source, and rejects extra active zero-effect evidence.
+MESP-135 applies the resulting one-active-candidate-per-non-zero-source rule
+and includes effective candidates plus unresolved evidence in its deterministic
+readiness fingerprint. No MESP-134 endpoint, entity, migration, or FX
+calculation semantics are changed by HOLD 6.

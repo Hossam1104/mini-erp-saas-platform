@@ -75,6 +75,53 @@ async function setupFinanceRoutes(page: Page): Promise<void> {
   await page.route('**/api/v1/finance/settlement/reconciliation**', (route) => route.fulfill({ json: [{ scope: 'Settlement', subledgerAmount: 0, postedJournalAmount: 0, difference: 0, status: 'Reconciled' }] }));
 }
 
+async function setupMesp135Routes(page: Page, initialPeriodState = 'Open'): Promise<void> {
+  await setupFinanceRoutes(page);
+  let periodState = initialPeriodState;
+  let closeRuns: Record<string, unknown>[] = [];
+  let closeHistory: Record<string, unknown>[] = [];
+  let yearEndRun: Record<string, unknown> | null = null;
+  const readiness = { periodId: 'period-a', fiscalYearId: 'year-a', tenantId: 'tenant-a', companyId: 'company-a', status: 'Ready', checks: [{ code: 'gl_balanced', status: 'Ready', message: 'Posted functional totals are balanced.' }], snapshotFingerprint: 'm135-close-fingerprint', evaluatedAt: '2026-08-26T00:00:00Z', periodVersion: 'AQ==' };
+
+  await page.route('**/api/v1/finance/years/year-a/periods', (route) => route.fulfill({ json: [{ id: 'period-a', fiscalYearId: 'year-a', sequence: 1, code: '2026-01', englishName: 'January', arabicName: null, startDate: '2026-01-01', endDate: '2026-01-31', state: periodState, version: periodState === 'Open' ? 'AQ==' : 'Ag==' }] }));
+  await page.route(/\/api\/v1\/finance\/periods\/period-a\/close-readiness(?:\?.*)?$/, (route) => route.fulfill({ json: readiness }));
+  await page.route(/\/api\/v1\/finance\/period-close-runs(?:\?.*)?$/, (route) => route.fulfill({ json: closeRuns }));
+  await page.route(/\/api\/v1\/finance\/periods\/period-a\/close-history(?:\?.*)?$/, (route) => route.fulfill({ json: closeHistory }));
+  await page.route(/\/api\/v1\/finance\/reconciliation\/close(?:\?.*)?$/, (route) => route.fulfill({ json: { companyId: 'company-a', periodId: 'period-a', asOfDate: '2026-01-31', overallStatus: 'Reconciled', items: [{ companyId: 'company-a', asOfDate: '2026-01-31', scope: 'GL', status: 'Reconciled', expectedAmount: 100, actualAmount: 100, difference: 0, sourceReference: null, detail: 'Balanced posted facts.', hasDurableEvidence: true }], closeHistory, yearEndRuns: yearEndRun ? [yearEndRun] : [] } }));
+  await page.route(/\/api\/v1\/finance\/year-end(?:\?.*)?$/, (route) => route.fulfill({ json: yearEndRun ? [yearEndRun] : [] }));
+  await page.route(/\/api\/v1\/finance\/periods\/period-a\/close$/, async (route) => {
+    periodState = 'Closed';
+    const run = { id: `close-${closeRuns.length + 1}`, tenantId: 'tenant-a', companyId: 'company-a', fiscalYearId: 'year-a', periodId: 'period-a', sequence: closeRuns.length + 1, status: 'Closed', readinessStatus: 'Ready', snapshotFingerprint: 'm135-close-fingerprint', checks: readiness.checks, reason: closeRuns.length === 0 ? 'MESP-135 browser close' : 'MESP-135 browser reclose', actorId: 'actor-1', sessionId: 'session-1', correlationId: 'corr-close', createdAt: '2026-08-26T00:00:00Z', reopenedAt: null, reopenedBy: null, version: 'Ag==' };
+    closeRuns = [...closeRuns, run];
+    closeHistory = [...closeHistory, { id: `history-${closeRuns.length}`, tenantId: 'tenant-a', companyId: 'company-a', fiscalYearId: 'year-a', periodId: 'period-a', action: closeRuns.length === 1 ? 'Closed' : 'Reclosed', fromState: 'Open', toState: 'Closed', closeRunId: run.id, actorId: 'actor-1', sessionId: 'session-1', correlationId: 'corr-close', reason: run.reason, occurredAt: '2026-08-26T00:00:00Z' }];
+    await route.fulfill({ json: run });
+  });
+  await page.route(/\/api\/v1\/finance\/periods\/period-a\/reopen$/, async (route) => {
+    periodState = 'Open';
+    const latest = closeRuns[closeRuns.length - 1];
+    const run = { ...latest, status: 'Reopened', reopenedAt: '2026-08-26T00:01:00Z', reopenedBy: 'actor-1', version: 'Aw==' };
+    closeRuns = closeRuns.map((item, index) => index === closeRuns.length - 1 ? run : item);
+    closeHistory = [...closeHistory, { id: `history-${closeHistory.length + 1}`, tenantId: 'tenant-a', companyId: 'company-a', fiscalYearId: 'year-a', periodId: 'period-a', action: 'Reopened', fromState: 'Closed', toState: 'Open', closeRunId: (latest?.id as string) ?? null, actorId: 'actor-1', sessionId: 'session-1', correlationId: 'corr-reopen', reason: 'MESP-135 browser reopen', occurredAt: '2026-08-26T00:01:00Z' }];
+    await route.fulfill({ json: run });
+  });
+  await page.route(/\/api\/v1\/finance\/year-end\/calculate$/, async (route) => {
+    yearEndRun = { id: 'year-end-a', tenantId: 'tenant-a', companyId: 'company-a', fiscalYearId: 'year-a', asOfDate: '2026-12-31', status: 'Calculated', snapshotFingerprint: 'm135-year-end-fingerprint', lines: [{ id: 'line-a', runId: 'year-end-a', accountId: 'account-revenue', accountCode: '4000', accountName: 'Revenue', accountNameArabic: null, accountType: 'Revenue', debit: 100, credit: 0, netBalance: 100, closingJournalLineId: null }], closingJournalId: null, reversalJournalId: null, retainedEarningsAccountId: 'account-equity', retainedEarningsAccountCode: '3900', postingRuleId: 'rule-year-end', postingRuleVersionNumber: 1, postingRuleSourceContract: 'finance-year-end.v1', postingRuleSourceEvent: 'close', reason: 'MESP-135 browser year-end', actorId: 'actor-1', sessionId: 'session-1', correlationId: 'corr-year-end', createdAt: '2026-08-26T00:00:00Z', postedAt: null, reversedAt: null, version: 'AQ==' };
+    await route.fulfill({ json: yearEndRun });
+  });
+  await page.route(/\/api\/v1\/finance\/year-end\/year-end-a\/(post|reverse)$/, async (route) => {
+    const action = route.request().url().endsWith('/reverse') ? 'Reversed' : 'Posted';
+    yearEndRun = { ...yearEndRun, status: action, closingJournalId: 'journal-year-end', reversalJournalId: action === 'Reversed' ? 'journal-year-end-reversal' : null, version: action === 'Posted' ? 'Ag==' : 'Aw==' };
+    await route.fulfill({ json: yearEndRun });
+  });
+
+  const trial = { companyId: 'company-a', asOfDate: '2026-01-31', fromDate: '2026-01-01', toDate: '2026-01-31', rows: [{ accountId: 'account-cash', accountCode: '1000', accountName: 'Cash', accountNameArabic: null, accountType: 'Asset', openingBalance: 10, periodDebit: 100, periodCredit: 20, closingBalance: 90, functionalCurrencyCode: 'SAR', reportingCurrencyCode: null, reportingOpeningBalance: null, reportingDebit: null, reportingCredit: null, reportingClosingBalance: null, reportingEvidenceStatus: 'NotCaptured' }], totalDebit: 100, totalCredit: 100, totalClosingBalance: 90, functionalCurrencyCode: 'SAR', reportingCurrencyCode: null, reportingEvidenceStatus: 'NotCaptured' };
+  await page.route(/\/api\/v1\/finance\/reports\/trial-balance(?:\?.*)?$/, (route) => route.fulfill({ json: trial }));
+  await page.route(/\/api\/v1\/finance\/reports\/general-ledger(?:\?.*)?$/, (route) => route.fulfill({ json: [{ journalId: 'journal-a', journalNumber: 'J-1', journalSequence: 1, postingDate: '2026-01-15', accountId: 'account-cash', accountCode: '1000', accountName: 'Cash', accountNameArabic: null, fiscalPeriodId: 'period-a', costCenterId: null, costCenterCode: null, sourceContract: 'manual-journal.v1', sourceEvent: 'manual', sourceEvidenceId: null, lineNumber: 1, debit: 100, credit: 0, functionalDebit: 100, functionalCredit: 0, runningBalance: 100, functionalCurrencyCode: 'SAR', transactionCurrencyCode: 'SAR', transactionAmount: 100, reportingAmount: null, reportingEvidenceStatus: 'NotCaptured', isReversal: false }] }));
+  await page.route(/\/api\/v1\/finance\/reports\/(ap|ar)-aging(?:\?.*)?$/, (route) => route.fulfill({ json: [{ openItemId: 'open-item-a', kind: route.request().url().includes('/ap-aging') ? 'Payable' : 'Receivable', supplierId: 'supplier-a', customerId: null, sourceReference: 'PI-1001', documentDate: '2026-01-01', dueDate: '2026-01-31', asOfDate: '2026-01-31', daysOverdue: 0, agingBucket: 'Current', currencyCode: 'SAR', originalAmount: 100, allocatedAmount: 20, outstandingAmount: 80, functionalCurrencyCode: 'SAR', originalFunctionalAmount: 100, outstandingFunctionalAmount: 80, status: 'Open' }] }));
+  await page.route(/\/api\/v1\/finance\/reports\/(profit-loss|balance-sheet)(?:\?.*)?$/, (route) => route.fulfill({ json: { kind: route.request().url().includes('profit-loss') ? 'ProfitAndLoss' : 'BalanceSheet', companyId: 'company-a', fromDate: '2026-01-01', toDate: '2026-01-31', rows: trial.rows.map((row) => ({ ...row, debit: row.periodDebit, credit: row.periodCredit })), totalDebit: 100, totalCredit: 100, totalClosingBalance: 90, functionalCurrencyCode: 'SAR', finding: null } }));
+  await page.route(/\/api\/v1\/finance\/reports\/(trial-balance|general-ledger|ap-aging|ar-aging)\/export(?:\?.*)?$/, (route) => route.fulfill({ status: 200, headers: { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename=finance.csv' }, body: 'Account,Name\n1000,Cash\n' }));
+}
+
 async function setupTaxFxRoutes(page: Page): Promise<{ requests: Record<string, Record<string, unknown> | undefined> }> {
   await setupFinanceRoutes(page);
   const requests: Record<string, Record<string, unknown> | undefined> = {};
@@ -243,6 +290,82 @@ test('Revaluation workspace runs the controlled draft, calculate, post, and reve
   await workspace.locator('input[name="revaluationReverseReason"]').fill('Re-run after source correction');
   await workspace.getByRole('button', { name: 'Reverse' }).click();
   await expect.poll(() => requests.revaluationReverse).toEqual({ reason: 'Re-run after source correction' });
+});
+
+test('MESP-135 close workspace evaluates, closes, reopens, and records reclose history', async ({ page }) => {
+  await setupMesp135Routes(page);
+  await page.goto('/app/finance/close');
+  const workspace = page.locator('.close-page');
+  await expect(workspace.getByRole('heading', { level: 1 })).toContainText('Close periods with evidence');
+  await expect(workspace).toContainText('Ready');
+  await workspace.locator('input.reason').fill('MESP-135 browser close');
+  await workspace.getByRole('button', { name: 'Close period' }).click();
+  await expect(workspace).toContainText('Closed');
+  await workspace.locator('input.reason').fill('MESP-135 browser reopen');
+  await workspace.getByRole('button', { name: 'Reopen period' }).click();
+  await expect(workspace).toContainText('Reopened');
+  await expect(workspace).toContainText('#1 · Reopened');
+  await workspace.getByRole('button', { name: 'Close period' }).click();
+  await expect(workspace).toContainText('#2 · Closed');
+  await expect(workspace).toContainText('MESP-135 browser reclose');
+});
+
+test('MESP-135 year-end workspace calculates, posts, and reverses the configured run', async ({ page }) => {
+  await setupMesp135Routes(page, 'Closed');
+  await page.goto('/app/finance/close');
+  const workspace = page.locator('.close-page');
+  await expect(workspace).toContainText('Year-end runs');
+  await workspace.getByRole('button', { name: 'Calculate year-end' }).click();
+  await expect(workspace).toContainText('Calculated');
+  await workspace.getByRole('button', { name: 'Post year-end' }).click();
+  await expect(workspace).toContainText('Posted');
+  await workspace.getByRole('button', { name: 'Reverse year-end' }).click();
+  await expect(workspace).toContainText('Reversed');
+  await expect(workspace).toContainText('3900');
+});
+
+test('MESP-135 reports query trial balance, ledger, statements, and authorized CSV export', async ({ page }) => {
+  await setupMesp135Routes(page);
+  let exportRequest = '';
+  await page.route(/\/api\/v1\/finance\/reports\/trial-balance\/export(?:\?.*)?$/, async (route) => { exportRequest = route.request().url(); await route.fulfill({ status: 200, headers: { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename=trial-balance.csv' }, body: 'Account,Name\n1000,Cash\n' }); });
+  await page.goto('/app/finance/reports');
+  const workspace = page.locator('.reports-page');
+  await expect(workspace.getByRole('heading', { level: 1 })).toContainText('Core reports from posted facts');
+  await expect(workspace).toContainText('Cash');
+  await workspace.getByRole('link', { name: 'CSV export' }).click();
+  await expect.poll(() => exportRequest).toContain('asOfDate=');
+  await workspace.getByRole('button', { name: 'General ledger' }).click();
+  await expect(workspace).toContainText('J-1');
+  await workspace.getByRole('button', { name: 'Profit & loss' }).click();
+  await expect(workspace).toContainText('Profit & loss');
+  await workspace.getByRole('button', { name: 'Balance sheet' }).click();
+  await expect(workspace).toContainText('Balance sheet');
+});
+
+test('MESP-135 AP and AR aging keep the requested accounting as-of date', async ({ page }) => {
+  await setupMesp135Routes(page);
+  const requested: string[] = [];
+  await page.route(/\/api\/v1\/finance\/reports\/(ap|ar)-aging(?:\?.*)?$/, async (route) => { requested.push(new URL(route.request().url()).searchParams.get('asOfDate') ?? ''); await route.fulfill({ json: [{ openItemId: 'open-item-a', sourceReference: 'PI-1001', dueDate: '2026-01-31', asOfDate: '2026-01-31', agingBucket: 'Current', currencyCode: 'SAR', originalAmount: 100, allocatedAmount: 20, outstandingAmount: 80, kind: route.request().url().includes('/ap-aging') ? 'Payable' : 'Receivable', status: 'Open' }] }); });
+  await page.goto('/app/finance/reports');
+  const workspace = page.locator('.reports-page');
+  await workspace.locator('input[type="date"]').first().fill('2026-01-31');
+  await workspace.getByRole('button', { name: 'AP aging' }).click();
+  await expect(workspace).toContainText('PI-1001');
+  await workspace.getByRole('button', { name: 'AR aging' }).click();
+  await expect(workspace).toContainText('PI-1001');
+  await expect.poll(() => requested).toEqual(['2026-01-31', '2026-01-31']);
+});
+
+test('MESP-135 close and report workspaces preserve Arabic RTL presentation', async ({ page }) => {
+  await setupMesp135Routes(page);
+  await page.goto('/app/finance/close');
+  await page.locator('.language-button').click();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('.close-page h1')).not.toHaveText('Close periods with evidence');
+  await page.goto('/app/finance/reports');
+  await page.locator('.language-button').click();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('.reports-page h1')).not.toHaveText('Core reports from posted facts');
 });
 
 test('Tax/FX workspace renders meaningful Arabic labels and RTL direction', async ({ page }) => {

@@ -23,7 +23,42 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### Current capability: MESP-135 Finance close, corrections, reconciliation and reports - 26 August 2026
+### Current capability: MESP-135 Finance close, corrections, reconciliation and reports - 27 August 2026 (Sol HOLD 6)
+
+MESP-135 is the only active Finance implementation capability under MESP-10,
+with HOLD 6 authority MESP-135 `12186` and MESP-10 `12187`. The feature branch
+is `feat/MESP-135-finance-close-reports`; Draft PR #79 remains
+Open/Draft/Unmerged for GPT-5.6 Sol acceptance.
+
+HOLD 6 makes Close readiness consume effective MESP-134 unrealized-FX
+reconciliation at the exact period-end as-of date. Valid reversed evidence is
+retained as historical but inactive; a replacement must be the sole active
+reconciled candidate for a non-zero source. Valid reversed evidence is allowed
+for a current zero-effect source, while unexpected active zero-effect,
+missing, broken, duplicate, stale, extra, cross-Company, or cross-Tenant
+evidence blocks. The deterministic readiness fingerprint includes effective
+active and unresolved evidence. No public endpoint, entity, DbContext,
+configuration, schema, migration, or `frontend/assets` file changed.
+
+The exact HOLD 6 start and remote feature head were
+`243199b22b1762f0797d19702577b874429dabaf`; the source/test commit is
+`69b20b3c0dbba2a7f3b6c5ade2a19f63ad7fb9bb`. The feature remains based on
+Finance merge-base `841a777af1622cb4de9c3708cd4a2b389b7ef9e9`; current
+`origin/main` `0d1485d4a2197f23250b1d5acc1a00ddf26dc4c9` differs only by the
+expected main-only presentation PPTX.
+
+Fast-track remains `18/26 = 69.2%`; production readiness remains approximately
+`47%` overall and `41%` Procurement/P2P. Validation is Release `0/0`, focused
+MESP-133 `22/22`, MESP-134 `27/27`, MESP-135 `31/31`, full backend
+`1,098/1,098`, SQL safety `80/80`, focused HOLD6/MESP-134 SQL `14/14`,
+REST/OpenAPI/host `55/55`, Angular `296/296`, focused/full Chromium `15/15`
+and `47/47`, both npm audits at 0 vulnerabilities, and a clear five-project
+NuGet vulnerable-package scan. The repository-owned runtime is API `5300` PID
+`38772` and frontend `4300` PID `8036`; all 11 required probes return HTTP
+200. No Jira write, Opus review, Ready transition, merge, rebase, force-push,
+or next-capability activation occurred.
+
+### Historical MESP-135 Finance close, corrections, reconciliation and reports - 26 August 2026
 
 MESP-134 is Done and squash-merged to `main` at
 `1e49814172843c2ec2279b8dcc5fc0a41e5da372` through PR #78; closure comment is
@@ -43,6 +78,21 @@ transition is permitted in this bounded session.
 Fast-track remains `18/26 = 69.2%`; production readiness remains approximately
 `47%` overall and `41%` Procurement/P2P. MESP-48 and MESP-50 remain open
 production gates.
+
+The implementation feature SHA is
+`6dca68888c4300dff2575d99b3edf919e965d783`, with additive migration
+`20260826133441_MESP135FinanceCloseReports`. It exposes 22 public Finance
+operations and lazy `/app/finance/close` and `/app/finance/reports` workspaces.
+Final evidence is Release 0 warnings/0 errors, focused MESP-135 persistence
+3/3, REST/OpenAPI/host 55/55, SQL safety 77/77, full backend 1,062/1,062 with
+0 failures and 0 skips, Angular 283/283, focused Chromium 5/5, full Chromium
+47/47, clean EF model-change detection, and both npm audits at 0
+vulnerabilities. The production bundle is 496.45 kB initial; Finance/GL,
+close, reports, and settlement lazy chunks are 34.52 kB, 16.28 kB, 16.59 kB,
+and 56.04 kB. The runtime is API 5300 PID 46612 and frontend 4300 PID 43716;
+all required probes returned HTTP 200. One Draft/Open/Unmerged PR remains for
+Sol acceptance; MESP-135 is not marked Done and no Jira, Opus, merge, or Ready
+transition occurred.
 
 ### Historical MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026
 
