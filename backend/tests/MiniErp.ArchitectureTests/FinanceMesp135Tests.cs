@@ -9,6 +9,7 @@ using MiniErp.App.Modules.Inventory;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Foundation;
+using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence;
 using MiniErp.Infrastructure.Persistence.Modules.Finance;
 using Xunit;
@@ -566,6 +567,129 @@ public sealed class FinanceMesp135Tests
     }
 
     [Fact]
+    public async Task Revaluation_readiness_is_satisfied_by_a_period_end_revaluation_effective_at_period_end()
+    {
+        await using var fixture = await SqliteFixture.CreateWithRevaluationAuthorityAsync();
+        var (january, _) = await fixture.CreateOpenJanuaryAndFebruaryPeriodsAsync();
+        var seed = await fixture.CreatePostedJournalAsync(january);
+        var debitAccountId = seed.Lines.Single(item => item.Debit > 0m).AccountId;
+        var creditAccountId = seed.Lines.Single(item => item.Credit > 0m).AccountId;
+
+        var settlementJournal = await fixture.CreateDatedJournalAsync(debitAccountId, creditAccountId, new DateOnly(2026, 1, 25));
+        await fixture.SeedForeignExposureAsync("HOLD4-1", debitAccountId, settlementJournal.Id, new DateOnly(2026, 1, 25));
+
+        var fxLoss = await fixture.CreateAccountAsync("M135-HOLD4-1-FX-LOSS", FinanceAccountType.Expense);
+        var fxGain = await fixture.CreateAccountAsync("M135-HOLD4-1-FX-GAIN", FinanceAccountType.Revenue);
+        var rule = await fixture.CreateUnrealizedFxPostingRuleAsync(fxLoss.Id, fxGain.Id);
+        var revaluationJournal = await fixture.CreateDatedJournalAsync(fxLoss.Id, fxGain.Id, new DateOnly(2026, 1, 31), 25m);
+        await fixture.SeedRevaluationAsync(new DateOnly(2026, 1, 31), rule, revaluationJournal.Id, 25m);
+
+        var readiness = await fixture.Persistence.EvaluateCloseReadinessAsync(fixture.Context("tenant.finance.close.readiness"), new FinanceCloseReadinessQuery(fixture.CompanyId, january.Id));
+        Assert.True(readiness.Succeeded, readiness.Code);
+        Assert.Equal(FinanceCloseCheckStatus.Ready, readiness.Value!.Checks.Single(item => item.Code == "revaluation_policy").Status);
+    }
+
+    [Fact]
+    public async Task Revaluation_readiness_at_period_end_is_unchanged_by_a_revaluation_reversal_posted_after_period_end()
+    {
+        await using var fixture = await SqliteFixture.CreateWithRevaluationAuthorityAsync();
+        var (january, _) = await fixture.CreateOpenJanuaryAndFebruaryPeriodsAsync();
+        var seed = await fixture.CreatePostedJournalAsync(january);
+        var debitAccountId = seed.Lines.Single(item => item.Debit > 0m).AccountId;
+        var creditAccountId = seed.Lines.Single(item => item.Credit > 0m).AccountId;
+
+        var settlementJournal = await fixture.CreateDatedJournalAsync(debitAccountId, creditAccountId, new DateOnly(2026, 1, 25));
+        await fixture.SeedForeignExposureAsync("HOLD4-2", debitAccountId, settlementJournal.Id, new DateOnly(2026, 1, 25));
+
+        var fxLoss = await fixture.CreateAccountAsync("M135-HOLD4-2-FX-LOSS", FinanceAccountType.Expense);
+        var fxGain = await fixture.CreateAccountAsync("M135-HOLD4-2-FX-GAIN", FinanceAccountType.Revenue);
+        var rule = await fixture.CreateUnrealizedFxPostingRuleAsync(fxLoss.Id, fxGain.Id);
+        var revaluationJournal = await fixture.CreateDatedJournalAsync(fxLoss.Id, fxGain.Id, new DateOnly(2026, 1, 31), 25m);
+        var reversalJournal = await fixture.ReverseJournalAsync(revaluationJournal.Id, new DateOnly(2026, 2, 10));
+        await fixture.SeedRevaluationAsync(new DateOnly(2026, 1, 31), rule, revaluationJournal.Id, 25m, reversalJournal.Id);
+
+        var readiness = await fixture.Persistence.EvaluateCloseReadinessAsync(fixture.Context("tenant.finance.close.readiness"), new FinanceCloseReadinessQuery(fixture.CompanyId, january.Id));
+        Assert.True(readiness.Succeeded, readiness.Code);
+        Assert.Equal(FinanceCloseCheckStatus.Ready, readiness.Value!.Checks.Single(item => item.Code == "revaluation_policy").Status);
+
+        var reconciliation = await fixture.Mesp134.ReconcileUnrealizedFxAsync(fixture.Context("tenant.finance.fx.reconcile"), fixture.CompanyId, new DateOnly(2026, 1, 31));
+        var reconciled = Assert.Single(reconciliation);
+        Assert.Equal(FinanceEvidenceStatus.Reconciled, reconciled.Status);
+        Assert.Equal(revaluationJournal.Id, reconciled.JournalId);
+        Assert.Null(reconciled.ReversalJournalId);
+    }
+
+    [Fact]
+    public async Task Revaluation_readiness_is_blocked_when_the_revaluation_reversal_is_effective_by_period_end()
+    {
+        await using var fixture = await SqliteFixture.CreateWithRevaluationAuthorityAsync();
+        var (january, _) = await fixture.CreateOpenJanuaryAndFebruaryPeriodsAsync();
+        var seed = await fixture.CreatePostedJournalAsync(january);
+        var debitAccountId = seed.Lines.Single(item => item.Debit > 0m).AccountId;
+        var creditAccountId = seed.Lines.Single(item => item.Credit > 0m).AccountId;
+
+        var settlementJournal = await fixture.CreateDatedJournalAsync(debitAccountId, creditAccountId, new DateOnly(2026, 1, 25));
+        await fixture.SeedForeignExposureAsync("HOLD4-3", debitAccountId, settlementJournal.Id, new DateOnly(2026, 1, 25));
+
+        var fxLoss = await fixture.CreateAccountAsync("M135-HOLD4-3-FX-LOSS", FinanceAccountType.Expense);
+        var fxGain = await fixture.CreateAccountAsync("M135-HOLD4-3-FX-GAIN", FinanceAccountType.Revenue);
+        var rule = await fixture.CreateUnrealizedFxPostingRuleAsync(fxLoss.Id, fxGain.Id);
+        var revaluationJournal = await fixture.CreateDatedJournalAsync(fxLoss.Id, fxGain.Id, new DateOnly(2026, 1, 20), 25m);
+        var reversalJournal = await fixture.ReverseJournalAsync(revaluationJournal.Id, new DateOnly(2026, 1, 28));
+        await fixture.SeedRevaluationAsync(new DateOnly(2026, 1, 31), rule, revaluationJournal.Id, 25m, reversalJournal.Id);
+
+        var readiness = await fixture.Persistence.EvaluateCloseReadinessAsync(fixture.Context("tenant.finance.close.readiness"), new FinanceCloseReadinessQuery(fixture.CompanyId, january.Id));
+        Assert.True(readiness.Succeeded, readiness.Code);
+        Assert.Equal(FinanceCloseCheckStatus.Blocked, readiness.Value!.Checks.Single(item => item.Code == "revaluation_policy").Status);
+
+        var reconciliation = await fixture.Mesp134.ReconcileUnrealizedFxAsync(fixture.Context("tenant.finance.fx.reconcile"), fixture.CompanyId, new DateOnly(2026, 1, 31));
+        var reversed = Assert.Single(reconciliation);
+        Assert.Equal(FinanceEvidenceStatus.Reversed, reversed.Status);
+        Assert.Equal(reversalJournal.Id, reversed.ReversalJournalId);
+    }
+
+    [Fact]
+    public async Task Revaluation_readiness_snapshot_at_period_end_is_stable_across_a_later_revaluation_reversal()
+    {
+        await using var fixture = await SqliteFixture.CreateWithRevaluationAuthorityAsync();
+        var (january, _) = await fixture.CreateOpenJanuaryAndFebruaryPeriodsAsync();
+        var seed = await fixture.CreatePostedJournalAsync(january);
+        var debitAccountId = seed.Lines.Single(item => item.Debit > 0m).AccountId;
+        var creditAccountId = seed.Lines.Single(item => item.Credit > 0m).AccountId;
+
+        var settlementJournal = await fixture.CreateDatedJournalAsync(debitAccountId, creditAccountId, new DateOnly(2026, 1, 25));
+        await fixture.SeedForeignExposureAsync("HOLD4-4", debitAccountId, settlementJournal.Id, new DateOnly(2026, 1, 25));
+
+        var fxLoss = await fixture.CreateAccountAsync("M135-HOLD4-4-FX-LOSS", FinanceAccountType.Expense);
+        var fxGain = await fixture.CreateAccountAsync("M135-HOLD4-4-FX-GAIN", FinanceAccountType.Revenue);
+        var rule = await fixture.CreateUnrealizedFxPostingRuleAsync(fxLoss.Id, fxGain.Id);
+        var revaluationJournal = await fixture.CreateDatedJournalAsync(fxLoss.Id, fxGain.Id, new DateOnly(2026, 1, 31), 25m);
+        await fixture.SeedRevaluationAsync(new DateOnly(2026, 1, 31), rule, revaluationJournal.Id, 25m);
+
+        var before = await fixture.Persistence.EvaluateCloseReadinessAsync(fixture.Context("tenant.finance.close.readiness"), new FinanceCloseReadinessQuery(fixture.CompanyId, january.Id));
+        Assert.True(before.Succeeded, before.Code);
+        Assert.Equal(FinanceCloseCheckStatus.Ready, before.Value!.Checks.Single(item => item.Code == "revaluation_policy").Status);
+
+        var reversalJournal = await fixture.ReverseJournalAsync(revaluationJournal.Id, new DateOnly(2026, 2, 10));
+        await using (var db = new FinanceDbContext(fixture.Options, fixture.TenantContext))
+        {
+            var line = await db.RevaluationLines.SingleAsync(item => item.CompanyId == fixture.CompanyId && item.AsOfDate == new DateOnly(2026, 1, 31));
+            line.SetReversal(reversalJournal.Id);
+            var batch = await db.RevaluationBatches.SingleAsync(item => item.Id == line.BatchId);
+            batch.SetStatus(FinanceRevaluationBatchStatus.Reversed, ActorId, DateTimeOffset.UtcNow);
+            await db.SaveChangesAsync();
+        }
+
+        var after = await fixture.Persistence.EvaluateCloseReadinessAsync(fixture.Context("tenant.finance.close.readiness"), new FinanceCloseReadinessQuery(fixture.CompanyId, january.Id));
+        Assert.True(after.Succeeded, after.Code);
+        Assert.Equal(FinanceCloseCheckStatus.Ready, after.Value!.Checks.Single(item => item.Code == "revaluation_policy").Status);
+        Assert.Equal(
+            before.Value.Checks.Select(item => (item.Code, item.Status, item.Message)),
+            after.Value.Checks.Select(item => (item.Code, item.Status, item.Message)));
+        Assert.Equal(before.Value.SnapshotFingerprint, after.Value.SnapshotFingerprint);
+    }
+
+    [Fact]
     public async Task Correction_reversal_preserves_original_posting_rule_lineage()
     {
         await using var fixture = await SqliteFixture.CreateAsync();
@@ -766,6 +890,7 @@ public sealed class FinanceMesp135Tests
         internal FinanceMesp135Persistence Persistence { get; }
         internal Guid CompanyId { get; }
         internal Guid YearId { get; private set; }
+        internal IFinanceMesp134Persistence Mesp134 { get; private set; } = new UnavailableFinanceMesp134Persistence();
         private FinanceRequestContext ContextValue { get; }
 
         internal FinanceRequestContext Context(string permission, Guid actorId = default)
@@ -790,6 +915,25 @@ public sealed class FinanceMesp135Tests
             var foundation = FoundationRequestContext.ForTenant(ActorId, Guid.NewGuid(), tenantContext, "tenant.finance.period.close");
             Assert.True(FinanceRequestContext.TryCreate(foundation, out var context));
             return new SqliteFixture(connection, options, tenantContext, context!, companies, setup, persistence, companyId);
+        }
+
+        internal static async Task<SqliteFixture> CreateWithRevaluationAuthorityAsync()
+        {
+            var connection = new SqliteConnection("Data Source=:memory:");
+            await connection.OpenAsync();
+            var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+            var tenantContext = TenantContext.ForOrdinaryMembership(new TenantId(TenantId), new MembershipReference(Guid.NewGuid()), correlationId: new CorrelationId("mesp135-test"), actorId: ActorId);
+            await using (var db = new FinanceDbContext(options, tenantContext)) await db.Database.EnsureCreatedAsync();
+            var companyId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            var companies = new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(TenantId, companyId, "MESP-135 Test Company", "SAR")]);
+            var setup = new FinancePersistence(options, companies, new UnavailableInventoryValuationPersistence(), new UnavailableMasterDataExchangeRatePersistence());
+            var authorization = new MasterDataResourceAuthorizationService(new GrantingCapabilityResolver(), new TaxResourcePolicy(), new TaxApprovalPolicy(), new TaxScopePolicy());
+            var taxService = new MasterDataTaxService(authorization, new UnavailableMasterDataTaxPersistence());
+            var mesp134 = new FinanceMesp134Persistence(options, companies, new UnavailableMasterDataCurrencyPaymentTermPersistence(), new UnavailableMasterDataExchangeRatePersistence(), taxService, new UnavailableFinanceSupplierInvoiceSourceProvider());
+            var persistence = new FinanceMesp135Persistence(options, companies, new UnavailableFinanceSettlementPersistence(), mesp134, new UnavailableMasterDataExchangeRatePersistence());
+            var foundation = FoundationRequestContext.ForTenant(ActorId, Guid.NewGuid(), tenantContext, "tenant.finance.period.close");
+            Assert.True(FinanceRequestContext.TryCreate(foundation, out var context));
+            return new SqliteFixture(connection, options, tenantContext, context!, companies, setup, persistence, companyId) { Mesp134 = mesp134 };
         }
 
         internal async Task<FinanceFiscalPeriodRecord> CreateOpenPeriodAsync()
@@ -902,7 +1046,67 @@ public sealed class FinanceMesp135Tests
 
         private FinanceAccountCommand Account(string code, FinanceAccountType type) => new(CompanyId, code, code, null, null, type, true, FinanceCurrencyBehavior.TransactionCurrencyAllowed, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), null, code + "-create", code + "-create");
 
+        internal async Task<FinancePostingRuleRecord> CreateUnrealizedFxPostingRuleAsync(Guid debitAccountId, Guid creditAccountId)
+        {
+            var key = Guid.NewGuid().ToString("N");
+            var rule = await setup.CreatePostingRuleAsync(Context("tenant.finance.postingrule.create"), new FinancePostingRuleCommand(CompanyId, "finance-fx.v1", "unrealized", debitAccountId, creditAccountId, false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), key, key));
+            Assert.True(rule.Succeeded, rule.Code);
+            return rule.Value!;
+        }
+
+        internal async Task<FinanceJournalRecord> ReverseJournalAsync(Guid journalId, DateOnly postingDate)
+        {
+            var key = Guid.NewGuid().ToString("N");
+            var reversal = await setup.ReverseJournalAsync(Context("tenant.finance.journal.reverse"), new FinanceReversalCommand(journalId, postingDate, "MESP-135 HOLD 4 reversal", Guid.NewGuid(), key, key));
+            Assert.True(reversal.Succeeded, reversal.Code);
+            return reversal.Value!;
+        }
+
+        internal async Task SeedForeignExposureAsync(string discriminator, Guid linkedAccountId, Guid postedJournalId, DateOnly documentDate)
+        {
+            var tenantId = new TenantId(TenantId);
+            await using var db = new FinanceDbContext(Options, TenantContext);
+            var paymentMethod = new FinancePaymentMethodEntity(tenantId, new FinancePaymentMethodCommand(CompanyId, $"{discriminator}-PM", $"{discriminator} payment method", null, FinancePaymentMethodDirection.Receipt, true, false, new DateOnly(2025, 1, 1), null, Guid.NewGuid(), null, $"pm-{discriminator}", $"pm-{discriminator}"));
+            db.PaymentMethods.Add(paymentMethod);
+            var cashAccount = new FinanceCashAccountEntity(tenantId, new FinanceCashAccountCommand(CompanyId, $"{discriminator}-CASH", $"{discriminator} cash account", null, FinanceCashAccountKind.Bank, "USD", linkedAccountId, null, new DateOnly(2025, 1, 1), null, Guid.NewGuid(), null, $"cash-{discriminator}", $"cash-{discriminator}"), "USD");
+            db.CashAccounts.Add(cashAccount);
+            db.MonetaryPolicies.Add(new FinanceMonetaryPolicyEntity(tenantId, new FinanceMonetaryPolicyCommand(CompanyId, null, 2, "AwayFromZero", true, new DateOnly(2025, 1, 1), null, Guid.NewGuid(), $"policy-{discriminator}", $"policy-{discriminator}"), "SAR", null, 1));
+            var settlementDocumentId = Guid.NewGuid();
+            var settlementDocument = new FinanceSettlementDocumentEntity(tenantId, new FinanceSettlementDocumentCommand(FinancePaymentMethodDirection.Receipt, CompanyId, null, null, cashAccount.Id, paymentMethod.Id, documentDate, "USD", 100m, 375m, 3.75m, null, null, null, null, null, settlementDocumentId, $"doc-{discriminator}", $"doc-{discriminator}"), "USD", "SAR", 375m, ActorId, DateTimeOffset.UtcNow);
+            settlementDocument.SetPostedJournal(postedJournalId);
+            settlementDocument.SetStatus(FinanceSettlementDocumentStatus.Posted, ActorId, DateTimeOffset.UtcNow);
+            db.SettlementDocuments.Add(settlementDocument);
+            await db.SaveChangesAsync();
+        }
+
+        internal async Task SeedRevaluationAsync(DateOnly asOfDate, FinancePostingRuleRecord rule, Guid revaluationJournalId, decimal difference, Guid? reversalJournalId = null)
+        {
+            var tenantId = new TenantId(TenantId);
+            var key = Guid.NewGuid().ToString("N");
+            await using var db = new FinanceDbContext(Options, TenantContext);
+            var batch = new FinanceRevaluationBatchEntity(tenantId, new FinanceRevaluationBatchCommand(CompanyId, asOfDate, "open-items", Guid.NewGuid(), key, key), ActorId, DateTimeOffset.UtcNow);
+            batch.SetStatus(FinanceRevaluationBatchStatus.Posted, ActorId, DateTimeOffset.UtcNow);
+            var evidence = new FinanceExchangeRateEvidence(Guid.NewGuid(), Guid.NewGuid(), 1, "USD", "SAR", asOfDate, 3.85m, 6, "Manual", null, $"USD->SAR;v1@{asOfDate:yyyy-MM-dd}", new DateOnly(2026, 1, 1), null);
+            var line = new FinanceRevaluationLineEntity(tenantId, Guid.NewGuid(), batch, Guid.NewGuid(), "settlement", "USD", 100m, 375m, 375m + difference, difference, FinanceFxDirection.Loss, evidence);
+            line.SetPostingRule(rule.Id, rule.VersionNumber);
+            line.SetJournal(revaluationJournalId);
+            if (reversalJournalId is { } reversalId)
+            {
+                line.SetReversal(reversalId);
+                batch.SetStatus(FinanceRevaluationBatchStatus.Reversed, ActorId, DateTimeOffset.UtcNow);
+            }
+
+            db.RevaluationBatches.Add(batch);
+            db.RevaluationLines.Add(line);
+            await db.SaveChangesAsync();
+        }
+
         public async ValueTask DisposeAsync() => await connection.DisposeAsync();
+    }
+
+    private sealed class GrantingCapabilityResolver : IMasterDataCapabilityResolver
+    {
+        public IReadOnlySet<MasterDataCapability> Resolve(MasterDataRequestContext context) => Enum.GetValues<MasterDataCapability>().ToHashSet();
     }
 }
 
