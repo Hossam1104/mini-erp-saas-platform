@@ -41,7 +41,7 @@ velocity, or forecast:
 * MESP-139 remains inactive. No next capability may be activated before MESP-135 verified merge/closure and Sol dependency reconciliation.
 * MESP-48 and MESP-50 remain open production gates.
 * The project presentation commit on main is legitimate and must remain main-only; it must not be copied into the MESP-135 feature branch.
-* Historical/session-scoped â€œno merge / stop for Solâ€ wording in `TASK.md`, `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and the current PR #79 implementation handoff was correct before final Sol acceptance. Do not rewrite the accepted feature branch to change those handoffs before merge. For the guarded exact-head PR #79 merge only, final Sol PASS `12192` / `12193` and this current root execution overlay are the superseding execution authority.
+* Historical/session-scoped "no merge / stop for Sol" wording in `TASK.md`, `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and the current PR #79 implementation handoff was correct before final Sol acceptance. Do not rewrite the accepted feature branch to change those handoffs before merge. For the guarded exact-head PR #79 merge only, final Sol PASS `12192` / `12193` and this current root execution overlay are the superseding execution authority.
 * This governance synchronization is not a new MESP-135 HOLD and does not reopen Finance accounting acceptance.
 
 ## Permanent Architecture Rules (ADR-019 / Tenant & Workspace Isolation)
