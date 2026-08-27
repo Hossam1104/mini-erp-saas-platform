@@ -26,17 +26,23 @@ velocity, or forecast:
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 26 August 2026 (MESP-134 active)
+## Current execution overlay - 28 August 2026 (MESP-135 Sol PASS / merge-authorized)
 
-MESP-133 is Done and squash-merged into `main` at
-`3c616dd85b9cebb53990934321f1ae7d0d5410c9` from accepted feature head
-`6908c003a32be8a3a31782d855b8358f2a9505f5`. Sol closure is `12037`, Finance
-reconciliation is `12038`, and MESP-134 activation is `12039`. MESP-134 is the
-only active implementation capability under MESP-10; MESP-135 remains inactive.
-Accepted fast-track is `17/26 = 65.4%`; production readiness remains roughly
-`47%` overall and `41%` Procurement/P2P. The bounded MESP-134 session must use
-one Draft/Open/Unmerged PR, write no Jira, invoke no Opus review, make no Ready
-transition, and must stop for Sol acceptance.
+* MESP-132 is Done and merged.
+* MESP-133 is Done and merged.
+* MESP-134 is Done and squash-merged at `1e49814172843c2ec2279b8dcc5fc0a41e5da372`; post-MESP-134 governance/Finance base is `841a777af1622cb4de9c3708cd4a2b389b7ef9e9`.
+* MESP-135 is the single current active Finance capability under MESP-10 and remains In Progress.
+* MESP-135 has GPT-5.6 Sol FINAL PASS at accepted feature head `dbc239d6bd1ef948bb8505d4360208f4a3470dda`.
+* Final Sol authority is MESP-135 comment `12192` and MESP-10 reconciliation `12193`.
+* PR #79 is merge-authorized only through a guarded exact-head normal GitHub squash merge after live preconditions are reverified.
+* MESP-135 is NOT Done until the merge and post-merge gate are independently verified.
+* Fast-track remains `18/26 = 69.2%` before verified merge. Do not pre-count `19/26`.
+* Production readiness remains separate from fast-track capability completion.
+* MESP-139 remains inactive. No next capability may be activated before MESP-135 verified merge/closure and Sol dependency reconciliation.
+* MESP-48 and MESP-50 remain open production gates.
+* The project presentation commit on main is legitimate and must remain main-only; it must not be copied into the MESP-135 feature branch.
+* Historical/session-scoped â€œno merge / stop for Solâ€ wording in `TASK.md`, `.ai/CURRENT_STATE.md`, `docs/staticts.md`, and the current PR #79 implementation handoff was correct before final Sol acceptance. Do not rewrite the accepted feature branch to change those handoffs before merge. For the guarded exact-head PR #79 merge only, final Sol PASS `12192` / `12193` and this current root execution overlay are the superseding execution authority.
+* This governance synchronization is not a new MESP-135 HOLD and does not reopen Finance accounting acceptance.
 
 ## Permanent Architecture Rules (ADR-019 / Tenant & Workspace Isolation)
 
