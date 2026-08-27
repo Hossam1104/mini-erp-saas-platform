@@ -1,12 +1,15 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
 <!-- MESP-135-JIRA-SYNC-START -->
-## Jira/documentation synchronization - 26 August 2026 (MESP-135 active)
+## Jira/documentation synchronization - 27 August 2026 (MESP-135 active, Sol HOLD 4)
 
 - MESP-134 is Done and squash-merged to `main` through PR #78 at
   `1e49814172843c2ec2279b8dcc5fc0a41e5da372`; closure comment `12122`.
 - MESP-135 is In Progress/activated under MESP-10; activation comment is
   `12123` and Finance reconciliation is `12124`.
+- Sol acceptance trail: HOLD 1 `12130`, HOLD 1 supplemental `12132`, HOLD 2
+  `12135`, HOLD 3 `12140`, HOLD 4 `12174`, and MESP-10 HOLD 4 reconciliation
+  `12175`.
 - MESP-135 is the only active Finance implementation capability. No Jira
   writes were performed by this session; the supplied Jira evidence is recorded
   for traceability only.
@@ -14,9 +17,48 @@
   MESP-139 remains inactive; MESP-48 and MESP-50 remain open production gates.
 <!-- MESP-135-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-27 02:40 +03:00
+**Last Updated:** 2026-08-27 16:20 +03:00
 
-## Current authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 3 remediation)
+## Current authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 4 final remediation)
+
+| Current repository control | Verified position |
+|---|---|
+| Starting feature head | `a76481ab423ef9ffb102af352050974491d6f2b9` |
+| Reconciled base | `841a777af1622cb4de9c3708cd4a2b389b7ef9e9` |
+| Implementation head | `502490c25cc28beafef1a0b047a5fff7c7221a9c` (`fix(MESP-135): bind revaluation readiness to historical as-of effectiveness`); final branch tip follows with documentation-only synchronization |
+| Current capability | MESP-135 Finance close, corrections, reconciliation and core reports; In Progress under MESP-10; HOLD 4 bounded remediation complete on the same branch/PR |
+| Branch / PR | `feat/MESP-135-finance-close-reports`; Draft PR #79 remains Open/Draft/Unmerged for Sol re-review |
+| HOLD 4 closure | The `revaluation_policy` close-readiness gate no longer reads current `FinanceRevaluationBatchEntity.Status`. It now reuses the MESP-134 authority already computed at the same AsOfDate — `ReconcileUnrealizedFxAsync(context, companyId, period.EndDate, ct)` — and requires a period-end revaluation line reported `FinanceEvidenceStatus.Reconciled` at that date, so effectiveness follows durable original/reversal journal chronology and a later reversal cannot rewrite a closed period. |
+| Fail-closed behaviour | Reversal effective on/before period end reports `Reversed` and blocks; missing or broken lineage reports `PendingMapping` and blocks; `unrealized_fx_reconciliation` and `revaluation_policy` read one result at one AsOfDate and cannot disagree; no second revaluation engine was introduced |
+| Regressions added | `Revaluation_readiness_is_satisfied_by_a_period_end_revaluation_effective_at_period_end`; `Revaluation_readiness_at_period_end_is_unchanged_by_a_revaluation_reversal_posted_after_period_end`; `Revaluation_readiness_is_blocked_when_the_revaluation_reversal_is_effective_by_period_end`; `Revaluation_readiness_snapshot_at_period_end_is_stable_across_a_later_revaluation_reversal` — all against real production persistence and genuine `ReverseJournalAsync` reversals |
+| Validation | Release 0 warnings/0 errors; focused MESP-133 settlement `22/22`, MESP-134 `27/27`, MESP-135 `20/20`; full backend `1,087/1,087` passed, 0 failed, 0 skipped (1,083 baseline + exactly 4 new); complete SQL safety `80/80` including `Close04`, `Year03`, and `Corr03`; REST/OpenAPI/host `55/55` |
+| REST/OpenAPI | Public operation catalogue unchanged at `383` public and 2 internal operations; the generated document exposes 382 `operationId` values, differing only by `platform.openapi`, the document endpoint itself, which is catalogued but is not a documented path |
+| Angular / browser | Angular `296/296` across 41 specs; focused Finance Chromium `15/15`; full Chromium `47/47` |
+| Production bundle / security | Initial `496.45 kB`; Finance/GL `34.52 kB`, close `16.28 kB`, reports `17.02 kB`, tax-fx `40.38 kB`, settlements `56.04 kB` — all at the accepted baseline; both npm audits 0 vulnerabilities; NuGet vulnerable-package scan clear across all five projects |
+| Runtime | Backend `http://localhost:5300` PID `32132`; frontend `http://localhost:4300` PID `37940`; all 11 required route probes HTTP 200; repository-owned processes remain alive; `LEFT RUNNING = YES` |
+| Governance | MESP-135 remains In Progress; MESP-139 inactive; fast-track `18/26 = 69.2%`; production readiness unchanged; no Jira writes, Opus review, Ready transition, merge, rebase, force-push, or second PR |
+| Scope / persistence | No entity, DbContext, configuration, migration, endpoint, or `frontend/assets` file changed; no migration needed and no existing migration edited; tracked Markdown count `70`; `docs/statistics.md` not created |
+
+The exact implementation and final documentation synchronization heads are
+recorded in the commit/push handoff for this session. STOP for independent
+GPT-5.6 Sol HOLD 4 acceptance; do not merge or mark PR #79 Ready.
+
+Runtime probe detail: `5300/health` 200; `5300/openapi/v1.json` 200;
+`4300/` 200; `4300/main.js` 200; `4300/app/finance` 200;
+`4300/app/finance/ap` 200; `4300/app/finance/ar` 200;
+`4300/app/finance/settlements` 200; `4300/app/finance/tax-fx` 200;
+`4300/app/finance/close` 200; `4300/app/finance/reports` 200.
+
+## Progress history addendum - 27 August 2026
+
+HOLD 4 is a bounded correctness remediation inside the already-counted
+MESP-135 capability. It adds no new capability, no new public operation, and
+no schema change, so accepted fast-track completion remains `18/26 = 69.2%`
+and production readiness remains approximately `47%` overall and `41%`
+Procurement/P2P. The only movement is backend test depth, from `1,083` to
+`1,087` executed cases.
+
+## Historical authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 3 remediation)
 
 | Current repository control | Verified position |
 |---|---|
@@ -46,7 +88,7 @@ Runtime probe detail: `5300/health` 200; `5300/openapi/v1.json` 200;
 `4300/app/finance/settlements` 200; `4300/app/finance/tax-fx` 200;
 `4300/app/finance/close` 200; `4300/app/finance/reports` 200.
 
-## Current authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 2 remediation)
+## Historical authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 2 remediation)
 
 | Current repository control | Verified position |
 |---|---|

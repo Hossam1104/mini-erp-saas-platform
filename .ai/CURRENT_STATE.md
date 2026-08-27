@@ -1,6 +1,109 @@
 # Current State
 
-## MESP-135 Sol HOLD 3 bounded remediation - 27 August 2026
+## MESP-135 Sol HOLD 4 final bounded remediation - 27 August 2026
+
+MESP-135 remains the only active Finance implementation capability under
+MESP-10, In Progress/activated, on branch
+`feat/MESP-135-finance-close-reports`, with Draft PR #79 still
+Open/Draft/Unmerged. GPT-5.6 Sol independently accepted every HOLD 3 fix
+except one remaining historical-as-of defect in the period-end revaluation
+readiness gate; this bounded session closes exactly that defect and nothing
+else. Governance references are MESP-135 activation `12123`, HOLD 1 `12130`,
+HOLD 1 supplemental `12132`, HOLD 2 `12135`, HOLD 3 `12140`, HOLD 4 `12174`,
+and MESP-10 HOLD 4 reconciliation `12175`.
+
+The exact pre-remediation feature and origin head was
+`a76481ab423ef9ffb102af352050974491d6f2b9`; the reconciled base `main` is
+`841a777af1622cb4de9c3708cd4a2b389b7ef9e9`. The branch did not move between
+preflight and push, so no other local session was overwritten; no rebase or
+force-push occurred. The focused source/test remediation commit is
+`502490c25cc28beafef1a0b047a5fff7c7221a9c`, followed by this
+documentation-only synchronization commit on the same branch.
+
+The defect: `FinanceMesp135Persistence.EvaluateReadinessAsync` decided the
+`revaluation_policy` close check by reading
+`FinanceRevaluationBatchEntity.Status == Posted`, which is the batch's
+*current* lifecycle state. MESP-134 legitimately moves a previously Posted
+batch to `Reversed` after an exact reversal, so a later reversal retroactively
+rewrote a historical close evaluation from `Ready` to `Blocked`.
+
+The fix binds the gate to durable journal chronology by reusing the MESP-134
+reconciliation authority that `EvaluateReadinessAsync` already computes at the
+identical AsOfDate - `ReconcileUnrealizedFxAsync(context, companyId,
+period.EndDate, cancellationToken)`. The check now requires a revaluation line
+whose `AsOfDate` equals the period end and whose evidence is
+`FinanceEvidenceStatus.Reconciled` at that date, meaning the original journal
+is effective with `PostingDate <= period.EndDate`, its monetary evidence is
+valid, and it is not reversed on or before the period end. A reversal posted
+after the period end leaves the original effective and the gate satisfied; a
+reversal effective on or before the period end reports `Reversed` and blocks;
+missing or broken lineage reports `PendingMapping` so the gate fails closed
+without fabricating accounting truth. Because `unrealized_fx_reconciliation`
+and `revaluation_policy` now read one result at one AsOfDate they cannot
+disagree, and no second revaluation engine was introduced.
+`FinanceRevaluationLineEntity` sets `AsOfDate = batch.AsOfDate` at
+construction, so line-level scoping preserves the intended
+`batch.AsOfDate == period.EndDate` requirement exactly.
+
+Four production-persistence regressions were added to `FinanceMesp135Tests`,
+seeded against real posted journals and genuine
+`FinancePersistence.ReverseJournalAsync` reversals rather than spies:
+`Revaluation_readiness_is_satisfied_by_a_period_end_revaluation_effective_at_period_end`;
+`Revaluation_readiness_at_period_end_is_unchanged_by_a_revaluation_reversal_posted_after_period_end`
+(which also asserts `ReconcileUnrealizedFxAsync(..., 2026-01-31)` returns the
+original as `Reconciled` with `ReversalJournalId == null`);
+`Revaluation_readiness_is_blocked_when_the_revaluation_reversal_is_effective_by_period_end`
+(original posted 2026-01-20, real reversal posted 2026-01-28, asserting
+`Blocked` and `FinanceEvidenceStatus.Reversed` from actual journal dates);
+and
+`Revaluation_readiness_snapshot_at_period_end_is_stable_across_a_later_revaluation_reversal`
+(identical per-check `(Code, Status, Message)` and identical
+`SnapshotFingerprint` across a 2026-02-10 reversal). Regressions 2 and 4 fail
+against the previous implementation.
+
+Validation is complete for this bounded source state: Release backend build 0
+warnings/0 errors; focused MESP-133 settlement `22/22`, MESP-134 `27/27`, and
+MESP-135 `20/20`; full disposable-LocalDB backend runner
+**1,087/1,087 passed, 0 failed, 0 skipped** (the accepted 1,083 baseline plus
+exactly the 4 new regressions, disposable database
+`MiniErpFoundation_20260827152800_95c5ea1e`, runtime connection string never
+reassigned); complete SQL safety catalogue `80/80` including
+`Close04_Concurrent_reopen_and_post_preserve_one_coherent_period_state`,
+`Year03_Concurrent_year_end_post_and_late_journal_cannot_commit_stale_year_end`,
+and `Corr03_Concurrent_correction_and_period_close_preserve_close_snapshot`;
+REST/OpenAPI/host-security `55/55`; Angular `296/296` across 41 specs; focused
+Finance Chromium `15/15`; full Chromium `47/47`; both npm audits 0
+vulnerabilities; NuGet vulnerable-package scan clear across all five projects.
+Production Angular initial bundle is 496.45 kB with Finance/GL 34.52 kB, close
+16.28 kB, reports 17.02 kB, tax-fx 40.38 kB, and settlements 56.04 kB - all
+exactly at the accepted baseline.
+
+The public REST operation catalogue is unchanged at **383 public operations**
+and 2 internal operations. The generated OpenAPI document contains 382
+`operationId` values; the single difference is `platform.openapi`, the
+document endpoint itself, which is catalogued but is not a documented path. A
+set difference in both directions confirms no other divergence.
+
+The required runtime was restarted via
+`Start-MiniErpDevelopment.ps1 -Restart` and remains running: backend
+`http://localhost:5300` PID `32132`, frontend `http://localhost:4300` PID
+`37940`. `/health`, `/openapi/v1.json`, `/`, `/main.js`, `/app/finance`,
+`/app/finance/ap`, `/app/finance/ar`, `/app/finance/settlements`,
+`/app/finance/tax-fx`, `/app/finance/close`, and `/app/finance/reports` each
+returned HTTP 200. Both are repository-owned, alive, and the web shell is
+normal/non-degraded. `LEFT RUNNING = YES`.
+
+No entity, DbContext, configuration, migration, endpoint, public operation, or
+`frontend/assets` file changed; no migration was needed and no existing
+migration was edited. Tracked Markdown count is **70** and
+`docs/statistics.md` was not created. No Jira write, Opus review, Ready
+transition, merge, rebase, force-push, or second PR occurred. MESP-139 remains
+inactive, accepted fast-track remains `18/26 = 69.2%`, and production
+readiness is unchanged at approximately `47%` overall and `41%`
+Procurement/P2P. STOP for independent GPT-5.6 Sol HOLD 4 re-review of the
+exact final Draft PR #79 head.
+
+## Historical MESP-135 Sol HOLD 3 bounded remediation - 27 August 2026 (accepted by Sol except the revaluation as-of gate)
 
 MESP-135 remains the only active Finance implementation capability under
 MESP-10, In Progress/activated, on branch

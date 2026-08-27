@@ -88,6 +88,19 @@ evidence, amount mismatch, invalid period assignment, or required unposted
 revaluation blocks close. A later readiness evaluation creates new evidence and
 never rewrites the original snapshot.
 
+`revaluation_policy` is decided by historical effectiveness at the requested
+as-of date, never by a revaluation batch's current lifecycle status. It reuses
+the MESP-134 reconciliation authority evaluated at the same period end date, so
+the gate is satisfied only when a period-end revaluation line reports
+reconciled evidence there: the original revaluation journal is effective with a
+posting date on or before the period end, its monetary evidence is valid, and
+it is not reversed on or before the period end. A reversal recorded after the
+period end therefore cannot rewrite an already-evaluated historical close,
+while a reversal effective on or before the period end, or missing or broken
+reversal lineage, keeps the gate blocked. Because the close reconciliation and
+the policy gate read one reconciliation result at one as-of date, they cannot
+report contradictory unrealized-FX conclusions.
+
 Close requires an explicit reason, exact expected period version, idempotency
 key, mandatory antiforgery, protected audit, and Tenant/Company authorization.
 Reopen requires the same controls, changes only the current lifecycle, marks
