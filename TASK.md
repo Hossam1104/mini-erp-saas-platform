@@ -49,10 +49,9 @@ acceptance, verified merge, and Jira closure. Production readiness remains
 separate and unchanged at approximately **47% overall** and **41%
 Procurement/P2P**. MESP-48 and MESP-50 remain open production gates.
 
-Exactly one Draft PR is to be created for this branch and then left
-Open/Draft/Unmerged for independent GPT-5.6 Sol acceptance. Do not mark Ready,
-merge, rebase, force-push, write Jira, invoke Opus, activate a later
-capability, or count MESP-136 as complete before that acceptance.
+Draft PR #80 is Open/Draft/Unmerged for independent GPT-5.6 Sol acceptance.
+Do not mark Ready, merge, rebase, force-push, write Jira, invoke Opus, activate
+a later capability, or count MESP-136 as complete before that acceptance.
 
 ## Historical MESP-135 Sol HOLD 6 final bounded remediation and handoff
 

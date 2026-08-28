@@ -42,9 +42,9 @@ Fast-track remains **19/26 = 73.1%** until Sol acceptance, verified merge, and
 Jira closure. Production readiness remains separate and unchanged at
 approximately **47% overall** and **41% Procurement/P2P**. MESP-48 and
 MESP-50 remain open production gates. MESP-137/138/139 remain inactive.
-No Jira writes, Opus review, Ready transition, merge, rebase, or force-push is
-permitted; stop after exactly one Draft PR for independent GPT-5.6 Sol
-acceptance.
+Draft PR #80 is Open/Draft/Unmerged. No Jira writes, Opus review, Ready
+transition, merge, rebase, or force-push is permitted; stop for independent
+GPT-5.6 Sol acceptance.
 
 ## Historical MESP-135 Sol HOLD 6 final bounded remediation - 27 August 2026
 

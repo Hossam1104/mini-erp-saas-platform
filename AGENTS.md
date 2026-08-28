@@ -35,7 +35,7 @@ velocity, or forecast:
 * MESP-137, MESP-138, and MESP-139 remain To Do/inactive. No later Sales capability may be activated or implemented by this session. MESP-48 and MESP-50 remain open production gates.
 * Fast-track capability completion remains `19/26 = 73.1%` until Sol acceptance, verified merge, and Jira closure. Production readiness remains separate and unchanged at approximately `47%` overall and `41%` Procurement/P2P.
 * No Wafra-specific workflow, schema, API, permission, pricing, credit, approval, accounting, or lifecycle behavior was added. The project presentation remains main-only and `frontend/assets` remains untouched.
-* Exactly one Draft PR is required for MESP-136. Sol acceptance is required before any Ready transition or merge. No Jira writes, Opus review, merge, rebase, or force-push is permitted in this handoff.
+* Draft PR #80 is Open/Draft/Unmerged for MESP-136. Sol acceptance is required before any Ready transition or merge. No Jira writes, Opus review, merge, rebase, or force-push is permitted in this handoff.
 
 ## Permanent Architecture Rules (ADR-019 / Tenant & Workspace Isolation)
 
