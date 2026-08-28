@@ -7,6 +7,7 @@ using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 using MiniErp.Infrastructure.Persistence.Modules.Finance;
+using MiniErp.Infrastructure.Persistence.Modules.Sales;
 
 namespace MiniErp.Infrastructure.Persistence;
 
@@ -245,6 +246,24 @@ internal sealed class TenantOwnershipVerifierRegistry
             FinanceTenantOwnershipVerifier.For<FinancePeriodHistoryEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceYearEndRunEntity>(),
             FinanceTenantOwnershipVerifier.For<FinanceYearEndLineEntity>()
+        ]);
+    }
+
+    internal static TenantOwnershipVerifierRegistry CreateSales()
+    {
+        return new TenantOwnershipVerifierRegistry(
+        [
+            new TenantOwnershipVerifierRegistration(
+                typeof(TenantOwnedRecord),
+                TenantOwnershipStoreVerifier.ReadStoredTenantId,
+                TenantOwnershipStoreVerifier.ReadStoredTenantIdAsync),
+            SalesTenantOwnershipVerifier.For<SalesQuotationEntity>(),
+            SalesTenantOwnershipVerifier.For<SalesQuotationRevisionEntity>(),
+            SalesTenantOwnershipVerifier.For<SalesOrderEntity>(),
+            SalesTenantOwnershipVerifier.For<SalesHistoryEntity>(),
+            SalesTenantOwnershipVerifier.For<SalesAuditEntity>(),
+            SalesTenantOwnershipVerifier.For<SalesIdempotencyEntity>(),
+            SalesTenantOwnershipVerifier.For<SalesCreditEntity>()
         ]);
     }
 

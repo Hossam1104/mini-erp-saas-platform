@@ -157,6 +157,25 @@ public static class MasterDataTaxValuePolicy
         return normalized;
     }
 
+    public static decimal CalculateTaxAmount(
+        decimal taxableBase,
+        decimal ratePercentage,
+        int roundingScale,
+        TaxRoundingMode roundingMode)
+    {
+        if (taxableBase < 0m || ratePercentage is < 0m or > 100m || roundingScale is < 0 or > 6 || !Enum.IsDefined(roundingMode))
+        {
+            throw new ArgumentException("The Tax calculation values are invalid.");
+        }
+
+        return decimal.Round(
+            taxableBase * ratePercentage / 100m,
+            roundingScale,
+            roundingMode == TaxRoundingMode.ToEven
+                ? MidpointRounding.ToEven
+                : MidpointRounding.AwayFromZero);
+    }
+
     public static string NameKey(LocalizedName name)
     {
         ArgumentNullException.ThrowIfNull(name);

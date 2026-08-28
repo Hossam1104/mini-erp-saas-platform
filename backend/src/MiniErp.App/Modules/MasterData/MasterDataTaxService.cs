@@ -206,12 +206,11 @@ public sealed class MasterDataTaxService
 
             var currencyCode = MasterDataTaxValuePolicy.NormalizeCurrencyCode(request.CurrencyCode);
             var sourceLineage = MasterDataTaxValuePolicy.NormalizeLineage(request.SourceLineage);
-            var taxAmount = decimal.Round(
-                request.TaxableBase * version.RatePercentage / 100m,
+            var taxAmount = MasterDataTaxValuePolicy.CalculateTaxAmount(
+                request.TaxableBase,
+                version.RatePercentage,
                 request.RoundingScale,
-                request.RoundingMode == TaxRoundingMode.ToEven
-                    ? MidpointRounding.ToEven
-                    : MidpointRounding.AwayFromZero);
+                request.RoundingMode);
             var snapshot = new ReferenceSnapshot(
                 MasterDataResourceKind.Tax,
                 record.Id,

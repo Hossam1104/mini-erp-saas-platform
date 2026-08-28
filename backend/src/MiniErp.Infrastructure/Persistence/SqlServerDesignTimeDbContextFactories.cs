@@ -6,6 +6,7 @@ using MiniErp.Infrastructure.Persistence.Modules.MasterData;
 using MiniErp.Infrastructure.Persistence.Modules.Procurement;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 using MiniErp.Infrastructure.Persistence.Modules.Finance;
+using MiniErp.Infrastructure.Persistence.Modules.Sales;
 
 namespace MiniErp.Infrastructure.Persistence;
 
@@ -102,6 +103,17 @@ public sealed class FinanceDbContextFactory
             SqlServerMigrationConfiguration.Configure(
                 SqlServerDesignTimeDbContextConfiguration.RequireConnectionString(),
                 SqlServerMigrationConfiguration.FinanceHistoryTable),
+            SqlServerDesignTimeDbContextConfiguration.CreateTenantContext());
+}
+
+/// <summary>EF Core design-time factory for the Sales context.</summary>
+public sealed class SalesDbContextFactory : IDesignTimeDbContextFactory<SalesDbContext>
+{
+    SalesDbContext IDesignTimeDbContextFactory<SalesDbContext>.CreateDbContext(string[] args) =>
+        new(
+            SqlServerMigrationConfiguration.Configure(
+                SqlServerDesignTimeDbContextConfiguration.RequireConnectionString(),
+                SqlServerMigrationConfiguration.SalesHistoryTable),
             SqlServerDesignTimeDbContextConfiguration.CreateTenantContext());
 }
 
