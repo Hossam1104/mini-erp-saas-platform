@@ -257,7 +257,13 @@ export interface SalesCreditResponse {
   documentId: string;
   customerId: string;
   companyId: string;
-  currencyCode: string;
+  /** Finance-authoritative currency used for exposure, commitment, and limit evaluation. */
+  currencyCode: string | null;
+  transactionCurrencyCode?: string | null;
+  transactionAmount?: number | null;
+  convertedOrderCommitment?: number | null;
+  exchangeRateEvidence?: SalesExchangeRateEvidence | null;
+  orderRevisionNumber?: number | null;
   openReceivables: number | null;
   overdueReceivables: number | null;
   netReceivableExposure: number | null;

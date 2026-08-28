@@ -1,5 +1,51 @@
 # Current State
 
+## MESP-136 active - 29 August 2026 - Sol HOLD 3 currency-integrity remediation
+
+MESP-136 remains the single active implementation capability under Epic
+MESP-9 - B2B Sales and Order-to-Cash. Both are In Progress/activated under
+Sol evidence MESP-136 comment `12234` and MESP-9 reconciliation `12235`.
+HOLD 3 authority is MESP-136 comment `12248` and MESP-9 reconciliation
+`12249`.
+
+The bounded remediation is on `feat/MESP-136-b2b-quote-order-credit`, from
+exact Sol-reviewed starting head `29bd9bc1b65ef3b451e282091e25aa041796d9d3`
+and exact main baseline `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`; the final
+documentation/tracker handoff SHA follows after the final push.
+
+HOLD 3 makes the Finance exposure `CurrencyCode` the single credit evaluation
+currency. Same-currency orders use the raw total with no fabricated FX;
+foreign orders use immutable validated Sales transaction-to-functional FX
+evidence and 8-decimal ToEven rounding. Evaluation-currency limit lookup,
+durable evaluation/transaction/FX/converted/revision evidence, currency-aware
+override reuse, and explicit Unknown fail-closed handling are covered through
+the real `SalesService` path. The additive schema change is Sales-only; no
+Finance schema, external provider, or later MESP capability was added.
+
+Validation is green: Release `0 warnings / 0 errors`; focused Sales `26/26`;
+full disposable-LocalDB backend `1,124/1,124` with 0 failures and 0 skips;
+SQL safety `80/80`; REST/OpenAPI/host/security `55/55`; generated OpenAPI
+`410` unique operationIds; catalog `411` public / `2` internal; Angular
+`305/305` across 43 spec files; focused Sales Chromium `2/2`; full Chromium
+`49/49`; EF pending-model check clean; both npm audits `0 vulnerabilities`;
+NuGet vulnerable-package scan clear; and `git diff --check` clean. Production
+initial bundle is `510.08 kB` (`10.08 kB` over the 500 kB budget); Sales lazy
+chunk is `72.72 kB`; the warning remains visible and the budget was not raised.
+
+The canonical launcher left the repository-owned runtime running with
+loopback Development auth bypass: API PID `7608` on `http://localhost:5300`
+and Angular PID `10148` on `http://localhost:4300`. It uses isolated
+`.runtime/hold3-runtime-20260829` to create the current Development schema;
+the persistent MESP store was untouched. Authenticated backend and frontend
+health/OpenAPI/Finance/Sales/order-edit probes all returned HTTP 200;
+`LEFT RUNNING = YES`.
+
+Fast-track remains `19/26 = 73.1%` and production readiness remains
+approximately `47%` overall / `41%` Procurement/P2P. MESP-48 and MESP-50 are
+open; MESP-137/138/139 remain inactive. PR #80 remains Open/Draft/Unmerged.
+No Jira writes, Opus review, Ready transition, merge, rebase, or force-push is
+permitted. Stop for third independent GPT-5.6 Sol acceptance.
+
 ## MESP-136 active - 28 August 2026 - Sol HOLD 2 remediation
 
 MESP-136 is the single active implementation capability under Epic MESP-9 -

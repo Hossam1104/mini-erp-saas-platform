@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -622,6 +623,11 @@ public sealed class SalesTests
         Assert.Equal(SalesCreditOutcome.Eligible, eligible.Value.CreditOutcome);
         var eligibleCredit = await service.GetOrderCreditAsync(fixture.Context(Approver), order.Id);
         Assert.Equal(SalesCreditOutcome.Eligible, eligibleCredit!.Outcome);
+        Assert.Equal("SAR", eligibleCredit.CurrencyCode);
+        Assert.Equal("SAR", eligibleCredit.TransactionCurrencyCode);
+        Assert.Equal(150m, eligibleCredit.TransactionAmount);
+        Assert.Equal(150m, eligibleCredit.ConvertedOrderCommitment);
+        Assert.Null(eligibleCredit.ExchangeRateEvidence);
         Assert.Equal(250m, eligibleCredit.ProposedExposure);
         Assert.Equal(500m, eligibleCredit.CreditLimit);
 
@@ -654,6 +660,173 @@ public sealed class SalesTests
         Assert.Equal(SalesOrderStatus.CreditHold, unknown.Value!.Status);
         Assert.Equal(SalesCreditOutcome.Unknown, unknown.Value.CreditOutcome);
         Assert.Equal("credit_truth_unavailable", unknown.Value.CreditReason);
+    }
+
+    [Fact]
+    public async Task Credit_evaluation_converts_foreign_order_into_finance_currency_and_reloads_durable_evidence()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var finance = new ControllableFinanceSettlementPersistence();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-credit-fx", 1, Approver, currencyCode: null),
+            ApprovalOption("order", "order-credit-fx", 1, Approver, currencyCode: null),
+            creditLimit: 3000m));
+        var service = fixture.CreateService(options, finance, "USD", new ExchangeRateReferenceFake());
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+        finance.Exposure = Exposure(1000m, 0m, 1000m, creditHold: false, asOf);
+
+        var order = await CreateApprovedOrderAsync(fixture, service, "credit-fx", 10m, ExchangeRateA);
+        Assert.Equal("USD", order.CurrencyCode);
+        Assert.Equal(500m, order.Total);
+        var confirmed = await ConfirmOrderAsync(fixture, service, order, "credit-fx-confirm");
+
+        Assert.True(confirmed.Succeeded, confirmed.Code);
+        Assert.Equal(SalesOrderStatus.Confirmed, confirmed.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Eligible, confirmed.Value.CreditOutcome);
+
+        var credit = await service.GetOrderCreditAsync(fixture.Context(Approver), order.Id);
+        Assert.NotNull(credit);
+        Assert.Equal("SAR", credit!.CurrencyCode);
+        Assert.Equal("USD", credit.TransactionCurrencyCode);
+        Assert.Equal(500m, credit.TransactionAmount);
+        Assert.Equal(1875m, credit.ConvertedOrderCommitment);
+        Assert.Equal(2875m, credit.ProposedExposure);
+        Assert.Equal(3000m, credit.CreditLimit);
+        Assert.Equal(1, credit.OrderRevisionNumber);
+        Assert.Equal("USD", credit.ExchangeRateEvidence!.SourceCurrencyCode);
+        Assert.Equal("SAR", credit.ExchangeRateEvidence.TargetCurrencyCode);
+        Assert.Equal(3.75m, credit.ExchangeRateEvidence.Rate);
+
+        var history = await fixture.Persistence.ListHistoryAsync(fixture.Context(Approver), "order", order.Id);
+        Assert.Contains(history, item => item.Action == nameof(SalesHistoryAction.CreditEvaluated)
+            && item.SnapshotJson?.Contains("\"convertedOrderCommitment\":1875", StringComparison.Ordinal) == true);
+    }
+
+    [Fact]
+    public async Task Credit_evaluation_converts_before_comparing_against_the_finance_currency_limit()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var finance = new ControllableFinanceSettlementPersistence();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-credit-limit-currency", 1, Approver, currencyCode: null),
+            ApprovalOption("order", "order-credit-limit-currency", 1, Approver, currencyCode: null),
+            creditLimit: 1500m));
+        var service = fixture.CreateService(options, finance, "USD", new ExchangeRateReferenceFake());
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+        finance.Exposure = Exposure(1000m, 0m, 1000m, creditHold: false, asOf);
+
+        var order = await CreateApprovedOrderAsync(fixture, service, "credit-limit-currency", 10m, ExchangeRateA);
+        var result = await ConfirmOrderAsync(fixture, service, order, "credit-limit-currency-confirm");
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, result.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Blocked, result.Value.CreditOutcome);
+        Assert.Equal("credit_limit_exceeded", result.Value.CreditReason);
+        var credit = await service.GetOrderCreditAsync(fixture.Context(Approver), order.Id);
+        Assert.Equal("SAR", credit!.CurrencyCode);
+        Assert.Equal(1875m, credit.ConvertedOrderCommitment);
+        Assert.Equal(2875m, credit.ProposedExposure);
+        Assert.Equal(1500m, credit.CreditLimit);
+    }
+
+    [Fact]
+    public async Task Credit_evaluation_does_not_use_a_transaction_currency_limit_when_the_required_limit_is_missing()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var finance = new ControllableFinanceSettlementPersistence();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-credit-limit-missing", 1, Approver, currencyCode: null),
+            ApprovalOption("order", "order-credit-limit-missing", 1, Approver, currencyCode: null),
+            creditLimit: 10000m,
+            creditCurrencyCode: "USD"));
+        var service = fixture.CreateService(options, finance, "USD", new ExchangeRateReferenceFake());
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+        finance.Exposure = Exposure(1000m, 0m, 1000m, creditHold: false, asOf);
+
+        var order = await CreateApprovedOrderAsync(fixture, service, "credit-limit-missing", 10m, ExchangeRateA);
+        var result = await ConfirmOrderAsync(fixture, service, order, "credit-limit-missing-confirm");
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, result.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Unknown, result.Value.CreditOutcome);
+        Assert.Equal("credit_limit_unavailable", result.Value.CreditReason);
+        var credit = await service.GetOrderCreditAsync(fixture.Context(Approver), order.Id);
+        Assert.Equal("SAR", credit!.CurrencyCode);
+        Assert.Equal(1875m, credit.ConvertedOrderCommitment);
+        Assert.Null(credit.CreditLimit);
+    }
+
+    [Fact]
+    public async Task Credit_evaluation_fails_closed_for_missing_mismatched_and_invalid_persisted_fx_evidence()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var finance = new ControllableFinanceSettlementPersistence();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-credit-fx-invalid", 1, Approver, currencyCode: null),
+            ApprovalOption("order", "order-credit-fx-invalid", 1, Approver, currencyCode: null),
+            creditLimit: 3000m));
+        var service = fixture.CreateService(options, finance, "USD", new ExchangeRateReferenceFake());
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+        finance.Exposure = Exposure(1000m, 0m, 1000m, creditHold: false, asOf);
+
+        var missing = await CreateApprovedOrderAsync(fixture, service, "credit-fx-missing", 10m, ExchangeRateA);
+        await fixture.SetOrderExchangeRateAsync(missing.Id, null);
+        var missingResult = await ConfirmOrderAsync(fixture, service, missing, "credit-fx-missing-confirm");
+        Assert.True(missingResult.Succeeded, missingResult.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, missingResult.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Unknown, missingResult.Value.CreditOutcome);
+        Assert.Equal("credit_fx_evidence_missing", missingResult.Value.CreditReason);
+
+        var mismatched = await CreateApprovedOrderAsync(fixture, service, "credit-fx-mismatch", 10m, ExchangeRateA);
+        await fixture.SetOrderExchangeRateAsync(mismatched.Id, mismatched.ExchangeRateEvidence! with { TargetCurrencyCode = "EUR" });
+        var mismatchedResult = await ConfirmOrderAsync(fixture, service, mismatched, "credit-fx-mismatch-confirm");
+        Assert.True(mismatchedResult.Succeeded, mismatchedResult.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, mismatchedResult.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Unknown, mismatchedResult.Value.CreditOutcome);
+        Assert.Equal("credit_fx_target_currency_mismatch", mismatchedResult.Value.CreditReason);
+
+        var invalid = await CreateApprovedOrderAsync(fixture, service, "credit-fx-invalid", 10m, ExchangeRateA);
+        await fixture.SetOrderExchangeRateAsync(invalid.Id, invalid.ExchangeRateEvidence! with { Rate = 0m });
+        var invalidResult = await ConfirmOrderAsync(fixture, service, invalid, "credit-fx-invalid-confirm");
+        Assert.True(invalidResult.Succeeded, invalidResult.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, invalidResult.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Unknown, invalidResult.Value.CreditOutcome);
+        Assert.Equal("credit_fx_rate_invalid", invalidResult.Value.CreditReason);
+    }
+
+    [Fact]
+    public async Task Credit_override_is_invalidated_when_persisted_fx_evidence_changes()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var finance = new ControllableFinanceSettlementPersistence();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-credit-fx-override", 1, Approver, currencyCode: null),
+            ApprovalOption("order", "order-credit-fx-override", 1, Approver, currencyCode: null),
+            creditLimit: 1500m));
+        var service = fixture.CreateService(options, finance, "USD", new ExchangeRateReferenceFake());
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+        finance.Exposure = Exposure(1000m, 0m, 1000m, creditHold: false, asOf);
+        var order = await CreateApprovedOrderAsync(fixture, service, "credit-fx-override", 10m, ExchangeRateA);
+        var hold = await ConfirmOrderAsync(fixture, service, order, "credit-fx-override-hold");
+        Assert.True(hold.Succeeded, hold.Code);
+
+        var overridden = await service.OverrideCreditAsync(
+            fixture.Context(Approver, permission: "tenant.sales.order.credit.override"),
+            order.Id,
+            new SalesCreditOverrideRequest("foreign currency exception", DateTimeOffset.UtcNow.AddHours(1), "finance", "fx-override-1"),
+            hold.Value!.Version,
+            "credit-fx-override-set");
+        Assert.True(overridden.Succeeded, overridden.Code);
+
+        await fixture.SetOrderExchangeRateAsync(order.Id, overridden.Value!.ExchangeRateEvidence! with { Rate = 4m });
+        var changed = await ConfirmOrderAsync(fixture, service, overridden.Value, "credit-fx-override-changed");
+
+        Assert.True(changed.Succeeded, changed.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, changed.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Blocked, changed.Value.CreditOutcome);
+        var credit = await service.GetOrderCreditAsync(fixture.Context(Approver), order.Id);
+        Assert.Equal(2000m, credit!.ConvertedOrderCommitment);
+        Assert.Equal(3000m, credit.ProposedExposure);
     }
 
     [Fact]
@@ -836,7 +1009,8 @@ public sealed class SalesTests
     private static SalesPolicyOptions RuntimeOptions(
         SalesApprovalPolicyOptions quotationPolicy,
         SalesApprovalPolicyOptions orderPolicy,
-        decimal creditLimit = 500m) => new()
+        decimal creditLimit = 500m,
+        string creditCurrencyCode = "SAR") => new()
     {
         ApprovalPolicies = [quotationPolicy, orderPolicy],
         CreditLimits = [new SalesCreditLimitOptions
@@ -844,13 +1018,13 @@ public sealed class SalesTests
             TenantId = TenantA,
             CompanyId = CompanyA,
             CustomerId = CustomerA,
-            CurrencyCode = "SAR",
+            CurrencyCode = creditCurrencyCode,
             Limit = creditLimit,
             EffectiveFrom = new DateOnly(2026, 1, 1)
         }]
     };
 
-    private static SalesApprovalPolicyOptions ApprovalOption(string documentType, string policyId, int version, Guid eligibleApprover, bool allowCancellation = true) => new()
+    private static SalesApprovalPolicyOptions ApprovalOption(string documentType, string policyId, int version, Guid eligibleApprover, bool allowCancellation = true, string? currencyCode = "SAR") => new()
     {
         TenantId = TenantA,
         CompanyId = CompanyA,
@@ -867,10 +1041,10 @@ public sealed class SalesTests
         }],
         AllowRequesterCancellationWhilePending = allowCancellation,
         EffectiveFrom = DateTimeOffset.MinValue,
-        CurrencyCode = "SAR"
+        CurrencyCode = currencyCode
     };
 
-    private static SalesQuotationCreateRequest CreateQuotationRequest() => new(
+    private static SalesQuotationCreateRequest CreateQuotationRequest(decimal quantity = 3m, Guid? exchangeRateId = null) => new(
         CompanyA,
         BranchA,
         CustomerA,
@@ -881,14 +1055,15 @@ public sealed class SalesTests
         null,
         "Sales service test",
         null,
-        [new SalesQuotationLineRequest(ProductA, UomA, 3m)]);
+        [new SalesQuotationLineRequest(ProductA, UomA, quantity)],
+        exchangeRateId);
 
     private static FinanceCustomerExposureRecord Exposure(decimal open, decimal overdue, decimal net, bool creditHold, DateOnly asOf, string? holdReason = null) =>
         new(CompanyA, CustomerA, "SAR", open, overdue, 0m, net, asOf, creditHold, holdReason);
 
-    private static async Task<SalesOrderResponse> CreateApprovedOrderAsync(Fixture fixture, SalesService service, string keyPrefix = "sales-service")
+    private static async Task<SalesOrderResponse> CreateApprovedOrderAsync(Fixture fixture, SalesService service, string keyPrefix = "sales-service", decimal quantity = 3m, Guid? exchangeRateId = null)
     {
-        var quotation = await service.CreateQuotationAsync(fixture.Context(Creator, permission: "tenant.sales.quotation.create"), CreateQuotationRequest(), $"{keyPrefix}-quotation-create");
+        var quotation = await service.CreateQuotationAsync(fixture.Context(Creator, permission: "tenant.sales.quotation.create"), CreateQuotationRequest(quantity, exchangeRateId), $"{keyPrefix}-quotation-create");
         Assert.True(quotation.Succeeded, quotation.Code);
         var submittedQuotation = await service.TransitionQuotationAsync(fixture.Context(Creator, permission: "tenant.sales.quotation.submit"), quotation.Value!.Id, SalesQuotationStatus.PendingApproval, null, quotation.Value.Version, $"{keyPrefix}-quotation-submit");
         Assert.True(submittedQuotation.Succeeded, submittedQuotation.Code);
@@ -941,7 +1116,7 @@ public sealed class SalesTests
 
         public ProcurementRequestContext Context(Guid actor, Guid tenantId = default, Guid companyId = default, string permission = "tenant.sales.quotation.create") => SalesTests.Context(actor, tenantId == Guid.Empty ? TenantA : tenantId, companyId == Guid.Empty ? CompanyA : companyId, permission);
 
-        public SalesService CreateService(IOptionsMonitor<SalesPolicyOptions> policies, IFinanceSettlementPersistence finance) => new(
+        public SalesService CreateService(IOptionsMonitor<SalesPolicyOptions> policies, IFinanceSettlementPersistence finance, string priceCurrencyCode = "SAR", ISalesExchangeRateReferenceProvider? exchangeRates = null) => new(
             Persistence,
             new SalesAuthorizationService(new PurchaseRequestAuthorizationService()),
             new ConfigurationSalesApprovalPolicyProvider(policies),
@@ -952,9 +1127,18 @@ public sealed class SalesTests
             new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(TenantA, CompanyA, "Company A", "SAR", BranchA)]),
             new CustomerReferenceFake(),
             new ProductReferenceFake(),
-            new PriceReferenceFake(),
+            new PriceReferenceFake(priceCurrencyCode),
             new UnavailableSalesTaxReferenceProvider(),
-            new UnavailableSalesExchangeRateReferenceProvider());
+            exchangeRates ?? new UnavailableSalesExchangeRateReferenceProvider());
+
+        public async Task SetOrderExchangeRateAsync(Guid orderId, SalesExchangeRateEvidence? evidence)
+        {
+            await using var db = new SalesDbContext(options, TenantContext(TenantA, Creator, CompanyA));
+            if (evidence is null)
+                await db.Database.ExecuteSqlRawAsync("UPDATE SalesOrders SET ExchangeRateJson = NULL WHERE Id = {0}", orderId);
+            else
+                await db.Database.ExecuteSqlRawAsync("UPDATE SalesOrders SET ExchangeRateJson = {0} WHERE Id = {1}", JsonSerializer.Serialize(evidence), orderId);
+        }
 
         public SalesApprovalPolicyDefinition Policy() => new("sales.test.policy", 7, [new SalesApprovalStageDefinition("commercial", 1, 1, [Approver], false)], true, false, DateTimeOffset.MinValue, null);
 
@@ -1096,7 +1280,7 @@ public sealed class SalesTests
     {
         public Task<SalesExchangeRateResolution> ResolveAsync(TenantContext tenantContext, Guid exchangeRateId, string sourceCurrencyCode, string targetCurrencyCode, DateOnly effectiveOn, CancellationToken cancellationToken = default) =>
             Task.FromResult(exchangeRateId == ExchangeRateA
-                ? SalesExchangeRateResolution.Success(new SalesExchangeRateEvidence(ExchangeRateA, Guid.Parse("dddddddd-1111-1111-1111-111111111111"), 3, sourceCurrencyCode, targetCurrencyCode, 3.75m, 1, "Configured", "USD/SAR", effectiveOn, effectiveOn.AddDays(-30), null, $"{sourceCurrencyCode}->{targetCurrencyCode};v3"))
+                ? SalesExchangeRateResolution.Success(new SalesExchangeRateEvidence(ExchangeRateA, Guid.Parse("dddddddd-1111-1111-1111-111111111111"), 3, sourceCurrencyCode, targetCurrencyCode, 3.75m, 2, "Configured", "USD/SAR", effectiveOn, effectiveOn.AddDays(-30), null, $"{sourceCurrencyCode}->{targetCurrencyCode};v3"))
                 : SalesExchangeRateResolution.Failure("exchange_rate_not_found"));
     }
 

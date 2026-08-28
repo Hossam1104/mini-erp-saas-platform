@@ -275,7 +275,20 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
         if (credit is not null) db.Credit.Add(ToCredit(entity, credit));
         await db.SaveChangesAsync(cancellationToken);
         var response = ToResponse(entity);
-        AddHistory(db, context, "order", id, credit is null ? ActionToHistory(actualTarget) : SalesHistoryAction.CreditEvaluated, before, actualTarget, reason, effectivePolicy, credit?.Outcome.ToString(), Hash(response), now, JsonSerializer.Serialize(response, Json));
+        string historyHash;
+        string? historySnapshot;
+        if (credit is null)
+        {
+            historyHash = Hash(response);
+            historySnapshot = JsonSerializer.Serialize(response, Json);
+        }
+        else
+        {
+            var snapshot = new { Order = response, Credit = credit };
+            historyHash = Hash(snapshot);
+            historySnapshot = JsonSerializer.Serialize(snapshot, Json);
+        }
+        AddHistory(db, context, "order", id, credit is null ? ActionToHistory(actualTarget) : SalesHistoryAction.CreditEvaluated, before, actualTarget, reason, effectivePolicy, credit?.Outcome.ToString(), historyHash, now, historySnapshot);
         AddAudit(db, context, $"sales.order.{Action(target)}", "order", id, "Allowed", reason, $"status={before}", $"status={actualTarget};credit={credit?.Outcome}", idempotencyKey, now);
         await db.SaveChangesAsync(cancellationToken);
         await SaveIdempotencyAsync(db, context, $"sales.order.{Action(target)}", idempotencyKey, requestFingerprint, "order", id, response, now, cancellationToken);
@@ -296,11 +309,12 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
         if (!entity.Version.SequenceEqual(expectedVersion)) return Failure<SalesOrderResponse>("concurrency_conflict");
         if (expiresAt <= DateTimeOffset.UtcNow) return Failure<SalesOrderResponse>("credit_override_expired");
         var now = DateTimeOffset.UtcNow;
-        entity.OverrideCredit(credit with { OverrideExpiresAt = expiresAt }, now);
-        db.Credit.Add(ToCredit(entity, credit with { OverrideExpiresAt = expiresAt }));
+        var persistedCredit = credit with { OverrideExpiresAt = expiresAt };
+        entity.OverrideCredit(persistedCredit, now);
+        db.Credit.Add(ToCredit(entity, persistedCredit));
         await db.SaveChangesAsync(cancellationToken);
         var response = ToResponse(entity);
-        AddHistory(db, context, "order", id, SalesHistoryAction.CreditOverridden, SalesOrderStatus.CreditHold, entity.Status, reason, null, SalesCreditOutcome.Overridden.ToString(), Hash(response), now);
+        AddHistory(db, context, "order", id, SalesHistoryAction.CreditOverridden, SalesOrderStatus.CreditHold, entity.Status, reason, null, SalesCreditOutcome.Overridden.ToString(), Hash(new { Order = response, Credit = persistedCredit }), now, JsonSerializer.Serialize(new { Order = response, Credit = persistedCredit }, Json));
         AddAudit(db, context, "sales.order.credit.override", "order", id, "Allowed", reason, "credit=hold", $"credit=overridden;expires={expiresAt:O};scope={scope};source={sourceReference}", idempotencyKey, now);
         await db.SaveChangesAsync(cancellationToken);
         await SaveIdempotencyAsync(db, context, "sales.order.credit.override", idempotencyKey, requestFingerprint, "order", id, response, now, cancellationToken);
@@ -312,9 +326,10 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
     public async Task<SalesCreditResponse?> GetOrderCreditAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default)
     {
         await using var db = Create(context);
-        if (!await ApplyTrustedScope(db.Orders.AsNoTracking(), context.TenantContext.Scope).AnyAsync(item => item.Id == id, cancellationToken)) return null;
+        var order = await ApplyTrustedScope(db.Orders.AsNoTracking(), context.TenantContext.Scope).SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+        if (order is null) return null;
         var row = (await db.Credit.AsNoTracking().Where(item => item.DocumentId == id).ToListAsync(cancellationToken)).OrderByDescending(item => item.EvaluatedAt).FirstOrDefault();
-        return row is null ? null : new SalesCreditResponse(row.DocumentId, row.CustomerId, row.CompanyId, row.CurrencyCode, row.OpenReceivables, row.OverdueReceivables, row.NetReceivableExposure, row.ProposedExposure, row.CreditLimit, row.Outcome, row.Reason, row.AsOfDate, row.EvaluatedAt, row.OverrideExpiresAt);
+        return row is null ? null : ToCreditResponse(row, order);
     }
 
     private static IQueryable<SalesQuotationEntity> ApplyTrustedScope(IQueryable<SalesQuotationEntity> query, ScopeReference? scope)
@@ -363,7 +378,8 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
     private static void AddRevision(SalesDbContext db, ProcurementRequestContext context, SalesQuotationEntity entity, SalesQuotationResponse response, string? reason, DateTimeOffset now) => db.QuotationRevisions.Add(new SalesQuotationRevisionEntity(context.TenantId, entity.Id, entity.RevisionNumber, entity.Status, JsonSerializer.Serialize(response, Json), Hash(response), context.ActorId, reason, now));
     private static void AddHistory(SalesDbContext db, ProcurementRequestContext context, string type, Guid id, SalesHistoryAction action, Enum? from, Enum? to, string? reason, SalesApprovalPolicyDefinition? policy, string? credit, string? hash, DateTimeOffset now, string? snapshotJson = null) => db.History.Add(new SalesHistoryEntity(context.TenantId, type, id, action, from?.ToString(), to?.ToString(), context.ActorId, reason, policy?.PolicyId, policy?.Version, credit, hash, now, snapshotJson));
     private static void AddAudit(SalesDbContext db, ProcurementRequestContext context, string operation, string type, Guid id, string decision, string? reason, string? before, string? after, string? key, DateTimeOffset now) => db.Audit.Add(new SalesAuditEntity(context.TenantId, operation, type, id, context.ActorId, now, decision, reason, before, after, key, context.CorrelationId?.Value ?? "sales"));
-    private static SalesCreditEntity ToCredit(SalesOrderEntity entity, SalesCreditEvaluation credit) => new(entity.TenantId, new SalesCreditResponse(entity.Id, entity.CustomerId, entity.CompanyId, entity.CurrencyCode, credit.OpenReceivables, credit.OverdueReceivables, credit.NetReceivableExposure, credit.ProposedExposure, credit.CreditLimit, credit.Outcome, credit.Reason, credit.AsOfDate, credit.EvaluatedAt, credit.OverrideExpiresAt));
+    private static SalesCreditEntity ToCredit(SalesOrderEntity entity, SalesCreditEvaluation credit) => new(entity.TenantId, new SalesCreditResponse(entity.Id, entity.CustomerId, entity.CompanyId, credit.CurrencyCode, credit.OpenReceivables, credit.OverdueReceivables, credit.NetReceivableExposure, credit.ProposedExposure, credit.CreditLimit, credit.Outcome, credit.Reason, credit.AsOfDate, credit.EvaluatedAt, credit.OverrideExpiresAt, credit.TransactionCurrencyCode ?? entity.CurrencyCode, credit.TransactionAmount ?? entity.Total, credit.ConvertedOrderCommitment, credit.ExchangeRateEvidence, credit.OrderRevisionNumber ?? entity.RevisionNumber));
+    private static SalesCreditResponse ToCreditResponse(SalesCreditEntity row, SalesOrderEntity order) => new(row.DocumentId, row.CustomerId, row.CompanyId, row.OrderRevisionNumber is null ? null : row.CurrencyCode, row.OpenReceivables, row.OverdueReceivables, row.NetReceivableExposure, row.ProposedExposure, row.CreditLimit, row.Outcome, row.Reason, row.AsOfDate, row.EvaluatedAt, row.OverrideExpiresAt, row.TransactionCurrencyCode ?? order.CurrencyCode, row.TransactionAmount ?? order.Total, row.ConvertedOrderCommitment, DeserializeExchangeRate(row.ExchangeRateJson), row.OrderRevisionNumber);
     private static string LinesJson(IReadOnlyList<SalesLineWriteModel> lines) => JsonSerializer.Serialize(lines.Select(item => new SalesQuotationLineResponse(item.Id, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.Quantity, item.UnitPrice, item.ResolvedUnitPrice, item.DiscountPercent, item.DiscountAmount, item.TaxAmount, item.LineTotal, item.PriceListId, item.PriceVersionNumber, item.PriceEffectiveFrom, item.PriceProvenance, item.PriceSourceReference, item.ManualPriceApplied, item.CommercialAuthorityPolicyId, item.CommercialAuthorityActorId, item.CommercialAuthorityEvidence, item.Notes, item.TaxEvidence?.TaxId, item.TaxEvidence?.TaxCode, item.TaxEvidence?.RateVersionId, item.TaxEvidence?.RateVersionNumber, item.TaxEvidence?.EffectiveFrom, item.TaxEvidence?.EffectiveTo, item.TaxEvidence?.RatePercentage, item.TaxEvidence?.TaxableBase, item.TaxEvidence?.ReferenceValue)).ToArray(), Json);
     private static IReadOnlyList<SalesQuotationLineResponse> Lines(string json) => JsonSerializer.Deserialize<IReadOnlyList<SalesQuotationLineResponse>>(json, Json) ?? [];
     private static SalesQuotationResponse ToResponse(SalesQuotationEntity item) => new(item.Id, item.Number, item.TenantId.Value, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.QuotationDate, item.ValidUntil, item.CurrencyId, item.CurrencyCode, item.CustomerContactId, item.Notes, item.CustomerReference, item.Subtotal, item.DiscountAmount, item.TaxAmount, item.Total, item.Status, item.RevisionNumber, Lines(item.LinesJson), item.Version, item.CreatedAt, item.UpdatedAt, DeserializeExchangeRate(item.ExchangeRateJson), DeserializeApprovalState(item.CurrentApprovalsJson));

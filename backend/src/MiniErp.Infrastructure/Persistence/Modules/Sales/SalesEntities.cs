@@ -197,13 +197,18 @@ internal sealed class SalesCreditEntity : ITenantOwned
 {
     private SalesCreditEntity() { }
     internal SalesCreditEntity(TenantId tenantId, SalesCreditResponse response)
-    { Id = Guid.NewGuid(); TenantId = tenantId; DocumentId = response.DocumentId; CustomerId = response.CustomerId; CompanyId = response.CompanyId; CurrencyCode = response.CurrencyCode; OpenReceivables = response.OpenReceivables; OverdueReceivables = response.OverdueReceivables; NetReceivableExposure = response.NetReceivableExposure; ProposedExposure = response.ProposedExposure; CreditLimit = response.CreditLimit; Outcome = response.Outcome; Reason = response.Reason; AsOfDate = response.AsOfDate; EvaluatedAt = response.EvaluatedAt; OverrideExpiresAt = response.OverrideExpiresAt; }
+    { Id = Guid.NewGuid(); TenantId = tenantId; DocumentId = response.DocumentId; CustomerId = response.CustomerId; CompanyId = response.CompanyId; CurrencyCode = response.CurrencyCode; TransactionCurrencyCode = response.TransactionCurrencyCode; TransactionAmount = response.TransactionAmount; ConvertedOrderCommitment = response.ConvertedOrderCommitment; ExchangeRateJson = JsonSerializer.Serialize(response.ExchangeRateEvidence); OrderRevisionNumber = response.OrderRevisionNumber; OpenReceivables = response.OpenReceivables; OverdueReceivables = response.OverdueReceivables; NetReceivableExposure = response.NetReceivableExposure; ProposedExposure = response.ProposedExposure; CreditLimit = response.CreditLimit; Outcome = response.Outcome; Reason = response.Reason; AsOfDate = response.AsOfDate; EvaluatedAt = response.EvaluatedAt; OverrideExpiresAt = response.OverrideExpiresAt; }
     internal Guid Id { get; private set; }
     public TenantId TenantId { get; private set; }
     internal Guid DocumentId { get; private set; }
     internal Guid CustomerId { get; private set; }
     internal Guid CompanyId { get; private set; }
-    internal string CurrencyCode { get; private set; } = string.Empty;
+    internal string? CurrencyCode { get; private set; }
+    internal string? TransactionCurrencyCode { get; private set; }
+    internal decimal? TransactionAmount { get; private set; }
+    internal decimal? ConvertedOrderCommitment { get; private set; }
+    internal string? ExchangeRateJson { get; private set; }
+    internal int? OrderRevisionNumber { get; private set; }
     internal decimal? OpenReceivables { get; private set; }
     internal decimal? OverdueReceivables { get; private set; }
     internal decimal? NetReceivableExposure { get; private set; }

@@ -161,7 +161,12 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
         credit.Property(item => item.CreditLimit).HasPrecision(28, 8).IsRequired(false);
         credit.Property(item => item.AsOfDate).IsRequired();
         credit.Property(item => item.OverrideExpiresAt).IsRequired(false);
-        credit.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired();
+        credit.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired(false);
+        credit.Property(item => item.TransactionCurrencyCode).HasMaxLength(16).IsRequired(false);
+        credit.Property(item => item.TransactionAmount).HasPrecision(28, 8).IsRequired(false);
+        credit.Property(item => item.ConvertedOrderCommitment).HasPrecision(28, 8).IsRequired(false);
+        credit.Property(item => item.ExchangeRateJson).HasMaxLength(4096).IsRequired(false);
+        credit.Property(item => item.OrderRevisionNumber).IsRequired(false);
         credit.Property(item => item.Outcome).IsRequired();
         credit.Property(item => item.Reason).HasMaxLength(2048);
         credit.HasIndex(item => new { item.TenantId, item.DocumentId, item.EvaluatedAt });

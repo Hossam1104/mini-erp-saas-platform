@@ -611,7 +611,13 @@ public sealed record SalesCreditEvaluation(
     decimal? CreditLimit,
     DateOnly AsOfDate,
     DateTimeOffset EvaluatedAt,
-    DateTimeOffset? OverrideExpiresAt = null)
+    DateTimeOffset? OverrideExpiresAt = null,
+    string? CurrencyCode = null,
+    string? TransactionCurrencyCode = null,
+    decimal? TransactionAmount = null,
+    decimal? ConvertedOrderCommitment = null,
+    SalesExchangeRateEvidence? ExchangeRateEvidence = null,
+    int? OrderRevisionNumber = null)
 {
     public static SalesCreditEvaluation Unknown(DateOnly asOfDate, string reason) => new(SalesCreditOutcome.Unknown, reason, null, null, null, null, null, asOfDate, DateTimeOffset.UtcNow);
 }
@@ -889,14 +895,121 @@ public sealed class SalesService(
     private async Task<SalesCreditEvaluation> EvaluateCreditAsync(ProcurementRequestContext context, SalesOrderResponse order, CancellationToken cancellationToken)
     {
         var at = DateOnly.FromDateTime(DateTime.UtcNow);
-        var limit = await creditLimits.ResolveLimitAsync(context, order.CompanyId, order.CustomerId, order.CurrencyCode, at, cancellationToken);
-        if (!FinanceRequestContext.TryCreate(context.FoundationContext, out var financeContext) || financeContext is null) return SalesCreditEvaluation.Unknown(at, "finance_context_unavailable");
+        var transactionCurrency = NormalizeCurrencyCode(order.CurrencyCode);
+        if (transactionCurrency is null || order.Total < 0m || order.RevisionNumber <= 0)
+            return UnknownCredit(order, at, "sales_order_currency_invalid");
+
+        if (!FinanceRequestContext.TryCreate(context.FoundationContext, out var financeContext) || financeContext is null)
+            return UnknownCredit(order, at, "finance_context_unavailable");
+
         var exposure = await finance.GetExposureAsync(financeContext, new FinanceExposureQuery(order.CompanyId, order.CustomerId, at), cancellationToken);
-        if (limit is null || exposure is null) return SalesCreditEvaluation.Unknown(at, "credit_truth_unavailable");
-        var proposed = exposure.NetReceivableExposure + order.Total;
+        if (exposure is null)
+            return UnknownCredit(order, at, "credit_truth_unavailable");
+        if (exposure.CompanyId != order.CompanyId || exposure.CustomerId != order.CustomerId || exposure.AsOfDate != at)
+            return UnknownCredit(order, at, "finance_exposure_invalid");
+
+        var evaluationCurrency = NormalizeCurrencyCode(exposure.CurrencyCode);
+        if (evaluationCurrency is null)
+            return UnknownCredit(order, at, "finance_exposure_currency_invalid");
+
+        var conversion = ResolveCreditCommitment(order, transactionCurrency, evaluationCurrency);
+        if (!conversion.Succeeded)
+            return UnknownCredit(order, at, conversion.Code, evaluationCurrency, conversion.ExchangeRateEvidence, conversion.ConvertedOrderCommitment);
+
+        var limit = await creditLimits.ResolveLimitAsync(context, order.CompanyId, order.CustomerId, evaluationCurrency, at, cancellationToken);
+        if (limit is null || limit < 0m)
+            return UnknownCredit(order, at, "credit_limit_unavailable", evaluationCurrency, conversion.ExchangeRateEvidence, conversion.ConvertedOrderCommitment);
+
+        var proposed = decimal.Round(exposure.NetReceivableExposure + conversion.ConvertedOrderCommitment!.Value, 8, MidpointRounding.ToEven);
         var outcome = exposure.CreditHold ? SalesCreditOutcome.Blocked : proposed <= limit.Value ? SalesCreditOutcome.Eligible : SalesCreditOutcome.Blocked;
         if (outcome == SalesCreditOutcome.Eligible && exposure.OverdueReceivables > 0m) outcome = SalesCreditOutcome.Warning;
-        return new(outcome, outcome == SalesCreditOutcome.Blocked ? (exposure.CreditHold ? "finance_credit_hold" : "credit_limit_exceeded") : exposure.OverdueReceivables > 0m ? "overdue_receivables" : null, exposure.OpenReceivables, exposure.OverdueReceivables, exposure.NetReceivableExposure, proposed, limit, at, DateTimeOffset.UtcNow);
+        return new(
+            outcome,
+            outcome == SalesCreditOutcome.Blocked ? (exposure.CreditHold ? "finance_credit_hold" : "credit_limit_exceeded") : exposure.OverdueReceivables > 0m ? "overdue_receivables" : null,
+            exposure.OpenReceivables,
+            exposure.OverdueReceivables,
+            exposure.NetReceivableExposure,
+            proposed,
+            limit,
+            at,
+            DateTimeOffset.UtcNow,
+            CurrencyCode: evaluationCurrency,
+            TransactionCurrencyCode: transactionCurrency,
+            TransactionAmount: order.Total,
+            ConvertedOrderCommitment: conversion.ConvertedOrderCommitment,
+            ExchangeRateEvidence: conversion.ExchangeRateEvidence,
+            OrderRevisionNumber: order.RevisionNumber);
+    }
+
+    private static SalesCreditEvaluation UnknownCredit(
+        SalesOrderResponse order,
+        DateOnly asOfDate,
+        string reason,
+        string? evaluationCurrency = null,
+        SalesExchangeRateEvidence? exchangeRateEvidence = null,
+        decimal? convertedOrderCommitment = null) =>
+        new(
+            SalesCreditOutcome.Unknown,
+            reason,
+            null,
+            null,
+            null,
+            null,
+            null,
+            asOfDate,
+            DateTimeOffset.UtcNow,
+            CurrencyCode: evaluationCurrency,
+            TransactionCurrencyCode: NormalizeCurrencyCode(order.CurrencyCode) ?? order.CurrencyCode,
+            TransactionAmount: order.Total,
+            ConvertedOrderCommitment: convertedOrderCommitment,
+            ExchangeRateEvidence: exchangeRateEvidence,
+            OrderRevisionNumber: order.RevisionNumber);
+
+    private static (bool Succeeded, string Code, decimal? ConvertedOrderCommitment, SalesExchangeRateEvidence? ExchangeRateEvidence) ResolveCreditCommitment(
+        SalesOrderResponse order,
+        string transactionCurrency,
+        string evaluationCurrency)
+    {
+        if (string.Equals(transactionCurrency, evaluationCurrency, StringComparison.OrdinalIgnoreCase))
+            return (true, "resolved", order.Total, null);
+
+        var evidence = order.ExchangeRateEvidence;
+        if (evidence is null)
+            return (false, "credit_fx_evidence_missing", null, null);
+        if (!string.Equals(NormalizeCurrencyCode(evidence.SourceCurrencyCode), transactionCurrency, StringComparison.OrdinalIgnoreCase))
+            return (false, "credit_fx_source_currency_mismatch", null, evidence);
+        if (!string.Equals(NormalizeCurrencyCode(evidence.TargetCurrencyCode), evaluationCurrency, StringComparison.OrdinalIgnoreCase))
+            return (false, "credit_fx_target_currency_mismatch", null, evidence);
+        if (evidence.ExchangeRateId == Guid.Empty
+            || evidence.ExchangeRateVersionId == Guid.Empty
+            || evidence.VersionNumber <= 0
+            || evidence.Rate <= 0m
+            || evidence.RateScale is <= 0 or > 12
+            || decimal.Round(evidence.Rate, evidence.RateScale, MidpointRounding.ToEven) != evidence.Rate)
+            return (false, "credit_fx_rate_invalid", null, evidence);
+        if (evidence.EffectiveOn == default
+            || evidence.EffectiveFrom == default
+            || evidence.EffectiveFrom > evidence.EffectiveOn
+            || evidence.EffectiveTo is { } effectiveTo && evidence.EffectiveOn > effectiveTo
+            || string.IsNullOrWhiteSpace(evidence.ReferenceValue))
+            return (false, "credit_fx_evidence_invalid", null, evidence);
+
+        // Finance's established transaction-to-functional convention is amount * rate,
+        // with functional monetary precision rounded to 8 places using ToEven.
+        var converted = decimal.Round(order.Total * evidence.Rate, 8, MidpointRounding.ToEven);
+        return (true, "resolved", converted, evidence);
+    }
+
+    private static string? NormalizeCurrencyCode(string? value)
+    {
+        try
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : MasterDataCurrencyPaymentTermValuePolicy.NormalizeCode(value);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     private async Task<SalesQuotationWriteModel?> BuildModelAsync(ProcurementRequestContext context, Guid id, Guid companyId, Guid? branchId, Guid customerId, DateOnly quotationDate, DateOnly validUntil, Guid currencyId, Guid? priceListId, Guid? exchangeRateId, string? contactId, string? notes, string? reference, IReadOnlyList<SalesQuotationLineRequest> lineRequests, CancellationToken cancellationToken, string documentType = "quotation")
@@ -990,7 +1103,13 @@ public sealed class SalesService(
         && prior.OverdueReceivables == current.OverdueReceivables
         && prior.NetReceivableExposure == current.NetReceivableExposure
         && prior.ProposedExposure == current.ProposedExposure
-        && prior.CreditLimit == current.CreditLimit;
+        && prior.CreditLimit == current.CreditLimit
+        && string.Equals(prior.CurrencyCode, current.CurrencyCode, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(prior.TransactionCurrencyCode, current.TransactionCurrencyCode, StringComparison.OrdinalIgnoreCase)
+        && prior.TransactionAmount == current.TransactionAmount
+        && prior.ConvertedOrderCommitment == current.ConvertedOrderCommitment
+        && prior.ExchangeRateEvidence == current.ExchangeRateEvidence
+        && prior.OrderRevisionNumber == current.OrderRevisionNumber;
     private static string Fingerprint<T>(T value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value))));
 }
 

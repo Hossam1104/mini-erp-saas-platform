@@ -327,7 +327,7 @@ public sealed record SalesCreditResponse(
     Guid DocumentId,
     Guid CustomerId,
     Guid CompanyId,
-    string CurrencyCode,
+    string? CurrencyCode,
     decimal? OpenReceivables,
     decimal? OverdueReceivables,
     decimal? NetReceivableExposure,
@@ -337,6 +337,11 @@ public sealed record SalesCreditResponse(
     string? Reason,
     DateOnly AsOfDate,
     DateTimeOffset EvaluatedAt,
-    DateTimeOffset? OverrideExpiresAt);
+    DateTimeOffset? OverrideExpiresAt,
+    string? TransactionCurrencyCode = null,
+    decimal? TransactionAmount = null,
+    decimal? ConvertedOrderCommitment = null,
+    SalesExchangeRateEvidence? ExchangeRateEvidence = null,
+    int? OrderRevisionNumber = null);
 
 #pragma warning restore CS1591
