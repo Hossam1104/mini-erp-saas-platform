@@ -1,6 +1,55 @@
 # Current State
 
-## MESP-136 active - 28 August 2026 - Sol HOLD 1 remediation
+## MESP-136 active - 28 August 2026 - Sol HOLD 2 remediation
+
+MESP-136 is the single active implementation capability under Epic MESP-9 -
+B2B Sales and Order-to-Cash. Both are In Progress/activated under Sol evidence
+MESP-136 comment `12234` and MESP-9 reconciliation `12235`. HOLD 2 authority
+is MESP-136 comment `12244` and MESP-9 reconciliation `12245`.
+
+The bounded remediation is on `feat/MESP-136-b2b-quote-order-credit`, starting
+from reviewed HOLD 2 head `36d1c04cb4537142bdb29d369d40e35ac3b76618` and based
+on exact main baseline `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`. The
+source/test/UI commit is `397ef6d`; the final documentation/tracker handoff
+SHA follows after the final push.
+
+HOLD 2A establishes deterministic approval policy authority: submission from
+Draft/ReturnedForChange resolves and persists the current effective policy
+from current document facts, pending workflow state derives consistently from
+that stored snapshot, and live delegation is still checked against the stored
+stage with current time-bounded validity. HOLD 2B adds integrated
+`SalesService.TransitionOrderAsync` and `OverrideCreditAsync` coverage using a
+controllable Finance-owned exposure fixture for eligible, warning, limit,
+Finance hold, unavailable truth, valid/unauthorized/self/expired overrides,
+exposure and limit changes, material edit invalidation, and durable
+credit/history/audit evidence. The order UI removes the duplicate Audit
+button and restores the Audit tab click handler. No later Sales capability,
+fulfillment, accounting, external integration, or Wafra-specific behavior was
+added.
+
+Validation is green: Release `0 warnings / 0 errors`; focused Sales `21/21`;
+full disposable-LocalDB backend `1,119/1,119` with 0 failures and 0 skips;
+SQL safety `80/80`; REST/OpenAPI/host/security `55/55`; generated OpenAPI
+`410` operationIds; catalog `411` public / `2` internal; Angular `305/305`
+across 43 spec files; focused Sales Chromium `2/2`; full Chromium `49/49`;
+EF pending-model check clean; both npm audits `0 vulnerabilities`; NuGet
+vulnerable-package scan clear; and final `git diff --check` clean. Production
+initial bundle is `510.08 kB` (10.08 kB over the 500 kB budget) and Sales lazy
+chunk is `72.72 kB`; the warning is retained and the budget was not raised.
+
+The canonical launcher left the repository-owned runtime running with
+loopback Development auth bypass: API PID `44876` on `http://localhost:5300`
+and Angular PID `44908` on `http://localhost:4300`. Required health, OpenAPI,
+frontend, Finance smoke, Sales, and order-edit probes returned HTTP 200;
+`LEFT RUNNING = YES`.
+
+Fast-track remains `19/26 = 73.1%` and production readiness remains
+approximately `47%` overall / `41%` Procurement/P2P. MESP-48 and MESP-50 are
+open; MESP-137/138/139 remain inactive. PR #80 remains Open/Draft/Unmerged.
+No Jira writes, Opus review, Ready transition, merge, rebase, or force-push is
+permitted. Stop for third independent GPT-5.6 Sol acceptance.
+
+## Historical MESP-136 active - 28 August 2026 - Sol HOLD 1 remediation
 
 MESP-136 is the single active implementation capability under Epic MESP-9 -
 B2B Sales and Order-to-Cash. Both are In Progress/activated under Sol evidence

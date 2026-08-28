@@ -1,5 +1,65 @@
 
-# MESP-136 - GPT-5.6 Sol acceptance handoff after HOLD 1
+# MESP-136 - GPT-5.6 Sol acceptance handoff after HOLD 2
+
+MESP-136 remains the single active implementation capability under Epic
+MESP-9 - B2B Sales and Order-to-Cash. It is In Progress/activated under Sol
+evidence MESP-136 comment `12234` and MESP-9 reconciliation `12235`.
+
+HOLD 2 authority is MESP-136 comment `12244` and MESP-9 reconciliation
+`12245`. The bounded remediation is on branch
+`feat/MESP-136-b2b-quote-order-credit`, starting from the exact reviewed head
+`36d1c04cb4537142bdb29d369d40e35ac3b76618` and exact main baseline
+`8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`. Source/test/UI remediation commit:
+`397ef6d`; the final documentation/tracker handoff SHA follows after the final
+push.
+
+HOLD 2A establishes one deterministic approval authority. Draft and
+ReturnedForChange submission resolves the current effective policy from the
+current document facts and persists that exact snapshot; all PendingApproval
+stage/count/eligibility/SoD/cancellation and policy identity decisions use the
+stored snapshot, while delegation remains a live, time-bounded fact checked
+against the stored stage. HOLD 2B adds integrated SalesService credit tests
+through `TransitionOrderAsync` and `OverrideCreditAsync` with a controllable
+Finance-owned exposure fixture, durable credit/history/audit assertions, and
+eligible, overdue-warning, limit, Finance-hold, unavailable-truth, override,
+authorization, expiry, exposure-change, limit-change, and material-edit
+invalidation coverage. The small UI cleanup removes the duplicate Audit
+button and restores the Audit tab click handler.
+
+The capability remains reusable Tenant/Company/Branch-scoped B2B quotations
+and Sales Orders with server-authoritative Price List resolution, immutable
+commercial/tax/FX evidence, approval/delegation/SoD seams, Finance-exposed
+credit outcomes and controlled override, durable idempotency,
+revisions/history/audit, optimistic concurrency, and bilingual RTL Angular
+surfaces. No stock, fulfillment, delivery, invoice/AR/receipt posting,
+returns/credit notes, external integrations, ZATCA/FATOORA, or MESP-137/138/
+139 work was added. `frontend/assets` is untouched and the presentation is
+main-only.
+
+Validation is authoritative: Release build `0 warnings / 0 errors`; focused
+Sales `21/21`; full disposable-LocalDB backend `1,119/1,119` with 0 failures
+and 0 skips; SQL safety `80/80`; REST/OpenAPI/host/security `55/55`; generated
+OpenAPI `410` operationIds; catalog `411` public / `2` internal; Angular
+`305/305` across 43 spec files; focused Sales Chromium `2/2`; full Chromium
+`49/49`; EF pending-model check clean; `npm audit` and `npm audit --omit=dev`
+both report 0 vulnerabilities; and the five-project transitive NuGet scan is
+clear. The production initial bundle is `510.08 kB` (10.08 kB over the 500 kB
+budget) and the Sales lazy chunk is `72.72 kB`; the warning is retained and
+the budget was not raised.
+
+The canonical launcher left the repository-owned runtime running with the
+approved loopback Development auth bypass: API PID `44876` on port `5300`,
+Angular PID `44908` on port `4300`. Health, OpenAPI, frontend root, `main.js`,
+Finance smoke, Sales landing/quotations/orders, and order-edit probes returned
+HTTP 200; `LEFT RUNNING = YES`.
+
+Fast-track remains `19/26 = 73.1%`; production readiness remains approximately
+`47%` overall and `41%` Procurement/P2P. MESP-48 and MESP-50 remain open;
+MESP-137/138/139 remain inactive. PR #80 is Open/Draft/Unmerged. No Jira
+writes, Opus review, Ready transition, merge, rebase, force-push, or new PR
+occurred. Stop for third independent GPT-5.6 Sol acceptance.
+
+## Historical MESP-136 - GPT-5.6 Sol acceptance handoff after HOLD 1
 
 MESP-136 is the single active implementation capability under Epic MESP-9 -
 B2B Sales and Order-to-Cash. It is In Progress/activated under Sol evidence
