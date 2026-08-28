@@ -1,6 +1,6 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
-## Current authoritative fast-track snapshot - 28 August 2026 (MESP-136 active)
+## Current authoritative fast-track snapshot - 28 August 2026 (MESP-136 Sol HOLD 1)
 
 - MESP-132, MESP-133, MESP-134, and MESP-135 are Done and merged. MESP-135's
   accepted feature head is `dbc239d6bd1ef948bb8505d4360208f4a3470dda`; PR #79
@@ -8,27 +8,41 @@
   final accounting closure comment `12200` and MESP-10 reconciliation `12201`.
 - MESP-136 is the single active implementation capability under Epic MESP-9,
   both In Progress/activated under Sol evidence MESP-136 comment `12234` and
-  MESP-9 reconciliation `12235`. It is implemented on
+  MESP-9 reconciliation `12235`; Sol HOLD 1 authority is MESP-136 comment
+  `12239` with MESP-9 reconciliation `12240`. It is implemented on
   `feat/MESP-136-b2b-quote-order-credit` from exact baseline
-  `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`; implementation commit is
-  `c3283ea` and the final documentation/tracker handoff SHA follows after the
-  final push.
+  `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`; original reviewed head was
+  `be62e0ff46ec9100584be623d18d203e880aa052`; remediation source/test commit
+  is `a140237d564ccd90f409404bb861b3b7c96380c2`; the final
+  documentation/tracker handoff SHA follows after the final push.
 - The bounded capability adds reusable Tenant/Company/Branch-scoped B2B
   quotations and Sales Orders, server-authoritative Price List resolution,
   immutable commercial/tax/FX evidence, approval/delegation/SoD seams,
   Finance-exposed credit outcomes and controlled override, durable idempotency,
   revisions/history/audit, optimistic concurrency, and bilingual RTL Angular
-  Sales workspace surfaces. No Wafra-specific behavior was added.
-- Validation is green: Release `0 warnings / 0 errors`; full disposable-LocalDB
-  backend `1,108/1,108` with 0 failures and 0 skips; Angular `304/304` across
-  43 spec files; full Chromium `49/49`; EF migration/model check clean; npm
-  audit `0 vulnerabilities`; and `git diff --check` has no content errors.
-  Production initial bundle is `509.97 kB`, exceeding the 500 kB budget by
-  `9.97 kB`; Sales lazy chunk is `71.28 kB`. The budget warning is retained.
-- Runtime is left running through the canonical launcher: backend PID `37192`
-  on `5300`, frontend PID `48252` on `4300`. The 11 existing required probes
-  plus `/app/sales`, `/app/sales/quotations`, and `/app/sales/orders` returned
-  HTTP 200 (`14/14`).
+  Sales workspace surfaces. HOLD 1A makes quotation/order Company/Branch scope
+  immutable after creation. HOLD 1B adds durable configuration-led effective
+  multi-stage approval state with required counts, delegation/SoD evidence,
+  and revision binding. HOLD 1C wires actual runtime providers to
+  `MESP_SALES_POLICIES` for approval, commercial authority, delegation, and
+  Finance-owned credit limits with fail-closed missing configuration. HOLD 1D
+  adds controlled Sales Order edit/revision, ReturnedForChange correction and
+  resubmission, re-pricing, approval/credit invalidation, cancellation policy,
+  audit, idempotency, and concurrency. No Wafra-specific behavior was added.
+- Validation is green: Release `0 warnings / 0 errors`; focused Sales `16/16`;
+  full disposable-LocalDB backend `1,114/1,114` with 0 failures and 0 skips;
+  SQL safety `80/80`; REST/OpenAPI/host/security `59/59`; generated OpenAPI
+  `410` operationIds and catalog `411` public / `2` internal; Angular `305/305`
+  across 43 spec files; focused Sales Chromium `2/2`; full Chromium `49/49`;
+  EF pending-model check clean; both npm audits `0 vulnerabilities`; NuGet
+  vulnerable-package scan clear; and `git diff --check` clean. Production
+  initial bundle is `510.08 kB`, exceeding the 500 kB budget by `10.08 kB`;
+  Sales lazy chunk is `72.82 kB`. The warning is retained and the budget was
+  not increased.
+- Runtime is left running through the canonical launcher: backend PID `22504`
+  on `5300`, frontend PID `48376` on `4300`. Two backend probes, the 11
+  existing Finance/root probes, three existing Sales probes, and the new
+  order-edit route returned HTTP 200 (`15/15`).
 - Fast-track capability completion remains **19/26 = 73.1%** until Sol
   acceptance, verified merge, and Jira closure. Production readiness remains
   separate and unchanged at approximately **47% overall** and **41%
@@ -50,7 +64,7 @@
   No Jira writes were performed by Luna during this implementation.
 <!-- MESP-136-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-28 16:14 +03:00
+**Last Updated:** 2026-08-28 18:26 +03:00
 
 ## Historical authoritative fast-track snapshot - 27 August 2026 (MESP-135 Sol HOLD 6)
 
@@ -139,7 +153,7 @@ Runtime probe detail: `5300/health` 200; `5300/openapi/v1.json` 200;
 
 | Date | Capability / governance change | Overall | Procurement/P2P | Evidence / note |
 |---|---|---:|---:|---|
-| 2026-08-28 | MESP-136 bounded implementation completed for reusable B2B quotations, Sales Orders, server-authoritative pricing, immutable commercial/tax/FX evidence, approval/delegation/SoD seams, Finance-exposed credit control, durable idempotency, revisions/history/audit, optimistic concurrency, and bilingual RTL Sales workspace surfaces. | ~47% | ~41% | Exact baseline `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`; implementation `c3283ea`; branch `feat/MESP-136-b2b-quote-order-credit`; Sol activation `12234`; Epic reconciliation `12235`; Release 0/0; backend 1,108/1,108 with 0 failed/0 skipped; Angular 304/304 across 43 specs; full Chromium 49/49; EF migration/model check clean; npm audit 0 vulnerabilities; initial bundle 509.97 kB (9.97 kB above 500 kB budget), Sales lazy 71.28 kB; runtime backend/frontend PIDs 37192/48252 on 5300/4300; 14/14 baseline-plus-Sales HTTP 200 probes; fast-track remains 19/26 = 73.1% and production-readiness headlines unchanged; MESP-137/138/139 inactive; MESP-48/MESP-50 open; Draft PR #80 is Open/Draft/Unmerged; no Jira writes, Opus review, Ready transition, merge, rebase, or force-push; assets untouched. |
+| 2026-08-28 | MESP-136 Sol HOLD 1 bounded remediation completed on the existing Draft PR #80: HOLD 1A immutable Company/Branch scope; HOLD 1B durable configuration-led multi-stage approval state, required counts, delegation/SoD and revision evidence; HOLD 1C actual `MESP_SALES_POLICIES` runtime provider composition with fail-closed missing configuration; HOLD 1D Sales Order edit/revision, ReturnedForChange correction/resubmission, cancellation policy, approval/credit invalidation, audit, idempotency, and concurrency. | ~47% | ~41% | Original reviewed head `be62e0ff46ec9100584be623d18d203e880aa052`; source/test `a140237d564ccd90f409404bb861b3b7c96380c2`; exact baseline `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`; branch `feat/MESP-136-b2b-quote-order-credit`; Sol HOLD `12239`; MESP-9 reconciliation `12240`; Release 0/0; focused Sales 16/16; backend 1,114/1,114 with 0 failed/0 skipped; SQL safety 80/80; REST/OpenAPI/host/security 59/59; OpenAPI 410 operationIds, catalogue 411 public / 2 internal; Angular 305/305 across 43 specs; focused/full Chromium 2/2 and 49/49; EF clean; both npm audits 0 vulnerabilities; NuGet scan clear; initial bundle 510.08 kB (10.08 kB above 500 kB budget), Sales lazy 72.82 kB; runtime backend/frontend PIDs 22504/48376 on 5300/4300; 15/15 HTTP 200 probes; fast-track remains 19/26 = 73.1% and production-readiness headlines unchanged; MESP-137/138/139 inactive; MESP-48/MESP-50 open; Draft PR #80 Open/Draft/Unmerged; no Jira writes, Opus review, Ready transition, merge, rebase, or force-push; assets and presentation untouched. |
 | 2026-08-28 | MESP-135 reached Done after final accounting acceptance, verified squash merge, and post-merge integration-gate recovery. | ~47% | ~41% | Accepted feature `dbc239d6bd1ef948bb8505d4360208f4a3470dda`; merged main `8238ce562ee165def8ecdbfa07b285aeb3f1a2ef`; closure `12200`; MESP-10 reconciliation `12201`; Release retry 0 warnings / 0 errors after safely releasing the repository-owned DLL lock; runtime left running on backend/frontend 5300/4300, PIDs 45016/19140; 11/11 HTTP 200 probes; fast-track `19/26 = 73.1%`; production readiness unchanged and separate; no active capability; MESP-139 inactive; MESP-48/MESP-50 open; no Jira writes by Luna; assets and presentation preserved. |
 
 ## Historical progress history addendum - 27 August 2026
