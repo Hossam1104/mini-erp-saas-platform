@@ -26,7 +26,16 @@ velocity, or forecast:
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 29 August 2026 (MESP-136 HOLD 3 active; stop for third Sol acceptance)
+## Current execution overlay - 29 August 2026 (MESP-136 closed and merged; awaiting next Sol activation)
+
+* MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged. MESP-136 final Sol acceptance is recorded as MESP-136 comment `12252`; closure evidence is MESP-136 comment `12255` and MESP-9 reconciliation `12256`. PR #80 is closed/merged with squash commit `992195f7e61cf03b94675a498377a6d8bf679ebf` at 2026-08-28T23:37:13Z. Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`.
+* **No current implementation capability is active.** MESP-137, MESP-138, and MESP-139 remain To Do/inactive and must not be started until Sol explicitly activates the next task.
+* Fast-track capability completion = **20/26 = 76.9%** after verified merge and Jira closure. Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**. MESP-48 and MESP-50 remain open production gates.
+* MESP-9 remains In Progress pending Sol next-capability activation and Epic reconciliation.
+* MESP-136 delivered reusable Tenant/Company/Branch-scoped B2B quotations and Sales Orders, server-authoritative Price List resolution, immutable commercial/tax/FX evidence, approval/delegation/SoD seams, Finance-exposed credit outcomes and controlled override, durable idempotency, revisions/history/audit, optimistic concurrency, and bilingual RTL Angular workspace surfaces. No stock, fulfillment, delivery, invoice/AR/receipt posting, returns/credit notes, external integrations, ZATCA/FATOORA, or Wafra-specific core behavior was added. `frontend/assets` remains untouched and the presentation remains main-only.
+* Ponytail FULL is the default executor mode when installed and available.
+
+## Historical execution overlay - 29 August 2026 (MESP-136 HOLD 3 active; stop for third Sol acceptance)
 
 * MESP-132, MESP-133, MESP-134, and MESP-135 are Done and merged. MESP-136 remains the single active implementation capability under Epic MESP-9 - B2B Sales and Order-to-Cash, In Progress/activated under Sol evidence MESP-136 comment `12234` and MESP-9 reconciliation `12235`.
 * HOLD 3 authority is MESP-136 comment `12248` with MESP-9 reconciliation `12249`. The bounded remediation is on `feat/MESP-136-b2b-quote-order-credit` from exact Sol-reviewed starting head `29bd9bc1b65ef3b451e282091e25aa041796d9d3` and exact main baseline `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`; the final documentation/tracker handoff SHA is recorded by `git rev-parse HEAD` after push.
@@ -59,6 +68,18 @@ velocity, or forecast:
 * Fast-track capability completion remains `19/26 = 73.1%` until Sol acceptance, verified merge, and Jira closure. Production readiness remains separate and unchanged at approximately `47%` overall and `41%` Procurement/P2P.
 * No Wafra-specific workflow, schema, API, permission, pricing, credit, approval, accounting, or lifecycle behavior was added. The project presentation remains main-only and `frontend/assets` remains untouched.
 * Draft PR #80 is Open/Draft/Unmerged for MESP-136. Sol acceptance is required before any Ready transition or merge. No Jira writes, Opus review, merge, rebase, or force-push is permitted in this handoff.
+
+## Ponytail Executor Tooling
+
+When Ponytail is installed and available in the executor environment, use **Ponytail FULL** as the default mode for normal MESP implementation work.
+
+**FULL semantics**: FULL must never weaken validation, Tenant isolation, authorization, financial/accounting integrity, data-loss safeguards, audit/evidence, concurrency, accessibility, or acceptance gates. It is a productivity and organization tool only.
+
+Different Ponytail modes may only be selected when explicitly justified by Sol/Owner for the bounded task at hand.
+
+Ponytail's installation, plugin cache, marketplace state, and hook trust are machine-local under the executor's Windows user profile. They must not be committed into the repository.
+
+Absence or unavailability of Ponytail must not block otherwise valid work. Report unavailability honestly and continue under the repository's normal rules unless the task specifically requires it.
 
 ## Permanent Architecture Rules (ADR-019 / Tenant & Workspace Isolation)
 

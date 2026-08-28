@@ -1,63 +1,17 @@
 
-# MESP-136 - GPT-5.6 Sol acceptance handoff after HOLD 3
+# MESP-136 closed and merged — awaiting next Sol activation
 
-MESP-136 remains the single active implementation capability under Epic
-MESP-9 - B2B Sales and Order-to-Cash. It is In Progress/activated under Sol
-evidence MESP-136 comment `12234` and MESP-9 reconciliation `12235`.
+MESP-136 is **Done** and **merged to `main` at commit `992195f7e61cf03b94675a498377a6d8bf679ebf`** on 2026-08-28T23:37:13Z. Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`. PR #80 is closed/merged/not-Draft.
 
-HOLD 3 authority is MESP-136 comment `12248` and MESP-9 reconciliation
-`12249`. The bounded remediation is on branch
-`feat/MESP-136-b2b-quote-order-credit`, starting from the exact Sol-reviewed
-head `29bd9bc1b65ef3b451e282091e25aa041796d9d3` and exact main baseline
-`8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`; the final documentation/tracker
-handoff SHA is recorded by `git rev-parse HEAD` after the final push.
+Final Sol acceptance is recorded as MESP-136 comment `12252`; closure evidence is MESP-136 comment `12255` and MESP-9 reconciliation `12256`.
 
-HOLD 3 corrects the mixed-currency credit decision. Finance exposure
-`CurrencyCode` is the single evaluation currency. Functional-currency orders
-use their raw total without fabricated FX; foreign orders use the immutable
-validated Sales transaction-to-functional FX evidence and repository
-8-decimal ToEven rounding before the limit comparison. Credit responses and
-durable history retain evaluation currency, transaction currency/amount,
-converted commitment, applicable FX evidence, proposed exposure, limit, and
-order revision. Missing or invalid exposure, limit, or FX truth is explicit
-Unknown/fail-closed, and override reuse compares the currency-aligned facts.
+**No current implementation capability is active.** MESP-137, MESP-138, and MESP-139 remain To Do/inactive and must not be started until Sol explicitly activates the next task in a fresh session with a new TASK.md prompt.
 
-The bounded Sales-only persistence addition is an additive migration for
-evaluation currency, transaction facts, converted commitment, FX evidence,
-and order revision; no Finance schema or unrelated capability changed. Real
-`SalesService` coverage now proves functional-currency evaluation, valid USD
-to SAR conversion, the converted-over-limit regression, evaluation-currency
-limit absence, missing/mismatched/invalid FX fail-closed behavior, durable
-reload evidence, and foreign-currency override invalidation. HOLD 1/HOLD 2
-approval, edit, delegation, SoD, credit, audit, and concurrency behavior is
-preserved.
+Fast-track capability completion = **20/26 = 76.9%** after verified merge and Jira closure. Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**. MESP-48 and MESP-50 remain open production gates. MESP-9 remains In Progress.
 
-Validation is authoritative: Release build `0 warnings / 0 errors`; focused
-Sales `26/26`; full disposable-LocalDB backend `1,124/1,124` with 0 failures
-and 0 skips; SQL safety `80/80`; REST/OpenAPI/host/security `55/55`; generated
-OpenAPI `410` unique operationIds; catalog `411` public / `2` internal;
-Angular `305/305` across 43 spec files; focused Sales Chromium `2/2`; full
-Chromium `49/49`; EF pending-model check clean; both npm audits report `0
-vulnerabilities`; NuGet vulnerable-package scan is clear; and `git diff
---check` is clean. The production initial bundle is `510.08 kB`, exceeding
-the 500 kB budget by `10.08 kB`; Sales lazy chunk is `72.72 kB`. The warning
-is retained and the budget was not raised.
+Ponytail FULL is the default executor mode when available on supported environments (Claude Code, OpenAI Codex).
 
-The canonical launcher left the repository-owned runtime running with the
-approved loopback Development auth bypass: API PID `7608` on port `5300`,
-Angular PID `10148` on port `4300`. The runtime was recreated in isolated
-`.runtime/hold3-runtime-20260829` because the prior local SQLite schema was
-stale; the persistent MESP store was not touched. Authenticated backend
-health, OpenAPI, Scalar, module registration, session, entry, contexts,
-Finance companies/source-ready/AR aging, and Sales quotation/order probes,
-plus frontend root, `main.js`, Finance, Sales quotation/order, and order-edit
-routes, returned HTTP 200. `LEFT RUNNING = YES`.
-
-Fast-track remains `19/26 = 73.1%`; production readiness remains
-approximately `47%` overall and `41%` Procurement/P2P. MESP-48 and MESP-50
-remain open; MESP-137/138/139 remain inactive. PR #80 is Open/Draft/Unmerged.
-No Jira writes, Opus review, Ready transition, merge, rebase, force-push, or
-new PR occurred. Stop for third independent GPT-5.6 Sol acceptance.
+Repository state has been reconciled to reflect closure and to document Ponytail tooling governance.
 
 ## Historical MESP-136 - GPT-5.6 Sol acceptance handoff after HOLD 2
 

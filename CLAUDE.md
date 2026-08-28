@@ -1,12 +1,14 @@
 @AGENTS.md
 
-## Current execution overlay - 26 August 2026 (MESP-134 active)
+## Current execution overlay - 29 August 2026 (MESP-136 closed; awaiting next activation)
 
-MESP-133 is Done and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
-MESP-134 is the only active implementation capability under MESP-10; MESP-135
-remains inactive. Sol closure `12037`, Finance reconciliation `12038`, and
-MESP-134 activation `12039` are authoritative. Use one Draft/Open/Unmerged PR,
-no Jira writes, no Opus, no merge, and stop for GPT-5.6 Sol acceptance.
+MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged.
+MESP-136 merged at `992195f7e61cf03b94675a498377a6d8bf679ebf` (2026-08-28T23:37:13Z).
+Final Sol acceptance: MESP-136 comment `12252`. Closure: MESP-136 comment `12255`, MESP-9 reconciliation `12256`.
+
+No current implementation capability is active. MESP-137/138/139 remain To Do/inactive.
+Fast-track = 20/26 = 76.9%. Production readiness remains ~47% overall / ~41% Procurement/P2P.
+Ponytail FULL is the default executor mode when available.
 
 ## Owner-Managed Asset Protection
 
