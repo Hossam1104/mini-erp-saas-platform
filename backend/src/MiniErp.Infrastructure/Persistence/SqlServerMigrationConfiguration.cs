@@ -15,6 +15,7 @@ internal static class SqlServerMigrationConfiguration
     internal const string ProcurementHistoryTable = "__EFMigrationsHistory_Procurement";
     internal const string InventoryHistoryTable = "__EFMigrationsHistory_Inventory";
     internal const string FinanceHistoryTable = "__EFMigrationsHistory_Finance";
+    internal const string SalesHistoryTable = "__EFMigrationsHistory_Sales";
 
     internal static DbContextOptions Configure(
         string connectionString,

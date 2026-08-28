@@ -595,6 +595,47 @@ public sealed class MasterDataAuditEvidence
             afterSummary,
             approverId);
 
+    /// <summary>
+    /// Creates immutable evidence for a trusted bounded-module reference read.
+    /// The caller must already have completed the owning module's authorization;
+    /// this factory only preserves the actor, Tenant, and operation facts for
+    /// the Master Data reference port.
+    /// </summary>
+    public static MasterDataAuditEvidence CreateTrustedModuleReference(
+        string operationId,
+        string correlationId,
+        Guid actorId,
+        Guid sessionId,
+        Guid tenantId,
+        Guid? organizationId = null,
+        OrganizationScopeKind? organizationKind = null,
+        string? afterSummary = null) =>
+        CreateValidated(
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow,
+            operationId,
+            correlationId,
+            actorId,
+            sessionId,
+            FoundationAuditAuthorizationPath.OrdinaryMembership,
+            new TenantOwnership(tenantId),
+            organizationId is { } id && organizationKind is { } kind
+                ? new BusinessScope(
+                    new TenantOwnership(tenantId),
+                    new OrganizationReference(new TenantOwnership(tenantId), kind, id),
+                    new ScopePolicyReference("trusted-module-reference.v1", 1))
+                : null,
+            MasterDataOperation.View,
+            MasterDataResourceKind.PriceList,
+            null,
+            null,
+            MasterDataPolicyOutcome.Allowed,
+            FoundationAuditDecision.Allowed,
+            FoundationAuditReason.Allowed,
+            null,
+            afterSummary,
+            null);
+
     public Guid EvidenceId { get; }
 
     public DateTimeOffset OccurredAt { get; }

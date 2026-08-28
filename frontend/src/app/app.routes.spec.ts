@@ -29,4 +29,20 @@ describe('Application route contract', () => {
     expect(childPaths).not.toContain('inventory/goods-receipts');
     expect(childPaths).not.toContain('finance/accounts-payable');
   });
+
+  it('exposes the bounded Sales quotation and order workspace without fulfillment routes', () => {
+    const appRoute = routes.find((route) => route.path === 'app');
+    const childPaths = (appRoute?.children ?? []).map((route) => route.path);
+
+    expect(childPaths).toContain('sales');
+    expect(childPaths).toContain('sales/quotations');
+    expect(childPaths).toContain('sales/quotations/new');
+    expect(childPaths).toContain('sales/quotations/:id');
+    expect(childPaths).toContain('sales/quotations/:id/edit');
+    expect(childPaths).toContain('sales/orders');
+    expect(childPaths).toContain('sales/orders/:id');
+    expect(childPaths).toContain('sales/orders/:id/edit');
+    expect(childPaths).not.toContain('sales/deliveries');
+    expect(childPaths).not.toContain('sales/invoices');
+  });
 });
