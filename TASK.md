@@ -60,8 +60,8 @@ not increased. `git diff --check` is clean.
 
 The repository-owned runtime is left running through the canonical launcher:
 backend PID `22504` on port `5300`, frontend PID `48376` on port `4300`.
-The two backend probes, 11 existing Finance/root probes, three existing Sales
-workspace probes, and the new order-edit route returned HTTP 200 (**15/15**).
+The 11 existing backend/root/Finance probes, three existing Sales workspace
+probes, and the new order-edit route returned HTTP 200 (**15/15**).
 
 Fast-track capability completion remains **19/26 = 73.1%** until Sol
 acceptance, verified merge, and Jira closure. Production readiness remains

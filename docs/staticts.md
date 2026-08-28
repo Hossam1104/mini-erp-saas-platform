@@ -40,9 +40,9 @@
   Sales lazy chunk is `72.82 kB`. The warning is retained and the budget was
   not increased.
 - Runtime is left running through the canonical launcher: backend PID `22504`
-  on `5300`, frontend PID `48376` on `4300`. Two backend probes, the 11
-  existing Finance/root probes, three existing Sales probes, and the new
-  order-edit route returned HTTP 200 (`15/15`).
+  on `5300`, frontend PID `48376` on `4300`. The 11 existing backend/root/
+  Finance probes, three existing Sales probes, and the new order-edit route
+  returned HTTP 200 (`15/15`).
 - Fast-track capability completion remains **19/26 = 73.1%** until Sol
   acceptance, verified merge, and Jira closure. Production readiness remains
   separate and unchanged at approximately **47% overall** and **41%
