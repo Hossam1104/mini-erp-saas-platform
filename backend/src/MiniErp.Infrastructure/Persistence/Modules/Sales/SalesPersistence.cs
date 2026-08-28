@@ -121,7 +121,10 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
         if (!CanTransition(entity.Status, target)) return Failure<SalesQuotationResponse>("quotation_transition_invalid");
         var before = entity.Status;
         var now = DateTimeOffset.UtcNow;
-        var effectivePolicy = DeserializePolicy(entity.ApprovalPolicyJson) ?? policy;
+        var storedPolicy = DeserializePolicy(entity.ApprovalPolicyJson);
+        var effectivePolicy = target == SalesQuotationStatus.PendingApproval ? policy : storedPolicy;
+        if (entity.Status == SalesQuotationStatus.PendingApproval && effectivePolicy is null)
+            return Failure<SalesQuotationResponse>("approval_policy_missing");
         var actualTarget = target;
         SalesApprovalStateResponse? approvalState = DeserializeApprovalState(entity.CurrentApprovalsJson);
         if (target == SalesQuotationStatus.Cancelled && entity.Status == SalesQuotationStatus.PendingApproval
@@ -139,7 +142,7 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
             approvalState = approval.State;
             actualTarget = approval.IsFullyApproved ? SalesQuotationStatus.Approved : SalesQuotationStatus.PendingApproval;
         }
-        entity.Transition(actualTarget, now, JsonSerializer.Serialize(effectivePolicy, Json), SerializeApprovalState(approvalState));
+        entity.Transition(actualTarget, now, effectivePolicy is null ? entity.ApprovalPolicyJson : JsonSerializer.Serialize(effectivePolicy, Json), SerializeApprovalState(approvalState));
         await db.SaveChangesAsync(cancellationToken);
         var response = ToResponse(entity);
         AddHistory(db, context, "quotation", id, ActionToHistory(actualTarget), before, actualTarget, reason, effectivePolicy, null, Hash(response), now, JsonSerializer.Serialize(response, Json));
@@ -168,6 +171,26 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
     {
         await using var db = Create(context);
         return (await db.Audit.AsNoTracking().Where(item => item.DocumentType == documentType && item.DocumentId == id).ToListAsync(cancellationToken)).OrderByDescending(item => item.OccurredAt).Select(item => new SalesAuditResponse(item.Id, item.OperationId, item.DocumentType, item.DocumentId, item.ActorId, item.OccurredAt, item.Decision, item.Reason, item.BeforeSummary, item.AfterSummary, item.IdempotencyKey, item.CorrelationId)).ToArray();
+    }
+
+    public async Task<SalesApprovalPolicyDefinition?> GetApprovalPolicyAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context);
+        if (string.Equals(documentType, "quotation", StringComparison.Ordinal))
+        {
+            var quotation = await ApplyTrustedScope(db.Quotations.AsNoTracking(), context.TenantContext.Scope)
+                .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+            return quotation is null ? null : DeserializePolicy(quotation.ApprovalPolicyJson);
+        }
+
+        if (string.Equals(documentType, "order", StringComparison.Ordinal))
+        {
+            var order = await ApplyTrustedScope(db.Orders.AsNoTracking(), context.TenantContext.Scope)
+                .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+            return order is null ? null : DeserializePolicy(order.ApprovalPolicyJson);
+        }
+
+        return null;
     }
 
     public async Task<IReadOnlyList<SalesOrderSummaryResponse>> ListOrdersAsync(ProcurementRequestContext context, Guid? companyId, SalesOrderStatus? status, CancellationToken cancellationToken = default)
@@ -227,7 +250,10 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
         if (!CanTransition(entity.Status, target)) return Failure<SalesOrderResponse>("order_transition_invalid");
         var before = entity.Status;
         var now = DateTimeOffset.UtcNow;
-        var effectivePolicy = DeserializePolicy(entity.ApprovalPolicyJson) ?? policy;
+        var storedPolicy = DeserializePolicy(entity.ApprovalPolicyJson);
+        var effectivePolicy = target == SalesOrderStatus.PendingApproval ? policy : storedPolicy;
+        if (entity.Status == SalesOrderStatus.PendingApproval && effectivePolicy is null)
+            return Failure<SalesOrderResponse>("approval_policy_missing");
         var actualTarget = target;
         SalesApprovalStateResponse? approvalState = DeserializeApprovalState(entity.CurrentApprovalsJson);
         if (target == SalesOrderStatus.Cancelled && entity.Status == SalesOrderStatus.PendingApproval
@@ -245,7 +271,7 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
             approvalState = approval.State;
             actualTarget = approval.IsFullyApproved ? SalesOrderStatus.Approved : SalesOrderStatus.PendingApproval;
         }
-        entity.Transition(actualTarget, reason, now, credit, JsonSerializer.Serialize(effectivePolicy, Json), SerializeApprovalState(approvalState));
+        entity.Transition(actualTarget, reason, now, credit, effectivePolicy is null ? entity.ApprovalPolicyJson : JsonSerializer.Serialize(effectivePolicy, Json), SerializeApprovalState(approvalState));
         if (credit is not null) db.Credit.Add(ToCredit(entity, credit));
         await db.SaveChangesAsync(cancellationToken);
         var response = ToResponse(entity);

@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.BusinessParties;
@@ -489,6 +490,422 @@ public sealed class SalesTests
         Assert.Null(persistence.Captured);
     }
 
+    [Fact]
+    public async Task Approval_policy_is_snapshotted_at_submission_for_quotations_and_orders()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-a", 1, Approver),
+            ApprovalOption("order", "order-a", 1, Approver)));
+        var service = fixture.CreateService(options, new ControllableFinanceSettlementPersistence());
+
+        var quotation = await service.CreateQuotationAsync(
+            fixture.Context(Creator, permission: "tenant.sales.quotation.create"),
+            CreateQuotationRequest(),
+            "service-policy-quotation-create");
+        Assert.True(quotation.Succeeded, quotation.Code);
+
+        options.Set(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-b", 2, ApproverTwo),
+            ApprovalOption("order", "order-a", 1, Approver)));
+        var submittedQuotation = await service.TransitionQuotationAsync(
+            fixture.Context(Creator, permission: "tenant.sales.quotation.submit"),
+            quotation.Value!.Id,
+            SalesQuotationStatus.PendingApproval,
+            null,
+            quotation.Value.Version,
+            "service-policy-quotation-submit");
+        Assert.True(submittedQuotation.Succeeded, submittedQuotation.Code);
+        Assert.Equal("quotation-b", submittedQuotation.Value!.ApprovalState!.PolicyId);
+        Assert.Equal(2, submittedQuotation.Value.ApprovalState.PolicyVersion);
+
+        options.Set(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-c", 3, Approver),
+            ApprovalOption("order", "order-a", 1, Approver)));
+        var approvedQuotation = await service.TransitionQuotationAsync(
+            fixture.Context(ApproverTwo, permission: "tenant.sales.quotation.approve"),
+            quotation.Value.Id,
+            SalesQuotationStatus.Approved,
+            "approved using submitted snapshot",
+            submittedQuotation.Value.Version,
+            "service-policy-quotation-approve");
+        Assert.True(approvedQuotation.Succeeded, approvedQuotation.Code);
+
+        var order = await service.ConvertQuotationAsync(
+            fixture.Context(Creator, permission: "tenant.sales.quotation.convert"),
+            quotation.Value.Id,
+            approvedQuotation.Value!.Version,
+            "service-policy-order-convert");
+        Assert.True(order.Succeeded, order.Code);
+
+        options.Set(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-c", 3, Approver),
+            ApprovalOption("order", "order-b", 2, ApproverTwo)));
+        var submittedOrder = await service.TransitionOrderAsync(
+            fixture.Context(Creator, permission: "tenant.sales.order.submit"),
+            order.Value!.Id,
+            SalesOrderStatus.PendingApproval,
+            null,
+            order.Value.Version,
+            "service-policy-order-submit");
+        Assert.True(submittedOrder.Succeeded, submittedOrder.Code);
+        Assert.Equal("order-b", submittedOrder.Value!.ApprovalState!.PolicyId);
+        Assert.Equal(2, submittedOrder.Value.ApprovalState.PolicyVersion);
+
+        options.Set(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-c", 3, Approver),
+            ApprovalOption("order", "order-c", 3, Approver)));
+        var approvedOrder = await service.TransitionOrderAsync(
+            fixture.Context(ApproverTwo, permission: "tenant.sales.order.approve"),
+            order.Value.Id,
+            SalesOrderStatus.Approved,
+            "approved using submitted snapshot",
+            submittedOrder.Value.Version,
+            "service-policy-order-approve");
+        Assert.True(approvedOrder.Succeeded, approvedOrder.Code);
+        Assert.Equal(SalesOrderStatus.Approved, approvedOrder.Value!.Status);
+        Assert.Equal("order-b", approvedOrder.Value.ApprovalState!.PolicyId);
+    }
+
+    [Fact]
+    public async Task Pending_cancellation_uses_the_stored_policy_snapshot()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-cancel-a", 1, Approver, allowCancellation: true),
+            ApprovalOption("order", "order-a", 1, Approver)));
+        var service = fixture.CreateService(options, new ControllableFinanceSettlementPersistence());
+
+        var quotation = await service.CreateQuotationAsync(fixture.Context(Creator), CreateQuotationRequest(), "service-cancel-create");
+        Assert.True(quotation.Succeeded, quotation.Code);
+        var submitted = await service.TransitionQuotationAsync(
+            fixture.Context(Creator, permission: "tenant.sales.quotation.submit"),
+            quotation.Value!.Id,
+            SalesQuotationStatus.PendingApproval,
+            null,
+            quotation.Value.Version,
+            "service-cancel-submit");
+        Assert.True(submitted.Succeeded, submitted.Code);
+
+        options.Set(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-cancel-b", 2, Approver, allowCancellation: false),
+            ApprovalOption("order", "order-a", 1, Approver)));
+        var cancelled = await service.TransitionQuotationAsync(
+            fixture.Context(Creator, permission: "tenant.sales.quotation.cancel"),
+            quotation.Value.Id,
+            SalesQuotationStatus.Cancelled,
+            "requester cancellation",
+            submitted.Value!.Version,
+            "service-cancel-cancel");
+
+        Assert.True(cancelled.Succeeded, cancelled.Code);
+        Assert.Equal(SalesQuotationStatus.Cancelled, cancelled.Value!.Status);
+    }
+
+    [Fact]
+    public async Task Credit_evaluation_persists_eligible_warning_blocked_hold_and_unknown_outcomes()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var finance = new ControllableFinanceSettlementPersistence();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-credit", 1, Approver),
+            ApprovalOption("order", "order-credit", 1, Approver),
+            creditLimit: 500m));
+        var service = fixture.CreateService(options, finance);
+        var order = await CreateApprovedOrderAsync(fixture, service);
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        finance.Exposure = Exposure(100m, 0m, 100m, creditHold: false, asOf);
+        var eligible = await ConfirmOrderAsync(fixture, service, order, "credit-eligible");
+        Assert.True(eligible.Succeeded, eligible.Code);
+        Assert.Equal(SalesOrderStatus.Confirmed, eligible.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Eligible, eligible.Value.CreditOutcome);
+        var eligibleCredit = await service.GetOrderCreditAsync(fixture.Context(Approver), order.Id);
+        Assert.Equal(SalesCreditOutcome.Eligible, eligibleCredit!.Outcome);
+        Assert.Equal(250m, eligibleCredit.ProposedExposure);
+        Assert.Equal(500m, eligibleCredit.CreditLimit);
+
+        var warningOrder = await CreateApprovedOrderAsync(fixture, service, "credit-warning");
+        finance.Exposure = Exposure(100m, 25m, 100m, creditHold: false, asOf);
+        var warning = await ConfirmOrderAsync(fixture, service, warningOrder, "credit-warning-confirm");
+        Assert.True(warning.Succeeded, warning.Code);
+        Assert.Equal(SalesOrderStatus.Confirmed, warning.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Warning, warning.Value.CreditOutcome);
+
+        var blockedOrder = await CreateApprovedOrderAsync(fixture, service, "credit-blocked");
+        finance.Exposure = Exposure(400m, 0m, 400m, creditHold: false, asOf);
+        var blocked = await ConfirmOrderAsync(fixture, service, blockedOrder, "credit-blocked-confirm");
+        Assert.True(blocked.Succeeded, blocked.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, blocked.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Blocked, blocked.Value.CreditOutcome);
+        Assert.Equal("credit_limit_exceeded", blocked.Value.CreditReason);
+
+        var financeHoldOrder = await CreateApprovedOrderAsync(fixture, service, "credit-finance-hold");
+        finance.Exposure = Exposure(100m, 0m, 100m, creditHold: true, asOf, "Finance hold");
+        var financeHold = await ConfirmOrderAsync(fixture, service, financeHoldOrder, "credit-finance-hold-confirm");
+        Assert.True(financeHold.Succeeded, financeHold.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, financeHold.Value!.Status);
+        Assert.Equal("finance_credit_hold", financeHold.Value.CreditReason);
+
+        var unknownOrder = await CreateApprovedOrderAsync(fixture, service, "credit-unknown");
+        finance.Exposure = null;
+        var unknown = await ConfirmOrderAsync(fixture, service, unknownOrder, "credit-unknown-confirm");
+        Assert.True(unknown.Succeeded, unknown.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, unknown.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Unknown, unknown.Value.CreditOutcome);
+        Assert.Equal("credit_truth_unavailable", unknown.Value.CreditReason);
+    }
+
+    [Fact]
+    public async Task Credit_override_requires_authority_and_is_invalidated_by_expiry_exposure_and_limit_changes()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var finance = new ControllableFinanceSettlementPersistence();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-override", 1, Approver),
+            ApprovalOption("order", "order-override", 1, Approver),
+            creditLimit: 500m));
+        var service = fixture.CreateService(options, finance);
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        finance.Exposure = Exposure(400m, 0m, 400m, creditHold: false, asOf);
+        var order = await CreateApprovedOrderAsync(fixture, service, "credit-override");
+        var hold = await ConfirmOrderAsync(fixture, service, order, "credit-override-hold");
+        Assert.True(hold.Succeeded, hold.Code);
+
+        var self = await service.OverrideCreditAsync(
+            fixture.Context(Creator, permission: "tenant.sales.order.credit.override"),
+            order.Id,
+            new SalesCreditOverrideRequest("self", DateTimeOffset.UtcNow.AddHours(1), "test", "self"),
+            hold.Value!.Version,
+            "credit-override-self");
+        Assert.False(self.Succeeded);
+        Assert.Equal("self_approval_denied", self.Code);
+
+        var unauthorized = await service.OverrideCreditAsync(
+            fixture.Context(Approver, permission: "tenant.sales.order.confirm"),
+            order.Id,
+            new SalesCreditOverrideRequest("wrong permission", DateTimeOffset.UtcNow.AddHours(1), null, null),
+            hold.Value.Version,
+            "credit-override-unauthorized");
+        Assert.False(unauthorized.Succeeded);
+        Assert.Equal("permission_denied", unauthorized.Code);
+
+        var overridden = await service.OverrideCreditAsync(
+            fixture.Context(Approver, permission: "tenant.sales.order.credit.override"),
+            order.Id,
+            new SalesCreditOverrideRequest("approved exception", DateTimeOffset.UtcNow.AddHours(1), "finance", "approval-1"),
+            hold.Value.Version,
+            "credit-override-valid");
+        Assert.True(overridden.Succeeded, overridden.Code);
+        Assert.Equal(SalesOrderStatus.Approved, overridden.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Overridden, overridden.Value.CreditOutcome);
+
+        var confirmed = await ConfirmOrderAsync(fixture, service, overridden.Value, "credit-override-reuse");
+        Assert.True(confirmed.Succeeded, confirmed.Code);
+        Assert.Equal(SalesOrderStatus.Confirmed, confirmed.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Overridden, confirmed.Value.CreditOutcome);
+
+        var history = await fixture.Persistence.ListHistoryAsync(fixture.Context(Approver), "order", order.Id);
+        Assert.Contains(history, item => item.Action == nameof(SalesHistoryAction.CreditEvaluated));
+        Assert.Contains(history, item => item.Action == nameof(SalesHistoryAction.CreditOverridden));
+        var audit = await fixture.Persistence.ListAuditAsync(fixture.Context(Approver), "order", order.Id);
+        Assert.Contains(audit, item => item.OperationId == "sales.order.credit.override" && item.Decision == "Allowed");
+
+        var expiredOrder = await CreateApprovedOrderAsync(fixture, service, "credit-override-expired");
+        var expiredHold = await ConfirmOrderAsync(fixture, service, expiredOrder, "credit-override-expired-hold");
+        Assert.True(expiredHold.Succeeded, expiredHold.Code);
+        var expired = await service.OverrideCreditAsync(
+            fixture.Context(Approver, permission: "tenant.sales.order.credit.override"),
+            expiredOrder.Id,
+            new SalesCreditOverrideRequest("short exception", DateTimeOffset.UtcNow.AddMilliseconds(150), null, null),
+            expiredHold.Value!.Version,
+            "credit-override-expired-set");
+        Assert.True(expired.Succeeded, expired.Code);
+        await Task.Delay(350);
+        var expiredConfirmation = await ConfirmOrderAsync(fixture, service, expired.Value!, "credit-override-expired-confirm");
+        Assert.True(expiredConfirmation.Succeeded, expiredConfirmation.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, expiredConfirmation.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Blocked, expiredConfirmation.Value.CreditOutcome);
+
+        var exposureChangedOrder = await CreateApprovedOrderAsync(fixture, service, "credit-override-exposure");
+        var exposureHold = await ConfirmOrderAsync(fixture, service, exposureChangedOrder, "credit-override-exposure-hold");
+        Assert.True(exposureHold.Succeeded, exposureHold.Code);
+        var exposureOverride = await service.OverrideCreditAsync(
+            fixture.Context(Approver, permission: "tenant.sales.order.credit.override"),
+            exposureChangedOrder.Id,
+            new SalesCreditOverrideRequest("exposure exception", DateTimeOffset.UtcNow.AddHours(1), null, null),
+            exposureHold.Value!.Version,
+            "credit-override-exposure-set");
+        Assert.True(exposureOverride.Succeeded, exposureOverride.Code);
+        finance.Exposure = Exposure(401m, 0m, 401m, creditHold: false, asOf);
+        var exposureChanged = await ConfirmOrderAsync(fixture, service, exposureOverride.Value!, "credit-override-exposure-confirm");
+        Assert.True(exposureChanged.Succeeded, exposureChanged.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, exposureChanged.Value!.Status);
+        var exposureCredit = await service.GetOrderCreditAsync(fixture.Context(Approver), exposureChangedOrder.Id);
+        Assert.Equal(401m, exposureCredit!.NetReceivableExposure);
+        Assert.Equal(551m, exposureCredit.ProposedExposure);
+
+        var limitChangedOrder = await CreateApprovedOrderAsync(fixture, service, "credit-override-limit");
+        finance.Exposure = Exposure(100m, 0m, 100m, creditHold: false, asOf);
+        options.Set(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-override", 1, Approver),
+            ApprovalOption("order", "order-override", 1, Approver),
+            creditLimit: 200m));
+        var limitHold = await ConfirmOrderAsync(fixture, service, limitChangedOrder, "credit-override-limit-hold");
+        Assert.True(limitHold.Succeeded, limitHold.Code);
+        var limitOverride = await service.OverrideCreditAsync(
+            fixture.Context(Approver, permission: "tenant.sales.order.credit.override"),
+            limitChangedOrder.Id,
+            new SalesCreditOverrideRequest("limit exception", DateTimeOffset.UtcNow.AddHours(1), null, null),
+            limitHold.Value!.Version,
+            "credit-override-limit-set");
+        Assert.True(limitOverride.Succeeded, limitOverride.Code);
+        options.Set(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-override", 1, Approver),
+            ApprovalOption("order", "order-override", 1, Approver),
+            creditLimit: 240m));
+        var limitChanged = await ConfirmOrderAsync(fixture, service, limitOverride.Value!, "credit-override-limit-confirm");
+        Assert.True(limitChanged.Succeeded, limitChanged.Code);
+        Assert.Equal(SalesOrderStatus.CreditHold, limitChanged.Value!.Status);
+        var limitCredit = await service.GetOrderCreditAsync(fixture.Context(Approver), limitChangedOrder.Id);
+        Assert.Equal(240m, limitCredit!.CreditLimit);
+    }
+
+    [Fact]
+    public async Task Material_order_edit_resets_credit_and_approval_state_before_resubmission_snapshot()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var finance = new ControllableFinanceSettlementPersistence();
+        var options = new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-edit", 1, Approver),
+            ApprovalOption("order", "order-edit-a", 1, Approver),
+            creditLimit: 500m));
+        var service = fixture.CreateService(options, finance);
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+        finance.Exposure = Exposure(400m, 0m, 400m, creditHold: false, asOf);
+        var order = await CreateApprovedOrderAsync(fixture, service, "credit-edit");
+        var hold = await ConfirmOrderAsync(fixture, service, order, "credit-edit-hold");
+        Assert.True(hold.Succeeded, hold.Code);
+        var overrideResult = await service.OverrideCreditAsync(
+            fixture.Context(Approver, permission: "tenant.sales.order.credit.override"),
+            order.Id,
+            new SalesCreditOverrideRequest("edit requires recheck", DateTimeOffset.UtcNow.AddHours(1), null, null),
+            hold.Value!.Version,
+            "credit-edit-override");
+        Assert.True(overrideResult.Succeeded, overrideResult.Code);
+
+        var returned = await service.TransitionOrderAsync(
+            fixture.Context(Approver, permission: "tenant.sales.order.return"),
+            order.Id,
+            SalesOrderStatus.ReturnedForChange,
+            "material commercial edit",
+            overrideResult.Value!.Version,
+            "credit-edit-return");
+        Assert.True(returned.Succeeded, returned.Code);
+
+        var edited = await service.EditOrderAsync(
+            fixture.Context(Creator, permission: "tenant.sales.order.edit"),
+            order.Id,
+            new SalesOrderEditRequest(CurrencyA, PriceListA, [new SalesQuotationLineRequest(ProductA, UomA, 4m)]),
+            returned.Value!.Version,
+            "credit-edit-edit");
+        Assert.True(edited.Succeeded, edited.Code);
+        Assert.Equal(SalesOrderStatus.Draft, edited.Value!.Status);
+        Assert.Equal(SalesCreditOutcome.Unknown, edited.Value.CreditOutcome);
+        Assert.Null(edited.Value.CreditOverrideExpiresAt);
+        Assert.Null(edited.Value.ApprovalState);
+        Assert.Equal(200m, edited.Value.Total);
+
+        options.Set(RuntimeOptions(
+            ApprovalOption("quotation", "quotation-edit", 1, Approver),
+            ApprovalOption("order", "order-edit-b", 2, ApproverTwo),
+            creditLimit: 500m));
+        var resubmitted = await service.TransitionOrderAsync(
+            fixture.Context(Creator, permission: "tenant.sales.order.submit"),
+            order.Id,
+            SalesOrderStatus.PendingApproval,
+            null,
+            edited.Value.Version,
+            "credit-edit-resubmit");
+        Assert.True(resubmitted.Succeeded, resubmitted.Code);
+        Assert.Equal("order-edit-b", resubmitted.Value!.ApprovalState!.PolicyId);
+        Assert.Equal(2, resubmitted.Value.ApprovalState.PolicyVersion);
+    }
+
+    private static SalesPolicyOptions RuntimeOptions(
+        SalesApprovalPolicyOptions quotationPolicy,
+        SalesApprovalPolicyOptions orderPolicy,
+        decimal creditLimit = 500m) => new()
+    {
+        ApprovalPolicies = [quotationPolicy, orderPolicy],
+        CreditLimits = [new SalesCreditLimitOptions
+        {
+            TenantId = TenantA,
+            CompanyId = CompanyA,
+            CustomerId = CustomerA,
+            CurrencyCode = "SAR",
+            Limit = creditLimit,
+            EffectiveFrom = new DateOnly(2026, 1, 1)
+        }]
+    };
+
+    private static SalesApprovalPolicyOptions ApprovalOption(string documentType, string policyId, int version, Guid eligibleApprover, bool allowCancellation = true) => new()
+    {
+        TenantId = TenantA,
+        CompanyId = CompanyA,
+        BranchId = BranchA,
+        DocumentType = documentType,
+        PolicyId = policyId,
+        Version = version,
+        Stages = [new SalesApprovalStageOptions
+        {
+            StageKey = "commercial",
+            Sequence = 1,
+            RequiredApprovals = 1,
+            EligibleApproverIds = [eligibleApprover]
+        }],
+        AllowRequesterCancellationWhilePending = allowCancellation,
+        EffectiveFrom = DateTimeOffset.MinValue,
+        CurrencyCode = "SAR"
+    };
+
+    private static SalesQuotationCreateRequest CreateQuotationRequest() => new(
+        CompanyA,
+        BranchA,
+        CustomerA,
+        new DateOnly(2026, 8, 28),
+        new DateOnly(2026, 9, 30),
+        CurrencyA,
+        PriceListA,
+        null,
+        "Sales service test",
+        null,
+        [new SalesQuotationLineRequest(ProductA, UomA, 3m)]);
+
+    private static FinanceCustomerExposureRecord Exposure(decimal open, decimal overdue, decimal net, bool creditHold, DateOnly asOf, string? holdReason = null) =>
+        new(CompanyA, CustomerA, "SAR", open, overdue, 0m, net, asOf, creditHold, holdReason);
+
+    private static async Task<SalesOrderResponse> CreateApprovedOrderAsync(Fixture fixture, SalesService service, string keyPrefix = "sales-service")
+    {
+        var quotation = await service.CreateQuotationAsync(fixture.Context(Creator, permission: "tenant.sales.quotation.create"), CreateQuotationRequest(), $"{keyPrefix}-quotation-create");
+        Assert.True(quotation.Succeeded, quotation.Code);
+        var submittedQuotation = await service.TransitionQuotationAsync(fixture.Context(Creator, permission: "tenant.sales.quotation.submit"), quotation.Value!.Id, SalesQuotationStatus.PendingApproval, null, quotation.Value.Version, $"{keyPrefix}-quotation-submit");
+        Assert.True(submittedQuotation.Succeeded, submittedQuotation.Code);
+        var approvedQuotation = await service.TransitionQuotationAsync(fixture.Context(Approver, permission: "tenant.sales.quotation.approve"), quotation.Value.Id, SalesQuotationStatus.Approved, null, submittedQuotation.Value!.Version, $"{keyPrefix}-quotation-approve");
+        Assert.True(approvedQuotation.Succeeded, approvedQuotation.Code);
+        var order = await service.ConvertQuotationAsync(fixture.Context(Creator, permission: "tenant.sales.quotation.convert"), quotation.Value.Id, approvedQuotation.Value!.Version, $"{keyPrefix}-order-convert");
+        Assert.True(order.Succeeded, order.Code);
+        var submittedOrder = await service.TransitionOrderAsync(fixture.Context(Creator, permission: "tenant.sales.order.submit"), order.Value!.Id, SalesOrderStatus.PendingApproval, null, order.Value.Version, $"{keyPrefix}-order-submit");
+        Assert.True(submittedOrder.Succeeded, submittedOrder.Code);
+        var approvedOrder = await service.TransitionOrderAsync(fixture.Context(Approver, permission: "tenant.sales.order.approve"), order.Value.Id, SalesOrderStatus.Approved, null, submittedOrder.Value!.Version, $"{keyPrefix}-order-approve");
+        Assert.True(approvedOrder.Succeeded, approvedOrder.Code);
+        return approvedOrder.Value!;
+    }
+
+    private static Task<SalesOperationResult<SalesOrderResponse>> ConfirmOrderAsync(Fixture fixture, SalesService service, SalesOrderResponse order, string key) =>
+        service.TransitionOrderAsync(fixture.Context(Approver, permission: "tenant.sales.order.confirm"), order.Id, SalesOrderStatus.Confirmed, null, order.Version, key);
+
     private static ProcurementRequestContext Context(Guid actor, Guid tenantId = default, Guid companyId = default, string permission = "tenant.sales.quotation.create")
     {
         tenantId = tenantId == Guid.Empty ? TenantA : tenantId;
@@ -522,7 +939,22 @@ public sealed class SalesTests
             return new Fixture(connection, options);
         }
 
-        public ProcurementRequestContext Context(Guid actor, Guid tenantId = default, Guid companyId = default) => SalesTests.Context(actor, tenantId == Guid.Empty ? TenantA : tenantId, companyId == Guid.Empty ? CompanyA : companyId);
+        public ProcurementRequestContext Context(Guid actor, Guid tenantId = default, Guid companyId = default, string permission = "tenant.sales.quotation.create") => SalesTests.Context(actor, tenantId == Guid.Empty ? TenantA : tenantId, companyId == Guid.Empty ? CompanyA : companyId, permission);
+
+        public SalesService CreateService(IOptionsMonitor<SalesPolicyOptions> policies, IFinanceSettlementPersistence finance) => new(
+            Persistence,
+            new SalesAuthorizationService(new PurchaseRequestAuthorizationService()),
+            new ConfigurationSalesApprovalPolicyProvider(policies),
+            new NoSalesCommercialAuthorityProvider(),
+            new ConfigurationSalesApprovalDelegationProvider(policies),
+            new ConfigurationSalesCreditLimitProvider(policies),
+            finance,
+            new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(TenantA, CompanyA, "Company A", "SAR", BranchA)]),
+            new CustomerReferenceFake(),
+            new ProductReferenceFake(),
+            new PriceReferenceFake(),
+            new UnavailableSalesTaxReferenceProvider(),
+            new UnavailableSalesExchangeRateReferenceProvider());
 
         public SalesApprovalPolicyDefinition Policy() => new("sales.test.policy", 7, [new SalesApprovalStageDefinition("commercial", 1, 1, [Approver], false)], true, false, DateTimeOffset.MinValue, null);
 
@@ -534,6 +966,58 @@ public sealed class SalesTests
         private static TenantContext TenantContext(Guid tenantId, Guid actor, Guid companyId) => MiniErp.App.BuildingBlocks.Tenancy.TenantContext.ForOrdinaryMembership(new TenantId(tenantId), new MembershipReference(Guid.NewGuid()), new ScopeReference($"Company:{companyId:D}"), new CorrelationId($"sales-fixture-{Guid.NewGuid():N}"), actor);
 
         public async ValueTask DisposeAsync() => await connection.DisposeAsync();
+    }
+
+    private sealed class MutableOptionsMonitor<T>(T value) : IOptionsMonitor<T>
+    {
+        public T CurrentValue { get; private set; } = value;
+
+        public T Get(string? name) => CurrentValue;
+
+        public IDisposable OnChange(Action<T, string?> listener) => NoopDisposable.Instance;
+
+        public void Set(T value) => CurrentValue = value;
+
+        private sealed class NoopDisposable : IDisposable
+        {
+            internal static NoopDisposable Instance { get; } = new();
+            public void Dispose() { }
+        }
+    }
+
+    private sealed class ControllableFinanceSettlementPersistence : IFinanceSettlementPersistence
+    {
+        private readonly UnavailableFinanceSettlementPersistence fallback = new();
+        public FinanceCustomerExposureRecord? Exposure { get; set; }
+
+        public Task<IReadOnlyList<FinancePaymentMethodRecord>> ListPaymentMethodsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListPaymentMethodsAsync(context, companyId, cancellationToken);
+        public Task<FinanceOperationResult<FinancePaymentMethodRecord>> CreatePaymentMethodAsync(FinanceRequestContext context, FinancePaymentMethodCommand command, CancellationToken cancellationToken = default) => fallback.CreatePaymentMethodAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinancePaymentMethodRecord>> EditPaymentMethodAsync(FinanceRequestContext context, FinancePaymentMethodCommand command, CancellationToken cancellationToken = default) => fallback.EditPaymentMethodAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinancePaymentMethodRecord>> SetPaymentMethodLifecycleAsync(FinanceRequestContext context, Guid methodId, Guid companyId, FinancePaymentMethodLifecycle lifecycle, byte[] expectedVersion, string idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) => fallback.SetPaymentMethodLifecycleAsync(context, methodId, companyId, lifecycle, expectedVersion, idempotencyKey, fingerprint, cancellationToken);
+        public Task<IReadOnlyList<FinanceCashAccountRecord>> ListCashAccountsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListCashAccountsAsync(context, companyId, cancellationToken);
+        public Task<FinanceOperationResult<FinanceCashAccountRecord>> CreateCashAccountAsync(FinanceRequestContext context, FinanceCashAccountCommand command, CancellationToken cancellationToken = default) => fallback.CreateCashAccountAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceCashAccountRecord>> EditCashAccountAsync(FinanceRequestContext context, FinanceCashAccountCommand command, byte[] expectedVersion, CancellationToken cancellationToken = default) => fallback.EditCashAccountAsync(context, command, expectedVersion, cancellationToken);
+        public Task<FinanceOperationResult<FinanceCashAccountRecord>> SetCashAccountLifecycleAsync(FinanceRequestContext context, Guid accountId, Guid companyId, FinancePaymentMethodLifecycle lifecycle, byte[] expectedVersion, string idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) => fallback.SetCashAccountLifecycleAsync(context, accountId, companyId, lifecycle, expectedVersion, idempotencyKey, fingerprint, cancellationToken);
+        public Task<Guid?> ResolveCompanyIdAsync(FinanceRequestContext context, string resource, Guid resourceId, CancellationToken cancellationToken = default) => fallback.ResolveCompanyIdAsync(context, resource, resourceId, cancellationToken);
+        public Task<IReadOnlyList<FinanceOpenItemRecord>> ListOpenItemsAsync(FinanceRequestContext context, FinanceOpenItemKind kind, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListOpenItemsAsync(context, kind, companyId, cancellationToken);
+        public Task<FinanceOpenItemRecord?> GetOpenItemAsync(FinanceRequestContext context, Guid itemId, FinanceOpenItemKind? expectedKind = null, CancellationToken cancellationToken = default) => fallback.GetOpenItemAsync(context, itemId, expectedKind, cancellationToken);
+        public Task<IReadOnlyList<FinanceApSourceReadyRecord>> ListApSourceReadyAsync(FinanceRequestContext context, Guid? companyId = null, CancellationToken cancellationToken = default) => fallback.ListApSourceReadyAsync(context, companyId, cancellationToken);
+        public Task<FinanceOperationResult<FinanceOpenItemRecord>> RecognizeSupplierInvoiceAsync(FinanceRequestContext context, FinanceSupplierInvoiceRecognitionCommand command, CancellationToken cancellationToken = default) => fallback.RecognizeSupplierInvoiceAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateManualReceivableAsync(FinanceRequestContext context, FinanceManualReceivableCommand command, CancellationToken cancellationToken = default) => fallback.CreateManualReceivableAsync(context, command, cancellationToken);
+        public Task<IReadOnlyList<FinanceSettlementDocumentRecord>> ListSettlementDocumentsAsync(FinanceRequestContext context, FinanceSettlementQuery query, CancellationToken cancellationToken = default) => fallback.ListSettlementDocumentsAsync(context, query, cancellationToken);
+        public Task<FinanceSettlementDocumentRecord?> GetSettlementDocumentAsync(FinanceRequestContext context, Guid documentId, FinancePaymentMethodDirection? expectedDirection = null, CancellationToken cancellationToken = default) => fallback.GetSettlementDocumentAsync(context, documentId, expectedDirection, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> CreateSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementDocumentCommand command, CancellationToken cancellationToken = default) => fallback.CreateSettlementDocumentAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> EditSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementDocumentCommand command, byte[] expectedVersion, CancellationToken cancellationToken = default) => fallback.EditSettlementDocumentAsync(context, command, expectedVersion, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> TransitionSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementActionCommand command, FinanceSettlementDocumentStatus target, CancellationToken cancellationToken = default) => fallback.TransitionSettlementDocumentAsync(context, command, target, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> PostSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementActionCommand command, CancellationToken cancellationToken = default) => fallback.PostSettlementDocumentAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> ReverseSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementReversalCommand command, CancellationToken cancellationToken = default) => fallback.ReverseSettlementDocumentAsync(context, command, cancellationToken);
+        public Task<IReadOnlyList<FinanceAllocationRecord>> ListAllocationsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListAllocationsAsync(context, companyId, cancellationToken);
+        public Task<FinanceOperationResult<FinanceAllocationRecord>> CreateAllocationAsync(FinanceRequestContext context, FinanceAllocationCommand command, CancellationToken cancellationToken = default) => fallback.CreateAllocationAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceAllocationRecord>> ReverseAllocationAsync(FinanceRequestContext context, FinanceAllocationReversalCommand command, CancellationToken cancellationToken = default) => fallback.ReverseAllocationAsync(context, command, cancellationToken);
+        public Task<IReadOnlyList<FinanceAgingRecord>> GetAgingAsync(FinanceRequestContext context, FinanceAgingQuery query, CancellationToken cancellationToken = default) => fallback.GetAgingAsync(context, query, cancellationToken);
+        public Task<FinanceCustomerExposureRecord?> GetExposureAsync(FinanceRequestContext context, FinanceExposureQuery query, CancellationToken cancellationToken = default) => Task.FromResult(Exposure);
+        public Task<IReadOnlyList<FinanceReconciliationRecord>> GetReconciliationAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.GetReconciliationAsync(context, companyId, cancellationToken);
+        public Task<IReadOnlyList<FinanceReconciliationRecord>> GetReconciliationAsync(FinanceRequestContext context, Guid companyId, DateOnly asOfDate, CancellationToken cancellationToken = default) => fallback.GetReconciliationAsync(context, companyId, asOfDate, cancellationToken);
     }
 
     private sealed class CapturingSalesPersistence : ISalesPersistence
@@ -556,6 +1040,7 @@ public sealed class SalesTests
         public Task<IReadOnlyList<SalesQuotationRevisionResponse>> ListQuotationRevisionsAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => EmptyList<SalesQuotationRevisionResponse>();
         public Task<IReadOnlyList<SalesHistoryResponse>> ListHistoryAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default) => EmptyList<SalesHistoryResponse>();
         public Task<IReadOnlyList<SalesAuditResponse>> ListAuditAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default) => EmptyList<SalesAuditResponse>();
+        public Task<SalesApprovalPolicyDefinition?> GetApprovalPolicyAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default) => Empty<SalesApprovalPolicyDefinition?>();
         public Task<IReadOnlyList<SalesOrderSummaryResponse>> ListOrdersAsync(ProcurementRequestContext context, Guid? companyId, SalesOrderStatus? status, CancellationToken cancellationToken = default) => EmptyList<SalesOrderSummaryResponse>();
         public Task<SalesOrderResponse?> GetOrderAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => Empty<SalesOrderResponse?>();
         public Task<SalesOperationResult<SalesOrderResponse>> ConvertQuotationAsync(ProcurementRequestContext context, Guid quotationId, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, CancellationToken cancellationToken = default) => Failure<SalesOrderResponse>();

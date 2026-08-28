@@ -627,6 +627,7 @@ public interface ISalesPersistence
     Task<IReadOnlyList<SalesQuotationRevisionResponse>> ListQuotationRevisionsAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SalesHistoryResponse>> ListHistoryAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SalesAuditResponse>> ListAuditAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default);
+    Task<SalesApprovalPolicyDefinition?> GetApprovalPolicyAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SalesOrderSummaryResponse>> ListOrdersAsync(ProcurementRequestContext context, Guid? companyId, SalesOrderStatus? status, CancellationToken cancellationToken = default);
     Task<SalesOrderResponse?> GetOrderAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default);
     Task<SalesOperationResult<SalesOrderResponse>> ConvertQuotationAsync(ProcurementRequestContext context, Guid quotationId, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, CancellationToken cancellationToken = default);
@@ -649,6 +650,7 @@ public sealed class UnavailableSalesPersistence : ISalesPersistence
     public Task<IReadOnlyList<SalesQuotationRevisionResponse>> ListQuotationRevisionsAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => EmptyList<SalesQuotationRevisionResponse>();
     public Task<IReadOnlyList<SalesHistoryResponse>> ListHistoryAsync(ProcurementRequestContext c, string t, Guid id, CancellationToken x = default) => EmptyList<SalesHistoryResponse>();
     public Task<IReadOnlyList<SalesAuditResponse>> ListAuditAsync(ProcurementRequestContext c, string t, Guid id, CancellationToken x = default) => EmptyList<SalesAuditResponse>();
+    public Task<SalesApprovalPolicyDefinition?> GetApprovalPolicyAsync(ProcurementRequestContext c, string t, Guid id, CancellationToken x = default) => Empty<SalesApprovalPolicyDefinition?>();
     public Task<IReadOnlyList<SalesOrderSummaryResponse>> ListOrdersAsync(ProcurementRequestContext c, Guid? companyId, SalesOrderStatus? status, CancellationToken x = default) => EmptyList<SalesOrderSummaryResponse>();
     public Task<SalesOrderResponse?> GetOrderAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => Empty<SalesOrderResponse?>();
     public Task<SalesOperationResult<SalesOrderResponse>> ConvertQuotationAsync(ProcurementRequestContext c, Guid q, byte[] v, string k, string f, SalesApprovalPolicyDefinition? p, CancellationToken x = default) => Task.FromResult(Failure<SalesOrderResponse>());
@@ -702,6 +704,7 @@ public sealed class SalesService(
     public Task<IReadOnlyList<SalesQuotationRevisionResponse>> ListQuotationRevisionsAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => persistence.ListQuotationRevisionsAsync(c, id, x);
     public Task<IReadOnlyList<SalesHistoryResponse>> ListHistoryAsync(ProcurementRequestContext c, string type, Guid id, CancellationToken x = default) => persistence.ListHistoryAsync(c, type, id, x);
     public Task<IReadOnlyList<SalesAuditResponse>> ListAuditAsync(ProcurementRequestContext c, string type, Guid id, CancellationToken x = default) => persistence.ListAuditAsync(c, type, id, x);
+    public Task<SalesApprovalPolicyDefinition?> GetApprovalPolicyAsync(ProcurementRequestContext c, string type, Guid id, CancellationToken x = default) => persistence.GetApprovalPolicyAsync(c, type, id, x);
 
     public async Task<SalesOperationResult<SalesQuotationResponse>> CreateQuotationAsync(ProcurementRequestContext context, SalesQuotationCreateRequest request, string key, CancellationToken cancellationToken = default)
     {
@@ -749,7 +752,7 @@ public sealed class SalesService(
         var operation = target switch { SalesQuotationStatus.PendingApproval => "sales.quotation.submit", SalesQuotationStatus.Approved => "sales.quotation.approve", SalesQuotationStatus.Rejected => "sales.quotation.reject", SalesQuotationStatus.ReturnedForChange => "sales.quotation.return", SalesQuotationStatus.Sent => "sales.quotation.send", SalesQuotationStatus.Withdrawn => "sales.quotation.withdraw", SalesQuotationStatus.Cancelled => "sales.quotation.cancel", _ => "sales.quotation.edit" };
         var authorizationDecision = authorization.Decide(context, operation, Scope(context, existing.CompanyId, existing.BranchId));
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesQuotationResponse>.Failure(ScopeFailure(authorizationDecision.Code, "quotation_not_found"));
-        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "quotation", existing.Total, DateTimeOffset.UtcNow, cancellationToken, existing.CurrencyCode);
+        var policy = await ResolveTransitionPolicyAsync(context, id, existing.CompanyId, existing.BranchId, "quotation", existing.Status, target, existing.Total, existing.CurrencyCode, cancellationToken);
         if (target == SalesQuotationStatus.PendingApproval && policy is null) return SalesOperationResult<SalesQuotationResponse>.Failure("approval_policy_missing");
         if (target == SalesQuotationStatus.Cancelled && existing.Status == SalesQuotationStatus.PendingApproval
             && (policy is null || !policy.AllowRequesterCancellationWhilePending || existing.CreatedByActorId != context.ActorId))
@@ -792,7 +795,7 @@ public sealed class SalesService(
         var operation = target switch { SalesOrderStatus.PendingApproval => "sales.order.submit", SalesOrderStatus.Approved => "sales.order.approve", SalesOrderStatus.Rejected => "sales.order.reject", SalesOrderStatus.ReturnedForChange => "sales.order.return", SalesOrderStatus.Confirmed => "sales.order.confirm", SalesOrderStatus.Cancelled => "sales.order.cancel", _ => "sales.order.edit" };
         var authorizationDecision = authorization.Decide(context, operation, Scope(context, existing.CompanyId, existing.BranchId));
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesOrderResponse>.Failure(ScopeFailure(authorizationDecision.Code, "order_not_found"));
-        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "order", existing.Total, DateTimeOffset.UtcNow, cancellationToken, existing.CurrencyCode);
+        var policy = await ResolveTransitionPolicyAsync(context, id, existing.CompanyId, existing.BranchId, "order", existing.Status, target, existing.Total, existing.CurrencyCode, cancellationToken);
         if (target == SalesOrderStatus.PendingApproval && policy is null) return SalesOperationResult<SalesOrderResponse>.Failure("approval_policy_missing");
         if (target == SalesOrderStatus.Cancelled && existing.Status == SalesOrderStatus.PendingApproval
             && (policy is null || !policy.AllowRequesterCancellationWhilePending || existing.CreatedByActorId != context.ActorId))
@@ -851,6 +854,37 @@ public sealed class SalesService(
     }
 
     public Task<SalesCreditResponse?> GetOrderCreditAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => persistence.GetOrderCreditAsync(c, id, x);
+
+    private async Task<SalesApprovalPolicyDefinition?> ResolveTransitionPolicyAsync(
+        ProcurementRequestContext context,
+        Guid id,
+        Guid companyId,
+        Guid? branchId,
+        string documentType,
+        Enum currentStatus,
+        Enum target,
+        decimal total,
+        string currencyCode,
+        CancellationToken cancellationToken)
+    {
+        if (target is SalesQuotationStatus.PendingApproval || target is SalesOrderStatus.PendingApproval)
+        {
+            return await approvalPolicies.ResolveAsync(
+                context,
+                Scope(context, companyId, branchId),
+                documentType,
+                total,
+                DateTimeOffset.UtcNow,
+                cancellationToken,
+                currencyCode);
+        }
+
+        var isDraft = currentStatus is SalesQuotationStatus.Draft or SalesQuotationStatus.ReturnedForChange
+            || currentStatus is SalesOrderStatus.Draft or SalesOrderStatus.ReturnedForChange;
+        return isDraft
+            ? null
+            : await persistence.GetApprovalPolicyAsync(context, documentType, id, cancellationToken);
+    }
 
     private async Task<SalesCreditEvaluation> EvaluateCreditAsync(ProcurementRequestContext context, SalesOrderResponse order, CancellationToken cancellationToken)
     {
