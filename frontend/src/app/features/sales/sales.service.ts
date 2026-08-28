@@ -10,6 +10,7 @@ import {
   SalesCreditResponse,
   SalesHistoryResponse,
   SalesOrderResponse,
+  SalesOrderEditRequest,
   SalesOrderStatus,
   SalesOrderSummaryResponse,
   SalesQuotationCreateRequest,
@@ -45,6 +46,7 @@ export class SalesService {
 
   createQuotation(payload: SalesQuotationCreateRequest): Promise<SalesQuotationResponse> { return this.mutate('/sales/quotations', payload); }
   editQuotation(id: string, payload: SalesQuotationEditRequest, version: string): Promise<SalesQuotationResponse> { return this.mutate(`/sales/quotations/${id}/edit`, payload, version); }
+  editOrder(id: string, payload: SalesOrderEditRequest, version: string): Promise<SalesOrderResponse> { return this.mutate(`/sales/orders/${id}/edit`, payload, version); }
   convertQuotation(id: string, version: string): Promise<SalesOrderResponse> { return this.mutate(`/sales/quotations/${id}/convert`, {}, version); }
 
   quotationAction(id: string, action: 'submit' | 'approve' | 'reject' | 'return' | 'send' | 'withdraw' | 'cancel', version: string, reason?: string): Promise<SalesQuotationResponse> {

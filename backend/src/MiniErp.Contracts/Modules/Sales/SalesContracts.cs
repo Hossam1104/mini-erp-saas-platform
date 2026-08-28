@@ -109,6 +109,12 @@ public sealed record SalesQuotationEditRequest(
     IReadOnlyList<SalesQuotationLineRequest> Lines,
     Guid? ExchangeRateId = null);
 
+public sealed record SalesOrderEditRequest(
+    Guid CurrencyId,
+    Guid? PriceListId,
+    IReadOnlyList<SalesQuotationLineRequest> Lines,
+    Guid? ExchangeRateId = null);
+
 public sealed record SalesActionRequest(string? Reason);
 
 public sealed record SalesCreditOverrideRequest(
@@ -116,6 +122,26 @@ public sealed record SalesCreditOverrideRequest(
     DateTimeOffset ExpiresAt,
     string? Scope,
     string? SourceReference);
+
+public sealed record SalesApprovalDecisionResponse(
+    string StageKey,
+    Guid ActorId,
+    Guid? DelegatedFromActorId,
+    DateTimeOffset DecidedAt,
+    string PolicyId,
+    int PolicyVersion,
+    int RevisionNumber,
+    byte[] DocumentVersion);
+
+public sealed record SalesApprovalStateResponse(
+    string PolicyId,
+    int PolicyVersion,
+    int CurrentStageIndex,
+    string? CurrentStageKey,
+    int CurrentStageRequiredApprovals,
+    int CurrentStageApprovalCount,
+    IReadOnlyList<Guid> CurrentStageApproverIds,
+    IReadOnlyList<SalesApprovalDecisionResponse> Decisions);
 
 public sealed record SalesQuotationSummaryResponse(
     Guid Id,
@@ -200,7 +226,8 @@ public sealed record SalesQuotationResponse(
     byte[] Version,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    SalesExchangeRateEvidence? ExchangeRateEvidence = null);
+    SalesExchangeRateEvidence? ExchangeRateEvidence = null,
+    SalesApprovalStateResponse? ApprovalState = null);
 
 public sealed record SalesQuotationRevisionResponse(
     Guid Id,
@@ -231,7 +258,8 @@ public sealed record SalesOrderSummaryResponse(
     SalesOrderStatus Status,
     SalesCreditOutcome CreditOutcome,
     byte[] Version,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    int RevisionNumber = 1);
 
 public sealed record SalesOrderResponse(
     Guid Id,
@@ -261,7 +289,9 @@ public sealed record SalesOrderResponse(
     byte[] Version,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    SalesExchangeRateEvidence? ExchangeRateEvidence = null);
+    SalesExchangeRateEvidence? ExchangeRateEvidence = null,
+    int RevisionNumber = 1,
+    SalesApprovalStateResponse? ApprovalState = null);
 
 public sealed record SalesHistoryResponse(
     Guid Id,
@@ -276,7 +306,8 @@ public sealed record SalesHistoryResponse(
     string? PolicyId,
     int? PolicyVersion,
     string? CreditOutcome,
-    string? SnapshotHash);
+    string? SnapshotHash,
+    string? SnapshotJson = null);
 
 public sealed record SalesAuditResponse(
     Guid Id,

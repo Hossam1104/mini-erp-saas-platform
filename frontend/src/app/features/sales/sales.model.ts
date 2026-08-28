@@ -49,6 +49,13 @@ export interface SalesQuotationCreateRequest {
 
 export interface SalesQuotationEditRequest extends Omit<SalesQuotationCreateRequest, 'customerId' | 'quotationDate'> {}
 
+export interface SalesOrderEditRequest {
+  currencyId: string;
+  priceListId: string | null;
+  lines: SalesQuotationLineRequest[];
+  exchangeRateId?: string | null;
+}
+
 export interface SalesActionRequest { reason?: string | null; }
 
 export interface SalesCreditOverrideRequest {
@@ -140,6 +147,29 @@ export interface SalesQuotationResponse extends SalesQuotationSummaryResponse {
   lines: SalesQuotationLineResponse[];
   createdAt: string;
   exchangeRateEvidence?: SalesExchangeRateEvidence | null;
+  approvalState?: SalesApprovalStateResponse | null;
+}
+
+export interface SalesApprovalDecisionResponse {
+  stageKey: string;
+  actorId: string;
+  delegatedFromActorId: string | null;
+  decidedAt: string;
+  policyId: string;
+  policyVersion: number;
+  revisionNumber: number;
+  documentVersion: string;
+}
+
+export interface SalesApprovalStateResponse {
+  policyId: string;
+  policyVersion: number;
+  currentStageIndex: number;
+  currentStageKey: string | null;
+  currentStageRequiredApprovals: number;
+  currentStageApprovalCount: number;
+  currentStageApproverIds: string[];
+  decisions: SalesApprovalDecisionResponse[];
 }
 
 export interface SalesQuotationRevisionResponse {
@@ -173,6 +203,7 @@ export interface SalesOrderSummaryResponse {
   creditOutcome: SalesCreditOutcome;
   version: string;
   updatedAt: string;
+  revisionNumber?: number;
 }
 
 export interface SalesOrderResponse extends SalesOrderSummaryResponse {
@@ -186,6 +217,8 @@ export interface SalesOrderResponse extends SalesOrderSummaryResponse {
   lines: SalesQuotationLineResponse[];
   createdAt: string;
   exchangeRateEvidence?: SalesExchangeRateEvidence | null;
+  revisionNumber?: number;
+  approvalState?: SalesApprovalStateResponse | null;
 }
 
 export interface SalesHistoryResponse {
@@ -202,6 +235,7 @@ export interface SalesHistoryResponse {
   policyVersion: number | null;
   creditOutcome: string | null;
   snapshotHash: string | null;
+  snapshotJson?: string | null;
 }
 
 export interface SalesAuditResponse {

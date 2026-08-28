@@ -243,6 +243,10 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
+                    b.Property<string>("SnapshotJson")
+                        .HasMaxLength(131072)
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
@@ -332,6 +336,11 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
                         .HasMaxLength(32768)
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CurrentApprovalsJson")
+                        .IsRequired()
+                        .HasMaxLength(32768)
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid?>("BranchId")
                         .HasColumnType("uniqueidentifier");
 
@@ -405,6 +414,9 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
                         .HasColumnType("nvarchar(64)");
 
                     b.Property<int>("SourceQuotationRevision")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RevisionNumber")
                         .HasColumnType("int");
 
                     b.Property<int>("Status")

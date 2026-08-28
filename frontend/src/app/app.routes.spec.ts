@@ -41,6 +41,7 @@ describe('Application route contract', () => {
     expect(childPaths).toContain('sales/quotations/:id/edit');
     expect(childPaths).toContain('sales/orders');
     expect(childPaths).toContain('sales/orders/:id');
+    expect(childPaths).toContain('sales/orders/:id/edit');
     expect(childPaths).not.toContain('sales/deliveries');
     expect(childPaths).not.toContain('sales/invoices');
   });

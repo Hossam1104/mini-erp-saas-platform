@@ -80,6 +80,7 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
         order.Property(item => item.CustomerId).IsRequired();
         order.Property(item => item.SourceQuotationId).IsRequired();
         order.Property(item => item.SourceQuotationRevision).IsRequired();
+        order.Property(item => item.RevisionNumber).IsRequired();
         order.Property(item => item.CurrencyId).IsRequired();
         order.Property(item => item.Subtotal).HasPrecision(28, 8).IsRequired();
         order.Property(item => item.DiscountAmount).HasPrecision(28, 8).IsRequired();
@@ -99,6 +100,7 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
         order.Property(item => item.LinesJson).HasMaxLength(131072).IsRequired();
         order.Property(item => item.ExchangeRateJson).HasMaxLength(4096).IsRequired(false);
         order.Property(item => item.ApprovalPolicyJson).HasMaxLength(32768).IsRequired();
+        order.Property(item => item.CurrentApprovalsJson).HasMaxLength(32768).IsRequired();
         order.HasIndex(item => new { item.TenantId, item.Number }).IsUnique();
         order.HasIndex(item => new { item.TenantId, item.SourceQuotationId, item.SourceQuotationRevision }).IsUnique();
         order.HasIndex(item => new { item.TenantId, item.CompanyId, item.BranchId, item.UpdatedAt });
@@ -118,6 +120,7 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
         history.Property(item => item.PolicyVersion).IsRequired(false);
         history.Property(item => item.CreditOutcome).HasMaxLength(32);
         history.Property(item => item.SnapshotHash).HasMaxLength(128);
+        history.Property(item => item.SnapshotJson).HasMaxLength(131072);
         history.HasIndex(item => new { item.TenantId, item.DocumentType, item.DocumentId, item.OccurredAt });
 
         var audit = modelBuilder.Entity<SalesAuditEntity>();

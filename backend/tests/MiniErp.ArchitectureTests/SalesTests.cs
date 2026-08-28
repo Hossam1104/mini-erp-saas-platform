@@ -1,5 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.BusinessParties;
@@ -33,6 +35,8 @@ public sealed class SalesTests
     private static readonly Guid ExchangeRateA = Guid.Parse("bbbbbbbb-1111-1111-1111-111111111111");
     private static readonly Guid Creator = Guid.Parse("99999999-9999-9999-9999-999999999999");
     private static readonly Guid Approver = Guid.Parse("12121212-1212-1212-1212-121212121212");
+    private static readonly Guid ApproverTwo = Guid.Parse("13131313-1313-1313-1313-131313131313");
+    private static readonly Guid ApproverThree = Guid.Parse("14141414-1414-1414-1414-141414141414");
 
     [Fact]
     public async Task Quotation_revision_history_is_immutable_and_stale_edits_fail()
@@ -154,6 +158,171 @@ public sealed class SalesTests
 
         var orderAudit = await fixture.Persistence.ListAuditAsync(fixture.Context(Approver), "order", converted.Value!.Id);
         Assert.Contains(orderAudit, item => item.OperationId == "sales.quotation.convert" && item.Decision == "Allowed");
+    }
+
+    [Fact]
+    public async Task Approval_state_enforces_sequential_stages_counts_sod_and_survives_reload()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var policy = new SalesApprovalPolicyDefinition("sales.multi-stage", 4,
+            [
+                new SalesApprovalStageDefinition("commercial", 1, 2, [Approver, ApproverTwo], false),
+                new SalesApprovalStageDefinition("finance", 2, 1, [ApproverThree], false)
+            ], true, false, DateTimeOffset.MinValue, null, 100m, 200m, "SAR", true);
+        var created = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), fixture.Model(), "approval-create", "approval-create-fp", policy);
+        Assert.True(created.Succeeded, created.Code);
+        var submitted = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), created.Value!.Id, SalesQuotationStatus.PendingApproval, null, created.Value.Version, "approval-submit", "approval-submit-fp", policy);
+        Assert.True(submitted.Succeeded, submitted.Code);
+
+        var first = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Approver), created.Value.Id, SalesQuotationStatus.Approved, null, submitted.Value!.Version, "approval-first", "approval-first-fp", policy);
+        Assert.True(first.Succeeded, first.Code);
+        Assert.Equal(SalesQuotationStatus.PendingApproval, first.Value!.Status);
+        Assert.Equal(1, first.Value.ApprovalState!.CurrentStageApprovalCount);
+        Assert.Single(first.Value.ApprovalState.Decisions);
+
+        var duplicate = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Approver), created.Value.Id, SalesQuotationStatus.Approved, null, first.Value.Version, "approval-duplicate", "approval-duplicate-fp", policy);
+        Assert.False(duplicate.Succeeded);
+        Assert.Equal("approval_already_recorded", duplicate.Code);
+        var earlyLaterStage = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(ApproverThree), created.Value.Id, SalesQuotationStatus.Approved, null, first.Value.Version, "approval-early", "approval-early-fp", policy);
+        Assert.False(earlyLaterStage.Succeeded);
+        Assert.Equal("approver_not_eligible", earlyLaterStage.Code);
+
+        var second = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(ApproverTwo), created.Value.Id, SalesQuotationStatus.Approved, null, first.Value.Version, "approval-second", "approval-second-fp", policy);
+        Assert.True(second.Succeeded, second.Code);
+        Assert.Equal(SalesQuotationStatus.PendingApproval, second.Value!.Status);
+        Assert.Equal("finance", second.Value.ApprovalState!.CurrentStageKey);
+        Assert.Equal(2, second.Value.ApprovalState.Decisions.Count);
+
+        var reloaded = await fixture.Persistence.GetQuotationAsync(fixture.Context(Creator), created.Value.Id);
+        Assert.Equal(2, reloaded!.ApprovalState!.Decisions.Count);
+        var final = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(ApproverThree), created.Value.Id, SalesQuotationStatus.Approved, null, reloaded.Version, "approval-final", "approval-final-fp", policy);
+        Assert.True(final.Succeeded, final.Code);
+        Assert.Equal(SalesQuotationStatus.Approved, final.Value!.Status);
+        Assert.Equal(3, final.Value.ApprovalState!.Decisions.Count);
+        Assert.Equal(ApproverThree, final.Value.ApprovalState.Decisions[^1].ActorId);
+        Assert.Equal("finance", final.Value.ApprovalState.Decisions[^1].StageKey);
+    }
+
+    [Fact]
+    public async Task Quotation_scope_is_immutable_but_same_scope_edit_succeeds()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var created = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), fixture.Model(), "scope-create", "scope-create-fp", fixture.Policy());
+        Assert.True(created.Succeeded, created.Code);
+
+        var otherCompany = await fixture.Persistence.EditQuotationAsync(fixture.Context(Creator), created.Value!.Id, fixture.Model(created.Value.Id) with { CompanyId = CompanyB }, created.Value.Version, "scope-company", "scope-company-fp");
+        Assert.False(otherCompany.Succeeded);
+        Assert.Equal("quotation_scope_immutable", otherCompany.Code);
+        var otherBranch = await fixture.Persistence.EditQuotationAsync(fixture.Context(Creator), created.Value.Id, fixture.Model(created.Value.Id) with { BranchId = null }, created.Value.Version, "scope-branch", "scope-branch-fp");
+        Assert.False(otherBranch.Succeeded);
+        Assert.Equal("quotation_scope_immutable", otherBranch.Code);
+
+        var unchanged = await fixture.Persistence.GetQuotationAsync(fixture.Context(Creator), created.Value.Id);
+        Assert.Equal(CompanyA, unchanged!.CompanyId);
+        Assert.Equal(BranchA, unchanged.BranchId);
+        var valid = await fixture.Persistence.EditQuotationAsync(fixture.Context(Creator), created.Value.Id, fixture.Model(created.Value.Id) with { CustomerReference = "same-scope" }, created.Value.Version, "scope-valid", "scope-valid-fp");
+        Assert.True(valid.Succeeded, valid.Code);
+        Assert.Equal("same-scope", valid.Value!.CustomerReference);
+    }
+
+    [Fact]
+    public async Task Returned_order_can_be_revised_resubmitted_and_prior_snapshot_is_retained()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var quote = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), fixture.Model(), "order-edit-create", "order-edit-create-fp", fixture.Policy());
+        var submittedQuote = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), quote.Value!.Id, SalesQuotationStatus.PendingApproval, null, quote.Value.Version, "order-edit-submit-q", "order-edit-submit-q-fp", fixture.Policy());
+        var approvedQuote = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Approver), quote.Value.Id, SalesQuotationStatus.Approved, null, submittedQuote.Value!.Version, "order-edit-approve-q", "order-edit-approve-q-fp", fixture.Policy());
+        var order = await fixture.Persistence.ConvertQuotationAsync(fixture.Context(Creator), quote.Value.Id, approvedQuote.Value!.Version, "order-edit-convert", "order-edit-convert-fp", fixture.Policy());
+        Assert.True(order.Succeeded, order.Code);
+        var submitted = await fixture.Persistence.TransitionOrderAsync(fixture.Context(Creator), order.Value!.Id, SalesOrderStatus.PendingApproval, null, order.Value.Version, "order-edit-submit", "order-edit-submit-fp", null, fixture.Policy());
+        var returned = await fixture.Persistence.TransitionOrderAsync(fixture.Context(Approver), order.Value.Id, SalesOrderStatus.ReturnedForChange, "change quantity", submitted.Value!.Version, "order-edit-return", "order-edit-return-fp", null, fixture.Policy());
+        Assert.True(returned.Succeeded, returned.Code);
+
+        var edited = await fixture.Persistence.EditOrderAsync(fixture.Context(Creator), order.Value.Id, fixture.Model() with { Id = order.Value.Id, Lines = [fixture.Model().Lines[0] with { Quantity = 5m, LineTotal = 250m }], Subtotal = 250m, Total = 250m }, returned.Value!.Version, "order-edit-edit", "order-edit-edit-fp", fixture.Policy());
+        Assert.True(edited.Succeeded, edited.Code);
+        Assert.Equal(SalesOrderStatus.Draft, edited.Value!.Status);
+        Assert.Equal(2, edited.Value.RevisionNumber);
+        Assert.Equal(5m, edited.Value.Lines.Single().Quantity);
+        Assert.Null(edited.Value.ApprovalState);
+
+        var history = await fixture.Persistence.ListHistoryAsync(fixture.Context(Creator), "order", order.Value.Id);
+        Assert.Contains(history, item => item.Action == nameof(SalesHistoryAction.Edited) && item.SnapshotJson is not null && item.SnapshotJson.Contains("\"total\":150", StringComparison.OrdinalIgnoreCase));
+        var resubmitted = await fixture.Persistence.TransitionOrderAsync(fixture.Context(Creator), order.Value.Id, SalesOrderStatus.PendingApproval, null, edited.Value.Version, "order-edit-resubmit", "order-edit-resubmit-fp", null, fixture.Policy());
+        Assert.True(resubmitted.Succeeded, resubmitted.Code);
+        Assert.Equal(SalesOrderStatus.PendingApproval, resubmitted.Value!.Status);
+        var approved = await fixture.Persistence.TransitionOrderAsync(fixture.Context(Approver), order.Value.Id, SalesOrderStatus.Approved, null, resubmitted.Value.Version, "order-edit-approve", "order-edit-approve-fp", null, fixture.Policy());
+        Assert.True(approved.Succeeded, approved.Code);
+        Assert.Equal(SalesOrderStatus.Approved, approved.Value!.Status);
+        Assert.Single(approved.Value.ApprovalState!.Decisions);
+    }
+
+    [Fact]
+    public async Task Pending_cancellation_is_limited_to_the_requester_and_configured_policy()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var deniedPolicy = fixture.Policy() with { AllowRequesterCancellationWhilePending = false };
+        var deniedQuote = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), fixture.Model(), "cancel-denied-create", "cancel-denied-create-fp", deniedPolicy);
+        Assert.True(deniedQuote.Succeeded, deniedQuote.Code);
+        var deniedSubmit = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), deniedQuote.Value!.Id, SalesQuotationStatus.PendingApproval, null, deniedQuote.Value.Version, "cancel-denied-submit", "cancel-denied-submit-fp", deniedPolicy);
+        Assert.True(deniedSubmit.Succeeded, deniedSubmit.Code);
+        var denied = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), deniedQuote.Value.Id, SalesQuotationStatus.Cancelled, "withdraw", deniedSubmit.Value!.Version, "cancel-denied", "cancel-denied-fp", deniedPolicy);
+        Assert.False(denied.Succeeded);
+        Assert.Equal("cancellation_not_allowed", denied.Code);
+
+        var allowedPolicy = fixture.Policy();
+        var allowedQuote = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), fixture.Model(), "cancel-allowed-create", "cancel-allowed-create-fp", allowedPolicy);
+        Assert.True(allowedQuote.Succeeded, allowedQuote.Code);
+        var allowedSubmit = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), allowedQuote.Value!.Id, SalesQuotationStatus.PendingApproval, null, allowedQuote.Value.Version, "cancel-allowed-submit", "cancel-allowed-submit-fp", allowedPolicy);
+        Assert.True(allowedSubmit.Succeeded, allowedSubmit.Code);
+        var otherActor = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Approver), allowedQuote.Value.Id, SalesQuotationStatus.Cancelled, "withdraw", allowedSubmit.Value!.Version, "cancel-other", "cancel-other-fp", allowedPolicy);
+        Assert.False(otherActor.Succeeded);
+        Assert.Equal("cancellation_not_allowed", otherActor.Code);
+        var cancelled = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), allowedQuote.Value.Id, SalesQuotationStatus.Cancelled, "withdraw", allowedSubmit.Value.Version, "cancel-allowed", "cancel-allowed-fp", allowedPolicy);
+        Assert.True(cancelled.Succeeded, cancelled.Code);
+        Assert.Equal(SalesQuotationStatus.Cancelled, cancelled.Value!.Status);
+    }
+
+    [Fact]
+    public async Task Runtime_sales_configuration_uses_application_composition_and_fails_closed_when_missing()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var values = new Dictionary<string, string?>
+        {
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:TenantId"] = TenantA.ToString(),
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:CompanyId"] = CompanyA.ToString(),
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:BranchId"] = BranchA.ToString(),
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:DocumentType"] = "quotation",
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:PolicyId"] = "runtime-policy",
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:Version"] = "2",
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:EffectiveFrom"] = now.AddMinutes(-5).ToString("O"),
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:EffectiveTo"] = now.AddMinutes(5).ToString("O"),
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:Stages:0:StageKey"] = "commercial",
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:Stages:0:Sequence"] = "1",
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:Stages:0:RequiredApprovals"] = "1",
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:Stages:0:EligibleApproverIds:0"] = Approver.ToString(),
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:MinimumTotal"] = "100",
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:MaximumTotal"] = "200",
+            ["MESP_SALES_POLICIES:ApprovalPolicies:0:CurrencyCode"] = "SAR",
+            ["MESP_SALES_POLICIES:CreditLimits:0:TenantId"] = TenantA.ToString(),
+            ["MESP_SALES_POLICIES:CreditLimits:0:CompanyId"] = CompanyA.ToString(),
+            ["MESP_SALES_POLICIES:CreditLimits:0:CustomerId"] = CustomerA.ToString(),
+            ["MESP_SALES_POLICIES:CreditLimits:0:CurrencyCode"] = "SAR",
+            ["MESP_SALES_POLICIES:CreditLimits:0:Limit"] = "500"
+        };
+        using var provider = new ServiceCollection().AddSalesApplication(new ConfigurationBuilder().AddInMemoryCollection(values).Build()).BuildServiceProvider();
+        Assert.IsType<ConfigurationSalesApprovalPolicyProvider>(provider.GetRequiredService<ISalesApprovalPolicyProvider>());
+        Assert.IsType<ConfigurationSalesCreditLimitProvider>(provider.GetRequiredService<ISalesCreditLimitProvider>());
+        var context = Context(Creator, TenantA, CompanyA);
+        var approval = await provider.GetRequiredService<ISalesApprovalPolicyProvider>().ResolveAsync(context, new SalesScope(TenantA, CompanyA, BranchA), "quotation", 150m, now, currencyCode: "SAR");
+        Assert.Equal("runtime-policy", approval!.PolicyId);
+        Assert.Null(await provider.GetRequiredService<ISalesApprovalPolicyProvider>().ResolveAsync(context, new SalesScope(TenantA, CompanyA, BranchA), "quotation", 99m, now, currencyCode: "SAR"));
+        Assert.Null(await provider.GetRequiredService<ISalesApprovalPolicyProvider>().ResolveAsync(context, new SalesScope(TenantA, CompanyA, BranchA), "quotation", 150m, now, currencyCode: "USD"));
+        Assert.Null(await provider.GetRequiredService<ISalesApprovalPolicyProvider>().ResolveAsync(context, new SalesScope(TenantA, CompanyA, BranchA), "quotation", 150m, now.AddHours(1), currencyCode: "SAR"));
+        Assert.Equal(500m, await provider.GetRequiredService<ISalesCreditLimitProvider>().ResolveLimitAsync(context, CompanyA, CustomerA, "SAR", new DateOnly(2026, 8, 28)));
+
+        using var missingProvider = new ServiceCollection().AddSalesApplication(new ConfigurationBuilder().Build()).BuildServiceProvider();
+        Assert.Null(await missingProvider.GetRequiredService<ISalesApprovalPolicyProvider>().ResolveAsync(context, new SalesScope(TenantA, CompanyA, BranchA), "quotation", 150m, now, currencyCode: "SAR"));
+        Assert.Null(await missingProvider.GetRequiredService<ISalesCreditLimitProvider>().ResolveLimitAsync(context, CompanyA, CustomerA, "SAR", new DateOnly(2026, 8, 28)));
     }
 
     [Fact]
@@ -290,6 +459,36 @@ public sealed class SalesTests
         Assert.Equal("SAR", persistence.Captured.ExchangeRateEvidence.TargetCurrencyCode);
     }
 
+    [Fact]
+    public async Task Sales_service_rejects_destination_scope_before_rebuilding_or_persisting_edit()
+    {
+        var quotationId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        var existing = new SalesQuotationResponse(quotationId, "SQ-TEST", TenantA, CompanyA, BranchA, CustomerA, "CUST-001", "Customer A", Creator, new DateOnly(2026, 8, 28), new DateOnly(2026, 9, 30), CurrencyA, "SAR", null, null, null, 0m, 0m, 0m, 0m, SalesQuotationStatus.Draft, 1, [], [1], now, now);
+        var persistence = new CapturingSalesPersistence(existing);
+        var service = new SalesService(
+            persistence,
+            new SalesAuthorizationService(new PurchaseRequestAuthorizationService()),
+            new DefaultSalesApprovalPolicyProvider(),
+            new NoSalesCommercialAuthorityProvider(),
+            new NoSalesApprovalDelegationProvider(),
+            new NoSalesCreditLimitProvider(),
+            new UnavailableFinanceSettlementPersistence(),
+            new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(TenantA, CompanyA, "Company A", "SAR", BranchA)]),
+            new CustomerReferenceFake(),
+            new ProductReferenceFake(),
+            new PriceReferenceFake(),
+            new UnavailableSalesTaxReferenceProvider(),
+            new UnavailableSalesExchangeRateReferenceProvider());
+
+        var request = new SalesQuotationEditRequest(CompanyB, BranchA, new DateOnly(2026, 9, 30), CurrencyA, PriceListA, null, null, null, [new SalesQuotationLineRequest(ProductA, UomA, 1m)]);
+        var result = await service.EditQuotationAsync(Context(Creator, TenantA, CompanyA, "tenant.sales.quotation.edit"), quotationId, request, [1], "service-scope-edit");
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("quotation_scope_immutable", result.Code);
+        Assert.Null(persistence.Captured);
+    }
+
     private static ProcurementRequestContext Context(Guid actor, Guid tenantId = default, Guid companyId = default, string permission = "tenant.sales.quotation.create")
     {
         tenantId = tenantId == Guid.Empty ? TenantA : tenantId;
@@ -339,16 +538,20 @@ public sealed class SalesTests
 
     private sealed class CapturingSalesPersistence : ISalesPersistence
     {
+        private readonly SalesQuotationResponse? quotation;
+
+        public CapturingSalesPersistence(SalesQuotationResponse? quotation = null) => this.quotation = quotation;
         public SalesQuotationWriteModel? Captured { get; private set; }
 
         public Task<IReadOnlyList<SalesQuotationSummaryResponse>> ListQuotationsAsync(ProcurementRequestContext context, Guid? companyId, SalesQuotationStatus? status, CancellationToken cancellationToken = default) => EmptyList<SalesQuotationSummaryResponse>();
-        public Task<SalesQuotationResponse?> GetQuotationAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => Empty<SalesQuotationResponse?>();
+        public Task<SalesQuotationResponse?> GetQuotationAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => Task.FromResult(quotation);
         public Task<SalesOperationResult<SalesQuotationResponse>> CreateQuotationAsync(ProcurementRequestContext context, SalesQuotationWriteModel model, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, CancellationToken cancellationToken = default)
         {
             Captured = model;
             return Task.FromResult(SalesOperationResult<SalesQuotationResponse>.Success(null!));
         }
-        public Task<SalesOperationResult<SalesQuotationResponse>> EditQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationWriteModel model, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default) => Failure<SalesQuotationResponse>();
+        public Task<SalesOperationResult<SalesQuotationResponse>> EditQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationWriteModel model, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default, SalesApprovalPolicyDefinition? policy = null) => Failure<SalesQuotationResponse>();
+        public Task<SalesOperationResult<SalesOrderResponse>> EditOrderAsync(ProcurementRequestContext context, Guid id, SalesQuotationWriteModel model, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, CancellationToken cancellationToken = default) => Failure<SalesOrderResponse>();
         public Task<SalesOperationResult<SalesQuotationResponse>> TransitionQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationStatus target, string? reason, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, Guid? delegatedFromActorId = null, CancellationToken cancellationToken = default) => Failure<SalesQuotationResponse>();
         public Task<IReadOnlyList<SalesQuotationRevisionResponse>> ListQuotationRevisionsAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => EmptyList<SalesQuotationRevisionResponse>();
         public Task<IReadOnlyList<SalesHistoryResponse>> ListHistoryAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default) => EmptyList<SalesHistoryResponse>();

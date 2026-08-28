@@ -95,7 +95,7 @@ builder.Services.AddMasterDataImport();
 builder.Services.AddPurchaseRequestApprovalFoundation(builder.Configuration);
 builder.Services.AddInventoryApplication();
 builder.Services.AddFinanceApplication();
-builder.Services.AddSalesApplication();
+builder.Services.AddSalesApplication(builder.Configuration);
 builder.Services.AddSingleton<IInventoryProductProvider, MasterDataInventoryProductProvider>();
 string? developmentMasterDataSqliteConnectionString = null;
 string? developmentBusinessPartiesSqliteConnectionString = null;

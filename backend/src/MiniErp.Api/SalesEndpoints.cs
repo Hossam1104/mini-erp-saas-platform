@@ -102,6 +102,10 @@ public static class SalesEndpoints
             return Results.Ok(value);
         }).WithName("sales.order.read").WithMetadata(Metadata("sales.order.read"));
 
+        app.MapPost("/api/v1/sales/orders/{orderId:guid}/edit", async (Guid orderId, SalesOrderEditRequest request, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesService service) =>
+            await ExecuteMutationAsync(http, resolver, tenantResolver, "sales.order.edit", orderId, async (context, key, version) => await service.EditOrderAsync(context, orderId, request, version!, key, http.RequestAborted)))
+            .WithName("sales.order.edit").WithMetadata(Metadata("sales.order.edit"));
+
         app.MapPost("/api/v1/sales/orders/{orderId:guid}/submit", async (Guid orderId, SalesActionRequest? request, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesService service) =>
             await ExecuteMutationAsync(http, resolver, tenantResolver, "sales.order.submit", orderId, async (context, key, version) => await service.TransitionOrderAsync(context, orderId, SalesOrderStatus.PendingApproval, request?.Reason, version!, key, http.RequestAborted)))
             .WithName("sales.order.submit").WithMetadata(Metadata("sales.order.submit"));
@@ -205,7 +209,7 @@ public static class SalesEndpoints
     }
 
     private static byte[]? GetVersion(object value) => value switch { SalesQuotationResponse quote => quote.Version, SalesOrderResponse order => order.Version, _ => null };
-    private static int Status(string code) => code switch { "permission_denied" or "self_approval_denied" or "approver_not_eligible" => 403, "quotation_not_found" or "order_not_found" => 404, "concurrency_conflict" or "idempotency_conflict" or "quotation_transition_invalid" or "order_transition_invalid" or "quotation_edit_locked" or "quotation_revision_already_converted" or "quotation_expired" or "credit_override_not_allowed" => 409, "sales_persistence_unavailable" or "credit_truth_unavailable" => 503, _ => 400 };
+    private static int Status(string code) => code switch { "permission_denied" or "self_approval_denied" or "approver_not_eligible" => 403, "quotation_not_found" or "order_not_found" => 404, "concurrency_conflict" or "idempotency_conflict" or "quotation_transition_invalid" or "order_transition_invalid" or "quotation_edit_locked" or "order_edit_locked" or "quotation_scope_immutable" or "order_scope_immutable" or "quotation_revision_already_converted" or "quotation_expired" or "credit_override_not_allowed" or "approval_state_missing" or "approval_already_recorded" or "approval_sod_violation" or "approval_already_complete" or "delegation_invalid" or "cancellation_not_allowed" => 409, "sales_persistence_unavailable" or "credit_truth_unavailable" => 503, _ => 400 };
     private static async Task<bool> Antiforgery(HttpContext http) { try { await http.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(http); return true; } catch (AntiforgeryValidationException) { return false; } }
     private static FoundationOperationMetadata Metadata(string operation) => new(FoundationOperationCatalog.GetRequired(operation));
     private static bool AuthorizeListScope(ProcurementRequestContext context, SalesAuthorizationService authorization, string operation, Guid? companyId) =>

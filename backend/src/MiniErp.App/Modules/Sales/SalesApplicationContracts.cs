@@ -3,6 +3,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.Finance;
@@ -276,7 +277,19 @@ public sealed record SalesApprovalPolicyDefinition(
     bool AllowRequesterCancellationWhilePending,
     bool DirectOrderCreationAllowed,
     DateTimeOffset EffectiveFrom,
-    DateTimeOffset? EffectiveTo);
+    DateTimeOffset? EffectiveTo,
+    decimal? MinimumTotal = null,
+    decimal? MaximumTotal = null,
+    string? CurrencyCode = null,
+    bool EnforceSeparationOfDuties = true)
+{
+    public bool Matches(decimal total, string? currencyCode, DateTimeOffset at) =>
+        EffectiveFrom <= at
+        && (EffectiveTo is null || EffectiveTo > at)
+        && (MinimumTotal is null || total >= MinimumTotal)
+        && (MaximumTotal is null || total <= MaximumTotal)
+        && (string.IsNullOrWhiteSpace(CurrencyCode) || string.Equals(CurrencyCode, currencyCode, StringComparison.OrdinalIgnoreCase));
+}
 
 public interface ISalesApprovalPolicyProvider
 {
@@ -286,7 +299,8 @@ public interface ISalesApprovalPolicyProvider
         string documentType,
         decimal total,
         DateTimeOffset at,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? currencyCode = null);
 }
 
 public sealed class DefaultSalesApprovalPolicyProvider : ISalesApprovalPolicyProvider
@@ -297,7 +311,8 @@ public sealed class DefaultSalesApprovalPolicyProvider : ISalesApprovalPolicyPro
         string documentType,
         decimal total,
         DateTimeOffset at,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default,
+        string? currencyCode = null) =>
         Task.FromResult<SalesApprovalPolicyDefinition?>(new(
             "sales.commercial.default",
             1,
@@ -320,13 +335,154 @@ public sealed class ConfiguredSalesApprovalPolicyProvider(IEnumerable<SalesAppro
         string documentType,
         decimal total,
         DateTimeOffset at,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default,
+        string? currencyCode = null) =>
         Task.FromResult(bindings
             .Where(item => item.Scope == scope && string.Equals(item.DocumentType, documentType, StringComparison.Ordinal))
-            .Where(item => item.Definition.EffectiveFrom <= at && (item.Definition.EffectiveTo is null || item.Definition.EffectiveTo > at))
+            .Where(item => item.Definition.Matches(total, currencyCode, at))
             .OrderByDescending(item => item.Definition.Version)
             .ThenBy(item => item.Definition.PolicyId, StringComparer.Ordinal)
             .Select(item => item.Definition)
+            .FirstOrDefault());
+}
+
+public sealed class SalesPolicyOptions
+{
+    public List<SalesApprovalPolicyOptions> ApprovalPolicies { get; set; } = [];
+    public List<SalesCommercialAuthorityOptions> CommercialAuthorities { get; set; } = [];
+    public List<SalesApprovalDelegationOptions> ApprovalDelegations { get; set; } = [];
+    public List<SalesCreditLimitOptions> CreditLimits { get; set; } = [];
+}
+
+public sealed class SalesApprovalPolicyOptions
+{
+    public Guid TenantId { get; set; }
+    public Guid CompanyId { get; set; }
+    public Guid? BranchId { get; set; }
+    public string DocumentType { get; set; } = string.Empty;
+    public string PolicyId { get; set; } = string.Empty;
+    public int Version { get; set; }
+    public List<SalesApprovalStageOptions> Stages { get; set; } = [];
+    public bool AllowRequesterCancellationWhilePending { get; set; }
+    public bool DirectOrderCreationAllowed { get; set; }
+    public DateTimeOffset EffectiveFrom { get; set; }
+    public DateTimeOffset? EffectiveTo { get; set; }
+    public decimal? MinimumTotal { get; set; }
+    public decimal? MaximumTotal { get; set; }
+    public string? CurrencyCode { get; set; }
+    public bool EnforceSeparationOfDuties { get; set; } = true;
+
+    public SalesApprovalPolicyBinding ToBinding() => new(
+        new SalesScope(TenantId, CompanyId, BranchId),
+        DocumentType,
+        new SalesApprovalPolicyDefinition(PolicyId, Version, Stages.Select(item => item.ToDefinition()).ToArray(), AllowRequesterCancellationWhilePending, DirectOrderCreationAllowed, EffectiveFrom, EffectiveTo, MinimumTotal, MaximumTotal, CurrencyCode, EnforceSeparationOfDuties));
+}
+
+public sealed class SalesApprovalStageOptions
+{
+    public string StageKey { get; set; } = string.Empty;
+    public int Sequence { get; set; }
+    public int RequiredApprovals { get; set; }
+    public List<Guid> EligibleApproverIds { get; set; } = [];
+    public bool AllowDelegation { get; set; }
+    public SalesApprovalStageDefinition ToDefinition() => new(StageKey, Sequence, RequiredApprovals, EligibleApproverIds, AllowDelegation);
+}
+
+public sealed class SalesCommercialAuthorityOptions
+{
+    public Guid TenantId { get; set; }
+    public Guid CompanyId { get; set; }
+    public Guid? BranchId { get; set; }
+    public string DocumentType { get; set; } = string.Empty;
+    public decimal MaximumDiscountPercent { get; set; }
+    public bool AllowManualPrice { get; set; }
+    public string PolicyId { get; set; } = string.Empty;
+    public int Version { get; set; }
+    public List<Guid> AuthorizedActorIds { get; set; } = [];
+    public DateTimeOffset EffectiveFrom { get; set; }
+    public DateTimeOffset? EffectiveTo { get; set; }
+
+    public SalesCommercialAuthority ToAuthority() => new(TenantId, CompanyId, BranchId, DocumentType, MaximumDiscountPercent, AllowManualPrice, PolicyId, Version, AuthorizedActorIds, EffectiveFrom, EffectiveTo);
+}
+
+public sealed class SalesApprovalDelegationOptions
+{
+    public Guid TenantId { get; set; }
+    public Guid CompanyId { get; set; }
+    public Guid? BranchId { get; set; }
+    public string DocumentType { get; set; } = string.Empty;
+    public string StageKey { get; set; } = string.Empty;
+    public Guid DelegatorId { get; set; }
+    public Guid DelegateeId { get; set; }
+    public DateTimeOffset StartsAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
+
+    public SalesApprovalDelegation ToDelegation() => new(TenantId, CompanyId, BranchId, DocumentType, StageKey, DelegatorId, DelegateeId, StartsAt, ExpiresAt);
+}
+
+public sealed class SalesCreditLimitOptions
+{
+    public Guid TenantId { get; set; }
+    public Guid CompanyId { get; set; }
+    public Guid CustomerId { get; set; }
+    public string CurrencyCode { get; set; } = string.Empty;
+    public decimal Limit { get; set; }
+    public DateOnly EffectiveFrom { get; set; }
+    public DateOnly? EffectiveTo { get; set; }
+
+    public SalesCreditLimit ToLimit() => new(TenantId, CompanyId, CustomerId, CurrencyCode, Limit, EffectiveFrom, EffectiveTo);
+}
+
+public sealed class ConfigurationSalesApprovalPolicyProvider(IOptionsMonitor<SalesPolicyOptions> options) : ISalesApprovalPolicyProvider
+{
+    public Task<SalesApprovalPolicyDefinition?> ResolveAsync(ProcurementRequestContext context, SalesScope scope, string documentType, decimal total, DateTimeOffset at, CancellationToken cancellationToken = default, string? currencyCode = null)
+    {
+        var selected = options.CurrentValue.ApprovalPolicies
+            .Where(item => item.TenantId == scope.TenantId && item.CompanyId == scope.CompanyId && item.BranchId == scope.BranchId && string.Equals(item.DocumentType, documentType, StringComparison.Ordinal))
+            .Select(item => item.ToBinding().Definition)
+            .Where(item => item.Stages.Count > 0 && item.Stages.All(stage => stage.RequiredApprovals > 0 && !string.IsNullOrWhiteSpace(stage.StageKey)) && item.Matches(total, currencyCode, at))
+            .OrderByDescending(item => item.Version)
+            .ThenBy(item => item.PolicyId, StringComparer.Ordinal)
+            .FirstOrDefault();
+        return Task.FromResult<SalesApprovalPolicyDefinition?>(selected);
+    }
+}
+
+public sealed class ConfigurationSalesCommercialAuthorityProvider(IOptionsMonitor<SalesPolicyOptions> options) : ISalesCommercialAuthorityProvider
+{
+    public Task<SalesCommercialAuthority?> ResolveAsync(ProcurementRequestContext context, SalesScope scope, string documentType, Guid actorId, DateTimeOffset at, CancellationToken cancellationToken = default) =>
+        Task.FromResult(options.CurrentValue.CommercialAuthorities
+            .Select(item => item.ToAuthority())
+            .Where(item => item.TenantId == scope.TenantId && item.CompanyId == scope.CompanyId && item.BranchId == scope.BranchId && string.Equals(item.DocumentType, documentType, StringComparison.Ordinal))
+            .Where(item => item.EffectiveFrom <= at && (item.EffectiveTo is null || item.EffectiveTo > at))
+            .Where(item => item.AuthorizedActorIds.Count == 0 || item.AuthorizedActorIds.Contains(actorId))
+            .OrderByDescending(item => item.Version)
+            .ThenBy(item => item.PolicyId, StringComparer.Ordinal)
+            .FirstOrDefault());
+}
+
+public sealed class ConfigurationSalesApprovalDelegationProvider(IOptionsMonitor<SalesPolicyOptions> options) : ISalesApprovalDelegationProvider
+{
+    public Task<SalesApprovalDelegation?> ResolveAsync(ProcurementRequestContext context, SalesScope scope, string documentType, SalesApprovalStageDefinition stage, Guid actorId, DateTimeOffset at, CancellationToken cancellationToken = default) =>
+        Task.FromResult(options.CurrentValue.ApprovalDelegations
+            .Select(item => item.ToDelegation())
+            .Where(item => item.TenantId == scope.TenantId && item.CompanyId == scope.CompanyId && item.BranchId == scope.BranchId && string.Equals(item.DocumentType, documentType, StringComparison.Ordinal) && string.Equals(item.StageKey, stage.StageKey, StringComparison.Ordinal))
+            .Where(item => item.DelegateeId == actorId && item.DelegatorId != actorId && item.StartsAt <= at && item.ExpiresAt > at)
+            .Where(item => stage.AllowDelegation && (stage.EligibleApproverIds.Count == 0 || stage.EligibleApproverIds.Contains(item.DelegatorId)))
+            .OrderBy(item => item.ExpiresAt)
+            .ThenBy(item => item.DelegatorId)
+            .FirstOrDefault());
+}
+
+public sealed class ConfigurationSalesCreditLimitProvider(IOptionsMonitor<SalesPolicyOptions> options) : ISalesCreditLimitProvider
+{
+    public Task<decimal?> ResolveLimitAsync(ProcurementRequestContext context, Guid companyId, Guid customerId, string currencyCode, DateOnly asOfDate, CancellationToken cancellationToken = default) =>
+        Task.FromResult(options.CurrentValue.CreditLimits
+            .Select(item => item.ToLimit())
+            .Where(item => item.TenantId == context.TenantId.Value && item.CompanyId == companyId && item.CustomerId == customerId && string.Equals(item.CurrencyCode, currencyCode, StringComparison.OrdinalIgnoreCase))
+            .Where(item => item.EffectiveFrom <= asOfDate && (item.EffectiveTo is null || item.EffectiveTo >= asOfDate))
+            .OrderByDescending(item => item.EffectiveFrom)
+            .Select(item => (decimal?)item.Limit)
             .FirstOrDefault());
 }
 
@@ -465,7 +621,8 @@ public interface ISalesPersistence
     Task<IReadOnlyList<SalesQuotationSummaryResponse>> ListQuotationsAsync(ProcurementRequestContext context, Guid? companyId, SalesQuotationStatus? status, CancellationToken cancellationToken = default);
     Task<SalesQuotationResponse?> GetQuotationAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default);
     Task<SalesOperationResult<SalesQuotationResponse>> CreateQuotationAsync(ProcurementRequestContext context, SalesQuotationWriteModel model, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, CancellationToken cancellationToken = default);
-    Task<SalesOperationResult<SalesQuotationResponse>> EditQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationWriteModel model, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default);
+    Task<SalesOperationResult<SalesQuotationResponse>> EditQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationWriteModel model, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default, SalesApprovalPolicyDefinition? policy = null);
+    Task<SalesOperationResult<SalesOrderResponse>> EditOrderAsync(ProcurementRequestContext context, Guid id, SalesQuotationWriteModel model, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, CancellationToken cancellationToken = default);
     Task<SalesOperationResult<SalesQuotationResponse>> TransitionQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationStatus target, string? reason, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, Guid? delegatedFromActorId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SalesQuotationRevisionResponse>> ListQuotationRevisionsAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SalesHistoryResponse>> ListHistoryAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default);
@@ -486,7 +643,8 @@ public sealed class UnavailableSalesPersistence : ISalesPersistence
     public Task<IReadOnlyList<SalesQuotationSummaryResponse>> ListQuotationsAsync(ProcurementRequestContext c, Guid? companyId, SalesQuotationStatus? status, CancellationToken x = default) => EmptyList<SalesQuotationSummaryResponse>();
     public Task<SalesQuotationResponse?> GetQuotationAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => Empty<SalesQuotationResponse?>();
     public Task<SalesOperationResult<SalesQuotationResponse>> CreateQuotationAsync(ProcurementRequestContext c, SalesQuotationWriteModel m, string k, string f, SalesApprovalPolicyDefinition? p, CancellationToken x = default) => Task.FromResult(Failure<SalesQuotationResponse>());
-    public Task<SalesOperationResult<SalesQuotationResponse>> EditQuotationAsync(ProcurementRequestContext c, Guid id, SalesQuotationWriteModel m, byte[] v, string k, string f, CancellationToken x = default) => Task.FromResult(Failure<SalesQuotationResponse>());
+    public Task<SalesOperationResult<SalesQuotationResponse>> EditQuotationAsync(ProcurementRequestContext c, Guid id, SalesQuotationWriteModel m, byte[] v, string k, string f, CancellationToken x = default, SalesApprovalPolicyDefinition? p = null) => Task.FromResult(Failure<SalesQuotationResponse>());
+    public Task<SalesOperationResult<SalesOrderResponse>> EditOrderAsync(ProcurementRequestContext c, Guid id, SalesQuotationWriteModel m, byte[] v, string k, string f, SalesApprovalPolicyDefinition? p, CancellationToken x = default) => Task.FromResult(Failure<SalesOrderResponse>());
     public Task<SalesOperationResult<SalesQuotationResponse>> TransitionQuotationAsync(ProcurementRequestContext c, Guid id, SalesQuotationStatus t, string? r, byte[] v, string k, string f, SalesApprovalPolicyDefinition? p, Guid? d = null, CancellationToken x = default) => Task.FromResult(Failure<SalesQuotationResponse>());
     public Task<IReadOnlyList<SalesQuotationRevisionResponse>> ListQuotationRevisionsAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => EmptyList<SalesQuotationRevisionResponse>();
     public Task<IReadOnlyList<SalesHistoryResponse>> ListHistoryAsync(ProcurementRequestContext c, string t, Guid id, CancellationToken x = default) => EmptyList<SalesHistoryResponse>();
@@ -552,7 +710,7 @@ public sealed class SalesService(
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesQuotationResponse>.Failure(ScopeFailure(authorizationDecision.Code, "quotation_not_found"));
         var model = await BuildModelAsync(context, Guid.NewGuid(), request.CompanyId, request.BranchId, request.CustomerId, request.QuotationDate, request.ValidUntil, request.CurrencyId, request.PriceListId, request.ExchangeRateId, request.CustomerContactId, request.Notes, request.CustomerReference, request.Lines, cancellationToken);
         if (model is null) return SalesOperationResult<SalesQuotationResponse>.Failure("commercial_reference_invalid");
-        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, model.CompanyId, model.BranchId), "quotation", model.Total, DateTimeOffset.UtcNow, cancellationToken);
+        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, model.CompanyId, model.BranchId), "quotation", model.Total, DateTimeOffset.UtcNow, cancellationToken, model.CurrencyCode);
         return await persistence.CreateQuotationAsync(context, model, key, Fingerprint(request), policy, cancellationToken);
     }
 
@@ -562,9 +720,26 @@ public sealed class SalesService(
         if (existing is null) return SalesOperationResult<SalesQuotationResponse>.Failure("quotation_not_found");
         var authorizationDecision = authorization.Decide(context, "sales.quotation.edit", Scope(context, existing.CompanyId, existing.BranchId));
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesQuotationResponse>.Failure(ScopeFailure(authorizationDecision.Code, "quotation_not_found"));
-        var model = await BuildModelAsync(context, id, request.CompanyId, request.BranchId, existing.CustomerId, existing.QuotationDate, request.ValidUntil, request.CurrencyId, request.PriceListId, request.ExchangeRateId, request.CustomerContactId, request.Notes, request.CustomerReference, request.Lines, cancellationToken);
+        if (request.CompanyId != existing.CompanyId || request.BranchId != existing.BranchId)
+            return SalesOperationResult<SalesQuotationResponse>.Failure("quotation_scope_immutable");
+        var model = await BuildModelAsync(context, id, existing.CompanyId, existing.BranchId, existing.CustomerId, existing.QuotationDate, request.ValidUntil, request.CurrencyId, request.PriceListId, request.ExchangeRateId, request.CustomerContactId, request.Notes, request.CustomerReference, request.Lines, cancellationToken);
         if (model is null) return SalesOperationResult<SalesQuotationResponse>.Failure("commercial_reference_invalid");
-        return await persistence.EditQuotationAsync(context, id, model, expectedVersion, key, Fingerprint(request), cancellationToken);
+        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "quotation", model.Total, DateTimeOffset.UtcNow, cancellationToken, model.CurrencyCode);
+        return await persistence.EditQuotationAsync(context, id, model, expectedVersion, key, Fingerprint(request), cancellationToken, policy);
+    }
+
+    public async Task<SalesOperationResult<SalesOrderResponse>> EditOrderAsync(ProcurementRequestContext context, Guid id, SalesOrderEditRequest request, byte[] expectedVersion, string key, CancellationToken cancellationToken = default)
+    {
+        var existing = await persistence.GetOrderAsync(context, id, cancellationToken);
+        if (existing is null) return SalesOperationResult<SalesOrderResponse>.Failure("order_not_found");
+        var authorizationDecision = authorization.Decide(context, "sales.order.edit", Scope(context, existing.CompanyId, existing.BranchId));
+        if (!authorizationDecision.Allowed) return SalesOperationResult<SalesOrderResponse>.Failure(ScopeFailure(authorizationDecision.Code, "order_not_found"));
+        if (existing.Status is not (SalesOrderStatus.Draft or SalesOrderStatus.ReturnedForChange)) return SalesOperationResult<SalesOrderResponse>.Failure("order_edit_locked");
+        var date = DateOnly.FromDateTime(DateTime.UtcNow);
+        var model = await BuildModelAsync(context, id, existing.CompanyId, existing.BranchId, existing.CustomerId, date, date, request.CurrencyId, request.PriceListId, request.ExchangeRateId, null, null, null, request.Lines, cancellationToken, "order");
+        if (model is null) return SalesOperationResult<SalesOrderResponse>.Failure("commercial_reference_invalid");
+        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "order", model.Total, DateTimeOffset.UtcNow, cancellationToken, model.CurrencyCode);
+        return await persistence.EditOrderAsync(context, id, model, expectedVersion, key, Fingerprint(request), policy, cancellationToken);
     }
 
     public async Task<SalesOperationResult<SalesQuotationResponse>> TransitionQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationStatus target, string? reason, byte[] version, string key, CancellationToken cancellationToken = default)
@@ -574,12 +749,18 @@ public sealed class SalesService(
         var operation = target switch { SalesQuotationStatus.PendingApproval => "sales.quotation.submit", SalesQuotationStatus.Approved => "sales.quotation.approve", SalesQuotationStatus.Rejected => "sales.quotation.reject", SalesQuotationStatus.ReturnedForChange => "sales.quotation.return", SalesQuotationStatus.Sent => "sales.quotation.send", SalesQuotationStatus.Withdrawn => "sales.quotation.withdraw", SalesQuotationStatus.Cancelled => "sales.quotation.cancel", _ => "sales.quotation.edit" };
         var authorizationDecision = authorization.Decide(context, operation, Scope(context, existing.CompanyId, existing.BranchId));
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesQuotationResponse>.Failure(ScopeFailure(authorizationDecision.Code, "quotation_not_found"));
-        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "quotation", existing.Total, DateTimeOffset.UtcNow, cancellationToken);
+        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "quotation", existing.Total, DateTimeOffset.UtcNow, cancellationToken, existing.CurrencyCode);
+        if (target == SalesQuotationStatus.PendingApproval && policy is null) return SalesOperationResult<SalesQuotationResponse>.Failure("approval_policy_missing");
+        if (target == SalesQuotationStatus.Cancelled && existing.Status == SalesQuotationStatus.PendingApproval
+            && (policy is null || !policy.AllowRequesterCancellationWhilePending || existing.CreatedByActorId != context.ActorId))
+            return SalesOperationResult<SalesQuotationResponse>.Failure("cancellation_not_allowed");
         Guid? delegatedFrom = null;
         if (target == SalesQuotationStatus.Approved)
         {
             if (existing.CreatedByActorId == context.ActorId) return SalesOperationResult<SalesQuotationResponse>.Failure("self_approval_denied");
-            var stage = policy?.Stages.OrderBy(item => item.Sequence).FirstOrDefault();
+            if (policy is null) return SalesOperationResult<SalesQuotationResponse>.Failure("approval_policy_missing");
+            var stageIndex = existing.ApprovalState?.CurrentStageIndex ?? 0;
+            var stage = policy.Stages.OrderBy(item => item.Sequence).ElementAtOrDefault(stageIndex);
             if (stage is null) return SalesOperationResult<SalesQuotationResponse>.Failure("approval_policy_missing");
             if (stage.EligibleApproverIds.Count > 0 && !stage.EligibleApproverIds.Contains(context.ActorId))
             {
@@ -600,7 +781,7 @@ public sealed class SalesService(
         if (quote is null) return SalesOperationResult<SalesOrderResponse>.Failure("quotation_not_found");
         var authorizationDecision = authorization.Decide(context, "sales.quotation.convert", Scope(context, quote.CompanyId, quote.BranchId));
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesOrderResponse>.Failure(ScopeFailure(authorizationDecision.Code, "quotation_not_found"));
-        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, quote.CompanyId, quote.BranchId), "order", quote.Total, DateTimeOffset.UtcNow, cancellationToken);
+        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, quote.CompanyId, quote.BranchId), "order", quote.Total, DateTimeOffset.UtcNow, cancellationToken, quote.CurrencyCode);
         return await persistence.ConvertQuotationAsync(context, quotationId, version, key, Fingerprint(new { quotationId, version }), policy, cancellationToken);
     }
 
@@ -611,12 +792,18 @@ public sealed class SalesService(
         var operation = target switch { SalesOrderStatus.PendingApproval => "sales.order.submit", SalesOrderStatus.Approved => "sales.order.approve", SalesOrderStatus.Rejected => "sales.order.reject", SalesOrderStatus.ReturnedForChange => "sales.order.return", SalesOrderStatus.Confirmed => "sales.order.confirm", SalesOrderStatus.Cancelled => "sales.order.cancel", _ => "sales.order.edit" };
         var authorizationDecision = authorization.Decide(context, operation, Scope(context, existing.CompanyId, existing.BranchId));
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesOrderResponse>.Failure(ScopeFailure(authorizationDecision.Code, "order_not_found"));
-        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "order", existing.Total, DateTimeOffset.UtcNow, cancellationToken);
+        var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "order", existing.Total, DateTimeOffset.UtcNow, cancellationToken, existing.CurrencyCode);
+        if (target == SalesOrderStatus.PendingApproval && policy is null) return SalesOperationResult<SalesOrderResponse>.Failure("approval_policy_missing");
+        if (target == SalesOrderStatus.Cancelled && existing.Status == SalesOrderStatus.PendingApproval
+            && (policy is null || !policy.AllowRequesterCancellationWhilePending || existing.CreatedByActorId != context.ActorId))
+            return SalesOperationResult<SalesOrderResponse>.Failure("cancellation_not_allowed");
         Guid? delegatedFrom = null;
         if (target is SalesOrderStatus.Approved or SalesOrderStatus.Confirmed)
         {
             if (existing.CreatedByActorId == context.ActorId) return SalesOperationResult<SalesOrderResponse>.Failure("self_approval_denied");
-            var stage = policy?.Stages.OrderBy(item => item.Sequence).FirstOrDefault();
+            if (policy is null && target == SalesOrderStatus.Approved) return SalesOperationResult<SalesOrderResponse>.Failure("approval_policy_missing");
+            var stageIndex = existing.ApprovalState?.CurrentStageIndex ?? 0;
+            var stage = policy?.Stages.OrderBy(item => item.Sequence).ElementAtOrDefault(stageIndex);
             if (target == SalesOrderStatus.Approved && stage is null) return SalesOperationResult<SalesOrderResponse>.Failure("approval_policy_missing");
             if (stage is not null && stage.EligibleApproverIds.Count > 0 && !stage.EligibleApproverIds.Contains(context.ActorId))
             {
@@ -678,7 +865,7 @@ public sealed class SalesService(
         return new(outcome, outcome == SalesCreditOutcome.Blocked ? (exposure.CreditHold ? "finance_credit_hold" : "credit_limit_exceeded") : exposure.OverdueReceivables > 0m ? "overdue_receivables" : null, exposure.OpenReceivables, exposure.OverdueReceivables, exposure.NetReceivableExposure, proposed, limit, at, DateTimeOffset.UtcNow);
     }
 
-    private async Task<SalesQuotationWriteModel?> BuildModelAsync(ProcurementRequestContext context, Guid id, Guid companyId, Guid? branchId, Guid customerId, DateOnly quotationDate, DateOnly validUntil, Guid currencyId, Guid? priceListId, Guid? exchangeRateId, string? contactId, string? notes, string? reference, IReadOnlyList<SalesQuotationLineRequest> lineRequests, CancellationToken cancellationToken)
+    private async Task<SalesQuotationWriteModel?> BuildModelAsync(ProcurementRequestContext context, Guid id, Guid companyId, Guid? branchId, Guid customerId, DateOnly quotationDate, DateOnly validUntil, Guid currencyId, Guid? priceListId, Guid? exchangeRateId, string? contactId, string? notes, string? reference, IReadOnlyList<SalesQuotationLineRequest> lineRequests, CancellationToken cancellationToken, string documentType = "quotation")
     {
         if (companyId == Guid.Empty || customerId == Guid.Empty || currencyId == Guid.Empty || validUntil < quotationDate || lineRequests is null || lineRequests.Count == 0 || lineRequests.Count > 500) return null;
         var company = companies.List(context.TenantId).FirstOrDefault(item => item.CompanyId == companyId && item.BranchId == branchId);
@@ -712,7 +899,7 @@ public sealed class SalesService(
             SalesCommercialAuthority? authority = null;
             if (requiresAuthority)
             {
-                authority = await commercialAuthorities.ResolveAsync(context, Scope(context, companyId, branchId), "quotation", context.ActorId, DateTimeOffset.UtcNow, cancellationToken);
+                authority = await commercialAuthorities.ResolveAsync(context, Scope(context, companyId, branchId), documentType, context.ActorId, DateTimeOffset.UtcNow, cancellationToken);
                 if (authority is null || line.UnitPriceOverride is not null && !authority.AllowManualPrice || line.DiscountPercent > authority.MaximumDiscountPercent) return null;
             }
             var appliedUnitPrice = decimal.Round(line.UnitPriceOverride ?? source.Price.Price, 8, MidpointRounding.AwayFromZero);

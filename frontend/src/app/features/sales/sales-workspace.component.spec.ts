@@ -8,6 +8,7 @@ import { PriceListService } from '../master-data/price-list.service';
 import { PurchaseRequestService } from '../procurement/purchase-request.service';
 import { SalesService } from './sales.service';
 import { SalesWorkspaceComponent } from './sales-workspace.component';
+import { SalesOrderResponse } from './sales.model';
 
 describe('SalesWorkspaceComponent', () => {
   let fixture: ComponentFixture<SalesWorkspaceComponent>;
@@ -68,5 +69,13 @@ describe('SalesWorkspaceComponent', () => {
     fixture.detectChanges();
     expect(document.documentElement.dir).toBe('rtl');
     expect(fixture.nativeElement.querySelector('h1')).toBeTruthy();
+  });
+
+  it('offers only the backend-supported returned-order correction actions and an edit route', () => {
+    const order = { status: 'ReturnedForChange' } as SalesOrderResponse;
+    const actions = fixture.componentInstance.orderActions(order);
+    expect(actions.map(action => action.key)).toEqual(['submit']);
+    expect(fixture.componentInstance.canEditOrder(order)).toBe(true);
+    expect(fixture.componentInstance.orderActions({ status: 'Approved' } as SalesOrderResponse).map(action => action.key)).toContain('return');
   });
 });

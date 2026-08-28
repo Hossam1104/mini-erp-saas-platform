@@ -31,6 +31,7 @@ export const routes: Routes = [
       { path: 'sales/quotations/:id/edit', loadComponent: () => import('./features/sales/sales-workspace.component').then((module) => module.SalesWorkspaceComponent) },
       { path: 'sales/orders', loadComponent: () => import('./features/sales/sales-workspace.component').then((module) => module.SalesWorkspaceComponent) },
       { path: 'sales/orders/:id', loadComponent: () => import('./features/sales/sales-workspace.component').then((module) => module.SalesWorkspaceComponent) },
+      { path: 'sales/orders/:id/edit', loadComponent: () => import('./features/sales/sales-workspace.component').then((module) => module.SalesWorkspaceComponent) },
       { path: 'procurement/purchase-requests', loadComponent: () => import('./features/procurement/purchase-request-workspace.component').then((module) => module.PurchaseRequestWorkspaceComponent) },
       { path: 'procurement/purchase-requests/new', loadComponent: () => import('./features/procurement/purchase-request-workspace.component').then((module) => module.PurchaseRequestWorkspaceComponent) },
       { path: 'procurement/purchase-requests/:id', loadComponent: () => import('./features/procurement/purchase-request-workspace.component').then((module) => module.PurchaseRequestWorkspaceComponent) },

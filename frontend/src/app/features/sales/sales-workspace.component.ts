@@ -18,6 +18,7 @@ import {
   SalesCreditResponse,
   SalesHistoryResponse,
   SalesOrderResponse,
+  SalesOrderEditRequest,
   SalesOrderStatus,
   SalesOrderSummaryResponse,
   SalesQuotationCreateRequest,
@@ -151,6 +152,8 @@ interface QuotationDraft {
     </ng-template>
 
     <ng-template #orderDetail let-record="record">
+      @if (canEditOrder(record)) { <button class="button button--quiet" type="button" (click)="editOrder(record.id)">{{ language.text('editRecord') }}</button> }
+      <button class="button button--quiet" type="button" (click)="setTab('audit')">{{ language.text('audit') }}</button>
       <div class="detail-heading"><div><p class="eyebrow eyebrow--soft">{{ language.text('salesOrder') }}</p><h2 id="sales-detail-title">{{ record.number }}</h2><p>{{ record.customerName }} · {{ record.customerCode }}</p></div><div class="detail-actions"><span class="status-pill" [class]="'status-pill status-pill--' + statusTone(record.status)"><i aria-hidden="true"></i>{{ statusLabel(record.status) }}</span>@for (action of orderActions(record); track action.key) {<button class="button" [class.button--primary]="action.key === 'submit' || action.key === 'approve' || action.key === 'confirm'" [class.button--danger]="action.key === 'reject' || action.key === 'cancel'" type="button" (click)="runOrderAction(action.key)">{{ action.label }}</button>}</div></div>
       @if (mutationError()) { <div class="inline-alert" role="alert"><b>{{ errorMessage(mutationError()) }}</b><span>{{ mutationError()?.code === 'concurrency_conflict' ? language.text('salesStaleLead') : language.text('salesActionFailed') }}</span></div> }
       <div class="commercial-strip"><div><span>{{ language.text('customer') }}</span><b>{{ record.customerName }}</b><small>{{ record.customerCode }}</small></div><div><span>{{ language.text('salesSource') }}</span><b>{{ record.sourceQuotationNumber }}</b><small>R{{ record.sourceQuotationRevision }}</small></div><div><span>{{ language.text('salesCreditStatus') }}</span><b class="credit-text" [class.credit-text--hold]="record.creditOutcome === 'Blocked' || record.creditOutcome === 'Unknown'">{{ creditLabel(record.creditOutcome) }}</b><small>{{ record.creditReason || language.text('salesNoCreditReason') }}</small></div><div class="commercial-strip__total"><span>{{ language.text('salesTotal') }}</span><b>{{ record.total | number:'1.2-2' }} {{ record.currencyCode }}</b></div></div>
@@ -271,7 +274,7 @@ export class SalesWorkspaceComponent implements OnInit {
         const [revisions, history, audit] = await Promise.all([firstValueFrom(this.sales.quotationRevisions(this.currentId)), firstValueFrom(this.sales.quotationHistory(this.currentId)), firstValueFrom(this.sales.quotationAudit(this.currentId))]);
         this.revisions.set(revisions); this.history.set(history); this.audit.set(audit);
       } else {
-        const order = await firstValueFrom(this.sales.order(this.currentId)); this.selectedOrder.set(order);
+        const order = await firstValueFrom(this.sales.order(this.currentId)); this.selectedOrder.set(order); if (this.mode() === 'edit') this.draft = this.draftFromOrder(order);
         const [history, audit, credit] = await Promise.all([firstValueFrom(this.sales.orderHistory(this.currentId)), firstValueFrom(this.sales.orderAudit(this.currentId)), firstValueFrom(this.sales.orderCredit(this.currentId))]);
         this.history.set(history); this.audit.set(audit); this.credit.set(credit);
       }
@@ -301,6 +304,7 @@ export class SalesWorkspaceComponent implements OnInit {
 
   openRecord(id: string): void { void this.router.navigate(['/app/sales', this.documentType() === 'quotation' ? 'quotations' : 'orders', id]); }
   editQuotation(id: string): void { void this.router.navigate(['/app/sales/quotations', id, 'edit']); }
+  editOrder(id: string): void { void this.router.navigate(['/app/sales/orders', id, 'edit']); }
   backToList(): void { void this.router.navigate(['/app/sales', this.documentType() === 'quotation' ? 'quotations' : 'orders']); }
   setTab(tab: DetailTab): void { this.detailTab.set(tab); }
   addLine(): void { this.draft.lines = [...this.draft.lines, this.emptyLine()]; }
@@ -310,7 +314,11 @@ export class SalesWorkspaceComponent implements OnInit {
     this.saving.set(true); this.mutationError.set(null);
     const payload: SalesQuotationCreateRequest = { companyId: this.draft.companyId.trim(), branchId: this.draft.branchId.trim() || null, customerId: this.draft.customerId, quotationDate: this.draft.quotationDate, validUntil: this.draft.validUntil, currencyId: this.draft.currencyId, priceListId: this.draft.priceListId || null, customerContactId: this.draft.customerContactId.trim() || null, notes: this.draft.notes.trim() || null, customerReference: this.draft.customerReference.trim() || null, exchangeRateId: this.draft.exchangeRateId || null, lines: this.draft.lines.map(line => ({ productId: line.productId, unitOfMeasureId: line.unitOfMeasureId, quantity: Number(line.quantity), unitPriceOverride: line.unitPriceOverride, discountPercent: Number(line.discountPercent), taxId: line.taxId || null, notes: line.notes.trim() || null })) };
     try {
-      if (this.mode() === 'edit' && this.currentId && this.selectedQuotation()) {
+      if (this.mode() === 'edit' && this.documentType() === 'order' && this.currentId && this.selectedOrder()) {
+        const editPayload: SalesOrderEditRequest = { currencyId: payload.currencyId, priceListId: payload.priceListId, exchangeRateId: payload.exchangeRateId, lines: payload.lines };
+        await this.sales.editOrder(this.currentId, editPayload, this.selectedOrder()!.version);
+      }
+      else if (this.mode() === 'edit' && this.currentId && this.selectedQuotation()) {
         const { customerId: _customerId, quotationDate: _quotationDate, ...editPayload } = payload;
         await this.sales.editQuotation(this.currentId, editPayload, this.selectedQuotation()!.version);
       }
@@ -321,6 +329,7 @@ export class SalesWorkspaceComponent implements OnInit {
   }
 
   canEditQuotation(record: SalesQuotationResponse): boolean { return record.status === 'Draft' || record.status === 'ReturnedForChange'; }
+  canEditOrder(record: SalesOrderResponse): boolean { return record.status === 'Draft' || record.status === 'ReturnedForChange'; }
   quotationActions(record: SalesQuotationResponse): { key: 'submit' | 'approve' | 'reject' | 'return' | 'send' | 'withdraw' | 'cancel' | 'convert'; label: string }[] {
     const labels = { submit: this.language.text('submitForApproval'), approve: this.language.text('approveRequest'), reject: this.language.text('rejectRequest'), return: this.language.text('returnForChange'), send: this.language.text('salesSendQuotation'), withdraw: this.language.text('salesWithdrawQuotation'), cancel: this.language.text('cancelRequest'), convert: this.language.text('salesConvertToOrder') } as const;
     if (record.status === 'Draft' || record.status === 'ReturnedForChange') return [{ key: 'submit', label: labels.submit }];
@@ -333,7 +342,7 @@ export class SalesWorkspaceComponent implements OnInit {
     const labels = { submit: this.language.text('submitForApproval'), approve: this.language.text('approveRequest'), reject: this.language.text('rejectRequest'), return: this.language.text('returnForChange'), confirm: this.language.text('salesConfirmOrder'), cancel: this.language.text('cancelRequest') } as const;
     if (record.status === 'Draft' || record.status === 'ReturnedForChange') return [{ key: 'submit', label: labels.submit }];
     if (record.status === 'PendingApproval') return [{ key: 'approve', label: labels.approve }, { key: 'return', label: labels.return }, { key: 'reject', label: labels.reject }];
-    if (record.status === 'Approved' || record.status === 'CreditHold') return [{ key: 'confirm', label: labels.confirm }, { key: 'cancel', label: labels.cancel }];
+    if (record.status === 'Approved' || record.status === 'CreditHold') return [{ key: 'confirm', label: labels.confirm }, { key: 'return', label: labels.return }, { key: 'cancel', label: labels.cancel }];
     return [];
   }
 
@@ -369,5 +378,6 @@ export class SalesWorkspaceComponent implements OnInit {
 
   private emptyLine(): LineDraft { return { productId: '', unitOfMeasureId: '', quantity: 1, unitPriceOverride: null, discountPercent: 0, notes: '', taxId: '' }; }
   private draftFromQuotation(quote: SalesQuotationResponse): QuotationDraft { return { companyId: quote.companyId, branchId: quote.branchId ?? '', customerId: quote.customerId, quotationDate: quote.quotationDate, validUntil: quote.validUntil, currencyId: quote.currencyId, priceListId: quote.lines[0]?.priceListId ?? '', exchangeRateId: quote.exchangeRateEvidence?.exchangeRateId ?? '', customerContactId: quote.customerContactId ?? '', notes: quote.notes ?? '', customerReference: quote.customerReference ?? '', lines: quote.lines.map(line => ({ productId: line.productId, unitOfMeasureId: line.unitOfMeasureId, quantity: line.quantity, unitPriceOverride: line.manualPriceApplied ? line.unitPrice : null, discountPercent: line.discountPercent, taxId: line.taxId ?? '', notes: line.notes ?? '' })) }; }
+  private draftFromOrder(order: SalesOrderResponse): QuotationDraft { const now = new Date().toISOString().slice(0, 10); return { companyId: order.companyId, branchId: order.branchId ?? '', customerId: order.customerId, quotationDate: now, validUntil: now, currencyId: order.currencyId, priceListId: order.lines[0]?.priceListId ?? '', exchangeRateId: order.exchangeRateEvidence?.exchangeRateId ?? '', customerContactId: '', notes: '', customerReference: '', lines: order.lines.map(line => ({ productId: line.productId, unitOfMeasureId: line.unitOfMeasureId, quantity: line.quantity, unitPriceOverride: line.manualPriceApplied ? line.unitPrice : null, discountPercent: line.discountPercent, taxId: line.taxId ?? '', notes: line.notes ?? '' })) }; }
   private emptyDraft(): QuotationDraft { const now = new Date(); const valid = new Date(now); valid.setDate(valid.getDate() + 30); return { companyId: '', branchId: '', customerId: '', quotationDate: now.toISOString().slice(0, 10), validUntil: valid.toISOString().slice(0, 10), currencyId: '', priceListId: '', exchangeRateId: '', customerContactId: '', notes: '', customerReference: '', lines: [this.emptyLine()] }; }
 }

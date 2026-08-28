@@ -51,12 +51,13 @@ internal sealed class SalesQuotationEntity : ITenantOwned
     internal byte[] Version { get; private set; } = [];
 
     internal void SetCreator(Guid actorId) => CreatedByActorId = actorId;
-    internal void Edit(SalesQuotationWriteModel model, string linesJson, DateTimeOffset now)
+    internal void Edit(SalesQuotationWriteModel model, string linesJson, DateTimeOffset now, string policyJson)
     {
-        CompanyId = model.CompanyId; BranchId = model.BranchId; ValidUntil = model.ValidUntil; CurrencyId = model.CurrencyId; CurrencyCode = model.CurrencyCode;
-        CustomerContactId = model.CustomerContactId; Notes = model.Notes; CustomerReference = model.CustomerReference; Subtotal = model.Subtotal; DiscountAmount = model.DiscountAmount; TaxAmount = model.TaxAmount; Total = model.Total; LinesJson = linesJson; ExchangeRateJson = JsonSerializer.Serialize(model.ExchangeRateEvidence); RevisionNumber++; Status = SalesQuotationStatus.Draft; UpdatedAt = now; CurrentApprovalsJson = "[]"; Version = NewVersion();
+        if (CompanyId != model.CompanyId || BranchId != model.BranchId) throw new InvalidOperationException("quotation_scope_immutable");
+        ValidUntil = model.ValidUntil; CurrencyId = model.CurrencyId; CurrencyCode = model.CurrencyCode;
+        CustomerContactId = model.CustomerContactId; Notes = model.Notes; CustomerReference = model.CustomerReference; Subtotal = model.Subtotal; DiscountAmount = model.DiscountAmount; TaxAmount = model.TaxAmount; Total = model.Total; LinesJson = linesJson; ExchangeRateJson = JsonSerializer.Serialize(model.ExchangeRateEvidence); RevisionNumber++; Status = SalesQuotationStatus.Draft; ApprovalPolicyJson = policyJson; UpdatedAt = now; CurrentApprovalsJson = "[]"; Version = NewVersion();
     }
-    internal void Transition(SalesQuotationStatus status, DateTimeOffset now, string policyJson) { Status = status; UpdatedAt = now; ApprovalPolicyJson = policyJson; Version = NewVersion(); }
+    internal void Transition(SalesQuotationStatus status, DateTimeOffset now, string policyJson, string? approvalsJson = null) { Status = status; UpdatedAt = now; ApprovalPolicyJson = policyJson; if (approvalsJson is not null) CurrentApprovalsJson = approvalsJson; Version = NewVersion(); }
     private static byte[] NewVersion() => Guid.NewGuid().ToByteArray();
 }
 
@@ -86,7 +87,7 @@ internal sealed class SalesOrderEntity : ITenantOwned
         Id = Guid.NewGuid(); TenantId = tenantId; Number = number; CompanyId = quote.CompanyId; BranchId = quote.BranchId; CustomerId = quote.CustomerId; CustomerCode = quote.CustomerCode; CustomerName = quote.CustomerName;
         SourceQuotationId = quote.Id; SourceQuotationNumber = quote.Number; SourceQuotationRevision = quote.RevisionNumber; CurrencyId = quote.CurrencyId; CurrencyCode = quote.CurrencyCode;
         Subtotal = quote.Subtotal; DiscountAmount = quote.DiscountAmount; TaxAmount = quote.TaxAmount; Total = quote.Total; LinesJson = linesJson; ExchangeRateJson = quote.ExchangeRateJson; Status = SalesOrderStatus.Draft; CreditOutcome = SalesCreditOutcome.Unknown; ApprovalPolicyJson = policyJson;
-        CreatedByActorId = actorId; CreatedAt = now; UpdatedAt = now; Version = Guid.NewGuid().ToByteArray();
+        CreatedByActorId = actorId; CreatedAt = now; UpdatedAt = now; RevisionNumber = 1; Version = Guid.NewGuid().ToByteArray();
     }
     internal Guid Id { get; private set; }
     public TenantId TenantId { get; private set; }
@@ -113,20 +114,29 @@ internal sealed class SalesOrderEntity : ITenantOwned
     internal string LinesJson { get; private set; } = "[]";
     internal string? ExchangeRateJson { get; private set; }
     internal string ApprovalPolicyJson { get; private set; } = "{}";
+    internal string CurrentApprovalsJson { get; private set; } = "[]";
     internal Guid CreatedByActorId { get; private set; }
     internal DateTimeOffset CreatedAt { get; private set; }
     internal DateTimeOffset UpdatedAt { get; private set; }
+    internal int RevisionNumber { get; private set; }
     internal byte[] Version { get; private set; } = [];
-    internal void Transition(SalesOrderStatus status, string? reason, DateTimeOffset now, SalesCreditEvaluation? credit, string policyJson)
-    { Status = status; CreditReason = reason ?? credit?.Reason; CreditOutcome = credit?.Outcome ?? CreditOutcome; CreditEvaluatedAt = credit is null ? CreditEvaluatedAt : credit.EvaluatedAt; CreditOverrideExpiresAt = credit?.OverrideExpiresAt ?? CreditOverrideExpiresAt; UpdatedAt = now; ApprovalPolicyJson = policyJson; Version = Guid.NewGuid().ToByteArray(); }
+    internal void Edit(SalesQuotationWriteModel model, string linesJson, DateTimeOffset now)
+    {
+        if (CompanyId != model.CompanyId || BranchId != model.BranchId || CustomerId != model.CustomerId) throw new InvalidOperationException("order_scope_immutable");
+        CurrencyId = model.CurrencyId; CurrencyCode = model.CurrencyCode; Subtotal = model.Subtotal; DiscountAmount = model.DiscountAmount; TaxAmount = model.TaxAmount;
+        Total = model.Total; LinesJson = linesJson; ExchangeRateJson = JsonSerializer.Serialize(model.ExchangeRateEvidence); RevisionNumber++; Status = SalesOrderStatus.Draft;
+        CreditOutcome = SalesCreditOutcome.Unknown; CreditReason = null; CreditEvaluatedAt = null; CreditOverrideExpiresAt = null; CurrentApprovalsJson = "[]"; UpdatedAt = now; Version = Guid.NewGuid().ToByteArray();
+    }
+    internal void Transition(SalesOrderStatus status, string? reason, DateTimeOffset now, SalesCreditEvaluation? credit, string policyJson, string? approvalsJson = null)
+    { Status = status; CreditReason = reason ?? credit?.Reason; CreditOutcome = credit?.Outcome ?? CreditOutcome; CreditEvaluatedAt = credit is null ? CreditEvaluatedAt : credit.EvaluatedAt; CreditOverrideExpiresAt = credit?.OverrideExpiresAt ?? CreditOverrideExpiresAt; UpdatedAt = now; ApprovalPolicyJson = policyJson; if (approvalsJson is not null) CurrentApprovalsJson = approvalsJson; Version = Guid.NewGuid().ToByteArray(); }
     internal void OverrideCredit(SalesCreditEvaluation credit, DateTimeOffset now) { CreditOutcome = SalesCreditOutcome.Overridden; CreditReason = credit.Reason; CreditEvaluatedAt = credit.EvaluatedAt; CreditOverrideExpiresAt = credit.OverrideExpiresAt; Status = SalesOrderStatus.Approved; UpdatedAt = now; Version = Guid.NewGuid().ToByteArray(); }
 }
 
 internal sealed class SalesHistoryEntity : ITenantOwned
 {
     private SalesHistoryEntity() { }
-    internal SalesHistoryEntity(TenantId tenantId, string type, Guid documentId, SalesHistoryAction action, string? from, string? to, Guid actorId, string? reason, string? policyId, int? policyVersion, string? credit, string? hash, DateTimeOffset now)
-    { Id = Guid.NewGuid(); TenantId = tenantId; DocumentType = type; DocumentId = documentId; Action = action; FromStatus = from; ToStatus = to; ActorId = actorId; Reason = reason; PolicyId = policyId; PolicyVersion = policyVersion; CreditOutcome = credit; SnapshotHash = hash; OccurredAt = now; }
+    internal SalesHistoryEntity(TenantId tenantId, string type, Guid documentId, SalesHistoryAction action, string? from, string? to, Guid actorId, string? reason, string? policyId, int? policyVersion, string? credit, string? hash, DateTimeOffset now, string? snapshotJson = null)
+    { Id = Guid.NewGuid(); TenantId = tenantId; DocumentType = type; DocumentId = documentId; Action = action; FromStatus = from; ToStatus = to; ActorId = actorId; Reason = reason; PolicyId = policyId; PolicyVersion = policyVersion; CreditOutcome = credit; SnapshotHash = hash; SnapshotJson = snapshotJson; OccurredAt = now; }
     internal Guid Id { get; private set; }
     public TenantId TenantId { get; private set; }
     internal string DocumentType { get; private set; } = string.Empty;
@@ -141,6 +151,7 @@ internal sealed class SalesHistoryEntity : ITenantOwned
     internal int? PolicyVersion { get; private set; }
     internal string? CreditOutcome { get; private set; }
     internal string? SnapshotHash { get; private set; }
+    internal string? SnapshotJson { get; private set; }
     internal byte[] Version { get; private set; } = [];
 }
 

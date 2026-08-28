@@ -58,7 +58,7 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
         return SalesOperationResult<SalesQuotationResponse>.Success(response);
     }
 
-    public async Task<SalesOperationResult<SalesQuotationResponse>> EditQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationWriteModel model, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default)
+    public async Task<SalesOperationResult<SalesQuotationResponse>> EditQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationWriteModel model, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default, SalesApprovalPolicyDefinition? policy = null)
     {
         await using var db = Create(context);
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
@@ -68,19 +68,45 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
         if (entity is null) return Failure<SalesQuotationResponse>("quotation_not_found");
         if (!entity.Version.SequenceEqual(expectedVersion)) return Failure<SalesQuotationResponse>("concurrency_conflict");
         if (entity.Status is not (SalesQuotationStatus.Draft or SalesQuotationStatus.ReturnedForChange)) return Failure<SalesQuotationResponse>("quotation_edit_locked");
+        if (entity.CompanyId != model.CompanyId || entity.BranchId != model.BranchId) return Failure<SalesQuotationResponse>("quotation_scope_immutable");
         var before = ToResponse(entity);
         var now = DateTimeOffset.UtcNow;
-        entity.Edit(model, LinesJson(model.Lines), now);
+        entity.Edit(model, LinesJson(model.Lines), now, JsonSerializer.Serialize(policy, Json));
         await db.SaveChangesAsync(cancellationToken);
         var response = ToResponse(entity);
         AddRevision(db, context, entity, response, "quotation-edited", now);
-        AddHistory(db, context, "quotation", id, SalesHistoryAction.Edited, before.Status, entity.Status, "quotation-edited", null, null, Hash(response), now);
+        AddHistory(db, context, "quotation", id, SalesHistoryAction.Edited, before.Status, entity.Status, "quotation-edited", policy, null, Hash(response), now, JsonSerializer.Serialize(before, Json));
         AddAudit(db, context, "sales.quotation.edit", "quotation", id, "Allowed", null, Summary(before), Summary(response), idempotencyKey, now);
         await db.SaveChangesAsync(cancellationToken);
         await SaveIdempotencyAsync(db, context, "sales.quotation.edit", idempotencyKey, requestFingerprint, "quotation", id, response, now, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return SalesOperationResult<SalesQuotationResponse>.Success(response);
+    }
+
+    public async Task<SalesOperationResult<SalesOrderResponse>> EditOrderAsync(ProcurementRequestContext context, Guid id, SalesQuotationWriteModel model, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var replay = await ReplayAsync<SalesOrderResponse>(db, context, "sales.order.edit", idempotencyKey, requestFingerprint, cancellationToken);
+        if (replay is not null) return replay;
+        var entity = await ApplyTrustedScope(db.Orders, context.TenantContext.Scope).SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+        if (entity is null) return Failure<SalesOrderResponse>("order_not_found");
+        if (!entity.Version.SequenceEqual(expectedVersion)) return Failure<SalesOrderResponse>("concurrency_conflict");
+        if (entity.Status is not (SalesOrderStatus.Draft or SalesOrderStatus.ReturnedForChange)) return Failure<SalesOrderResponse>("order_edit_locked");
+        var before = ToResponse(entity);
+        var now = DateTimeOffset.UtcNow;
+        entity.Edit(model, LinesJson(model.Lines), now);
+        if (policy is not null) entity.Transition(entity.Status, null, now, null, JsonSerializer.Serialize(policy, Json), "[]");
+        await db.SaveChangesAsync(cancellationToken);
+        var response = ToResponse(entity);
+        AddHistory(db, context, "order", id, SalesHistoryAction.Edited, before.Status, entity.Status, "order-edited", policy, null, Hash(before), now, JsonSerializer.Serialize(before, Json));
+        AddAudit(db, context, "sales.order.edit", "order", id, "Allowed", null, Summary(before), Summary(response), idempotencyKey, now);
+        await db.SaveChangesAsync(cancellationToken);
+        await SaveIdempotencyAsync(db, context, "sales.order.edit", idempotencyKey, requestFingerprint, "order", id, response, now, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return SalesOperationResult<SalesOrderResponse>.Success(response);
     }
 
     public async Task<SalesOperationResult<SalesQuotationResponse>> TransitionQuotationAsync(ProcurementRequestContext context, Guid id, SalesQuotationStatus target, string? reason, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, Guid? delegatedFromActorId = null, CancellationToken cancellationToken = default)
@@ -95,11 +121,29 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
         if (!CanTransition(entity.Status, target)) return Failure<SalesQuotationResponse>("quotation_transition_invalid");
         var before = entity.Status;
         var now = DateTimeOffset.UtcNow;
-        entity.Transition(target, now, JsonSerializer.Serialize(policy, Json));
+        var effectivePolicy = DeserializePolicy(entity.ApprovalPolicyJson) ?? policy;
+        var actualTarget = target;
+        SalesApprovalStateResponse? approvalState = DeserializeApprovalState(entity.CurrentApprovalsJson);
+        if (target == SalesQuotationStatus.Cancelled && entity.Status == SalesQuotationStatus.PendingApproval
+            && (effectivePolicy is null || !effectivePolicy.AllowRequesterCancellationWhilePending || entity.CreatedByActorId != context.ActorId))
+            return Failure<SalesQuotationResponse>("cancellation_not_allowed");
+        if (target == SalesQuotationStatus.PendingApproval)
+        {
+            if (effectivePolicy is null) return Failure<SalesQuotationResponse>("approval_policy_missing");
+            approvalState = NewApprovalState(effectivePolicy);
+        }
+        else if (target == SalesQuotationStatus.Approved)
+        {
+            var approval = EvaluateApproval(approvalState, effectivePolicy, entity.CreatedByActorId, context.ActorId, delegatedFromActorId, entity.RevisionNumber, entity.Version);
+            if (!approval.Succeeded) return Failure<SalesQuotationResponse>(approval.Code);
+            approvalState = approval.State;
+            actualTarget = approval.IsFullyApproved ? SalesQuotationStatus.Approved : SalesQuotationStatus.PendingApproval;
+        }
+        entity.Transition(actualTarget, now, JsonSerializer.Serialize(effectivePolicy, Json), SerializeApprovalState(approvalState));
         await db.SaveChangesAsync(cancellationToken);
         var response = ToResponse(entity);
-        AddHistory(db, context, "quotation", id, ActionToHistory(target), before, target, reason, policy, null, Hash(response), now);
-        AddAudit(db, context, $"sales.quotation.{Action(target)}", "quotation", id, "Allowed", reason, $"status={before}", $"status={target};revision={entity.RevisionNumber}", idempotencyKey, now);
+        AddHistory(db, context, "quotation", id, ActionToHistory(actualTarget), before, actualTarget, reason, effectivePolicy, null, Hash(response), now, JsonSerializer.Serialize(response, Json));
+        AddAudit(db, context, $"sales.quotation.{Action(target)}", "quotation", id, "Allowed", reason, $"status={before}", $"status={actualTarget};revision={entity.RevisionNumber}", idempotencyKey, now);
         await db.SaveChangesAsync(cancellationToken);
         await SaveIdempotencyAsync(db, context, $"sales.quotation.{Action(target)}", idempotencyKey, requestFingerprint, "quotation", id, response, now, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
@@ -117,7 +161,7 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
     public async Task<IReadOnlyList<SalesHistoryResponse>> ListHistoryAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default)
     {
         await using var db = Create(context);
-        return (await db.History.AsNoTracking().Where(item => item.DocumentType == documentType && item.DocumentId == id).ToListAsync(cancellationToken)).OrderByDescending(item => item.OccurredAt).Select(item => new SalesHistoryResponse(item.Id, item.DocumentType, item.DocumentId, item.Action.ToString(), item.FromStatus, item.ToStatus, item.ActorId, item.OccurredAt, item.Reason, item.PolicyId, item.PolicyVersion, item.CreditOutcome, item.SnapshotHash)).ToArray();
+        return (await db.History.AsNoTracking().Where(item => item.DocumentType == documentType && item.DocumentId == id).ToListAsync(cancellationToken)).OrderByDescending(item => item.OccurredAt).Select(item => new SalesHistoryResponse(item.Id, item.DocumentType, item.DocumentId, item.Action.ToString(), item.FromStatus, item.ToStatus, item.ActorId, item.OccurredAt, item.Reason, item.PolicyId, item.PolicyVersion, item.CreditOutcome, item.SnapshotHash, item.SnapshotJson)).ToArray();
     }
 
     public async Task<IReadOnlyList<SalesAuditResponse>> ListAuditAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default)
@@ -183,12 +227,30 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
         if (!CanTransition(entity.Status, target)) return Failure<SalesOrderResponse>("order_transition_invalid");
         var before = entity.Status;
         var now = DateTimeOffset.UtcNow;
-        entity.Transition(target, reason, now, credit, JsonSerializer.Serialize(policy, Json));
+        var effectivePolicy = DeserializePolicy(entity.ApprovalPolicyJson) ?? policy;
+        var actualTarget = target;
+        SalesApprovalStateResponse? approvalState = DeserializeApprovalState(entity.CurrentApprovalsJson);
+        if (target == SalesOrderStatus.Cancelled && entity.Status == SalesOrderStatus.PendingApproval
+            && (effectivePolicy is null || !effectivePolicy.AllowRequesterCancellationWhilePending || entity.CreatedByActorId != context.ActorId))
+            return Failure<SalesOrderResponse>("cancellation_not_allowed");
+        if (target == SalesOrderStatus.PendingApproval)
+        {
+            if (effectivePolicy is null) return Failure<SalesOrderResponse>("approval_policy_missing");
+            approvalState = NewApprovalState(effectivePolicy);
+        }
+        else if (target == SalesOrderStatus.Approved)
+        {
+            var approval = EvaluateApproval(approvalState, effectivePolicy, entity.CreatedByActorId, context.ActorId, delegatedFromActorId, entity.RevisionNumber, entity.Version);
+            if (!approval.Succeeded) return Failure<SalesOrderResponse>(approval.Code);
+            approvalState = approval.State;
+            actualTarget = approval.IsFullyApproved ? SalesOrderStatus.Approved : SalesOrderStatus.PendingApproval;
+        }
+        entity.Transition(actualTarget, reason, now, credit, JsonSerializer.Serialize(effectivePolicy, Json), SerializeApprovalState(approvalState));
         if (credit is not null) db.Credit.Add(ToCredit(entity, credit));
         await db.SaveChangesAsync(cancellationToken);
         var response = ToResponse(entity);
-        AddHistory(db, context, "order", id, credit is null ? ActionToHistory(target) : SalesHistoryAction.CreditEvaluated, before, target, reason, policy, credit?.Outcome.ToString(), Hash(response), now);
-        AddAudit(db, context, $"sales.order.{Action(target)}", "order", id, "Allowed", reason, $"status={before}", $"status={target};credit={credit?.Outcome}", idempotencyKey, now);
+        AddHistory(db, context, "order", id, credit is null ? ActionToHistory(actualTarget) : SalesHistoryAction.CreditEvaluated, before, actualTarget, reason, effectivePolicy, credit?.Outcome.ToString(), Hash(response), now, JsonSerializer.Serialize(response, Json));
+        AddAudit(db, context, $"sales.order.{Action(target)}", "order", id, "Allowed", reason, $"status={before}", $"status={actualTarget};credit={credit?.Outcome}", idempotencyKey, now);
         await db.SaveChangesAsync(cancellationToken);
         await SaveIdempotencyAsync(db, context, $"sales.order.{Action(target)}", idempotencyKey, requestFingerprint, "order", id, response, now, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
@@ -273,24 +335,59 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
     }
 
     private static void AddRevision(SalesDbContext db, ProcurementRequestContext context, SalesQuotationEntity entity, SalesQuotationResponse response, string? reason, DateTimeOffset now) => db.QuotationRevisions.Add(new SalesQuotationRevisionEntity(context.TenantId, entity.Id, entity.RevisionNumber, entity.Status, JsonSerializer.Serialize(response, Json), Hash(response), context.ActorId, reason, now));
-    private static void AddHistory(SalesDbContext db, ProcurementRequestContext context, string type, Guid id, SalesHistoryAction action, Enum? from, Enum? to, string? reason, SalesApprovalPolicyDefinition? policy, string? credit, string? hash, DateTimeOffset now) => db.History.Add(new SalesHistoryEntity(context.TenantId, type, id, action, from?.ToString(), to?.ToString(), context.ActorId, reason, policy?.PolicyId, policy?.Version, credit, hash, now));
+    private static void AddHistory(SalesDbContext db, ProcurementRequestContext context, string type, Guid id, SalesHistoryAction action, Enum? from, Enum? to, string? reason, SalesApprovalPolicyDefinition? policy, string? credit, string? hash, DateTimeOffset now, string? snapshotJson = null) => db.History.Add(new SalesHistoryEntity(context.TenantId, type, id, action, from?.ToString(), to?.ToString(), context.ActorId, reason, policy?.PolicyId, policy?.Version, credit, hash, now, snapshotJson));
     private static void AddAudit(SalesDbContext db, ProcurementRequestContext context, string operation, string type, Guid id, string decision, string? reason, string? before, string? after, string? key, DateTimeOffset now) => db.Audit.Add(new SalesAuditEntity(context.TenantId, operation, type, id, context.ActorId, now, decision, reason, before, after, key, context.CorrelationId?.Value ?? "sales"));
     private static SalesCreditEntity ToCredit(SalesOrderEntity entity, SalesCreditEvaluation credit) => new(entity.TenantId, new SalesCreditResponse(entity.Id, entity.CustomerId, entity.CompanyId, entity.CurrencyCode, credit.OpenReceivables, credit.OverdueReceivables, credit.NetReceivableExposure, credit.ProposedExposure, credit.CreditLimit, credit.Outcome, credit.Reason, credit.AsOfDate, credit.EvaluatedAt, credit.OverrideExpiresAt));
     private static string LinesJson(IReadOnlyList<SalesLineWriteModel> lines) => JsonSerializer.Serialize(lines.Select(item => new SalesQuotationLineResponse(item.Id, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.Quantity, item.UnitPrice, item.ResolvedUnitPrice, item.DiscountPercent, item.DiscountAmount, item.TaxAmount, item.LineTotal, item.PriceListId, item.PriceVersionNumber, item.PriceEffectiveFrom, item.PriceProvenance, item.PriceSourceReference, item.ManualPriceApplied, item.CommercialAuthorityPolicyId, item.CommercialAuthorityActorId, item.CommercialAuthorityEvidence, item.Notes, item.TaxEvidence?.TaxId, item.TaxEvidence?.TaxCode, item.TaxEvidence?.RateVersionId, item.TaxEvidence?.RateVersionNumber, item.TaxEvidence?.EffectiveFrom, item.TaxEvidence?.EffectiveTo, item.TaxEvidence?.RatePercentage, item.TaxEvidence?.TaxableBase, item.TaxEvidence?.ReferenceValue)).ToArray(), Json);
     private static IReadOnlyList<SalesQuotationLineResponse> Lines(string json) => JsonSerializer.Deserialize<IReadOnlyList<SalesQuotationLineResponse>>(json, Json) ?? [];
-    private static SalesQuotationResponse ToResponse(SalesQuotationEntity item) => new(item.Id, item.Number, item.TenantId.Value, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.QuotationDate, item.ValidUntil, item.CurrencyId, item.CurrencyCode, item.CustomerContactId, item.Notes, item.CustomerReference, item.Subtotal, item.DiscountAmount, item.TaxAmount, item.Total, item.Status, item.RevisionNumber, Lines(item.LinesJson), item.Version, item.CreatedAt, item.UpdatedAt, DeserializeExchangeRate(item.ExchangeRateJson));
+    private static SalesQuotationResponse ToResponse(SalesQuotationEntity item) => new(item.Id, item.Number, item.TenantId.Value, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.QuotationDate, item.ValidUntil, item.CurrencyId, item.CurrencyCode, item.CustomerContactId, item.Notes, item.CustomerReference, item.Subtotal, item.DiscountAmount, item.TaxAmount, item.Total, item.Status, item.RevisionNumber, Lines(item.LinesJson), item.Version, item.CreatedAt, item.UpdatedAt, DeserializeExchangeRate(item.ExchangeRateJson), DeserializeApprovalState(item.CurrentApprovalsJson));
     private static SalesQuotationSummaryResponse ToSummary(SalesQuotationEntity item) => new(item.Id, item.Number, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.QuotationDate, item.ValidUntil, item.CurrencyId, item.CurrencyCode, item.Subtotal, item.DiscountAmount, item.TaxAmount, item.Total, item.Status, item.RevisionNumber, item.Version, item.UpdatedAt);
-    private static SalesOrderResponse ToResponse(SalesOrderEntity item) => new(item.Id, item.Number, item.TenantId.Value, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.SourceQuotationId, item.SourceQuotationNumber, item.SourceQuotationRevision, item.CurrencyId, item.CurrencyCode, item.Subtotal, item.DiscountAmount, item.TaxAmount, item.Total, item.Status, item.CreditOutcome, item.CreditReason, item.CreditEvaluatedAt, item.CreditOverrideExpiresAt, Lines(item.LinesJson), item.Version, item.CreatedAt, item.UpdatedAt, DeserializeExchangeRate(item.ExchangeRateJson));
+    private static SalesOrderResponse ToResponse(SalesOrderEntity item) => new(item.Id, item.Number, item.TenantId.Value, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.SourceQuotationId, item.SourceQuotationNumber, item.SourceQuotationRevision, item.CurrencyId, item.CurrencyCode, item.Subtotal, item.DiscountAmount, item.TaxAmount, item.Total, item.Status, item.CreditOutcome, item.CreditReason, item.CreditEvaluatedAt, item.CreditOverrideExpiresAt, Lines(item.LinesJson), item.Version, item.CreatedAt, item.UpdatedAt, DeserializeExchangeRate(item.ExchangeRateJson), item.RevisionNumber, DeserializeApprovalState(item.CurrentApprovalsJson));
     private static SalesExchangeRateEvidence? DeserializeExchangeRate(string? json) => string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<SalesExchangeRateEvidence>(json, Json);
-    private static SalesOrderSummaryResponse ToSummary(SalesOrderEntity item) => new(item.Id, item.Number, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.SourceQuotationId, item.SourceQuotationNumber, item.SourceQuotationRevision, item.CurrencyId, item.CurrencyCode, item.Total, item.Status, item.CreditOutcome, item.Version, item.UpdatedAt);
+    private static SalesOrderSummaryResponse ToSummary(SalesOrderEntity item) => new(item.Id, item.Number, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.SourceQuotationId, item.SourceQuotationNumber, item.SourceQuotationRevision, item.CurrencyId, item.CurrencyCode, item.Total, item.Status, item.CreditOutcome, item.Version, item.UpdatedAt, item.RevisionNumber);
     private static string Summary(SalesQuotationResponse item) => $"quotation={item.Number};revision={item.RevisionNumber};status={item.Status};total={item.Total.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
     private static string Summary(SalesOrderResponse item) => $"order={item.Number};source={item.SourceQuotationNumber};status={item.Status};credit={item.CreditOutcome};total={item.Total.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
     private static string Hash<T>(T value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, Json))));
     private static SalesOperationResult<T> Failure<T>(string code) => SalesOperationResult<T>.Failure(code);
+    private static SalesApprovalPolicyDefinition? DeserializePolicy(string? json) => string.IsNullOrWhiteSpace(json) || json == "null" || json == "{}" ? null : JsonSerializer.Deserialize<SalesApprovalPolicyDefinition>(json, Json);
+    private static SalesApprovalStateResponse? DeserializeApprovalState(string? json) => string.IsNullOrWhiteSpace(json) || json == "[]" || json == "null" ? null : JsonSerializer.Deserialize<SalesApprovalStateResponse>(json, Json);
+    private static string? SerializeApprovalState(SalesApprovalStateResponse? state) => state is null ? null : JsonSerializer.Serialize(state, Json);
+    private static SalesApprovalStateResponse NewApprovalState(SalesApprovalPolicyDefinition policy) {
+        var stage = policy.Stages.OrderBy(item => item.Sequence).FirstOrDefault();
+        return new(policy.PolicyId, policy.Version, 0, stage?.StageKey, stage?.RequiredApprovals ?? 0, 0, stage?.EligibleApproverIds ?? [], []);
+    }
+    private static ApprovalDecisionResult EvaluateApproval(SalesApprovalStateResponse? state, SalesApprovalPolicyDefinition? policy, Guid creatorId, Guid actorId, Guid? delegatedFromActorId, int revisionNumber, byte[] documentVersion)
+    {
+        if (policy is null || state is null || state.PolicyId != policy.PolicyId || state.PolicyVersion != policy.Version) return ApprovalDecisionResult.Failure("approval_state_missing");
+        var stages = policy.Stages.OrderBy(item => item.Sequence).ToArray();
+        if (state.CurrentStageIndex < 0 || state.CurrentStageIndex >= stages.Length) return ApprovalDecisionResult.Failure("approval_already_complete");
+        var stage = stages[state.CurrentStageIndex];
+        if (creatorId == actorId) return ApprovalDecisionResult.Failure("self_approval_denied");
+        if (state.Decisions.Any(item => item.StageKey == stage.StageKey && item.ActorId == actorId)) return ApprovalDecisionResult.Failure("approval_already_recorded");
+        if (policy.EnforceSeparationOfDuties && state.Decisions.Any(item => item.ActorId == actorId)) return ApprovalDecisionResult.Failure("approval_sod_violation");
+        if (stage.EligibleApproverIds.Count > 0 && !stage.EligibleApproverIds.Contains(actorId))
+        {
+            if (!stage.AllowDelegation || delegatedFromActorId is null || !stage.EligibleApproverIds.Contains(delegatedFromActorId.Value)) return ApprovalDecisionResult.Failure("approver_not_eligible");
+        }
+        else if (delegatedFromActorId is not null) return ApprovalDecisionResult.Failure("delegation_invalid");
+        var decision = new SalesApprovalDecisionResponse(stage.StageKey, actorId, delegatedFromActorId, DateTimeOffset.UtcNow, policy.PolicyId, policy.Version, revisionNumber, documentVersion.ToArray());
+        var decisions = state.Decisions.Concat([decision]).ToArray();
+        var count = decisions.Count(item => item.StageKey == stage.StageKey);
+        if (count < stage.RequiredApprovals) return ApprovalDecisionResult.Success(state with { CurrentStageApprovalCount = count, Decisions = decisions }, false);
+        var nextIndex = state.CurrentStageIndex + 1;
+        if (nextIndex >= stages.Length) return ApprovalDecisionResult.Success(state with { CurrentStageIndex = nextIndex, CurrentStageKey = null, CurrentStageRequiredApprovals = 0, CurrentStageApprovalCount = 0, CurrentStageApproverIds = [], Decisions = decisions }, true);
+        var next = stages[nextIndex];
+        return ApprovalDecisionResult.Success(state with { CurrentStageIndex = nextIndex, CurrentStageKey = next.StageKey, CurrentStageRequiredApprovals = next.RequiredApprovals, CurrentStageApprovalCount = 0, CurrentStageApproverIds = next.EligibleApproverIds, Decisions = decisions }, false);
+    }
+    private sealed record ApprovalDecisionResult(bool Succeeded, string Code, SalesApprovalStateResponse? State, bool IsFullyApproved)
+    {
+        internal static ApprovalDecisionResult Failure(string code) => new(false, code, null, false);
+        internal static ApprovalDecisionResult Success(SalesApprovalStateResponse state, bool complete) => new(true, "succeeded", state, complete);
+    }
     private static string Action(Enum target) => target is SalesQuotationStatus quote ? quote switch { SalesQuotationStatus.PendingApproval => "submit", SalesQuotationStatus.Approved => "approve", SalesQuotationStatus.Rejected => "reject", SalesQuotationStatus.ReturnedForChange => "return", SalesQuotationStatus.Sent => "send", SalesQuotationStatus.Withdrawn => "withdraw", SalesQuotationStatus.Cancelled => "cancel", _ => "transition" } : target is SalesOrderStatus order ? order switch { SalesOrderStatus.PendingApproval => "submit", SalesOrderStatus.Approved => "approve", SalesOrderStatus.Rejected => "reject", SalesOrderStatus.ReturnedForChange => "return", SalesOrderStatus.Confirmed or SalesOrderStatus.CreditHold => "confirm", SalesOrderStatus.Cancelled => "cancel", _ => "transition" } : "transition";
     private static SalesHistoryAction ActionToHistory(Enum target) => target is SalesQuotationStatus quote ? quote switch { SalesQuotationStatus.PendingApproval => SalesHistoryAction.Submitted, SalesQuotationStatus.Approved => SalesHistoryAction.Approved, SalesQuotationStatus.Rejected => SalesHistoryAction.Rejected, SalesQuotationStatus.ReturnedForChange => SalesHistoryAction.ReturnedForChange, SalesQuotationStatus.Sent => SalesHistoryAction.Sent, SalesQuotationStatus.Withdrawn => SalesHistoryAction.Withdrawn, SalesQuotationStatus.Expired => SalesHistoryAction.Expired, SalesQuotationStatus.Cancelled => SalesHistoryAction.Cancelled, _ => SalesHistoryAction.Edited } : target is SalesOrderStatus order ? order switch { SalesOrderStatus.PendingApproval => SalesHistoryAction.Submitted, SalesOrderStatus.Approved => SalesHistoryAction.Approved, SalesOrderStatus.Rejected => SalesHistoryAction.Rejected, SalesOrderStatus.ReturnedForChange => SalesHistoryAction.ReturnedForChange, SalesOrderStatus.Cancelled => SalesHistoryAction.Cancelled, SalesOrderStatus.Confirmed => SalesHistoryAction.Confirmed, _ => SalesHistoryAction.Edited } : SalesHistoryAction.Edited;
-    private static bool CanTransition(SalesQuotationStatus from, SalesQuotationStatus to) => (from, to) switch { (SalesQuotationStatus.Draft, SalesQuotationStatus.PendingApproval) => true, (SalesQuotationStatus.ReturnedForChange, SalesQuotationStatus.PendingApproval) => true, (SalesQuotationStatus.PendingApproval, SalesQuotationStatus.Approved or SalesQuotationStatus.Rejected or SalesQuotationStatus.ReturnedForChange) => true, (SalesQuotationStatus.Approved, SalesQuotationStatus.Sent or SalesQuotationStatus.Withdrawn or SalesQuotationStatus.Cancelled) => true, (SalesQuotationStatus.Sent, SalesQuotationStatus.Withdrawn or SalesQuotationStatus.Expired) => true, _ => false };
-    private static bool CanTransition(SalesOrderStatus from, SalesOrderStatus to) => (from, to) switch { (SalesOrderStatus.Draft, SalesOrderStatus.PendingApproval) => true, (SalesOrderStatus.PendingApproval, SalesOrderStatus.Approved or SalesOrderStatus.Rejected or SalesOrderStatus.ReturnedForChange) => true, (SalesOrderStatus.Approved, SalesOrderStatus.Confirmed or SalesOrderStatus.Cancelled or SalesOrderStatus.CreditHold) => true, (SalesOrderStatus.CreditHold, SalesOrderStatus.Confirmed or SalesOrderStatus.Cancelled) => true, _ => false };
+    private static bool CanTransition(SalesQuotationStatus from, SalesQuotationStatus to) => (from, to) switch { (SalesQuotationStatus.Draft, SalesQuotationStatus.PendingApproval) => true, (SalesQuotationStatus.ReturnedForChange, SalesQuotationStatus.PendingApproval) => true, (SalesQuotationStatus.PendingApproval, SalesQuotationStatus.Approved or SalesQuotationStatus.Rejected or SalesQuotationStatus.ReturnedForChange or SalesQuotationStatus.Cancelled) => true, (SalesQuotationStatus.Approved, SalesQuotationStatus.Sent or SalesQuotationStatus.Withdrawn or SalesQuotationStatus.Cancelled) => true, (SalesQuotationStatus.Sent, SalesQuotationStatus.Withdrawn or SalesQuotationStatus.Expired) => true, _ => false };
+    private static bool CanTransition(SalesOrderStatus from, SalesOrderStatus to) => (from, to) switch { (SalesOrderStatus.Draft or SalesOrderStatus.ReturnedForChange, SalesOrderStatus.PendingApproval) => true, (SalesOrderStatus.PendingApproval, SalesOrderStatus.Approved or SalesOrderStatus.Rejected or SalesOrderStatus.ReturnedForChange or SalesOrderStatus.Cancelled) => true, (SalesOrderStatus.Approved, SalesOrderStatus.Confirmed or SalesOrderStatus.Cancelled or SalesOrderStatus.CreditHold or SalesOrderStatus.ReturnedForChange) => true, (SalesOrderStatus.CreditHold, SalesOrderStatus.Confirmed or SalesOrderStatus.Cancelled or SalesOrderStatus.ReturnedForChange) => true, _ => false };
 }
 
 #pragma warning restore CS1591
