@@ -26,20 +26,16 @@ velocity, or forecast:
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 28 August 2026 (MESP-135 Done / awaiting Sol next-capability selection)
+## Current execution overlay - 28 August 2026 (MESP-136 active; stop for Sol acceptance)
 
-* MESP-132 is Done and merged.
-* MESP-133 is Done and merged.
-* MESP-134 is Done and squash-merged at `1e49814172843c2ec2279b8dcc5fc0a41e5da372`; post-MESP-134 governance/Finance base is `841a777af1622cb4de9c3708cd4a2b389b7ef9e9`.
-* MESP-135 is Done in Jira after final accounting acceptance. Its accepted feature head is `dbc239d6bd1ef948bb8505d4360208f4a3470dda`, and PR #79 is merged/closed and non-Draft at squash commit `8238ce562ee165def8ecdbfa07b285aeb3f1a2ef`.
-* MESP-135 Jira closure is comment `12200`; the latest MESP-10 reconciliation is comment `12201`. MESP-10 remains In Progress because remaining Finance dependencies and capabilities have not yet been reconciled and selected.
-* The post-merge integration gate passed after the repository-owned backend DLL lock was safely released and the Release build was retried: `0 warnings / 0 errors`. This operational retry did not reopen MESP-135 accounting acceptance.
-* The validated runtime is left running on backend port `5300` (PID `45016`) and frontend port `4300` (PID `19140`); all 11 required HTTP probes returned 200.
-* Fast-track capability completion is `19/26 = 73.1%`. Production readiness remains separate from fast-track capability completion; the last accepted estimate remains approximately `47%` overall and `41%` Procurement/P2P.
-* MESP-48 and MESP-50 remain open production gates.
-* MESP-139 remains inactive. There is **NO active implementation capability** at this moment. GPT-5.6 Sol must perform dependency analysis and explicitly activate exactly one eligible next capability; no executor may infer that MESP-139 or any other ticket is next.
-* The project presentation commit on main is legitimate and remains preserved on main; it must not be copied into the MESP-135 feature branch.
-* MESP-135 accounting acceptance is final. This post-closure governance synchronization does not reopen it and is not a new MESP-135 HOLD.
+* MESP-132, MESP-133, MESP-134, and MESP-135 are Done and merged. MESP-135's accepted feature head is `dbc239d6bd1ef948bb8505d4360208f4a3470dda`, with PR #79 closed at squash commit `8238ce562ee165def8ecdbfa07b285aeb3f1a2ef`; its final accounting acceptance is not reopened.
+* MESP-136 is the single active implementation capability under Epic MESP-9 — B2B Sales and Order-to-Cash. Both are In Progress/activated under Sol evidence MESP-136 comment `12234` and MESP-9 reconciliation `12235`.
+* MESP-136 is implemented on `feat/MESP-136-b2b-quote-order-credit` from exact main baseline `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c` (`docs: close MESP-135 and reconcile project state`). The implementation commit is `c3283ea`; the final documentation/tracker handoff SHA is recorded by `git rev-parse HEAD` after push.
+* The bounded capability covers reusable Tenant/Company/Branch-scoped B2B quotations and Sales Orders, server-authoritative Price List resolution, immutable commercial/tax/FX evidence, approval/delegation/SoD seams, Finance-exposed credit outcomes and controlled override, durable idempotency, revisions/history/audit, optimistic concurrency, and bilingual RTL Angular workspace surfaces.
+* MESP-137, MESP-138, and MESP-139 remain To Do/inactive. No later Sales capability may be activated or implemented by this session. MESP-48 and MESP-50 remain open production gates.
+* Fast-track capability completion remains `19/26 = 73.1%` until Sol acceptance, verified merge, and Jira closure. Production readiness remains separate and unchanged at approximately `47%` overall and `41%` Procurement/P2P.
+* No Wafra-specific workflow, schema, API, permission, pricing, credit, approval, accounting, or lifecycle behavior was added. The project presentation remains main-only and `frontend/assets` remains untouched.
+* Exactly one Draft PR is required for MESP-136. Sol acceptance is required before any Ready transition or merge. No Jira writes, Opus review, merge, rebase, or force-push is permitted in this handoff.
 
 ## Permanent Architecture Rules (ADR-019 / Tenant & Workspace Isolation)
 

@@ -1,36 +1,50 @@
 # Current State
 
-## MESP-135 closed - 28 August 2026
+## MESP-136 active - 28 August 2026
 
-MESP-135 is **Done** in Jira and its accounting acceptance is final. PR #79
-is **MERGED/CLOSED** and non-Draft, with accepted feature head
-`dbc239d6bd1ef948bb8505d4360208f4a3470dda` squash-merged into `main` at
-`8238ce562ee165def8ecdbfa07b285aeb3f1a2ef`. The Jira closure comment is
-`12200`; the latest MESP-10 reconciliation is `12201`.
+MESP-136 is the single active implementation capability under Epic MESP-9 -
+B2B Sales and Order-to-Cash. Both are In Progress/activated under Sol evidence
+MESP-136 comment `12234` and MESP-9 reconciliation `12235`. MESP-135 remains
+Done in Jira with final accounting acceptance, accepted feature head
+`dbc239d6bd1ef948bb8505d4360208f4a3470dda`, and PR #79 closed at squash
+`8238ce562ee165def8ecdbfa07b285aeb3f1a2ef` (closure `12200`, reconciliation
+`12201`).
 
-The post-merge integration gate recovered from the repository-owned
-`MiniErp.Api.exe` Release DLL lock. After the lock was safely released, the
-bounded Release retry passed with **0 warnings / 0 errors**. This was an
-operational integration-gate recovery only: no source or accounting correction
-was made and MESP-135 acceptance was not reopened.
+The implementation is on `feat/MESP-136-b2b-quote-order-credit`, based on the
+exact required main baseline `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`.
+Implementation commit is `c3283ea`; the final documentation/tracker handoff
+SHA follows after the final push.
 
-The validated runtime was left running: backend port `5300`, PID `45016`;
-frontend port `4300`, PID `19140`. The required probes all returned HTTP 200
-(`11/11`): `/health`, `/openapi/v1.json`, `/`, `/main.js`, `/app/finance`,
-`/app/finance/ap`, `/app/finance/ar`, `/app/finance/settlements`,
-`/app/finance/tax-fx`, `/app/finance/close`, and `/app/finance/reports`.
+The bounded capability adds reusable Tenant/Company/Branch-scoped quotations
+and Sales Orders, server-authoritative Price List resolution, customer and
+currency validation, immutable commercial/tax/FX evidence, approval and
+delegation/SoD seams, Finance-exposed credit outcomes and controlled override,
+durable idempotency, revisions/history/audit, optimistic concurrency, and a
+bilingual RTL Angular Sales workspace. It does not add stock, reservation,
+fulfillment, delivery, invoice/AR/receipt posting, returns/credit notes,
+external integrations, ZATCA/FATOORA, or MESP-137/138/139. Direct order
+creation is disabled unless a configured policy explicitly allows it.
 
-Fast-track capability completion is **19/26 = 73.1%**. Production readiness
-remains separate from fast-track completion; the last accepted estimate remains
-approximately **47% overall** and **41% Procurement/P2P**, with no increase
-inferred from this documentation-only reconciliation. MESP-10 remains **In Progress**.
-MESP-48 and MESP-50 remain open production gates.
+Validation is green: Release **0 warnings / 0 errors**; full disposable-LocalDB
+backend **1,108/1,108** with 0 failures and 0 skips; Angular **304/304** across
+43 spec files; full Chromium **49/49**; EF migration/model check clean; npm
+audit **0 vulnerabilities**; and `git diff --check` has no content errors.
+The production bundle is initially **509.97 kB**, exceeding the 500 kB budget
+by 9.97 kB; Sales lazy chunk is **71.28 kB**. This warning is retained.
 
-MESP-139 remains **inactive**, and there is **NO currently active
-implementation capability**. The next capability requires GPT-5.6 Sol to
-perform dependency analysis on the live Jira graph and explicit activation.
-No executor may infer that MESP-139 or any other ticket is next. No Jira writes
-were performed by Luna.
+The canonical runtime is left running: backend PID `37192` on `5300`, frontend
+PID `48252` on `4300`. The 11 existing required probes and the three Sales
+routes `/app/sales`, `/app/sales/quotations`, and `/app/sales/orders` all
+returned HTTP 200 (`14/14`). `frontend/assets` remains untouched and the
+presentation remains main-only.
+
+Fast-track remains **19/26 = 73.1%** until Sol acceptance, verified merge, and
+Jira closure. Production readiness remains separate and unchanged at
+approximately **47% overall** and **41% Procurement/P2P**. MESP-48 and
+MESP-50 remain open production gates. MESP-137/138/139 remain inactive.
+No Jira writes, Opus review, Ready transition, merge, rebase, or force-push is
+permitted; stop after exactly one Draft PR for independent GPT-5.6 Sol
+acceptance.
 
 ## Historical MESP-135 Sol HOLD 6 final bounded remediation - 27 August 2026
 
