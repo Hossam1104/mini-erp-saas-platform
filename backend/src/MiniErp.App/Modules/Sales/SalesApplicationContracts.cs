@@ -685,13 +685,13 @@ public interface ISalesPersistence
     Task<IReadOnlyList<SalesDeliveryResponse>> ListDeliveriesAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default);
     Task<SalesDeliveryResponse?> GetDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, CancellationToken cancellationToken = default);
     Task<SalesOperationResult<SalesDeliveryResponse>> CreateDeliveryAsync(ProcurementRequestContext context, SalesDeliveryWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default);
-    Task<SalesOperationResult<SalesDeliveryResponse>> CompleteDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, IReadOnlyList<Guid> movementIds, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default);
-    Task<SalesOperationResult<SalesDeliveryResponse>> FailDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, string code, bool unknown, CancellationToken cancellationToken = default);
+    Task<SalesOperationResult<SalesDeliveryResponse>> CompleteDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, IReadOnlyList<Guid> movementIds, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null);
+    Task<SalesOperationResult<SalesDeliveryResponse>> FailDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, string code, bool unknown, CancellationToken cancellationToken = default, SalesDownstreamEvidence? downstream = null);
     Task<IReadOnlyList<SalesInvoiceRequestResponse>> ListInvoiceRequestsAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default);
     Task<SalesInvoiceRequestResponse?> GetInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, CancellationToken cancellationToken = default);
     Task<SalesOperationResult<SalesInvoiceRequestResponse>> CreateInvoiceRequestAsync(ProcurementRequestContext context, SalesInvoiceRequestWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default);
-    Task<SalesOperationResult<SalesInvoiceRequestResponse>> CompleteInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, Guid financeOpenItemId, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default);
-    Task<SalesOperationResult<SalesInvoiceRequestResponse>> FailInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, string code, bool unknown, CancellationToken cancellationToken = default);
+    Task<SalesOperationResult<SalesInvoiceRequestResponse>> CompleteInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, Guid financeOpenItemId, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null);
+    Task<SalesOperationResult<SalesInvoiceRequestResponse>> FailInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, string code, bool unknown, CancellationToken cancellationToken = default, SalesDownstreamEvidence? downstream = null);
 }
 
 public sealed class UnavailableSalesPersistence : ISalesPersistence
@@ -718,13 +718,13 @@ public sealed class UnavailableSalesPersistence : ISalesPersistence
     public Task<IReadOnlyList<SalesDeliveryResponse>> ListDeliveriesAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => EmptyList<SalesDeliveryResponse>();
     public Task<SalesDeliveryResponse?> GetDeliveryAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => Empty<SalesDeliveryResponse?>();
     public Task<SalesOperationResult<SalesDeliveryResponse>> CreateDeliveryAsync(ProcurementRequestContext c, SalesDeliveryWriteModel m, string k, string f, CancellationToken x = default) => Task.FromResult(Failure<SalesDeliveryResponse>());
-    public Task<SalesOperationResult<SalesDeliveryResponse>> CompleteDeliveryAsync(ProcurementRequestContext c, Guid id, IReadOnlyList<Guid> movements, string k, string f, CancellationToken x = default) => Task.FromResult(Failure<SalesDeliveryResponse>());
-    public Task<SalesOperationResult<SalesDeliveryResponse>> FailDeliveryAsync(ProcurementRequestContext c, Guid id, string code, bool unknown, CancellationToken x = default) => Task.FromResult(Failure<SalesDeliveryResponse>());
+    public Task<SalesOperationResult<SalesDeliveryResponse>> CompleteDeliveryAsync(ProcurementRequestContext c, Guid id, IReadOnlyList<Guid> movements, string k, string f, CancellationToken x = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null) => Task.FromResult(Failure<SalesDeliveryResponse>());
+    public Task<SalesOperationResult<SalesDeliveryResponse>> FailDeliveryAsync(ProcurementRequestContext c, Guid id, string code, bool unknown, CancellationToken x = default, SalesDownstreamEvidence? downstream = null) => Task.FromResult(Failure<SalesDeliveryResponse>());
     public Task<IReadOnlyList<SalesInvoiceRequestResponse>> ListInvoiceRequestsAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => EmptyList<SalesInvoiceRequestResponse>();
     public Task<SalesInvoiceRequestResponse?> GetInvoiceRequestAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => Empty<SalesInvoiceRequestResponse?>();
     public Task<SalesOperationResult<SalesInvoiceRequestResponse>> CreateInvoiceRequestAsync(ProcurementRequestContext c, SalesInvoiceRequestWriteModel m, string k, string f, CancellationToken x = default) => Task.FromResult(Failure<SalesInvoiceRequestResponse>());
-    public Task<SalesOperationResult<SalesInvoiceRequestResponse>> CompleteInvoiceRequestAsync(ProcurementRequestContext c, Guid id, Guid financeOpenItemId, string k, string f, CancellationToken x = default) => Task.FromResult(Failure<SalesInvoiceRequestResponse>());
-    public Task<SalesOperationResult<SalesInvoiceRequestResponse>> FailInvoiceRequestAsync(ProcurementRequestContext c, Guid id, string code, bool unknown, CancellationToken x = default) => Task.FromResult(Failure<SalesInvoiceRequestResponse>());
+    public Task<SalesOperationResult<SalesInvoiceRequestResponse>> CompleteInvoiceRequestAsync(ProcurementRequestContext c, Guid id, Guid financeOpenItemId, string k, string f, CancellationToken x = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null) => Task.FromResult(Failure<SalesInvoiceRequestResponse>());
+    public Task<SalesOperationResult<SalesInvoiceRequestResponse>> FailInvoiceRequestAsync(ProcurementRequestContext c, Guid id, string code, bool unknown, CancellationToken x = default, SalesDownstreamEvidence? downstream = null) => Task.FromResult(Failure<SalesInvoiceRequestResponse>());
 }
 
 public sealed class SalesAuthorizationService(PurchaseRequestAuthorizationService authorization)
@@ -1024,19 +1024,26 @@ public sealed class SalesService(
         if (!created.Succeeded || created.Value is null) return created;
         var delivery = created.Value;
         if (delivery.Status == SalesDeliveryStatus.Posted) return created;
-        if (delivery.Status != SalesDeliveryStatus.Draft) return SalesOperationResult<SalesDeliveryResponse>.Failure(delivery.ErrorCode ?? "delivery_not_postable");
+        if (delivery.Status is not (SalesDeliveryStatus.Draft or SalesDeliveryStatus.Unknown)) return SalesOperationResult<SalesDeliveryResponse>.Failure(delivery.ErrorCode ?? "delivery_not_postable");
+        var inventoryKey = delivery.Handoff?.DownstreamIdempotencyKey ?? $"{key}:inventory";
+        var inventoryFingerprint = delivery.Handoff?.DownstreamRequestFingerprint ?? Fingerprint(new { deliveryId = delivery.Id, request });
         var posted = await inventory!.PostSalesDeliveryAsync(inventoryContext, new InventorySalesDeliveryPostCommand(
             delivery.Id, order.Id, order.RevisionNumber, string.Join(';', inventoryLines.Select(item => item.SourceReference)), request.DeliveryDate,
-            inventoryLines, context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), $"{key}:inventory", Fingerprint(new { deliveryId = delivery.Id, request })), cancellationToken);
+            inventoryLines, context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), inventoryKey, inventoryFingerprint), cancellationToken);
         if (!posted.Succeeded || posted.Value is null)
         {
-            await persistence.FailDeliveryAsync(context, delivery.Id, posted.Code, posted.Code is "persistence_unavailable" or "forbidden", cancellationToken);
+            await persistence.FailDeliveryAsync(context, delivery.Id, posted.Code, true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", inventoryKey, inventoryFingerprint));
             return SalesOperationResult<SalesDeliveryResponse>.Failure(posted.Code);
         }
-        var completed = await persistence.CompleteDeliveryAsync(context, delivery.Id, posted.Value.MovementIds, $"{key}:complete", Fingerprint(new { deliveryId = delivery.Id, posted.Value.MovementIds }), cancellationToken);
+        if (posted.Value.TenantId != context.TenantId.Value || posted.Value.SalesOrderRevision != order.RevisionNumber || posted.Value.DeliveryId != delivery.Id || posted.Value.SalesOrderId != order.Id || posted.Value.MovementIds.Count == 0 || posted.Value.MovementIds.Distinct().Count() != posted.Value.MovementIds.Count || posted.Value.PostedQuantity != inventoryLines.Sum(item => item.Quantity))
+        {
+            await persistence.FailDeliveryAsync(context, delivery.Id, "inventory_effect_mismatch", true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", inventoryKey, inventoryFingerprint));
+            return SalesOperationResult<SalesDeliveryResponse>.Failure("inventory_effect_mismatch");
+        }
+        var completed = await persistence.CompleteDeliveryAsync(context, delivery.Id, posted.Value.MovementIds, $"{key}:complete", Fingerprint(new { deliveryId = delivery.Id, posted.Value.MovementIds }), cancellationToken, inventoryKey, inventoryFingerprint);
         if (!completed.Succeeded)
         {
-            await persistence.FailDeliveryAsync(context, delivery.Id, "sales_finalization_failed", true, cancellationToken);
+            await persistence.FailDeliveryAsync(context, delivery.Id, "sales_finalization_failed", true, cancellationToken, new SalesDownstreamEvidence(posted.Value.MovementIds, "Committed", "NotAcknowledged", "Required", inventoryKey, inventoryFingerprint));
             return SalesOperationResult<SalesDeliveryResponse>.Failure("sales_finalization_failed");
         }
         return completed;
@@ -1060,7 +1067,7 @@ public sealed class SalesService(
         var decision = authorization.Decide(context, "sales.invoice.request", Scope(context, order.CompanyId, order.BranchId));
         if (!decision.Allowed) return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(ScopeFailure(decision.Code, "order_not_found"));
         var requestId = Guid.NewGuid();
-        var evaluation = await EvaluateInvoiceInternalAsync(context, order, request, "sales.invoice.request", requestId, cancellationToken);
+        var evaluation = await EvaluateInvoiceInternalAsync(context, order, request, "sales.invoice.request", requestId, cancellationToken, allowUnknownRecovery: true);
         if (evaluation.Response is null) return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(evaluation.Code);
         if (evaluation.Response.Status != SalesInvoiceEligibilityStatus.Eligible || evaluation.FinanceCommand is null)
             return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(evaluation.Response.Code);
@@ -1070,23 +1077,36 @@ public sealed class SalesService(
         if (!created.Succeeded || created.Value is null) return created;
         var invoiceRequest = created.Value;
         if (invoiceRequest.Status == SalesInvoiceRequestStatus.Posted) return created;
-        if (invoiceRequest.Status != SalesInvoiceRequestStatus.Pending) return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(invoiceRequest.ErrorCode ?? "invoice_request_not_postable");
+        if (invoiceRequest.Status is not (SalesInvoiceRequestStatus.Pending or SalesInvoiceRequestStatus.Unknown)) return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(invoiceRequest.ErrorCode ?? "invoice_request_not_postable");
+        var financeKey = invoiceRequest.Handoff?.DownstreamIdempotencyKey ?? $"{key}:finance";
+        var financeFingerprint = invoiceRequest.Handoff?.DownstreamRequestFingerprint ?? Fingerprint(new { invoiceRequest.Id, invoiceRequest.OrderId, invoiceRequest.OrderRevisionNumber, invoiceRequest.InvoiceDate, invoiceRequest.CurrencyCode, invoiceRequest.Amount, invoiceRequest.NetAmount, invoiceRequest.TaxAmount, invoiceRequest.LineEvidence, invoiceRequest.PaymentTerm, invoiceRequest.SourceSnapshot });
         var financeContext = FinanceRequestContext.TryCreate(context.FoundationContext, out var fc) ? fc : null;
         if (financeContext is null)
         {
-            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "finance_context_unavailable", true, cancellationToken);
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "finance_context_unavailable", true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", financeKey, financeFingerprint));
             return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("finance_context_unavailable");
         }
-        var posted = await finance.CreateSalesInvoiceAsync(financeContext, evaluation.FinanceCommand with { InvoiceRequestId = invoiceRequest.Id, IdempotencyKey = $"{key}:finance", RequestFingerprint = Fingerprint(new { requestId = invoiceRequest.Id, request }) }, cancellationToken);
+        var financeCommand = BuildFinanceCommandFromPersistedInvoiceRequest(order, invoiceRequest, request.InvoiceDate, financeKey, financeFingerprint);
+        if (financeCommand is null)
+        {
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "invoice_source_evidence_missing", true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", financeKey, financeFingerprint));
+            return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("invoice_source_evidence_missing");
+        }
+        var posted = await finance.CreateSalesInvoiceAsync(financeContext, financeCommand, cancellationToken);
         if (!posted.Succeeded || posted.Value is null)
         {
-            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, posted.Code, posted.Code is "finance_unavailable" or "source_effect_exists", cancellationToken);
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, posted.Code, true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", financeKey, financeFingerprint));
             return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(posted.Code);
         }
-        var completed = await persistence.CompleteInvoiceRequestAsync(context, invoiceRequest.Id, posted.Value.Id, $"{key}:complete", Fingerprint(new { requestId = invoiceRequest.Id, posted.Value.Id }), cancellationToken);
+        if (!FinanceEffectMatches(context, order, invoiceRequest, posted.Value))
+        {
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "finance_effect_mismatch", true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", financeKey, financeFingerprint));
+            return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("finance_effect_mismatch");
+        }
+        var completed = await persistence.CompleteInvoiceRequestAsync(context, invoiceRequest.Id, posted.Value.Id, $"{key}:complete", Fingerprint(new { requestId = invoiceRequest.Id, posted.Value.Id }), cancellationToken, financeKey, financeFingerprint);
         if (!completed.Succeeded)
         {
-            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "sales_finalization_failed", true, cancellationToken);
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "sales_finalization_failed", true, cancellationToken, new SalesDownstreamEvidence([posted.Value.Id], "Committed", "NotAcknowledged", "Required", financeKey, financeFingerprint));
             return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("sales_finalization_failed");
         }
         return completed;
@@ -1097,7 +1117,7 @@ public sealed class SalesService(
     public Task<IReadOnlyList<SalesInvoiceRequestResponse>> ListInvoiceRequestsAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default) => persistence.ListInvoiceRequestsAsync(context, orderId, cancellationToken);
     public Task<SalesInvoiceRequestResponse?> GetInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, CancellationToken cancellationToken = default) => persistence.GetInvoiceRequestAsync(context, requestId, cancellationToken);
 
-    private async Task<SalesOperationResult<SalesFulfillmentResponse>> BuildFulfillmentAsync(ProcurementRequestContext context, SalesOrderResponse order, string inventoryOperation, CancellationToken cancellationToken)
+    private async Task<SalesOperationResult<SalesFulfillmentResponse>> BuildFulfillmentAsync(ProcurementRequestContext context, SalesOrderResponse order, string inventoryOperation, CancellationToken cancellationToken, bool allowUnknownRecovery = false)
     {
         if (inventory is null) return SalesOperationResult<SalesFulfillmentResponse>.Failure("inventory_unavailable");
         InventoryRequestContext inventoryContext;
@@ -1111,7 +1131,7 @@ public sealed class SalesService(
             var reservations = await inventory!.ListSalesReservationsAsync(inventoryContext, ReservationSource(order, line.Id), inventoryOperation, cancellationToken);
             if (!reservations.Succeeded || reservations.Value is null) return SalesOperationResult<SalesFulfillmentResponse>.Failure(reservations.Code);
             var delivered = deliveries.Where(item => item.Status == SalesDeliveryStatus.Posted).SelectMany(item => item.Lines).Where(item => item.OrderLineId == line.Id).Sum(item => item.Quantity);
-            var invoiced = invoices.Where(item => item.Status is SalesInvoiceRequestStatus.Pending or SalesInvoiceRequestStatus.Posted or SalesInvoiceRequestStatus.Unknown).SelectMany(item => item.Lines).Where(item => item.OrderLineId == line.Id).Sum(item => item.Quantity);
+            var invoiced = invoices.Where(item => item.Status is SalesInvoiceRequestStatus.Pending or SalesInvoiceRequestStatus.Posted || !allowUnknownRecovery && item.Status == SalesInvoiceRequestStatus.Unknown).SelectMany(item => item.Lines).Where(item => item.OrderLineId == line.Id).Sum(item => item.Quantity);
             var reserved = reservations.Value.Where(item => item.Status == InventoryReservationStatus.Active).Sum(item => item.ReservedQuantity);
             var unallocated = reservations.Value.Where(item => item.Status == InventoryReservationStatus.Active).Sum(item => item.UnallocatedQuantity);
             var fulfilled = reservations.Value.Sum(item => item.FulfilledQuantity);
@@ -1124,11 +1144,12 @@ public sealed class SalesService(
             if (fulfilled + reserved + unallocated > line.Quantity || delivered > line.Quantity || invoiced > delivered) return SalesOperationResult<SalesFulfillmentResponse>.Failure("fulfillment_quantity_invariant");
             lines.Add(new(line.Id, line.Quantity, reserved, unallocated, fulfilled, delivered, invoiced, Math.Max(0m, line.Quantity - delivered), Math.Max(0m, delivered - invoiced), status));
         }
-        if (invoices.Any(item => item.Status == SalesInvoiceRequestStatus.Unknown)) return SalesOperationResult<SalesFulfillmentResponse>.Failure("invoice_source_unknown");
+        if (!allowUnknownRecovery && invoices.Any(item => item.Status == SalesInvoiceRequestStatus.Unknown))
+            return SalesOperationResult<SalesFulfillmentResponse>.Failure("invoice_source_unknown");
         return SalesOperationResult<SalesFulfillmentResponse>.Success(new(order.Id, order.RevisionNumber, lines, deliveries, invoices));
     }
 
-    private async Task<(SalesInvoiceEligibilityResponse? Response, string Code, FinanceSalesInvoiceCommand? FinanceCommand)> EvaluateInvoiceInternalAsync(ProcurementRequestContext context, SalesOrderResponse order, SalesInvoiceEligibilityRequest request, string inventoryOperation, Guid? invoiceRequestId, CancellationToken cancellationToken)
+    private async Task<(SalesInvoiceEligibilityResponse? Response, string Code, FinanceSalesInvoiceCommand? FinanceCommand)> EvaluateInvoiceInternalAsync(ProcurementRequestContext context, SalesOrderResponse order, SalesInvoiceEligibilityRequest request, string inventoryOperation, Guid? invoiceRequestId, CancellationToken cancellationToken, bool allowUnknownRecovery = false)
     {
         var blocked = (string code) => (new SalesInvoiceEligibilityResponse(order.Id, order.RevisionNumber, SalesInvoiceEligibilityStatus.Blocked, code, 0m, order.CurrencyCode, [], request.InvoiceDate, order.PaymentTerm), code, (FinanceSalesInvoiceCommand?)null);
         if (order.Status != SalesOrderStatus.Confirmed || order.CreditOutcome is SalesCreditOutcome.Blocked or SalesCreditOutcome.Pending or SalesCreditOutcome.Unknown) return blocked("order_not_invoiceable");
@@ -1141,9 +1162,8 @@ public sealed class SalesService(
             var delivery = await persistence.GetDeliveryAsync(context, deliveryId, cancellationToken);
             if (delivery is null || delivery.OrderId != order.Id || delivery.OrderRevisionNumber != order.RevisionNumber || delivery.CompanyId != order.CompanyId || delivery.BranchId != order.BranchId || delivery.CustomerId != order.CustomerId || delivery.Status != SalesDeliveryStatus.Posted) return blocked("delivery_not_posted");
         }
-        var fulfillment = await BuildFulfillmentAsync(context, order, inventoryOperation, cancellationToken);
+        var fulfillment = await BuildFulfillmentAsync(context, order, inventoryOperation, cancellationToken, allowUnknownRecovery);
         if (!fulfillment.Succeeded || fulfillment.Value is null) return (null, fulfillment.Code, null);
-        if (fulfillment.Value.InvoiceRequests.Any(item => item.Status == SalesInvoiceRequestStatus.Unknown)) return blocked("invoice_source_unknown");
         var responseLines = new List<SalesInvoiceEligibilityLineResponse>();
         var invalid = false;
         foreach (var requested in request.Lines)
@@ -1195,6 +1215,36 @@ public sealed class SalesService(
         if (!financeEligibility.Succeeded || financeEligibility.Value is null) return (null, financeEligibility.Code, null);
         return (new(order.Id, order.RevisionNumber, SalesInvoiceEligibilityStatus.Eligible, "eligible", total, currency, responseLines, request.InvoiceDate, order.PaymentTerm), "eligible", financeCommand);
     }
+
+    private FinanceSalesInvoiceCommand? BuildFinanceCommandFromPersistedInvoiceRequest(SalesOrderResponse order, SalesInvoiceRequestResponse invoice, DateOnly fallbackInvoiceDate, string idempotencyKey, string requestFingerprint)
+    {
+        var company = companies.List(new TenantId(invoice.TenantId)).FirstOrDefault(item => item.CompanyId == order.CompanyId && item.BranchId == order.BranchId && item.IsActive);
+        var currency = NormalizeCurrencyCode(string.IsNullOrWhiteSpace(invoice.CurrencyCode) ? order.CurrencyCode : invoice.CurrencyCode);
+        var paymentTerm = invoice.PaymentTerm ?? order.PaymentTerm;
+        var invoiceDate = invoice.InvoiceDate == default ? fallbackInvoiceDate : invoice.InvoiceDate;
+        if (company is null || currency is null || paymentTerm is null || invoice.Amount <= 0m || invoice.LineEvidence is null || invoice.LineEvidence.Count == 0 || string.IsNullOrWhiteSpace(invoice.SourceSnapshot)) return null;
+        var paymentTermSnapshot = ResolveFinancePaymentTerm(paymentTerm, invoiceDate);
+        if (paymentTermSnapshot is null) return null;
+        var exchange = order.ExchangeRateEvidence;
+        var lines = invoice.LineEvidence.Select(item => new FinanceSalesInvoiceLine(item.OrderLineId, item.RequestedQuantity, item.NetAmount, item.TaxAmount, item.GrossAmount, item.TaxEvidence?.TaxId, item.TaxEvidence?.TaxCode, item.TaxEvidence?.RateVersionId, item.TaxEvidence?.RateVersionNumber, item.TaxEvidence?.EffectiveFrom, item.TaxEvidence?.EffectiveTo, item.TaxEvidence?.RatePercentage, item.TaxEvidence?.TaxableBase, item.TaxEvidence?.ReferenceValue)).ToArray();
+        return new FinanceSalesInvoiceCommand(order.CompanyId, order.CustomerId, order.Id, order.RevisionNumber, invoice.Id, invoiceDate, paymentTerm.Id, currency, invoice.Amount, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.Rate, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.ExchangeRateId, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.ExchangeRateVersionId, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.VersionNumber, invoice.SourceSnapshot, $"sales-invoice:{invoice.Id:N}", idempotencyKey, requestFingerprint, invoice.NetAmount, invoice.TaxAmount, lines, paymentTermSnapshot);
+    }
+
+    private static bool FinanceEffectMatches(ProcurementRequestContext context, SalesOrderResponse order, SalesInvoiceRequestResponse invoice, FinanceOpenItemRecord effect) =>
+        effect.TenantId == context.TenantId.Value
+        && effect.CompanyId == order.CompanyId
+        && effect.CustomerId == order.CustomerId
+        && effect.Kind == FinanceOpenItemKind.Receivable
+        && effect.SourceContract == "sales-invoice.v1"
+        && effect.SourceDocumentId == order.Id
+        && effect.SourceDocumentVersion == order.RevisionNumber
+        && effect.SourceEvidenceId == invoice.Id
+        && effect.SourceEvidenceVersion == 1
+        && effect.DocumentDate == invoice.InvoiceDate
+        && effect.CurrencyCode.Equals(string.IsNullOrWhiteSpace(invoice.CurrencyCode) ? order.CurrencyCode : invoice.CurrencyCode, StringComparison.OrdinalIgnoreCase)
+        && effect.OriginalAmount == invoice.Amount
+        && effect.PaymentTerm?.Id == invoice.PaymentTerm?.Id
+        && effect.PaymentTerm?.VersionId == invoice.PaymentTerm?.VersionId;
 
     private static IReadOnlyList<SalesInvoiceSourceAllocation>? BuildInvoiceAllocations(SalesFulfillmentResponse fulfillment, SalesOrderResponse order, Guid orderLineId, decimal quantity, Guid? selectedDeliveryId)
     {

@@ -712,7 +712,9 @@ public sealed record InventorySalesDeliveryPostingRecord(
     Guid SalesOrderId,
     IReadOnlyList<Guid> MovementIds,
     decimal PostedQuantity,
-    DateTimeOffset PostedAt);
+    DateTimeOffset PostedAt,
+    Guid? TenantId = null,
+    int? SalesOrderRevision = null);
 
 public sealed record InventoryGoodsReceiptPostCommand(
     Guid PostingId,

@@ -182,7 +182,17 @@ public sealed record SalesHandoffEvidence(
     string? LastError,
     int AttemptCount,
     DateTimeOffset? LastAttemptAt,
-    string RequestFingerprint);
+    string RequestFingerprint,
+    string? DownstreamIdempotencyKey = null,
+    string? DownstreamRequestFingerprint = null);
+
+public sealed record SalesDownstreamEvidence(
+    IReadOnlyList<Guid> EffectIds,
+    string CommitState,
+    string AcknowledgementState,
+    string ReconciliationStatus,
+    string? IdempotencyKey,
+    string? RequestFingerprint);
 
 public sealed record SalesQuotationCreateRequest(
     Guid CompanyId,
@@ -327,7 +337,10 @@ public sealed record SalesInvoiceRequestResponse(
     decimal TaxAmount = 0m,
     SalesPaymentTermSnapshot? PaymentTerm = null,
     IReadOnlyList<SalesInvoiceLineEvidence>? LineEvidence = null,
-    SalesHandoffEvidence? Handoff = null);
+    SalesHandoffEvidence? Handoff = null,
+    string CurrencyCode = "",
+    DateOnly InvoiceDate = default,
+    string SourceSnapshot = "{}");
 
 public sealed record SalesApprovalDecisionResponse(
     string StageKey,

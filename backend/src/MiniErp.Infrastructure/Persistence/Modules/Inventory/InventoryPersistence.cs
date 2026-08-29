@@ -389,7 +389,7 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
             if (existing.Count > 0)
             {
                 return existing.Count == command.Lines.Count
-                    ? new InventorySalesDeliveryPostingRecord(command.DeliveryId, command.SalesOrderId, existing.OrderBy(item => item.LedgerSequence).Select(item => item.Id).ToArray(), existing.Sum(item => item.Quantity), existing.Max(item => item.PostedAt))
+                    ? new InventorySalesDeliveryPostingRecord(command.DeliveryId, command.SalesOrderId, existing.OrderBy(item => item.LedgerSequence).Select(item => item.Id).ToArray(), existing.Sum(item => item.Quantity), existing.Max(item => item.PostedAt), context.TenantId.Value, command.SalesOrderRevision)
                     : null;
             }
 
@@ -441,7 +441,7 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
                 db.ReservationHistory.Add(new InventoryReservationHistoryEntity(context.TenantId, Guid.NewGuid(), reservation.Id, InventoryReservationAction.Consumed, line.Quantity, reservation.ReservedQuantity, reservation.UnallocatedQuantity, reservation.FulfilledQuantity, command.ActorId, "sales-delivery-posted", command.CorrelationId, now));
             }
 
-            var result = new InventorySalesDeliveryPostingRecord(command.DeliveryId, command.SalesOrderId, movements.Select(item => item.Id).ToArray(), movements.Sum(item => item.Quantity), now);
+            var result = new InventorySalesDeliveryPostingRecord(command.DeliveryId, command.SalesOrderId, movements.Select(item => item.Id).ToArray(), movements.Sum(item => item.Quantity), now, context.TenantId.Value, command.SalesOrderRevision);
             AddAudit(db, context, "sales-delivery", command.DeliveryId, "inventory.sales-delivery.post", command.ActorId, "Succeeded", "physical quantity posted", command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, $"movements:{movements.Count};quantity:{result.PostedQuantity}", now);
             await db.SaveChangesAsync(cancellationToken);
             AddReplay(db, context, "inventory.sales-delivery.post", command.IdempotencyKey, command.RequestFingerprint, "sales-delivery", command.DeliveryId, result, now);
