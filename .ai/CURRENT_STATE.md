@@ -1,42 +1,53 @@
 # Current State
 
-## MESP-137 HOLD-1 remediation - stopped for GPT-5.6 Sol review
+## MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance
 
 MESP-137 remains the single active implementation capability under Epic
 MESP-9, activated by MESP-137 comment `12265` and MESP-9 reconciliation
-`12266`. HOLD-1 remediation is complete on
-`feat/MESP-137-reservation-fulfillment-invoice`, continuing Draft PR #84 from
-starting head `dfd3ec0fd91bdc56f9c609ce796ebad32fdd52dd` and exact
-`origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`. Final
-documentation/tracker handoff SHA is recorded after push.
+`12266`. HOLD-2 authority is MESP-137 comment `12275` with MESP-9
+reconciliation `12277`. The bounded remediation continues Draft PR #84 on
+`feat/MESP-137-reservation-fulfillment-invoice` from exact HOLD-1 head
+`4ecfb64ffd5391a934af80fe11003b9031881ae3`, exact `origin/main` baseline
+`cb58d69fb0a589d363aed2d55b605e39f79d03bc`, and pushed head
+`d1914884bead08fac7a5b4eddc6f573297ef5550`.
 
-The four Sol blockers are addressed in scope: posted Delivery source
-allocation and residual quantities; immutable invoice net/tax/gross and tax
-identity carried into Finance; active Master Data Payment Term selection with
-quotation/order snapshots and due-date authority; and durable Delivery/invoice
-handoff commit, acknowledgement, reconciliation, attempt, and Unknown
-recovery evidence. Finance revalidates source, amount, payment-term,
-currency/FX, tax, period, and posting-rule facts at commit time. Multiple tax
-identities remain separate deterministic tax journals/effects.
+`MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance`.
+HOLD-137-E makes the serializable Sales persistence transaction authoritative
+for current posted deliveries, prior invoice evidence, source allocation,
+quantity, net, tax, gross, rounding residual, tax identity, Payment Term, and
+source snapshot. Finance posting is built from that persisted authoritative
+invoice request, then Finance revalidates its contract. HOLD-137-F persists
+real downstream fingerprints, known Inventory Movement IDs and Finance effect
+IDs, explicit committed/not-acknowledged/reconciliation-required semantics,
+durable retry identity, and fail-closed mismatch checks.
 
 MESP-138 and MESP-139 remain To Do/inactive. Returns, credit notes, receipts,
 refunds, revenue recognition, external integrations, ZATCA/FATOORA, and
 Wafra-specific behavior remain excluded. `frontend/assets` remains untouched.
 Fast-track remains **20/26 = 76.9%**; production readiness remains separate at
 approximately **47% overall** and **41% Procurement/P2P**; MESP-48 and MESP-50
-remain open production gates.
+remain open production gates. MESP-9 remains In Progress.
 
 Final validation is Release `0 warnings / 0 errors`; full disposable-LocalDB
-backend `1,131/1,131` with 0 failures and 0 skips; focused Sales `31/31`;
-Angular `305/305`; focused Sales Chromium `2/2`; full Chromium `49/49`; and
-the retained bundle warning is documented. The isolated runtime is API
-`http://localhost:5310` PID `36140`, Angular `http://localhost:4300` PID
-`34328`, data `.runtime/hold1-runtime-20260829`, with health, OpenAPI, Scalar,
-Angular, authentication/context, and authenticated Sales read probes HTTP 200;
-no live business mutation was performed and `LEFT RUNNING = YES`. No Jira
-writes, Ready transition, merge, rebase, force-push, or review request is
-authorized. PR #84
-must remain Open/Draft/Unmerged; stop for independent GPT-5.6 Sol review.
+backend `1,138/1,138` with 0 failures and 0 skips; SQL safety `80/80`;
+focused Inventory ledger/stock-control/valuation `34/34`, `12/12`, and
+`44/44`; focused Sales `38/38`; Finance MESP-135 `31/31`; REST `36/36`;
+catalogue `4/4`; host security `19/19`; identity/authorization `89/89`;
+Angular `305/305` across 43 specs; focused/full Chromium `2/2` and `49/49`;
+both npm audits `0 vulnerabilities`; five-project NuGet scan clear; all seven
+EF contexts report no pending model changes; and `git diff --check` clean.
+The retained production warning is `512.18 kB` initial (`12.18 kB` over
+500 kB), with an `88.24 kB` Sales lazy chunk; the budget was not raised.
+
+The isolated runtime is API `http://localhost:5310` PID `34956`, Angular
+`http://localhost:4300` PID `42444`, data `.runtime/hold2-runtime-20260830`,
+and source head `d191488`. Health, OpenAPI, Scalar, Angular root,
+`/app/sales`, `/app/sales/orders`, authentication/session/context, and
+authenticated Sales quotation/order reads returned HTTP 200. No live business
+mutation was performed; port `5300` was not touched; `LEFT RUNNING = YES`.
+No Jira writes, Ready transition, merge, rebase, force-push, or review request
+was performed. PR #84 remains Open/Draft/Unmerged for independent GPT-5.6 Sol
+review.
 
 ## Historical MESP-137 initial implementation - superseded by HOLD-1 remediation
 

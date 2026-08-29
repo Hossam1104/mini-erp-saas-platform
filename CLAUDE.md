@@ -6,26 +6,33 @@
 authorization boundaries. Read it before any Ready transition, merge, Jira
 write, or mutation not explicitly authorized by the current bounded task.
 
-## Current execution overlay - 29 August 2026 (MESP-137 HOLD-1 remediation; stop for Sol review)
+## Current execution overlay - 30 August 2026 (MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance)
 
-HOLD-1 remediation is complete on the authorized branch, continuing Draft PR
-#84 from starting head `dfd3ec0fd91bdc56f9c609ce796ebad32fdd52dd` and exact
-`origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`. The final
-documentation/tracker handoff SHA follows after the final push.
-The four blockers are addressed with posted-Delivery source allocation and
-residual evidence, immutable invoice net/tax/gross and tax identity through
-Finance, active Master Data Payment Term snapshots for due-date authority, and
-durable Delivery/invoice handoff commit/reconciliation/Unknown recovery. No
-MESP-138/139 work, Jira write, Ready transition, merge, rebase, force-push, or
-review request is authorized. Fast-track remains 20/26 = 76.9%; production
-readiness remains ~47% overall / ~41% Procurement/P2P; `frontend/assets`
-remains untouched. Final validation is Release 0 warnings/0 errors, full
-disposable-LocalDB backend 1,131/1,131, focused Sales 31/31, Angular 305/305,
-focused Sales Chromium 2/2, and full Chromium 49/49. The isolated runtime
-is API `http://localhost:5310` PID `36140`, Angular `http://localhost:4300` PID
-`34328`, data `.runtime/hold1-runtime-20260829`, with authenticated read probes
-HTTP 200. Stop after final push and exact PR verification for independent
-GPT-5.6 Sol review.
+`MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance`.
+The authorized branch continues Draft PR #84 from exact HOLD-1 head
+`4ecfb64ffd5391a934af80fe11003b9031881ae3` and exact `origin/main` baseline
+`cb58d69fb0a589d363aed2d55b605e39f79d03bc`; pushed head is
+`d1914884bead08fac7a5b4eddc6f573297ef5550`. HOLD-2 authority is MESP-137
+comment `12275` with MESP-9 reconciliation `12277`.
+
+HOLD-137-E makes serializable Sales persistence authoritative for delivery
+allocation, prior invoice evidence, quantity, exact net/tax/gross residuals,
+tax identity, Payment Term, and source snapshot, and Finance posts only from
+the persisted Sales invoice request. HOLD-137-F preserves real downstream
+fingerprints, known Inventory Movement IDs and Finance effect IDs, explicit
+commit/acknowledgement/reconciliation states, durable retry identity, and
+fail-closed mismatch protection. No MESP-138/139 work, Jira write, Ready
+transition, merge, rebase, force-push, or review request was performed.
+
+Fast-track remains 20/26 = 76.9%; production readiness remains ~47% overall /
+~41% Procurement/P2P; `frontend/assets` remains untouched. Release validation
+is 0 warnings/0 errors, full backend 1,138/1,138, Angular 305/305, focused/full
+Chromium 2/2 and 49/49, and the retained initial bundle is 512.18 kB with
+Sales lazy chunk 88.24 kB. The isolated runtime is API
+`http://localhost:5310` PID `34956`, Angular `http://localhost:4300` PID
+`42444`, data `.runtime/hold2-runtime-20260830`; required and authenticated
+Sales read probes returned HTTP 200. Stop after exact PR verification for
+independent GPT-5.6 Sol review.
 
 ## Historical execution overlay - 29 August 2026 (MESP-137 initial implementation; superseded by HOLD-1 remediation)
 

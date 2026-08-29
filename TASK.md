@@ -1,5 +1,5 @@
 
-# MESP-137 HOLD-1 remediation handoff - stopped for GPT-5.6 Sol review
+# MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance
 
 MESP-136 is **Done** and **merged to `main` at commit `992195f7e61cf03b94675a498377a6d8bf679ebf`** on 2026-08-28T23:37:13Z. Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`. PR #80 is closed/merged/not-Draft.
 
@@ -15,82 +15,69 @@ external integrations, ZATCA/FATOORA, Wafra-specific behavior, MESP-138, and
 MESP-139 are excluded.
 
 The authorized branch is `feat/MESP-137-reservation-fulfillment-invoice`,
-based on exact `origin/main` baseline
-`cb58d69fb0a589d363aed2d55b605e39f79d03bc`. One Draft PR may be created. No
-Jira writes, Ready transition, merge, rebase, force-push, or review request is
-authorized. After final push and Draft PR verification, stop for independent
+continuing Draft PR #84 from exact HOLD-1 head
+`4ecfb64ffd5391a934af80fe11003b9031881ae3` and exact `origin/main` baseline
+`cb58d69fb0a589d363aed2d55b605e39f79d03bc`. HOLD-2 authority is MESP-137
+comment `12275` with MESP-9 reconciliation `12277`. The pushed HOLD-2 head is
+`d1914884bead08fac7a5b4eddc6f573297ef5550`. PR #84 remains Open/Draft/Unmerged;
+no Jira writes, Ready transition, merge, rebase, force-push, or review request
+was performed. After exact final PR verification, stop for independent
 GPT-5.6 Sol review.
 
-The HOLD-1 remediation is implemented on the same authorized branch and Draft
-PR. The final documentation/tracker handoff SHA is recorded after push. Draft
-PR `#84` is Open/Draft/Unmerged at
-https://github.com/Hossam1104/mini-erp-saas-platform/pull/84. The final
-documentation/tracker handoff SHA is the exact pushed branch head recorded
-after this reconciliation.
+`MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance`.
+HOLD-2 closes the two remaining financial/convergence blockers without
+broadening the capability. HOLD-137-E moves authoritative invoice quantity,
+source allocation, net, tax, gross, rounding residual, tax evidence, Payment
+Term evidence, and source snapshot preparation into the serializable Sales
+transaction. Finance posting is constructed from the persisted authoritative
+invoice-request response and Finance revalidates the complete contract.
 
-HOLD-1 closes the four Sol blockers without broadening MESP-137: invoice
-source allocation now uses posted Delivery evidence and residual quantities;
-invoice net/tax/gross amounts and immutable tax identity are carried into
-Finance-owned posting; Payment Term is selected from active Master Data and
-snapshotted at quotation/order scope for due-date authority; and Delivery and
-invoice handoffs persist downstream effect, acknowledgement, reconciliation,
-attempt, and Unknown recovery evidence. Finance revalidates the complete
-invoice contract at commit time, including payment-term, currency/FX, source,
-period, tax, and posting-rule facts. Multiple tax identities remain separate
-tax journals/effects with deterministic source evidence.
+HOLD-137-F persists the real downstream request fingerprint and distinguishes
+unknown downstream outcome from a known committed effect whose Sales
+acknowledgement failed. Inventory Movement IDs and Finance effect IDs survive
+the Unknown transition, retries replay the durable downstream identity, and
+effect, Tenant, order, revision, source, and fingerprint mismatches fail
+closed. Existing known effects are retained if a later recovery attempt has no
+new effect to report.
 
-Final Sol acceptance is recorded as MESP-136 comment `12252`; closure evidence is MESP-136 comment `12255` and MESP-9 reconciliation `12256`.
+The bounded capability remains source-linked Tenant/Company/Branch/Warehouse
+reservation, partial fulfillment, Delivery handoff, Finance-owned invoice
+eligibility/AR handoff, durable evidence, REST/OpenAPI metadata, and bilingual
+RTL Sales UI. No returns, credit notes, receipts, refunds, revenue
+recognition, external integrations, ZATCA/FATOORA, Wafra-specific behavior,
+MESP-138, or MESP-139 work was added. `frontend/assets` remains untouched.
 
-MESP-137 is the current activated capability described above. MESP-138 and
-MESP-139 remain To Do/inactive and are out of scope for this handoff.
-
-Fast-track capability completion = **20/26 = 76.9%** after verified merge and Jira closure. Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**. MESP-48 and MESP-50 remain open production gates. MESP-9 remains In Progress.
-
-Ponytail FULL is the default executor mode when available on supported environments (Claude Code, OpenAI Codex).
-
-The implementation adds source-linked Tenant/Company/Branch/Warehouse
-reservation records with available-stock caps, partial allocation and
-backorder remainder, controlled reduction/release, source/revision binding,
-serializable stock/reservation posting, durable history/audit, and idempotent
-replay. Sales delivery posting uses a durable coordinated/reconcilable handoff
-for delivery evidence, stock movement, and reservation consumption; failed or
-uncertain delivery cannot create a Finance document. Invoice eligibility uses
-posted delivery remainder and Finance-owned customer credit/AR validation,
-with durable invoice-request evidence and no revenue, receipt, refund,
-tax-invoice, or external submission implementation.
-
-The API adds seven public Sales fulfillment/delivery/invoice operations. The
-generated OpenAPI document has `417` unique operationIds and the REST catalog
-has `418` public / `2` internal operations. The Angular Sales workspace adds
-reservation, availability, partial-delivery, invoice-eligibility, bilingual
-EN/AR RTL, stale-revision, error, print, and loading states. Existing
-Tenant/Company/Branch scope, permissions, approval/SoD, credit holds,
-optimistic concurrency, and audit boundaries remain enforced.
+Fast-track capability completion remains **20/26 = 76.9%**; production
+readiness remains separate and unchanged at approximately **47% overall** and
+**41% Procurement/P2P**. MESP-48 and MESP-50 remain open production gates.
+MESP-9 remains In Progress. Ponytail FULL remains the default executor mode.
 
 Authoritative validation: Release build `0 warnings / 0 errors`; full
-disposable-LocalDB backend `1,131/1,131` with 0 failures and 0 skips; SQL
-safety `80/80`; focused Inventory `34/34`; focused Sales `31/31`; Finance
-MESP-135 regression `31/31`; REST foundation `36/36`; catalogue validation
-`4/4`; host security `19/19`; identity/authorization `89/89`; Angular
-`305/305` across 43 spec files; focused Chromium `2/2`; full Chromium
-`49/49`; both npm audits `0 vulnerabilities`; transitive NuGet vulnerability
-scan clear across all discovered backend projects; EF pending-model validation
-clean; and `git diff --check` clean. Production initial bundle is `512.18 kB`,
-`12.18 kB` over the retained `500 kB` budget; Sales lazy chunk is `88.24 kB`.
-The warning is retained and the budget was not raised.
+disposable-LocalDB backend `1,138/1,138` with 0 failures and 0 skips; SQL
+safety `80/80`; focused Inventory ledger `34/34`, stock control `12/12`, and
+valuation `44/44`; focused Sales `38/38`; Finance MESP-135 regression `31/31`;
+REST foundation `36/36`; catalogue validation `4/4`; host security `19/19`;
+identity/authorization `89/89`; Angular `305/305` across 43 spec files;
+focused Chromium `2/2`; full Chromium `49/49`; both npm audits
+`0 vulnerabilities`; transitive NuGet vulnerability scans clear across all
+five discovered backend projects; all seven EF contexts report no pending
+model changes; and `git diff --check` clean. Production initial bundle is
+`512.18 kB`, `12.18 kB` over the retained `500 kB` budget; Sales lazy chunk is
+`88.24 kB`. The warning is retained and the budget was not raised.
 
-The canonical launcher is running from the pushed implementation head in the
-isolated feature worktree with the approved loopback Development auth bypass:
-API `http://localhost:5310` PID `36140`, Angular `http://localhost:4300` PID
-`34328`, and isolated data `.runtime/hold1-runtime-20260829`. Health, OpenAPI,
-Scalar, Angular root, `/app/sales`, `/app/sales/orders`, authentication/session,
-context, and authenticated Sales register probes returned HTTP 200. No live
-reservation/delivery/invoice mutation is claimed; the pre-existing listener on
-port `5300` is not touched. `LEFT RUNNING = YES`.
+No schema or migration change was required; richer handoff data remains in the
+existing serialized `HandoffJson` contract. The canonical launcher is running
+from pushed head `d191488` in the isolated feature worktree with the approved
+loopback Development auth bypass: API `http://localhost:5310` PID `34956`,
+Angular `http://localhost:4300` PID `42444`, and isolated data
+`.runtime/hold2-runtime-20260830`. Health, OpenAPI, Scalar, Angular root,
+`/app/sales`, `/app/sales/orders`, authentication/session/context, and
+authenticated Sales quotation/order register reads returned HTTP 200. No live
+reservation/delivery/invoice mutation is claimed; port `5300` was not touched.
+`LEFT RUNNING = YES`.
 
-Repository state has been reconciled to reflect MESP-137 implementation and
-Ponytail tooling governance. After the Draft PR is created and verified, the
-executor stops for independent GPT-5.6 Sol review.
+Repository state is reconciled to reflect HOLD-2 implementation and the next
+independent GPT-5.6 Sol acceptance gate.
 
 ## Historical MESP-136 - GPT-5.6 Sol acceptance handoff after HOLD 2
 
