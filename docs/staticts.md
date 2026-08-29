@@ -1,65 +1,32 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
-## Current authoritative fast-track snapshot - 29 August 2026 (MESP-136 Sol HOLD 3)
+## Current authoritative fast-track snapshot - 29 August 2026 (MESP-136 accepted and merged)
 
-- MESP-132, MESP-133, MESP-134, and MESP-135 are Done and merged. MESP-136
-  remains the single active implementation capability under Epic MESP-9,
-  In Progress/activated under Sol evidence MESP-136 comment `12234` and
-  MESP-9 reconciliation `12235`. HOLD 3 authority is MESP-136 comment `12248`
-  with MESP-9 reconciliation `12249`.
-- The bounded remediation is on `feat/MESP-136-b2b-quote-order-credit`, from
-  exact starting head `29bd9bc1b65ef3b451e282091e25aa041796d9d3` and exact main
-  baseline `8bab7e36ca7fe4da0d8e62e7d7a4b9d7bcd59f6c`; the final
-  documentation/tracker handoff SHA follows after the final push. The HOLD 3
-  correction makes Finance exposure `CurrencyCode` the common credit
-  evaluation currency, converts foreign Sales commitments with immutable
-  validated order FX evidence and repository rounding, resolves limits in the
-  evaluation currency, persists unambiguous evidence, and fails closed on
-  unavailable or mismatched truth. Override reuse now includes currency-aligned
-  facts. HOLD 1/HOLD 2 behavior remains covered.
-- A minimal Sales-only additive migration,
-  `20260828224412_MESP136SalesHold3CurrencyIntegrity`, stores evaluation and
-  transaction currency facts, converted commitment, FX evidence, and order
-  revision. No Finance schema, external provider, or later capability changed.
-- Validation: Release `0 warnings / 0 errors`; focused Sales `26/26`; full
-  disposable-LocalDB backend `1,124/1,124` with 0 failures and 0 skips; SQL
-  safety `80/80`; REST/OpenAPI/host/security `55/55`; generated OpenAPI `410`
-  unique operationIds; catalog `411` public / `2` internal; Angular `305/305`
-  across 43 spec files; focused Sales Chromium `2/2`; full Chromium `49/49`;
-  EF pending-model check clean; both npm audits `0 vulnerabilities`; NuGet
-  vulnerable-package scan clear; and final `git diff --check` clean. Production
-  initial bundle is `510.08 kB`, `10.08 kB` over the 500 kB budget; Sales lazy
-  chunk is `72.72 kB`. The warning is retained and the budget was not raised.
-- Runtime is left running through the canonical launcher with loopback
-  Development auth bypass: backend PID `7608` on `5300`, frontend PID `10148`
-  on `4300`; isolated runtime directory `.runtime/hold3-runtime-20260829` was
-  used because the prior Development SQLite schema was stale, and the
-  persistent MESP store was not touched. Authenticated backend/frontend
-  health, OpenAPI, Finance, Sales, and order-edit probes returned HTTP 200
-  (`all recorded probes passed`); `LEFT RUNNING = YES`.
-- Fast-track capability completion remains **19/26 = 73.1%** until Sol
-  acceptance, verified merge, and Jira closure. Production readiness remains
-  separate and unchanged at approximately **47% overall** and **41%
-  Procurement/P2P**. MESP-48 and MESP-50 remain open production gates.
-- MESP-137, MESP-138, and MESP-139 remain To Do/inactive. PR #80 is
-  Open/Draft/Unmerged. No Jira writes, Opus review, Ready transition, merge,
-  rebase, or force-push occurred; the presentation remains main-only and
-  `frontend/assets` remains untouched.
+- MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged.
+  MESP-136 accepted/merged on 2026-08-28T23:37:13Z at `992195f7e61cf03b94675a498377a6d8bf679ebf`.
+  Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`.
+  Final Sol acceptance: MESP-136 comment `12252`. Closure: MESP-136 comment `12255`, MESP-9 reconciliation `12256`.
+- **No current implementation capability is active.** MESP-137, MESP-138, and MESP-139 remain To Do/inactive.
+- **Fast-track capability completion = 20/26 = 76.9%** after verified merge and Jira closure.
+  Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**.
+  MESP-48 and MESP-50 remain open production gates. MESP-9 remains In Progress.
+- Ponytail FULL is the default executor mode when available (Claude Code, OpenAI Codex).
+  Machine-local plugin and cache state must not be committed to the repository.
 
 <!-- MESP-136-JIRA-SYNC-START -->
-## Jira/documentation synchronization - 29 August 2026 (MESP-136 HOLD 3 handoff)
+## Jira/documentation synchronization - 29 August 2026 (MESP-136 closure reconciliation)
 
-- Sol HOLD 3 authority is recorded as MESP-136 comment `12248` and MESP-9
-  reconciliation `12249`; Jira state was not changed by this session.
-- MESP-136 remains In Progress/activated, MESP-137/138/139 remain inactive,
-  and MESP-48/MESP-50 remain open production gates. Fast-track and production
-  readiness metrics remain separate and unchanged.
-- Draft PR #80 remains Open/Draft/Unmerged with no Ready transition or merge.
-  No Jira writes were performed by Luna. Stop for third independent Sol
-  acceptance.
+- MESP-136 final Sol acceptance is recorded as MESP-136 comment `12252`.
+  Closure evidence: MESP-136 comment `12255` and MESP-9 reconciliation `12256`.
+- MESP-136 is Done/closed/merged. PR #80 is closed/merged/not-Draft.
+- MESP-9 remains In Progress. MESP-137/138/139 remain To Do/inactive.
+  MESP-48/MESP-50 remain open production gates.
+- Fast-track = 20/26 = 76.9%. Production readiness = ~47% overall / ~41% Procurement/P2P.
+  Both remain separate and unchanged in substance (governance reconciliation only, no new capability).
+- No current implementation capability is active. Repository state reconciled to Jira closure.
 <!-- MESP-136-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-29 02:15 +03:00
+**Last Updated:** 2026-08-29 03:08 +03:00
 
 ## Historical authoritative fast-track snapshot - 28 August 2026 (MESP-136 Sol HOLD 2)
 
