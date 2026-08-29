@@ -2,17 +2,28 @@
 
 ## Current handoff
 
-This session is the repository reconciliation checkpoint before the next MESP
-capability. It is not feature implementation. MESP-136 is accepted, merged to
-`main`, and Jira-closed. MESP-137, MESP-138, MESP-139, and later capabilities
-remain inactive and must not be activated by this session.
+This session is the repository reconciliation checkpoint. It is not feature
+implementation; it is governance/documentation correction only.
 
-- Branch: `chore/project-health-reconciliation-cleanup`
-- Starting `origin/main`: `c8c9084d2cf72550e7a51e4ab9475ef54d14e864`
-- Final head: see the final pushed Draft PR head and Git handoff below
-- Jira checkpoint: MESP-144, In Progress
-- Draft PR: create after the final commit and push
-- Base: `main`
+MESP-136 is accepted, merged to `main`, and Jira-closed. MESP-137, MESP-138,
+MESP-139, and later capabilities remain inactive and must not be activated.
+
+**Checkpoint Details:**
+
+- **Checkpoint:** MESP-144, In Progress
+- **Jira Evidence:** Sol HOLD 1 review comment 12261
+- **Branch:** `chore/project-health-reconciliation-cleanup`
+- **Base:** `main` at `c8c9084d2cf72550e7a51e4ab9475ef54d14e864`
+- **Sol-Reviewed Pre-Correction Head:** `ac41279c21121e3aa43657d9f4a4b210f28499cd`
+- **Draft PR #82:** https://github.com/Hossam1104/mini-erp-saas-platform/pull/82
+- **PR State:** Open, Draft, Unmerged
+
+**Final Head Truth:**
+
+The exact current/final checkpoint head is the head of Draft PR #82 and is
+verified with `git rev-parse HEAD` and `gh pr view 82`. It is recorded in the
+PR, Jira evidence, and this final executor handoff; it is not self-embedded in
+this tracked file to avoid Git SHA self-reference loops.
 
 ## Scope completed in this checkpoint
 
