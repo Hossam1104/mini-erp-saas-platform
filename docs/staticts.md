@@ -1,41 +1,42 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
-## Current authoritative fast-track snapshot - 29 August 2026 (MESP-137 Sol review handoff)
+## Current authoritative fast-track snapshot - 29 August 2026 (MESP-137 HOLD-1 remediation handoff)
 
 - MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged.
   MESP-136 accepted/merged on 2026-08-28T23:37:13Z at `992195f7e61cf03b94675a498377a6d8bf679ebf`.
   Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`.
   Final Sol acceptance: MESP-136 comment `12252`. Closure: MESP-136 comment `12255`, MESP-9 reconciliation `12256`.
 - **MESP-137 is In Progress/activated** under MESP-9 by MESP-137 comment `12265` and MESP-9 reconciliation `12266`, on branch `feat/MESP-137-reservation-fulfillment-invoice` from exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`. MESP-138 and MESP-139 remain To Do/inactive.
-- Implementation commit is `86e9c5708daf33caa751e799ebbb8b02bfd717ed`; Draft PR #84 is Open/Draft/Unmerged.
+- HOLD-1 remediation is complete on `feat/MESP-137-reservation-fulfillment-invoice`, continuing Draft PR #84 from starting head `dfd3ec0fd91bdc56f9c609ce796ebad32fdd52dd` and exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`. The final documentation/tracker handoff SHA is recorded after push; PR #84 remains Open/Draft/Unmerged.
+- HOLD-1 closes the four Sol blockers in scope: posted Delivery source allocation and residual quantities; immutable invoice net/tax/gross and tax identity carried into Finance; active Master Data Payment Term snapshots with due-date authority; and durable Delivery/invoice downstream commit, acknowledgement, reconciliation, attempt, and Unknown recovery evidence. Finance revalidates the complete invoice contract at commit time; multiple tax identities use separate deterministic tax journals/effects.
 - **Fast-track capability completion = 20/26 = 76.9%** after verified merge and Jira closure.
   Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**.
   MESP-48 and MESP-50 remain open production gates. MESP-9 remains In Progress.
 - Ponytail FULL is the default executor mode when available (Claude Code, OpenAI Codex).
   Machine-local plugin and cache state must not be committed to the repository.
-- Validation is green: Release `0 warnings / 0 errors`; non-SQL backend
-  `1,046/1,046`; full disposable-LocalDB backend `1,126/1,126`; SQL safety
-  `80/80`; focused Inventory `34/34`; focused Sales `27/27`; Finance MESP-135
+- Validation is green: Release `0 warnings / 0 errors`; full disposable-LocalDB
+  backend `1,131/1,131` with 0 failures and 0 skips; SQL safety `80/80`;
+  focused Inventory `34/34`; focused Sales `31/31`; Finance MESP-135
   regression `31/31`; REST foundation `36/36`; catalogue validation `4/4`;
   host security `19/19`; identity/authorization `89/89`; Angular `305/305`
-  across 43 spec files; focused Chromium `10/10`; full Chromium `49/49`; both
+  across 43 spec files; focused Chromium `2/2`; full Chromium `49/49`; both
   npm audits report `0 vulnerabilities`; and transitive NuGet vulnerability
   scanning is clear. Generated OpenAPI has `417` unique operationIds and the
   REST catalogue has `418` public / `2` internal operations. EF pending-model
   validation and `git diff --check` are clean.
-- Production initial bundle is `511.98 kB`, `11.98 kB` over the retained
-  `500 kB` budget; Sales lazy chunk is `86.51 kB`. The warning is retained and
-  the budget was not raised. Runtime is left running in the isolated feature
-  worktree at API `http://localhost:5310` (PID `39344`) and Angular
-  `http://localhost:4300` (PID `38836`); no eligible seeded Sales Order was
-  available for a live mutation probe.
+- Production initial bundle is `512.18 kB`, `12.18 kB` over the retained
+  `500 kB` budget; Sales lazy chunk is `88.24 kB`. The warning is retained and
+  the budget was not raised. The final isolated runtime is started after the
+  final push; no live reservation/delivery/invoice mutation is claimed.
 
 <!-- MESP-137-JIRA-SYNC-START -->
-## Jira/documentation synchronization - 29 August 2026 (MESP-137 Sol review handoff)
+## Jira/documentation synchronization - 29 August 2026 (MESP-137 HOLD-1 remediation handoff)
 
 - MESP-137 is In Progress/activated by comment `12265`; MESP-9 reconciliation is `12266`.
 - The bounded capability covers reservation, partial fulfillment, delivery, and
-  Finance-owned invoice eligibility/AR handoff. No MESP-138/MESP-139 work,
+  Finance-owned invoice eligibility/AR handoff. HOLD-1 adds source allocation,
+  invoice amount/tax evidence, Payment Term snapshot authority, and durable
+  downstream recovery. No MESP-138/MESP-139 work,
   Jira write, Ready transition, merge, or review request was performed.
   MESP-48/MESP-50 remain open production gates.
 - Fast-track remains 20/26 = 76.9%; production readiness remains ~47% overall / ~41% Procurement/P2P. These headlines are unchanged pending acceptance, merge, and Jira closure.
@@ -43,11 +44,11 @@
 - Draft PR #84 is the single authorized PR for this handoff; no Jira write, Ready transition, merge, rebase, force-push, or review request was performed.
 <!-- MESP-137-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-29 19:15 +03:00
+**Last Updated:** 2026-08-29 22:00 +03:00
 
-## Progress history - 29 August 2026 (MESP-137 Sol review handoff)
+## Progress history - 29 August 2026 (MESP-137 HOLD-1 remediation handoff)
 
-| 2026-08-29 | MESP-137 implementation adds Sales-linked Inventory reservation and partial allocation, atomic delivery stock/reservation consumption, durable Sales delivery and invoice-request evidence, Finance-owned invoice eligibility/AR handoff seams, REST/OpenAPI metadata, and bilingual RTL fulfillment UI. | ~47% | ~41% | Activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`; exact baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`; non-SQL backend 1,046/1,046; full disposable-LocalDB backend 1,126/1,126; SQL safety 80/80; focused Inventory 34/34; focused Sales 27/27; Finance MESP-135 regression 31/31; REST/catalogue/host/identity 148/148; Angular 305/305; focused/full Chromium 10/10 and 49/49; OpenAPI 417 unique operationIds; initial bundle 511.98 kB, 11.98 kB over the retained 500 kB budget; no percentage increase or acceptance claimed; MESP-138/139 inactive; no Jira writes, Ready transition, merge, or review request. |
+| 2026-08-29 | MESP-137 HOLD-1 remediation closes source allocation/residual, invoice net/tax/gross and tax identity, Payment Term snapshot authority, and durable downstream handoff recovery while retaining the bounded reservation, fulfillment, delivery, Finance AR handoff, and RTL UI scope. | ~47% | ~41% | Activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`; exact baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`; full disposable-LocalDB backend 1,131/1,131; SQL safety 80/80; focused Inventory 34/34; focused Sales 31/31; Finance MESP-135 regression 31/31; REST/catalogue/host/identity 148/148; Angular 305/305; focused/full Chromium 2/2 and 49/49; OpenAPI 417 unique operationIds; initial bundle 512.18 kB, 12.18 kB over the retained 500 kB budget; warning retained; no percentage increase or acceptance claimed; MESP-138/139 inactive; no Jira writes, Ready transition, merge, or review request. |
 
 ## Historical authoritative fast-track snapshot - 28 August 2026 (MESP-136 Sol HOLD 2)
 

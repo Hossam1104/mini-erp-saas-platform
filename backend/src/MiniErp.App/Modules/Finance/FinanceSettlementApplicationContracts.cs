@@ -73,7 +73,27 @@ public sealed record FinanceSalesInvoiceCommand(
     string SourceSnapshot,
     string? Reference,
     string IdempotencyKey,
-    string RequestFingerprint);
+    string RequestFingerprint,
+    decimal? NetAmount = null,
+    decimal? TaxAmount = null,
+    IReadOnlyList<FinanceSalesInvoiceLine>? Lines = null,
+    FinancePaymentTermSnapshotRecord? PaymentTerm = null);
+
+public sealed record FinanceSalesInvoiceLine(
+    Guid OrderLineId,
+    decimal Quantity,
+    decimal NetAmount,
+    decimal TaxAmount,
+    decimal GrossAmount,
+    Guid? TaxId,
+    string? TaxCode,
+    Guid? TaxRateVersionId,
+    int? TaxRateVersionNumber,
+    DateOnly? TaxEffectiveFrom,
+    DateOnly? TaxEffectiveTo,
+    decimal? TaxRatePercentage,
+    decimal? TaxableBase,
+    string? TaxReferenceValue);
 
 public sealed record FinanceSalesInvoiceEligibilityRecord(
     bool Eligible,

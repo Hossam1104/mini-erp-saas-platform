@@ -37,7 +37,14 @@ velocity, or forecast:
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 29 August 2026 (MESP-137 active; stop for Sol review)
+## Current execution overlay - 29 August 2026 (MESP-137 HOLD-1 remediation; stop for Sol review)
+
+* HOLD-1 remediation is complete on `feat/MESP-137-reservation-fulfillment-invoice`, continuing Draft PR #84 from starting head `dfd3ec0fd91bdc56f9c609ce796ebad32fdd52dd` and exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`. The final documentation/tracker handoff SHA follows after the final push.
+* The four Sol blockers are addressed within MESP-137: posted Delivery source allocation and residual quantity evidence; immutable invoice net/tax/gross and tax identity through Finance posting; active Master Data Payment Term selection with quotation/order snapshot and due-date authority; and durable Delivery/invoice downstream commit, acknowledgement, reconciliation, attempt, and Unknown recovery evidence. Finance revalidates the complete invoice contract at commit time. Multiple tax identities use separate deterministic tax journals/effects.
+* Final validation is Release `0 warnings / 0 errors`; full disposable-LocalDB backend `1,131/1,131` with 0 failures and 0 skips; focused Sales `31/31`; Angular `305/305`; focused Sales Chromium `2/2`; full Chromium `49/49`; SQL safety `80/80`; both npm audits `0 vulnerabilities`; and the retained frontend initial-bundle warning is not suppressed or raised. Fast-track remains **20/26 = 76.9%**; production readiness remains approximately **47% overall** and **41% Procurement/P2P**; MESP-48 and MESP-50 remain open production gates.
+* MESP-137 remains In Progress/activated; MESP-138 and MESP-139 remain To Do/inactive. No Jira writes, Ready transition, merge, rebase, force-push, or review request is permitted. Stop after final push and exact Draft PR verification for independent GPT-5.6 Sol review. `frontend/assets` remains untouched.
+
+## Historical execution overlay - 29 August 2026 (MESP-137 initial implementation; superseded by HOLD-1 remediation)
 
 * MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged. MESP-136 final Sol acceptance is recorded as MESP-136 comment `12252`; closure evidence is MESP-136 comment `12255` and MESP-9 reconciliation `12256`. PR #80 is closed/merged with squash commit `992195f7e61cf03b94675a498377a6d8bf679ebf` at 2026-08-28T23:37:13Z. Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`.
 * MESP-137 is the single active implementation capability under Epic MESP-9, activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`, on `feat/MESP-137-reservation-fulfillment-invoice` from exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`.

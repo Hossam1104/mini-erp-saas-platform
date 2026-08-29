@@ -3,6 +3,7 @@
 using MiniErp.Contracts.Modules.Inventory;
 using MiniErp.Contracts.Modules.Procurement;
 using MiniErp.App.Modules.Procurement;
+using MiniErp.App.Modules.Sales;
 
 namespace MiniErp.App.Modules.Inventory;
 
@@ -17,7 +18,7 @@ public sealed partial class InventoryService(
     ISupplierReturnPhysicalEffectGate? physicalEffectGate = null,
     IInventorySupplierReturnStateProvider? supplierReturnState = null,
     IInventoryApprovalPolicyProvider? approvalPolicies = null,
-    IInventoryApprovalDelegationProvider? approvalDelegation = null)
+    IInventoryApprovalDelegationProvider? approvalDelegation = null) : ISalesInventoryPort
 {
     private readonly ISupplierReturnPhysicalEffectGate supplierReturnPhysicalEffectGate = physicalEffectGate ?? new SupplierReturnPhysicalEffectGate();
     private readonly IInventorySupplierReturnStateProvider supplierReturnStateProvider = supplierReturnState ?? new NoInventorySupplierReturnStateProvider();

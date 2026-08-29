@@ -15,6 +15,7 @@
 # MiniERP local Development runtime and HTTP smoke output. Keep smoke data
 # under this dedicated directory or the OS temporary directory.
 /.runtime/
+/.angular/cache/
 /cookies.txt
 /d_cookies.txt
 /p_cookies.txt

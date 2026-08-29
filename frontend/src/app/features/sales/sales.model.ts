@@ -45,6 +45,7 @@ export interface SalesQuotationCreateRequest {
   customerReference: string | null;
   lines: SalesQuotationLineRequest[];
   exchangeRateId?: string | null;
+  paymentTermId?: string | null;
 }
 
 export interface SalesQuotationEditRequest extends Omit<SalesQuotationCreateRequest, 'customerId' | 'quotationDate'> {}
@@ -139,6 +140,25 @@ export interface SalesExchangeRateEvidence {
   referenceValue: string;
 }
 
+export interface SalesPaymentTermSnapshot {
+  id: string;
+  code: string;
+  englishName: string;
+  arabicName: string | null;
+  versionId: string;
+  versionNumber: number;
+  effectiveOn: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  baseDateRule: string;
+  scheduleMode: string;
+  dueOffsetDays: number;
+  dueOffsetMonths: number;
+  provenance: string;
+  referenceValue: string;
+  installments?: Array<{ sequence: number; percentage: number; days: number; months: number }> | null;
+}
+
 export interface SalesQuotationResponse extends SalesQuotationSummaryResponse {
   tenantId: string;
   customerContactId: string | null;
@@ -148,6 +168,7 @@ export interface SalesQuotationResponse extends SalesQuotationSummaryResponse {
   createdAt: string;
   exchangeRateEvidence?: SalesExchangeRateEvidence | null;
   approvalState?: SalesApprovalStateResponse | null;
+  paymentTerm?: SalesPaymentTermSnapshot | null;
 }
 
 export interface SalesApprovalDecisionResponse {
@@ -219,6 +240,7 @@ export interface SalesOrderResponse extends SalesOrderSummaryResponse {
   exchangeRateEvidence?: SalesExchangeRateEvidence | null;
   revisionNumber?: number;
   approvalState?: SalesApprovalStateResponse | null;
+  paymentTerm?: SalesPaymentTermSnapshot | null;
 }
 
 export interface SalesHistoryResponse {
@@ -283,8 +305,8 @@ export type SalesInvoiceRequestStatus = 'Pending' | 'Posted' | 'Failed' | 'Unkno
 
 export interface SalesReservationRequest { warehouseId: string; lines: Array<{ orderLineId: string; quantity: number; trackingIdentity?: string | null }>; }
 export interface SalesFulfillmentLineResponse { orderLineId: string; orderedQuantity: number; reservedQuantity: number; unallocatedQuantity: number; fulfilledQuantity: number; deliveredQuantity: number; invoicedQuantity: number; remainingFulfillableQuantity: number; remainingInvoiceableQuantity: number; status: SalesFulfillmentLineStatus; }
-export interface SalesDeliveryResponse { id: string; tenantId: string; orderId: string; orderRevisionNumber: number; companyId: string; branchId: string | null; customerId: string; warehouseId: string; status: SalesDeliveryStatus; errorCode: string | null; lines: Array<{ orderLineId: string; reservationId: string; quantity: number }>; movementIds: string[]; createdAt: string; postedAt: string | null; version: string; }
+export interface SalesDeliveryResponse { id: string; tenantId: string; orderId: string; orderRevisionNumber: number; companyId: string; branchId: string | null; customerId: string; warehouseId: string; status: SalesDeliveryStatus; errorCode: string | null; lines: Array<{ orderLineId: string; reservationId: string; quantity: number }>; movementIds: string[]; createdAt: string; postedAt: string | null; version: string; handoff?: { operation: string; movementIds: string[]; downstreamCommitState: string; salesAcknowledgementState: string; reconciliationStatus: string; lastError: string | null; attemptCount: number; lastAttemptAt: string | null; requestFingerprint: string } | null; }
 export interface SalesFulfillmentResponse { orderId: string; orderRevisionNumber: number; lines: SalesFulfillmentLineResponse[]; deliveries: SalesDeliveryResponse[]; invoiceRequests: SalesInvoiceRequestResponse[]; }
-export interface SalesInvoiceEligibilityRequest { deliveryId?: string | null; paymentTermId: string; invoiceDate: string; lines: Array<{ orderLineId: string; quantity: number }>; }
-export interface SalesInvoiceEligibilityResponse { orderId: string; orderRevisionNumber: number; status: SalesInvoiceEligibilityStatus; code: string; totalAmount: number; currencyCode: string; lines: Array<{ orderLineId: string; deliveredQuantity: number; invoicedQuantity: number; requestedQuantity: number; remainingInvoiceableQuantity: number; amount: number; status: string }>; invoiceDate: string; }
-export interface SalesInvoiceRequestResponse { id: string; tenantId: string; orderId: string; orderRevisionNumber: number; deliveryId: string | null; status: SalesInvoiceRequestStatus; errorCode: string | null; financeOpenItemId: string | null; amount: number; lines: Array<{ orderLineId: string; quantity: number }>; createdAt: string; postedAt: string | null; version: string; }
+export interface SalesInvoiceEligibilityRequest { deliveryId?: string | null; paymentTermId?: string | null; invoiceDate: string; lines: Array<{ orderLineId: string; quantity: number }>; }
+export interface SalesInvoiceEligibilityResponse { orderId: string; orderRevisionNumber: number; status: SalesInvoiceEligibilityStatus; code: string; totalAmount: number; currencyCode: string; lines: Array<{ orderLineId: string; deliveredQuantity: number; invoicedQuantity: number; requestedQuantity: number; remainingInvoiceableQuantity: number; amount: number; netAmount?: number; taxAmount?: number; grossAmount?: number; status: string; taxEvidence?: unknown; allocations?: unknown[] | null }>; invoiceDate: string; paymentTerm?: SalesPaymentTermSnapshot | null; }
+export interface SalesInvoiceRequestResponse { id: string; tenantId: string; orderId: string; orderRevisionNumber: number; deliveryId: string | null; status: SalesInvoiceRequestStatus; errorCode: string | null; financeOpenItemId: string | null; amount: number; netAmount?: number; taxAmount?: number; paymentTerm?: SalesPaymentTermSnapshot | null; lineEvidence?: unknown[] | null; handoff?: { operation: string; movementIds: string[]; downstreamCommitState: string; salesAcknowledgementState: string; reconciliationStatus: string; lastError: string | null; attemptCount: number; lastAttemptAt: string | null; requestFingerprint: string } | null; lines: Array<{ orderLineId: string; quantity: number }>; createdAt: string; postedAt: string | null; version: string; }

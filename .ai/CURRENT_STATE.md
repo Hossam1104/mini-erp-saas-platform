@@ -1,49 +1,48 @@
 # Current State
 
-## MESP-137 active - reservation, fulfillment, delivery, and invoice eligibility
+## MESP-137 HOLD-1 remediation - stopped for GPT-5.6 Sol review
 
-MESP-137 is the single active implementation capability under Epic MESP-9,
-activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`. The
-bounded implementation is on `feat/MESP-137-reservation-fulfillment-invoice`,
-based on exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`.
-Implementation commit is `86e9c5708daf33caa751e799ebbb8b02bfd717ed`; Draft PR
-`#84` is Open/Draft/Unmerged at
-https://github.com/Hossam1104/mini-erp-saas-platform/pull/84.
+MESP-137 remains the single active implementation capability under Epic
+MESP-9, activated by MESP-137 comment `12265` and MESP-9 reconciliation
+`12266`. HOLD-1 remediation is complete on
+`feat/MESP-137-reservation-fulfillment-invoice`, continuing Draft PR #84 from
+starting head `dfd3ec0fd91bdc56f9c609ce796ebad32fdd52dd` and exact
+`origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`. Final
+documentation/tracker handoff SHA is recorded after push.
 
-The capability adds Sales-linked Inventory reservations, partial allocation,
-atomic Sales delivery posting with stock movement and reservation consumption,
-durable delivery/invoice-request evidence, Finance-owned invoice eligibility
-and AR/invoice posting seams, REST/OpenAPI metadata, and bilingual RTL Sales
-fulfillment UI. It does not add returns, credit notes, receipts, refunds,
-revenue recognition, external integrations, ZATCA/FATOORA, Wafra-specific
-behavior, or MESP-138/MESP-139 work.
+The four Sol blockers are addressed in scope: posted Delivery source
+allocation and residual quantities; immutable invoice net/tax/gross and tax
+identity carried into Finance; active Master Data Payment Term selection with
+quotation/order snapshots and due-date authority; and durable Delivery/invoice
+handoff commit, acknowledgement, reconciliation, attempt, and Unknown
+recovery evidence. Finance revalidates source, amount, payment-term,
+currency/FX, tax, period, and posting-rule facts at commit time. Multiple tax
+identities remain separate deterministic tax journals/effects.
 
-Validation is green for the current implementation: Release build `0 warnings
-/ 0 errors`, non-SQL backend `1,046/1,046`, full disposable-LocalDB backend
-`1,126/1,126`, SQL safety `80/80`, focused Inventory `34/34`, focused Sales
-`27/27`, Finance MESP-135 regression `31/31`, REST foundation `36/36`,
-catalogue validation `4/4`, host security `19/19`, identity/authorization
-`89/89`, Angular `305/305` across 43 spec files, focused Chromium `10/10`,
-full Chromium `49/49`, both npm audits `0 vulnerabilities`, and a clear
-transitive NuGet vulnerability scan. Generated OpenAPI has `417` unique
-operationIds; the REST catalogue has `418` public / `2` internal operations;
-EF pending-model validation and `git diff --check` are clean. Frontend
-production build retains the initial-bundle warning at `511.98 kB` against the
-`500 kB` budget; Sales lazy chunk is `86.51 kB`; the budget was not increased.
+MESP-138 and MESP-139 remain To Do/inactive. Returns, credit notes, receipts,
+refunds, revenue recognition, external integrations, ZATCA/FATOORA, and
+Wafra-specific behavior remain excluded. `frontend/assets` remains untouched.
+Fast-track remains **20/26 = 76.9%**; production readiness remains separate at
+approximately **47% overall** and **41% Procurement/P2P**; MESP-48 and MESP-50
+remain open production gates.
 
-The canonical launcher is running the isolated feature worktree with the
-approved loopback Development auth bypass: API `http://localhost:5310` PID
-`39344`, Angular `http://localhost:4300` PID `38836`, data directory
-`.runtime/sol-review-20260829`. Health, OpenAPI, Scalar, root, Sales UI,
-authentication, context, and authenticated Sales register reads returned HTTP
-200. No eligible Sales Order is present in the isolated Development seed, so
-no live reservation/delivery/invoice mutation is claimed; focused integration
-tests cover the Sales-to-Inventory path. The pre-existing port-5300 listener
-was not touched.
+Final validation is Release `0 warnings / 0 errors`; full disposable-LocalDB
+backend `1,131/1,131` with 0 failures and 0 skips; focused Sales `31/31`;
+Angular `305/305`; focused Sales Chromium `2/2`; full Chromium `49/49`; and
+the retained bundle warning is documented. Isolated runtime evidence is
+recorded in the tracked handoff after the final push. No Jira writes, Ready
+transition, merge, rebase, force-push, or review request is authorized. PR #84
+must remain Open/Draft/Unmerged; stop for independent GPT-5.6 Sol review.
 
-No Jira writes, Ready transition, merge, or review request is authorized.
-One Draft PR is authorized; it must remain Open/Draft/Unmerged. Stop after
-push and PR verification for independent GPT-5.6 Sol review.
+## Historical MESP-137 initial implementation - superseded by HOLD-1 remediation
+
+The initial MESP-137 implementation used the same branch and Draft PR #84
+from `cb58...` and delivered Sales-linked Inventory reservations, partial
+allocation, atomic delivery posting, durable invoice-request evidence, and
+Finance-owned invoice eligibility. Its initial handoff recorded full backend
+`1,126/1,126`, focused Sales `27/27`, and a retained `511.98 kB` initial bundle
+warning. HOLD-1 supersedes that validation snapshot while preserving the
+bounded capability and historical evidence.
 
 ## MESP-136 closed and merged - 29 August 2026 - awaiting next Sol activation
 

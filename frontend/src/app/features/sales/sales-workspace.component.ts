@@ -63,6 +63,7 @@ interface QuotationDraft {
   notes: string;
   customerReference: string;
   exchangeRateId: string;
+  paymentTermId: string;
   lines: LineDraft[];
 }
 
@@ -122,7 +123,8 @@ interface QuotationDraft {
               <label class="form-field form-field--scope"><span>{{ language.text('organizationScope') }}</span><select name="organizationScope" [ngModel]="draft.companyId ? draft.companyId + '|' + draft.branchId : ''" (ngModelChange)="setOrganizationScope($event)" required><option value="">{{ language.text('organizationScopeSelectHint') }}</option>@for (scope of organizationScopes(); track organizationScopeKey(scope)) {<option [value]="organizationScopeKey(scope)">{{ scope.displayName }}</option>}</select><small>{{ language.text('salesScopeHint') }}</small></label>
               <label class="form-field"><span>{{ language.text('customer') }}</span><select name="customerId" [(ngModel)]="draft.customerId" required><option value="">{{ language.text('salesSelectCustomer') }}</option>@for (customer of customers(); track customer.id) {<option [value]="customer.id">{{ displayCustomer(customer) }}</option>}</select></label>
               <label class="form-field"><span>{{ language.text('currency') }}</span><select name="currencyId" [(ngModel)]="draft.currencyId" required><option value="">{{ language.text('salesSelectCurrency') }}</option>@for (currency of currencies(); track currency.id) {<option [value]="currency.id">{{ currency.code }} · {{ displayCurrency(currency) }}</option>}</select></label>
-              <label class="form-field"><span>{{ language.text('priceLists') }}</span><select name="priceListId" [(ngModel)]="draft.priceListId"><option value="">{{ language.text('salesAutomaticPriceSource') }}</option>@for (priceList of priceLists(); track priceList.id) {<option [value]="priceList.id">{{ priceList.code }} · {{ priceList.currencyCode }}</option>}</select></label>
+               <label class="form-field"><span>{{ language.text('priceLists') }}</span><select name="priceListId" [(ngModel)]="draft.priceListId"><option value="">{{ language.text('salesAutomaticPriceSource') }}</option>@for (priceList of priceLists(); track priceList.id) {<option [value]="priceList.id">{{ priceList.code }} · {{ priceList.currencyCode }}</option>}</select></label>
+              @if (documentType() === 'quotation') { <label class="form-field"><span>{{ language.text('paymentTerms') }}</span><select name="paymentTermId" [(ngModel)]="draft.paymentTermId" required><option value="">{{ language.text('salesSelectPaymentTerm') }}</option>@for (paymentTerm of paymentTerms(); track paymentTerm.id) { @if (paymentTerm.lifecycleState === 'Active') { <option [value]="paymentTerm.id">{{ paymentTerm.code }} · {{ paymentTerm.englishName || paymentTerm.arabicName || paymentTerm.code }} · v{{ paymentTerm.currentVersionNumber }}</option> } }</select></label> }
                <label class="form-field"><span>{{ language.text('exchangeRates') }}</span><select name="exchangeRateId" [(ngModel)]="draft.exchangeRateId"><option value="">{{ language.text('salesNoExchangeRate') }}</option>@for (rate of exchangeRates(); track rate.id) {<option [value]="rate.id">{{ rate.sourceCurrencyCode }} → {{ rate.targetCurrencyCode }} · v{{ rate.currentVersionNumber }}</option>}</select><small>{{ language.text('salesExchangeRateHint') }}</small></label>
                <label class="form-field"><span>{{ language.text('documentDate') }}</span><input name="quotationDate" type="date" [(ngModel)]="draft.quotationDate" required [disabled]="mode() === 'edit'" /></label>
               <label class="form-field"><span>{{ language.text('salesValidUntil') }}</span><input name="validUntil" type="date" [(ngModel)]="draft.validUntil" required /></label>
@@ -176,10 +178,11 @@ interface QuotationDraft {
     <ng-template #fulfillmentPanel let-record="record">
       <section class="fulfillment-panel">
         <div class="subsection-heading"><div><p class="eyebrow eyebrow--soft">{{ language.text('salesFulfillment') }}</p><h3>{{ language.text('salesFulfillmentTitle') }}</h3><p class="field-note">{{ language.text('salesFulfillmentLead') }}</p></div><div class="section-actions"><button class="button button--quiet" type="button" (click)="printFulfillment()">{{ language.text('salesPrintFulfillment') }}</button><button class="button button--quiet" type="button" (click)="loadFulfillment()">{{ language.text('refresh') }}</button></div></div>
-        <div class="form-grid form-grid--context"><label class="form-field"><span>{{ language.text('salesWarehouse') }}</span><select [ngModel]="selectedWarehouseId()" (ngModelChange)="selectWarehouse($event)"><option value="">{{ language.text('salesSelectWarehouse') }}</option>@for (warehouse of warehouses(); track warehouse.warehouseId) {<option [value]="warehouse.warehouseId">{{ warehouse.displayName }}</option>}</select></label><label class="form-field"><span>{{ language.text('paymentTerms') }}</span><select [ngModel]="paymentTermId()" (ngModelChange)="paymentTermId.set($event)"><option value="">{{ language.text('salesSelectPaymentTerm') }}</option>@for (term of paymentTerms(); track term.id) {<option [value]="term.id">{{ term.code }} - v{{ term.currentVersionNumber }}</option>}</select></label><label class="form-field"><span>{{ language.text('invoiceDate') }}</span><input type="date" [ngModel]="invoiceDate()" (ngModelChange)="invoiceDate.set($event)" /></label></div>
+        <div class="form-grid form-grid--context"><label class="form-field"><span>{{ language.text('salesWarehouse') }}</span><select [ngModel]="selectedWarehouseId()" (ngModelChange)="selectWarehouse($event)"><option value="">{{ language.text('salesSelectWarehouse') }}</option>@for (warehouse of warehouses(); track warehouse.warehouseId) {<option [value]="warehouse.warehouseId">{{ warehouse.displayName }}</option>}</select></label><label class="form-field"><span>{{ language.text('salesInvoiceSource') }}</span><select [ngModel]="selectedInvoiceDeliveryId()" (ngModelChange)="selectInvoiceDelivery($event || null)"><option [ngValue]="null">{{ language.text('salesAllPostedDeliveries') }}</option>@for (delivery of deliveries(); track delivery.id) { @if (delivery.status === 'Posted') {<option [value]="delivery.id">{{ delivery.id.slice(0, 8) }} · {{ delivery.postedAt | date:'mediumDate' }}</option>} }</select></label><label class="form-field"><span>{{ language.text('invoiceDate') }}</span><input type="date" [ngModel]="invoiceDate()" (ngModelChange)="invoiceDate.set($event)" /></label></div>
+        @if (record.paymentTerm; as paymentTerm) { <article class="evidence-row"><div><b>{{ language.text('paymentTerms') }} · {{ paymentTerm.code }}</b><small>v{{ paymentTerm.versionNumber }} · {{ paymentTerm.effectiveOn | date:'mediumDate' }}</small></div><span>{{ paymentTerm.englishName || paymentTerm.arabicName || paymentTerm.referenceValue }}</span></article> }
         @if (fulfillment(); as state) {
           <div class="record-table-wrap"><table class="record-table"><caption class="sr-only">{{ language.text('salesFulfillment') }}</caption><thead><tr><th>{{ language.text('salesLine') }}</th><th>{{ language.text('quantity') }}</th><th>{{ language.text('salesAvailable') }}</th><th>{{ language.text('salesReserved') }}</th><th>{{ language.text('salesDelivered') }}</th><th>{{ language.text('salesInvoiced') }}</th><th>{{ language.text('salesStatus') }}</th></tr></thead><tbody>@for (line of state.lines; track line.orderLineId) {<tr><td>{{ line.orderLineId.slice(0, 8) }}</td><td>{{ line.orderedQuantity }}</td><td>{{ availabilityByLine()[line.orderLineId]?.onHandQuantity ?? '—' }} / {{ availabilityByLine()[line.orderLineId]?.availableQuantity ?? '—' }}<small>{{ language.text('salesOnHand') }} / {{ language.text('salesAvailable') }}</small></td><td>{{ line.reservedQuantity }} <small>{{ line.unallocatedQuantity }} {{ language.text('salesUnallocated') }}</small></td><td>{{ line.deliveredQuantity }} / {{ line.orderedQuantity }}</td><td>{{ line.invoicedQuantity }} / {{ line.deliveredQuantity }}</td><td><span class="status-pill" [class]="'status-pill status-pill--' + statusTone(line.status)"><i aria-hidden="true"></i>{{ line.status }}</span></td></tr>}</tbody></table></div>
-          <div class="form-actions"><button class="button button--primary" type="button" (click)="reserveOrder()" [disabled]="saving() || !selectedWarehouseId() || record.status !== 'Confirmed'">{{ language.text('salesReserve') }}</button><button class="button" type="button" (click)="postDelivery()" [disabled]="saving() || !selectedWarehouseId() || record.status !== 'Confirmed'">{{ language.text('salesPostDelivery') }}</button><button class="button" type="button" (click)="checkInvoiceEligibility()" [disabled]="saving() || !paymentTermId()">{{ language.text('salesCheckInvoiceEligibility') }}</button><button class="button button--primary" type="button" (click)="requestInvoice()" [disabled]="saving() || !paymentTermId() || invoiceEligibility()?.status !== 'Eligible'">{{ language.text('salesRequestInvoice') }}</button></div>
+          <div class="form-actions"><button class="button button--primary" type="button" (click)="reserveOrder()" [disabled]="saving() || !selectedWarehouseId() || record.status !== 'Confirmed'">{{ language.text('salesReserve') }}</button><button class="button" type="button" (click)="postDelivery()" [disabled]="saving() || !selectedWarehouseId() || record.status !== 'Confirmed'">{{ language.text('salesPostDelivery') }}</button><button class="button" type="button" (click)="checkInvoiceEligibility()" [disabled]="saving() || !record.paymentTerm">{{ language.text('salesCheckInvoiceEligibility') }}</button><button class="button button--primary" type="button" (click)="requestInvoice()" [disabled]="saving() || !record.paymentTerm || invoiceEligibility()?.status !== 'Eligible'">{{ language.text('salesRequestInvoice') }}</button></div>
           @if (invoiceEligibility(); as eligibility) { <p class="field-note" role="status">{{ eligibility.code }} - {{ eligibility.totalAmount | number:'1.2-2' }} {{ eligibility.currencyCode }}</p> }
           @if (warehouseReservations().length > 0) {
             <section class="evidence-list reservation-list" aria-labelledby="sales-reservations-title">
@@ -253,9 +256,8 @@ export class SalesWorkspaceComponent implements OnInit {
   readonly warehouseReservations = signal<InventoryReservation[]>([]);
   readonly reservationReductions = signal<Record<string, number>>({});
   readonly availabilityByLine = signal<Record<string, InventoryAvailability>>({});
-  readonly paymentTerms = signal<PaymentTermRecord[]>([]);
   readonly selectedWarehouseId = signal('');
-  readonly paymentTermId = signal('');
+  readonly selectedInvoiceDeliveryId = signal<string | null>(null);
   readonly invoiceDate = signal(new Date().toISOString().slice(0, 10));
   readonly invoiceEligibility = signal<SalesInvoiceEligibilityResponse | null>(null);
   readonly customers = signal<CustomerRecord[]>([]);
@@ -263,6 +265,7 @@ export class SalesWorkspaceComponent implements OnInit {
   readonly products = signal<ProductRecord[]>([]);
   readonly units = signal<UnitOfMeasureRecord[]>([]);
   readonly priceLists = signal<PriceListRecord[]>([]);
+  readonly paymentTerms = signal<PaymentTermRecord[]>([]);
   readonly taxes = signal<TaxRecord[]>([]);
   readonly exchangeRates = signal<ExchangeRateRecord[]>([]);
   readonly organizationScopes = signal<PurchaseRequestOrganizationScopeResponse[]>([]);
@@ -331,18 +334,19 @@ export class SalesWorkspaceComponent implements OnInit {
   async loadReferences(): Promise<void> {
     this.referenceError.set(null);
     try {
-      const [customers, currencies, products, units, priceLists, taxes, exchangeRates, organizationScopes] = await Promise.all([
+      const [customers, currencies, products, units, priceLists, paymentTerms, taxes, exchangeRates, organizationScopes] = await Promise.all([
         firstValueFrom(this.masterData.list('customers')),
         firstValueFrom(this.masterData.list('currencies')),
         firstValueFrom(this.masterData.list('products')),
         firstValueFrom(this.masterData.list('units')),
         firstValueFrom(this.priceListsApi.list()),
+        firstValueFrom(this.masterData.list('payment-terms')),
         firstValueFrom(this.masterData.list('taxes')),
         firstValueFrom(this.masterData.list('exchange-rates')),
         firstValueFrom(this.purchaseRequests.organizationScopes()),
       ]);
       this.customers.set(customers as CustomerRecord[]); this.currencies.set(currencies as CurrencyRecord[]); this.products.set(products as ProductRecord[]); this.units.set(units as UnitOfMeasureRecord[]); this.priceLists.set(priceLists);
-      this.taxes.set(taxes as TaxRecord[]); this.exchangeRates.set(exchangeRates as ExchangeRateRecord[]);
+      this.paymentTerms.set(paymentTerms as PaymentTermRecord[]); this.taxes.set(taxes as TaxRecord[]); this.exchangeRates.set(exchangeRates as ExchangeRateRecord[]);
       this.organizationScopes.set(organizationScopes ?? []);
       if (this.mode() === 'create' && !this.draft.companyId && organizationScopes.length === 1) this.setOrganizationScope(this.organizationScopeKey(organizationScopes[0]));
     } catch (error) { this.referenceError.set(toSafeUiError(error)); }
@@ -359,17 +363,15 @@ export class SalesWorkspaceComponent implements OnInit {
     try {
       const state = await firstValueFrom(this.sales.fulfillment(order.id));
       this.fulfillment.set(state); this.deliveries.set(state.deliveries); this.invoiceRequests.set(state.invoiceRequests);
-      const [warehouses, paymentTerms, reservations] = await Promise.all([
+      const [warehouses, reservations] = await Promise.all([
         firstValueFrom(this.inventory.warehouses(order.companyId, order.branchId ?? undefined)),
-        firstValueFrom(this.masterData.list('payment-terms')),
         firstValueFrom(this.inventory.reservations({ companyId: order.companyId, branchId: order.branchId ?? undefined })),
       ]);
       const authorizedWarehouses = warehouses.filter(item => item.isActive && item.companyId === order.companyId && item.branchId === order.branchId);
       this.warehouses.set(authorizedWarehouses);
       if (!authorizedWarehouses.some(item => item.warehouseId === this.selectedWarehouseId())) this.selectedWarehouseId.set(authorizedWarehouses[0]?.warehouseId ?? '');
-      this.paymentTerms.set((paymentTerms as PaymentTermRecord[]).filter(item => item.lifecycleState === 'Active'));
       this.warehouseReservations.set(reservations.filter(item => item.sourceDocumentId === order.id && item.sourceRevision === (order.revisionNumber ?? 1)));
-      if (!this.paymentTermId()) this.paymentTermId.set(this.paymentTerms()[0]?.id ?? '');
+      if (this.selectedInvoiceDeliveryId() && !state.deliveries.some(item => item.id === this.selectedInvoiceDeliveryId() && item.status === 'Posted')) this.selectedInvoiceDeliveryId.set(null);
       const availability: Record<string, InventoryAvailability> = {};
       const warehouseId = this.selectedWarehouseId();
       if (warehouseId) await Promise.all(order.lines.map(async line => {
@@ -381,6 +383,7 @@ export class SalesWorkspaceComponent implements OnInit {
     } catch (error) { this.detailError.set(toSafeUiError(error)); }
   }
   selectWarehouse(id: string): void { this.selectedWarehouseId.set(id); }
+  selectInvoiceDelivery(id: string | null): void { this.selectedInvoiceDeliveryId.set(id); this.invoiceEligibility.set(null); }
   reductionQuantity(reservation: InventoryReservation): number { return this.reservationReductions()[reservation.id] ?? Math.min(1, reservation.reservedQuantity); }
   setReductionQuantity(id: string, quantity: number): void { this.reservationReductions.update(values => ({ ...values, [id]: Number(quantity) })); }
   async reduceReservation(reservation: InventoryReservation): Promise<void> {
@@ -426,21 +429,20 @@ export class SalesWorkspaceComponent implements OnInit {
   }
   async checkInvoiceEligibility(): Promise<void> {
     const order = this.selectedOrder(); const state = this.fulfillment();
-    if (!order || !state || !this.paymentTermId()) return;
+    if (!order || !state || !order.paymentTerm) return;
     this.saving.set(true); this.mutationError.set(null);
     try {
       const lines = state.lines.filter(line => line.remainingInvoiceableQuantity > 0).map(line => ({ orderLineId: line.orderLineId, quantity: line.remainingInvoiceableQuantity }));
-      const deliveryId = state.deliveries.find(delivery => delivery.status === 'Posted')?.id ?? null;
-      this.invoiceEligibility.set(await firstValueFrom(this.sales.evaluateInvoiceEligibility(order.id, { deliveryId, paymentTermId: this.paymentTermId(), invoiceDate: this.invoiceDate(), lines })));
+      this.invoiceEligibility.set(await firstValueFrom(this.sales.evaluateInvoiceEligibility(order.id, { deliveryId: this.selectedInvoiceDeliveryId(), paymentTermId: null, invoiceDate: this.invoiceDate(), lines })));
     } catch (error) { this.invoiceEligibility.set(null); this.mutationError.set(toSafeUiError(error)); }
     finally { this.saving.set(false); }
   }
   async requestInvoice(): Promise<void> {
     const order = this.selectedOrder(); const eligibility = this.invoiceEligibility();
-    if (!order || !eligibility || eligibility.status !== 'Eligible' || !this.paymentTermId()) return;
+    if (!order || !eligibility || eligibility.status !== 'Eligible' || !order.paymentTerm) return;
     this.saving.set(true); this.mutationError.set(null);
     try {
-      await this.sales.requestInvoice(order.id, { deliveryId: this.fulfillment()?.deliveries.find(delivery => delivery.status === 'Posted')?.id ?? null, paymentTermId: this.paymentTermId(), invoiceDate: this.invoiceDate(), lines: eligibility.lines.map(line => ({ orderLineId: line.orderLineId, quantity: line.requestedQuantity })) }, order.version);
+      await this.sales.requestInvoice(order.id, { deliveryId: this.selectedInvoiceDeliveryId(), paymentTermId: null, invoiceDate: this.invoiceDate(), lines: eligibility.lines.map(line => ({ orderLineId: line.orderLineId, quantity: line.requestedQuantity })) }, order.version);
       this.invoiceEligibility.set(null); await this.loadFulfillment();
     } catch (error) { this.mutationError.set(toSafeUiError(error)); }
     finally { this.saving.set(false); }
@@ -450,7 +452,7 @@ export class SalesWorkspaceComponent implements OnInit {
 
   async saveQuotation(): Promise<void> {
     this.saving.set(true); this.mutationError.set(null);
-    const payload: SalesQuotationCreateRequest = { companyId: this.draft.companyId.trim(), branchId: this.draft.branchId.trim() || null, customerId: this.draft.customerId, quotationDate: this.draft.quotationDate, validUntil: this.draft.validUntil, currencyId: this.draft.currencyId, priceListId: this.draft.priceListId || null, customerContactId: this.draft.customerContactId.trim() || null, notes: this.draft.notes.trim() || null, customerReference: this.draft.customerReference.trim() || null, exchangeRateId: this.draft.exchangeRateId || null, lines: this.draft.lines.map(line => ({ productId: line.productId, unitOfMeasureId: line.unitOfMeasureId, quantity: Number(line.quantity), unitPriceOverride: line.unitPriceOverride, discountPercent: Number(line.discountPercent), taxId: line.taxId || null, notes: line.notes.trim() || null })) };
+    const payload: SalesQuotationCreateRequest = { companyId: this.draft.companyId.trim(), branchId: this.draft.branchId.trim() || null, customerId: this.draft.customerId, quotationDate: this.draft.quotationDate, validUntil: this.draft.validUntil, currencyId: this.draft.currencyId, priceListId: this.draft.priceListId || null, customerContactId: this.draft.customerContactId.trim() || null, notes: this.draft.notes.trim() || null, customerReference: this.draft.customerReference.trim() || null, exchangeRateId: this.draft.exchangeRateId || null, paymentTermId: this.draft.paymentTermId || null, lines: this.draft.lines.map(line => ({ productId: line.productId, unitOfMeasureId: line.unitOfMeasureId, quantity: Number(line.quantity), unitPriceOverride: line.unitPriceOverride, discountPercent: Number(line.discountPercent), taxId: line.taxId || null, notes: line.notes.trim() || null })) };
     try {
       if (this.mode() === 'edit' && this.documentType() === 'order' && this.currentId && this.selectedOrder()) {
         const editPayload: SalesOrderEditRequest = { currencyId: payload.currencyId, priceListId: payload.priceListId, exchangeRateId: payload.exchangeRateId, lines: payload.lines };
@@ -515,7 +517,7 @@ export class SalesWorkspaceComponent implements OnInit {
   organizationScopeLabel(): string { const scope = this.organizationScopes().find(item => item.companyId === this.draft.companyId && item.branchId === (this.draft.branchId || null)); return scope?.displayName ?? this.language.text('organizationScopeUnresolved'); }
 
   private emptyLine(): LineDraft { return { productId: '', unitOfMeasureId: '', quantity: 1, unitPriceOverride: null, discountPercent: 0, notes: '', taxId: '' }; }
-  private draftFromQuotation(quote: SalesQuotationResponse): QuotationDraft { return { companyId: quote.companyId, branchId: quote.branchId ?? '', customerId: quote.customerId, quotationDate: quote.quotationDate, validUntil: quote.validUntil, currencyId: quote.currencyId, priceListId: quote.lines[0]?.priceListId ?? '', exchangeRateId: quote.exchangeRateEvidence?.exchangeRateId ?? '', customerContactId: quote.customerContactId ?? '', notes: quote.notes ?? '', customerReference: quote.customerReference ?? '', lines: quote.lines.map(line => ({ productId: line.productId, unitOfMeasureId: line.unitOfMeasureId, quantity: line.quantity, unitPriceOverride: line.manualPriceApplied ? line.unitPrice : null, discountPercent: line.discountPercent, taxId: line.taxId ?? '', notes: line.notes ?? '' })) }; }
-  private draftFromOrder(order: SalesOrderResponse): QuotationDraft { const now = new Date().toISOString().slice(0, 10); return { companyId: order.companyId, branchId: order.branchId ?? '', customerId: order.customerId, quotationDate: now, validUntil: now, currencyId: order.currencyId, priceListId: order.lines[0]?.priceListId ?? '', exchangeRateId: order.exchangeRateEvidence?.exchangeRateId ?? '', customerContactId: '', notes: '', customerReference: '', lines: order.lines.map(line => ({ productId: line.productId, unitOfMeasureId: line.unitOfMeasureId, quantity: line.quantity, unitPriceOverride: line.manualPriceApplied ? line.unitPrice : null, discountPercent: line.discountPercent, taxId: line.taxId ?? '', notes: line.notes ?? '' })) }; }
-  private emptyDraft(): QuotationDraft { const now = new Date(); const valid = new Date(now); valid.setDate(valid.getDate() + 30); return { companyId: '', branchId: '', customerId: '', quotationDate: now.toISOString().slice(0, 10), validUntil: valid.toISOString().slice(0, 10), currencyId: '', priceListId: '', exchangeRateId: '', customerContactId: '', notes: '', customerReference: '', lines: [this.emptyLine()] }; }
+  private draftFromQuotation(quote: SalesQuotationResponse): QuotationDraft { return { companyId: quote.companyId, branchId: quote.branchId ?? '', customerId: quote.customerId, quotationDate: quote.quotationDate, validUntil: quote.validUntil, currencyId: quote.currencyId, priceListId: quote.lines[0]?.priceListId ?? '', paymentTermId: quote.paymentTerm?.id ?? '', exchangeRateId: quote.exchangeRateEvidence?.exchangeRateId ?? '', customerContactId: quote.customerContactId ?? '', notes: quote.notes ?? '', customerReference: quote.customerReference ?? '', lines: quote.lines.map(line => ({ productId: line.productId, unitOfMeasureId: line.unitOfMeasureId, quantity: line.quantity, unitPriceOverride: line.manualPriceApplied ? line.unitPrice : null, discountPercent: line.discountPercent, taxId: line.taxId ?? '', notes: line.notes ?? '' })) }; }
+  private draftFromOrder(order: SalesOrderResponse): QuotationDraft { const now = new Date().toISOString().slice(0, 10); return { companyId: order.companyId, branchId: order.branchId ?? '', customerId: order.customerId, quotationDate: now, validUntil: now, currencyId: order.currencyId, priceListId: order.lines[0]?.priceListId ?? '', paymentTermId: order.paymentTerm?.id ?? '', exchangeRateId: order.exchangeRateEvidence?.exchangeRateId ?? '', customerContactId: '', notes: '', customerReference: '', lines: order.lines.map(line => ({ productId: line.productId, unitOfMeasureId: line.unitOfMeasureId, quantity: line.quantity, unitPriceOverride: line.manualPriceApplied ? line.unitPrice : null, discountPercent: line.discountPercent, taxId: line.taxId ?? '', notes: line.notes ?? '' })) }; }
+  private emptyDraft(): QuotationDraft { const now = new Date(); const valid = new Date(now); valid.setDate(valid.getDate() + 30); return { companyId: '', branchId: '', customerId: '', quotationDate: now.toISOString().slice(0, 10), validUntil: valid.toISOString().slice(0, 10), currencyId: '', priceListId: '', paymentTermId: '', exchangeRateId: '', customerContactId: '', notes: '', customerReference: '', lines: [this.emptyLine()] }; }
 }

@@ -6,7 +6,25 @@
 authorization boundaries. Read it before any Ready transition, merge, Jira
 write, or mutation not explicitly authorized by the current bounded task.
 
-## Current execution overlay - 29 August 2026 (MESP-137 active; stop for Sol review)
+## Current execution overlay - 29 August 2026 (MESP-137 HOLD-1 remediation; stop for Sol review)
+
+HOLD-1 remediation is complete on the authorized branch, continuing Draft PR
+#84 from starting head `dfd3ec0fd91bdc56f9c609ce796ebad32fdd52dd` and exact
+`origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`. The final
+documentation/tracker handoff SHA follows after the final push.
+The four blockers are addressed with posted-Delivery source allocation and
+residual evidence, immutable invoice net/tax/gross and tax identity through
+Finance, active Master Data Payment Term snapshots for due-date authority, and
+durable Delivery/invoice handoff commit/reconciliation/Unknown recovery. No
+MESP-138/139 work, Jira write, Ready transition, merge, rebase, force-push, or
+review request is authorized. Fast-track remains 20/26 = 76.9%; production
+readiness remains ~47% overall / ~41% Procurement/P2P; `frontend/assets`
+remains untouched. Final validation is Release 0 warnings/0 errors, full
+disposable-LocalDB backend 1,131/1,131, focused Sales 31/31, Angular 305/305,
+focused Sales Chromium 2/2, and full Chromium 49/49. Stop after final push and exact PR verification for
+independent GPT-5.6 Sol review.
+
+## Historical execution overlay - 29 August 2026 (MESP-137 initial implementation; superseded by HOLD-1 remediation)
 
 MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged.
 MESP-136 merged at `992195f7e61cf03b94675a498377a6d8bf679ebf` (2026-08-28T23:37:13Z).

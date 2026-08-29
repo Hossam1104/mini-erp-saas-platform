@@ -1,5 +1,5 @@
 
-# MESP-137 implementation handoff - stopped for GPT-5.6 Sol review
+# MESP-137 HOLD-1 remediation handoff - stopped for GPT-5.6 Sol review
 
 MESP-136 is **Done** and **merged to `main` at commit `992195f7e61cf03b94675a498377a6d8bf679ebf`** on 2026-08-28T23:37:13Z. Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`. PR #80 is closed/merged/not-Draft.
 
@@ -21,11 +21,23 @@ Jira writes, Ready transition, merge, rebase, force-push, or review request is
 authorized. After final push and Draft PR verification, stop for independent
 GPT-5.6 Sol review.
 
-Implementation commit: `86e9c5708daf33caa751e799ebbb8b02bfd717ed`. Draft PR
-`#84` is Open/Draft/Unmerged at
+The HOLD-1 remediation is implemented on the same authorized branch and Draft
+PR. The final documentation/tracker handoff SHA is recorded after push. Draft
+PR `#84` is Open/Draft/Unmerged at
 https://github.com/Hossam1104/mini-erp-saas-platform/pull/84. The final
 documentation/tracker handoff SHA is the exact pushed branch head recorded
 after this reconciliation.
+
+HOLD-1 closes the four Sol blockers without broadening MESP-137: invoice
+source allocation now uses posted Delivery evidence and residual quantities;
+invoice net/tax/gross amounts and immutable tax identity are carried into
+Finance-owned posting; Payment Term is selected from active Master Data and
+snapshotted at quotation/order scope for due-date authority; and Delivery and
+invoice handoffs persist downstream effect, acknowledgement, reconciliation,
+attempt, and Unknown recovery evidence. Finance revalidates the complete
+invoice contract at commit time, including payment-term, currency/FX, source,
+period, tax, and posting-rule facts. Multiple tax identities remain separate
+tax journals/effects with deterministic source evidence.
 
 Final Sol acceptance is recorded as MESP-136 comment `12252`; closure evidence is MESP-136 comment `12255` and MESP-9 reconciliation `12256`.
 
@@ -40,12 +52,12 @@ The implementation adds source-linked Tenant/Company/Branch/Warehouse
 reservation records with available-stock caps, partial allocation and
 backorder remainder, controlled reduction/release, source/revision binding,
 serializable stock/reservation posting, durable history/audit, and idempotent
-replay. Sales delivery posting is atomic across delivery evidence, stock
-movement, and reservation consumption; failed delivery cannot create a
-Finance document. Invoice eligibility uses posted delivery remainder and
-Finance-owned customer credit/AR validation, with durable invoice-request
-evidence and no revenue, receipt, refund, tax-invoice, or external submission
-implementation.
+replay. Sales delivery posting uses a durable coordinated/reconcilable handoff
+for delivery evidence, stock movement, and reservation consumption; failed or
+uncertain delivery cannot create a Finance document. Invoice eligibility uses
+posted delivery remainder and Finance-owned customer credit/AR validation,
+with durable invoice-request evidence and no revenue, receipt, refund,
+tax-invoice, or external submission implementation.
 
 The API adds seven public Sales fulfillment/delivery/invoice operations. The
 generated OpenAPI document has `417` unique operationIds and the REST catalog
@@ -55,27 +67,23 @@ EN/AR RTL, stale-revision, error, print, and loading states. Existing
 Tenant/Company/Branch scope, permissions, approval/SoD, credit holds,
 optimistic concurrency, and audit boundaries remain enforced.
 
-Authoritative validation: Release build `0 warnings / 0 errors`; non-SQL
-backend `1,046/1,046`; full disposable-LocalDB backend `1,126/1,126`;
-SQL safety `80/80`; focused Inventory `34/34`; focused Sales `27/27`;
-Finance MESP-135 regression `31/31`; REST foundation `36/36`; catalogue
-validation `4/4`; host security `19/19`; identity/authorization `89/89`;
-Angular `305/305` across 43 spec files; focused Chromium `10/10`; full
-Chromium `49/49`; both npm audits `0 vulnerabilities`; transitive NuGet
-vulnerability scan clear; and `git diff --check` clean. Production initial
-bundle is `511.98 kB`, `11.98 kB` over the retained `500 kB` budget; Sales
-lazy chunk is `86.51 kB`. The warning is retained and the budget was not
-raised. EF pending-model validation is clean.
+Authoritative validation: Release build `0 warnings / 0 errors`; full
+disposable-LocalDB backend `1,131/1,131` with 0 failures and 0 skips; SQL
+safety `80/80`; focused Inventory `34/34`; focused Sales `31/31`; Finance
+MESP-135 regression `31/31`; REST foundation `36/36`; catalogue validation
+`4/4`; host security `19/19`; identity/authorization `89/89`; Angular
+`305/305` across 43 spec files; focused Chromium `2/2`; full Chromium
+`49/49`; both npm audits `0 vulnerabilities`; transitive NuGet vulnerability
+scan clear across all discovered backend projects; EF pending-model validation
+clean; and `git diff --check` clean. Production initial bundle is `512.18 kB`,
+`12.18 kB` over the retained `500 kB` budget; Sales lazy chunk is `88.24 kB`.
+The warning is retained and the budget was not raised.
 
-The canonical launcher is running the isolated feature worktree with the
-approved loopback Development auth bypass: API
-`http://localhost:5310` PID `39344`, Angular `http://localhost:4300` PID
-`38836`, data directory `.runtime/sol-review-20260829`. Health, OpenAPI,
-Scalar, root, Sales UI, authentication, context, and authenticated Sales
-register read probes returned HTTP 200. The isolated Development seed has no
-eligible Sales Order, so no live reservation/delivery/invoice mutation is
-claimed; the real Sales-to-Inventory path is covered by focused integration
-tests. The pre-existing listener on port `5300` was not touched.
+The canonical launcher is restarted after final push in the isolated feature
+worktree with the approved loopback Development auth bypass. Final API and
+Angular PIDs, isolated runtime data directory, and HTTP-200 read probes are
+recorded in the final handoff. No live reservation/delivery/invoice mutation
+is claimed; the pre-existing listener on port `5300` is not touched.
 
 Repository state has been reconciled to reflect MESP-137 implementation and
 Ponytail tooling governance. After the Draft PR is created and verified, the

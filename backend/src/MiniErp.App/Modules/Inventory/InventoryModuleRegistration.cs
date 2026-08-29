@@ -2,6 +2,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using MiniErp.App.Modules.Procurement;
+using MiniErp.App.Modules.Sales;
 
 namespace MiniErp.App.Modules.Inventory;
 
@@ -13,6 +14,7 @@ public static class InventoryModuleRegistration
         services.AddSingleton<InventoryTenantContextResolver>();
         services.AddSingleton<InventoryResourceAuthorizationService>();
         services.AddSingleton<InventoryService>();
+        services.AddSingleton<ISalesInventoryPort>(provider => provider.GetRequiredService<InventoryService>());
         services.AddSingleton<InventoryValuationService>();
         services.AddSingleton<IInventoryWarehouseProvider, NoInventoryWarehouseProvider>();
         services.AddSingleton<IInventoryProductProvider, NoInventoryProductProvider>();
