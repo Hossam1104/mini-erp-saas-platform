@@ -1,9 +1,39 @@
 
-# MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance
+# MESP-137 closed and merged — awaiting next GPT-5.6 Sol capability activation
+
+MESP-137 is **Done**. PR #84 is **closed/merged/non-Draft**, squash-merged to
+`main` at commit `6b3aeb63da15253dee5466f7be001773b80c28ad`, from accepted
+feature head `9406e8c6408251323b96d4a0c25082142546b9ef`. Sol final acceptance
+is MESP-137 comment `12282`; post-merge closure is comment `12284`; MESP-9
+closure reconciliation is comment `12285`.
+
+MESP-137 delivered Sales-linked Inventory reservation/allocation, partial
+fulfillment, durable coordinated/reconcilable Delivery handoff, Finance-owned
+invoice eligibility/AR handoff seams, durable evidence, and the bilingual RTL
+Sales workspace. Returns, credit notes, receipts, refunds, revenue
+recognition, external integrations, ZATCA/FATOORA, and Wafra-specific
+behavior were excluded and remain unimplemented.
+
+**No implementation capability is currently active.** MESP-138 and MESP-139
+remain To Do/inactive; MESP-138 is a later candidate pending explicit
+GPT-5.6 Sol activation and must not be started or its next-session prompt
+drafted here automatically. MESP-9 remains In Progress pending further
+Sales/Order-to-Cash capabilities. MESP-48 and MESP-50 remain open production
+gates.
+
+Fast-track capability completion is now **21/26 = 80.8%**, authoritative
+after MESP-137's implementation, independent Sol acceptance, exact-head
+merge, post-merge verification, and Jira Done closure. Production readiness
+remains a separate, unchanged conservative metric at approximately **47%
+overall** and **41% Procurement/P2P**; the fast-track figure does not imply
+that level of production readiness. Ponytail FULL remains the default
+executor mode when available.
+
+## Historical MESP-137 HOLD-2 remediation - awaiting independent Sol acceptance (superseded by closure above)
 
 MESP-136 is **Done** and **merged to `main` at commit `992195f7e61cf03b94675a498377a6d8bf679ebf`** on 2026-08-28T23:37:13Z. Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`. PR #80 is closed/merged/not-Draft.
 
-## MESP-137 active - reservation, fulfillment, delivery, and invoice eligibility
+### MESP-137 active - reservation, fulfillment, delivery, and invoice eligibility
 
 MESP-137 is the single active implementation capability under Epic MESP-9,
 activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`.
