@@ -1,5 +1,11 @@
 @AGENTS.md
 
+## Executor authorization policy
+
+`.ai/AI_EXECUTION_POLICY.md` is authoritative for STOP/Ready/merge/post-report
+authorization boundaries. Read it before any Ready transition, merge, Jira
+write, or mutation not explicitly authorized by the current bounded task.
+
 ## Current execution overlay - 29 August 2026 (MESP-136 closed; awaiting next activation)
 
 MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged.
