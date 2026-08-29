@@ -46,9 +46,12 @@
 - Fast-track is now 21/26 = 80.8%; production readiness remains ~47% overall
   / ~41% Procurement/P2P.
 - This reconciliation is documentation/state only: zero product code, zero
-  Jira writes, zero MESP-138/139 activation. One Draft PR
-  (`chore/MESP-137-closure-reconciliation`) is authorized and must remain
-  Open/Draft/Unmerged pending GPT-5.6 Sol review.
+  Jira writes, zero MESP-138/139 activation. It was prepared on branch
+  `chore/MESP-137-closure-reconciliation` via PR #85; during its bounded
+  executor handoff the PR was left Draft for independent GPT-5.6 Sol review.
+  PR lifecycle state (Draft/Open/Merged) is not part of the enduring
+  authoritative project state — GitHub remains authoritative for PR #85's
+  current and final status.
 <!-- MESP-137-JIRA-SYNC-END -->
 
 **Last Updated:** 2026-08-30 (post-MESP-137-closure reconciliation)
