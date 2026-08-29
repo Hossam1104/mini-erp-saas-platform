@@ -8,7 +8,7 @@ MESP-136 is **Done** and **merged to `main` at commit `992195f7e61cf03b94675a498
 MESP-137 is the single active implementation capability under Epic MESP-9,
 activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`.
 Implementation is bounded to Sales-linked Inventory reservation/allocation,
-partial fulfillment, atomic delivery posting, Finance-owned invoice
+partial fulfillment, durable coordinated/reconcilable Delivery handoff, Finance-owned invoice
 eligibility/AR handoff seams, durable evidence, and the bilingual RTL Sales
 workspace. Returns, credit notes, receipts, refunds, revenue recognition,
 external integrations, ZATCA/FATOORA, Wafra-specific behavior, MESP-138, and
@@ -79,11 +79,14 @@ clean; and `git diff --check` clean. Production initial bundle is `512.18 kB`,
 `12.18 kB` over the retained `500 kB` budget; Sales lazy chunk is `88.24 kB`.
 The warning is retained and the budget was not raised.
 
-The canonical launcher is restarted after final push in the isolated feature
-worktree with the approved loopback Development auth bypass. Final API and
-Angular PIDs, isolated runtime data directory, and HTTP-200 read probes are
-recorded in the final handoff. No live reservation/delivery/invoice mutation
-is claimed; the pre-existing listener on port `5300` is not touched.
+The canonical launcher is running from the pushed implementation head in the
+isolated feature worktree with the approved loopback Development auth bypass:
+API `http://localhost:5310` PID `36140`, Angular `http://localhost:4300` PID
+`34328`, and isolated data `.runtime/hold1-runtime-20260829`. Health, OpenAPI,
+Scalar, Angular root, `/app/sales`, `/app/sales/orders`, authentication/session,
+context, and authenticated Sales register probes returned HTTP 200. No live
+reservation/delivery/invoice mutation is claimed; the pre-existing listener on
+port `5300` is not touched. `LEFT RUNNING = YES`.
 
 Repository state has been reconciled to reflect MESP-137 implementation and
 Ponytail tooling governance. After the Draft PR is created and verified, the

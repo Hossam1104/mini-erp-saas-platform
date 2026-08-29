@@ -21,8 +21,11 @@ review request is authorized. Fast-track remains 20/26 = 76.9%; production
 readiness remains ~47% overall / ~41% Procurement/P2P; `frontend/assets`
 remains untouched. Final validation is Release 0 warnings/0 errors, full
 disposable-LocalDB backend 1,131/1,131, focused Sales 31/31, Angular 305/305,
-focused Sales Chromium 2/2, and full Chromium 49/49. Stop after final push and exact PR verification for
-independent GPT-5.6 Sol review.
+focused Sales Chromium 2/2, and full Chromium 49/49. The isolated runtime
+is API `http://localhost:5310` PID `36140`, Angular `http://localhost:4300` PID
+`34328`, data `.runtime/hold1-runtime-20260829`, with authenticated read probes
+HTTP 200. Stop after final push and exact PR verification for independent
+GPT-5.6 Sol review.
 
 ## Historical execution overlay - 29 August 2026 (MESP-137 initial implementation; superseded by HOLD-1 remediation)
 

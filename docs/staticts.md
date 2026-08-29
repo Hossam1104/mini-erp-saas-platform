@@ -26,8 +26,12 @@
   validation and `git diff --check` are clean.
 - Production initial bundle is `512.18 kB`, `12.18 kB` over the retained
   `500 kB` budget; Sales lazy chunk is `88.24 kB`. The warning is retained and
-  the budget was not raised. The final isolated runtime is started after the
-  final push; no live reservation/delivery/invoice mutation is claimed.
+  the budget was not raised. Final isolated runtime: API
+  `http://localhost:5310` PID `36140`, Angular `http://localhost:4300` PID
+  `34328`, data `.runtime/hold1-runtime-20260829`; health, OpenAPI, Scalar,
+  Angular, authentication/context, and authenticated Sales read probes were
+  HTTP 200; no live reservation/delivery/invoice mutation was performed;
+  `LEFT RUNNING = YES`.
 
 <!-- MESP-137-JIRA-SYNC-START -->
 ## Jira/documentation synchronization - 29 August 2026 (MESP-137 HOLD-1 remediation handoff)
@@ -44,11 +48,11 @@
 - Draft PR #84 is the single authorized PR for this handoff; no Jira write, Ready transition, merge, rebase, force-push, or review request was performed.
 <!-- MESP-137-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-29 22:00 +03:00
+**Last Updated:** 2026-08-29 22:27 +03:00
 
 ## Progress history - 29 August 2026 (MESP-137 HOLD-1 remediation handoff)
 
-| 2026-08-29 | MESP-137 HOLD-1 remediation closes source allocation/residual, invoice net/tax/gross and tax identity, Payment Term snapshot authority, and durable downstream handoff recovery while retaining the bounded reservation, fulfillment, delivery, Finance AR handoff, and RTL UI scope. | ~47% | ~41% | Activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`; exact baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`; full disposable-LocalDB backend 1,131/1,131; SQL safety 80/80; focused Inventory 34/34; focused Sales 31/31; Finance MESP-135 regression 31/31; REST/catalogue/host/identity 148/148; Angular 305/305; focused/full Chromium 2/2 and 49/49; OpenAPI 417 unique operationIds; initial bundle 512.18 kB, 12.18 kB over the retained 500 kB budget; warning retained; no percentage increase or acceptance claimed; MESP-138/139 inactive; no Jira writes, Ready transition, merge, or review request. |
+| 2026-08-29 | MESP-137 HOLD-1 remediation closes source allocation/residual, invoice net/tax/gross and tax identity, Payment Term snapshot authority, and durable downstream handoff recovery while retaining the bounded reservation, fulfillment, delivery, Finance AR handoff, and RTL UI scope. | ~47% | ~41% | Activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`; exact baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`; full disposable-LocalDB backend 1,131/1,131; SQL safety 80/80; focused Inventory 34/34; focused Sales 31/31; Finance MESP-135 regression 31/31; REST/catalogue/host/identity 148/148; Angular 305/305; focused/full Chromium 2/2 and 49/49; OpenAPI 417 unique operationIds; initial bundle 512.18 kB, 12.18 kB over the retained 500 kB budget; warning retained; final runtime API 5310 PID 36140 / Angular 4300 PID 34328 using .runtime/hold1-runtime-20260829; authenticated read probes HTTP 200; no live business mutation; LEFT RUNNING = YES; no percentage increase or acceptance claimed; MESP-138/139 inactive; no Jira writes, Ready transition, merge, or review request. |
 
 ## Historical authoritative fast-track snapshot - 28 August 2026 (MESP-136 Sol HOLD 2)
 

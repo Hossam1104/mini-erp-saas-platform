@@ -29,9 +29,13 @@ remain open production gates.
 Final validation is Release `0 warnings / 0 errors`; full disposable-LocalDB
 backend `1,131/1,131` with 0 failures and 0 skips; focused Sales `31/31`;
 Angular `305/305`; focused Sales Chromium `2/2`; full Chromium `49/49`; and
-the retained bundle warning is documented. Isolated runtime evidence is
-recorded in the tracked handoff after the final push. No Jira writes, Ready
-transition, merge, rebase, force-push, or review request is authorized. PR #84
+the retained bundle warning is documented. The isolated runtime is API
+`http://localhost:5310` PID `36140`, Angular `http://localhost:4300` PID
+`34328`, data `.runtime/hold1-runtime-20260829`, with health, OpenAPI, Scalar,
+Angular, authentication/context, and authenticated Sales read probes HTTP 200;
+no live business mutation was performed and `LEFT RUNNING = YES`. No Jira
+writes, Ready transition, merge, rebase, force-push, or review request is
+authorized. PR #84
 must remain Open/Draft/Unmerged; stop for independent GPT-5.6 Sol review.
 
 ## Historical MESP-137 initial implementation - superseded by HOLD-1 remediation
