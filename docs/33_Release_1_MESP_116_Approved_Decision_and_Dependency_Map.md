@@ -1,5 +1,19 @@
 # Release 1 MESP-116 Approved Decision and Dependency Map
 
+## Current checkpoint overlay - 29 August 2026
+
+This overlay does not change the approved plan baseline. MESP-132 through
+MESP-136 are complete at their accepted bounded scopes. MESP-136 is the latest
+merged capability; its accepted feature head was `507bd1b1`, PR #80 was
+squash-merged at `992195f7`, and Jira closure evidence is recorded on MESP-136
+and MESP-9. MESP-144 is the current repository-health checkpoint and is In
+Progress for GPT-5.6 Sol acceptance.
+
+Fast-track completion is `20/26 = 76.9%`; this is capability completion, not
+production readiness. Overall production readiness remains approximately `47%`
+and Procurement/P2P `41%`. MESP-137 through MESP-142 remain To Do/inactive.
+MESP-48 and MESP-50 remain open production gates.
+
 <!-- MESP-132-EXECUTION-START -->
 ## Execution overlay â€” 24 August 2026
 
@@ -15,7 +29,7 @@ Inventory fast-track execution currently stands at:
 - MESP-132 â€” merged through PR #76 under Epic MESP-10; Jira remains In Progress
   pending Sol closure and Finance Epic reconciliation.
 
-Fast-track completion after the verified MESP-133 merge is `17/26 = 65.4%`; this is capability completion, not production readiness. Overall production-readiness remains approximately `47%` and Procurement/P2P `41%`. MESP-134 is the only active implementation capability; MESP-135 remains inactive.
+This block is historical evidence from the 24 August 2026 MESP-132 handoff.
 <!-- MESP-132-EXECUTION-END -->
 
 **Date:** 12 August 2026 (historical approval baseline)
@@ -23,7 +37,7 @@ Fast-track completion after the verified MESP-133 merge is `17/26 = 65.4%`; this
 **Owner evidence:** MESP-116 Jira comment `10957`
 **Product Decision evidence:** MESP-22 Jira comment `10958` (PD-025-PD-046)
 **Living register:** MESP-23 Jira comment `10976`
-**Current acceptance handoff:** MESP-132 accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; PR #76 squash SHA `ccc52a892c8258778f57c55c12fa0032bd3e276b`; Sol Jira closure and MESP-10 reconciliation
+**Current acceptance handoff:** MESP-136 accepted feature head `507bd1b11b933fd81d734e5cd12cad4c858dffb4`; PR #80 squash SHA `992195f7e61cf03b94675a498377a6d8bf679ebf`; Sol Jira closure and MESP-9 reconciliation are recorded in live Jira
 **Repository evidence:** PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e`, merged at `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`
 
 ## 1. Authority and boundary
@@ -38,9 +52,10 @@ commitment, or production distribution.
 
 C1-C9 remain open production/external/legal/provider/infrastructure gates.
 MESP-39 remains future-release and unactivated. MESP-40 remains a required
-Release 1 migration/onboarding task but is unactivated. MESP-133-MESP-142 remain
-To Do/not activated; MESP-132 is the latest merged capability and remains Jira
-In Progress pending Sol closure.
+Release 1 migration/onboarding task but is unactivated. MESP-133 through
+MESP-136 are complete at their accepted scopes; MESP-137 through MESP-142
+remain To Do/not activated. MESP-144 is the current health checkpoint and
+remains In Progress pending Sol acceptance.
 
 ## 2. Cross-cutting gates used by every capability
 

@@ -1,7 +1,7 @@
 # Mini ERP SaaS Platform — Product Delivery Master Plan
 
-> **Authoritative current full-feature fast-track overlay — 24 August 2026
-> (MESP-132 acceptance stage).** Release 1 remains the full-feature reusable B2B ERP. The
+> **Historical fast-track overlay — 24 August 2026 (MESP-132
+> acceptance-stage evidence).** Release 1 remains the full-feature reusable B2B ERP. The
 > milestone is **31 August 2026 — Release 1 Integrated Preview**, a running
 > preview of the real codebase, not an MVP, throwaway/demo UI, Wafra fork, or
 > scope cut. Unfinished capability remains required after the preview.
@@ -14,18 +14,20 @@
 > is complete, reviewed by Claude Opus 5 (APPROVE FOR MERGE), and squash-merged to `main`
 > at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (PR #68).
 >
-> The active implementation capability is MESP-132 (Finance / General Ledger
-> foundation), which is In Progress / activated under Epic MESP-10. Current main
-> is `ccc52a892c8258778f57c55c12fa0032bd3e276b`, the PR #76 squash merge from
-> accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`. The retained
-> feature branch is `feat/MESP-132-finance-foundation`; its source/test
-> implementation commit is `dcae7e231bd264580c33e60c35f5cc8436c4f050` (starting
-> SHA `2f523582fbd3394b1eb11580eff490ba83aa9afb`). MESP-132 remains Jira In
-> Progress pending Sol closure and MESP-10 reconciliation. MESP-131 is Done
-> through PR #75 merged at `a8664d6a0d006e463a1a03fadd76c28475475f58`. The
-> accepted fast-track count is 16/26 = 61.5%; production-readiness remains
-> approximately 47% overall and 41% Procurement/P2P. No capability starts
-> automatically.
+> No feature implementation is active. MESP-136 is accepted/merged/closed and
+> MESP-144 is the current In Progress repository-health checkpoint. The
+> dedicated branch is `chore/project-health-reconciliation-cleanup`, starting
+> from `c8c9084d2cf72550e7a51e4ab9475ef54d14e864`. Fast-track progress is
+> 20/26 = 76.9%; production readiness remains approximately 47% overall and
+> 41% Procurement/P2P. MESP-137 through MESP-142 remain To Do/inactive.
+>
+> **Checkpoint correction - 29 August 2026.** MESP-136 is accepted, merged,
+> and Jira-closed. MESP-144 is the current repository-health checkpoint and
+> remains In Progress pending GPT-5.6 Sol acceptance. Fast-track progress is
+> 20/26 = 76.9%; production readiness remains approximately 47% overall and
+> 41% Procurement/P2P. MESP-137 through MESP-142 remain To Do/inactive, and
+> MESP-48/MESP-50 remain open production gates. The older execution overlays
+> below are historical evidence and do not describe the current active task.
 
 > **Historical pre-fast-track overlay — MESP-38 completion.** The prior
 > MESP-38/MESP-39 overlay immediately below remains preserved evidence only;
@@ -394,15 +396,15 @@
 | Owner | Hossam |
 | Repository | `Hossam1104/mini-erp-saas-platform` |
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
-| Last updated | 24 August 2026 |
+| Last updated | 29 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-132 Finance / General Ledger foundation is In Progress / activated under MESP-10; MESP-131 and MESP-8 are Done; MESP-23 and named production/legal/external gates remain preserved.` |
-| Current implementation item | `MESP-132 merged through PR #76 at squash SHA ccc52a892c8258778f57c55c12fa0032bd3e276b from accepted feature head c0e04553db3c7b04fa7f7870b60fc439ec8a40b7; retained branch feat/MESP-132-finance-foundation; Jira In Progress pending Sol closure.` |
-| Merged-main baseline | `main and origin/main are synchronized at the post-merge documentation reconciliation commit; PR #76 squash SHA is ccc52a892c8258778f57c55c12fa0032bd3e276b; MESP-131 PR #75 merged at a8664d6a0d006e463a1a03fadd76c28475475f58.` |
+| Current activity | `MESP-144 repository health, architecture, documentation, and backlog reconciliation checkpoint is In Progress under MESP-1; MESP-136 is accepted/merged/closed; MESP-23 and named production/legal/external gates remain preserved.` |
+| Current implementation item | `No feature implementation is active. MESP-137 through MESP-142 remain To Do/inactive. The dedicated health branch is chore/project-health-reconciliation-cleanup.` |
+| Merged-main baseline | `origin/main is c8c9084d2cf72550e7a51e4ab9475ef54d14e864 at the start of this checkpoint; MESP-136 accepted feature head 507bd1b11b933fd81d734e5cd12cad4c858dffb4 and PR #80 squash SHA 992195f7e61cf03b94675a498377a6d8bf679ebf.` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `PR #76 is merged; the retained feature branch is preserved for traceability and no next implementation capability is activated automatically.` |
-| Current review checkpoint | `MESP-132 post-merge evidence: Release build 0/0; focused Finance 12/12; bounded Inventory regression 89/89; accepted exact-head SQL 46/46; prior exact-head backend/REST/Angular/Playwright/bundle/audit evidence remains recorded; runtime probes are recorded in the merged-main handoff.` |
+| Open Pull Request | `The health branch will carry one Draft PR for Sol review; no merge or Ready transition is authorized by this checkpoint.` |
+| Current review checkpoint | `MESP-144 evidence: repository audit, conservative documentation cleanup, one test-fixture correction, final full validation, Jira evidence, and Azure classification.` |
 
 ---
 
