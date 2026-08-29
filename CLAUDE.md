@@ -19,6 +19,7 @@ from exact \`origin/main\` baseline
 \`cb58d69fb0a589d363aed2d55b605e39f79d03bc\`. It covers Sales-linked
 Warehouse-scoped reservation, partial allocation/backorder, atomic physical
 Delivery handoff, and Finance-owned invoice eligibility/AR handoff.
+Implementation commit is `86e9c5708daf33caa751e799ebbb8b02bfd717ed`; Draft PR #84 is Open/Draft/Unmerged.
 MESP-138/139 remain To Do/inactive. No Jira writes, Ready transition, merge,
 rebase, force-push, or review request is authorized; stop for independent
 GPT-5.6 Sol review with the PR Open/Draft/Unmerged.

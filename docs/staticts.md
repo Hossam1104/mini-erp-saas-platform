@@ -7,6 +7,7 @@
   Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`.
   Final Sol acceptance: MESP-136 comment `12252`. Closure: MESP-136 comment `12255`, MESP-9 reconciliation `12256`.
 - **MESP-137 is In Progress/activated** under MESP-9 by MESP-137 comment `12265` and MESP-9 reconciliation `12266`, on branch `feat/MESP-137-reservation-fulfillment-invoice` from exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`. MESP-138 and MESP-139 remain To Do/inactive.
+- Implementation commit is `86e9c5708daf33caa751e799ebbb8b02bfd717ed`; Draft PR #84 is Open/Draft/Unmerged.
 - **Fast-track capability completion = 20/26 = 76.9%** after verified merge and Jira closure.
   Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**.
   MESP-48 and MESP-50 remain open production gates. MESP-9 remains In Progress.
@@ -39,6 +40,7 @@
   MESP-48/MESP-50 remain open production gates.
 - Fast-track remains 20/26 = 76.9%; production readiness remains ~47% overall / ~41% Procurement/P2P. These headlines are unchanged pending acceptance, merge, and Jira closure.
 - One Draft PR is authorized and must remain Open/Draft/Unmerged pending independent GPT-5.6 Sol review.
+- Draft PR #84 is the single authorized PR for this handoff; no Jira write, Ready transition, merge, rebase, force-push, or review request was performed.
 <!-- MESP-137-JIRA-SYNC-END -->
 
 **Last Updated:** 2026-08-29 19:15 +03:00

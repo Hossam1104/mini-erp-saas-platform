@@ -6,6 +6,9 @@ MESP-137 is the single active implementation capability under Epic MESP-9,
 activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`. The
 bounded implementation is on `feat/MESP-137-reservation-fulfillment-invoice`,
 based on exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`.
+Implementation commit is `86e9c5708daf33caa751e799ebbb8b02bfd717ed`; Draft PR
+`#84` is Open/Draft/Unmerged at
+https://github.com/Hossam1104/mini-erp-saas-platform/pull/84.
 
 The capability adds Sales-linked Inventory reservations, partial allocation,
 atomic Sales delivery posting with stock movement and reservation consumption,
