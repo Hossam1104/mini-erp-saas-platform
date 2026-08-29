@@ -15,7 +15,8 @@ public enum InventoryMovementSourceType
     WarehouseTransferReturn = 9,
     StockAdjustment = 10,
     InventoryCountVariance = 11,
-    StockIssue = 12
+    StockIssue = 12,
+    SalesDelivery = 13
 }
 
 public enum InventoryValuationStatus
@@ -92,14 +93,17 @@ public enum InventoryOpeningRowStatus
 public enum InventoryReservationStatus
 {
     Active = 1,
-    Released = 2
+    Released = 2,
+    Fulfilled = 3
 }
 
 public enum InventoryReservationAction
 {
     Created = 1,
     Reduced = 2,
-    Released = 3
+    Released = 3,
+    Consumed = 4,
+    Allocated = 5
 }
 
 public enum InventoryTransferMode
@@ -183,7 +187,11 @@ public sealed record InventoryReservationCreateRequest(
     string SourceType,
     string SourceReference,
     bool AllowPartialAllocation,
-    string? TrackingIdentity = null);
+    string? TrackingIdentity = null,
+    Guid? SourceDocumentId = null,
+    Guid? SourceLineId = null,
+    int? SourceRevision = null,
+    decimal? SourceQuantityLimit = null);
 
 public sealed record InventoryReservationActionRequest(
     decimal? Quantity = null,
@@ -572,7 +580,11 @@ public sealed record InventoryReservationRecord(
     Guid ActorId,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    byte[] Version);
+    byte[] Version,
+    decimal FulfilledQuantity = 0m,
+    Guid? SourceDocumentId = null,
+    Guid? SourceLineId = null,
+    int? SourceRevision = null);
 
 public sealed record InventoryReservationHistoryRecord(
     Guid Id,
@@ -581,6 +593,7 @@ public sealed record InventoryReservationHistoryRecord(
     decimal Quantity,
     decimal ReservedQuantityAfter,
     decimal UnallocatedQuantityAfter,
+    decimal FulfilledQuantityAfter,
     Guid ActorId,
     string? Reason,
     string CorrelationId,

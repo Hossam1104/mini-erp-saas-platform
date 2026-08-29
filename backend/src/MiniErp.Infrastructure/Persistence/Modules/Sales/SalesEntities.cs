@@ -17,7 +17,7 @@ internal sealed class SalesQuotationEntity : ITenantOwned
         CustomerCode = model.CustomerCode; CustomerName = model.CustomerName; QuotationDate = model.QuotationDate; ValidUntil = model.ValidUntil;
         CurrencyId = model.CurrencyId; CurrencyCode = model.CurrencyCode; CustomerContactId = model.CustomerContactId; Notes = model.Notes; CustomerReference = model.CustomerReference;
         Subtotal = model.Subtotal; DiscountAmount = model.DiscountAmount; TaxAmount = model.TaxAmount; Total = model.Total; LinesJson = linesJson;
-        ExchangeRateJson = JsonSerializer.Serialize(model.ExchangeRateEvidence); Status = SalesQuotationStatus.Draft; RevisionNumber = 1; CreatedByActorId = Guid.Empty; CreatedAt = now; UpdatedAt = now; ApprovalPolicyJson = policyJson; Version = NewVersion();
+        ExchangeRateJson = JsonSerializer.Serialize(model.ExchangeRateEvidence); PaymentTermJson = JsonSerializer.Serialize(model.PaymentTerm); Status = SalesQuotationStatus.Draft; RevisionNumber = 1; CreatedByActorId = Guid.Empty; CreatedAt = now; UpdatedAt = now; ApprovalPolicyJson = policyJson; Version = NewVersion();
     }
 
     internal Guid Id { get; private set; }
@@ -46,6 +46,7 @@ internal sealed class SalesQuotationEntity : ITenantOwned
     internal DateTimeOffset UpdatedAt { get; private set; }
     internal string LinesJson { get; private set; } = "[]";
     internal string? ExchangeRateJson { get; private set; }
+    internal string? PaymentTermJson { get; private set; }
     internal string ApprovalPolicyJson { get; private set; } = "{}";
     internal string CurrentApprovalsJson { get; private set; } = "[]";
     internal byte[] Version { get; private set; } = [];
@@ -55,7 +56,7 @@ internal sealed class SalesQuotationEntity : ITenantOwned
     {
         if (CompanyId != model.CompanyId || BranchId != model.BranchId) throw new InvalidOperationException("quotation_scope_immutable");
         ValidUntil = model.ValidUntil; CurrencyId = model.CurrencyId; CurrencyCode = model.CurrencyCode;
-        CustomerContactId = model.CustomerContactId; Notes = model.Notes; CustomerReference = model.CustomerReference; Subtotal = model.Subtotal; DiscountAmount = model.DiscountAmount; TaxAmount = model.TaxAmount; Total = model.Total; LinesJson = linesJson; ExchangeRateJson = JsonSerializer.Serialize(model.ExchangeRateEvidence); RevisionNumber++; Status = SalesQuotationStatus.Draft; ApprovalPolicyJson = policyJson; UpdatedAt = now; CurrentApprovalsJson = "[]"; Version = NewVersion();
+        CustomerContactId = model.CustomerContactId; Notes = model.Notes; CustomerReference = model.CustomerReference; Subtotal = model.Subtotal; DiscountAmount = model.DiscountAmount; TaxAmount = model.TaxAmount; Total = model.Total; LinesJson = linesJson; ExchangeRateJson = JsonSerializer.Serialize(model.ExchangeRateEvidence); PaymentTermJson = JsonSerializer.Serialize(model.PaymentTerm); RevisionNumber++; Status = SalesQuotationStatus.Draft; ApprovalPolicyJson = policyJson; UpdatedAt = now; CurrentApprovalsJson = "[]"; Version = NewVersion();
     }
     internal void Transition(SalesQuotationStatus status, DateTimeOffset now, string policyJson, string? approvalsJson = null) { Status = status; UpdatedAt = now; ApprovalPolicyJson = policyJson; if (approvalsJson is not null) CurrentApprovalsJson = approvalsJson; Version = NewVersion(); }
     private static byte[] NewVersion() => Guid.NewGuid().ToByteArray();
@@ -86,7 +87,7 @@ internal sealed class SalesOrderEntity : ITenantOwned
     {
         Id = Guid.NewGuid(); TenantId = tenantId; Number = number; CompanyId = quote.CompanyId; BranchId = quote.BranchId; CustomerId = quote.CustomerId; CustomerCode = quote.CustomerCode; CustomerName = quote.CustomerName;
         SourceQuotationId = quote.Id; SourceQuotationNumber = quote.Number; SourceQuotationRevision = quote.RevisionNumber; CurrencyId = quote.CurrencyId; CurrencyCode = quote.CurrencyCode;
-        Subtotal = quote.Subtotal; DiscountAmount = quote.DiscountAmount; TaxAmount = quote.TaxAmount; Total = quote.Total; LinesJson = linesJson; ExchangeRateJson = quote.ExchangeRateJson; Status = SalesOrderStatus.Draft; CreditOutcome = SalesCreditOutcome.Unknown; ApprovalPolicyJson = policyJson;
+        Subtotal = quote.Subtotal; DiscountAmount = quote.DiscountAmount; TaxAmount = quote.TaxAmount; Total = quote.Total; LinesJson = linesJson; ExchangeRateJson = quote.ExchangeRateJson; PaymentTermJson = quote.PaymentTermJson; Status = SalesOrderStatus.Draft; CreditOutcome = SalesCreditOutcome.Unknown; ApprovalPolicyJson = policyJson;
         CreatedByActorId = actorId; CreatedAt = now; UpdatedAt = now; RevisionNumber = 1; Version = Guid.NewGuid().ToByteArray();
     }
     internal Guid Id { get; private set; }
@@ -113,6 +114,7 @@ internal sealed class SalesOrderEntity : ITenantOwned
     internal DateTimeOffset? CreditOverrideExpiresAt { get; private set; }
     internal string LinesJson { get; private set; } = "[]";
     internal string? ExchangeRateJson { get; private set; }
+    internal string? PaymentTermJson { get; private set; }
     internal string ApprovalPolicyJson { get; private set; } = "{}";
     internal string CurrentApprovalsJson { get; private set; } = "[]";
     internal Guid CreatedByActorId { get; private set; }
@@ -124,7 +126,7 @@ internal sealed class SalesOrderEntity : ITenantOwned
     {
         if (CompanyId != model.CompanyId || BranchId != model.BranchId || CustomerId != model.CustomerId) throw new InvalidOperationException("order_scope_immutable");
         CurrencyId = model.CurrencyId; CurrencyCode = model.CurrencyCode; Subtotal = model.Subtotal; DiscountAmount = model.DiscountAmount; TaxAmount = model.TaxAmount;
-        Total = model.Total; LinesJson = linesJson; ExchangeRateJson = JsonSerializer.Serialize(model.ExchangeRateEvidence); RevisionNumber++; Status = SalesOrderStatus.Draft;
+        Total = model.Total; LinesJson = linesJson; ExchangeRateJson = JsonSerializer.Serialize(model.ExchangeRateEvidence); PaymentTermJson = JsonSerializer.Serialize(model.PaymentTerm); RevisionNumber++; Status = SalesOrderStatus.Draft;
         CreditOutcome = SalesCreditOutcome.Unknown; CreditReason = null; CreditEvaluatedAt = null; CreditOverrideExpiresAt = null; CurrentApprovalsJson = "[]"; UpdatedAt = now; Version = Guid.NewGuid().ToByteArray();
     }
     internal void Transition(SalesOrderStatus status, string? reason, DateTimeOffset now, SalesCreditEvaluation? credit, string policyJson, string? approvalsJson = null)
@@ -220,6 +222,70 @@ internal sealed class SalesCreditEntity : ITenantOwned
     internal DateTimeOffset EvaluatedAt { get; private set; }
     internal DateTimeOffset? OverrideExpiresAt { get; private set; }
     internal byte[] Version { get; private set; } = [];
+}
+
+internal sealed class SalesDeliveryEntity : ITenantOwned
+{
+    private SalesDeliveryEntity() { }
+    internal SalesDeliveryEntity(TenantId tenantId, Guid id, Guid orderId, int orderRevision, Guid companyId, Guid? branchId, Guid customerId, Guid warehouseId, string linesJson, string snapshotJson, Guid actorId, string? idempotencyKey, DateTimeOffset at, string? requestFingerprint = null)
+    { Id = id; TenantId = tenantId; OrderId = orderId; OrderRevisionNumber = orderRevision; CompanyId = companyId; BranchId = branchId; CustomerId = customerId; WarehouseId = warehouseId; LinesJson = linesJson; SourceSnapshotJson = snapshotJson; HandoffJson = JsonSerializer.Serialize(new SalesHandoffEvidence("inventory.sales-delivery.post", [], "NotCommitted", "NotAcknowledged", "Pending", null, 0, null, requestFingerprint ?? string.Empty)); ActorId = actorId; IdempotencyKey = idempotencyKey; Status = SalesDeliveryStatus.Draft; CreatedAt = at; Version = NewVersion(); }
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid OrderId { get; private set; }
+    internal int OrderRevisionNumber { get; private set; }
+    internal Guid CompanyId { get; private set; }
+    internal Guid? BranchId { get; private set; }
+    internal Guid CustomerId { get; private set; }
+    internal Guid WarehouseId { get; private set; }
+    internal SalesDeliveryStatus Status { get; private set; }
+    internal string? ErrorCode { get; private set; }
+    internal string LinesJson { get; private set; } = "[]";
+    internal string SourceSnapshotJson { get; private set; } = "{}";
+    internal string HandoffJson { get; private set; } = "{}";
+    internal string MovementIdsJson { get; private set; } = "[]";
+    internal Guid ActorId { get; private set; }
+    internal string? IdempotencyKey { get; private set; }
+    internal DateTimeOffset CreatedAt { get; private set; }
+    internal DateTimeOffset? PostedAt { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal void Posted(IEnumerable<Guid> movements, DateTimeOffset at, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null) { var ids = movements.Distinct().ToArray(); MovementIdsJson = JsonSerializer.Serialize(ids); Status = SalesDeliveryStatus.Posted; PostedAt = at; ErrorCode = null; var handoff = Handoff(); HandoffJson = JsonSerializer.Serialize(handoff with { DownstreamEffectIds = ids, DownstreamCommitState = "Committed", SalesAcknowledgementState = "Acknowledged", ReconciliationStatus = "Reconciled", LastError = null, AttemptCount = handoff.AttemptCount + 1, LastAttemptAt = at, DownstreamIdempotencyKey = downstreamIdempotencyKey ?? handoff.DownstreamIdempotencyKey, DownstreamRequestFingerprint = downstreamRequestFingerprint ?? handoff.DownstreamRequestFingerprint }); Version = NewVersion(); }
+    internal void Fail(string code, bool unknown, SalesDownstreamEvidence? downstream = null) { Status = unknown ? SalesDeliveryStatus.Unknown : SalesDeliveryStatus.Failed; ErrorCode = code; var handoff = Handoff(); if (downstream is not null && downstream.EffectIds.Count > 0) { var ids = downstream.EffectIds.Distinct().ToArray(); MovementIdsJson = JsonSerializer.Serialize(ids); handoff = handoff with { DownstreamEffectIds = ids, DownstreamCommitState = downstream.CommitState, SalesAcknowledgementState = downstream.AcknowledgementState, ReconciliationStatus = downstream.ReconciliationStatus, DownstreamIdempotencyKey = downstream.IdempotencyKey, DownstreamRequestFingerprint = downstream.RequestFingerprint }; } else if (downstream is not null && handoff.DownstreamEffectIds.Count == 0) { handoff = handoff with { DownstreamCommitState = downstream.CommitState, SalesAcknowledgementState = downstream.AcknowledgementState, ReconciliationStatus = downstream.ReconciliationStatus, DownstreamIdempotencyKey = downstream.IdempotencyKey, DownstreamRequestFingerprint = downstream.RequestFingerprint }; } else if (downstream is null && unknown && handoff.DownstreamEffectIds.Count == 0) handoff = handoff with { DownstreamCommitState = "Unknown", SalesAcknowledgementState = "NotAcknowledged", ReconciliationStatus = "Required" }; HandoffJson = JsonSerializer.Serialize(handoff with { LastError = code, AttemptCount = handoff.AttemptCount + 1, LastAttemptAt = DateTimeOffset.UtcNow }); Version = NewVersion(); }
+    private SalesHandoffEvidence Handoff() => JsonSerializer.Deserialize<SalesHandoffEvidence>(HandoffJson) ?? new("inventory.sales-delivery.post", [], "Unknown", "NotAcknowledged", "Required", null, 0, null, string.Empty);
+    private static byte[] NewVersion() => Guid.NewGuid().ToByteArray();
+}
+
+internal sealed class SalesInvoiceRequestEntity : ITenantOwned
+{
+    private SalesInvoiceRequestEntity() { }
+    internal SalesInvoiceRequestEntity(TenantId tenantId, Guid id, Guid orderId, int orderRevision, Guid? deliveryId, Guid companyId, Guid? branchId, Guid customerId, DateOnly invoiceDate, string linesJson, decimal amount, string currencyCode, string snapshotJson, Guid actorId, string? idempotencyKey, DateTimeOffset at, string? paymentTermJson = null, string? requestFingerprint = null)
+    { Id = id; TenantId = tenantId; OrderId = orderId; OrderRevisionNumber = orderRevision; DeliveryId = deliveryId; CompanyId = companyId; BranchId = branchId; CustomerId = customerId; InvoiceDate = invoiceDate; LinesJson = linesJson; Amount = amount; CurrencyCode = currencyCode; SourceSnapshotJson = snapshotJson; PaymentTermJson = paymentTermJson; HandoffJson = JsonSerializer.Serialize(new SalesHandoffEvidence("finance.sales-invoice.create", [], "NotCommitted", "NotAcknowledged", "Pending", null, 0, null, requestFingerprint ?? string.Empty)); ActorId = actorId; IdempotencyKey = idempotencyKey; Status = SalesInvoiceRequestStatus.Pending; CreatedAt = at; Version = NewVersion(); }
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid OrderId { get; private set; }
+    internal int OrderRevisionNumber { get; private set; }
+    internal Guid? DeliveryId { get; private set; }
+    internal Guid CompanyId { get; private set; }
+    internal Guid? BranchId { get; private set; }
+    internal Guid CustomerId { get; private set; }
+    internal DateOnly InvoiceDate { get; private set; }
+    internal string LinesJson { get; private set; } = "[]";
+    internal decimal Amount { get; private set; }
+    internal string CurrencyCode { get; private set; } = string.Empty;
+    internal string SourceSnapshotJson { get; private set; } = "{}";
+    internal string? PaymentTermJson { get; private set; }
+    internal string HandoffJson { get; private set; } = "{}";
+    internal SalesInvoiceRequestStatus Status { get; private set; }
+    internal string? ErrorCode { get; private set; }
+    internal Guid? FinanceOpenItemId { get; private set; }
+    internal Guid ActorId { get; private set; }
+    internal string? IdempotencyKey { get; private set; }
+    internal DateTimeOffset CreatedAt { get; private set; }
+    internal DateTimeOffset? PostedAt { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal void Posted(Guid financeOpenItemId, DateTimeOffset at, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null) { FinanceOpenItemId = financeOpenItemId; Status = SalesInvoiceRequestStatus.Posted; PostedAt = at; ErrorCode = null; var handoff = Handoff(); HandoffJson = JsonSerializer.Serialize(handoff with { DownstreamEffectIds = [financeOpenItemId], DownstreamCommitState = "Committed", SalesAcknowledgementState = "Acknowledged", ReconciliationStatus = "Reconciled", LastError = null, AttemptCount = handoff.AttemptCount + 1, LastAttemptAt = at, DownstreamIdempotencyKey = downstreamIdempotencyKey ?? handoff.DownstreamIdempotencyKey, DownstreamRequestFingerprint = downstreamRequestFingerprint ?? handoff.DownstreamRequestFingerprint }); Version = NewVersion(); }
+    internal void Fail(string code, bool unknown, SalesDownstreamEvidence? downstream = null) { Status = unknown ? SalesInvoiceRequestStatus.Unknown : SalesInvoiceRequestStatus.Failed; ErrorCode = code; var handoff = Handoff(); if (downstream is not null && downstream.EffectIds.Count > 0) { var ids = downstream.EffectIds.Distinct().ToArray(); FinanceOpenItemId = ids[0]; handoff = handoff with { DownstreamEffectIds = ids, DownstreamCommitState = downstream.CommitState, SalesAcknowledgementState = downstream.AcknowledgementState, ReconciliationStatus = downstream.ReconciliationStatus, DownstreamIdempotencyKey = downstream.IdempotencyKey, DownstreamRequestFingerprint = downstream.RequestFingerprint }; } else if (downstream is not null && handoff.DownstreamEffectIds.Count == 0) { handoff = handoff with { DownstreamCommitState = downstream.CommitState, SalesAcknowledgementState = downstream.AcknowledgementState, ReconciliationStatus = downstream.ReconciliationStatus, DownstreamIdempotencyKey = downstream.IdempotencyKey, DownstreamRequestFingerprint = downstream.RequestFingerprint }; } else if (downstream is null && unknown && handoff.DownstreamEffectIds.Count == 0) handoff = handoff with { DownstreamCommitState = "Unknown", SalesAcknowledgementState = "NotAcknowledged", ReconciliationStatus = "Required" }; HandoffJson = JsonSerializer.Serialize(handoff with { LastError = code, AttemptCount = handoff.AttemptCount + 1, LastAttemptAt = DateTimeOffset.UtcNow }); Version = NewVersion(); }
+    private SalesHandoffEvidence Handoff() => JsonSerializer.Deserialize<SalesHandoffEvidence>(HandoffJson) ?? new("finance.sales-invoice.create", [], "Unknown", "NotAcknowledged", "Required", null, 0, null, string.Empty);
+    private static byte[] NewVersion() => Guid.NewGuid().ToByteArray();
 }
 
 #pragma warning restore CS1591

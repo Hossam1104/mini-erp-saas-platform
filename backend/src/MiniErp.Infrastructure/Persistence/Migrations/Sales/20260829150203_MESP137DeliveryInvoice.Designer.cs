@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Sales;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Sales;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
 {
     [DbContext(typeof(SalesDbContext))]
-    partial class SalesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260829150203_MESP137DeliveryInvoice")]
+    partial class MESP137DeliveryInvoice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -240,11 +243,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
-                    b.Property<string>("HandoffJson")
-                        .IsRequired()
-                        .HasMaxLength(16384)
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("IdempotencyKey")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -469,11 +467,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
                     b.Property<Guid?>("FinanceOpenItemId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("HandoffJson")
-                        .IsRequired()
-                        .HasMaxLength(16384)
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("IdempotencyKey")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -491,10 +484,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
 
                     b.Property<int>("OrderRevisionNumber")
                         .HasColumnType("int");
-
-                    b.Property<string>("PaymentTermJson")
-                        .HasMaxLength(8192)
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTimeOffset?>("PostedAt")
                         .HasColumnType("datetimeoffset");
@@ -610,10 +599,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("PaymentTermJson")
-                        .HasMaxLength(8192)
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("RevisionNumber")
                         .HasColumnType("int");
@@ -751,10 +736,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("PaymentTermJson")
-                        .HasMaxLength(8192)
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateOnly>("QuotationDate")
                         .HasColumnType("date");

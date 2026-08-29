@@ -6,13 +6,51 @@
 authorization boundaries. Read it before any Ready transition, merge, Jira
 write, or mutation not explicitly authorized by the current bounded task.
 
-## Current execution overlay - 29 August 2026 (MESP-136 closed; awaiting next activation)
+## Current execution overlay - 30 August 2026 (MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance)
+
+`MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance`.
+The authorized branch continues Draft PR #84 from exact HOLD-1 head
+`4ecfb64ffd5391a934af80fe11003b9031881ae3` and exact `origin/main` baseline
+`cb58d69fb0a589d363aed2d55b605e39f79d03bc`; pushed head is
+`d1914884bead08fac7a5b4eddc6f573297ef5550`. HOLD-2 authority is MESP-137
+comment `12275` with MESP-9 reconciliation `12277`.
+
+HOLD-137-E makes serializable Sales persistence authoritative for delivery
+allocation, prior invoice evidence, quantity, exact net/tax/gross residuals,
+tax identity, Payment Term, and source snapshot, and Finance posts only from
+the persisted Sales invoice request. HOLD-137-F preserves real downstream
+fingerprints, known Inventory Movement IDs and Finance effect IDs, explicit
+commit/acknowledgement/reconciliation states, durable retry identity, and
+fail-closed mismatch protection. No MESP-138/139 work, Jira write, Ready
+transition, merge, rebase, force-push, or review request was performed.
+
+Fast-track remains 20/26 = 76.9%; production readiness remains ~47% overall /
+~41% Procurement/P2P; `frontend/assets` remains untouched. Release validation
+is 0 warnings/0 errors, full backend 1,138/1,138, Angular 305/305, focused/full
+Chromium 2/2 and 49/49, and the retained initial bundle is 512.18 kB with
+Sales lazy chunk 88.24 kB. The isolated runtime is API
+`http://localhost:5310` PID `34956`, Angular `http://localhost:4300` PID
+`42444`, data `.runtime/hold2-runtime-20260830`; required and authenticated
+Sales read probes returned HTTP 200. Stop after exact PR verification for
+independent GPT-5.6 Sol review.
+
+## Historical execution overlay - 29 August 2026 (MESP-137 initial implementation; superseded by HOLD-1 remediation)
 
 MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged.
 MESP-136 merged at `992195f7e61cf03b94675a498377a6d8bf679ebf` (2026-08-28T23:37:13Z).
 Final Sol acceptance: MESP-136 comment `12252`. Closure: MESP-136 comment `12255`, MESP-9 reconciliation `12256`.
 
-No current implementation capability is active. MESP-137/138/139 remain To Do/inactive.
+MESP-137 is the single active implementation capability under Epic MESP-9,
+activated by MESP-137 comment \`12265\` and MESP-9 reconciliation \`12266\`.
+The bounded implementation is on \`feat/MESP-137-reservation-fulfillment-invoice\`
+from exact \`origin/main\` baseline
+\`cb58d69fb0a589d363aed2d55b605e39f79d03bc\`. It covers Sales-linked
+Warehouse-scoped reservation, partial allocation/backorder, atomic physical
+Delivery handoff, and Finance-owned invoice eligibility/AR handoff.
+Implementation commit is `86e9c5708daf33caa751e799ebbb8b02bfd717ed`; Draft PR #84 is Open/Draft/Unmerged.
+MESP-138/139 remain To Do/inactive. No Jira writes, Ready transition, merge,
+rebase, force-push, or review request is authorized; stop for independent
+GPT-5.6 Sol review with the PR Open/Draft/Unmerged.
 Fast-track = 20/26 = 76.9%. Production readiness remains ~47% overall / ~41% Procurement/P2P.
 Ponytail FULL is the default executor mode when available.
 
