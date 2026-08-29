@@ -1296,17 +1296,16 @@ public sealed class SalesTests
         public Task<MasterDataPersistenceResult<MasterDataPriceListRecord>> EditPriceListAsync(TenantContext tenantContext, EditMasterDataPriceListCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataPriceListRecord>();
         public Task<MasterDataPersistenceResult<MasterDataPriceListRecord>> AppendPriceAsync(TenantContext tenantContext, AppendMasterDataPriceCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataPriceListRecord>();
         public Task<MasterDataPersistenceResult<MasterDataPriceListRecord>> SetPriceListLifecycleAsync(TenantContext tenantContext, Guid priceListId, MasterDataLifecycleState lifecycleState, byte[] expectedVersion, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataPriceListRecord>();
-        public Task<MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>> ResolvePriceAsync(TenantContext tenantContext, ResolveMasterDataPriceQuery query, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Task.FromResult(MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>.Success(CreateRecord()));
+        public Task<MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>> ResolvePriceAsync(TenantContext tenantContext, ResolveMasterDataPriceQuery query, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Task.FromResult(MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>.Success(CreateRecord(query.EffectiveOn)));
         public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(TenantContext tenantContext, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataAuditRecord>();
         public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(TenantContext tenantContext, Guid? priceListId = null, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataAuditRecord>>([]);
 
-        private MasterDataPriceListReferenceRecord CreateRecord()
+        private MasterDataPriceListReferenceRecord CreateRecord(DateOnly effective)
         {
-            var effective = new DateOnly(2026, 8, 1);
             var price = new MasterDataPriceListPriceRecord(Guid.NewGuid(), 4, ProductA, "SKU-001", UomA, "EA", CurrencyA, currencyCode, CustomerA, OrganizationScopeKind.Branch, BranchA, 1, effective, null, 50m, 2, PriceListProvenance.Configured, "price-row-4", [1]);
             var configuration = new MasterDataPriceListCurrentConfiguration(CurrencyA, currencyCode, CustomerA, OrganizationScopeKind.Branch, BranchA, 1, MasterDataLifecycleState.Active);
             var snapshot = new ReferenceSnapshot(MasterDataResourceKind.PriceList, PriceListA, new TenantOwnership(TenantA), 4, "price-row-4", effective);
-            return new MasterDataPriceListReferenceRecord(PriceListA, new TenantId(TenantA), "STANDARD", price, configuration, new DateOnly(2026, 8, 28), snapshot, [1]);
+            return new MasterDataPriceListReferenceRecord(PriceListA, new TenantId(TenantA), "STANDARD", price, configuration, effective, snapshot, [1]);
         }
 
         private static Task<T> Empty<T>() => Task.FromResult<T>(default!);
