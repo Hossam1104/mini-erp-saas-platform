@@ -222,4 +222,63 @@ internal sealed class SalesCreditEntity : ITenantOwned
     internal byte[] Version { get; private set; } = [];
 }
 
+internal sealed class SalesDeliveryEntity : ITenantOwned
+{
+    private SalesDeliveryEntity() { }
+    internal SalesDeliveryEntity(TenantId tenantId, Guid id, Guid orderId, int orderRevision, Guid companyId, Guid? branchId, Guid customerId, Guid warehouseId, string linesJson, string snapshotJson, Guid actorId, string? idempotencyKey, DateTimeOffset at)
+    { Id = id; TenantId = tenantId; OrderId = orderId; OrderRevisionNumber = orderRevision; CompanyId = companyId; BranchId = branchId; CustomerId = customerId; WarehouseId = warehouseId; LinesJson = linesJson; SourceSnapshotJson = snapshotJson; ActorId = actorId; IdempotencyKey = idempotencyKey; Status = SalesDeliveryStatus.Draft; CreatedAt = at; Version = NewVersion(); }
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid OrderId { get; private set; }
+    internal int OrderRevisionNumber { get; private set; }
+    internal Guid CompanyId { get; private set; }
+    internal Guid? BranchId { get; private set; }
+    internal Guid CustomerId { get; private set; }
+    internal Guid WarehouseId { get; private set; }
+    internal SalesDeliveryStatus Status { get; private set; }
+    internal string? ErrorCode { get; private set; }
+    internal string LinesJson { get; private set; } = "[]";
+    internal string SourceSnapshotJson { get; private set; } = "{}";
+    internal string MovementIdsJson { get; private set; } = "[]";
+    internal Guid ActorId { get; private set; }
+    internal string? IdempotencyKey { get; private set; }
+    internal DateTimeOffset CreatedAt { get; private set; }
+    internal DateTimeOffset? PostedAt { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal void Posted(IEnumerable<Guid> movements, DateTimeOffset at) { MovementIdsJson = JsonSerializer.Serialize(movements); Status = SalesDeliveryStatus.Posted; PostedAt = at; ErrorCode = null; Version = NewVersion(); }
+    internal void Fail(string code, bool unknown) { Status = unknown ? SalesDeliveryStatus.Unknown : SalesDeliveryStatus.Failed; ErrorCode = code; Version = NewVersion(); }
+    private static byte[] NewVersion() => Guid.NewGuid().ToByteArray();
+}
+
+internal sealed class SalesInvoiceRequestEntity : ITenantOwned
+{
+    private SalesInvoiceRequestEntity() { }
+    internal SalesInvoiceRequestEntity(TenantId tenantId, Guid id, Guid orderId, int orderRevision, Guid? deliveryId, Guid companyId, Guid? branchId, Guid customerId, DateOnly invoiceDate, string linesJson, decimal amount, string currencyCode, string snapshotJson, Guid actorId, string? idempotencyKey, DateTimeOffset at)
+    { Id = id; TenantId = tenantId; OrderId = orderId; OrderRevisionNumber = orderRevision; DeliveryId = deliveryId; CompanyId = companyId; BranchId = branchId; CustomerId = customerId; InvoiceDate = invoiceDate; LinesJson = linesJson; Amount = amount; CurrencyCode = currencyCode; SourceSnapshotJson = snapshotJson; ActorId = actorId; IdempotencyKey = idempotencyKey; Status = SalesInvoiceRequestStatus.Pending; CreatedAt = at; Version = NewVersion(); }
+    internal Guid Id { get; private set; }
+    public TenantId TenantId { get; private set; }
+    internal Guid OrderId { get; private set; }
+    internal int OrderRevisionNumber { get; private set; }
+    internal Guid? DeliveryId { get; private set; }
+    internal Guid CompanyId { get; private set; }
+    internal Guid? BranchId { get; private set; }
+    internal Guid CustomerId { get; private set; }
+    internal DateOnly InvoiceDate { get; private set; }
+    internal string LinesJson { get; private set; } = "[]";
+    internal decimal Amount { get; private set; }
+    internal string CurrencyCode { get; private set; } = string.Empty;
+    internal string SourceSnapshotJson { get; private set; } = "{}";
+    internal SalesInvoiceRequestStatus Status { get; private set; }
+    internal string? ErrorCode { get; private set; }
+    internal Guid? FinanceOpenItemId { get; private set; }
+    internal Guid ActorId { get; private set; }
+    internal string? IdempotencyKey { get; private set; }
+    internal DateTimeOffset CreatedAt { get; private set; }
+    internal DateTimeOffset? PostedAt { get; private set; }
+    internal byte[] Version { get; private set; } = [];
+    internal void Posted(Guid financeOpenItemId, DateTimeOffset at) { FinanceOpenItemId = financeOpenItemId; Status = SalesInvoiceRequestStatus.Posted; PostedAt = at; ErrorCode = null; Version = NewVersion(); }
+    internal void Fail(string code, bool unknown) { Status = unknown ? SalesInvoiceRequestStatus.Unknown : SalesInvoiceRequestStatus.Failed; ErrorCode = code; Version = NewVersion(); }
+    private static byte[] NewVersion() => Guid.NewGuid().ToByteArray();
+}
+
 #pragma warning restore CS1591

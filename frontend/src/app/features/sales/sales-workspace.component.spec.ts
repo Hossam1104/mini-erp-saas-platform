@@ -6,6 +6,7 @@ import { LanguageService } from '../../core/i18n/language.service';
 import { MasterDataService } from '../master-data/master-data.service';
 import { PriceListService } from '../master-data/price-list.service';
 import { PurchaseRequestService } from '../procurement/purchase-request.service';
+import { InventoryService } from '../inventory/inventory.service';
 import { SalesService } from './sales.service';
 import { SalesWorkspaceComponent } from './sales-workspace.component';
 import { SalesOrderResponse } from './sales.model';
@@ -26,7 +27,8 @@ describe('SalesWorkspaceComponent', () => {
     params = new BehaviorSubject(convertToParamMap({}));
     const sales = {
       quotations: vi.fn(() => of([])), orders: vi.fn(() => of([])), quotation: vi.fn(), quotationRevisions: vi.fn(() => of([])), quotationHistory: vi.fn(() => of([])), quotationAudit: vi.fn(() => of([])),
-      order: vi.fn(), orderHistory: vi.fn(() => of([])), orderAudit: vi.fn(() => of([])), orderCredit: vi.fn(() => of(null)),
+      order: vi.fn(), orderHistory: vi.fn(() => of([])), orderAudit: vi.fn(() => of([])), orderCredit: vi.fn(() => of(null)), fulfillment: vi.fn(() => of({ lines: [], deliveries: [], invoiceRequests: [] })),
+      reserveOrder: vi.fn(), postDelivery: vi.fn(), evaluateInvoiceEligibility: vi.fn(), requestInvoice: vi.fn(),
     };
     await TestBed.configureTestingModule({
       imports: [SalesWorkspaceComponent],
@@ -38,6 +40,7 @@ describe('SalesWorkspaceComponent', () => {
         { provide: MasterDataService, useValue: { list: vi.fn(() => of([])) } },
         { provide: PriceListService, useValue: { list: vi.fn(() => of([])) } },
         { provide: PurchaseRequestService, useValue: { organizationScopes: vi.fn(() => of([])) } },
+        { provide: InventoryService, useValue: { warehouses: vi.fn(() => of([])), reservations: vi.fn(() => of([])) } },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(SalesWorkspaceComponent);

@@ -332,11 +332,27 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
             var replay = await ReadReplayAsync<InventoryReservationRecord>(db, context, "inventory.reservation.create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay.Handled) return replay.Value;
             var stockIdentity = StockIdentityKey.From(command);
             await AcquireConcurrencyAnchorsAsync(db, context.TenantId, [stockIdentity], cancellationToken);
+            if (command.SourceQuantityLimit is { } sourceLimit)
+            {
+                if (sourceLimit <= 0m) return null;
+                var sourceReservations = await db.Reservations
+                    .Where(item => item.SourceDocumentId == command.SourceDocumentId
+                        && item.SourceLineId == command.SourceLineId
+                        && item.SourceRevision == command.SourceRevision
+                        && item.Status != InventoryReservationStatus.Released)
+                    .ToListAsync(cancellationToken);
+                var committed = sourceReservations.Sum(item => item.Status == InventoryReservationStatus.Active
+                    ? item.FulfilledQuantity + item.ReservedQuantity + item.UnallocatedQuantity
+                    : item.FulfilledQuantity);
+                var sourceRemaining = sourceLimit - committed;
+                if (sourceRemaining <= 0m) return null;
+                command = command with { RequestedQuantity = Math.Min(command.RequestedQuantity, sourceRemaining) };
+            }
             var available = await CalculateAvailableAsync(db, command.Scope, command.ProductId, command.UnitOfMeasureId, command.TrackingIdentity, cancellationToken);
             if (command.RequestedQuantity > available && !command.AllowPartialAllocation) return null;
             var reserved = Math.Min(command.RequestedQuantity, Math.Max(0, available)); var unallocated = command.RequestedQuantity - reserved; var now = command.OccurredAt;
-            var reservation = new InventoryReservationEntity(context.TenantId, command.Id, command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, command.WarehouseCode, command.WarehouseName, command.ProductId, command.Product.Sku, command.Product.Name, command.UnitOfMeasureId, command.Product.BaseUnitOfMeasureCode, command.TrackingIdentity, command.SourceType, command.SourceReference, command.RequestedQuantity, reserved, unallocated, command.ActorId, now);
-            db.Reservations.Add(reservation); db.ReservationHistory.Add(new InventoryReservationHistoryEntity(context.TenantId, Guid.NewGuid(), reservation.Id, InventoryReservationAction.Created, reserved, reserved, unallocated, command.ActorId, null, command.CorrelationId, now));
+            var reservation = new InventoryReservationEntity(context.TenantId, command.Id, command.Scope.CompanyId, command.Scope.BranchId, command.Scope.WarehouseId, command.WarehouseCode, command.WarehouseName, command.ProductId, command.Product.Sku, command.Product.Name, command.UnitOfMeasureId, command.Product.BaseUnitOfMeasureCode, command.TrackingIdentity, command.SourceType, command.SourceReference, command.RequestedQuantity, reserved, unallocated, command.ActorId, now, command.SourceDocumentId, command.SourceLineId, command.SourceRevision);
+            db.Reservations.Add(reservation); db.ReservationHistory.Add(new InventoryReservationHistoryEntity(context.TenantId, Guid.NewGuid(), reservation.Id, InventoryReservationAction.Created, reserved, reserved, unallocated, 0m, command.ActorId, null, command.CorrelationId, now));
             AddAudit(db, context, "reservation", reservation.Id, "inventory.reservation.create", command.ActorId, "Succeeded", null, command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, $"reserved:{reserved}", now);
             await db.SaveChangesAsync(cancellationToken);
             var result = await db.Reservations.AsNoTracking().Where(item => item.Id == reservation.Id).Select(ToReservation).SingleAsync(cancellationToken);
@@ -354,6 +370,91 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
     public Task<InventoryReservationRecord?> ReleaseReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) =>
         ActReservationAsync(context, id, expectedVersion, 0, actorId, reason, correlationId, idempotencyKey, fingerprint, "inventory.reservation.release", (reservation, now) => { if (reservation.Status != InventoryReservationStatus.Active) return false; reservation.Release(now); reservation.TouchVersion(); return true; }, cancellationToken);
 
+    public Task<InventoryReservationRecord?> AllocateReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, decimal quantity, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) =>
+        ActReservationAsync(context, id, expectedVersion, quantity, actorId, reason, correlationId, idempotencyKey, fingerprint, "inventory.reservation.allocate", (reservation, now) => { if (!reservation.Allocate(quantity, now)) return false; reservation.TouchVersion(); return true; }, cancellationToken);
+
+    public async Task<InventorySalesDeliveryPostingRecord?> PostSalesDeliveryAsync(InventoryRequestContext context, InventorySalesDeliveryPostCommand command, CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        try
+        {
+            var replay = await ReadReplayAsync<InventorySalesDeliveryPostingRecord>(db, context, "inventory.sales-delivery.post", command.IdempotencyKey, command.RequestFingerprint, cancellationToken);
+            if (replay.Handled) return replay.Value;
+            if (command.Lines.Count == 0 || command.Lines.Select(item => item.SourceLineId).Distinct().Count() != command.Lines.Count) return null;
+
+            var existing = await db.StockMovements.AsNoTracking()
+                .Where(item => item.SourceType == InventoryMovementSourceType.SalesDelivery && item.SourceDocumentId == command.DeliveryId)
+                .ToListAsync(cancellationToken);
+            if (existing.Count > 0)
+            {
+                return existing.Count == command.Lines.Count
+                    ? new InventorySalesDeliveryPostingRecord(command.DeliveryId, command.SalesOrderId, existing.OrderBy(item => item.LedgerSequence).Select(item => item.Id).ToArray(), existing.Sum(item => item.Quantity), existing.Max(item => item.PostedAt))
+                    : null;
+            }
+
+            var reservationIds = command.Lines.Select(item => item.ReservationId).Distinct().ToArray();
+            if (reservationIds.Length != command.Lines.Count) return null;
+            var reservations = await db.Reservations.Where(item => reservationIds.Contains(item.Id)).ToListAsync(cancellationToken);
+            if (reservations.Count != command.Lines.Count) return null;
+            var byId = reservations.ToDictionary(item => item.Id);
+            var identities = reservations.Select(StockIdentityKey.From).ToArray();
+            await AcquireConcurrencyAnchorsAsync(db, context.TenantId, identities, cancellationToken);
+
+            foreach (var line in command.Lines)
+            {
+                if (!byId.TryGetValue(line.ReservationId, out var reservation)
+                    || reservation.Status != InventoryReservationStatus.Active
+                    || reservation.SourceDocumentId != command.SalesOrderId
+                    || reservation.SourceLineId != line.SourceLineId
+                    || reservation.SourceRevision != command.SalesOrderRevision
+                    || !string.Equals(reservation.SourceReference, line.SourceReference, StringComparison.Ordinal)
+                    || !reservation.Version.SequenceEqual(line.ExpectedReservationVersion)
+                    || line.Quantity > reservation.ReservedQuantity)
+                {
+                    return null;
+                }
+            }
+
+            foreach (var group in command.Lines.GroupBy(item => StockIdentityKey.From(byId[item.ReservationId])))
+            {
+                var onHand = await SignedQuantityAsync(db, group.Key, cancellationToken);
+                if (group.Sum(item => item.Quantity) > onHand) return null;
+            }
+
+            var now = command.OccurredAt;
+            var movements = new List<InventoryStockMovementEntity>(command.Lines.Count);
+            foreach (var line in command.Lines)
+            {
+                var reservation = byId[line.ReservationId];
+                var movement = new InventoryStockMovementEntity(
+                    context.TenantId, Guid.NewGuid(), reservation.CompanyId, reservation.BranchId, reservation.WarehouseId,
+                    reservation.WarehouseCode, reservation.WarehouseName, reservation.ProductId, reservation.ProductSku,
+                    reservation.ProductName, reservation.UnitOfMeasureId, reservation.UnitOfMeasureCode,
+                    InventoryMovementDirection.Outbound, line.Quantity, null, null, InventoryValuationStatus.Pending,
+                    reservation.TrackingIdentity, InventoryMovementSourceType.SalesDelivery, command.DeliveryId, line.SourceLineId,
+                    null, command.EffectiveDate, command.ActorId, command.CorrelationId, now, sourceReference: command.SourceReference);
+                db.StockMovements.Add(movement);
+                movements.Add(movement);
+                if (!reservation.Consume(line.Quantity, now)) return null;
+                reservation.TouchVersion();
+                db.ReservationHistory.Add(new InventoryReservationHistoryEntity(context.TenantId, Guid.NewGuid(), reservation.Id, InventoryReservationAction.Consumed, line.Quantity, reservation.ReservedQuantity, reservation.UnallocatedQuantity, reservation.FulfilledQuantity, command.ActorId, "sales-delivery-posted", command.CorrelationId, now));
+            }
+
+            var result = new InventorySalesDeliveryPostingRecord(command.DeliveryId, command.SalesOrderId, movements.Select(item => item.Id).ToArray(), movements.Sum(item => item.Quantity), now);
+            AddAudit(db, context, "sales-delivery", command.DeliveryId, "inventory.sales-delivery.post", command.ActorId, "Succeeded", "physical quantity posted", command.CorrelationId, command.IdempotencyKey, command.RequestFingerprint, null, $"movements:{movements.Count};quantity:{result.PostedQuantity}", now);
+            await db.SaveChangesAsync(cancellationToken);
+            AddReplay(db, context, "inventory.sales-delivery.post", command.IdempotencyKey, command.RequestFingerprint, "sales-delivery", command.DeliveryId, result, now);
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch (Exception exception) when (InventoryPersistenceExceptionClassifier.IsSqlServerContention(exception)) { return null; }
+        catch (DbUpdateConcurrencyException) { return null; }
+        catch (DbUpdateException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+        catch (SqlException exception) { throw InventoryPersistenceExceptionClassifier.Unavailable(exception); }
+    }
+
     private async Task<InventoryReservationRecord?> ActReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, decimal quantity, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, string operationId, Func<InventoryReservationEntity, DateTimeOffset, bool> mutate, CancellationToken cancellationToken)
     {
         await using var db = CreateContext(context); await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
@@ -363,10 +464,15 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
             var reference = await db.Reservations.AsNoTracking().SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
             if (reference is null) return null;
             await AcquireConcurrencyAnchorsAsync(db, context.TenantId, [StockIdentityKey.From(reference)], cancellationToken);
+            if (operationId.EndsWith("allocate", StringComparison.Ordinal))
+            {
+                var available = await CalculateAvailableAsync(db, new InventoryScope(context.TenantId.Value, reference.CompanyId, reference.BranchId, reference.WarehouseId), reference.ProductId, reference.UnitOfMeasureId, reference.TrackingIdentity, cancellationToken);
+                if (quantity > available + reference.ReservedQuantity) return null;
+            }
             var reservation = await db.Reservations.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
             if (reservation is null || !reservation.Version.SequenceEqual(expectedVersion) || !mutate(reservation, DateTimeOffset.UtcNow)) return null;
-            var now = DateTimeOffset.UtcNow; var action = operationId.EndsWith("release", StringComparison.Ordinal) ? InventoryReservationAction.Released : InventoryReservationAction.Reduced;
-            db.ReservationHistory.Add(new InventoryReservationHistoryEntity(context.TenantId, Guid.NewGuid(), id, action, quantity == 0 ? reservation.RequestedQuantity : quantity, reservation.ReservedQuantity, reservation.UnallocatedQuantity, actorId, reason, correlationId, now));
+            var now = DateTimeOffset.UtcNow; var action = operationId.EndsWith("release", StringComparison.Ordinal) ? InventoryReservationAction.Released : operationId.EndsWith("allocate", StringComparison.Ordinal) ? InventoryReservationAction.Allocated : InventoryReservationAction.Reduced;
+            db.ReservationHistory.Add(new InventoryReservationHistoryEntity(context.TenantId, Guid.NewGuid(), id, action, quantity == 0 ? reservation.RequestedQuantity : quantity, reservation.ReservedQuantity, reservation.UnallocatedQuantity, reservation.FulfilledQuantity, actorId, reason, correlationId, now));
             AddAudit(db, context, "reservation", id, operationId, actorId, "Succeeded", reason, correlationId, idempotencyKey, fingerprint, "active", reservation.Status.ToString(), now);
             await db.SaveChangesAsync(cancellationToken); var result = await db.Reservations.AsNoTracking().Where(item => item.Id == id).Select(ToReservation).SingleAsync(cancellationToken);
             AddReplay(db, context, operationId, idempotencyKey, fingerprint, "reservation", result.Id, result, now); await db.SaveChangesAsync(cancellationToken); await transaction.CommitAsync(cancellationToken); return result;
@@ -379,7 +485,7 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
 
     public async Task<IReadOnlyList<InventoryReservationHistoryRecord>> ReadReservationHistoryAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken = default)
     {
-        await using var db = CreateContext(context); var values = await db.ReservationHistory.AsNoTracking().Where(item => item.ReservationId == id).ToListAsync(cancellationToken); return values.OrderBy(item => item.OccurredAt).Select(item => new InventoryReservationHistoryRecord(item.Id, item.ReservationId, item.Action, item.Quantity, item.ReservedQuantityAfter, item.UnallocatedQuantityAfter, item.ActorId, item.Reason, item.CorrelationId, item.OccurredAt, item.Version)).ToArray();
+        await using var db = CreateContext(context); var values = await db.ReservationHistory.AsNoTracking().Where(item => item.ReservationId == id).ToListAsync(cancellationToken); return values.OrderBy(item => item.OccurredAt).Select(item => new InventoryReservationHistoryRecord(item.Id, item.ReservationId, item.Action, item.Quantity, item.ReservedQuantityAfter, item.UnallocatedQuantityAfter, item.FulfilledQuantityAfter, item.ActorId, item.Reason, item.CorrelationId, item.OccurredAt, item.Version)).ToArray();
     }
 
     public async Task<InventoryAvailabilityRecord?> GetAvailabilityAsync(InventoryRequestContext context, InventoryScope scope, Guid productId, Guid unitOfMeasureId, string? trackingIdentity, InventoryProductReference product, InventoryWarehouseOption warehouse, CancellationToken cancellationToken = default)
@@ -874,7 +980,7 @@ internal sealed partial class InventoryPersistence(DbContextOptions options) : I
     }
 
     private static readonly System.Linq.Expressions.Expression<Func<InventoryStockMovementEntity, InventoryMovementRecord>> ToMovement = item => new InventoryMovementRecord(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.Direction, item.Quantity, item.UnitCost, item.CurrencyCode, item.TrackingIdentity, item.SourceType, item.SourceDocumentId, item.SourceLineId, item.CorrectionOfMovementId, item.EffectiveDate, item.ActorId, item.CorrelationId, item.PostedAt, item.Version, item.ValuationStatus, item.GoodsReceiptId, item.GoodsReceiptLineId, item.SupplierReturnId, item.SupplierReturnLineId, item.PurchaseOrderId, item.PurchaseOrderLineId, item.TransferId, item.TransferLineId, item.SourceReference, item.LedgerSequence);
-    private static readonly System.Linq.Expressions.Expression<Func<InventoryReservationEntity, InventoryReservationRecord>> ToReservation = item => new InventoryReservationRecord(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.TrackingIdentity, item.SourceType, item.SourceReference, item.RequestedQuantity, item.ReservedQuantity, item.UnallocatedQuantity, item.Status, item.ActorId, item.CreatedAt, item.UpdatedAt, item.Version);
+    private static readonly System.Linq.Expressions.Expression<Func<InventoryReservationEntity, InventoryReservationRecord>> ToReservation = item => new InventoryReservationRecord(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.ProductId, item.ProductSku, item.ProductName, item.UnitOfMeasureId, item.UnitOfMeasureCode, item.TrackingIdentity, item.SourceType, item.SourceReference, item.RequestedQuantity, item.ReservedQuantity, item.UnallocatedQuantity, item.Status, item.ActorId, item.CreatedAt, item.UpdatedAt, item.Version, item.FulfilledQuantity, item.SourceDocumentId, item.SourceLineId, item.SourceRevision);
 
     private static InventoryOpeningBalanceRecord ToOpening(InventoryOpeningBalanceEntity item) => new(item.Id, item.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId, item.WarehouseCode, item.WarehouseName, item.AsOfDate, item.SourceOwner, item.SourceSystem, item.ExtractedAt, item.SourceReference, item.Status, item.Rows.Count, item.Rows.Count(row => row.Status is InventoryOpeningRowStatus.Valid or InventoryOpeningRowStatus.Posted), item.Rows.Count(row => row.Status == InventoryOpeningRowStatus.Quarantined), item.Rows.Where(row => row.Status is InventoryOpeningRowStatus.Valid or InventoryOpeningRowStatus.Posted).Sum(row => row.Quantity), item.CreatedAt, item.UpdatedAt, item.Rows.OrderBy(row => row.Id).Select(row => new InventoryOpeningBalanceRowRecord(row.Id, row.ProductId, row.ProductSku, row.ProductName, row.UnitOfMeasureId, row.UnitOfMeasureCode, row.Quantity, row.UnitCost, row.CurrencyCode, row.TrackingIdentity, row.SourceLineReference, row.Status, row.ValidationCode, row.PostedAt, row.Version, row.SourceFingerprint)).ToArray(), item.Version);
 

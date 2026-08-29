@@ -1,12 +1,55 @@
 # Current State
 
+## MESP-137 active - reservation, fulfillment, delivery, and invoice eligibility
+
+MESP-137 is the single active implementation capability under Epic MESP-9,
+activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`. The
+bounded implementation is on `feat/MESP-137-reservation-fulfillment-invoice`,
+based on exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`.
+
+The capability adds Sales-linked Inventory reservations, partial allocation,
+atomic Sales delivery posting with stock movement and reservation consumption,
+durable delivery/invoice-request evidence, Finance-owned invoice eligibility
+and AR/invoice posting seams, REST/OpenAPI metadata, and bilingual RTL Sales
+fulfillment UI. It does not add returns, credit notes, receipts, refunds,
+revenue recognition, external integrations, ZATCA/FATOORA, Wafra-specific
+behavior, or MESP-138/MESP-139 work.
+
+Validation is green for the current implementation: Release build `0 warnings
+/ 0 errors`, non-SQL backend `1,046/1,046`, full disposable-LocalDB backend
+`1,126/1,126`, SQL safety `80/80`, focused Inventory `34/34`, focused Sales
+`27/27`, Finance MESP-135 regression `31/31`, REST foundation `36/36`,
+catalogue validation `4/4`, host security `19/19`, identity/authorization
+`89/89`, Angular `305/305` across 43 spec files, focused Chromium `10/10`,
+full Chromium `49/49`, both npm audits `0 vulnerabilities`, and a clear
+transitive NuGet vulnerability scan. Generated OpenAPI has `417` unique
+operationIds; the REST catalogue has `418` public / `2` internal operations;
+EF pending-model validation and `git diff --check` are clean. Frontend
+production build retains the initial-bundle warning at `511.98 kB` against the
+`500 kB` budget; Sales lazy chunk is `86.51 kB`; the budget was not increased.
+
+The canonical launcher is running the isolated feature worktree with the
+approved loopback Development auth bypass: API `http://localhost:5310` PID
+`39344`, Angular `http://localhost:4300` PID `38836`, data directory
+`.runtime/sol-review-20260829`. Health, OpenAPI, Scalar, root, Sales UI,
+authentication, context, and authenticated Sales register reads returned HTTP
+200. No eligible Sales Order is present in the isolated Development seed, so
+no live reservation/delivery/invoice mutation is claimed; focused integration
+tests cover the Sales-to-Inventory path. The pre-existing port-5300 listener
+was not touched.
+
+No Jira writes, Ready transition, merge, or review request is authorized.
+One Draft PR is authorized; it must remain Open/Draft/Unmerged. Stop after
+push and PR verification for independent GPT-5.6 Sol review.
+
 ## MESP-136 closed and merged - 29 August 2026 - awaiting next Sol activation
 
 MESP-136 is **Done** and **merged to `main` at `992195f7e61cf03b94675a498377a6d8bf679ebf`** (2026-08-28T23:37:13Z). Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`. PR #80 is closed/merged/not-Draft.
 
 Final Sol acceptance: MESP-136 comment `12252`. Closure evidence: MESP-136 comment `12255` and MESP-9 reconciliation `12256`.
 
-**No current implementation capability is active.** MESP-137, MESP-138, and MESP-139 remain To Do/inactive. Sol must explicitly activate the next task in a fresh session with a new TASK.md prompt.
+MESP-137 is the current activated capability described above. MESP-138 and
+MESP-139 remain To Do/inactive and are out of scope for this handoff.
 
 Fast-track capability completion = **20/26 = 76.9%** after verified merge and Jira closure. Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**. MESP-48 and MESP-50 remain open production gates. MESP-9 remains In Progress.
 

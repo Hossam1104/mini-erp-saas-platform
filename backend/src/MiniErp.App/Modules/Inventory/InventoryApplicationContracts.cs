@@ -681,7 +681,38 @@ public sealed record InventoryReservationCommand(
     DateTimeOffset OccurredAt,
     string CorrelationId,
     string? IdempotencyKey,
+    string RequestFingerprint,
+    Guid? SourceDocumentId = null,
+    Guid? SourceLineId = null,
+    int? SourceRevision = null,
+    decimal? SourceQuantityLimit = null);
+
+public sealed record InventorySalesDeliveryLineCommand(
+    Guid ReservationId,
+    byte[] ExpectedReservationVersion,
+    Guid SourceLineId,
+    decimal Quantity,
+    string SourceReference);
+
+public sealed record InventorySalesDeliveryPostCommand(
+    Guid DeliveryId,
+    Guid SalesOrderId,
+    int SalesOrderRevision,
+    string SourceReference,
+    DateOnly EffectiveDate,
+    IReadOnlyList<InventorySalesDeliveryLineCommand> Lines,
+    Guid ActorId,
+    DateTimeOffset OccurredAt,
+    string CorrelationId,
+    string? IdempotencyKey,
     string RequestFingerprint);
+
+public sealed record InventorySalesDeliveryPostingRecord(
+    Guid DeliveryId,
+    Guid SalesOrderId,
+    IReadOnlyList<Guid> MovementIds,
+    decimal PostedQuantity,
+    DateTimeOffset PostedAt);
 
 public sealed record InventoryGoodsReceiptPostCommand(
     Guid PostingId,
@@ -763,6 +794,8 @@ public partial interface IInventoryPersistence
     Task<InventoryReservationRecord?> CreateReservationAsync(InventoryRequestContext context, InventoryReservationCommand command, decimal availableQuantity, CancellationToken cancellationToken = default);
     Task<InventoryReservationRecord?> ReduceReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, decimal quantity, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default);
     Task<InventoryReservationRecord?> ReleaseReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default);
+    Task<InventoryReservationRecord?> AllocateReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, decimal quantity, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default);
+    Task<InventorySalesDeliveryPostingRecord?> PostSalesDeliveryAsync(InventoryRequestContext context, InventorySalesDeliveryPostCommand command, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<InventoryReservationHistoryRecord>> ReadReservationHistoryAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken = default);
     Task<InventoryAvailabilityRecord?> GetAvailabilityAsync(InventoryRequestContext context, InventoryScope scope, Guid productId, Guid unitOfMeasureId, string? trackingIdentity, InventoryProductReference product, InventoryWarehouseOption warehouse, CancellationToken cancellationToken = default);
     Task<InventoryGoodsReceiptPostingRecord?> PostGoodsReceiptAsync(InventoryRequestContext context, InventoryGoodsReceiptPostCommand command, CancellationToken cancellationToken = default);
@@ -833,6 +866,8 @@ public sealed partial class UnavailableInventoryPersistence : IInventoryPersiste
     public Task<InventoryReservationRecord?> CreateReservationAsync(InventoryRequestContext context, InventoryReservationCommand command, decimal availableQuantity, CancellationToken cancellationToken = default) => Unavailable<InventoryReservationRecord?>();
     public Task<InventoryReservationRecord?> ReduceReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, decimal quantity, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) => Unavailable<InventoryReservationRecord?>();
     public Task<InventoryReservationRecord?> ReleaseReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) => Unavailable<InventoryReservationRecord?>();
+    public Task<InventoryReservationRecord?> AllocateReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, decimal quantity, Guid actorId, string? reason, string correlationId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default) => Unavailable<InventoryReservationRecord?>();
+    public Task<InventorySalesDeliveryPostingRecord?> PostSalesDeliveryAsync(InventoryRequestContext context, InventorySalesDeliveryPostCommand command, CancellationToken cancellationToken = default) => Unavailable<InventorySalesDeliveryPostingRecord?>();
     public Task<IReadOnlyList<InventoryReservationHistoryRecord>> ReadReservationHistoryAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken = default) => Unavailable<IReadOnlyList<InventoryReservationHistoryRecord>>();
     public Task<InventoryAvailabilityRecord?> GetAvailabilityAsync(InventoryRequestContext context, InventoryScope scope, Guid productId, Guid unitOfMeasureId, string? trackingIdentity, InventoryProductReference product, InventoryWarehouseOption warehouse, CancellationToken cancellationToken = default) => Unavailable<InventoryAvailabilityRecord?>();
     public Task<InventoryGoodsReceiptPostingRecord?> PostGoodsReceiptAsync(InventoryRequestContext context, InventoryGoodsReceiptPostCommand command, CancellationToken cancellationToken = default) => Unavailable<InventoryGoodsReceiptPostingRecord?>();

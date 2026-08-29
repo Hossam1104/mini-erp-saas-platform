@@ -492,6 +492,41 @@ public sealed class SalesTests
     }
 
     [Fact]
+    public async Task Sales_invoice_request_persistence_is_idempotent_and_blocks_cumulative_overinvoice()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var quotation = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), fixture.Model(), "invoice-source-create", "invoice-source-create-fp", fixture.Policy());
+        Assert.True(quotation.Succeeded, quotation.Code);
+        var submitted = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), quotation.Value!.Id, SalesQuotationStatus.PendingApproval, null, quotation.Value.Version, "invoice-source-submit", "invoice-source-submit-fp", fixture.Policy());
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Approver), quotation.Value.Id, SalesQuotationStatus.Approved, null, submitted.Value!.Version, "invoice-source-approve", "invoice-source-approve-fp", fixture.Policy());
+        Assert.True(approved.Succeeded, approved.Code);
+        var converted = await fixture.Persistence.ConvertQuotationAsync(fixture.Context(Approver), quotation.Value.Id, approved.Value!.Version, "invoice-source-convert", "invoice-source-convert-fp", fixture.Policy());
+        Assert.True(converted.Succeeded, converted.Code);
+        var order = converted.Value!;
+        var line = order.Lines.Single();
+        var deliveryId = Guid.NewGuid();
+        await using (var db = new SalesDbContext(fixture.Options, fixture.Context(Creator).TenantContext))
+        {
+            var delivery = new SalesDeliveryEntity(new TenantId(TenantA), deliveryId, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), JsonSerializer.Serialize(new[] { new SalesDeliveryRequestLine(line.Id, Guid.NewGuid(), 3m) }), "{}", Creator, "invoice-source-delivery", DateTimeOffset.UtcNow);
+            delivery.Posted([Guid.NewGuid()], DateTimeOffset.UtcNow);
+            db.Deliveries.Add(delivery);
+            await db.SaveChangesAsync();
+        }
+
+        var firstModel = new SalesInvoiceRequestWriteModel(Guid.NewGuid(), order.Id, order.RevisionNumber, deliveryId, CompanyA, BranchA, CustomerA, new DateOnly(2026, 8, 29), 100m, "SAR", [new SalesInvoiceRequestLine(line.Id, 2m)], "invoice-source-snapshot", Creator);
+        var first = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), firstModel, "invoice-source-key", "invoice-source-fp");
+        Assert.True(first.Succeeded, first.Code);
+        var replay = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), firstModel with { Id = Guid.NewGuid() }, "invoice-source-key", "invoice-source-fp");
+        Assert.True(replay.Succeeded, replay.Code);
+        Assert.Equal(first.Value!.Id, replay.Value!.Id);
+
+        var competing = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), firstModel with { Id = Guid.NewGuid(), Lines = [new SalesInvoiceRequestLine(line.Id, 2m)] }, "invoice-source-key-2", "invoice-source-fp-2");
+        Assert.False(competing.Succeeded);
+        Assert.Equal("invoice_quantity_conflict", competing.Code);
+    }
+
+    [Fact]
     public async Task Approval_policy_is_snapshotted_at_submission_for_quotations_and_orders()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -1104,6 +1139,7 @@ public sealed class SalesTests
         }
 
         public SalesPersistence Persistence { get; }
+        public DbContextOptions Options => options;
 
         public static async Task<Fixture> CreateAsync()
         {
@@ -1188,6 +1224,8 @@ public sealed class SalesTests
         public Task<IReadOnlyList<FinanceApSourceReadyRecord>> ListApSourceReadyAsync(FinanceRequestContext context, Guid? companyId = null, CancellationToken cancellationToken = default) => fallback.ListApSourceReadyAsync(context, companyId, cancellationToken);
         public Task<FinanceOperationResult<FinanceOpenItemRecord>> RecognizeSupplierInvoiceAsync(FinanceRequestContext context, FinanceSupplierInvoiceRecognitionCommand command, CancellationToken cancellationToken = default) => fallback.RecognizeSupplierInvoiceAsync(context, command, cancellationToken);
         public Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateManualReceivableAsync(FinanceRequestContext context, FinanceManualReceivableCommand command, CancellationToken cancellationToken = default) => fallback.CreateManualReceivableAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSalesInvoiceEligibilityRecord>> EvaluateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default) => fallback.EvaluateSalesInvoiceAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default) => fallback.CreateSalesInvoiceAsync(context, command, cancellationToken);
         public Task<IReadOnlyList<FinanceSettlementDocumentRecord>> ListSettlementDocumentsAsync(FinanceRequestContext context, FinanceSettlementQuery query, CancellationToken cancellationToken = default) => fallback.ListSettlementDocumentsAsync(context, query, cancellationToken);
         public Task<FinanceSettlementDocumentRecord?> GetSettlementDocumentAsync(FinanceRequestContext context, Guid documentId, FinancePaymentMethodDirection? expectedDirection = null, CancellationToken cancellationToken = default) => fallback.GetSettlementDocumentAsync(context, documentId, expectedDirection, cancellationToken);
         public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> CreateSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementDocumentCommand command, CancellationToken cancellationToken = default) => fallback.CreateSettlementDocumentAsync(context, command, cancellationToken);
@@ -1231,6 +1269,16 @@ public sealed class SalesTests
         public Task<SalesOperationResult<SalesOrderResponse>> TransitionOrderAsync(ProcurementRequestContext context, Guid id, SalesOrderStatus target, string? reason, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesCreditEvaluation? credit, SalesApprovalPolicyDefinition? policy, Guid? delegatedFromActorId = null, CancellationToken cancellationToken = default) => Failure<SalesOrderResponse>();
         public Task<SalesOperationResult<SalesOrderResponse>> OverrideOrderCreditAsync(ProcurementRequestContext context, Guid id, string reason, DateTimeOffset expiresAt, string? scope, string? sourceReference, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesCreditEvaluation credit, CancellationToken cancellationToken = default) => Failure<SalesOrderResponse>();
         public Task<SalesCreditResponse?> GetOrderCreditAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => Empty<SalesCreditResponse?>();
+        public Task<IReadOnlyList<SalesDeliveryResponse>> ListDeliveriesAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default) => EmptyList<SalesDeliveryResponse>();
+        public Task<SalesDeliveryResponse?> GetDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, CancellationToken cancellationToken = default) => Empty<SalesDeliveryResponse?>();
+        public Task<SalesOperationResult<SalesDeliveryResponse>> CreateDeliveryAsync(ProcurementRequestContext context, SalesDeliveryWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default) => Failure<SalesDeliveryResponse>();
+        public Task<SalesOperationResult<SalesDeliveryResponse>> CompleteDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, IReadOnlyList<Guid> movementIds, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default) => Failure<SalesDeliveryResponse>();
+        public Task<SalesOperationResult<SalesDeliveryResponse>> FailDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, string code, bool unknown, CancellationToken cancellationToken = default) => Failure<SalesDeliveryResponse>();
+        public Task<IReadOnlyList<SalesInvoiceRequestResponse>> ListInvoiceRequestsAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default) => EmptyList<SalesInvoiceRequestResponse>();
+        public Task<SalesInvoiceRequestResponse?> GetInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, CancellationToken cancellationToken = default) => Empty<SalesInvoiceRequestResponse?>();
+        public Task<SalesOperationResult<SalesInvoiceRequestResponse>> CreateInvoiceRequestAsync(ProcurementRequestContext context, SalesInvoiceRequestWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default) => Failure<SalesInvoiceRequestResponse>();
+        public Task<SalesOperationResult<SalesInvoiceRequestResponse>> CompleteInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, Guid financeOpenItemId, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default) => Failure<SalesInvoiceRequestResponse>();
+        public Task<SalesOperationResult<SalesInvoiceRequestResponse>> FailInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, string code, bool unknown, CancellationToken cancellationToken = default) => Failure<SalesInvoiceRequestResponse>();
 
         private static Task<T> Empty<T>() => Task.FromResult<T>(default!);
         private static Task<IReadOnlyList<T>> EmptyList<T>() => Task.FromResult<IReadOnlyList<T>>([]);
@@ -1296,17 +1344,17 @@ public sealed class SalesTests
         public Task<MasterDataPersistenceResult<MasterDataPriceListRecord>> EditPriceListAsync(TenantContext tenantContext, EditMasterDataPriceListCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataPriceListRecord>();
         public Task<MasterDataPersistenceResult<MasterDataPriceListRecord>> AppendPriceAsync(TenantContext tenantContext, AppendMasterDataPriceCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataPriceListRecord>();
         public Task<MasterDataPersistenceResult<MasterDataPriceListRecord>> SetPriceListLifecycleAsync(TenantContext tenantContext, Guid priceListId, MasterDataLifecycleState lifecycleState, byte[] expectedVersion, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataPriceListRecord>();
-        public Task<MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>> ResolvePriceAsync(TenantContext tenantContext, ResolveMasterDataPriceQuery query, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Task.FromResult(MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>.Success(CreateRecord()));
+        public Task<MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>> ResolvePriceAsync(TenantContext tenantContext, ResolveMasterDataPriceQuery query, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Task.FromResult(MasterDataPersistenceResult<MasterDataPriceListReferenceRecord>.Success(CreateRecord(query.EffectiveOn)));
         public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(TenantContext tenantContext, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataAuditRecord>();
         public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(TenantContext tenantContext, Guid? priceListId = null, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataAuditRecord>>([]);
 
-        private MasterDataPriceListReferenceRecord CreateRecord()
+        private MasterDataPriceListReferenceRecord CreateRecord(DateOnly effectiveOn)
         {
-            var effective = new DateOnly(2026, 8, 1);
+            var effective = effectiveOn;
             var price = new MasterDataPriceListPriceRecord(Guid.NewGuid(), 4, ProductA, "SKU-001", UomA, "EA", CurrencyA, currencyCode, CustomerA, OrganizationScopeKind.Branch, BranchA, 1, effective, null, 50m, 2, PriceListProvenance.Configured, "price-row-4", [1]);
             var configuration = new MasterDataPriceListCurrentConfiguration(CurrencyA, currencyCode, CustomerA, OrganizationScopeKind.Branch, BranchA, 1, MasterDataLifecycleState.Active);
             var snapshot = new ReferenceSnapshot(MasterDataResourceKind.PriceList, PriceListA, new TenantOwnership(TenantA), 4, "price-row-4", effective);
-            return new MasterDataPriceListReferenceRecord(PriceListA, new TenantId(TenantA), "STANDARD", price, configuration, new DateOnly(2026, 8, 28), snapshot, [1]);
+            return new MasterDataPriceListReferenceRecord(PriceListA, new TenantId(TenantA), "STANDARD", price, configuration, effectiveOn, snapshot, [1]);
         }
 
         private static Task<T> Empty<T>() => Task.FromResult<T>(default!);

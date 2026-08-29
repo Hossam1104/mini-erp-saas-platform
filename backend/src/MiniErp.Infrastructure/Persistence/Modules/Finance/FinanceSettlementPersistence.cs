@@ -25,6 +25,7 @@ internal sealed class FinanceSettlementPersistence(
 {
     private const string ManualArContract = "manual-ar.v1";
     private const string ApContract = "procurement-supplier-invoice.v1";
+    private const string SalesInvoiceContract = "sales-invoice.v1";
     private IFinanceSourceApprovalPolicy SourceApprovalPolicy => approvalPolicy ?? UnconfiguredFinanceSourceApprovalPolicy.Instance;
 
     private FinanceDbContext CreateContext(FinanceRequestContext context) => new(options, context.TenantContext);
@@ -162,6 +163,60 @@ internal sealed class FinanceSettlementPersistence(
         var term = await ResolvePaymentTermAsync(context, command.PaymentTermId, command.DueDate, command.DocumentDate, cancellationToken); if (!term.Succeeded || term.Value is null) return Failure<FinanceOpenItemRecord>(term.Code); var (dueDate, paymentTerm) = term.Value.Value; var rate = await ValidateCurrencyAsync(context, company, currency, command.DocumentDate, command.ExchangeRate, command.ExchangeRateId, command.ExchangeRateVersionId, command.ExchangeRateVersionNumber, cancellationToken); if (!rate.Succeeded) return Failure<FinanceOpenItemRecord>(rate.Code); var functionalAmount = currency == company.FunctionalCurrencyCode ? command.Amount : command.Amount * rate.Value;
         await using var db = CreateContext(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var replay = await ReadReplayAsync<FinanceOpenItemRecord>(db, context, "finance.ar.manual-create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken); if (replay is not null) return replay; if (await db.OpenItems.AnyAsync(item => item.CompanyId == command.CompanyId && item.SourceContract == ManualArContract && item.SourceEvidenceId == command.Id && item.SourceEvidenceVersion == 1, cancellationToken)) return Failure<FinanceOpenItemRecord>("source_effect_exists"); var rule = await FindRuleAsync(db, command.CompanyId, ManualArContract, "recognition", command.DocumentDate, cancellationToken); if (rule.Code != "eligible") return Failure<FinanceOpenItemRecord>(rule.Code);
         var item = new FinanceOpenItemEntity(context.TenantId, command.Id, FinanceOpenItemKind.Receivable, command.CompanyId, null, command.CustomerId, ManualArContract, command.Id, 1, command.Id, 1, command.Reference, command.DocumentDate, dueDate, currency, command.Amount, company.FunctionalCurrencyCode, functionalAmount, currency == company.FunctionalCurrencyCode ? 1m : rate.Value, currency == company.FunctionalCurrencyCode ? null : command.ExchangeRateId, currency == company.FunctionalCurrencyCode ? null : command.ExchangeRateVersionId, currency == company.FunctionalCurrencyCode ? null : command.ExchangeRateVersionNumber, paymentTerm, null, null, JsonSerializer.Serialize(new { source = ManualArContract, command.CustomerId, command.Reference, command.DocumentDate })); db.OpenItems.Add(item); var journal = await CreatePostedJournalAsync(db, context, command.CompanyId, command.DocumentDate, currency, command.Amount, functionalAmount, currency == company.FunctionalCurrencyCode ? 1m : rate.Value, currency == company.FunctionalCurrencyCode ? null : command.ExchangeRateId, currency == company.FunctionalCurrencyCode ? null : command.ExchangeRateVersionId, currency == company.FunctionalCurrencyCode ? null : command.ExchangeRateVersionNumber, ManualArContract, "recognition", command.Id, 1, rule.Value!, false, command.Description ?? "Manual receivable recognition", cancellationToken); if (!journal.Succeeded || journal.Value is null) return Failure<FinanceOpenItemRecord>(journal.Code); item.SetRecognition(FinanceOpenItemRecognitionState.Recognized, journal.Value.Id); var now = DateTimeOffset.UtcNow; AddAudit(db, context, "finance.ar.manual-create", "ar-open-item", item.Id, "Succeeded", command.Reference, command.IdempotencyKey, now); await db.SaveChangesAsync(cancellationToken); var result = FinanceOperationResult<FinanceOpenItemRecord>.Success(await ToOpenItemAsync(db, item, cancellationToken)); AddReplay(db, context, "finance.ar.manual-create", command.IdempotencyKey, command.RequestFingerprint, "ar-open-item", item.Id, result.Value!, now); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return result;
+    }
+
+    public async Task<FinanceOperationResult<FinanceSalesInvoiceEligibilityRecord>> EvaluateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default)
+    {
+        var company = Company(context, command.CompanyId);
+        var currency = NormalizeCode(command.CurrencyCode);
+        if (company is null) return Failure<FinanceSalesInvoiceEligibilityRecord>("company_scope_denied");
+        if (command.SalesOrderId == Guid.Empty || command.InvoiceRequestId == Guid.Empty || command.SalesOrderRevision <= 0 || command.Amount <= 0m || string.IsNullOrWhiteSpace(command.SourceSnapshot)) return Failure<FinanceSalesInvoiceEligibilityRecord>("invalid_sales_invoice");
+        if (!await CustomerIsActiveAsync(context, command.CustomerId, cancellationToken)) return Failure<FinanceSalesInvoiceEligibilityRecord>("party_scope_denied");
+        var term = await ResolvePaymentTermAsync(context, command.PaymentTermId, null, command.DocumentDate, cancellationToken);
+        if (!term.Succeeded || term.Value is null) return Failure<FinanceSalesInvoiceEligibilityRecord>(term.Code);
+        var rate = await ValidateCurrencyAsync(context, company, currency ?? string.Empty, command.DocumentDate, command.ExchangeRate, command.ExchangeRateId, command.ExchangeRateVersionId, command.ExchangeRateVersionNumber, cancellationToken);
+        if (!rate.Succeeded) return Failure<FinanceSalesInvoiceEligibilityRecord>(rate.Code);
+        await using var db = CreateContext(context);
+        if (await db.OpenItems.AnyAsync(item => item.CompanyId == command.CompanyId && item.SourceContract == SalesInvoiceContract && item.SourceEvidenceId == command.InvoiceRequestId && item.SourceEvidenceVersion == 1, cancellationToken)) return Failure<FinanceSalesInvoiceEligibilityRecord>("source_effect_exists");
+        var period = await db.FiscalPeriods.SingleOrDefaultAsync(item => item.CompanyId == command.CompanyId && item.StartDate <= command.DocumentDate && item.EndDate >= command.DocumentDate, cancellationToken);
+        if (period is null) return Failure<FinanceSalesInvoiceEligibilityRecord>("period_not_configured");
+        if (period.State != FinanceFiscalPeriodState.Open) return Failure<FinanceSalesInvoiceEligibilityRecord>(period.State == FinanceFiscalPeriodState.SoftClosed ? "period_soft_closed" : "period_closed");
+        var rule = await FindRuleAsync(db, command.CompanyId, SalesInvoiceContract, "recognition", command.DocumentDate, cancellationToken);
+        if (rule.Code != "eligible") return Failure<FinanceSalesInvoiceEligibilityRecord>(rule.Code);
+        var normalized = currency!;
+        return FinanceOperationResult<FinanceSalesInvoiceEligibilityRecord>.Success(new FinanceSalesInvoiceEligibilityRecord(true, "eligible", command.Amount, normalized, command.SalesOrderId, command.SalesOrderRevision, command.DocumentDate, term.Value.Value.Snapshot, normalized == company.FunctionalCurrencyCode ? 1m : rate.Value, normalized == company.FunctionalCurrencyCode ? null : command.ExchangeRateId, normalized == company.FunctionalCurrencyCode ? null : command.ExchangeRateVersionId, normalized == company.FunctionalCurrencyCode ? null : command.ExchangeRateVersionNumber));
+    }
+
+    public async Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default)
+    {
+        await using var db = CreateContext(context);
+        var replay = await ReadReplayAsync<FinanceOpenItemRecord>(db, context, "finance.ar.sales-invoice.create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken);
+        if (replay is not null) return replay;
+        var eligibility = await EvaluateSalesInvoiceAsync(context, command, cancellationToken);
+        if (!eligibility.Succeeded || eligibility.Value is null) return Failure<FinanceOpenItemRecord>(eligibility.Code);
+        var company = Company(context, command.CompanyId)!;
+        var effective = eligibility.Value;
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        replay = await ReadReplayAsync<FinanceOpenItemRecord>(db, context, "finance.ar.sales-invoice.create", command.IdempotencyKey, command.RequestFingerprint, cancellationToken);
+        if (replay is not null) return replay;
+        if (await db.OpenItems.AnyAsync(item => item.CompanyId == command.CompanyId && item.SourceContract == SalesInvoiceContract && item.SourceEvidenceId == command.InvoiceRequestId && item.SourceEvidenceVersion == 1, cancellationToken)) return Failure<FinanceOpenItemRecord>("source_effect_exists");
+        var rule = await FindRuleAsync(db, command.CompanyId, SalesInvoiceContract, "recognition", command.DocumentDate, cancellationToken);
+        if (rule.Code != "eligible") return Failure<FinanceOpenItemRecord>(rule.Code);
+        var currency = NormalizeCode(command.CurrencyCode)!;
+        var functionalAmount = decimal.Round(command.Amount * (effective.ExchangeRate ?? 1m), 8, MidpointRounding.ToEven);
+        var item = new FinanceOpenItemEntity(context.TenantId, Guid.NewGuid(), FinanceOpenItemKind.Receivable, command.CompanyId, null, command.CustomerId, SalesInvoiceContract, command.SalesOrderId, command.SalesOrderRevision, command.InvoiceRequestId, 1, command.Reference, command.DocumentDate, effective.PaymentTerm!.DueDate!.Value, currency, command.Amount, company.FunctionalCurrencyCode, functionalAmount, effective.ExchangeRate, effective.ExchangeRateId, effective.ExchangeRateVersionId, effective.ExchangeRateVersionNumber, effective.PaymentTerm, null, null, command.SourceSnapshot);
+        db.OpenItems.Add(item);
+        var journal = await CreatePostedJournalAsync(db, context, command.CompanyId, command.DocumentDate, currency, command.Amount, functionalAmount, effective.ExchangeRate, effective.ExchangeRateId, effective.ExchangeRateVersionId, effective.ExchangeRateVersionNumber, SalesInvoiceContract, "recognition", command.InvoiceRequestId, 1, rule.Value!, false, command.Reference ?? $"Sales invoice {command.SalesOrderId:D}", cancellationToken);
+        if (!journal.Succeeded || journal.Value is null) return Failure<FinanceOpenItemRecord>(journal.Code);
+        item.SetRecognition(FinanceOpenItemRecognitionState.Recognized, journal.Value.Id);
+        var now = DateTimeOffset.UtcNow;
+        AddAudit(db, context, "finance.ar.sales-invoice.create", "ar-open-item", item.Id, "Succeeded", command.Reference, command.IdempotencyKey, now);
+        await db.SaveChangesAsync(cancellationToken);
+        var result = FinanceOperationResult<FinanceOpenItemRecord>.Success(await ToOpenItemAsync(db, item, cancellationToken));
+        AddReplay(db, context, "finance.ar.sales-invoice.create", command.IdempotencyKey, command.RequestFingerprint, "ar-open-item", item.Id, result.Value!, now);
+        await db.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+        return result;
     }
 
     public async Task<IReadOnlyList<FinanceSettlementDocumentRecord>> ListSettlementDocumentsAsync(FinanceRequestContext context, FinanceSettlementQuery query, CancellationToken cancellationToken = default)

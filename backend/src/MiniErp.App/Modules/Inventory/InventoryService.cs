@@ -247,7 +247,7 @@ public sealed partial class InventoryService(
                 NormalizeRequired(request.SourceType, 128), NormalizeRequired(request.SourceReference, 512), request.AllowPartialAllocation,
                 NormalizeTracking(request.TrackingIdentity), product!, scope.Warehouse!.Code, scope.Warehouse.Name, context.ActorId,
                 DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256),
-                InventoryFingerprints.Create(request));
+                InventoryFingerprints.Create(request), request.SourceDocumentId, request.SourceLineId, request.SourceRevision, request.SourceQuantityLimit);
             var value = await persistence.CreateReservationAsync(context, command, available, cancellationToken);
             return value is null ? InventoryOperationResult<InventoryReservationRecord>.Failure("conflict") : InventoryOperationResult<InventoryReservationRecord>.Success(value);
         }
@@ -259,6 +259,63 @@ public sealed partial class InventoryService(
 
     public Task<InventoryOperationResult<InventoryReservationRecord>> ReleaseReservationAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, string? reason, string? idempotencyKey, CancellationToken cancellationToken = default) =>
         ActReservationAsync(context, id, expectedVersion, null, reason, idempotencyKey, "inventory.reservation.release", (c, i, v, _, a, r, correlation, k, f, ct) => persistence.ReleaseReservationAsync(c, i, v, a, r, correlation, k, f, ct), cancellationToken);
+
+    public async Task<InventoryOperationResult<IReadOnlyList<InventoryReservationRecord>>> ListSalesReservationsAsync(InventoryRequestContext context, string sourceReference, string operationId = "sales.fulfillment.read", CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceReference)) return InventoryOperationResult<IReadOnlyList<InventoryReservationRecord>>.Failure("source_reference_required");
+        try
+        {
+            var values = await persistence.ListReservationsAsync(context, null, null, cancellationToken);
+            var matching = values.Where(item => string.Equals(item.SourceReference, sourceReference, StringComparison.Ordinal)).ToArray();
+            if (matching.Any(item => !authorization.IsAllowed(context, operationId, new InventoryScope(context.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId))))
+                return InventoryOperationResult<IReadOnlyList<InventoryReservationRecord>>.Failure("forbidden");
+            return InventoryOperationResult<IReadOnlyList<InventoryReservationRecord>>.Success(matching);
+        }
+        catch (InvalidOperationException) { return InventoryOperationResult<IReadOnlyList<InventoryReservationRecord>>.Failure("persistence_unavailable"); }
+    }
+
+    public async Task<InventoryOperationResult<InventoryReservationRecord>> CreateSalesReservationAsync(InventoryRequestContext context, InventoryReservationCreateRequest request, string? idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        if (request.RequestedQuantity <= 0m || request.SourceDocumentId is null || request.SourceLineId is null || request.SourceRevision is not > 0 || string.IsNullOrWhiteSpace(request.SourceReference)) return InventoryOperationResult<InventoryReservationRecord>.Failure("invalid_reservation");
+        var scope = await ResolveScopeAsync(context, "sales.fulfillment.reserve", request.WarehouseId, request.CompanyId, request.BranchId, cancellationToken);
+        if (!scope.Succeeded) return InventoryOperationResult<InventoryReservationRecord>.Failure(scope.Code);
+        var product = await products.FindAsync(context, request.ProductId, cancellationToken); var productValidation = ValidateProduct(product, request.UnitOfMeasureId, request.TrackingIdentity); if (!productValidation.Succeeded) return InventoryOperationResult<InventoryReservationRecord>.Failure(productValidation.Code);
+        try
+        {
+            var availability = await persistence.GetAvailabilityAsync(context, scope.Value!, request.ProductId, request.UnitOfMeasureId, NormalizeTracking(request.TrackingIdentity), product!, scope.Warehouse!, cancellationToken); var available = availability?.AvailableQuantity ?? 0m; if (request.RequestedQuantity > available && !request.AllowPartialAllocation) return InventoryOperationResult<InventoryReservationRecord>.Failure("insufficient_available");
+            var command = new InventoryReservationCommand(Guid.NewGuid(), scope.Value!, request.ProductId, request.UnitOfMeasureId, request.RequestedQuantity, NormalizeRequired(request.SourceType, 128), NormalizeRequired(request.SourceReference, 512), request.AllowPartialAllocation, NormalizeTracking(request.TrackingIdentity), product!, scope.Warehouse!.Code, scope.Warehouse.Name, context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(request), request.SourceDocumentId, request.SourceLineId, request.SourceRevision, request.SourceQuantityLimit);
+            var value = await persistence.CreateReservationAsync(context, command, available, cancellationToken); return value is null ? InventoryOperationResult<InventoryReservationRecord>.Failure("conflict") : InventoryOperationResult<InventoryReservationRecord>.Success(value);
+        }
+        catch (InvalidOperationException) { return InventoryOperationResult<InventoryReservationRecord>.Failure("persistence_unavailable"); }
+    }
+
+    public async Task<InventoryOperationResult<InventoryReservationRecord>> AllocateSalesReservationAsync(InventoryRequestContext context, InventoryReservationRecord reservation, decimal quantity, string? idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        if (quantity <= 0m || reservation.SourceDocumentId is null || reservation.SourceLineId is null) return InventoryOperationResult<InventoryReservationRecord>.Failure("invalid_quantity");
+        if (!authorization.IsAllowed(context, "sales.fulfillment.reserve", new InventoryScope(context.TenantId.Value, reservation.CompanyId, reservation.BranchId, reservation.WarehouseId))) return InventoryOperationResult<InventoryReservationRecord>.Failure("forbidden");
+        try
+        {
+            var value = await persistence.AllocateReservationAsync(context, reservation.Id, reservation.Version, quantity, context.ActorId, "sales-backorder-allocation", context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), Normalize(idempotencyKey, 256), InventoryFingerprints.Create(new { reservation.Id, quantity }), cancellationToken);
+            return value is null ? InventoryOperationResult<InventoryReservationRecord>.Failure("conflict") : InventoryOperationResult<InventoryReservationRecord>.Success(value);
+        }
+        catch (InvalidOperationException) { return InventoryOperationResult<InventoryReservationRecord>.Failure("persistence_unavailable"); }
+    }
+
+    public async Task<InventoryOperationResult<InventorySalesDeliveryPostingRecord>> PostSalesDeliveryAsync(InventoryRequestContext context, InventorySalesDeliveryPostCommand command, CancellationToken cancellationToken = default)
+    {
+        if (command.DeliveryId == Guid.Empty || command.SalesOrderId == Guid.Empty || command.SalesOrderRevision <= 0 || string.IsNullOrWhiteSpace(command.SourceReference) || command.Lines.Count == 0 || command.Lines.Any(item => item.ReservationId == Guid.Empty || item.SourceLineId == Guid.Empty || item.Quantity <= 0m || item.ExpectedReservationVersion.Length == 0 || string.IsNullOrWhiteSpace(item.SourceReference)))
+            return InventoryOperationResult<InventorySalesDeliveryPostingRecord>.Failure("invalid_delivery");
+        try
+        {
+            var reservations = await persistence.ListReservationsAsync(context, null, null, cancellationToken);
+            var scope = reservations.Where(item => command.Lines.Any(line => line.ReservationId == item.Id)).Select(item => new InventoryScope(context.TenantId.Value, item.CompanyId, item.BranchId, item.WarehouseId)).Distinct().ToArray();
+            if (scope.Length != 1 || !authorization.IsAllowed(context, "sales.delivery.post", scope[0]))
+                return InventoryOperationResult<InventorySalesDeliveryPostingRecord>.Failure("forbidden");
+            var value = await persistence.PostSalesDeliveryAsync(context, command, cancellationToken);
+            return value is null ? InventoryOperationResult<InventorySalesDeliveryPostingRecord>.Failure("conflict") : InventoryOperationResult<InventorySalesDeliveryPostingRecord>.Success(value);
+        }
+        catch (InvalidOperationException) { return InventoryOperationResult<InventorySalesDeliveryPostingRecord>.Failure("persistence_unavailable"); }
+    }
 
     private async Task<InventoryOperationResult<InventoryReservationRecord>> ActReservationAsync(
         InventoryRequestContext context, Guid id, byte[] expectedVersion, decimal? quantity, string? reason, string? idempotencyKey, string operationId,

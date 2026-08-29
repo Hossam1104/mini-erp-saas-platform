@@ -275,3 +275,16 @@ export interface SalesCreditResponse {
   evaluatedAt: string;
   overrideExpiresAt: string | null;
 }
+
+export type SalesFulfillmentLineStatus = 'AwaitingReservation' | 'PartiallyReserved' | 'Reserved' | 'PartiallyDelivered' | 'Delivered' | 'Backordered';
+export type SalesDeliveryStatus = 'Draft' | 'Posted' | 'Failed' | 'Unknown';
+export type SalesInvoiceEligibilityStatus = 'Eligible' | 'PartiallyEligible' | 'Blocked' | 'Unknown';
+export type SalesInvoiceRequestStatus = 'Pending' | 'Posted' | 'Failed' | 'Unknown';
+
+export interface SalesReservationRequest { warehouseId: string; lines: Array<{ orderLineId: string; quantity: number; trackingIdentity?: string | null }>; }
+export interface SalesFulfillmentLineResponse { orderLineId: string; orderedQuantity: number; reservedQuantity: number; unallocatedQuantity: number; fulfilledQuantity: number; deliveredQuantity: number; invoicedQuantity: number; remainingFulfillableQuantity: number; remainingInvoiceableQuantity: number; status: SalesFulfillmentLineStatus; }
+export interface SalesDeliveryResponse { id: string; tenantId: string; orderId: string; orderRevisionNumber: number; companyId: string; branchId: string | null; customerId: string; warehouseId: string; status: SalesDeliveryStatus; errorCode: string | null; lines: Array<{ orderLineId: string; reservationId: string; quantity: number }>; movementIds: string[]; createdAt: string; postedAt: string | null; version: string; }
+export interface SalesFulfillmentResponse { orderId: string; orderRevisionNumber: number; lines: SalesFulfillmentLineResponse[]; deliveries: SalesDeliveryResponse[]; invoiceRequests: SalesInvoiceRequestResponse[]; }
+export interface SalesInvoiceEligibilityRequest { deliveryId?: string | null; paymentTermId: string; invoiceDate: string; lines: Array<{ orderLineId: string; quantity: number }>; }
+export interface SalesInvoiceEligibilityResponse { orderId: string; orderRevisionNumber: number; status: SalesInvoiceEligibilityStatus; code: string; totalAmount: number; currencyCode: string; lines: Array<{ orderLineId: string; deliveredQuantity: number; invoicedQuantity: number; requestedQuantity: number; remainingInvoiceableQuantity: number; amount: number; status: string }>; invoiceDate: string; }
+export interface SalesInvoiceRequestResponse { id: string; tenantId: string; orderId: string; orderRevisionNumber: number; deliveryId: string | null; status: SalesInvoiceRequestStatus; errorCode: string | null; financeOpenItemId: string | null; amount: number; lines: Array<{ orderLineId: string; quantity: number }>; createdAt: string; postedAt: string | null; version: string; }

@@ -137,6 +137,10 @@ export interface InventoryReservation {
   createdAt: string;
   updatedAt: string;
   version: string;
+  fulfilledQuantity?: number;
+  sourceDocumentId?: string | null;
+  sourceLineId?: string | null;
+  sourceRevision?: number | null;
 }
 
 export interface InventoryOpeningCreateRequest {

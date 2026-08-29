@@ -6,16 +6,22 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom, combineLatest } from 'rxjs';
 import { SafeUiError, toSafeUiError } from '../../core/api/safe-error';
 import { LanguageService } from '../../core/i18n/language.service';
-import { CustomerRecord, CurrencyRecord, ExchangeRateRecord, ProductRecord, TaxRecord, UnitOfMeasureRecord } from '../master-data/master-data.models';
+import { CustomerRecord, CurrencyRecord, ExchangeRateRecord, PaymentTermRecord, ProductRecord, TaxRecord, UnitOfMeasureRecord } from '../master-data/master-data.models';
 import { MasterDataService } from '../master-data/master-data.service';
 import { PriceListRecord } from '../master-data/price-list.model';
 import { PriceListService } from '../master-data/price-list.service';
 import { PurchaseRequestOrganizationScopeResponse } from '../procurement/purchase-request.model';
 import { PurchaseRequestService } from '../procurement/purchase-request.service';
+import { InventoryService } from '../inventory/inventory.service';
+import { InventoryAvailability, InventoryReservation, InventoryWarehouseOption } from '../inventory/inventory.model';
 import {
   SalesAuditResponse,
   SalesCreditOverrideRequest,
   SalesCreditResponse,
+  SalesDeliveryResponse,
+  SalesFulfillmentResponse,
+  SalesInvoiceEligibilityResponse,
+  SalesInvoiceRequestResponse,
   SalesHistoryResponse,
   SalesOrderResponse,
   SalesOrderEditRequest,
@@ -32,7 +38,7 @@ import {
 import { SalesService } from './sales.service';
 
 type WorkspaceDocument = 'quotation' | 'order';
-type DetailTab = 'summary' | 'lines' | 'revisions' | 'history' | 'audit' | 'credit';
+type DetailTab = 'summary' | 'lines' | 'revisions' | 'history' | 'audit' | 'credit' | 'fulfillment';
 type WorkspaceMode = 'list' | 'create' | 'edit' | 'view';
 
 interface LineDraft {
@@ -156,8 +162,8 @@ interface QuotationDraft {
       <div class="detail-heading"><div><p class="eyebrow eyebrow--soft">{{ language.text('salesOrder') }}</p><h2 id="sales-detail-title">{{ record.number }}</h2><p>{{ record.customerName }} · {{ record.customerCode }}</p></div><div class="detail-actions"><span class="status-pill" [class]="'status-pill status-pill--' + statusTone(record.status)"><i aria-hidden="true"></i>{{ statusLabel(record.status) }}</span>@for (action of orderActions(record); track action.key) {<button class="button" [class.button--primary]="action.key === 'submit' || action.key === 'approve' || action.key === 'confirm'" [class.button--danger]="action.key === 'reject' || action.key === 'cancel'" type="button" (click)="runOrderAction(action.key)">{{ action.label }}</button>}</div></div>
       @if (mutationError()) { <div class="inline-alert" role="alert"><b>{{ errorMessage(mutationError()) }}</b><span>{{ mutationError()?.code === 'concurrency_conflict' ? language.text('salesStaleLead') : language.text('salesActionFailed') }}</span></div> }
       <div class="commercial-strip"><div><span>{{ language.text('customer') }}</span><b>{{ record.customerName }}</b><small>{{ record.customerCode }}</small></div><div><span>{{ language.text('salesSource') }}</span><b>{{ record.sourceQuotationNumber }}</b><small>R{{ record.sourceQuotationRevision }}</small></div><div><span>{{ language.text('salesCreditStatus') }}</span><b class="credit-text" [class.credit-text--hold]="record.creditOutcome === 'Blocked' || record.creditOutcome === 'Unknown'">{{ creditLabel(record.creditOutcome) }}</b><small>{{ record.creditReason || language.text('salesNoCreditReason') }}</small></div><div class="commercial-strip__total"><span>{{ language.text('salesTotal') }}</span><b>{{ record.total | number:'1.2-2' }} {{ record.currencyCode }}</b></div></div>
-      <nav class="tabs" role="tablist" [attr.aria-label]="language.text('salesOrder')"><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'summary'" [class.is-active]="detailTab() === 'summary'" (click)="setTab('summary')">{{ language.text('salesSummary') }}</button><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'lines'" [class.is-active]="detailTab() === 'lines'" (click)="setTab('lines')">{{ language.text('salesLines') }}</button><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'credit'" [class.is-active]="detailTab() === 'credit'" (click)="setTab('credit')">{{ language.text('salesCredit') }}</button><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'history'" [class.is-active]="detailTab() === 'history'" (click)="setTab('history')">{{ language.text('salesHistory') }}</button><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'audit'" [class.is-active]="detailTab() === 'audit'" (click)="setTab('audit')">{{ language.text('audit') }}</button></nav>
-      @switch (detailTab()) { @case ('summary') { <ng-container *ngTemplateOutlet="summary; context: { record: record }" /> } @case ('lines') { <ng-container *ngTemplateOutlet="lines; context: { record: record }" /> } @case ('credit') { <ng-container *ngTemplateOutlet="creditPanel; context: { record: record }" /> } @case ('history') { <ng-container *ngTemplateOutlet="historyList" /> } @case ('audit') { <ng-container *ngTemplateOutlet="auditList" /> } }
+      <nav class="tabs" role="tablist" [attr.aria-label]="language.text('salesOrder')"><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'summary'" [class.is-active]="detailTab() === 'summary'" (click)="setTab('summary')">{{ language.text('salesSummary') }}</button><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'lines'" [class.is-active]="detailTab() === 'lines'" (click)="setTab('lines')">{{ language.text('salesLines') }}</button><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'fulfillment'" [class.is-active]="detailTab() === 'fulfillment'" (click)="setTab('fulfillment'); loadFulfillment()">{{ language.text('salesFulfillment') }}</button><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'credit'" [class.is-active]="detailTab() === 'credit'" (click)="setTab('credit')">{{ language.text('salesCredit') }}</button><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'history'" [class.is-active]="detailTab() === 'history'" (click)="setTab('history')">{{ language.text('salesHistory') }}</button><button role="tab" type="button" [attr.aria-selected]="detailTab() === 'audit'" [class.is-active]="detailTab() === 'audit'" (click)="setTab('audit')">{{ language.text('audit') }}</button></nav>
+      @switch (detailTab()) { @case ('summary') { <ng-container *ngTemplateOutlet="summary; context: { record: record }" /> } @case ('lines') { <ng-container *ngTemplateOutlet="lines; context: { record: record }" /> } @case ('fulfillment') { <ng-container *ngTemplateOutlet="fulfillmentPanel; context: { record: record }" /> } @case ('credit') { <ng-container *ngTemplateOutlet="creditPanel; context: { record: record }" /> } @case ('history') { <ng-container *ngTemplateOutlet="historyList" /> } @case ('audit') { <ng-container *ngTemplateOutlet="auditList" /> } }
     </ng-template>
 
     <ng-template #summary let-record="record"><div class="summary-grid"><div><span>{{ language.text('companyId') }}</span><b>{{ record.companyId }}</b></div><div><span>{{ language.text('branchId') }}</span><b>{{ record.branchId || language.text('emptyValue') }}</b></div><div><span>{{ language.text('customer') }}</span><b>{{ record.customerName }}</b></div><div><span>{{ language.text('salesDocumentStatus') }}</span><b>{{ statusLabel(record.status) }}</b></div><div><span>{{ language.text('salesCreated') }}</span><b>{{ record.createdAt | date:'medium' }}</b></div><div><span>{{ language.text('salesUpdated') }}</span><b>{{ record.updatedAt | date:'medium' }}</b></div><div class="summary-wide"><span>{{ language.text('salesBoundary') }}</span><p>{{ language.text('salesBoundaryText') }}</p></div></div></ng-template>
@@ -167,6 +173,34 @@ interface QuotationDraft {
     <ng-template #revisionList><section class="evidence-list"><h3>{{ language.text('salesRevisionEvidence') }}</h3>@if (revisions().length === 0) {<p class="muted-line">{{ language.text('salesNoRevisions') }}</p>} @else {@for (revision of revisions(); track revision.id) {<article class="evidence-row"><div><b>R{{ revision.revisionNumber }} · {{ statusLabel(revision.status) }}</b><small>{{ revision.occurredAt | date:'medium' }} · {{ revision.actorId }}</small></div><code>{{ revision.snapshotHash.slice(0, 18) }}…</code><span>{{ revision.reason || language.text('salesOriginalRevision') }}</span></article>}}</section></ng-template>
     <ng-template #historyList><section class="evidence-list"><h3>{{ language.text('salesHistory') }}</h3>@if (history().length === 0) {<p class="muted-line">{{ language.text('salesNoHistory') }}</p>} @else {@for (entry of history(); track entry.id) {<article class="evidence-row"><div><b>{{ entry.action }}</b><small>{{ entry.occurredAt | date:'medium' }} · {{ entry.actorId }}</small></div><span>{{ entry.fromStatus || '—' }} → {{ entry.toStatus || '—' }}</span><span>{{ entry.reason || entry.creditOutcome || language.text('salesNoReason') }}</span></article>}}</section></ng-template>
     <ng-template #auditList><section class="evidence-list"><h3>{{ language.text('audit') }}</h3>@if (audit().length === 0) {<p class="muted-line">{{ language.text('salesNoAudit') }}</p>} @else {@for (entry of audit(); track entry.id) {<article class="evidence-row"><div><b>{{ entry.operationId }}</b><small>{{ entry.occurredAt | date:'medium' }} · {{ entry.actorId }}</small></div><span class="evidence-chip">{{ entry.decision }}</span><span>{{ entry.reason || entry.afterSummary || language.text('salesNoReason') }}</span></article>}}</section></ng-template>
+    <ng-template #fulfillmentPanel let-record="record">
+      <section class="fulfillment-panel">
+        <div class="subsection-heading"><div><p class="eyebrow eyebrow--soft">{{ language.text('salesFulfillment') }}</p><h3>{{ language.text('salesFulfillmentTitle') }}</h3><p class="field-note">{{ language.text('salesFulfillmentLead') }}</p></div><div class="section-actions"><button class="button button--quiet" type="button" (click)="printFulfillment()">{{ language.text('salesPrintFulfillment') }}</button><button class="button button--quiet" type="button" (click)="loadFulfillment()">{{ language.text('refresh') }}</button></div></div>
+        <div class="form-grid form-grid--context"><label class="form-field"><span>{{ language.text('salesWarehouse') }}</span><select [ngModel]="selectedWarehouseId()" (ngModelChange)="selectWarehouse($event)"><option value="">{{ language.text('salesSelectWarehouse') }}</option>@for (warehouse of warehouses(); track warehouse.warehouseId) {<option [value]="warehouse.warehouseId">{{ warehouse.displayName }}</option>}</select></label><label class="form-field"><span>{{ language.text('paymentTerms') }}</span><select [ngModel]="paymentTermId()" (ngModelChange)="paymentTermId.set($event)"><option value="">{{ language.text('salesSelectPaymentTerm') }}</option>@for (term of paymentTerms(); track term.id) {<option [value]="term.id">{{ term.code }} - v{{ term.currentVersionNumber }}</option>}</select></label><label class="form-field"><span>{{ language.text('invoiceDate') }}</span><input type="date" [ngModel]="invoiceDate()" (ngModelChange)="invoiceDate.set($event)" /></label></div>
+        @if (fulfillment(); as state) {
+          <div class="record-table-wrap"><table class="record-table"><caption class="sr-only">{{ language.text('salesFulfillment') }}</caption><thead><tr><th>{{ language.text('salesLine') }}</th><th>{{ language.text('quantity') }}</th><th>{{ language.text('salesAvailable') }}</th><th>{{ language.text('salesReserved') }}</th><th>{{ language.text('salesDelivered') }}</th><th>{{ language.text('salesInvoiced') }}</th><th>{{ language.text('salesStatus') }}</th></tr></thead><tbody>@for (line of state.lines; track line.orderLineId) {<tr><td>{{ line.orderLineId.slice(0, 8) }}</td><td>{{ line.orderedQuantity }}</td><td>{{ availabilityByLine()[line.orderLineId]?.onHandQuantity ?? '—' }} / {{ availabilityByLine()[line.orderLineId]?.availableQuantity ?? '—' }}<small>{{ language.text('salesOnHand') }} / {{ language.text('salesAvailable') }}</small></td><td>{{ line.reservedQuantity }} <small>{{ line.unallocatedQuantity }} {{ language.text('salesUnallocated') }}</small></td><td>{{ line.deliveredQuantity }} / {{ line.orderedQuantity }}</td><td>{{ line.invoicedQuantity }} / {{ line.deliveredQuantity }}</td><td><span class="status-pill" [class]="'status-pill status-pill--' + statusTone(line.status)"><i aria-hidden="true"></i>{{ line.status }}</span></td></tr>}</tbody></table></div>
+          <div class="form-actions"><button class="button button--primary" type="button" (click)="reserveOrder()" [disabled]="saving() || !selectedWarehouseId() || record.status !== 'Confirmed'">{{ language.text('salesReserve') }}</button><button class="button" type="button" (click)="postDelivery()" [disabled]="saving() || !selectedWarehouseId() || record.status !== 'Confirmed'">{{ language.text('salesPostDelivery') }}</button><button class="button" type="button" (click)="checkInvoiceEligibility()" [disabled]="saving() || !paymentTermId()">{{ language.text('salesCheckInvoiceEligibility') }}</button><button class="button button--primary" type="button" (click)="requestInvoice()" [disabled]="saving() || !paymentTermId() || invoiceEligibility()?.status !== 'Eligible'">{{ language.text('salesRequestInvoice') }}</button></div>
+          @if (invoiceEligibility(); as eligibility) { <p class="field-note" role="status">{{ eligibility.code }} - {{ eligibility.totalAmount | number:'1.2-2' }} {{ eligibility.currencyCode }}</p> }
+          @if (warehouseReservations().length > 0) {
+            <section class="evidence-list reservation-list" aria-labelledby="sales-reservations-title">
+              <h3 id="sales-reservations-title">{{ language.text('salesReservations') }}</h3>
+              @for (reservation of warehouseReservations(); track reservation.id) {
+                <article class="evidence-row">
+                  <div><b>{{ reservation.productSku }} · {{ reservation.productName }}</b><small>{{ reservation.warehouseName }} · {{ reservation.sourceLineId?.slice(0, 8) }}</small></div>
+                  <span>{{ reservation.reservedQuantity }} {{ language.text('salesReserved') }} · {{ reservation.unallocatedQuantity }} {{ language.text('salesUnallocated') }}</span>
+                  @if (reservation.status === 'Active') {
+                    <div class="section-actions"><input class="reservation-quantity" type="number" min="0.000001" [max]="reservation.reservedQuantity" step="0.000001" [ngModel]="reductionQuantity(reservation)" (ngModelChange)="setReductionQuantity(reservation.id, $event)" [attr.aria-label]="language.text('salesReduceReservation')" /><button class="button" type="button" (click)="reduceReservation(reservation)" [disabled]="saving() || !reductionQuantity(reservation)">{{ language.text('salesReduceReservation') }}</button><button class="button button--danger" type="button" (click)="releaseReservation(reservation)" [disabled]="saving()">{{ language.text('salesReleaseReservation') }}</button></div>
+                  } @else { <span class="evidence-chip">{{ reservation.status }}</span> }
+                </article>
+              }
+            </section>
+          }
+          @if (deliveries().length > 0) { <p class="field-note">{{ deliveries().length }} {{ language.text('salesDeliveries') }} - {{ invoiceRequests().length }} {{ language.text('salesInvoiceRequests') }}</p> }
+        } @else {
+          <div class="state-card state-card--loading"><span class="loader" aria-hidden="true"></span><b>{{ language.text('salesLoading') }}</b></div>
+        }
+      </section>
+    </ng-template>
     <ng-template #creditPanel let-record="record"><section class="credit-panel"><div class="credit-heading"><div><p class="eyebrow eyebrow--soft">{{ language.text('salesCredit') }}</p><h3>{{ creditLabel(credit()?.outcome || record.creditOutcome) }}</h3><p>{{ credit()?.reason || record.creditReason || language.text('salesNoCreditReason') }}</p></div>@if ((credit()?.outcome || record.creditOutcome) === 'Unknown') {<span class="unknown-badge">{{ language.text('salesCreditUnknown') }}</span>} @else {<span class="status-pill" [class]="'status-pill status-pill--' + statusTone(credit()?.outcome || record.creditOutcome)"><i aria-hidden="true"></i>{{ creditLabel(credit()?.outcome || record.creditOutcome) }}</span>}</div>@if (credit(); as currentCredit) {<div class="credit-metrics"><div><span>{{ language.text('salesOpenExposure') }}</span><b>{{ currentCredit.openReceivables ?? '—' }}</b></div><div><span>{{ language.text('salesNetExposure') }}</span><b>{{ currentCredit.netReceivableExposure ?? '—' }}</b></div><div><span>{{ language.text('salesProposedExposure') }}</span><b>{{ currentCredit.proposedExposure ?? '—' }}</b></div><div><span>{{ language.text('salesCreditLimit') }}</span><b>{{ currentCredit.creditLimit ?? '—' }}</b></div></div><small class="field-note">{{ language.text('salesCreditAsOf') }} {{ currentCredit.asOfDate | date:'mediumDate' }}</small>}</section>@if (record.status === 'CreditHold') {<form class="override-card" (ngSubmit)="overrideCredit(record)" novalidate><h3>{{ language.text('salesCreditOverride') }}</h3><p>{{ language.text('salesCreditOverrideLead') }}</p><label class="form-field"><span>{{ language.text('salesOverrideReason') }}</span><textarea name="overrideReason" rows="2" [(ngModel)]="overrideReason" required></textarea></label><label class="form-field"><span>{{ language.text('salesOverrideExpiry') }}</span><input name="overrideExpiry" type="datetime-local" [(ngModel)]="overrideExpiry" required /></label><button class="button button--primary" type="submit" [disabled]="saving()">{{ language.text('salesGrantOverride') }}</button></form>}</ng-template>
   `,
   styles: `
@@ -190,6 +224,7 @@ export class SalesWorkspaceComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly sales = inject(SalesService);
+  private readonly inventory = inject(InventoryService);
   private readonly masterData = inject(MasterDataService);
   private readonly priceListsApi = inject(PriceListService);
   private readonly purchaseRequests = inject(PurchaseRequestService);
@@ -211,6 +246,18 @@ export class SalesWorkspaceComponent implements OnInit {
   readonly history = signal<SalesHistoryResponse[]>([]);
   readonly audit = signal<SalesAuditResponse[]>([]);
   readonly credit = signal<SalesCreditResponse | null>(null);
+  readonly fulfillment = signal<SalesFulfillmentResponse | null>(null);
+  readonly deliveries = signal<SalesDeliveryResponse[]>([]);
+  readonly invoiceRequests = signal<SalesInvoiceRequestResponse[]>([]);
+  readonly warehouses = signal<InventoryWarehouseOption[]>([]);
+  readonly warehouseReservations = signal<InventoryReservation[]>([]);
+  readonly reservationReductions = signal<Record<string, number>>({});
+  readonly availabilityByLine = signal<Record<string, InventoryAvailability>>({});
+  readonly paymentTerms = signal<PaymentTermRecord[]>([]);
+  readonly selectedWarehouseId = signal('');
+  readonly paymentTermId = signal('');
+  readonly invoiceDate = signal(new Date().toISOString().slice(0, 10));
+  readonly invoiceEligibility = signal<SalesInvoiceEligibilityResponse | null>(null);
   readonly customers = signal<CustomerRecord[]>([]);
   readonly currencies = signal<CurrencyRecord[]>([]);
   readonly products = signal<ProductRecord[]>([]);
@@ -275,7 +322,7 @@ export class SalesWorkspaceComponent implements OnInit {
       } else {
         const order = await firstValueFrom(this.sales.order(this.currentId)); this.selectedOrder.set(order); if (this.mode() === 'edit') this.draft = this.draftFromOrder(order);
         const [history, audit, credit] = await Promise.all([firstValueFrom(this.sales.orderHistory(this.currentId)), firstValueFrom(this.sales.orderAudit(this.currentId)), firstValueFrom(this.sales.orderCredit(this.currentId))]);
-        this.history.set(history); this.audit.set(audit); this.credit.set(credit);
+        this.history.set(history); this.audit.set(audit); this.credit.set(credit); void this.loadFulfillment();
       }
     } catch (error) { this.detailError.set(toSafeUiError(error)); }
     finally { this.detailLoading.set(false); }
@@ -306,6 +353,98 @@ export class SalesWorkspaceComponent implements OnInit {
   editOrder(id: string): void { void this.router.navigate(['/app/sales/orders', id, 'edit']); }
   backToList(): void { void this.router.navigate(['/app/sales', this.documentType() === 'quotation' ? 'quotations' : 'orders']); }
   setTab(tab: DetailTab): void { this.detailTab.set(tab); }
+  async loadFulfillment(): Promise<void> {
+    const order = this.selectedOrder();
+    if (!order) return;
+    try {
+      const state = await firstValueFrom(this.sales.fulfillment(order.id));
+      this.fulfillment.set(state); this.deliveries.set(state.deliveries); this.invoiceRequests.set(state.invoiceRequests);
+      const [warehouses, paymentTerms, reservations] = await Promise.all([
+        firstValueFrom(this.inventory.warehouses(order.companyId, order.branchId ?? undefined)),
+        firstValueFrom(this.masterData.list('payment-terms')),
+        firstValueFrom(this.inventory.reservations({ companyId: order.companyId, branchId: order.branchId ?? undefined })),
+      ]);
+      const authorizedWarehouses = warehouses.filter(item => item.isActive && item.companyId === order.companyId && item.branchId === order.branchId);
+      this.warehouses.set(authorizedWarehouses);
+      if (!authorizedWarehouses.some(item => item.warehouseId === this.selectedWarehouseId())) this.selectedWarehouseId.set(authorizedWarehouses[0]?.warehouseId ?? '');
+      this.paymentTerms.set((paymentTerms as PaymentTermRecord[]).filter(item => item.lifecycleState === 'Active'));
+      this.warehouseReservations.set(reservations.filter(item => item.sourceDocumentId === order.id && item.sourceRevision === (order.revisionNumber ?? 1)));
+      if (!this.paymentTermId()) this.paymentTermId.set(this.paymentTerms()[0]?.id ?? '');
+      const availability: Record<string, InventoryAvailability> = {};
+      const warehouseId = this.selectedWarehouseId();
+      if (warehouseId) await Promise.all(order.lines.map(async line => {
+        try {
+          availability[line.id] = await firstValueFrom(this.inventory.availability({ warehouseId, companyId: order.companyId, branchId: order.branchId, productId: line.productId, unitOfMeasureId: line.unitOfMeasureId }));
+        } catch { /* unauthorized line visibility remains absent rather than fabricated */ }
+      }));
+      this.availabilityByLine.set(availability);
+    } catch (error) { this.detailError.set(toSafeUiError(error)); }
+  }
+  selectWarehouse(id: string): void { this.selectedWarehouseId.set(id); }
+  reductionQuantity(reservation: InventoryReservation): number { return this.reservationReductions()[reservation.id] ?? Math.min(1, reservation.reservedQuantity); }
+  setReductionQuantity(id: string, quantity: number): void { this.reservationReductions.update(values => ({ ...values, [id]: Number(quantity) })); }
+  async reduceReservation(reservation: InventoryReservation): Promise<void> {
+    const quantity = this.reductionQuantity(reservation);
+    if (quantity <= 0 || quantity > reservation.reservedQuantity) return;
+    this.saving.set(true); this.mutationError.set(null);
+    try { await this.inventory.reduceReservation(reservation.id, reservation.version, quantity, 'sales fulfillment reduction'); await this.loadFulfillment(); }
+    catch (error) { this.mutationError.set(toSafeUiError(error)); }
+    finally { this.saving.set(false); }
+  }
+  async releaseReservation(reservation: InventoryReservation): Promise<void> {
+    this.saving.set(true); this.mutationError.set(null);
+    try { await this.inventory.releaseReservation(reservation.id, reservation.version, 'sales fulfillment release'); await this.loadFulfillment(); }
+    catch (error) { this.mutationError.set(toSafeUiError(error)); }
+    finally { this.saving.set(false); }
+  }
+  printFulfillment(): void { window.print(); }
+  async reserveOrder(): Promise<void> {
+    const order = this.selectedOrder();
+    if (!order || !this.selectedWarehouseId() || !this.fulfillment()) return;
+    this.saving.set(true); this.mutationError.set(null);
+    try {
+      await this.sales.reserveOrder(order.id, { warehouseId: this.selectedWarehouseId(), lines: this.fulfillment()!.lines.filter(line => line.remainingFulfillableQuantity > 0).map(line => ({ orderLineId: line.orderLineId, quantity: line.orderedQuantity })) }, order.version);
+      await this.loadFulfillment();
+    } catch (error) { this.mutationError.set(toSafeUiError(error)); }
+    finally { this.saving.set(false); }
+  }
+  async postDelivery(): Promise<void> {
+    const order = this.selectedOrder();
+    if (!order || !this.selectedWarehouseId() || !this.fulfillment()) return;
+    this.saving.set(true); this.mutationError.set(null);
+    try {
+      const reservations = await firstValueFrom(this.inventory.reservations({ companyId: order.companyId, branchId: order.branchId ?? undefined, warehouseId: this.selectedWarehouseId() }));
+      const lines = this.fulfillment()!.lines.map(line => {
+        const reservation = reservations.find(item => item.status === 'Active' && item.sourceDocumentId === order.id && item.sourceRevision === (order.revisionNumber ?? 1) && item.sourceLineId === line.orderLineId && item.warehouseId === this.selectedWarehouseId() && item.reservedQuantity > 0);
+        return reservation && line.remainingFulfillableQuantity > 0 ? { orderLineId: line.orderLineId, reservationId: reservation.id, quantity: Math.min(line.remainingFulfillableQuantity, reservation.reservedQuantity) } : null;
+      }).filter((line): line is { orderLineId: string; reservationId: string; quantity: number } => line !== null);
+      if (!lines.length) throw new Error('No reserved quantity is available for delivery.');
+      await this.sales.postDelivery(order.id, { warehouseId: this.selectedWarehouseId(), deliveryDate: new Date().toISOString().slice(0, 10), lines }, order.version);
+      await this.loadFulfillment();
+    } catch (error) { this.mutationError.set(toSafeUiError(error)); }
+    finally { this.saving.set(false); }
+  }
+  async checkInvoiceEligibility(): Promise<void> {
+    const order = this.selectedOrder(); const state = this.fulfillment();
+    if (!order || !state || !this.paymentTermId()) return;
+    this.saving.set(true); this.mutationError.set(null);
+    try {
+      const lines = state.lines.filter(line => line.remainingInvoiceableQuantity > 0).map(line => ({ orderLineId: line.orderLineId, quantity: line.remainingInvoiceableQuantity }));
+      const deliveryId = state.deliveries.find(delivery => delivery.status === 'Posted')?.id ?? null;
+      this.invoiceEligibility.set(await firstValueFrom(this.sales.evaluateInvoiceEligibility(order.id, { deliveryId, paymentTermId: this.paymentTermId(), invoiceDate: this.invoiceDate(), lines })));
+    } catch (error) { this.invoiceEligibility.set(null); this.mutationError.set(toSafeUiError(error)); }
+    finally { this.saving.set(false); }
+  }
+  async requestInvoice(): Promise<void> {
+    const order = this.selectedOrder(); const eligibility = this.invoiceEligibility();
+    if (!order || !eligibility || eligibility.status !== 'Eligible' || !this.paymentTermId()) return;
+    this.saving.set(true); this.mutationError.set(null);
+    try {
+      await this.sales.requestInvoice(order.id, { deliveryId: this.fulfillment()?.deliveries.find(delivery => delivery.status === 'Posted')?.id ?? null, paymentTermId: this.paymentTermId(), invoiceDate: this.invoiceDate(), lines: eligibility.lines.map(line => ({ orderLineId: line.orderLineId, quantity: line.requestedQuantity })) }, order.version);
+      this.invoiceEligibility.set(null); await this.loadFulfillment();
+    } catch (error) { this.mutationError.set(toSafeUiError(error)); }
+    finally { this.saving.set(false); }
+  }
   addLine(): void { this.draft.lines = [...this.draft.lines, this.emptyLine()]; }
   removeLine(index: number): void { if (this.draft.lines.length > 1) this.draft.lines = this.draft.lines.filter((_, lineIndex) => lineIndex !== index); }
 

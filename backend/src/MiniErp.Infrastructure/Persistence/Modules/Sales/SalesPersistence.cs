@@ -332,6 +332,84 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
         return row is null ? null : ToCreditResponse(row, order);
     }
 
+    public async Task<IReadOnlyList<SalesDeliveryResponse>> ListDeliveriesAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context);
+        var rows = await db.Deliveries.AsNoTracking().Where(item => item.OrderId == orderId).OrderBy(item => item.CreatedAt).ToListAsync(cancellationToken);
+        return rows.Where(item => InScope(context, item.CompanyId, item.BranchId)).Select(ToDelivery).ToArray();
+    }
+
+    public async Task<SalesDeliveryResponse?> GetDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context);
+        var row = await db.Deliveries.AsNoTracking().SingleOrDefaultAsync(item => item.Id == deliveryId, cancellationToken);
+        return row is null || !InScope(context, row.CompanyId, row.BranchId) ? null : ToDelivery(row);
+    }
+
+    public async Task<SalesOperationResult<SalesDeliveryResponse>> CreateDeliveryAsync(ProcurementRequestContext context, SalesDeliveryWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var replay = await ReplayAsync<SalesDeliveryResponse>(db, context, "sales.delivery.create", idempotencyKey, requestFingerprint, cancellationToken); if (replay is not null) return replay;
+        var order = await ApplyTrustedScope(db.Orders, context.TenantContext.Scope).SingleOrDefaultAsync(item => item.Id == model.OrderId, cancellationToken);
+        if (order is null || order.CompanyId != model.CompanyId || order.BranchId != model.BranchId || order.CustomerId != model.CustomerId || order.RevisionNumber != model.OrderRevisionNumber) return Failure<SalesDeliveryResponse>("order_not_found");
+        var now = DateTimeOffset.UtcNow;
+        var entity = new SalesDeliveryEntity(context.TenantId, model.Id, model.OrderId, model.OrderRevisionNumber, model.CompanyId, model.BranchId, model.CustomerId, model.WarehouseId, JsonSerializer.Serialize(model.Lines, Json), model.SourceSnapshot, model.ActorId, idempotencyKey, now);
+        db.Deliveries.Add(entity); AddHistory(db, context, "delivery", entity.Id, SalesHistoryAction.Created, null, entity.Status, "delivery-created", null, null, Hash(model.SourceSnapshot), now, model.SourceSnapshot); AddAudit(db, context, "sales.delivery.create", "delivery", entity.Id, "Allowed", null, null, $"status={entity.Status};order={entity.OrderId}", idempotencyKey, now);
+        await db.SaveChangesAsync(cancellationToken); var response = ToDelivery(entity); await SaveIdempotencyAsync(db, context, "sales.delivery.create", idempotencyKey, requestFingerprint, "delivery", entity.Id, response, now, cancellationToken); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return SalesOperationResult<SalesDeliveryResponse>.Success(response);
+    }
+
+    public async Task<SalesOperationResult<SalesDeliveryResponse>> CompleteDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, IReadOnlyList<Guid> movementIds, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var replay = await ReplayAsync<SalesDeliveryResponse>(db, context, "sales.delivery.complete", idempotencyKey, requestFingerprint, cancellationToken); if (replay is not null) return replay;
+        var entity = await db.Deliveries.SingleOrDefaultAsync(item => item.Id == deliveryId, cancellationToken); if (entity is null || !InScope(context, entity.CompanyId, entity.BranchId)) return Failure<SalesDeliveryResponse>("delivery_not_found"); if (entity.Status == SalesDeliveryStatus.Posted) return SalesOperationResult<SalesDeliveryResponse>.Success(ToDelivery(entity)); if (entity.Status != SalesDeliveryStatus.Draft) return Failure<SalesDeliveryResponse>("delivery_not_postable");
+        var before = entity.Status; var now = DateTimeOffset.UtcNow; entity.Posted(movementIds, now); AddHistory(db, context, "delivery", entity.Id, SalesHistoryAction.Confirmed, before, entity.Status, "inventory-posted", null, null, Hash(movementIds), now); AddAudit(db, context, "sales.delivery.complete", "delivery", entity.Id, "Allowed", null, $"status={before}", $"status={entity.Status};movements={movementIds.Count}", idempotencyKey, now); await db.SaveChangesAsync(cancellationToken); var response = ToDelivery(entity); await SaveIdempotencyAsync(db, context, "sales.delivery.complete", idempotencyKey, requestFingerprint, "delivery", entity.Id, response, now, cancellationToken); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return SalesOperationResult<SalesDeliveryResponse>.Success(response);
+    }
+
+    public async Task<SalesOperationResult<SalesDeliveryResponse>> FailDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, string code, bool unknown, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var entity = await db.Deliveries.SingleOrDefaultAsync(item => item.Id == deliveryId, cancellationToken); if (entity is null || !InScope(context, entity.CompanyId, entity.BranchId)) return Failure<SalesDeliveryResponse>("delivery_not_found"); if (entity.Status == SalesDeliveryStatus.Posted) return SalesOperationResult<SalesDeliveryResponse>.Success(ToDelivery(entity)); var before = entity.Status; entity.Fail(code, unknown); var now = DateTimeOffset.UtcNow; AddHistory(db, context, "delivery", entity.Id, SalesHistoryAction.Edited, before, entity.Status, code, null, null, null, now); AddAudit(db, context, "sales.delivery.fail", "delivery", entity.Id, "Failed", code, before.ToString(), entity.Status.ToString(), null, now); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return SalesOperationResult<SalesDeliveryResponse>.Success(ToDelivery(entity));
+    }
+
+    public async Task<IReadOnlyList<SalesInvoiceRequestResponse>> ListInvoiceRequestsAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context); var rows = await db.InvoiceRequests.AsNoTracking().Where(item => item.OrderId == orderId).OrderBy(item => item.CreatedAt).ToListAsync(cancellationToken); return rows.Where(item => InScope(context, item.CompanyId, item.BranchId)).Select(ToInvoice).ToArray();
+    }
+
+    public async Task<SalesInvoiceRequestResponse?> GetInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context); var row = await db.InvoiceRequests.AsNoTracking().SingleOrDefaultAsync(item => item.Id == requestId, cancellationToken); return row is null || !InScope(context, row.CompanyId, row.BranchId) ? null : ToInvoice(row);
+    }
+
+    public async Task<SalesOperationResult<SalesInvoiceRequestResponse>> CreateInvoiceRequestAsync(ProcurementRequestContext context, SalesInvoiceRequestWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var replay = await ReplayAsync<SalesInvoiceRequestResponse>(db, context, "sales.invoice-request.create", idempotencyKey, requestFingerprint, cancellationToken); if (replay is not null) return replay; var order = await ApplyTrustedScope(db.Orders, context.TenantContext.Scope).SingleOrDefaultAsync(item => item.Id == model.OrderId, cancellationToken); if (order is null || order.RevisionNumber != model.OrderRevisionNumber || order.CompanyId != model.CompanyId || order.BranchId != model.BranchId || order.CustomerId != model.CustomerId) return Failure<SalesInvoiceRequestResponse>("order_not_found");
+        var postedDeliveries = await db.Deliveries.Where(item => item.OrderId == model.OrderId && item.OrderRevisionNumber == model.OrderRevisionNumber && item.Status == SalesDeliveryStatus.Posted).ToListAsync(cancellationToken);
+        if (model.DeliveryId is { } deliveryId && !postedDeliveries.Any(item => item.Id == deliveryId)) return Failure<SalesInvoiceRequestResponse>("delivery_not_posted");
+        var sourceDeliveries = model.DeliveryId is { } selectedDeliveryId ? postedDeliveries.Where(item => item.Id == selectedDeliveryId) : postedDeliveries;
+        var sourceLines = sourceDeliveries.SelectMany(item => JsonSerializer.Deserialize<IReadOnlyList<SalesDeliveryRequestLine>>(item.LinesJson, Json) ?? []).ToArray();
+        var existingInvoices = await db.InvoiceRequests.Where(item => item.OrderId == model.OrderId && item.OrderRevisionNumber == model.OrderRevisionNumber && item.Status != SalesInvoiceRequestStatus.Failed).ToListAsync(cancellationToken);
+        if (existingInvoices.Any(item => item.Status == SalesInvoiceRequestStatus.Unknown)) return Failure<SalesInvoiceRequestResponse>("invoice_source_unknown");
+        var requestedByLine = model.Lines.ToDictionary(item => item.OrderLineId, item => item.Quantity);
+        foreach (var requested in requestedByLine)
+        {
+            var delivered = sourceLines.Where(item => item.OrderLineId == requested.Key).Sum(item => item.Quantity);
+            var invoiced = existingInvoices.SelectMany(item => JsonSerializer.Deserialize<IReadOnlyList<SalesInvoiceRequestLine>>(item.LinesJson, Json) ?? []).Where(item => item.OrderLineId == requested.Key).Sum(item => item.Quantity);
+            if (requested.Value > Math.Max(0m, delivered - invoiced)) return Failure<SalesInvoiceRequestResponse>("invoice_quantity_conflict");
+        }
+        var now = DateTimeOffset.UtcNow; var entity = new SalesInvoiceRequestEntity(context.TenantId, model.Id, model.OrderId, model.OrderRevisionNumber, model.DeliveryId, model.CompanyId, model.BranchId, model.CustomerId, model.InvoiceDate, JsonSerializer.Serialize(model.Lines, Json), model.Amount, model.CurrencyCode, model.SourceSnapshot, model.ActorId, idempotencyKey, now); db.InvoiceRequests.Add(entity); AddHistory(db, context, "invoice-request", entity.Id, SalesHistoryAction.Created, null, entity.Status, "invoice-request-created", null, null, Hash(model.SourceSnapshot), now, model.SourceSnapshot); AddAudit(db, context, "sales.invoice-request.create", "invoice-request", entity.Id, "Allowed", null, null, $"status={entity.Status};order={entity.OrderId}", idempotencyKey, now); await db.SaveChangesAsync(cancellationToken); var response = ToInvoice(entity); await SaveIdempotencyAsync(db, context, "sales.invoice-request.create", idempotencyKey, requestFingerprint, "invoice-request", entity.Id, response, now, cancellationToken); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return SalesOperationResult<SalesInvoiceRequestResponse>.Success(response);
+    }
+
+    public async Task<SalesOperationResult<SalesInvoiceRequestResponse>> CompleteInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, Guid financeOpenItemId, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var replay = await ReplayAsync<SalesInvoiceRequestResponse>(db, context, "sales.invoice-request.complete", idempotencyKey, requestFingerprint, cancellationToken); if (replay is not null) return replay; var entity = await db.InvoiceRequests.SingleOrDefaultAsync(item => item.Id == requestId, cancellationToken); if (entity is null || !InScope(context, entity.CompanyId, entity.BranchId)) return Failure<SalesInvoiceRequestResponse>("invoice_request_not_found"); if (entity.Status == SalesInvoiceRequestStatus.Posted) return SalesOperationResult<SalesInvoiceRequestResponse>.Success(ToInvoice(entity)); if (entity.Status != SalesInvoiceRequestStatus.Pending) return Failure<SalesInvoiceRequestResponse>("invoice_request_not_postable"); var before = entity.Status; var now = DateTimeOffset.UtcNow; entity.Posted(financeOpenItemId, now); AddHistory(db, context, "invoice-request", entity.Id, SalesHistoryAction.Confirmed, before, entity.Status, "finance-posted", null, null, null, now); AddAudit(db, context, "sales.invoice-request.complete", "invoice-request", entity.Id, "Allowed", null, before.ToString(), $"status={entity.Status};finance={financeOpenItemId}", idempotencyKey, now); await db.SaveChangesAsync(cancellationToken); var response = ToInvoice(entity); await SaveIdempotencyAsync(db, context, "sales.invoice-request.complete", idempotencyKey, requestFingerprint, "invoice-request", entity.Id, response, now, cancellationToken); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return SalesOperationResult<SalesInvoiceRequestResponse>.Success(response);
+    }
+
+    public async Task<SalesOperationResult<SalesInvoiceRequestResponse>> FailInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, string code, bool unknown, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken); var entity = await db.InvoiceRequests.SingleOrDefaultAsync(item => item.Id == requestId, cancellationToken); if (entity is null || !InScope(context, entity.CompanyId, entity.BranchId)) return Failure<SalesInvoiceRequestResponse>("invoice_request_not_found"); if (entity.Status == SalesInvoiceRequestStatus.Posted) return SalesOperationResult<SalesInvoiceRequestResponse>.Success(ToInvoice(entity)); var before = entity.Status; entity.Fail(code, unknown); var now = DateTimeOffset.UtcNow; AddHistory(db, context, "invoice-request", entity.Id, SalesHistoryAction.Edited, before, entity.Status, code, null, null, null, now); AddAudit(db, context, "sales.invoice-request.fail", "invoice-request", entity.Id, "Failed", code, before.ToString(), entity.Status.ToString(), null, now); await db.SaveChangesAsync(cancellationToken); await tx.CommitAsync(cancellationToken); return SalesOperationResult<SalesInvoiceRequestResponse>.Success(ToInvoice(entity));
+    }
+
     private static IQueryable<SalesQuotationEntity> ApplyTrustedScope(IQueryable<SalesQuotationEntity> query, ScopeReference? scope)
     {
         if (scope is not { } reference) return query;
@@ -358,6 +436,13 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
             "Tenant" => query,
             _ => query.Where(_ => false)
         };
+    }
+
+    private static bool InScope(ProcurementRequestContext context, Guid companyId, Guid? branchId)
+    {
+        if (context.TenantContext.Scope is not { } scope) return true;
+        var parts = scope.Value.Split(':', 2, StringSplitOptions.TrimEntries);
+        return parts.Length == 2 && Guid.TryParse(parts[1], out var id) && (parts[0] switch { "Tenant" => true, "Company" => companyId == id, "Branch" => branchId == id, _ => false });
     }
 
     private static async Task<SalesOperationResult<T>?> ReplayAsync<T>(SalesDbContext db, ProcurementRequestContext context, string operation, string key, string fingerprint, CancellationToken cancellationToken)
@@ -387,6 +472,8 @@ public sealed class SalesPersistence(DbContextOptions options) : ISalesPersisten
     private static SalesOrderResponse ToResponse(SalesOrderEntity item) => new(item.Id, item.Number, item.TenantId.Value, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.SourceQuotationId, item.SourceQuotationNumber, item.SourceQuotationRevision, item.CurrencyId, item.CurrencyCode, item.Subtotal, item.DiscountAmount, item.TaxAmount, item.Total, item.Status, item.CreditOutcome, item.CreditReason, item.CreditEvaluatedAt, item.CreditOverrideExpiresAt, Lines(item.LinesJson), item.Version, item.CreatedAt, item.UpdatedAt, DeserializeExchangeRate(item.ExchangeRateJson), item.RevisionNumber, DeserializeApprovalState(item.CurrentApprovalsJson));
     private static SalesExchangeRateEvidence? DeserializeExchangeRate(string? json) => string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<SalesExchangeRateEvidence>(json, Json);
     private static SalesOrderSummaryResponse ToSummary(SalesOrderEntity item) => new(item.Id, item.Number, item.CompanyId, item.BranchId, item.CustomerId, item.CustomerCode, item.CustomerName, item.CreatedByActorId, item.SourceQuotationId, item.SourceQuotationNumber, item.SourceQuotationRevision, item.CurrencyId, item.CurrencyCode, item.Total, item.Status, item.CreditOutcome, item.Version, item.UpdatedAt, item.RevisionNumber);
+    private static SalesDeliveryResponse ToDelivery(SalesDeliveryEntity item) => new(item.Id, item.TenantId.Value, item.OrderId, item.OrderRevisionNumber, item.CompanyId, item.BranchId, item.CustomerId, item.WarehouseId, item.Status, item.ErrorCode, JsonSerializer.Deserialize<IReadOnlyList<SalesDeliveryRequestLine>>(item.LinesJson, Json) ?? [], JsonSerializer.Deserialize<IReadOnlyList<Guid>>(item.MovementIdsJson, Json) ?? [], item.CreatedAt, item.PostedAt, item.Version);
+    private static SalesInvoiceRequestResponse ToInvoice(SalesInvoiceRequestEntity item) => new(item.Id, item.TenantId.Value, item.OrderId, item.OrderRevisionNumber, item.DeliveryId, item.Status, item.ErrorCode, item.FinanceOpenItemId, item.Amount, JsonSerializer.Deserialize<IReadOnlyList<SalesInvoiceRequestLine>>(item.LinesJson, Json) ?? [], item.CreatedAt, item.PostedAt, item.Version);
     private static string Summary(SalesQuotationResponse item) => $"quotation={item.Number};revision={item.RevisionNumber};status={item.Status};total={item.Total.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
     private static string Summary(SalesOrderResponse item) => $"order={item.Number};source={item.SourceQuotationNumber};status={item.Status};credit={item.CreditOutcome};total={item.Total.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
     private static string Hash<T>(T value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, Json))));

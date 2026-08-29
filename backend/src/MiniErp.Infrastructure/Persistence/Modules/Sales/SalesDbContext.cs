@@ -17,6 +17,8 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
     internal DbSet<SalesAuditEntity> Audit => Set<SalesAuditEntity>();
     internal DbSet<SalesIdempotencyEntity> Idempotency => Set<SalesIdempotencyEntity>();
     internal DbSet<SalesCreditEntity> Credit => Set<SalesCreditEntity>();
+    internal DbSet<SalesDeliveryEntity> Deliveries => Set<SalesDeliveryEntity>();
+    internal DbSet<SalesInvoiceRequestEntity> InvoiceRequests => Set<SalesInvoiceRequestEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +30,8 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
         Configure(modelBuilder.Entity<SalesAuditEntity>(), "SalesAudit");
         Configure(modelBuilder.Entity<SalesIdempotencyEntity>(), "SalesIdempotency");
         Configure(modelBuilder.Entity<SalesCreditEntity>(), "SalesCreditEvaluations");
+        Configure(modelBuilder.Entity<SalesDeliveryEntity>(), "SalesDeliveries");
+        Configure(modelBuilder.Entity<SalesInvoiceRequestEntity>(), "SalesInvoiceRequests");
 
         var quote = modelBuilder.Entity<SalesQuotationEntity>();
         quote.Property(item => item.Id).ValueGeneratedNever();
@@ -105,6 +109,12 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
         order.HasIndex(item => new { item.TenantId, item.SourceQuotationId, item.SourceQuotationRevision }).IsUnique();
         order.HasIndex(item => new { item.TenantId, item.CompanyId, item.BranchId, item.UpdatedAt });
         order.HasIndex(item => new { item.TenantId, item.Status, item.UpdatedAt });
+
+        var delivery = modelBuilder.Entity<SalesDeliveryEntity>();
+        delivery.Property(item => item.Id).ValueGeneratedNever(); delivery.Property(item => item.OrderId).IsRequired(); delivery.Property(item => item.OrderRevisionNumber).IsRequired(); delivery.Property(item => item.CompanyId).IsRequired(); delivery.Property(item => item.BranchId).IsRequired(false); delivery.Property(item => item.CustomerId).IsRequired(); delivery.Property(item => item.WarehouseId).IsRequired(); delivery.Property(item => item.Status).IsRequired(); delivery.Property(item => item.ErrorCode).HasMaxLength(128).IsRequired(false); delivery.Property(item => item.LinesJson).HasMaxLength(131072).IsRequired(); delivery.Property(item => item.SourceSnapshotJson).HasMaxLength(262144).IsRequired(); delivery.Property(item => item.MovementIdsJson).HasMaxLength(8192).IsRequired(); delivery.Property(item => item.ActorId).IsRequired(); delivery.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false); delivery.Property(item => item.CreatedAt).IsRequired(); delivery.Property(item => item.PostedAt).IsRequired(false); delivery.HasIndex(item => new { item.TenantId, item.OrderId, item.Status }); delivery.HasIndex(item => new { item.TenantId, item.IdempotencyKey }).IsUnique().HasFilter(Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer" ? "[IdempotencyKey] IS NOT NULL" : "IdempotencyKey IS NOT NULL");
+
+        var invoice = modelBuilder.Entity<SalesInvoiceRequestEntity>();
+        invoice.Property(item => item.Id).ValueGeneratedNever(); invoice.Property(item => item.OrderId).IsRequired(); invoice.Property(item => item.OrderRevisionNumber).IsRequired(); invoice.Property(item => item.DeliveryId).IsRequired(false); invoice.Property(item => item.CompanyId).IsRequired(); invoice.Property(item => item.BranchId).IsRequired(false); invoice.Property(item => item.CustomerId).IsRequired(); invoice.Property(item => item.InvoiceDate).IsRequired(); invoice.Property(item => item.LinesJson).HasMaxLength(131072).IsRequired(); invoice.Property(item => item.Amount).HasPrecision(28, 8).IsRequired(); invoice.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired(); invoice.Property(item => item.SourceSnapshotJson).HasMaxLength(262144).IsRequired(); invoice.Property(item => item.Status).IsRequired(); invoice.Property(item => item.ErrorCode).HasMaxLength(128).IsRequired(false); invoice.Property(item => item.FinanceOpenItemId).IsRequired(false); invoice.Property(item => item.ActorId).IsRequired(); invoice.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false); invoice.Property(item => item.CreatedAt).IsRequired(); invoice.Property(item => item.PostedAt).IsRequired(false); invoice.HasIndex(item => new { item.TenantId, item.OrderId, item.Status }); invoice.HasIndex(item => new { item.TenantId, item.IdempotencyKey }).IsUnique().HasFilter(Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer" ? "[IdempotencyKey] IS NOT NULL" : "IdempotencyKey IS NOT NULL"); invoice.HasIndex(item => new { item.TenantId, item.DeliveryId, item.Status });
 
         var history = modelBuilder.Entity<SalesHistoryEntity>();
         history.Property(item => item.Id).ValueGeneratedNever();

@@ -141,6 +141,56 @@ public static class SalesEndpoints
             return Results.Ok(await service.GetOrderCreditAsync(context, orderId, http.RequestAborted));
         }).WithName("sales.order.credit.read").WithMetadata(Metadata("sales.order.credit.read"));
 
+        app.MapGet("/api/v1/sales/orders/{orderId:guid}/fulfillment", async (Guid orderId, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesService service) =>
+        {
+            var (context, denied) = await Resolve(http, resolver, tenantResolver, "sales.fulfillment.read");
+            if (denied is not null || context is null) return denied!;
+            var result = await service.GetFulfillmentAsync(context, orderId, http.RequestAborted);
+            return result.Succeeded && result.Value is not null ? Results.Ok(result.Value) : Problem(Status(result.Code), result.Code, "sales.fulfillment.read");
+        }).WithName("sales.fulfillment.read").WithMetadata(Metadata("sales.fulfillment.read"));
+
+        app.MapPost("/api/v1/sales/orders/{orderId:guid}/reservations", async (Guid orderId, SalesReservationRequest request, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesService service) =>
+            await ExecuteMutationAsync(http, resolver, tenantResolver, "sales.fulfillment.reserve", orderId, async (context, key, version) => await service.ReserveOrderAsync(context, orderId, request, key, version, http.RequestAborted)))
+            .WithName("sales.fulfillment.reserve").WithMetadata(Metadata("sales.fulfillment.reserve"));
+
+        app.MapPost("/api/v1/sales/orders/{orderId:guid}/deliveries", async (Guid orderId, SalesDeliveryRequest request, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesService service) =>
+            await ExecuteMutationAsync(http, resolver, tenantResolver, "sales.delivery.post", orderId, async (context, key, version) => await service.CreateDeliveryAsync(context, orderId, request, key, version, http.RequestAborted)))
+            .WithName("sales.delivery.post").WithMetadata(Metadata("sales.delivery.post"));
+
+        app.MapGet("/api/v1/sales/deliveries/{deliveryId:guid}", async (Guid deliveryId, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesAuthorizationService authorization, SalesService service) =>
+        {
+            var (context, denied) = await Resolve(http, resolver, tenantResolver, "sales.delivery.read");
+            if (denied is not null || context is null) return denied!;
+            var delivery = await service.GetDeliveryAsync(context, deliveryId, http.RequestAborted);
+            if (delivery is null) return Problem(404, "delivery_not_found", "sales.delivery.read");
+            var resourceDenied = AuthorizeResource(context, authorization, "sales.delivery.read", new SalesScope(delivery.TenantId, delivery.CompanyId, delivery.BranchId), "delivery_not_found");
+            return resourceDenied ?? Results.Ok(delivery);
+        }).WithName("sales.delivery.read").WithMetadata(Metadata("sales.delivery.read"));
+
+        app.MapPost("/api/v1/sales/orders/{orderId:guid}/invoice-eligibility", async (Guid orderId, SalesInvoiceEligibilityRequest request, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesService service) =>
+        {
+            var (context, denied) = await Resolve(http, resolver, tenantResolver, "sales.invoice.eligibility.read");
+            if (denied is not null || context is null) return denied!;
+            var result = await service.EvaluateInvoiceEligibilityAsync(context, orderId, request, http.RequestAborted);
+            return result.Succeeded && result.Value is not null ? Results.Ok(result.Value) : Problem(Status(result.Code), result.Code, "sales.invoice.eligibility.read");
+        }).WithName("sales.invoice.eligibility.read").WithMetadata(Metadata("sales.invoice.eligibility.read"));
+
+        app.MapPost("/api/v1/sales/orders/{orderId:guid}/invoice-requests", async (Guid orderId, SalesInvoiceEligibilityRequest request, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesService service) =>
+            await ExecuteMutationAsync(http, resolver, tenantResolver, "sales.invoice.request", orderId, async (context, key, version) => await service.CreateInvoiceRequestAsync(context, orderId, request, key, version, http.RequestAborted)))
+            .WithName("sales.invoice.request").WithMetadata(Metadata("sales.invoice.request"));
+
+        app.MapGet("/api/v1/sales/invoice-requests/{requestId:guid}", async (Guid requestId, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesAuthorizationService authorization, SalesService service) =>
+        {
+            var (context, denied) = await Resolve(http, resolver, tenantResolver, "sales.invoice.request.read");
+            if (denied is not null || context is null) return denied!;
+            var invoice = await service.GetInvoiceRequestAsync(context, requestId, http.RequestAborted);
+            if (invoice is null) return Problem(404, "invoice_request_not_found", "sales.invoice.request.read");
+            var order = await service.GetOrderAsync(context, invoice.OrderId, http.RequestAborted);
+            if (order is null) return Problem(404, "invoice_request_not_found", "sales.invoice.request.read");
+            var resourceDenied = AuthorizeResource(context, authorization, "sales.invoice.request.read", new SalesScope(order.TenantId, order.CompanyId, order.BranchId), "invoice_request_not_found");
+            return resourceDenied ?? Results.Ok(invoice);
+        }).WithName("sales.invoice.request.read").WithMetadata(Metadata("sales.invoice.request.read"));
+
         app.MapPost("/api/v1/sales/orders/{orderId:guid}/credit/override", async (Guid orderId, SalesCreditOverrideRequest request, HttpContext http, ITrustedRequestContextResolver resolver, ProcurementTenantContextResolver tenantResolver, SalesService service) =>
             await ExecuteMutationAsync(http, resolver, tenantResolver, "sales.order.credit.override", orderId, async (context, key, version) => await service.OverrideCreditAsync(context, orderId, request, version!, key, http.RequestAborted)))
             .WithName("sales.order.credit.override").WithMetadata(Metadata("sales.order.credit.override"));
@@ -209,7 +259,7 @@ public static class SalesEndpoints
     }
 
     private static byte[]? GetVersion(object value) => value switch { SalesQuotationResponse quote => quote.Version, SalesOrderResponse order => order.Version, _ => null };
-    private static int Status(string code) => code switch { "permission_denied" or "self_approval_denied" or "approver_not_eligible" => 403, "quotation_not_found" or "order_not_found" => 404, "concurrency_conflict" or "idempotency_conflict" or "quotation_transition_invalid" or "order_transition_invalid" or "quotation_edit_locked" or "order_edit_locked" or "quotation_scope_immutable" or "order_scope_immutable" or "quotation_revision_already_converted" or "quotation_expired" or "credit_override_not_allowed" or "approval_state_missing" or "approval_already_recorded" or "approval_sod_violation" or "approval_already_complete" or "delegation_invalid" or "cancellation_not_allowed" => 409, "sales_persistence_unavailable" or "credit_truth_unavailable" => 503, _ => 400 };
+    private static int Status(string code) => code switch { "permission_denied" or "forbidden" or "self_approval_denied" or "approver_not_eligible" => 403, "quotation_not_found" or "order_not_found" or "delivery_not_found" or "invoice_request_not_found" => 404, "concurrency_conflict" or "idempotency_conflict" or "quotation_transition_invalid" or "order_transition_invalid" or "quotation_edit_locked" or "order_edit_locked" or "quotation_scope_immutable" or "order_scope_immutable" or "quotation_revision_already_converted" or "quotation_expired" or "credit_override_not_allowed" or "approval_state_missing" or "approval_already_recorded" or "approval_sod_violation" or "approval_already_complete" or "delegation_invalid" or "cancellation_not_allowed" or "reservation_warehouse_immutable" or "reservation_not_eligible" or "delivery_exceeds_reserved" or "delivery_not_posted" or "invoice_quantity_conflict" or "invoice_source_unknown" or "order_not_invoiceable" => 409, "sales_persistence_unavailable" or "credit_truth_unavailable" or "inventory_unavailable" or "inventory_context_unavailable" or "finance_context_unavailable" or "finance_company_unavailable" => 503, _ => 400 };
     private static async Task<bool> Antiforgery(HttpContext http) { try { await http.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(http); return true; } catch (AntiforgeryValidationException) { return false; } }
     private static FoundationOperationMetadata Metadata(string operation) => new(FoundationOperationCatalog.GetRequired(operation));
     private static bool AuthorizeListScope(ProcurementRequestContext context, SalesAuthorizationService authorization, string operation, Guid? companyId) =>

@@ -6,13 +6,22 @@
 authorization boundaries. Read it before any Ready transition, merge, Jira
 write, or mutation not explicitly authorized by the current bounded task.
 
-## Current execution overlay - 29 August 2026 (MESP-136 closed; awaiting next activation)
+## Current execution overlay - 29 August 2026 (MESP-137 active; stop for Sol review)
 
 MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged.
 MESP-136 merged at `992195f7e61cf03b94675a498377a6d8bf679ebf` (2026-08-28T23:37:13Z).
 Final Sol acceptance: MESP-136 comment `12252`. Closure: MESP-136 comment `12255`, MESP-9 reconciliation `12256`.
 
-No current implementation capability is active. MESP-137/138/139 remain To Do/inactive.
+MESP-137 is the single active implementation capability under Epic MESP-9,
+activated by MESP-137 comment \`12265\` and MESP-9 reconciliation \`12266\`.
+The bounded implementation is on \`feat/MESP-137-reservation-fulfillment-invoice\`
+from exact \`origin/main\` baseline
+\`cb58d69fb0a589d363aed2d55b605e39f79d03bc\`. It covers Sales-linked
+Warehouse-scoped reservation, partial allocation/backorder, atomic physical
+Delivery handoff, and Finance-owned invoice eligibility/AR handoff.
+MESP-138/139 remain To Do/inactive. No Jira writes, Ready transition, merge,
+rebase, force-push, or review request is authorized; stop for independent
+GPT-5.6 Sol review with the PR Open/Draft/Unmerged.
 Fast-track = 20/26 = 76.9%. Production readiness remains ~47% overall / ~41% Procurement/P2P.
 Ponytail FULL is the default executor mode when available.
 

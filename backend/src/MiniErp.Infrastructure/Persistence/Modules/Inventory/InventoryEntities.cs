@@ -256,8 +256,8 @@ internal sealed class InventoryTransferEventEntity : ITenantOwned
 internal sealed class InventoryReservationEntity : ITenantOwned
 {
     private InventoryReservationEntity() { }
-    internal InventoryReservationEntity(TenantId tenantId, Guid id, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, Guid productId, string sku, string productName, Guid uomId, string uomCode, string? trackingIdentity, string sourceType, string sourceReference, decimal requested, decimal reserved, decimal unallocated, Guid actorId, DateTimeOffset at)
-    { Id = id; TenantId = tenantId; CompanyId = companyId; BranchId = branchId; WarehouseId = warehouseId; WarehouseCode = warehouseCode; WarehouseName = warehouseName; ProductId = productId; ProductSku = sku; ProductName = productName; UnitOfMeasureId = uomId; UnitOfMeasureCode = uomCode; TrackingIdentity = trackingIdentity; SourceType = sourceType; SourceReference = sourceReference; RequestedQuantity = requested; ReservedQuantity = reserved; UnallocatedQuantity = unallocated; Status = InventoryReservationStatus.Active; ActorId = actorId; CreatedAt = at; UpdatedAt = at; TouchVersion(); }
+    internal InventoryReservationEntity(TenantId tenantId, Guid id, Guid companyId, Guid? branchId, Guid warehouseId, string warehouseCode, string warehouseName, Guid productId, string sku, string productName, Guid uomId, string uomCode, string? trackingIdentity, string sourceType, string sourceReference, decimal requested, decimal reserved, decimal unallocated, Guid actorId, DateTimeOffset at, Guid? sourceDocumentId = null, Guid? sourceLineId = null, int? sourceRevision = null)
+    { Id = id; TenantId = tenantId; CompanyId = companyId; BranchId = branchId; WarehouseId = warehouseId; WarehouseCode = warehouseCode; WarehouseName = warehouseName; ProductId = productId; ProductSku = sku; ProductName = productName; UnitOfMeasureId = uomId; UnitOfMeasureCode = uomCode; TrackingIdentity = trackingIdentity; SourceType = sourceType; SourceReference = sourceReference; SourceDocumentId = sourceDocumentId; SourceLineId = sourceLineId; SourceRevision = sourceRevision; RequestedQuantity = requested; ReservedQuantity = reserved; UnallocatedQuantity = unallocated; Status = InventoryReservationStatus.Active; ActorId = actorId; CreatedAt = at; UpdatedAt = at; TouchVersion(); }
     internal Guid Id { get; private set; }
     public TenantId TenantId { get; private set; }
     internal Guid CompanyId { get; private set; }
@@ -273,24 +273,40 @@ internal sealed class InventoryReservationEntity : ITenantOwned
     internal string? TrackingIdentity { get; private set; }
     internal string SourceType { get; private set; } = string.Empty;
     internal string SourceReference { get; private set; } = string.Empty;
+    internal Guid? SourceDocumentId { get; private set; }
+    internal Guid? SourceLineId { get; private set; }
+    internal int? SourceRevision { get; private set; }
     internal decimal RequestedQuantity { get; private set; }
     internal decimal ReservedQuantity { get; private set; }
     internal decimal UnallocatedQuantity { get; private set; }
+    internal decimal FulfilledQuantity { get; private set; }
     internal InventoryReservationStatus Status { get; private set; }
     internal Guid ActorId { get; private set; }
     internal DateTimeOffset CreatedAt { get; private set; }
     internal DateTimeOffset UpdatedAt { get; private set; }
     internal byte[] Version { get; private set; } = [];
     internal void Reduce(decimal quantity, DateTimeOffset at) { ReservedQuantity -= quantity; UnallocatedQuantity += quantity; UpdatedAt = at; }
-    internal void Release(DateTimeOffset at) { UnallocatedQuantity += ReservedQuantity; ReservedQuantity = 0; Status = InventoryReservationStatus.Released; UpdatedAt = at; }
+    internal bool Allocate(decimal quantity, DateTimeOffset at)
+    {
+        if (Status != InventoryReservationStatus.Active || quantity <= 0m || quantity > UnallocatedQuantity) return false;
+        UnallocatedQuantity -= quantity; ReservedQuantity += quantity; UpdatedAt = at; return true;
+    }
+    internal bool Consume(decimal quantity, DateTimeOffset at)
+    {
+        if (Status is not InventoryReservationStatus.Active || quantity <= 0m || quantity > ReservedQuantity) return false;
+        ReservedQuantity -= quantity; FulfilledQuantity += quantity;
+        if (ReservedQuantity == 0m && UnallocatedQuantity == 0m) Status = InventoryReservationStatus.Fulfilled;
+        UpdatedAt = at; return true;
+    }
+    internal void Release(DateTimeOffset at) { if (Status != InventoryReservationStatus.Active) return; UnallocatedQuantity += ReservedQuantity; ReservedQuantity = 0; Status = InventoryReservationStatus.Released; UpdatedAt = at; }
     internal void TouchVersion() => Version = Guid.NewGuid().ToByteArray();
 }
 
 internal sealed class InventoryReservationHistoryEntity : ITenantOwned
 {
     private InventoryReservationHistoryEntity() { }
-    internal InventoryReservationHistoryEntity(TenantId tenantId, Guid id, Guid reservationId, InventoryReservationAction action, decimal quantity, decimal reservedAfter, decimal unallocatedAfter, Guid actorId, string? reason, string correlationId, DateTimeOffset occurredAt)
-    { Id = id; TenantId = tenantId; ReservationId = reservationId; Action = action; Quantity = quantity; ReservedQuantityAfter = reservedAfter; UnallocatedQuantityAfter = unallocatedAfter; ActorId = actorId; Reason = reason; CorrelationId = correlationId; OccurredAt = occurredAt; }
+    internal InventoryReservationHistoryEntity(TenantId tenantId, Guid id, Guid reservationId, InventoryReservationAction action, decimal quantity, decimal reservedAfter, decimal unallocatedAfter, decimal fulfilledAfter, Guid actorId, string? reason, string correlationId, DateTimeOffset occurredAt)
+    { Id = id; TenantId = tenantId; ReservationId = reservationId; Action = action; Quantity = quantity; ReservedQuantityAfter = reservedAfter; UnallocatedQuantityAfter = unallocatedAfter; FulfilledQuantityAfter = fulfilledAfter; ActorId = actorId; Reason = reason; CorrelationId = correlationId; OccurredAt = occurredAt; }
     internal Guid Id { get; private set; }
     public TenantId TenantId { get; private set; }
     internal Guid ReservationId { get; private set; }
@@ -298,6 +314,7 @@ internal sealed class InventoryReservationHistoryEntity : ITenantOwned
     internal decimal Quantity { get; private set; }
     internal decimal ReservedQuantityAfter { get; private set; }
     internal decimal UnallocatedQuantityAfter { get; private set; }
+    internal decimal FulfilledQuantityAfter { get; private set; }
     internal Guid ActorId { get; private set; }
     internal string? Reason { get; private set; }
     internal string CorrelationId { get; private set; } = string.Empty;

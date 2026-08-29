@@ -56,6 +56,39 @@ public sealed record FinanceManualReceivableCommand(
     string IdempotencyKey,
     string RequestFingerprint);
 
+public sealed record FinanceSalesInvoiceCommand(
+    Guid CompanyId,
+    Guid CustomerId,
+    Guid SalesOrderId,
+    int SalesOrderRevision,
+    Guid InvoiceRequestId,
+    DateOnly DocumentDate,
+    Guid PaymentTermId,
+    string CurrencyCode,
+    decimal Amount,
+    decimal? ExchangeRate,
+    Guid? ExchangeRateId,
+    Guid? ExchangeRateVersionId,
+    int? ExchangeRateVersionNumber,
+    string SourceSnapshot,
+    string? Reference,
+    string IdempotencyKey,
+    string RequestFingerprint);
+
+public sealed record FinanceSalesInvoiceEligibilityRecord(
+    bool Eligible,
+    string Code,
+    decimal Amount,
+    string CurrencyCode,
+    Guid SalesOrderId,
+    int SalesOrderRevision,
+    DateOnly DocumentDate,
+    FinancePaymentTermSnapshotRecord? PaymentTerm,
+    decimal? ExchangeRate,
+    Guid? ExchangeRateId,
+    Guid? ExchangeRateVersionId,
+    int? ExchangeRateVersionNumber);
+
 public sealed record FinanceSupplierInvoiceRecognitionCommand(
     Guid SourceEvidenceId,
     string IdempotencyKey,
@@ -211,6 +244,8 @@ public interface IFinanceSettlementPersistence
     Task<IReadOnlyList<FinanceApSourceReadyRecord>> ListApSourceReadyAsync(FinanceRequestContext context, Guid? companyId = null, CancellationToken cancellationToken = default);
     Task<FinanceOperationResult<FinanceOpenItemRecord>> RecognizeSupplierInvoiceAsync(FinanceRequestContext context, FinanceSupplierInvoiceRecognitionCommand command, CancellationToken cancellationToken = default);
     Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateManualReceivableAsync(FinanceRequestContext context, FinanceManualReceivableCommand command, CancellationToken cancellationToken = default);
+    Task<FinanceOperationResult<FinanceSalesInvoiceEligibilityRecord>> EvaluateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default);
+    Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FinanceSettlementDocumentRecord>> ListSettlementDocumentsAsync(FinanceRequestContext context, FinanceSettlementQuery query, CancellationToken cancellationToken = default);
     Task<FinanceSettlementDocumentRecord?> GetSettlementDocumentAsync(FinanceRequestContext context, Guid documentId, FinancePaymentMethodDirection? expectedDirection = null, CancellationToken cancellationToken = default);
     Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> CreateSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementDocumentCommand command, CancellationToken cancellationToken = default);
@@ -246,6 +281,8 @@ public sealed class UnavailableFinanceSettlementPersistence : IFinanceSettlement
     public Task<IReadOnlyList<FinanceApSourceReadyRecord>> ListApSourceReadyAsync(FinanceRequestContext context, Guid? companyId = null, CancellationToken cancellationToken = default) => EmptyList<FinanceApSourceReadyRecord>();
     public Task<FinanceOperationResult<FinanceOpenItemRecord>> RecognizeSupplierInvoiceAsync(FinanceRequestContext context, FinanceSupplierInvoiceRecognitionCommand command, CancellationToken cancellationToken = default) => Task.FromResult(Failure<FinanceOpenItemRecord>());
     public Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateManualReceivableAsync(FinanceRequestContext context, FinanceManualReceivableCommand command, CancellationToken cancellationToken = default) => Task.FromResult(Failure<FinanceOpenItemRecord>());
+    public Task<FinanceOperationResult<FinanceSalesInvoiceEligibilityRecord>> EvaluateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default) => Task.FromResult(Failure<FinanceSalesInvoiceEligibilityRecord>());
+    public Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default) => Task.FromResult(Failure<FinanceOpenItemRecord>());
     public Task<IReadOnlyList<FinanceSettlementDocumentRecord>> ListSettlementDocumentsAsync(FinanceRequestContext context, FinanceSettlementQuery query, CancellationToken cancellationToken = default) => EmptyList<FinanceSettlementDocumentRecord>();
     public Task<FinanceSettlementDocumentRecord?> GetSettlementDocumentAsync(FinanceRequestContext context, Guid documentId, FinancePaymentMethodDirection? expectedDirection = null, CancellationToken cancellationToken = default) => Empty<FinanceSettlementDocumentRecord?>();
     public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> CreateSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementDocumentCommand command, CancellationToken cancellationToken = default) => Task.FromResult(Failure<FinanceSettlementDocumentRecord>());

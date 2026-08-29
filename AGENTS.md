@@ -37,13 +37,14 @@ velocity, or forecast:
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 29 August 2026 (MESP-136 closed and merged; awaiting next Sol activation)
+## Current execution overlay - 29 August 2026 (MESP-137 active; stop for Sol review)
 
 * MESP-132, MESP-133, MESP-134, MESP-135, and MESP-136 are Done and merged. MESP-136 final Sol acceptance is recorded as MESP-136 comment `12252`; closure evidence is MESP-136 comment `12255` and MESP-9 reconciliation `12256`. PR #80 is closed/merged with squash commit `992195f7e61cf03b94675a498377a6d8bf679ebf` at 2026-08-28T23:37:13Z. Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`.
-* **No current implementation capability is active.** MESP-137, MESP-138, and MESP-139 remain To Do/inactive and must not be started until Sol explicitly activates the next task.
+* MESP-137 is the single active implementation capability under Epic MESP-9, activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`, on `feat/MESP-137-reservation-fulfillment-invoice` from exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`.
 * Fast-track capability completion = **20/26 = 76.9%** after verified merge and Jira closure. Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**. MESP-48 and MESP-50 remain open production gates.
 * MESP-9 remains In Progress pending Sol next-capability activation and Epic reconciliation.
-* MESP-136 delivered reusable Tenant/Company/Branch-scoped B2B quotations and Sales Orders, server-authoritative Price List resolution, immutable commercial/tax/FX evidence, approval/delegation/SoD seams, Finance-exposed credit outcomes and controlled override, durable idempotency, revisions/history/audit, optimistic concurrency, and bilingual RTL Angular workspace surfaces. No stock, fulfillment, delivery, invoice/AR/receipt posting, returns/credit notes, external integrations, ZATCA/FATOORA, or Wafra-specific core behavior was added. `frontend/assets` remains untouched and the presentation remains main-only.
+* MESP-137 is bounded to Sales-linked Inventory reservations, partial allocation/fulfillment, atomic Sales delivery stock posting and reservation consumption, Finance-owned invoice eligibility and AR/invoice handoff seams, durable evidence, REST/OpenAPI metadata, and bilingual RTL Angular fulfillment UI. Returns, credit notes, receipts, refunds, revenue recognition, external integrations, ZATCA/FATOORA, Wafra-specific behavior, MESP-138, and MESP-139 are excluded. `frontend/assets` remains untouched and the presentation remains main-only.
+* One Draft PR is authorized and must remain Open/Draft/Unmerged. No Jira writes, Ready transition, merge, rebase, force-push, or review request is permitted; stop after push and PR verification for independent GPT-5.6 Sol review.
 * Ponytail FULL is the default executor mode when installed and available.
 
 ## Historical execution overlay - 29 August 2026 (MESP-136 HOLD 3 active; stop for third Sol acceptance)

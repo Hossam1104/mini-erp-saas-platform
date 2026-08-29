@@ -1,5 +1,7 @@
 #pragma warning disable CS1591
 
+using MiniErp.Contracts.Modules.Inventory;
+
 namespace MiniErp.Contracts.Modules.Sales;
 
 public enum SalesQuotationStatus
@@ -36,6 +38,40 @@ public enum SalesCreditOutcome
     Pending = 4,
     Unknown = 5,
     Overridden = 6
+}
+
+public enum SalesFulfillmentLineStatus
+{
+    AwaitingReservation = 1,
+    PartiallyReserved = 2,
+    Reserved = 3,
+    PartiallyDelivered = 4,
+    Delivered = 5,
+    Backordered = 6
+}
+
+public enum SalesDeliveryStatus
+{
+    Draft = 1,
+    Posted = 2,
+    Failed = 3,
+    Unknown = 4
+}
+
+public enum SalesInvoiceEligibilityStatus
+{
+    Eligible = 1,
+    PartiallyEligible = 2,
+    Blocked = 3,
+    Unknown = 4
+}
+
+public enum SalesInvoiceRequestStatus
+{
+    Pending = 1,
+    Posted = 2,
+    Failed = 3,
+    Unknown = 4
 }
 
 public enum SalesHistoryAction
@@ -122,6 +158,97 @@ public sealed record SalesCreditOverrideRequest(
     DateTimeOffset ExpiresAt,
     string? Scope,
     string? SourceReference);
+
+public sealed record SalesReservationRequestLine(Guid OrderLineId, decimal Quantity, string? TrackingIdentity = null);
+
+public sealed record SalesReservationRequest(Guid WarehouseId, IReadOnlyList<SalesReservationRequestLine> Lines);
+
+public sealed record SalesReservationResponse(
+    Guid OrderId,
+    int OrderRevisionNumber,
+    IReadOnlyList<InventoryReservationRecord> Reservations);
+
+public sealed record SalesDeliveryRequestLine(Guid OrderLineId, Guid ReservationId, decimal Quantity);
+
+public sealed record SalesDeliveryRequest(Guid WarehouseId, DateOnly DeliveryDate, IReadOnlyList<SalesDeliveryRequestLine> Lines);
+
+public sealed record SalesDeliveryResponse(
+    Guid Id,
+    Guid TenantId,
+    Guid OrderId,
+    int OrderRevisionNumber,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid CustomerId,
+    Guid WarehouseId,
+    SalesDeliveryStatus Status,
+    string? ErrorCode,
+    IReadOnlyList<SalesDeliveryRequestLine> Lines,
+    IReadOnlyList<Guid> MovementIds,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? PostedAt,
+    byte[] Version);
+
+public sealed record SalesFulfillmentLineResponse(
+    Guid OrderLineId,
+    decimal OrderedQuantity,
+    decimal ReservedQuantity,
+    decimal UnallocatedQuantity,
+    decimal FulfilledQuantity,
+    decimal DeliveredQuantity,
+    decimal InvoicedQuantity,
+    decimal RemainingFulfillableQuantity,
+    decimal RemainingInvoiceableQuantity,
+    SalesFulfillmentLineStatus Status);
+
+public sealed record SalesFulfillmentResponse(
+    Guid OrderId,
+    int OrderRevisionNumber,
+    IReadOnlyList<SalesFulfillmentLineResponse> Lines,
+    IReadOnlyList<SalesDeliveryResponse> Deliveries,
+    IReadOnlyList<SalesInvoiceRequestResponse> InvoiceRequests);
+
+public sealed record SalesInvoiceRequestLine(Guid OrderLineId, decimal Quantity);
+
+public sealed record SalesInvoiceEligibilityRequest(
+    Guid? DeliveryId,
+    Guid PaymentTermId,
+    DateOnly InvoiceDate,
+    IReadOnlyList<SalesInvoiceRequestLine> Lines);
+
+public sealed record SalesInvoiceEligibilityLineResponse(
+    Guid OrderLineId,
+    decimal DeliveredQuantity,
+    decimal InvoicedQuantity,
+    decimal RequestedQuantity,
+    decimal RemainingInvoiceableQuantity,
+    decimal Amount,
+    string Status);
+
+public sealed record SalesInvoiceEligibilityResponse(
+    Guid OrderId,
+    int OrderRevisionNumber,
+    SalesInvoiceEligibilityStatus Status,
+    string Code,
+    decimal TotalAmount,
+    string CurrencyCode,
+    IReadOnlyList<SalesInvoiceEligibilityLineResponse> Lines,
+    DateOnly InvoiceDate);
+
+public sealed record SalesInvoiceRequestResponse(
+    Guid Id,
+    Guid TenantId,
+    Guid OrderId,
+    int OrderRevisionNumber,
+    Guid? DeliveryId,
+    SalesInvoiceRequestStatus Status,
+    string? ErrorCode,
+    Guid? FinanceOpenItemId,
+    decimal Amount,
+    IReadOnlyList<SalesInvoiceRequestLine> Lines,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? PostedAt,
+    byte[] Version);
 
 public sealed record SalesApprovalDecisionResponse(
     string StageKey,

@@ -263,7 +263,9 @@ internal sealed class TenantOwnershipVerifierRegistry
             SalesTenantOwnershipVerifier.For<SalesHistoryEntity>(),
             SalesTenantOwnershipVerifier.For<SalesAuditEntity>(),
             SalesTenantOwnershipVerifier.For<SalesIdempotencyEntity>(),
-            SalesTenantOwnershipVerifier.For<SalesCreditEntity>()
+            SalesTenantOwnershipVerifier.For<SalesCreditEntity>(),
+            SalesTenantOwnershipVerifier.For<SalesDeliveryEntity>(),
+            SalesTenantOwnershipVerifier.For<SalesInvoiceRequestEntity>()
         ]);
     }
 

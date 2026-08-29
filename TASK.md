@@ -1,17 +1,79 @@
 
-# MESP-136 closed and merged — awaiting next Sol activation
+# MESP-137 implementation handoff - stopped for GPT-5.6 Sol review
 
 MESP-136 is **Done** and **merged to `main` at commit `992195f7e61cf03b94675a498377a6d8bf679ebf`** on 2026-08-28T23:37:13Z. Accepted feature head was `507bd1b11b933fd81d734e5cd12cad4c858dffb4`. PR #80 is closed/merged/not-Draft.
 
+## MESP-137 active - reservation, fulfillment, delivery, and invoice eligibility
+
+MESP-137 is the single active implementation capability under Epic MESP-9,
+activated by MESP-137 comment `12265` and MESP-9 reconciliation `12266`.
+Implementation is bounded to Sales-linked Inventory reservation/allocation,
+partial fulfillment, atomic delivery posting, Finance-owned invoice
+eligibility/AR handoff seams, durable evidence, and the bilingual RTL Sales
+workspace. Returns, credit notes, receipts, refunds, revenue recognition,
+external integrations, ZATCA/FATOORA, Wafra-specific behavior, MESP-138, and
+MESP-139 are excluded.
+
+The authorized branch is `feat/MESP-137-reservation-fulfillment-invoice`,
+based on exact `origin/main` baseline
+`cb58d69fb0a589d363aed2d55b605e39f79d03bc`. One Draft PR may be created. No
+Jira writes, Ready transition, merge, rebase, force-push, or review request is
+authorized. After final push and Draft PR verification, stop for independent
+GPT-5.6 Sol review.
+
 Final Sol acceptance is recorded as MESP-136 comment `12252`; closure evidence is MESP-136 comment `12255` and MESP-9 reconciliation `12256`.
 
-**No current implementation capability is active.** MESP-137, MESP-138, and MESP-139 remain To Do/inactive and must not be started until Sol explicitly activates the next task in a fresh session with a new TASK.md prompt.
+MESP-137 is the current activated capability described above. MESP-138 and
+MESP-139 remain To Do/inactive and are out of scope for this handoff.
 
 Fast-track capability completion = **20/26 = 76.9%** after verified merge and Jira closure. Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**. MESP-48 and MESP-50 remain open production gates. MESP-9 remains In Progress.
 
 Ponytail FULL is the default executor mode when available on supported environments (Claude Code, OpenAI Codex).
 
-Repository state has been reconciled to reflect closure and to document Ponytail tooling governance.
+The implementation adds source-linked Tenant/Company/Branch/Warehouse
+reservation records with available-stock caps, partial allocation and
+backorder remainder, controlled reduction/release, source/revision binding,
+serializable stock/reservation posting, durable history/audit, and idempotent
+replay. Sales delivery posting is atomic across delivery evidence, stock
+movement, and reservation consumption; failed delivery cannot create a
+Finance document. Invoice eligibility uses posted delivery remainder and
+Finance-owned customer credit/AR validation, with durable invoice-request
+evidence and no revenue, receipt, refund, tax-invoice, or external submission
+implementation.
+
+The API adds seven public Sales fulfillment/delivery/invoice operations. The
+generated OpenAPI document has `417` unique operationIds and the REST catalog
+has `418` public / `2` internal operations. The Angular Sales workspace adds
+reservation, availability, partial-delivery, invoice-eligibility, bilingual
+EN/AR RTL, stale-revision, error, print, and loading states. Existing
+Tenant/Company/Branch scope, permissions, approval/SoD, credit holds,
+optimistic concurrency, and audit boundaries remain enforced.
+
+Authoritative validation: Release build `0 warnings / 0 errors`; non-SQL
+backend `1,046/1,046`; full disposable-LocalDB backend `1,126/1,126`;
+SQL safety `80/80`; focused Inventory `34/34`; focused Sales `27/27`;
+Finance MESP-135 regression `31/31`; REST foundation `36/36`; catalogue
+validation `4/4`; host security `19/19`; identity/authorization `89/89`;
+Angular `305/305` across 43 spec files; focused Chromium `10/10`; full
+Chromium `49/49`; both npm audits `0 vulnerabilities`; transitive NuGet
+vulnerability scan clear; and `git diff --check` clean. Production initial
+bundle is `511.98 kB`, `11.98 kB` over the retained `500 kB` budget; Sales
+lazy chunk is `86.51 kB`. The warning is retained and the budget was not
+raised. EF pending-model validation is clean.
+
+The canonical launcher is running the isolated feature worktree with the
+approved loopback Development auth bypass: API
+`http://localhost:5310` PID `39344`, Angular `http://localhost:4300` PID
+`38836`, data directory `.runtime/sol-review-20260829`. Health, OpenAPI,
+Scalar, root, Sales UI, authentication, context, and authenticated Sales
+register read probes returned HTTP 200. The isolated Development seed has no
+eligible Sales Order, so no live reservation/delivery/invoice mutation is
+claimed; the real Sales-to-Inventory path is covered by focused integration
+tests. The pre-existing listener on port `5300` was not touched.
+
+Repository state has been reconciled to reflect MESP-137 implementation and
+Ponytail tooling governance. After the Draft PR is created and verified, the
+executor stops for independent GPT-5.6 Sol review.
 
 ## Historical MESP-136 - GPT-5.6 Sol acceptance handoff after HOLD 2
 
