@@ -22,7 +22,7 @@ When Ponytail is installed and available, use **FULL** as the default mode for n
 
 **OpenAI Codex:**
 ```
-PONYTAIL:FULL
+@ponytail full
 ```
 
 ### FULL Semantics
