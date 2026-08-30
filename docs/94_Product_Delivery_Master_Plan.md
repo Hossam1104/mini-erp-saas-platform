@@ -29,9 +29,11 @@
 > documentation reconciliation to `main` at
 > `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
 >
-> MESP-144 remains the active In Progress repository-health checkpoint under
-> Sol HOLD 3 comment `12288`. Draft PR #82 remains Open/Unmerged for
-> independent Sol review at the executor handoff. No feature
+> MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+> reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5
+> merge-safety authority is comment `12296`. At the HOLD 5 executor handoff,
+> Jira and PR lifecycle had not yet been finalized; Jira and GitHub remain
+> authoritative for their respective final states. No feature
 > implementation capability is active; MESP-138 through MESP-142 remain
 > To Do/inactive, and MESP-48/MESP-50 remain open production gates. Accepted
 > fast-track completion is 21/26 (80.8%); production readiness remains
@@ -408,12 +410,12 @@
 | Last updated | 30 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-144 repository health, architecture, documentation, and backlog reconciliation checkpoint is In Progress under MESP-1; MESP-137 is accepted/merged/closed; MESP-23 and named production/legal/external gates remain preserved.` |
+| Current activity | `MESP-144 repository-health reconciliation reached Sol content acceptance at comment 12293; HOLD 5 merge-safety authority is comment 12296; MESP-137 is accepted/merged/closed; MESP-23 and named production/legal/external gates remain preserved.` |
 | Current implementation item | `No feature implementation is active. MESP-138 through MESP-142 remain To Do/inactive. The dedicated health branch is chore/project-health-reconciliation-cleanup.` |
 | Merged-main baseline | `origin/main is 4d6e33189a3835d5d8d2a58736055a837a3f5bc9; MESP-137 accepted feature head 9406e8c6408251323b96d4a0c25082142546b9ef and PR #84 squash SHA 6b3aeb63da15253dee5466f7be001773b80c28ad are recorded.` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `PR #82 is Open/Draft/Unmerged for Sol review; no merge or Ready transition is authorized by this checkpoint.` |
-| Current review checkpoint | `MESP-144 evidence: repository audit, conservative documentation cleanup, one test-fixture correction, final full validation, Jira evidence, and Azure classification.` |
+| Open Pull Request | `At the HOLD 5 executor handoff, PR #82 was verified Open/Draft/Unmerged; GitHub is authoritative for its final lifecycle. No merge or Ready transition is authorized by this checkpoint.` |
+| Current review checkpoint | `MESP-144 content acceptance is recorded at comment 12293; HOLD 5 merge-safety cleanup is recorded at comment 12296; final PR/Jira lifecycle is checked live.` |
 
 ---
 

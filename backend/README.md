@@ -1,11 +1,13 @@
 # Mini ERP backend foundation
 
 <!-- MESP-144-CURRENT-START -->
-> **MESP-144 HOLD 3 repository-health reconciliation - 30 August 2026.**
-> MESP-144 is In Progress under Sol HOLD 3 comment `12288` on
-> `chore/project-health-reconciliation-cleanup`, starting at reviewed head
-> `0eae673ac49cdbc51503709323f49cce2a8aa138`. Accepted current `main` is
-> `4d6e33189a3835d5d8d2a58736055a837a3f5bc9` and is integrated by normal merge.
+> **MESP-144 HOLD 5 merge-safety record - 30 August 2026.**
+> MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+> reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 authority is
+> comment `12296` and exists only to make repository state merge-safe. At the
+> HOLD 5 executor handoff, Jira and PR lifecycle had not yet been finalized;
+> Jira and GitHub remain authoritative for their respective final states.
+> Accepted current `main` is `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
 > MESP-137 is Done/accepted/merged; no implementation capability is active;
 > MESP-138/139 remain To Do/inactive; fast-track is `21/26 = 80.8%`; and
 > production readiness remains approximately `47%` overall / `41%` P2P.

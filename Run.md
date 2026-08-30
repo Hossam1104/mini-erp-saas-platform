@@ -1,14 +1,15 @@
 # MiniERP Local Development & Integrated Runtime Guide
 
-## Current repository-health checkpoint - MESP-144 HOLD 3
+## MESP-144 reconciliation record - 30 August 2026 (HOLD 5 merge-safety)
 
-MESP-144 is **In Progress** under Sol HOLD 3 comment `12288`. PR #82 is the
-repository-health reconciliation checkpoint on
-`chore/project-health-reconciliation-cleanup`, starting from reviewed head
-`0eae673ac49cdbc51503709323f49cce2a8aa138`; accepted current `main` is
-`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. Current main is integrated by a
-normal merge without history rewrite. The PR's lifecycle at handoff is
-transient and GitHub remains authoritative.
+MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
+authority is comment `12296` and exists only to make repository state
+merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
+been finalized; Jira and GitHub remain authoritative for their respective
+final states. The accepted current `main` is
+`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; the reconciled branch is
+`chore/project-health-reconciliation-cleanup`.
 
 MESP-137 is Done/accepted/merged. No implementation capability is active;
 MESP-138 and MESP-139 remain To Do/inactive; fast-track remains `21/26 = 80.8%`;

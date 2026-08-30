@@ -32,22 +32,23 @@ separate and unchanged at approximately 47% overall / 41% Procurement/P2P.
 MESP-48 and MESP-50 remain open production gates. `frontend/assets` remains
 untouched. Ponytail FULL remains the default executor mode when available.
 
-## Current execution overlay - 30 August 2026 (MESP-144 HOLD 3 reconciliation; pending Sol review)
+## Current execution overlay - 30 August 2026 (MESP-144 HOLD 5 merge-safety record)
 
-MESP-144 is **In Progress** under Sol HOLD 3 comment `12288`. PR #82 is the
-repository-health reconciliation checkpoint on
-`chore/project-health-reconciliation-cleanup`, starting from reviewed head
-`0eae673ac49cdbc51503709323f49cce2a8aa138`; accepted current `main` is
-`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. The branch is reconciled by a
-normal merge; the resulting merge commit is
-`80d6971b371624bddfe50aaa8c797b1718e9e815`.
+MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
+authority is comment `12296` and exists only to make repository state
+merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
+been finalized; Jira is authoritative for MESP-144 status and GitHub is
+authoritative for PR #82 lifecycle and mergeability.
 
-MESP-137 is Done and no implementation capability is active. MESP-138 and
-MESP-139 remain To Do/inactive; fast-track completion remains `21/26 = 80.8%`;
+The accepted current `main` is `4d6e33189a3835d5d8d2a58736055a837a3f5bc9` and
+the bounded branch is `chore/project-health-reconciliation-cleanup`. MESP-137
+is Done and no implementation capability is active. MESP-138 and MESP-139
+remain To Do/inactive; fast-track completion remains `21/26 = 80.8%`;
 production readiness remains approximately `47%` overall / `41%`
-Procurement/P2P; and MESP-48/MESP-50 remain open. This is a documentation/
-state-only checkpoint; GitHub remains authoritative for PR #82's transient
-Draft/Open/Unmerged handoff state.
+Procurement/P2P; and MESP-48/MESP-50 remain open. This is documentation/state
+only; no product source, tests, migrations, assets, Jira state, or later
+capability was added.
 
 ## Historical execution overlay - 30 August 2026 (MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance; superseded by closure above)
 

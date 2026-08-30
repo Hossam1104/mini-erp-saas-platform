@@ -46,24 +46,24 @@ velocity, or forecast:
 * MESP-137 delivered Sales-linked Inventory reservation/allocation, partial fulfillment, durable coordinated/reconcilable Delivery handoff, Finance-owned invoice eligibility/AR handoff seams, durable evidence, REST/OpenAPI metadata, and bilingual RTL Angular fulfillment UI. No returns, credit notes, receipts, refunds, revenue recognition, external integrations, ZATCA/FATOORA, or Wafra-specific behavior was added. `frontend/assets` remains untouched and the presentation remains main-only.
 * Ponytail FULL is the default executor mode when installed and available.
 
-## Current execution overlay - 30 August 2026 (MESP-144 HOLD 3 reconciliation; pending Sol review)
+## Current execution overlay - 30 August 2026 (MESP-144 HOLD 5 merge-safety record)
 
-* MESP-144 is **In Progress** under Sol HOLD 3 authority, MESP-144 comment
-  `12288`. The bounded checkpoint reconciles PR #82 onto the accepted current
-  `origin/main` without rewriting the existing feature history.
-* The reviewed starting head was
-  `0eae673ac49cdbc51503709323f49cce2a8aa138` on
-  `chore/project-health-reconciliation-cleanup`. Accepted current `main` is
-  `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; the exact normal merge commit is
-  `80d6971b371624bddfe50aaa8c797b1718e9e815`.
+* MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+  reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
+  authority is comment `12296` and exists only to make repository state
+  merge-safe.
+* The accepted current `main` is
+  `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; the bounded branch is
+  `chore/project-health-reconciliation-cleanup`. At the HOLD 5 executor
+  handoff, Jira and PR lifecycle had not yet been finalized; Jira and GitHub
+  remain authoritative for their respective final states.
 * MESP-137 is Done/accepted/merged; no implementation capability is active.
   MESP-138 and MESP-139 remain To Do/inactive, MESP-9 remains In Progress,
   fast-track completion is `21/26 = 80.8%`, production readiness remains
   approximately `47%` overall / `41%` Procurement/P2P, and MESP-48/MESP-50
   remain open production gates.
-* This is documentation/state reconciliation only. The PR lifecycle described
-  at handoff is transient; GitHub remains authoritative for PR #82. No product
-  source, tests, migrations, assets, Jira state, or later capability was added.
+* This is documentation/state reconciliation only. No product source, tests,
+  migrations, assets, Jira state, or later capability was added.
 
 ## Historical execution overlay - 30 August 2026 (MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance; superseded by closure above)
 

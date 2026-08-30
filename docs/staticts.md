@@ -1,27 +1,32 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
-## Current repository-health checkpoint - 30 August 2026 (MESP-144 HOLD 3)
+## MESP-144 reconciliation record - 30 August 2026 (HOLD 5 merge-safety)
 
-- MESP-144 is **In Progress** under Sol HOLD 3 comment `12288`. PR #82 is the
-  repository-health reconciliation checkpoint on
-  `chore/project-health-reconciliation-cleanup`; the reviewed starting head
-  was `0eae673ac49cdbc51503709323f49cce2a8aa138` and accepted current `main`
-  `4d6e33189a3835d5d8d2a58736055a837a3f5bc9` was integrated by normal merge
-  commit `80d6971b371624bddfe50aaa8c797b1718e9e815`.
+- MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+  reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
+  authority is comment `12296` and exists only to make repository state
+  merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
+  been finalized; Jira and GitHub remain authoritative for their respective
+  final states.
+- The accepted current `main` is `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`;
+  the bounded branch is `chore/project-health-reconciliation-cleanup`.
 - MESP-137 is **Done / accepted / merged**. No implementation capability is
   active; MESP-138 and MESP-139 remain To Do/inactive; MESP-9 remains In
   Progress; and MESP-48/MESP-50 remain open production gates.
 - Fast-track remains **21/26 = 80.8%**. Production readiness remains
   approximately **47% overall / 41% Procurement/P2P**.
-- This checkpoint changes repository documentation/state only. No product
+- This record changes repository documentation/state only. No product
   source, tests, migrations, assets, Jira state, or later capability changed.
-  PR #82's lifecycle at handoff is transient; GitHub remains authoritative.
+  PR #82's lifecycle at handoff is a historical fact; GitHub remains
+  authoritative for its final lifecycle.
 
-## Progress history - 30 August 2026 (MESP-144 reconciliation)
+## Progress history - 30 August 2026 (MESP-144 HOLD 5 merge-safety)
 
-MESP-144 reconciled the existing documentation checkpoint onto accepted
-current `main` without history rewrite. Fast-track and production-readiness
-figures are unchanged at `21/26 = 80.8%` and approximately `47% overall / 41%
+MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`; HOLD 5 merge-safety
+authority is comment `12296`. The cleanup preserves the accepted current-main
+baseline without history rewrite. Fast-track and production-readiness figures
+are unchanged at `21/26 = 80.8%` and approximately `47% overall / 41%
 Procurement/P2P`; no implementation capability was added or activated.
 
 All dated capability records below are historical unless they are part of an
@@ -81,7 +86,7 @@ explicitly current authoritative snapshot above.
   current and final status.
 <!-- MESP-137-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-30 (MESP-144 HOLD 3 reconciliation)
+**Last Updated:** 2026-08-30 (MESP-144 HOLD 5 merge-safety remediation)
 
 ## Progress history - 30 August 2026 (MESP-137 closure reconciliation)
 

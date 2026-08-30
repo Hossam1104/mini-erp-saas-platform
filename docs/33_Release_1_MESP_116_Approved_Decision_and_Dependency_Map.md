@@ -8,15 +8,20 @@ merged capability through PR #84 from accepted feature head
 `9406e8c6408251323b96d4a0c25082142546b9ef` at merge commit
 `6b3aeb63da15253dee5466f7be001773b80c28ad`. PR #85 carries the post-closure
 documentation reconciliation to `main` at
-`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. MESP-144 is the current
-repository-health checkpoint and is In Progress for GPT-5.6 Sol acceptance.
+`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. MESP-144 reconciliation reached
+Sol content acceptance at comment `12293` on reviewed head
+`ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety authority is
+comment `12296`; at that executor handoff, Jira and PR lifecycle had not yet
+been finalized, with Jira and GitHub authoritative for their respective final
+states.
 
 Fast-track completion is `21/26 = 80.8%`; this is capability completion, not
 production readiness. Overall production readiness remains approximately `47%`
 and Procurement/P2P `41%`. MESP-138 through MESP-142 remain To Do/inactive.
-MESP-48 and MESP-50 remain open production gates. MESP-144 is In Progress
-under Sol HOLD 3 comment `12288`; its PR lifecycle remains a transient handoff
-fact governed by GitHub.
+MESP-48 and MESP-50 remain open production gates. MESP-144 is recorded as the
+repository-health checkpoint under the Sol content acceptance and HOLD 5
+evidence above; its final Jira and PR lifecycle are governed by Jira and
+GitHub respectively.
 
 <!-- MESP-132-EXECUTION-START -->
 ## Execution overlay â€” 24 August 2026
@@ -58,8 +63,8 @@ C1-C9 remain open production/external/legal/provider/infrastructure gates.
 MESP-39 remains future-release and unactivated. MESP-40 remains a required
 Release 1 migration/onboarding task but is unactivated. MESP-133 through
 MESP-137 are complete at their accepted scopes; MESP-138 through MESP-142
-remain To Do/not activated. MESP-144 is the current health checkpoint and
-remains In Progress pending Sol acceptance.
+remain To Do/not activated. MESP-144 is recorded as the health checkpoint;
+its content acceptance and HOLD 5 merge-safety evidence are recorded above.
 
 ## 2. Cross-cutting gates used by every capability
 

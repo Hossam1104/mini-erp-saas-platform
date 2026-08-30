@@ -6,9 +6,12 @@ MESP-137 is Done, independently accepted, and squash-merged through PR #84
 from accepted feature head `9406e8c6408251323b96d4a0c25082142546b9ef` at
 `6b3aeb63da15253dee5466f7be001773b80c28ad`. PR #85 carries the post-closure
 documentation reconciliation to `main` at
-`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. MESP-144 is the active
-repository-health checkpoint and remains In Progress on Draft PR #82 for
-independent Sol review.
+`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. MESP-144 reconciliation reached
+Sol content acceptance at comment `12293` on reviewed head
+`ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety authority is
+comment `12296`; at that executor handoff, Jira and PR lifecycle had not yet
+been finalized, with Jira and GitHub authoritative for their respective final
+states.
 
 No feature implementation capability is active. MESP-138 through MESP-142
 remain To Do/inactive; MESP-9 remains In Progress; and MESP-48/MESP-50 remain
@@ -54,9 +57,11 @@ Fast-track completion after the verified MESP-132 merge is `16/26 = 61.5%`; this
 **Date:** 12 August 2026
 **Milestone:** **31 August 2026 — Release 1 Integrated Preview**
 **Governance task:** MESP-115 (Done), MESP-116 (Done at bounded governance scope)
-**Current bounded session:** MESP-144 repository health, architecture,
-documentation, and backlog reconciliation on Draft PR #82; no PR Ready
-transition, PR merge, Jira transition, or next capability starts automatically.
+**MESP-144 reconciliation record:** The repository health, architecture,
+documentation, and backlog reconciliation reached Sol content acceptance at
+comment `12293`; HOLD 5 merge-safety cleanup is recorded under comment
+`12296`. Final PR/Jira lifecycle is checked live; no Ready transition, merge,
+Jira transition, or next capability starts automatically.
 
 ## 1. Purpose and authority
 
@@ -107,8 +112,8 @@ cross-module dependency map is
 | MESP-132-MESP-137 | Completed bounded capabilities at their accepted merged scopes. |
 | MESP-137 | Done; PR #84 accepted feature head `9406e8c6408251323b96d4a0c25082142546b9ef` merged to `main` at `6b3aeb63da15253dee5466f7be001773b80c28ad`. |
 | MESP-138-MESP-142 | Capability backlog remains To Do / not activated. |
-| MESP-144 | In Progress repository-health checkpoint on Draft PR #82; independent Sol review remains pending. |
-| Current acceptance handoff | PR #85 documentation reconciliation is merged to `main` at `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; PR #82 remains Draft/Open/Unmerged. |
+| MESP-144 | Sol content acceptance recorded at comment `12293`; HOLD 5 merge-safety authority is comment `12296`; final Jira/PR lifecycle is authoritative in the live systems. |
+| Current acceptance handoff | PR #85 documentation reconciliation is merged to `main` at `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; at the HOLD 5 executor handoff, PR #82 was verified Draft/Open/Unmerged. GitHub remains authoritative for its final lifecycle. |
 | Production capability | No percentage increase is justified by this governance/documentation work. |
 
 ## 2a. Historical verified baseline retained
@@ -241,7 +246,7 @@ and is superseded by current status below.*
 
 Current status (30 August 2026): MESP-117 through MESP-137 have completed at
 their accepted bounded scopes and are Done/merged. MESP-138 through MESP-142
-remain To Do/inactive. MESP-144 is the current repository-health
+remain To Do/inactive. MESP-144 is recorded as the repository-health
 reconciliation checkpoint; it is documentation/metadata-only and adds no
 production capability. No feature implementation capability is currently
 active, and no later capability starts automatically — each is activated only
