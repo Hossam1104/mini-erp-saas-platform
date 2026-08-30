@@ -7,7 +7,7 @@
 > comment `12296` and exists only to make repository state merge-safe. At the
 > HOLD 5 executor handoff, Jira and PR lifecycle had not yet been finalized;
 > Jira and GitHub remain authoritative for their respective final states.
-> Accepted current `main` is `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
+> The pre-reconciliation main baseline was `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
 > MESP-137 is Done/accepted/merged; no implementation capability is active;
 > MESP-138/139 remain To Do/inactive; fast-track is `21/26 = 80.8%`; and
 > production readiness remains approximately `47%` overall / `41%` P2P.

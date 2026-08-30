@@ -9,7 +9,7 @@ merge-safe. At the HOLD 5 executor handoff, the Jira and PR lifecycle had not
 yet been finalized; Jira is authoritative for MESP-144 status and GitHub is
 authoritative for PR #82 lifecycle and mergeability.
 
-The accepted current `main` is `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
+The pre-reconciliation main baseline was `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
 The bounded reconciliation branch is `chore/project-health-reconciliation-cleanup`;
 its preceding accepted reconciliation history is retained without rebasing,
 rewriting, or force-pushing.

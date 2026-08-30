@@ -7,7 +7,7 @@ reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
 authority is comment `12296` and exists only to make repository state
 merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
 been finalized; Jira and GitHub remain authoritative for their respective
-final states. The accepted current `main` is
+final states. The pre-reconciliation main baseline was
 `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; the reconciled branch is
 `chore/project-health-reconciliation-cleanup`.
 

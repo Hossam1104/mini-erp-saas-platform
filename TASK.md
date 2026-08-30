@@ -1,17 +1,18 @@
 
-# MESP-144 HOLD 5 merge-safety remediation — executor handoff
+# MESP-144 HOLD 6 merge-safety remediation — executor handoff
 
 MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
 reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
-authority is MESP-144 comment `12296` and exists only to make repository state
-merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
+authority is MESP-144 comment `12296`. Current HOLD 6 authority is MESP-144
+comment `12298` and exists only to make baseline-`main` wording durable across
+a merge. At the HOLD 6 executor handoff, Jira and PR lifecycle had not yet
 been finalized; Jira is authoritative for MESP-144 status and GitHub is
 authoritative for PR #82 lifecycle and mergeability.
 
 This bounded task performs the final documentation cleanup on the existing
-branch `chore/project-health-reconciliation-cleanup`, retaining the accepted
-current `main` baseline `4d6e33189a3835d5d8d2a58736055a837a3f5bc9` without
-rebasing, rewriting, or force-pushing.
+branch `chore/project-health-reconciliation-cleanup`, retaining the
+pre-reconciliation main baseline `4d6e33189a3835d5d8d2a58736055a837a3f5bc9` as
+baseline evidence only, without rebasing, rewriting, or force-pushing.
 
 MESP-137 is **Done/accepted/merged**. **No implementation capability is
 active.** MESP-138 and MESP-139 remain To Do/inactive; MESP-9 remains In

@@ -412,7 +412,7 @@
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
 | Current activity | `MESP-144 repository-health reconciliation reached Sol content acceptance at comment 12293; HOLD 5 merge-safety authority is comment 12296; MESP-137 is accepted/merged/closed; MESP-23 and named production/legal/external gates remain preserved.` |
 | Current implementation item | `No feature implementation is active. MESP-138 through MESP-142 remain To Do/inactive. The dedicated health branch is chore/project-health-reconciliation-cleanup.` |
-| Merged-main baseline | `origin/main is 4d6e33189a3835d5d8d2a58736055a837a3f5bc9; MESP-137 accepted feature head 9406e8c6408251323b96d4a0c25082142546b9ef and PR #84 squash SHA 6b3aeb63da15253dee5466f7be001773b80c28ad are recorded.` |
+| Merged-main baseline | `The pre-reconciliation main baseline integrated into the MESP-144 branch was 4d6e33189a3835d5d8d2a58736055a837a3f5bc9; MESP-137 accepted feature head 9406e8c6408251323b96d4a0c25082142546b9ef and PR #84 squash SHA 6b3aeb63da15253dee5466f7be001773b80c28ad are recorded.` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
 | Open Pull Request | `At the HOLD 5 executor handoff, PR #82 was verified Open/Draft/Unmerged; GitHub is authoritative for its final lifecycle. No merge or Ready transition is authorized by this checkpoint.` |
 | Current review checkpoint | `MESP-144 content acceptance is recorded at comment 12293; HOLD 5 merge-safety cleanup is recorded at comment 12296; final PR/Jira lifecycle is checked live.` |

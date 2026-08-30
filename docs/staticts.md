@@ -8,7 +8,7 @@
   merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
   been finalized; Jira and GitHub remain authoritative for their respective
   final states.
-- The accepted current `main` is `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`;
+- The pre-reconciliation main baseline was `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`;
   the bounded branch is `chore/project-health-reconciliation-cleanup`.
 - MESP-137 is **Done / accepted / merged**. No implementation capability is
   active; MESP-138 and MESP-139 remain To Do/inactive; MESP-9 remains In
