@@ -4,7 +4,8 @@
 
 The Angular application is the first-party bilingual EN/AR, RTL/LTR shell for
 the accepted Tenant-aware ERP boundary. MESP-136 Sales quotation and order
-workspaces are present. MESP-137 and later capabilities remain inactive.
+workspaces and MESP-137 fulfillment, Delivery, and invoice-eligibility surfaces
+are present. MESP-138 and later capabilities remain inactive.
 The frontend does not invent Tenant, Company/Branch, pricing, tax, FX,
 approval, credit, accounting, inventory, or lifecycle authority.
 

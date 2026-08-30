@@ -1,6 +1,6 @@
 # Mini ERP SaaS Platform — Project Statistics and Readiness Tracker
 
-Last Updated: 2026-08-29
+Last Updated: 2026-08-30
 
 This is the canonical tracked tracker. Functional fast-track progress and
 production readiness are intentionally separate measures.
@@ -9,26 +9,26 @@ production readiness are intentionally separate measures.
 
 | Measure | Current evidence |
 | --- | --- |
-| Fast-track capability progress | 20 / 26 = 76.9%; MESP-136 is accepted, merged, and Jira-closed |
+| Fast-track capability progress | 21 / 26 = 80.8%; MESP-137 is accepted, merged, and Jira-closed |
 | Production readiness | Approximately 47% overall; unchanged by this checkpoint |
 | Procurement/P2P readiness | Approximately 41%; unchanged by this checkpoint |
 | Active implementation capability | None; MESP-144 health checkpoint is In Progress |
-| Next capability | MESP-137 remains To Do/inactive |
+| Next capability | MESP-138 remains To Do/inactive pending explicit Sol activation |
 | Open production gates | MESP-48 reference tenant volume; MESP-50 data residency and retention |
 | Protected assets | `frontend/assets` untouched |
 | Azure DevOps | No MESP authority or pipeline configured; no mutation performed |
+| Live Jira project snapshot | 98 Done / 9 In Progress / 37 To Do / 0 Blocked across 144 issues; no Jira mutation performed |
 
 ## Accepted functional boundary
 
 The merged repository includes the reusable Tenant-aware platform entry,
 Master Data and Business Parties, Procurement through invoice-matching seams,
 Inventory controls and valuation, Finance posting/AP/AR/settlement/tax-FX/
-close/reconciliation/core-report surfaces, and MESP-136 B2B quotations, Sales
-Orders, pricing, approvals, credit outcomes, revisions, audit, idempotency,
-concurrency, and bilingual UI.
+close/reconciliation/core-report surfaces, MESP-136 B2B quotations and Sales
+Orders, and MESP-137 reservation, partial fulfillment, Delivery, invoice
+eligibility/AR handoff, evidence, and bilingual fulfillment UI.
 
-MESP-137 reservation/partial fulfillment/Delivery/Sales Invoice, MESP-138
-Customer Return/Credit Note/receipts/correction, MESP-139 generic Reporting,
+MESP-138 Customer Return/Credit Note/receipts/correction, MESP-139 generic Reporting,
 external/statutory providers, production infrastructure, and Wafra-specific
 core behavior remain outside the accepted boundary.
 
@@ -57,6 +57,7 @@ core behavior remain outside the accepted boundary.
 | 2026-08-27 | Finance close/reconciliation/reports accepted | 19 / 26 | unchanged |
 | 2026-08-28 | MESP-136 Sales accepted/merged | 20 / 26 | unchanged |
 | 2026-08-29 | Project-health checkpoint opened | 20 / 26 | unchanged |
+| 2026-08-30 | MESP-137 accepted/merged; MESP-144 reconciliation refreshed | 21 / 26 | unchanged |
 
 ## Unresolved readiness
 

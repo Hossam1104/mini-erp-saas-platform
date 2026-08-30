@@ -1,5 +1,14 @@
 @AGENTS.md
 
+## Current handoff - 30 August 2026
+
+MESP-137 is accepted, Done, and merged through PR #84. MESP-144 remains the
+active In Progress repository-health checkpoint on Draft PR #82; keep it
+Open/Unmerged for independent Sol review. No next capability is active:
+MESP-138 and MESP-139 remain To Do/inactive. The accepted fast-track boundary
+is 21/26 (80.8%), while production readiness remains approximately 47% overall
+and 41% Procurement/P2P.
+
 # Mini ERP execution guidance — Claude-specific
 
 This repository is a reusable, bilingual, multi-tenant B2B ERP foundation.
@@ -12,7 +21,7 @@ This repository is a reusable, bilingual, multi-tenant B2B ERP foundation.
 
 ## Claude execution rules
 
-- MESP-136 is accepted and merged; MESP-137 and later capabilities are inactive
+- MESP-137 is accepted and merged; MESP-138 and later capabilities are inactive
   and must not be activated by this session.
 - Use Ponytail FULL when installed and available, but never trade safety or
   validation for a smaller diff.

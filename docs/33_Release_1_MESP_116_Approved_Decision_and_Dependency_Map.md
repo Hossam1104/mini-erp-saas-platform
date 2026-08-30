@@ -1,17 +1,19 @@
 # Release 1 MESP-116 Approved Decision and Dependency Map
 
-## Current checkpoint overlay - 29 August 2026
+## Current checkpoint overlay - 30 August 2026
 
 This overlay does not change the approved plan baseline. MESP-132 through
-MESP-136 are complete at their accepted bounded scopes. MESP-136 is the latest
-merged capability; its accepted feature head was `507bd1b1`, PR #80 was
-squash-merged at `992195f7`, and Jira closure evidence is recorded on MESP-136
-and MESP-9. MESP-144 is the current repository-health checkpoint and is In
-Progress for GPT-5.6 Sol acceptance.
+MESP-137 are complete at their accepted bounded scopes. MESP-137 is the latest
+merged capability through PR #84 from accepted feature head
+`9406e8c6408251323b96d4a0c25082142546b9ef` at merge commit
+`6b3aeb63da15253dee5466f7be001773b80c28ad`. PR #85 carries the post-closure
+documentation reconciliation to `main` at
+`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. MESP-144 is the current
+repository-health checkpoint and is In Progress for GPT-5.6 Sol acceptance.
 
-Fast-track completion is `20/26 = 76.9%`; this is capability completion, not
+Fast-track completion is `21/26 = 80.8%`; this is capability completion, not
 production readiness. Overall production readiness remains approximately `47%`
-and Procurement/P2P `41%`. MESP-137 through MESP-142 remain To Do/inactive.
+and Procurement/P2P `41%`. MESP-138 through MESP-142 remain To Do/inactive.
 MESP-48 and MESP-50 remain open production gates.
 
 <!-- MESP-132-EXECUTION-START -->
@@ -53,7 +55,7 @@ commitment, or production distribution.
 C1-C9 remain open production/external/legal/provider/infrastructure gates.
 MESP-39 remains future-release and unactivated. MESP-40 remains a required
 Release 1 migration/onboarding task but is unactivated. MESP-133 through
-MESP-136 are complete at their accepted scopes; MESP-137 through MESP-142
+MESP-137 are complete at their accepted scopes; MESP-138 through MESP-142
 remain To Do/not activated. MESP-144 is the current health checkpoint and
 remains In Progress pending Sol acceptance.
 

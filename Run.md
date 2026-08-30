@@ -1,7 +1,7 @@
 # MiniERP local development and integrated runtime guide
 
-This guide covers the current merged-main ERP boundary. MESP-136 is accepted
-and merged; MESP-137 and later capabilities are inactive. Local runtime
+This guide covers the current merged-main ERP boundary. MESP-137 is accepted
+and merged; MESP-138 and later capabilities are inactive. Local runtime
 behavior is not a production-readiness claim.
 
 ## Recommended startup

@@ -1,5 +1,10 @@
 # Mini ERP SaaS Platform - Technology Architecture Baseline
 
+> **Historical capability-record note - 30 August 2026.** The dated MESP-131
+> and MESP-132 overlays below preserve architecture evidence from their original
+> handoffs. They are not live project-state authority; current status is
+> maintained in `TASK.md`, `.ai/CURRENT_STATE.md`, and `docs/staticts.md`.
+
 <!-- MESP-131-ARCH-START -->
 ## Current MESP-131 valuation architecture overlay — 24 August 2026
 

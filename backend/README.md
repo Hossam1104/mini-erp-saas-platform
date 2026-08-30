@@ -2,12 +2,14 @@
 
 ## Current boundary
 
-MESP-136 is accepted, merged, and Jira-closed. The backend currently provides
-the reusable Tenant/Company/Branch ERP spine through Procurement, Inventory,
-Finance, Tenant-aware entry, and B2B Sales quotations/orders. MESP-137 and
-later capabilities are inactive; no reservation fulfillment, Delivery, Sales
-Invoice, Customer Return/Credit Note, generic Reporting catalogue, external
-provider, statutory, or Wafra-specific core behavior is added here.
+MESP-137 is accepted, merged, and Jira-closed after MESP-136. The backend
+provides the reusable Tenant/Company/Branch ERP spine through Procurement,
+Inventory, Finance, Tenant-aware entry, B2B Sales quotations/orders, and
+Sales-linked reservation, partial fulfillment, coordinated Delivery handoff,
+and Finance-owned invoice-eligibility/AR handoff seams. MESP-138 and later
+capabilities are inactive; Customer Return/Credit Note, receipts/refunds,
+generic Reporting catalogue, external provider, statutory, or Wafra-specific
+core behavior is outside this boundary.
 
 ## Project graph
 

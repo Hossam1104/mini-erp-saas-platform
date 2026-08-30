@@ -1,5 +1,11 @@
 # MESP-135 Finance Close, Corrections, Reconciliation and Core Reports
 
+> **Historical capability record - 30 August 2026.** This document preserves
+> the MESP-135 implementation and review evidence. Its embedded branch and
+> status snapshot is frozen at that capability's review point; live project
+> state is maintained in `TASK.md`, `.ai/CURRENT_STATE.md`, and
+> `docs/staticts.md`.
+
 ## Status and bounded intent
 
 MESP-135 is implemented on `feat/MESP-135-finance-close-reports` from the

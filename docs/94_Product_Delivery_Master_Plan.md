@@ -21,13 +21,20 @@
 > 20/26 = 76.9%; production readiness remains approximately 47% overall and
 > 41% Procurement/P2P. MESP-137 through MESP-142 remain To Do/inactive.
 >
-> **Checkpoint correction - 29 August 2026.** MESP-136 is accepted, merged,
-> and Jira-closed. MESP-144 is the current repository-health checkpoint and
-> remains In Progress pending GPT-5.6 Sol acceptance. Fast-track progress is
-> 20/26 = 76.9%; production readiness remains approximately 47% overall and
-> 41% Procurement/P2P. MESP-137 through MESP-142 remain To Do/inactive, and
-> MESP-48/MESP-50 remain open production gates. The older execution overlays
-> below are historical evidence and do not describe the current active task.
+> **Authoritative current project-state overlay - 30 August 2026.** MESP-137
+> is Done, independently accepted, and squash-merged through PR #84 from
+> accepted feature head `9406e8c6408251323b96d4a0c25082142546b9ef` at
+> `6b3aeb63da15253dee5466f7be001773b80c28ad`. PR #85 carries the post-closure
+> documentation reconciliation to `main` at
+> `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
+>
+> MESP-144 remains the active In Progress repository-health checkpoint. Draft
+> PR #82 remains Open/Unmerged for independent Sol review. No feature
+> implementation capability is active; MESP-138 through MESP-142 remain
+> To Do/inactive, and MESP-48/MESP-50 remain open production gates. Accepted
+> fast-track completion is 21/26 (80.8%); production readiness remains
+> approximately 47% overall and 41% Procurement/P2P. The older overlays below
+> are historical planning records and are not current-state authority.
 
 > **Historical pre-fast-track overlay — MESP-38 completion.** The prior
 > MESP-38/MESP-39 overlay immediately below remains preserved evidence only;
@@ -396,14 +403,14 @@
 | Owner | Hossam |
 | Repository | `Hossam1104/mini-erp-saas-platform` |
 | Suggested repository path | `docs/94_Product_Delivery_Master_Plan.md` |
-| Last updated | 29 August 2026 |
+| Last updated | 30 August 2026 |
 | Product boundary | Release 1 B2B ERP only |
 | Approved PRD | `docs/MESP_PRD_v1.2.docx` (PRD v1.2 Final Approved Baseline, approved 31 July 2026; formerly `MiniERPSaaSPlatform_PRD_v1.2.docx` at the repository root and, before that, `docs/MiniERPSaaSPlatform_PRD_v1.2_Final_Approved_Baseline.docx`) |
-| Current activity | `MESP-144 repository health, architecture, documentation, and backlog reconciliation checkpoint is In Progress under MESP-1; MESP-136 is accepted/merged/closed; MESP-23 and named production/legal/external gates remain preserved.` |
-| Current implementation item | `No feature implementation is active. MESP-137 through MESP-142 remain To Do/inactive. The dedicated health branch is chore/project-health-reconciliation-cleanup.` |
-| Merged-main baseline | `origin/main is c8c9084d2cf72550e7a51e4ab9475ef54d14e864 at the start of this checkpoint; MESP-136 accepted feature head 507bd1b11b933fd81d734e5cd12cad4c858dffb4 and PR #80 squash SHA 992195f7e61cf03b94675a498377a6d8bf679ebf.` |
+| Current activity | `MESP-144 repository health, architecture, documentation, and backlog reconciliation checkpoint is In Progress under MESP-1; MESP-137 is accepted/merged/closed; MESP-23 and named production/legal/external gates remain preserved.` |
+| Current implementation item | `No feature implementation is active. MESP-138 through MESP-142 remain To Do/inactive. The dedicated health branch is chore/project-health-reconciliation-cleanup.` |
+| Merged-main baseline | `origin/main is 4d6e33189a3835d5d8d2a58736055a837a3f5bc9; MESP-137 accepted feature head 9406e8c6408251323b96d4a0c25082142546b9ef and PR #84 squash SHA 6b3aeb63da15253dee5466f7be001773b80c28ad are recorded.` |
 | Current Sprint | `No active Sprint — MESP-63 was delivered outside a Sprint` |
-| Open Pull Request | `The health branch will carry one Draft PR for Sol review; no merge or Ready transition is authorized by this checkpoint.` |
+| Open Pull Request | `PR #82 is Open/Draft/Unmerged for Sol review; no merge or Ready transition is authorized by this checkpoint.` |
 | Current review checkpoint | `MESP-144 evidence: repository audit, conservative documentation cleanup, one test-fixture correction, final full validation, Jira evidence, and Azure classification.` |
 
 ---

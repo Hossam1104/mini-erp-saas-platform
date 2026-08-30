@@ -12,16 +12,25 @@ configuration-led behavior, server-authoritative authorization, module-owned
 persistence, audit, and evidence are product rules. Wafra is a validation
 tenant, not a code fork.
 
+## Authoritative current status - 30 August 2026
+
+MESP-137 is accepted, merged, and Jira-closed through PR #84. MESP-144 is the
+active repository-health checkpoint and remains In Progress on Draft PR #82.
+No feature implementation capability is active; MESP-138 and MESP-139 remain
+To Do/inactive. Fast-track progress is 21/26 (80.8%); production readiness
+remains approximately 47% overall and 41% Procurement/P2P.
+
 ## Current status — 29 August 2026
 
-MESP-136 is accepted, merged, and Jira-closed. The accepted implementation
-boundary includes the Procurement, Inventory, Finance, Tenant-aware entry, and
-MESP-136 B2B Sales surfaces already present in `main`. The current repository
-health checkpoint is tracked as Jira MESP-144 on a dedicated Draft-PR branch.
+MESP-137 is accepted, merged, and Jira-closed through PR #84. The accepted
+implementation boundary includes the Procurement, Inventory, Finance,
+Tenant-aware entry, MESP-136 B2B Sales, and MESP-137 reservation/fulfillment
+surfaces already present in `main`. The current repository health checkpoint is
+tracked as Jira MESP-144 on a dedicated Draft-PR branch.
 
-MESP-137, MESP-138, MESP-139, and later capabilities are inactive. MESP-48 and
-MESP-50 remain open production-readiness gates. Fast-track progress is 20/26
-(76.9%); production readiness remains approximately 47% overall and 41%
+MESP-138, MESP-139, and later capabilities are inactive. MESP-48 and
+MESP-50 remain open production-readiness gates. Fast-track progress is 21/26
+(80.8%); production readiness remains approximately 47% overall and 41%
 Procurement/P2P. Functional completion does not equal production readiness.
 
 ## Capability boundary
@@ -33,8 +42,8 @@ Procurement/P2P. Functional completion does not equal production readiness.
 | Procurement | Purchase Requests, quotations/source decisions, Purchase Orders/confirmations, Goods Receipts, Supplier Returns, invoice handoffs and matching seams |
 | Inventory | Warehouse context, ledger, opening balances, reservations, transfers, stock controls and valuation evidence |
 | Finance | Journals/GL, fiscal controls, AP/AR/cash settlement, tax/FX, close, reconciliation and core reports |
-| Sales | MESP-136 quotations and Sales Orders with server pricing, immutable commercial/tax/FX evidence, approval/delegation/SoD, credit outcomes, revisions and audit |
-| Not included | Reservation fulfillment/Delivery/Sales Invoice, Customer Return/Credit Note, generic Reporting catalogue, external/statutory providers, production infrastructure, and Wafra-specific core behavior |
+| Sales | MESP-136, MESP-137 quotations/orders plus reservation, partial fulfillment, Delivery, and Finance-owned invoice eligibility seams |
+| Not included | Customer Return/Credit Note, receipts/refunds, generic Reporting catalogue, external/statutory providers, production infrastructure, and Wafra-specific core behavior |
 
 ## Architecture
 

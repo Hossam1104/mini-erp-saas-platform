@@ -1,17 +1,23 @@
 # Current State
 
-Last reconciled: 2026-08-29
+Last reconciled: 2026-08-30
 
 ## Authoritative status
 
-MESP-136 is accepted, merged, and Jira-closed. The current implementation
+MESP-137 is accepted, merged, and Jira-closed through PR #84 at
+`6b3aeb63da15253dee5466f7be001773b80c28ad` from accepted feature head
+`9406e8c6408251323b96d4a0c25082142546b9ef`. The current implementation
 branch for this checkpoint is `chore/project-health-reconciliation-cleanup`,
 created from verified `origin/main` at
 `c8c9084d2cf72550e7a51e4ab9475ef54d14e864`. The final checkpoint head is
 recorded in `TASK.md` after the final validation commit.
 
 MESP-144 is the project-health checkpoint and remains In Progress pending
-GPT-5.6 Sol acceptance. No implementation capability is active.
+GPT-5.6 Sol acceptance. No implementation capability is active. MESP-138 and
+MESP-139 remain To Do/inactive. The latest default branch is `main` at
+`4d6e33189a3835d5d8d2a58736055a837a3f5bc9` through PR #85. Fast-track
+completion is 21/26 (80.8%); production readiness remains approximately 47%
+overall and 41% Procurement/P2P.
 
 ## Accepted functional boundary
 
@@ -20,9 +26,10 @@ Master Data and Business Parties; Procurement sourcing, quotations, purchase
 orders, confirmations, receipts, returns, invoice handoffs and matching;
 Inventory ledger, controls, transfers, reservations, and valuation; Finance
 posting, periods, AP/AR/cash settlement, tax/FX, close, reconciliation and
-core reports; and MESP-136 B2B quotations, Sales Orders, server-authoritative
-pricing, approval/delegation/SoD seams, credit outcomes, revisions, audit,
-idempotency, concurrency, and bilingual Angular surfaces.
+core reports; MESP-136 B2B quotations and Sales Orders, and MESP-137
+Sales-linked reservation, partial fulfillment, Delivery, Finance-owned
+invoice-eligibility/AR handoff seams, durable evidence, and bilingual Angular
+fulfillment surfaces.
 
 ADR-019 Tenant-aware host entry, exact membership authorization,
 Overview-first routing, operational Company/Branch context, generic branding,
@@ -32,14 +39,14 @@ exists.
 
 ## Inactive work and production gates
 
-MESP-137 (reservation/partial fulfillment/Delivery/Sales Invoice), MESP-138
-(Customer Return/Credit Note/receipts/correction), MESP-139 (generic Reporting),
-and later work remain To Do/inactive. MESP-48 and MESP-50 remain open. External
+MESP-138 (Customer Return/Credit Note/receipts/correction), MESP-139 (generic
+Reporting), and later work remain To Do/inactive. MESP-48 and MESP-50 remain open.
+External
 providers, statutory submission, production DNS/TLS, residency/retention,
 backup/recovery, capacity, migration/cutover, legal, UAT, and specialist
 acceptance gates remain separate from functional completion.
 
-Current progress is 20/26 fast-track capabilities (76.9%), approximately 47%
+Current progress is 21/26 fast-track capabilities (80.8%), approximately 47%
 overall production readiness, and approximately 41% Procurement/P2P readiness.
 These figures are not interchangeable.
 

@@ -1,10 +1,24 @@
 # Repository Working Agreement
 
+## Current execution overlay - 30 August 2026
+
+MESP-137 is Done and merged through PR #84 at
+`6b3aeb63da15253dee5466f7be001773b80c28ad` from accepted feature head
+`9406e8c6408251323b96d4a0c25082142546b9ef`. PR #85 carries the post-closure
+documentation reconciliation to `main` at
+`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
+
+MESP-144 is the active repository-health checkpoint and remains In Progress.
+Draft PR #82 remains Open/Unmerged for independent Sol review. No feature
+implementation capability is active; MESP-138 and MESP-139 remain To Do/
+inactive. Fast-track completion is 21/26 (80.8%); production readiness remains
+approximately 47% overall and 41% Procurement/P2P, and MESP-48/MESP-50 remain
+open production gates.
+
 ## Current checkpoint boundary
 
-MESP-136 is accepted, merged, and Jira-closed. No implementation capability is
-active. MESP-137 (reservation, partial fulfillment, Delivery, and Sales
-Invoice), MESP-138, MESP-139, and later capabilities remain inactive until
+MESP-137 is accepted, merged, and Jira-closed. No implementation capability is
+active. MESP-138, MESP-139, and later capabilities remain inactive until
 GPT-5.6 Sol explicitly activates one bounded task.
 
 MESP-48 (reference tenant volume) and MESP-50 (data residency and retention)
