@@ -22,6 +22,9 @@ remains approximately 47% overall and 41% Procurement/P2P.
 
 ## Current status — 29 August 2026
 
+> The dated status heading below is retained as a historical snapshot; use the
+> authoritative current status section above for live state.
+
 MESP-137 is accepted, merged, and Jira-closed through PR #84. The accepted
 implementation boundary includes the Procurement, Inventory, Finance,
 Tenant-aware entry, MESP-136 B2B Sales, and MESP-137 reservation/fulfillment
