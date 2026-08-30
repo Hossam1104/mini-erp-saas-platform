@@ -1,18 +1,50 @@
 # Current State
 
-## MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance
+## MESP-137 closed and merged - 29 August 2026 - awaiting next Sol activation
 
-MESP-137 remains the single active implementation capability under Epic
+MESP-137 is **Done**. PR #84 is **closed/merged/non-Draft**, squash-merged to
+`main` at commit `6b3aeb63da15253dee5466f7be001773b80c28ad`, from accepted
+feature head `9406e8c6408251323b96d4a0c25082142546b9ef`. GitHub verified
+`main` equals the merge commit. Sol final acceptance is MESP-137 comment
+`12282`; post-merge closure is comment `12284`; MESP-9 closure reconciliation
+is comment `12285`.
+
+MESP-137 delivered Sales-linked Inventory reservation/allocation, partial
+fulfillment, durable coordinated/reconcilable Delivery handoff, Finance-owned
+invoice eligibility/AR handoff seams, durable evidence, and the bilingual RTL
+Sales workspace. Returns, credit notes, receipts, refunds, revenue
+recognition, external integrations, ZATCA/FATOORA, and Wafra-specific
+behavior remain excluded. `frontend/assets` remains untouched.
+
+**No implementation capability is currently active.** MESP-138 and MESP-139
+remain To Do/inactive; MESP-138 is a later candidate pending explicit
+GPT-5.6 Sol activation. MESP-9 remains In Progress pending further
+Sales/Order-to-Cash capabilities. MESP-48 and MESP-50 remain open production
+gates.
+
+Fast-track capability completion is now **21/26 = 80.8%**, authoritative
+after verified merge and Jira Done closure. Production readiness remains
+separate and unchanged at approximately **47% overall** and **41%
+Procurement/P2P**.
+
+Ponytail FULL is the default executor mode when installed and available
+(Claude Code, OpenAI Codex). Machine-local installation and plugin state must
+not be committed.
+
+Repository state has been reconciled to reflect MESP-137 closure.
+
+## Historical MESP-137 HOLD-2 remediation - superseded by closure above
+
+MESP-137 remained the single active implementation capability under Epic
 MESP-9, activated by MESP-137 comment `12265` and MESP-9 reconciliation
 `12266`. HOLD-2 authority is MESP-137 comment `12275` with MESP-9
-reconciliation `12277`. The bounded remediation continues Draft PR #84 on
+reconciliation `12277`. The bounded remediation continued Draft PR #84 on
 `feat/MESP-137-reservation-fulfillment-invoice` from exact HOLD-1 head
 `4ecfb64ffd5391a934af80fe11003b9031881ae3`, exact `origin/main` baseline
 `cb58d69fb0a589d363aed2d55b605e39f79d03bc`, and pushed head
 `d1914884bead08fac7a5b4eddc6f573297ef5550`.
 
-`MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance`.
-HOLD-137-E makes the serializable Sales persistence transaction authoritative
+HOLD-137-E made the serializable Sales persistence transaction authoritative
 for current posted deliveries, prior invoice evidence, source allocation,
 quantity, net, tax, gross, rounding residual, tax identity, Payment Term, and
 source snapshot. Finance posting is built from that persisted authoritative
@@ -21,14 +53,7 @@ real downstream fingerprints, known Inventory Movement IDs and Finance effect
 IDs, explicit committed/not-acknowledged/reconciliation-required semantics,
 durable retry identity, and fail-closed mismatch checks.
 
-MESP-138 and MESP-139 remain To Do/inactive. Returns, credit notes, receipts,
-refunds, revenue recognition, external integrations, ZATCA/FATOORA, and
-Wafra-specific behavior remain excluded. `frontend/assets` remains untouched.
-Fast-track remains **20/26 = 76.9%**; production readiness remains separate at
-approximately **47% overall** and **41% Procurement/P2P**; MESP-48 and MESP-50
-remain open production gates. MESP-9 remains In Progress.
-
-Final validation is Release `0 warnings / 0 errors`; full disposable-LocalDB
+Final validation was Release `0 warnings / 0 errors`; full disposable-LocalDB
 backend `1,138/1,138` with 0 failures and 0 skips; SQL safety `80/80`;
 focused Inventory ledger/stock-control/valuation `34/34`, `12/12`, and
 `44/44`; focused Sales `38/38`; Finance MESP-135 `31/31`; REST `36/36`;
@@ -36,18 +61,13 @@ catalogue `4/4`; host security `19/19`; identity/authorization `89/89`;
 Angular `305/305` across 43 specs; focused/full Chromium `2/2` and `49/49`;
 both npm audits `0 vulnerabilities`; five-project NuGet scan clear; all seven
 EF contexts report no pending model changes; and `git diff --check` clean.
-The retained production warning is `512.18 kB` initial (`12.18 kB` over
+The retained production warning was `512.18 kB` initial (`12.18 kB` over
 500 kB), with an `88.24 kB` Sales lazy chunk; the budget was not raised.
 
-The isolated runtime is API `http://localhost:5310` PID `34956`, Angular
+The isolated runtime was API `http://localhost:5310` PID `34956`, Angular
 `http://localhost:4300` PID `42444`, data `.runtime/hold2-runtime-20260830`,
-and source head `d191488`. Health, OpenAPI, Scalar, Angular root,
-`/app/sales`, `/app/sales/orders`, authentication/session/context, and
-authenticated Sales quotation/order reads returned HTTP 200. No live business
-mutation was performed; port `5300` was not touched; `LEFT RUNNING = YES`.
-No Jira writes, Ready transition, merge, rebase, force-push, or review request
-was performed. PR #84 remains Open/Draft/Unmerged for independent GPT-5.6 Sol
-review.
+and source head `d191488`. This snapshot preceded final Sol acceptance and
+merge, superseded by the closure section above.
 
 ## Historical MESP-137 initial implementation - superseded by HOLD-1 remediation
 
@@ -65,8 +85,8 @@ MESP-136 is **Done** and **merged to `main` at `992195f7e61cf03b94675a498377a6d8
 
 Final Sol acceptance: MESP-136 comment `12252`. Closure evidence: MESP-136 comment `12255` and MESP-9 reconciliation `12256`.
 
-MESP-137 is the current activated capability described above. MESP-138 and
-MESP-139 remain To Do/inactive and are out of scope for this handoff.
+MESP-137 is now Done/merged, described in the closure section above. MESP-138
+and MESP-139 remain To Do/inactive and are out of scope for this handoff.
 
 Fast-track capability completion = **20/26 = 76.9%** after verified merge and Jira closure. Production readiness remains separate and unchanged at approximately **47% overall** and **41% Procurement/P2P**. MESP-48 and MESP-50 remain open production gates. MESP-9 remains In Progress.
 

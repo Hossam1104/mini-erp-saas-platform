@@ -6,33 +6,56 @@
 authorization boundaries. Read it before any Ready transition, merge, Jira
 write, or mutation not explicitly authorized by the current bounded task.
 
-## Current execution overlay - 30 August 2026 (MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance)
+## Current execution overlay - 30 August 2026 (MESP-137 closed and merged; awaiting next Sol activation)
+
+MESP-137 is **Done**. PR #84 is closed/merged/non-Draft, squash-merged to
+`main` at commit `6b3aeb63da15253dee5466f7be001773b80c28ad`, from accepted
+feature head `9406e8c6408251323b96d4a0c25082142546b9ef`. Final Sol acceptance
+is MESP-137 comment `12282`; post-merge closure is comment `12284`; MESP-9
+closure reconciliation is comment `12285`.
+
+MESP-137 delivered Sales-linked Inventory reservation/allocation, partial
+fulfillment, durable coordinated/reconcilable Delivery handoff, Finance-owned
+invoice eligibility/AR handoff seams, durable evidence, and the bilingual RTL
+Sales workspace. Returns, credit notes, receipts, refunds, revenue
+recognition, external integrations, ZATCA/FATOORA, and Wafra-specific
+behavior remain excluded.
+
+**No current implementation capability is active.** MESP-138 and MESP-139
+remain To Do/inactive and must not be started until Sol explicitly activates
+the next task. MESP-9 remains In Progress pending further Sales/Order-to-Cash
+capabilities.
+
+Fast-track capability completion is now 20/26 → 21/26 = 80.8%, authoritative
+after verified merge and Jira Done closure; production readiness remains
+separate and unchanged at approximately 47% overall / 41% Procurement/P2P.
+MESP-48 and MESP-50 remain open production gates. `frontend/assets` remains
+untouched. Ponytail FULL remains the default executor mode when available.
+
+## Historical execution overlay - 30 August 2026 (MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance; superseded by closure above)
 
 `MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance`.
-The authorized branch continues Draft PR #84 from exact HOLD-1 head
+The authorized branch continued Draft PR #84 from exact HOLD-1 head
 `4ecfb64ffd5391a934af80fe11003b9031881ae3` and exact `origin/main` baseline
 `cb58d69fb0a589d363aed2d55b605e39f79d03bc`; pushed head is
 `d1914884bead08fac7a5b4eddc6f573297ef5550`. HOLD-2 authority is MESP-137
 comment `12275` with MESP-9 reconciliation `12277`.
 
-HOLD-137-E makes serializable Sales persistence authoritative for delivery
+HOLD-137-E made serializable Sales persistence authoritative for delivery
 allocation, prior invoice evidence, quantity, exact net/tax/gross residuals,
 tax identity, Payment Term, and source snapshot, and Finance posts only from
 the persisted Sales invoice request. HOLD-137-F preserves real downstream
 fingerprints, known Inventory Movement IDs and Finance effect IDs, explicit
 commit/acknowledgement/reconciliation states, durable retry identity, and
-fail-closed mismatch protection. No MESP-138/139 work, Jira write, Ready
-transition, merge, rebase, force-push, or review request was performed.
+fail-closed mismatch protection.
 
-Fast-track remains 20/26 = 76.9%; production readiness remains ~47% overall /
-~41% Procurement/P2P; `frontend/assets` remains untouched. Release validation
-is 0 warnings/0 errors, full backend 1,138/1,138, Angular 305/305, focused/full
-Chromium 2/2 and 49/49, and the retained initial bundle is 512.18 kB with
-Sales lazy chunk 88.24 kB. The isolated runtime is API
-`http://localhost:5310` PID `34956`, Angular `http://localhost:4300` PID
-`42444`, data `.runtime/hold2-runtime-20260830`; required and authenticated
-Sales read probes returned HTTP 200. Stop after exact PR verification for
-independent GPT-5.6 Sol review.
+Validation at that time was 0 warnings/0 errors, full backend 1,138/1,138,
+Angular 305/305, focused/full Chromium 2/2 and 49/49, and the retained
+initial bundle was 512.18 kB with Sales lazy chunk 88.24 kB. The isolated
+runtime was API `http://localhost:5310` PID `34956`, Angular
+`http://localhost:4300` PID `42444`, data `.runtime/hold2-runtime-20260830`.
+This snapshot preceded final Sol acceptance and merge; superseded by the
+closure overlay above.
 
 ## Historical execution overlay - 29 August 2026 (MESP-137 initial implementation; superseded by HOLD-1 remediation)
 
