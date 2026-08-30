@@ -229,10 +229,24 @@ the PRD and broad architecture only at a real cross-module or release gate.
 
 The backlog uses existing Epics and does not duplicate the existing
 foundation/platform work. MESP-57–MESP-64 and the existing MESP-65–MESP-85
-platform stories remain their original work. MESP-117–MESP-142 are the new
-full-feature capability tasks; all remain To Do/not activated. MESP-117 is the
-prepared first handoff after the completed MESP-116 reconciliation and starts
-only in a fresh session after its Definition of Ready is verified.
+platform stories remain their original work. MESP-117–MESP-142 are the
+full-feature capability tasks below.
+
+*Historical wording (12 August 2026, preserved for traceability): "MESP-117–
+MESP-142 are the new full-feature capability tasks; all remain To Do/not
+activated. MESP-117 is the prepared first handoff after the completed
+MESP-116 reconciliation and starts only in a fresh session after its
+Definition of Ready is verified." This described the state at BRD-entry time
+and is superseded by current status below.*
+
+Current status (30 August 2026): MESP-117 through MESP-137 have completed at
+their accepted bounded scopes and are Done/merged. MESP-138 through MESP-142
+remain To Do/inactive. MESP-144 is the current repository-health
+reconciliation checkpoint; it is documentation/metadata-only and adds no
+production capability. No feature implementation capability is currently
+active, and no later capability starts automatically — each is activated only
+by explicit Sol/Owner authorization in a fresh session after its Definition of
+Ready is verified.
 
 Every task description contains the common Definition of Done: Tenant-safe
 server-derived context; permission and SoD checks; business audit; private
@@ -275,7 +289,9 @@ MESP-116 selected MESP-117 as the first implementation handoff after approved
 decisions and published the final dependency map in
 `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`. The
 backlog order is the recommended sequence, not an automatic activation
-command; MESP-117 remains To Do/not activated.
+command. MESP-117 has since completed at its accepted bounded scope (see
+Section 2); MESP-138 through MESP-142 remain To Do/not activated, each
+requiring explicit Sol/Owner activation in a fresh session.
 
 ## 7. Definition of Ready for each capability
 
