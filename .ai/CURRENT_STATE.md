@@ -7,7 +7,8 @@ MESP-144 is **In Progress** under Sol HOLD 3 authority, MESP-144 comment
 `chore/project-health-reconciliation-cleanup`; its reviewed starting head was
 `0eae673ac49cdbc51503709323f49cce2a8aa138`. The accepted current `main` is
 `4d6e33189a3835d5d8d2a58736055a837a3f5bc9` and was integrated with a normal
-merge without rewriting the existing feature history.
+merge at `80d6971b371624bddfe50aaa8c797b1718e9e815` without rewriting the
+existing feature history.
 
 MESP-137 remains Done/accepted/merged. **No implementation capability is
 currently active.** MESP-138 and MESP-139 remain To Do/inactive; MESP-9 remains

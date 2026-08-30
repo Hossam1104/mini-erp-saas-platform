@@ -9,7 +9,7 @@ MESP-144 is **In Progress** under Sol HOLD 3 authority, MESP-144 comment
 The reviewed starting head was
 `0eae673ac49cdbc51503709323f49cce2a8aa138`; accepted `main` integrated by the
 normal merge is `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. The exact resulting
-merge commit is recorded below after the merge is committed.
+merge commit is `80d6971b371624bddfe50aaa8c797b1718e9e815`.
 
 MESP-137 is **Done/accepted/merged**. **No implementation capability is
 active.** MESP-138 and MESP-139 remain To Do/inactive; MESP-9 remains In

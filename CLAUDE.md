@@ -39,7 +39,8 @@ repository-health reconciliation checkpoint on
 `chore/project-health-reconciliation-cleanup`, starting from reviewed head
 `0eae673ac49cdbc51503709323f49cce2a8aa138`; accepted current `main` is
 `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. The branch is reconciled by a
-normal merge; the resulting merge commit is recorded in the final handoff.
+normal merge; the resulting merge commit is
+`80d6971b371624bddfe50aaa8c797b1718e9e815`.
 
 MESP-137 is Done and no implementation capability is active. MESP-138 and
 MESP-139 remain To Do/inactive; fast-track completion remains `21/26 = 80.8%`;
