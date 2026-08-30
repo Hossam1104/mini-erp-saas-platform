@@ -1,42 +1,29 @@
 # Mini ERP backend foundation
 
-<!-- MESP-135-CURRENT-START -->
-> **MESP-135 Finance close, corrections, reconciliation and core reports - 26 August 2026.**
-> MESP-134 is Done and merged into `main` at
-> `1e49814172843c2ec2279b8dcc5fc0a41e5da372` (PR #78, closure `12122`).
-> MESP-135 is the only active Finance implementation capability under MESP-10,
-> In Progress/activated by `12123`, with Finance reconciliation `12124`.
-> The bounded branch is `feat/MESP-135-finance-close-reports`; it must remain
-> one Draft/Open/Unmerged PR for Sol acceptance.
+<!-- MESP-144-CURRENT-START -->
+> **MESP-144 HOLD 5 merge-safety record - 30 August 2026.**
+> MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+> reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 authority is
+> comment `12296` and exists only to make repository state merge-safe. At the
+> HOLD 5 executor handoff, Jira and PR lifecycle had not yet been finalized;
+> Jira and GitHub remain authoritative for their respective final states.
+> The pre-reconciliation main baseline was `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
+> MESP-137 is Done/accepted/merged; no implementation capability is active;
+> MESP-138/139 remain To Do/inactive; fast-track is `21/26 = 80.8%`; and
+> production readiness remains approximately `47%` overall / `41%` P2P.
 >
-> The backend scope extends the existing MESP-132/133/134 fiscal, posting,
-> subledger, monetary-evidence, revaluation, and reconciliation authorities
-> with controlled period close/reopen/reclose, year-end, exact corrections and
-> reversals, Finance reconciliation, Trial Balance, General Ledger, AP/AR
-> aging, valid account-classified statements, and deterministic authorized
-> export. Generic Reporting/MESP-139, scheduling, consolidation, statutory or
-> provider work, and Wafra-specific behavior remain outside scope. No Jira,
-> Opus, merge, or Ready transition is permitted.
->
-> Implementation is at feature SHA
-> `6dca68888c4300dff2575d99b3edf919e965d783`, with additive migration
-> `20260826133441_MESP135FinanceCloseReports` and five new Tenant-owned tables.
-> The public catalogue contains 22 Finance operations. Focused persistence is
-> 3/3, REST/OpenAPI/host is 55/55, SQL safety is 77/77, and the full backend is
-> 1,062/1,062 with 0 failures and 0 skips. Release build is 0 warnings/0
-> errors. The seven new provider-realistic SQL races and retained prior Finance
-> races are documented in the architecture record; no existing migration was
-> edited.
-<!-- MESP-135-CURRENT-END -->
+> This is documentation/state reconciliation only. No backend source, tests,
+> migrations, assets, Jira state, or later capability changed in this checkpoint.
+<!-- MESP-144-CURRENT-END -->
 
-<!-- MESP-131-MERGED-CURRENT-START -->
+<!-- MESP-131-HISTORICAL-MERGED-START -->
 > **MESP-131 Opus P1 financial-correctness remediation - 24 August 2026.** Drifted-average corrections fail closed as Blocked evidence with `correction_would_orphan_residual_value`, stop only the affected valuation scope, and never persist an impossible zero-quantity/non-zero-value state. Physical quantity arithmetic preserves Stock Ledger `decimal(28,8)` precision; `AmountScale` remains monetary-only and reconciliation compares exact stored quantities. No schema migration was required.
 >
 > **Final validation.** Final P1 correction-quantity commit `64c4f4ea9b917119d07cb26df7ecac8c2239bfac`; focused valuation `44/44`; combined Inventory regression `89/89`; SQL safety `40/40`; canonical disposable-LocalDB backend `963/963` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `254/254`; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused/full Chromium `5/5` and `32/32`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. The final correction regression proves `1.005 - 0.001 = 1.004` without monetary quantity rounding. PR #75 is merged into `main`; no Jira writes were performed.
 > **Current MESP-131 merged-main overlay â€” 24 August 2026; MESP-131 and MESP-8 are Done in Jira.** Inventory now contains a deterministic Company-scoped `LedgerSequence` for movement ordering, versioned decimal Moving Weighted Average valuation policy/state/evidence, exact MESP-120 Exchange Rate snapshots, Pending/Blocked predecessor handling, append-only correction/reversal history, Warehouse Transfer/In-Transit value lineage, Inventory reconciliation, Finance handoff facts, and bounded valuation/report/export REST surfaces. Finance posting remains downstream: no Journal, GL, AP, AR, tax, payment, fiscal-period, Sales, generic Reporting, statutory, migration/cutover, external-provider, or Wafra-specific reusable core behavior is introduced.
 >
 > **MESP-131 accepted validation.** Focused valuation `44/44`; combined Inventory regression `89/89`; SQL Server safety `40/40` against disposable LocalDB; canonical disposable-LocalDB backend `963/963` with 0 failed/0 skipped; Release build 0 warnings/0 errors; Angular `254/254` across 35 specs; initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused Chromium `5/5`; full Chromium `32/32`; both npm audits 0 vulnerabilities; `frontend/assets` untouched. PR #75 is merged into `main`; no Jira writes were performed.
-<!-- MESP-131-MERGED-CURRENT-END -->
+<!-- MESP-131-HISTORICAL-MERGED-END -->
 
 <!-- MESP-134-HISTORICAL-START -->
 > **MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026.**

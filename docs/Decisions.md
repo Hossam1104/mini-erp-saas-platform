@@ -2,6 +2,13 @@
 
 This file is the lightweight ADR index for Release 1. The approved architecture direction is documented in [Technology Architecture Baseline](01_Technology_Architecture_Baseline.md). A full ADR is created only immediately before the related implementation or production decision becomes due. Every full ADR must record the decision, alternatives, rationale, consequences, owner, approval date, status, and superseding ADR.
 
+> **Historical decision-snapshot note - 30 August 2026.** The dated
+> capability-specific "Current" sections below are preserved decision evidence,
+> not live project-state authority. MESP-137 is the latest accepted/merged
+> capability; MESP-144 is the active In Progress repository-health checkpoint;
+> MESP-138 and later capabilities remain inactive. Use `TASK.md`,
+> `.ai/CURRENT_STATE.md`, and `docs/staticts.md` for live state.
+
 ## Current implementation state — MESP-132 Finance foundation — 24 August 2026
 
 MESP-132 is the latest merged bounded capability under Epic MESP-10, with Jira

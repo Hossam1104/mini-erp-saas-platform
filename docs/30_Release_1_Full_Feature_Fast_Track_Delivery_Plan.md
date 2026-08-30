@@ -1,17 +1,25 @@
 # Release 1 Full-Feature Fast-Track Delivery Plan
 
-## Current execution reconciliation - 25 August 2026
+## Current execution reconciliation - 30 August 2026
 
-The current bounded capability is MESP-134 Tax / FX / Reporting Currency /
-Revaluation, active/In Progress under MESP-10 on one Draft PR. MESP-133 is
-Done and merged at `3c616dd85b9cebb53990934321f1ae7d0d5410c9`.
-MESP-132 is
-Done/merged/closed; Sol HOLD `11892` / `11926` / `11963` / `11967` and MESP-10 progress
-comments `11893` / `11927` / `11964` / `11968`
-remain the acceptance authority. MESP-134 and MESP-135 are To Do and
-unactivated. Fast-track remains `16/26 = 61.5%`; production readiness remains
-approximately `47%` overall / `41%` Procurement/P2P. The older 24 August
-MESP-132 overlay below is historical and retained for traceability.
+MESP-137 is Done, independently accepted, and squash-merged through PR #84
+from accepted feature head `9406e8c6408251323b96d4a0c25082142546b9ef` at
+`6b3aeb63da15253dee5466f7be001773b80c28ad`. PR #85 carries the post-closure
+documentation reconciliation to `main` at
+`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`. MESP-144 reconciliation reached
+Sol content acceptance at comment `12293` on reviewed head
+`ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety authority is
+comment `12296`; at that executor handoff, Jira and PR lifecycle had not yet
+been finalized, with Jira and GitHub authoritative for their respective final
+states.
+
+No feature implementation capability is active. MESP-138 through MESP-142
+remain To Do/inactive; MESP-9 remains In Progress; and MESP-48/MESP-50 remain
+open production gates. Accepted fast-track completion is `21/26 = 80.8%`;
+production readiness remains approximately `47%` overall / `41%`
+Procurement/P2P. The older execution overlays below are historical records.
+
+## Historical execution overlay - 25 August 2026
 
 HOLD 4 adds no production code. Its implementation/test commit is
 `7cf177e8eaf694824a91b8b5b0cf3642d0f049f7`, from exact starting SHA
@@ -49,8 +57,11 @@ Fast-track completion after the verified MESP-132 merge is `16/26 = 61.5%`; this
 **Date:** 12 August 2026
 **Milestone:** **31 August 2026 — Release 1 Integrated Preview**
 **Governance task:** MESP-115 (Done), MESP-116 (Done at bounded governance scope)
-**Current bounded session:** GPT-5.6 Sol independent acceptance re-review of
-MESP-133 Draft PR #77; no merge, Jira write, or next capability starts automatically
+**MESP-144 reconciliation record:** The repository health, architecture,
+documentation, and backlog reconciliation reached Sol content acceptance at
+comment `12293`; HOLD 5 merge-safety cleanup is recorded under comment
+`12296`. Final PR/Jira lifecycle is checked live; no Ready transition, merge,
+Jira transition, or next capability starts automatically.
 
 ## 1. Purpose and authority
 
@@ -98,6 +109,17 @@ cross-module dependency map is
 
 | Item | Current position |
 |---|---|
+| MESP-132-MESP-137 | Completed bounded capabilities at their accepted merged scopes. |
+| MESP-137 | Done; PR #84 accepted feature head `9406e8c6408251323b96d4a0c25082142546b9ef` merged to `main` at `6b3aeb63da15253dee5466f7be001773b80c28ad`. |
+| MESP-138-MESP-142 | Capability backlog remains To Do / not activated. |
+| MESP-144 | Sol content acceptance recorded at comment `12293`; HOLD 5 merge-safety authority is comment `12296`; final Jira/PR lifecycle is authoritative in the live systems. |
+| Current acceptance handoff | PR #85 documentation reconciliation is merged to `main` at `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; at the HOLD 5 executor handoff, PR #82 was verified Draft/Open/Unmerged. GitHub remains authoritative for its final lifecycle. |
+| Production capability | No percentage increase is justified by this governance/documentation work. |
+
+## 2a. Historical verified baseline retained
+
+| Item | Historical position |
+|---|---|
 | MESP-38 | Done at its approved bounded Security, Audit, and Data Governance BRD scope. |
 | MESP-39 | To Do, not activated, not executed; future-release Integrations and External Services BRD. |
 | MESP-40 | To Do, not activated; full Release 1 migration and Tenant Onboarding requirement, scheduled in Wave H. |
@@ -105,8 +127,8 @@ cross-module dependency map is
 | MESP-115 | Done at the bounded documentation/Jira/governance rebaseline. |
 | MESP-116 | Done at the bounded approval/unblock reconciliation; Jira comment `10957`, closure transition, final dependency map, PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e`, merge `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`, and post-merge synchronization `66183c1` are recorded. |
 | MESP-117–MESP-131 | Completed bounded capabilities at their accepted merged scopes. |
-| MESP-132 | Merged through PR #76 under MESP-10; Jira closure and Finance Epic reconciliation remain with Sol. |
-| MESP-133 | In Progress / activated on Draft PR #77; awaiting Sol HOLD 2 review. |
+| MESP-132–MESP-137 | Completed bounded capabilities at their accepted merged scopes. |
+| MESP-137 | Done; PR #84 accepted feature head `9406e8c6408251323b96d4a0c25082142546b9ef` merged to `main` at `6b3aeb63da15253dee5466f7be001773b80c28ad`. |
 | MESP-134–MESP-142 | Capability backlog remains To Do / not activated. |
 | Product implementation | Existing bounded Category, UOM, Product, Supplier, and Customer slices remain evidence; the planned capability completion and shared Angular experience are not claimed complete. |
 | Current acceptance handoff | MESP-132 accepted feature head `c0e04553db3c7b04fa7f7870b60fc439ec8a40b7`; PR #76 squash SHA `ccc52a892c8258778f57c55c12fa0032bd3e276b`; Sol Jira closure and MESP-10 reconciliation are the next governance actions. |
@@ -212,10 +234,24 @@ the PRD and broad architecture only at a real cross-module or release gate.
 
 The backlog uses existing Epics and does not duplicate the existing
 foundation/platform work. MESP-57–MESP-64 and the existing MESP-65–MESP-85
-platform stories remain their original work. MESP-117–MESP-142 are the new
-full-feature capability tasks; all remain To Do/not activated. MESP-117 is the
-prepared first handoff after the completed MESP-116 reconciliation and starts
-only in a fresh session after its Definition of Ready is verified.
+platform stories remain their original work. MESP-117–MESP-142 are the
+full-feature capability tasks below.
+
+*Historical wording (12 August 2026, preserved for traceability): "MESP-117–
+MESP-142 are the new full-feature capability tasks; all remain To Do/not
+activated. MESP-117 is the prepared first handoff after the completed
+MESP-116 reconciliation and starts only in a fresh session after its
+Definition of Ready is verified." This described the state at BRD-entry time
+and is superseded by current status below.*
+
+Current status (30 August 2026): MESP-117 through MESP-137 have completed at
+their accepted bounded scopes and are Done/merged. MESP-138 through MESP-142
+remain To Do/inactive. MESP-144 is recorded as the repository-health
+reconciliation checkpoint; it is documentation/metadata-only and adds no
+production capability. No feature implementation capability is currently
+active, and no later capability starts automatically — each is activated only
+by explicit Sol/Owner authorization in a fresh session after its Definition of
+Ready is verified.
 
 Every task description contains the common Definition of Done: Tenant-safe
 server-derived context; permission and SoD checks; business audit; private
@@ -258,7 +294,9 @@ MESP-116 selected MESP-117 as the first implementation handoff after approved
 decisions and published the final dependency map in
 `docs/33_Release_1_MESP_116_Approved_Decision_and_Dependency_Map.md`. The
 backlog order is the recommended sequence, not an automatic activation
-command; MESP-117 remains To Do/not activated.
+command. MESP-117 has since completed at its accepted bounded scope (see
+Section 2); MESP-138 through MESP-142 remain To Do/not activated, each
+requiring explicit Sol/Owner activation in a fresh session.
 
 ## 7. Definition of Ready for each capability
 

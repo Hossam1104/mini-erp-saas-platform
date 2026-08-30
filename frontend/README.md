@@ -1,32 +1,21 @@
 # Mini ERP Tenant-Aware Shell
 
-<!-- MESP-135-CURRENT-START -->
-> **MESP-135 Finance close, corrections, reconciliation and core reports - 26 August 2026.**
-> MESP-134 is Done and merged into `main` at
-> `1e49814172843c2ec2279b8dcc5fc0a41e5da372` (PR #78, closure `12122`).
-> MESP-135 is the only active Finance capability under MESP-10,
-> In Progress/activated by `12123`, with Finance reconciliation `12124`.
-> The bounded branch is `feat/MESP-135-finance-close-reports` and must end in
-> one Draft/Open/Unmerged PR for Sol acceptance.
+<!-- MESP-144-CURRENT-START -->
+> **MESP-144 HOLD 5 merge-safety record - 30 August 2026.**
+> MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+> reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 authority is
+> comment `12296` and exists only to make repository state merge-safe. At the
+> HOLD 5 executor handoff, Jira and PR lifecycle had not yet been finalized;
+> Jira and GitHub remain authoritative for their respective final states.
+> The pre-reconciliation main baseline was `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
+> MESP-137 is Done/accepted/merged; no implementation capability is active;
+> MESP-138/139 remain To Do/inactive; fast-track is `21/26 = 80.8%`; and
+> production readiness remains approximately `47%` overall / `41%` P2P.
 >
-> The Angular scope is lazy Finance close/year-end and reports workspaces with
-> EN/AR, RTL-safe loading/empty/blocked/error/authorization states, server error
-> mappings, filters, and bounded export for the Finance-owned reports. It
-> reuses server-authoritative Tenant/Company, fiscal, posting, subledger, and
-> monetary-evidence contracts. MESP-139 generic Reporting, scheduling,
-> consolidation, statutory/provider work, and Wafra-specific behavior remain
-> outside scope. No Jira, Opus, merge, or Ready transition is permitted.
+> This is documentation/state reconciliation only. No frontend source, tests,
+> migrations, assets, Jira state, or later capability changed in this checkpoint.
 >
-> Implementation feature SHA is
-> `6dca68888c4300dff2575d99b3edf919e965d783`. The lazy routes are
-> `/app/finance/close` and `/app/finance/reports`; both preserve EN/AR, RTL,
-> loading/empty/blocked/error/authorization states, server-error mappings,
-> filters, and report-specific export links. Angular passes 283/283 across 39
-> spec files; focused MESP-135 Chromium is 5/5 and full Chromium is 47/47.
-> The initial bundle is 496.45 kB; close is 16.28 kB, reports 16.59 kB,
-> Finance/GL 34.52 kB, and settlement 56.04 kB lazy. Both npm audits report
-> 0 vulnerabilities. `frontend/assets` remains untouched.
-<!-- MESP-135-CURRENT-END -->
+<!-- MESP-144-CURRENT-END -->
 
 <!-- MESP-134-HISTORICAL-START -->
 > **MESP-134 Tax / FX / Reporting Currency / Revaluation HOLD 2 - 26 August 2026.**
@@ -50,8 +39,8 @@
 > **MESP-131 executor-reported frontend evidence.** Angular `254/254` across 35 spec files; production initial total `499.94 kB` with valuation lazy chunk `35.96 kB`; focused MESP-131 Chromium `5/5`; full Chromium `32/32`; both npm audits report 0 vulnerabilities. Draft PR #75 remains open/Draft/unmerged pending Sol acceptance. Sol acceptance comments are `11788` and `11789`; no Jira writes were performed.
 <!-- MESP-131-HISTORICAL-END -->
 
-<!-- MESP-131-MERGED-CURRENT-START -->
-> **Current MESP-131 merged-main workspace overlay — 24 August 2026.** PR #75
+<!-- MESP-131-HISTORICAL-MERGED-START -->
+> **Historical MESP-131 merged-main workspace overlay — 24 August 2026.** PR #75
 > is merged to `main`; MESP-131 and MESP-8 are Done in Jira. The Inventory
 > valuation workspace remains the bounded EN/AR RTL surface for summary, MWA
 > history, Pending/Blocked state, reconciliation, In-Transit value, Finance
@@ -62,7 +51,7 @@
 > initial bundle `499.94 kB`; valuation lazy chunk `35.96 kB`; focused/full
 > Chromium `5/5` and `32/32`; npm audits report 0 vulnerabilities; assets are
 > untouched.
-<!-- MESP-131-MERGED-CURRENT-END -->
+<!-- MESP-131-HISTORICAL-MERGED-END -->
 
 <!-- MESP-133-HISTORICAL-START -->
 > **MESP-133 Finance settlement workspaces verification-only HOLD 4 - 25 August 2026.** The shell

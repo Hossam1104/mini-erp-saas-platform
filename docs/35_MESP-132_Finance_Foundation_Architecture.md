@@ -1,5 +1,11 @@
 # MESP-132 Finance Foundation Architecture
 
+> **Historical capability record - 30 August 2026.** This document preserves
+> the MESP-132 implementation boundary and handoff evidence. Its embedded
+> status snapshot is frozen at that capability's review point; live project
+> state is maintained in `TASK.md`, `.ai/CURRENT_STATE.md`, and
+> `docs/staticts.md`.
+
 ## Status and boundary
 
 **Current acceptance state:** MESP-132 is merged through PR #76 under Epic

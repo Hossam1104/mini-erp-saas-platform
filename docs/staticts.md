@@ -1,5 +1,37 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
+## MESP-144 reconciliation record - 30 August 2026 (HOLD 5 merge-safety)
+
+- MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+  reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
+  authority is comment `12296` and exists only to make repository state
+  merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
+  been finalized; Jira and GitHub remain authoritative for their respective
+  final states.
+- The pre-reconciliation main baseline was `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`;
+  the bounded branch is `chore/project-health-reconciliation-cleanup`.
+- MESP-137 is **Done / accepted / merged**. No implementation capability is
+  active; MESP-138 and MESP-139 remain To Do/inactive; MESP-9 remains In
+  Progress; and MESP-48/MESP-50 remain open production gates.
+- Fast-track remains **21/26 = 80.8%**. Production readiness remains
+  approximately **47% overall / 41% Procurement/P2P**.
+- This record changes repository documentation/state only. No product
+  source, tests, migrations, assets, Jira state, or later capability changed.
+  PR #82's lifecycle at handoff is a historical fact; GitHub remains
+  authoritative for its final lifecycle.
+
+## Progress history - 30 August 2026 (MESP-144 HOLD 5 merge-safety)
+
+MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`; HOLD 5 merge-safety
+authority is comment `12296`. The cleanup preserves the accepted current-main
+baseline without history rewrite. Fast-track and production-readiness figures
+are unchanged at `21/26 = 80.8%` and approximately `47% overall / 41%
+Procurement/P2P`; no implementation capability was added or activated.
+
+All dated capability records below are historical unless they are part of an
+explicitly current authoritative snapshot above.
+
 ## Current authoritative fast-track snapshot - 30 August 2026 (MESP-137 closed and merged; awaiting next Sol activation)
 
 - MESP-132, MESP-133, MESP-134, MESP-135, MESP-136, and MESP-137 are **Done**
@@ -54,7 +86,7 @@
   current and final status.
 <!-- MESP-137-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-30 (post-MESP-137-closure reconciliation)
+**Last Updated:** 2026-08-30 (MESP-144 HOLD 5 merge-safety remediation)
 
 ## Progress history - 30 August 2026 (MESP-137 closure reconciliation)
 
@@ -483,7 +515,7 @@ and external providers remain outside scope and fail closed. The additive migrat
 The full MESP-133 architecture and handoff record is
 `docs/36_MESP-133_AP_AR_Cash_Settlement_Architecture.md`.
 
-## Current MESP-134 implementation result - 26 August 2026
+## Historical MESP-134 implementation result - 26 August 2026
 
 MESP-134 HOLD 2 is implemented on the single bounded feature branch as the Finance
 tax, monetary-policy, Reporting Currency, realized-FX, and period-end
@@ -588,7 +620,7 @@ and no Opus review was requested.
 | Delivery boundaries | Finance foundation only; no AP/AR, cash/bank, tax/VAT/ZATCA/FATOORA, financial statements, generic Reporting, Sales, production migration/cutover, external providers, statutory certification, or Wafra-specific Finance behavior. `frontend/assets` untouched. |
 | Next exact session | Sol verifies the final main/PR merge SHA, closes MESP-132 in Jira, reconciles MESP-10, determines and activates the next approved capability, and issues the next Luna prompt. Do not start MESP-133 automatically. |
 
-## Current module / capability matrix - 25 August 2026
+## Historical module / capability matrix - 25 August 2026
 
 | Area / capability | Current status | Evidence / boundary |
 |---|---|---|
@@ -1289,7 +1321,7 @@ Every future execution prompt should include:
 | Production Readiness | **~31%** |
 | **Remaining to Real Production** | **~58%** |
 
-## Current management headline
+## Historical management headline - pre-MESP-137 tracker
 
 > **Mini ERP SaaS Platform Release 1 is approximately 45% complete toward a genuinely production-ready system.**
 
@@ -1765,7 +1797,7 @@ Current estimate:
 
 ---
 
-# 10. Current Delivery Velocity
+# 10. Historical Delivery Velocity Baseline
 
 Observed recent execution rhythm can produce approximately:
 
@@ -1819,7 +1851,7 @@ These durations are not strictly sequential. Frontend, reporting, hardening, and
 
 ---
 
-# 12. Current Fast-Track Forecast
+# 12. Historical Fast-Track Forecast Baseline
 
 The current milestone is **31 August 2026 — Release 1 Integrated Preview**.
 This is a forecast of the maximum safely integrated real codebase, not a
@@ -2274,7 +2306,7 @@ These gates should not prevent unrelated bounded implementation work, but they m
 
 ---
 
-# 17. Current Project Position
+# 17. Historical Project Position - MESP-132 snapshot
 
 Current active development area:
 
@@ -2523,7 +2555,7 @@ Do not answer from percentages alone. Check the 100% Production Ready Definition
 
 ---
 
-# 21. Current Management Snapshot
+# 21. Historical Management Snapshot
 
 > ## Mini ERP SaaS Platform — Release 1
 >

@@ -1,39 +1,22 @@
 # MiniERP Local Development & Integrated Runtime Guide
 
-## Current Finance capability - MESP-135 HOLD 6
+## MESP-144 reconciliation record - 30 August 2026 (HOLD 5 merge-safety)
 
-MESP-135 is the only active Finance capability under MESP-10. HOLD 6 authority
-is MESP-135 `12186` and MESP-10 `12187`; the implementation branch is
-`feat/MESP-135-finance-close-reports`, and Draft PR #79 remains
-Open/Draft/Unmerged for Sol acceptance.
+MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
+authority is comment `12296` and exists only to make repository state
+merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
+been finalized; Jira and GitHub remain authoritative for their respective
+final states. The pre-reconciliation main baseline was
+`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; the reconciled branch is
+`chore/project-health-reconciliation-cleanup`.
 
-HOLD 6 makes Close readiness consume effective MESP-134 unrealized-FX
-reconciliation at the exact period-end as-of date. Valid reversed evidence is
-historical but inactive, replacement evidence must be the sole active
-reconciled candidate for a non-zero source, valid reversed evidence is allowed
-for a current zero-effect source, and unexpected active zero-effect,
-missing, broken, duplicate, stale, extra, cross-Company, or cross-Tenant
-evidence blocks. The deterministic readiness fingerprint includes effective
-active and unresolved evidence. No public endpoint, entity, DbContext,
-configuration, schema, migration, or `frontend/assets` file changed.
-
-The exact HOLD 6 source/test commit is
-`69b20b3c0dbba2a7f3b6c5ade2a19f63ad7fb9bb`, from feature start and remote
-head `243199b22b1762f0797d19702577b874429dabaf`. Finance merge-base remains
-`841a777af1622cb4de9c3708cd4a2b389b7ef9e9`; current `origin/main`
-`0d1485d4a2197f23250b1d5acc1a00ddf26dc4c9` is intentionally one PPT-only
-commit ahead and the presentation is not in this feature tree.
-
-Validation is Release `0/0`; focused MESP-133 `22/22`, MESP-134 `27/27`,
-MESP-135 `31/31`; full backend `1,098/1,098`; SQL safety `80/80`; focused
-HOLD6/MESP-134 SQL `14/14`; REST/OpenAPI/host `55/55`; catalogue `383` public
-and `2` internal; EF model clean; Angular `296/296`; focused/full Chromium
-`15/15` and `47/47`; both npm audits 0 vulnerabilities; and NuGet scan clear.
-Runtime is left running on API `5300` PID `38772` and frontend `4300` PID
-`8036`; all 11 required probes return HTTP 200. No Jira write, Opus review,
-Ready transition, merge, rebase, force-push, or next-capability activation
-occurred. Fast-track remains `18/26 = 69.2%` and production readiness remains
-approximately `47%` overall / `41%` Procurement/P2P.
+MESP-137 is Done/accepted/merged. No implementation capability is active;
+MESP-138 and MESP-139 remain To Do/inactive; fast-track remains `21/26 = 80.8%`;
+production readiness remains approximately `47%` overall / `41%`
+Procurement/P2P; and MESP-48/MESP-50 remain open. This checkpoint changes
+documentation/state only; no product code, tests, migrations, assets, Jira,
+or later capability changed.
 
 ### Historical MESP-135 Finance capability snapshot
 

@@ -633,9 +633,11 @@ duplicating their Jira owners:
 The pack does not replace an approved BRD or activate implementation. The
 approved A/B rows are bounded contracts, not permission to skip specialist,
 security, accounting, stock, migration, SQL, provider, legal, or production
-validation. MESP-117–MESP-142 remain To Do/not activated; MESP-117 is the
-prepared first handoff and its implementation starts only in a fresh later
-session.
+validation. In this dated 12 August 2026 approval-baseline snapshot,
+MESP-117–MESP-142 remained To Do/not activated; MESP-117 was the prepared
+first handoff and its implementation started only in a fresh later session.
+This statement is historical; the current repository-health authority is the
+MESP-144 checkpoint above.
 
 ## 7. MESP-116 completion record
 

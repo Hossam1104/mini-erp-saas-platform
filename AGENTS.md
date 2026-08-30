@@ -46,6 +46,25 @@ velocity, or forecast:
 * MESP-137 delivered Sales-linked Inventory reservation/allocation, partial fulfillment, durable coordinated/reconcilable Delivery handoff, Finance-owned invoice eligibility/AR handoff seams, durable evidence, REST/OpenAPI metadata, and bilingual RTL Angular fulfillment UI. No returns, credit notes, receipts, refunds, revenue recognition, external integrations, ZATCA/FATOORA, or Wafra-specific behavior was added. `frontend/assets` remains untouched and the presentation remains main-only.
 * Ponytail FULL is the default executor mode when installed and available.
 
+## Current execution overlay - 30 August 2026 (MESP-144 HOLD 5 merge-safety record)
+
+* MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+  reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
+  authority is comment `12296` and exists only to make repository state
+  merge-safe.
+* The pre-reconciliation main baseline was
+  `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; the bounded branch is
+  `chore/project-health-reconciliation-cleanup`. At the HOLD 5 executor
+  handoff, Jira and PR lifecycle had not yet been finalized; Jira and GitHub
+  remain authoritative for their respective final states.
+* MESP-137 is Done/accepted/merged; no implementation capability is active.
+  MESP-138 and MESP-139 remain To Do/inactive, MESP-9 remains In Progress,
+  fast-track completion is `21/26 = 80.8%`, production readiness remains
+  approximately `47%` overall / `41%` Procurement/P2P, and MESP-48/MESP-50
+  remain open production gates.
+* This is documentation/state reconciliation only. No product source, tests,
+  migrations, assets, Jira state, or later capability was added.
+
 ## Historical execution overlay - 30 August 2026 (MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance; superseded by closure above)
 
 * HOLD-2 was complete on `feat/MESP-137-reservation-fulfillment-invoice`, continuing Draft PR #84 from exact HOLD-1 head `4ecfb64ffd5391a934af80fe11003b9031881ae3` and exact `origin/main` baseline `cb58d69fb0a589d363aed2d55b605e39f79d03bc`. HOLD-2 authority is MESP-137 comment `12275` with MESP-9 reconciliation `12277`; pushed head is `d1914884bead08fac7a5b4eddc6f573297ef5550`.
@@ -149,7 +168,7 @@ integrity, audit, concurrency, or acceptance gates. See
 - **Presentational Only**: Presentation-layer only; causes zero FX conversion, zero tax effect, zero accounting effect, and zero persisted amount change.
 - **Fallback & Non-SAR**: Safe text fallback (e.g. `SAR`) is preserved for semantic clarity in multi-currency comparison, audit, and exports. Non-SAR currencies remain completely unaffected. Governed by MESP-12 / MESP-37.
 
-## Current execution overlay - 25 August 2026 (MESP-133 Sol HOLD 3 micro-remediation)
+## Historical execution overlay - 25 August 2026 (MESP-133 Sol HOLD 3 micro-remediation)
 
 PR #77 is Open/Draft/Unmerged on `feat/MESP-133-ap-ar-cash-settlement` from
 HOLD 3 starting head `452441084a44d1a8a0a1d8db3a0d679aac5ff550`, based on main

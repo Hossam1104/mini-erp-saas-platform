@@ -32,6 +32,24 @@ separate and unchanged at approximately 47% overall / 41% Procurement/P2P.
 MESP-48 and MESP-50 remain open production gates. `frontend/assets` remains
 untouched. Ponytail FULL remains the default executor mode when available.
 
+## Current execution overlay - 30 August 2026 (MESP-144 HOLD 5 merge-safety record)
+
+MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
+authority is comment `12296` and exists only to make repository state
+merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
+been finalized; Jira is authoritative for MESP-144 status and GitHub is
+authoritative for PR #82 lifecycle and mergeability.
+
+The pre-reconciliation main baseline was `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`
+and the bounded branch is `chore/project-health-reconciliation-cleanup`. MESP-137
+is Done and no implementation capability is active. MESP-138 and MESP-139
+remain To Do/inactive; fast-track completion remains `21/26 = 80.8%`;
+production readiness remains approximately `47%` overall / `41%`
+Procurement/P2P; and MESP-48/MESP-50 remain open. This is documentation/state
+only; no product source, tests, migrations, assets, Jira state, or later
+capability was added.
+
 ## Historical execution overlay - 30 August 2026 (MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance; superseded by closure above)
 
 `MESP-137 HOLD-2 remediation complete — awaiting independent Sol acceptance`.
@@ -86,7 +104,7 @@ Ponytail FULL is the default executor mode when available.
 - Full logos/icons use `frontend/assets` as source of truth.
 - `frontend/assets/brand` is reserved only for necessary generated browser derivatives (e.g., favicons, touch icons).
 
-## Current execution overlay - 25 August 2026 (MESP-133 Sol HOLD 3 micro-remediation)
+## Historical execution overlay - 25 August 2026 (MESP-133 Sol HOLD 3 micro-remediation)
 
 PR #77 is Open/Draft/Unmerged on `feat/MESP-133-ap-ar-cash-settlement` from
 HOLD 3 starting head `452441084a44d1a8a0a1d8db3a0d679aac5ff550`, based on main

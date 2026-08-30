@@ -23,40 +23,22 @@ module-owned persistence are product rules—not customer-specific forks.
 
 ## Current development status
 
-### Current capability: MESP-135 Finance close, corrections, reconciliation and reports - 27 August 2026 (Sol HOLD 6)
+### MESP-144 reconciliation record - 30 August 2026 (HOLD 5 merge-safety)
 
-MESP-135 is the only active Finance implementation capability under MESP-10,
-with HOLD 6 authority MESP-135 `12186` and MESP-10 `12187`. The feature branch
-is `feat/MESP-135-finance-close-reports`; Draft PR #79 remains
-Open/Draft/Unmerged for GPT-5.6 Sol acceptance.
+MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
+reviewed head `ffe5a8975611dcc85c3a7c40dce0b3737b123aeb`. HOLD 5 merge-safety
+authority is comment `12296` and exists only to make repository state
+merge-safe. At the HOLD 5 executor handoff, Jira and PR lifecycle had not yet
+been finalized; Jira and GitHub remain authoritative for their respective
+final states. The pre-reconciliation main baseline was
+`4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
 
-HOLD 6 makes Close readiness consume effective MESP-134 unrealized-FX
-reconciliation at the exact period-end as-of date. Valid reversed evidence is
-retained as historical but inactive; a replacement must be the sole active
-reconciled candidate for a non-zero source. Valid reversed evidence is allowed
-for a current zero-effect source, while unexpected active zero-effect,
-missing, broken, duplicate, stale, extra, cross-Company, or cross-Tenant
-evidence blocks. The deterministic readiness fingerprint includes effective
-active and unresolved evidence. No public endpoint, entity, DbContext,
-configuration, schema, migration, or `frontend/assets` file changed.
-
-The exact HOLD 6 start and remote feature head were
-`243199b22b1762f0797d19702577b874429dabaf`; the source/test commit is
-`69b20b3c0dbba2a7f3b6c5ade2a19f63ad7fb9bb`. The feature remains based on
-Finance merge-base `841a777af1622cb4de9c3708cd4a2b389b7ef9e9`; current
-`origin/main` `0d1485d4a2197f23250b1d5acc1a00ddf26dc4c9` differs only by the
-expected main-only presentation PPTX.
-
-Fast-track remains `18/26 = 69.2%`; production readiness remains approximately
-`47%` overall and `41%` Procurement/P2P. Validation is Release `0/0`, focused
-MESP-133 `22/22`, MESP-134 `27/27`, MESP-135 `31/31`, full backend
-`1,098/1,098`, SQL safety `80/80`, focused HOLD6/MESP-134 SQL `14/14`,
-REST/OpenAPI/host `55/55`, Angular `296/296`, focused/full Chromium `15/15`
-and `47/47`, both npm audits at 0 vulnerabilities, and a clear five-project
-NuGet vulnerable-package scan. The repository-owned runtime is API `5300` PID
-`38772` and frontend `4300` PID `8036`; all 11 required probes return HTTP
-200. No Jira write, Opus review, Ready transition, merge, rebase, force-push,
-or next-capability activation occurred.
+MESP-137 is Done/accepted/merged. No implementation capability is active;
+MESP-138 and MESP-139 remain To Do/inactive; fast-track completion is
+`21/26 = 80.8%`; production readiness remains approximately `47%` overall and
+`41%` Procurement/P2P; and MESP-48/MESP-50 remain open production gates.
+This record changes documentation/state only and does not claim a new product,
+test, migration, asset, Jira, or downstream-capability change.
 
 ### Historical MESP-135 Finance close, corrections, reconciliation and reports - 26 August 2026
 
@@ -181,7 +163,7 @@ does not count as an accepted capability until Sol accepts it and the owner
 controls the merge. The next planned Finance capability is MESP-134, but it is
 not activated.
 
-### MESP-131 guarded merge complete - 24 August 2026
+### Historical MESP-131 guarded merge complete - 24 August 2026
 
 The final bounded MESP-131 capability is merged through PR #75 into `main` at
 the exact squash SHA `a8664d6a0d006e463a1a03fadd76c28475475f58`. The approved
