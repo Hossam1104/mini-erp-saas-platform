@@ -221,6 +221,55 @@ public sealed class FinanceSettlementRemediationTests
     }
 
     [Fact]
+    public async Task Sales_invoice_posts_gross_ar_with_immutable_tax_evidence_and_configured_tax_liability()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        await EnsureCreatedAsync(options);
+        var context = Context("tenant.finance.sales-invoice");
+        await using (var policyDb = new FinanceDbContext(options, context.TenantContext))
+        {
+            policyDb.MonetaryPolicies.Add(new FinanceMonetaryPolicyEntity(context.TenantId, new FinanceMonetaryPolicyCommand(CompanyId, null, 2, "ToEven", false, new DateOnly(2026, 1, 1), null, Guid.NewGuid(), "sales-policy", "sales-policy"), "SAR", null, 1));
+            await policyDb.SaveChangesAsync();
+        }
+        var ar = await CreateAccountAsync(options, context, "SALES-INVOICE-AR");
+        var revenue = await CreateAccountAsync(options, context, "SALES-INVOICE-REVENUE");
+        var taxLiability = await CreateAccountAsync(options, context, "SALES-INVOICE-TAX");
+        await OpenFullYearAndRulesAsync(options, context,
+        [
+            ("sales-invoice.v1", "recognition", ar.Id, revenue.Id, new DateOnly(2026, 1, 1), (DateOnly?)null),
+            ("finance-tax.v1", "output", revenue.Id, taxLiability.Id, new DateOnly(2026, 1, 1), (DateOnly?)null)
+        ]);
+
+        var paymentTerm = new FinancePaymentTermSnapshotRecord(Guid.NewGuid(), "NET30", "Net 30", null, 4, Guid.NewGuid(), new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31));
+        var taxId = Guid.NewGuid();
+        var secondTaxId = Guid.NewGuid();
+        var line = new FinanceSalesInvoiceLine(Guid.NewGuid(), 1m, 100m, 15m, 115m, taxId, "VAT15", Guid.NewGuid(), 3, new DateOnly(2026, 1, 1), null, 15m, 100m, "VAT15;v3");
+        var secondLine = new FinanceSalesInvoiceLine(Guid.NewGuid(), 2m, 200m, 20m, 220m, secondTaxId, "VAT10", Guid.NewGuid(), 1, new DateOnly(2026, 1, 1), null, 10m, 200m, "VAT10;v1");
+        var command = new FinanceSalesInvoiceCommand(CompanyId, CustomerId, Guid.NewGuid(), 1, Guid.NewGuid(), new DateOnly(2026, 1, 15), paymentTerm.Id, "SAR", 335m, null, null, null, null, "immutable-sales-source", "SI-137", "sales-invoice-137", "sales-invoice-137", 300m, 35m, [line, secondLine], paymentTerm);
+        var persistence = CreatePersistence(options, customers: new ActiveCustomerReader());
+
+        var result = await persistence.CreateSalesInvoiceAsync(context, command);
+
+        Assert.True(result.Succeeded, result.Code);
+        Assert.Equal(335m, result.Value!.OriginalAmount);
+        Assert.Equal(paymentTerm.Id, result.Value.PaymentTerm!.Id);
+        await using var db = new FinanceDbContext(options, context.TenantContext);
+        var effects = await db.TaxAccountingEffects.Where(item => item.OpenItemId == result.Value.Id).ToListAsync();
+        Assert.Equal(2, effects.Count);
+        Assert.Contains(effects, item => item.TaxId == taxId && item.TaxAmount == 15m);
+        Assert.Contains(effects, item => item.TaxId == secondTaxId && item.TaxAmount == 20m);
+        Assert.Contains(await db.AuditEvents.ToListAsync(), audit => audit.OperationId == "finance.tax-accounting.post" && audit.ResourceId == command.InvoiceRequestId && audit.Result == "Succeeded");
+        var journals = await db.Journals.Include(item => item.Lines).Where(item => item.SourceEvidenceId == command.InvoiceRequestId || item.SourceContract == "finance-tax.v1").ToListAsync();
+        Assert.Equal(3, journals.Count);
+        var taxJournals = journals.Where(item => item.SourceContract == "finance-tax.v1").ToArray();
+        Assert.Equal(2, taxJournals.Length);
+        Assert.Contains(taxJournals, journal => journal.Lines.Any(item => item.AccountId == revenue.Id && item.FunctionalDebit == 15m) && journal.Lines.Any(item => item.AccountId == taxLiability.Id && item.FunctionalCredit == 15m));
+        Assert.Contains(taxJournals, journal => journal.Lines.Any(item => item.AccountId == revenue.Id && item.FunctionalDebit == 20m) && journal.Lines.Any(item => item.AccountId == taxLiability.Id && item.FunctionalCredit == 20m));
+    }
+
+    [Fact]
     public async Task Receipt_exposure_uses_posted_and_reversal_journal_dates_for_as_of_truth()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

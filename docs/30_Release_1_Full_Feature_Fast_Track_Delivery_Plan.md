@@ -55,8 +55,8 @@ Fast-track completion after the verified MESP-132 merge is `16/26 = 61.5%`; this
 **Milestone:** **31 August 2026 — Release 1 Integrated Preview**
 **Governance task:** MESP-115 (Done), MESP-116 (Done at bounded governance scope)
 **Current bounded session:** MESP-144 repository health, architecture,
-documentation, and backlog reconciliation on Draft PR #82; no merge, Jira
-transition, or next capability starts automatically
+documentation, and backlog reconciliation on Draft PR #82; no PR Ready
+transition, PR merge, Jira transition, or next capability starts automatically.
 
 ## 1. Purpose and authority
 

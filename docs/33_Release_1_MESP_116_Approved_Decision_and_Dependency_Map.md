@@ -14,7 +14,9 @@ repository-health checkpoint and is In Progress for GPT-5.6 Sol acceptance.
 Fast-track completion is `21/26 = 80.8%`; this is capability completion, not
 production readiness. Overall production readiness remains approximately `47%`
 and Procurement/P2P `41%`. MESP-138 through MESP-142 remain To Do/inactive.
-MESP-48 and MESP-50 remain open production gates.
+MESP-48 and MESP-50 remain open production gates. MESP-144 is In Progress
+under Sol HOLD 3 comment `12288`; its PR lifecycle remains a transient handoff
+fact governed by GitHub.
 
 <!-- MESP-132-EXECUTION-START -->
 ## Execution overlay â€” 24 August 2026
@@ -39,7 +41,7 @@ This block is historical evidence from the 24 August 2026 MESP-132 handoff.
 **Owner evidence:** MESP-116 Jira comment `10957`
 **Product Decision evidence:** MESP-22 Jira comment `10958` (PD-025-PD-046)
 **Living register:** MESP-23 Jira comment `10976`
-**Current acceptance handoff:** MESP-136 accepted feature head `507bd1b11b933fd81d734e5cd12cad4c858dffb4`; PR #80 squash SHA `992195f7e61cf03b94675a498377a6d8bf679ebf`; Sol Jira closure and MESP-9 reconciliation are recorded in live Jira
+**Current acceptance handoff:** MESP-137 accepted feature head `9406e8c6408251323b96d4a0c25082142546b9ef`; PR #84 squash SHA `6b3aeb63da15253dee5466f7be001773b80c28ad`; post-closure main reconciliation is `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`; MESP-144 HOLD 3 is recorded in Sol comment `12288`
 **Repository evidence:** PR #59 reviewed at `8b3f7b61c0128f97aa6a775dec23e623c1fde70e`, merged at `b58bcaaeb4103c8fbdfb6a1c933c5239e228c5bd`
 
 ## 1. Authority and boundary

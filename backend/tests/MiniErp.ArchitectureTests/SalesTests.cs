@@ -8,12 +8,14 @@ using MiniErp.App.BuildingBlocks.Rest;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.Finance;
+using MiniErp.App.Modules.Inventory;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Procurement;
 using MiniErp.App.Modules.Sales;
 using MiniErp.Contracts.Modules.Audit;
 using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Foundation;
+using MiniErp.Contracts.Modules.Inventory;
 using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Contracts.Modules.Sales;
 using MiniErp.Infrastructure.Persistence.Modules.Sales;
@@ -35,6 +37,8 @@ public sealed class SalesTests
     private static readonly Guid PriceListA = Guid.Parse("88888888-8888-8888-8888-888888888888");
     private static readonly Guid TaxA = Guid.Parse("aaaaaaaa-1111-1111-1111-111111111111");
     private static readonly Guid ExchangeRateA = Guid.Parse("bbbbbbbb-1111-1111-1111-111111111111");
+    private static readonly Guid PaymentTermA = Guid.Parse("cccccccc-1111-1111-1111-111111111111");
+    private static readonly Guid PaymentTermVersionA = Guid.Parse("dddddddd-1111-1111-1111-111111111111");
     private static readonly Guid Creator = Guid.Parse("99999999-9999-9999-9999-999999999999");
     private static readonly Guid Approver = Guid.Parse("12121212-1212-1212-1212-121212121212");
     private static readonly Guid ApproverTwo = Guid.Parse("13131313-1313-1313-1313-131313131313");
@@ -432,7 +436,8 @@ public sealed class SalesTests
             new ProductReferenceFake(),
             new PriceReferenceFake("USD"),
             new TaxReferenceFake(),
-            new ExchangeRateReferenceFake());
+            new ExchangeRateReferenceFake(),
+            paymentTerms: new PaymentTermReferenceFake());
 
         var request = new SalesQuotationCreateRequest(
             CompanyA,
@@ -446,7 +451,8 @@ public sealed class SalesTests
             null,
             null,
             [new SalesQuotationLineRequest(ProductA, UomA, 2m, null, 0m, null, TaxA)],
-            ExchangeRateA);
+            ExchangeRateA,
+            PaymentTermA);
 
         var created = await service.CreateQuotationAsync(Context(Creator), request, "service-tax-fx-1");
 
@@ -459,6 +465,10 @@ public sealed class SalesTests
         Assert.Equal(ExchangeRateA, persistence.Captured.ExchangeRateEvidence!.ExchangeRateId);
         Assert.Equal("USD", persistence.Captured.ExchangeRateEvidence.SourceCurrencyCode);
         Assert.Equal("SAR", persistence.Captured.ExchangeRateEvidence.TargetCurrencyCode);
+        Assert.Equal(PaymentTermA, persistence.Captured.PaymentTerm!.Id);
+        Assert.Equal(PaymentTermVersionA, persistence.Captured.PaymentTerm.VersionId);
+        Assert.Equal(4, persistence.Captured.PaymentTerm.DueOffsetDays);
+        Assert.Equal("masterdata.payment-term", persistence.Captured.PaymentTerm.Provenance);
     }
 
     [Fact]
@@ -489,6 +499,510 @@ public sealed class SalesTests
         Assert.False(result.Succeeded);
         Assert.Equal("quotation_scope_immutable", result.Code);
         Assert.Null(persistence.Captured);
+    }
+
+    [Fact]
+    public async Task Sales_invoice_request_persistence_is_idempotent_and_blocks_cumulative_overinvoice()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var baseModel = fixture.Model();
+        var expandedModel = baseModel with { Lines = [baseModel.Lines.Single() with { Quantity = 10m, LineTotal = 500m }], Subtotal = 500m, Total = 500m };
+        var quotation = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), expandedModel, "invoice-source-create", "invoice-source-create-fp", fixture.Policy());
+        Assert.True(quotation.Succeeded, quotation.Code);
+        var submitted = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), quotation.Value!.Id, SalesQuotationStatus.PendingApproval, null, quotation.Value.Version, "invoice-source-submit", "invoice-source-submit-fp", fixture.Policy());
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Approver), quotation.Value.Id, SalesQuotationStatus.Approved, null, submitted.Value!.Version, "invoice-source-approve", "invoice-source-approve-fp", fixture.Policy());
+        Assert.True(approved.Succeeded, approved.Code);
+        var converted = await fixture.Persistence.ConvertQuotationAsync(fixture.Context(Approver), quotation.Value.Id, approved.Value!.Version, "invoice-source-convert", "invoice-source-convert-fp", fixture.Policy());
+        Assert.True(converted.Succeeded, converted.Code);
+        var order = converted.Value!;
+        var line = order.Lines.Single();
+        var deliveryId = Guid.NewGuid();
+        var secondDeliveryId = Guid.NewGuid();
+        await using (var db = new SalesDbContext(fixture.Options, fixture.Context(Creator).TenantContext))
+        {
+            var delivery = new SalesDeliveryEntity(new TenantId(TenantA), deliveryId, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), JsonSerializer.Serialize(new[] { new SalesDeliveryRequestLine(line.Id, Guid.NewGuid(), 5m) }), "{}", Creator, "invoice-source-delivery", DateTimeOffset.UtcNow);
+            delivery.Posted([Guid.NewGuid()], DateTimeOffset.UtcNow);
+            var secondDelivery = new SalesDeliveryEntity(new TenantId(TenantA), secondDeliveryId, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), JsonSerializer.Serialize(new[] { new SalesDeliveryRequestLine(line.Id, Guid.NewGuid(), 5m) }), "{}", Creator, "invoice-source-delivery-2", DateTimeOffset.UtcNow.AddMinutes(1));
+            secondDelivery.Posted([Guid.NewGuid()], DateTimeOffset.UtcNow.AddMinutes(1));
+            db.Deliveries.AddRange(delivery, secondDelivery);
+            await db.SaveChangesAsync();
+        }
+
+        var firstModel = new SalesInvoiceRequestWriteModel(Guid.NewGuid(), order.Id, order.RevisionNumber, deliveryId, CompanyA, BranchA, CustomerA, new DateOnly(2026, 8, 29), 100m, "SAR", [new SalesInvoiceRequestLine(line.Id, 2m)], "invoice-source-snapshot", Creator);
+        var first = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), firstModel, "invoice-source-key", "invoice-source-fp");
+        Assert.True(first.Succeeded, first.Code);
+        var replay = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), firstModel with { Id = Guid.NewGuid() }, "invoice-source-key", "invoice-source-fp");
+        Assert.True(replay.Succeeded, replay.Code);
+        Assert.Equal(first.Value!.Id, replay.Value!.Id);
+
+        var second = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), firstModel with { Id = Guid.NewGuid(), Lines = [new SalesInvoiceRequestLine(line.Id, 3m)] }, "invoice-source-key-2", "invoice-source-fp-2");
+        Assert.True(second.Succeeded, second.Code);
+        Assert.Equal(deliveryId, second.Value!.DeliveryId);
+
+        var third = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), firstModel with { Id = Guid.NewGuid(), DeliveryId = secondDeliveryId, Lines = [new SalesInvoiceRequestLine(line.Id, 5m)] }, "invoice-source-key-3", "invoice-source-fp-3");
+        Assert.True(third.Succeeded, third.Code);
+        Assert.Equal(secondDeliveryId, third.Value!.DeliveryId);
+
+        var competing = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), firstModel with { Id = Guid.NewGuid(), Lines = [new SalesInvoiceRequestLine(line.Id, 1m)] }, "invoice-source-key-4", "invoice-source-fp-4");
+        Assert.False(competing.Succeeded);
+        Assert.Equal("invoice_quantity_conflict", competing.Code);
+
+        var mismatchedDeliveries = new[]
+        {
+            new SalesDeliveryEntity(new TenantId(TenantA), Guid.NewGuid(), Guid.NewGuid(), order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.NewGuid(), "[]", "{}", Creator, "invoice-source-other-order", DateTimeOffset.UtcNow),
+            new SalesDeliveryEntity(new TenantId(TenantA), Guid.NewGuid(), order.Id, order.RevisionNumber + 1, CompanyA, BranchA, CustomerA, Guid.NewGuid(), "[]", "{}", Creator, "invoice-source-other-revision", DateTimeOffset.UtcNow),
+            new SalesDeliveryEntity(new TenantId(TenantA), Guid.NewGuid(), order.Id, order.RevisionNumber, CompanyB, BranchA, CustomerA, Guid.NewGuid(), "[]", "{}", Creator, "invoice-source-other-company", DateTimeOffset.UtcNow),
+            new SalesDeliveryEntity(new TenantId(TenantA), Guid.NewGuid(), order.Id, order.RevisionNumber, CompanyA, Guid.NewGuid(), CustomerA, Guid.NewGuid(), "[]", "{}", Creator, "invoice-source-other-branch", DateTimeOffset.UtcNow),
+            new SalesDeliveryEntity(new TenantId(TenantA), Guid.NewGuid(), order.Id, order.RevisionNumber, CompanyA, BranchA, Guid.NewGuid(), Guid.NewGuid(), "[]", "{}", Creator, "invoice-source-other-customer", DateTimeOffset.UtcNow)
+        };
+        foreach (var mismatchedDelivery in mismatchedDeliveries) mismatchedDelivery.Posted([Guid.NewGuid()], DateTimeOffset.UtcNow);
+        await using (var db = new SalesDbContext(fixture.Options, fixture.Context(Creator).TenantContext))
+        {
+            db.Deliveries.AddRange(mismatchedDeliveries);
+            await db.SaveChangesAsync();
+        }
+
+        var tenantMismatch = new SalesDeliveryEntity(new TenantId(TenantB), Guid.NewGuid(), order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.NewGuid(), "[]", "{}", Creator, "invoice-source-other-tenant", DateTimeOffset.UtcNow);
+        tenantMismatch.Posted([Guid.NewGuid()], DateTimeOffset.UtcNow);
+        await using (var db = new SalesDbContext(fixture.Options, fixture.Context(Creator, TenantB, CompanyB).TenantContext))
+        {
+            db.Deliveries.Add(tenantMismatch);
+            await db.SaveChangesAsync();
+        }
+
+        foreach (var mismatchedDelivery in mismatchedDeliveries.Append(tenantMismatch))
+        {
+            var mismatch = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), firstModel with { Id = Guid.NewGuid(), DeliveryId = mismatchedDelivery.Id }, $"invoice-source-mismatch-{mismatchedDelivery.Id}", $"invoice-source-mismatch-fp-{mismatchedDelivery.Id}");
+            Assert.False(mismatch.Succeeded);
+            Assert.Equal("delivery_not_posted", mismatch.Code);
+        }
+    }
+
+    [Fact]
+    public async Task Concurrent_invoice_requests_cannot_consume_one_delivery_quantity_twice()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var baseModel = fixture.Model();
+        var expandedModel = baseModel with { Lines = [baseModel.Lines.Single() with { Quantity = 5m, LineTotal = 250m }], Subtotal = 250m, Total = 250m };
+        var quotation = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), expandedModel, "invoice-race-create", "invoice-race-create-fp", fixture.Policy());
+        Assert.True(quotation.Succeeded, quotation.Code);
+        var submitted = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), quotation.Value!.Id, SalesQuotationStatus.PendingApproval, null, quotation.Value.Version, "invoice-race-submit", "invoice-race-submit-fp", fixture.Policy());
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Approver), quotation.Value.Id, SalesQuotationStatus.Approved, null, submitted.Value!.Version, "invoice-race-approve", "invoice-race-approve-fp", fixture.Policy());
+        Assert.True(approved.Succeeded, approved.Code);
+        var converted = await fixture.Persistence.ConvertQuotationAsync(fixture.Context(Approver), quotation.Value.Id, approved.Value!.Version, "invoice-race-convert", "invoice-race-convert-fp", fixture.Policy());
+        Assert.True(converted.Succeeded, converted.Code);
+        var order = converted.Value!;
+        var line = order.Lines.Single();
+        var deliveryId = Guid.NewGuid();
+        await using (var db = new SalesDbContext(fixture.Options, fixture.Context(Creator).TenantContext))
+        {
+            var delivery = new SalesDeliveryEntity(new TenantId(TenantA), deliveryId, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.NewGuid(), JsonSerializer.Serialize(new[] { new SalesDeliveryRequestLine(line.Id, Guid.NewGuid(), 5m) }), "{}", Creator, "invoice-race-delivery", DateTimeOffset.UtcNow);
+            delivery.Posted([Guid.NewGuid()], DateTimeOffset.UtcNow);
+            db.Deliveries.Add(delivery);
+            await db.SaveChangesAsync();
+        }
+
+        var firstModel = new SalesInvoiceRequestWriteModel(Guid.NewGuid(), order.Id, order.RevisionNumber, deliveryId, CompanyA, BranchA, CustomerA, new DateOnly(2026, 8, 29), 250m, "SAR", [new SalesInvoiceRequestLine(line.Id, 5m)], "invoice-race-snapshot", Creator);
+        var results = await Task.WhenAll(
+            AttemptAsync(firstModel with { Id = Guid.NewGuid() }, "invoice-race-key-1", "invoice-race-fp-1"),
+            AttemptAsync(firstModel with { Id = Guid.NewGuid() }, "invoice-race-key-2", "invoice-race-fp-2"));
+
+        Assert.Single(results, item => item.Succeeded);
+        Assert.Contains(results, item => !item.Succeeded);
+
+        async Task<(bool Succeeded, string? Code)> AttemptAsync(SalesInvoiceRequestWriteModel model, string key, string fingerprint)
+        {
+            try
+            {
+                var result = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), model, key, fingerprint);
+                return (result.Succeeded, result.Code);
+            }
+            catch (SqliteException)
+            {
+                return (false, "concurrency_conflict");
+            }
+            catch (DbUpdateException)
+            {
+                return (false, "concurrency_conflict");
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Invoice_money_uses_persisted_prior_evidence_and_reconciles_net_tax_and_gross()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var baseModel = fixture.Model();
+        var taxEvidence = new SalesTaxEvidence(TaxA, "VAT-10", Guid.Parse("cccccccc-2222-2222-2222-222222222222"), 1, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), null, 10m, 100m, 10m, "SAR", "VAT-10;v1");
+        var expandedModel = baseModel with
+        {
+            Lines = [baseModel.Lines.Single() with { Quantity = 3m, LineTotal = 100m, TaxAmount = 10m, TaxEvidence = taxEvidence }],
+            Subtotal = 100m,
+            TaxAmount = 10m,
+            Total = 110m
+        };
+        var quotation = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), expandedModel, "invoice-residual-create", "invoice-residual-create-fp", fixture.Policy());
+        Assert.True(quotation.Succeeded, quotation.Code);
+        var submitted = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), quotation.Value!.Id, SalesQuotationStatus.PendingApproval, null, quotation.Value.Version, "invoice-residual-submit", "invoice-residual-submit-fp", fixture.Policy());
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Approver), quotation.Value.Id, SalesQuotationStatus.Approved, null, submitted.Value!.Version, "invoice-residual-approve", "invoice-residual-approve-fp", fixture.Policy());
+        Assert.True(approved.Succeeded, approved.Code);
+        var order = (await fixture.Persistence.ConvertQuotationAsync(fixture.Context(Approver), quotation.Value.Id, approved.Value!.Version, "invoice-residual-convert", "invoice-residual-convert-fp", fixture.Policy())).Value!;
+        var line = order.Lines.Single();
+        var deliveryId = Guid.NewGuid();
+        await using (var db = new SalesDbContext(fixture.Options, fixture.Context(Creator).TenantContext))
+        {
+            var delivery = new SalesDeliveryEntity(new TenantId(TenantA), deliveryId, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.NewGuid(), JsonSerializer.Serialize(new[] { new SalesDeliveryRequestLine(line.Id, Guid.NewGuid(), 3m) }), "{}", Creator, "invoice-residual-delivery", DateTimeOffset.UtcNow);
+            delivery.Posted([Guid.NewGuid()], DateTimeOffset.UtcNow);
+            db.Deliveries.Add(delivery);
+            await db.SaveChangesAsync();
+        }
+
+        for (var index = 0; index < 3; index++)
+        {
+            var request = new SalesInvoiceRequestWriteModel(Guid.NewGuid(), order.Id, order.RevisionNumber, deliveryId, CompanyA, BranchA, CustomerA, new DateOnly(2026, 8, 29), 999m, "USD", [new SalesInvoiceRequestLine(line.Id, 1m)], "stale-request-snapshot", Creator, 999m, 999m);
+            var result = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), request, $"invoice-residual-key-{index}", $"invoice-residual-fp-{index}");
+            Assert.True(result.Succeeded, result.Code);
+            var evidence = Assert.Single(result.Value!.LineEvidence!);
+            Assert.Equal(index == 2 ? 33.34m : 33.33m, evidence.NetAmount);
+            Assert.Equal(index == 2 ? 3.34m : 3.33m, evidence.TaxAmount);
+            Assert.Equal(evidence.NetAmount + evidence.TaxAmount, evidence.GrossAmount);
+        }
+
+        var persisted = await fixture.Persistence.ListInvoiceRequestsAsync(fixture.Context(Creator), order.Id);
+        Assert.Equal(3, persisted.Count);
+        Assert.Equal(100m, persisted.Sum(item => item.NetAmount));
+        Assert.Equal(10m, persisted.Sum(item => item.TaxAmount));
+        Assert.Equal(110m, persisted.Sum(item => item.Amount));
+        Assert.Equal(persisted.Sum(item => item.NetAmount) + persisted.Sum(item => item.TaxAmount), persisted.Sum(item => item.Amount));
+    }
+
+    [Fact]
+    public async Task Concurrent_one_unit_invoice_requests_reconcile_exact_residual_money()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var baseModel = fixture.Model();
+        var taxEvidence = new SalesTaxEvidence(TaxA, "VAT-10", Guid.Parse("cccccccc-2222-2222-2222-222222222222"), 1, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), null, 10m, 100m, 10m, "SAR", "VAT-10;v1");
+        var quoteModel = baseModel with
+        {
+            Lines = [baseModel.Lines.Single() with { Quantity = 3m, LineTotal = 100m, TaxAmount = 10m, TaxEvidence = taxEvidence }],
+            Subtotal = 100m,
+            TaxAmount = 10m,
+            Total = 110m
+        };
+        var quotation = await fixture.Persistence.CreateQuotationAsync(fixture.Context(Creator), quoteModel, "invoice-concurrency-create", "invoice-concurrency-create-fp", fixture.Policy());
+        Assert.True(quotation.Succeeded, quotation.Code);
+        var submitted = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Creator), quotation.Value!.Id, SalesQuotationStatus.PendingApproval, null, quotation.Value.Version, "invoice-concurrency-submit", "invoice-concurrency-submit-fp", fixture.Policy());
+        Assert.True(submitted.Succeeded, submitted.Code);
+        var approved = await fixture.Persistence.TransitionQuotationAsync(fixture.Context(Approver), quotation.Value.Id, SalesQuotationStatus.Approved, null, submitted.Value!.Version, "invoice-concurrency-approve", "invoice-concurrency-approve-fp", fixture.Policy());
+        Assert.True(approved.Succeeded, approved.Code);
+        var order = (await fixture.Persistence.ConvertQuotationAsync(fixture.Context(Approver), quotation.Value.Id, approved.Value!.Version, "invoice-concurrency-convert", "invoice-concurrency-convert-fp", fixture.Policy())).Value!;
+        var line = order.Lines.Single();
+        var deliveryId = Guid.NewGuid();
+        await using (var db = new SalesDbContext(fixture.Options, fixture.Context(Creator).TenantContext))
+        {
+            var delivery = new SalesDeliveryEntity(new TenantId(TenantA), deliveryId, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.NewGuid(), JsonSerializer.Serialize(new[] { new SalesDeliveryRequestLine(line.Id, Guid.NewGuid(), 3m) }), "{}", Creator, "invoice-concurrency-delivery", DateTimeOffset.UtcNow);
+            delivery.Posted([Guid.NewGuid()], DateTimeOffset.UtcNow);
+            db.Deliveries.Add(delivery);
+            await db.SaveChangesAsync();
+        }
+
+        var requests = Enumerable.Range(0, 3).Select(index =>
+            (Model: new SalesInvoiceRequestWriteModel(Guid.NewGuid(), order.Id, order.RevisionNumber, deliveryId, CompanyA, BranchA, CustomerA, new DateOnly(2026, 8, 29), 999m, "USD", [new SalesInvoiceRequestLine(line.Id, 1m)], "stale-request-snapshot", Creator, 999m, 999m),
+             Key: $"invoice-concurrency-key-{index}", Fingerprint: $"invoice-concurrency-fp-{index}")).ToArray();
+        var results = await Task.WhenAll(requests.Select(item => AttemptAsync(item.Model, item.Key, item.Fingerprint)));
+
+        for (var index = 0; index < results.Length; index++)
+        {
+            if (!results[index].Succeeded)
+            {
+                var retry = await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), requests[index].Model, requests[index].Key, requests[index].Fingerprint);
+                Assert.True(retry.Succeeded, retry.Code);
+            }
+        }
+
+        var persisted = await fixture.Persistence.ListInvoiceRequestsAsync(fixture.Context(Creator), order.Id);
+        Assert.Equal(3, persisted.Count);
+        Assert.Equal([33.33m, 33.33m, 33.34m], persisted.Select(item => item.NetAmount).OrderBy(item => item).ToArray());
+        Assert.Equal(100m, persisted.Sum(item => item.NetAmount));
+        Assert.Equal(10m, persisted.Sum(item => item.TaxAmount));
+        Assert.Equal(110m, persisted.Sum(item => item.Amount));
+
+        async Task<SalesOperationResult<SalesInvoiceRequestResponse>> AttemptAsync(SalesInvoiceRequestWriteModel model, string key, string fingerprint)
+        {
+            try
+            {
+                return await fixture.Persistence.CreateInvoiceRequestAsync(fixture.Context(Creator), model, key, fingerprint);
+            }
+            catch (SqliteException)
+            {
+                return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("concurrency_conflict");
+            }
+            catch (DbUpdateException)
+            {
+                return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("concurrency_conflict");
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Delivery_and_invoice_handoffs_are_durable_recoverable_and_duplicate_safe()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var deliveryId = Guid.NewGuid();
+        var invoiceId = Guid.NewGuid();
+        var orderId = Guid.NewGuid();
+        var deliveryMovementId = Guid.NewGuid();
+        var financeOpenItemId = Guid.NewGuid();
+        await using (var db = new SalesDbContext(fixture.Options, fixture.Context(Creator).TenantContext))
+        {
+            db.Deliveries.Add(new SalesDeliveryEntity(new TenantId(TenantA), deliveryId, orderId, 1, CompanyA, BranchA, CustomerA, Guid.NewGuid(), "[]", "{}", Creator, "handoff-delivery", DateTimeOffset.UtcNow));
+            db.InvoiceRequests.Add(new SalesInvoiceRequestEntity(new TenantId(TenantA), invoiceId, orderId, 1, null, CompanyA, BranchA, CustomerA, new DateOnly(2026, 8, 29), "[]", 1m, "SAR", "{}", Creator, "handoff-invoice", DateTimeOffset.UtcNow));
+            await db.SaveChangesAsync();
+        }
+
+        var deliveryKey = "inventory-handoff-key";
+        var deliveryFingerprint = "inventory-handoff-fingerprint";
+        var failedDelivery = await fixture.Persistence.FailDeliveryAsync(fixture.Context(Creator), deliveryId, "downstream_ack_lost", true, downstream: new SalesDownstreamEvidence([deliveryMovementId], "Committed", "NotAcknowledged", "Required", deliveryKey, deliveryFingerprint));
+        Assert.True(failedDelivery.Succeeded, failedDelivery.Code);
+        Assert.Equal(SalesDeliveryStatus.Unknown, failedDelivery.Value!.Status);
+        Assert.Equal([deliveryMovementId], failedDelivery.Value.Handoff!.DownstreamEffectIds);
+        Assert.Equal("Committed", failedDelivery.Value.Handoff.DownstreamCommitState);
+        Assert.Equal(deliveryKey, failedDelivery.Value.Handoff.DownstreamIdempotencyKey);
+        Assert.Equal(deliveryFingerprint, failedDelivery.Value.Handoff.DownstreamRequestFingerprint);
+        Assert.Equal("Required", failedDelivery.Value.Handoff.ReconciliationStatus);
+        Assert.Equal(1, failedDelivery.Value.Handoff.AttemptCount);
+
+        var completedDelivery = await fixture.Persistence.CompleteDeliveryAsync(fixture.Context(Creator), deliveryId, [deliveryMovementId], "handoff-delivery-complete", "handoff-delivery-complete-fp", downstreamIdempotencyKey: deliveryKey, downstreamRequestFingerprint: deliveryFingerprint);
+        Assert.True(completedDelivery.Succeeded, completedDelivery.Code);
+        Assert.Equal(SalesDeliveryStatus.Posted, completedDelivery.Value!.Status);
+        Assert.Equal("Reconciled", completedDelivery.Value.Handoff!.ReconciliationStatus);
+
+        var deliveryRetry = await fixture.Persistence.CompleteDeliveryAsync(fixture.Context(Creator), deliveryId, [deliveryMovementId], "handoff-delivery-retry", "handoff-delivery-retry-fp", downstreamIdempotencyKey: deliveryKey, downstreamRequestFingerprint: deliveryFingerprint);
+        Assert.True(deliveryRetry.Succeeded, deliveryRetry.Code);
+        var deliveryMismatch = await fixture.Persistence.CompleteDeliveryAsync(fixture.Context(Creator), deliveryId, [Guid.NewGuid()], "handoff-delivery-mismatch", "handoff-delivery-mismatch-fp", downstreamIdempotencyKey: deliveryKey, downstreamRequestFingerprint: deliveryFingerprint);
+        Assert.False(deliveryMismatch.Succeeded);
+        Assert.Equal("delivery_effect_mismatch", deliveryMismatch.Code);
+
+        var invoiceKey = "finance-handoff-key";
+        var invoiceFingerprint = "finance-handoff-fingerprint";
+        var failedInvoice = await fixture.Persistence.FailInvoiceRequestAsync(fixture.Context(Creator), invoiceId, "finance_ack_lost", true, downstream: new SalesDownstreamEvidence([financeOpenItemId], "Committed", "NotAcknowledged", "Required", invoiceKey, invoiceFingerprint));
+        Assert.True(failedInvoice.Succeeded, failedInvoice.Code);
+        Assert.Equal(SalesInvoiceRequestStatus.Unknown, failedInvoice.Value!.Status);
+        Assert.Equal([financeOpenItemId], failedInvoice.Value.Handoff!.DownstreamEffectIds);
+        Assert.Equal(financeOpenItemId, failedInvoice.Value.FinanceOpenItemId);
+        Assert.Equal("Committed", failedInvoice.Value.Handoff.DownstreamCommitState);
+        Assert.Equal(invoiceKey, failedInvoice.Value.Handoff.DownstreamIdempotencyKey);
+        Assert.Equal(invoiceFingerprint, failedInvoice.Value.Handoff.DownstreamRequestFingerprint);
+        Assert.Equal("Required", failedInvoice.Value.Handoff.ReconciliationStatus);
+
+        var completedInvoice = await fixture.Persistence.CompleteInvoiceRequestAsync(fixture.Context(Creator), invoiceId, financeOpenItemId, "handoff-invoice-complete", "handoff-invoice-complete-fp", downstreamIdempotencyKey: invoiceKey, downstreamRequestFingerprint: invoiceFingerprint);
+        Assert.True(completedInvoice.Succeeded, completedInvoice.Code);
+        Assert.Equal(SalesInvoiceRequestStatus.Posted, completedInvoice.Value!.Status);
+        Assert.Equal("Reconciled", completedInvoice.Value.Handoff!.ReconciliationStatus);
+
+        var invoiceRetry = await fixture.Persistence.CompleteInvoiceRequestAsync(fixture.Context(Creator), invoiceId, financeOpenItemId, "handoff-invoice-retry", "handoff-invoice-retry-fp", downstreamIdempotencyKey: invoiceKey, downstreamRequestFingerprint: invoiceFingerprint);
+        Assert.True(invoiceRetry.Succeeded, invoiceRetry.Code);
+        var invoiceMismatch = await fixture.Persistence.CompleteInvoiceRequestAsync(fixture.Context(Creator), invoiceId, Guid.NewGuid(), "handoff-invoice-mismatch", "handoff-invoice-mismatch-fp", downstreamIdempotencyKey: invoiceKey, downstreamRequestFingerprint: invoiceFingerprint);
+        Assert.False(invoiceMismatch.Succeeded);
+        Assert.Equal("invoice_effect_mismatch", invoiceMismatch.Code);
+        var invoiceFingerprintMismatch = await fixture.Persistence.CompleteInvoiceRequestAsync(fixture.Context(Creator), invoiceId, financeOpenItemId, "handoff-invoice-fingerprint-mismatch", "handoff-invoice-fingerprint-mismatch-fp", downstreamIdempotencyKey: invoiceKey, downstreamRequestFingerprint: "changed");
+        Assert.False(invoiceFingerprintMismatch.Succeeded);
+        Assert.Equal("invoice_effect_mismatch", invoiceFingerprintMismatch.Code);
+    }
+
+    [Fact]
+    public async Task Service_marks_delivery_unknown_when_inventory_commits_before_sales_finalization_fails()
+    {
+        var order = HandoffOrder();
+        var persistence = new CapturingSalesPersistence(order);
+        var inventory = new HandoffInventoryPort(order.Id, order.Lines.Single().Id);
+        var service = CreateHandoffService(persistence, inventory, new ControllableFinanceSettlementPersistence());
+
+        var result = await service.CreateDeliveryAsync(
+            Context(Creator, permission: "tenant.sales.delivery.post"),
+            order.Id,
+            new SalesDeliveryRequest(Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), new DateOnly(2026, 8, 29), [new SalesDeliveryRequestLine(order.Lines.Single().Id, inventory.ReservationId, 1m)]),
+            "service-delivery-handoff",
+            order.Version);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("sales_finalization_failed", result.Code);
+        Assert.True(inventory.DeliveryCommitted);
+        Assert.True(persistence.DeliveryFailedUnknown);
+        Assert.Equal(SalesDeliveryStatus.Unknown, persistence.Delivery!.Status);
+        Assert.Single(inventory.MovementIds);
+    }
+
+    [Fact]
+    public async Task Service_marks_invoice_unknown_when_finance_commits_before_sales_finalization_fails()
+    {
+        var order = HandoffOrder();
+        var persistence = new CapturingSalesPersistence(order)
+        {
+            Delivery = new SalesDeliveryResponse(Guid.NewGuid(), TenantA, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.NewGuid(), SalesDeliveryStatus.Posted, null, [new SalesDeliveryRequestLine(order.Lines.Single().Id, Guid.NewGuid(), 1m)], [Guid.NewGuid()], DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, [1], new SalesHandoffEvidence("inventory.sales-delivery.post", [], "Committed", "Acknowledged", "Reconciled", null, 1, DateTimeOffset.UtcNow, "delivery-fp"))
+        };
+        var finance = new ControllableFinanceSettlementPersistence
+        {
+            SalesInvoiceResult = new FinanceOpenItemRecord(Guid.NewGuid(), TenantA, CompanyA, FinanceOpenItemKind.Receivable, null, CustomerA, "sales-invoice.v1", order.Id, order.RevisionNumber, Guid.NewGuid(), 1, "sales-invoice", new DateOnly(2026, 8, 29), new DateOnly(2026, 9, 28), "SAR", 100m, "SAR", 100m, null, null, null, null, order.PaymentTerm is null ? null : new FinancePaymentTermSnapshotRecord(order.PaymentTerm.Id, order.PaymentTerm.Code, order.PaymentTerm.EnglishName, order.PaymentTerm.ArabicName, order.PaymentTerm.VersionNumber, order.PaymentTerm.VersionId, order.PaymentTerm.EffectiveOn, new DateOnly(2026, 9, 28)), null, null, FinanceOpenItemRecognitionState.Recognized, Guid.NewGuid(), 0m, 100m, FinanceOpenItemStatus.Open, [1])
+        };
+        var service = CreateHandoffService(persistence, new HandoffInventoryPort(order.Id, order.Lines.Single().Id), finance);
+
+        var result = await service.CreateInvoiceRequestAsync(
+            Context(Creator, permission: "tenant.sales.invoice.create"),
+            order.Id,
+            new SalesInvoiceEligibilityRequest(persistence.Delivery!.Id, null, new DateOnly(2026, 8, 29), [new SalesInvoiceRequestLine(order.Lines.Single().Id, 1m)]),
+            "service-invoice-handoff",
+            order.Version);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("sales_finalization_failed", result.Code);
+        Assert.True(finance.SalesInvoiceCommitted);
+        Assert.True(persistence.InvoiceFailedUnknown);
+        Assert.Equal(SalesInvoiceRequestStatus.Unknown, persistence.Invoice!.Status);
+    }
+
+    [Fact]
+    public async Task Service_retries_known_inventory_handoff_without_creating_a_second_effect()
+    {
+        var order = HandoffOrder();
+        var persistence = new CapturingSalesPersistence(order);
+        var inventory = new HandoffInventoryPort(order.Id, order.Lines.Single().Id);
+        var service = CreateHandoffService(persistence, inventory, new ControllableFinanceSettlementPersistence());
+        var request = new SalesDeliveryRequest(Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), new DateOnly(2026, 8, 29), [new SalesDeliveryRequestLine(order.Lines.Single().Id, inventory.ReservationId, 1m)]);
+
+        var first = await service.CreateDeliveryAsync(Context(Creator, permission: "tenant.sales.delivery.post"), order.Id, request, "service-delivery-recovery", order.Version);
+        Assert.False(first.Succeeded);
+        Assert.Equal("sales_finalization_failed", first.Code);
+        Assert.Equal(SalesDeliveryStatus.Unknown, persistence.Delivery!.Status);
+        Assert.Equal(inventory.MovementIds, persistence.Delivery.Handoff!.DownstreamEffectIds);
+        Assert.Equal("Committed", persistence.Delivery.Handoff.DownstreamCommitState);
+        Assert.Equal("NotAcknowledged", persistence.Delivery.Handoff.SalesAcknowledgementState);
+        Assert.Equal("Required", persistence.Delivery.Handoff.ReconciliationStatus);
+        Assert.NotNull(persistence.Delivery.Handoff.DownstreamRequestFingerprint);
+
+        var second = await service.CreateDeliveryAsync(Context(Creator, permission: "tenant.sales.delivery.post"), order.Id, request, "service-delivery-recovery", order.Version);
+        Assert.True(second.Succeeded, second.Code);
+        Assert.Equal(SalesDeliveryStatus.Posted, second.Value!.Status);
+        Assert.Equal("Reconciled", second.Value.Handoff!.ReconciliationStatus);
+        Assert.Equal(2, inventory.PostAttempts);
+        Assert.Single(inventory.MovementIds.Distinct());
+    }
+
+    [Fact]
+    public async Task Service_retries_known_finance_handoff_without_creating_a_second_effect()
+    {
+        var order = HandoffOrder();
+        var deliveryId = Guid.NewGuid();
+        var movementId = Guid.NewGuid();
+        var persistence = new CapturingSalesPersistence(order)
+        {
+            Delivery = new SalesDeliveryResponse(deliveryId, TenantA, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.NewGuid(), SalesDeliveryStatus.Posted, null, [new SalesDeliveryRequestLine(order.Lines.Single().Id, Guid.NewGuid(), 1m)], [movementId], DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, [1], new SalesHandoffEvidence("inventory.sales-delivery.post", [movementId], "Committed", "Acknowledged", "Reconciled", null, 1, DateTimeOffset.UtcNow, "delivery-fp"))
+        };
+        var financeEffectId = Guid.NewGuid();
+        var finance = new ControllableFinanceSettlementPersistence
+        {
+            SalesInvoiceResult = new FinanceOpenItemRecord(financeEffectId, TenantA, CompanyA, FinanceOpenItemKind.Receivable, null, CustomerA, "sales-invoice.v1", order.Id, order.RevisionNumber, Guid.NewGuid(), 1, "sales-invoice", new DateOnly(2026, 8, 29), new DateOnly(2026, 9, 28), "SAR", 100m, "SAR", 100m, null, null, null, null, new FinancePaymentTermSnapshotRecord(order.PaymentTerm!.Id, order.PaymentTerm.Code, order.PaymentTerm.EnglishName, order.PaymentTerm.ArabicName, order.PaymentTerm.VersionNumber, order.PaymentTerm.VersionId, order.PaymentTerm.EffectiveOn, new DateOnly(2026, 9, 2)), null, null, FinanceOpenItemRecognitionState.Recognized, Guid.NewGuid(), 0m, 100m, FinanceOpenItemStatus.Open, [1])
+        };
+        var service = CreateHandoffService(persistence, new HandoffInventoryPort(order.Id, order.Lines.Single().Id), finance);
+        var request = new SalesInvoiceEligibilityRequest(deliveryId, null, new DateOnly(2026, 8, 29), [new SalesInvoiceRequestLine(order.Lines.Single().Id, 1m)]);
+
+        var first = await service.CreateInvoiceRequestAsync(Context(Creator, permission: "tenant.sales.invoice.create"), order.Id, request, "service-invoice-recovery", order.Version);
+        Assert.False(first.Succeeded);
+        Assert.Equal("sales_finalization_failed", first.Code);
+        Assert.Equal(SalesInvoiceRequestStatus.Unknown, persistence.Invoice!.Status);
+        Assert.Equal([financeEffectId], persistence.Invoice.Handoff!.DownstreamEffectIds);
+        Assert.Equal(financeEffectId, persistence.Invoice.FinanceOpenItemId);
+        Assert.Equal("Committed", persistence.Invoice.Handoff.DownstreamCommitState);
+        Assert.Equal("NotAcknowledged", persistence.Invoice.Handoff.SalesAcknowledgementState);
+        Assert.Equal("Required", persistence.Invoice.Handoff.ReconciliationStatus);
+
+        var second = await service.CreateInvoiceRequestAsync(Context(Creator, permission: "tenant.sales.invoice.create"), order.Id, request, "service-invoice-recovery", order.Version);
+        Assert.True(second.Succeeded, second.Code);
+        Assert.Equal(SalesInvoiceRequestStatus.Posted, second.Value!.Status);
+        Assert.Equal("Reconciled", second.Value.Handoff!.ReconciliationStatus);
+        Assert.Equal(2, finance.SalesInvoicePostAttempts);
+        Assert.Single(finance.SalesInvoiceEffects);
+        Assert.Equal(persistence.Invoice.Amount, finance.LastSalesInvoiceCommand!.Amount);
+        var persistedLine = Assert.Single(persistence.Invoice.LineEvidence!);
+        var financeLine = Assert.Single(finance.LastSalesInvoiceCommand.Lines!);
+        Assert.Equal(persistedLine.OrderLineId, financeLine.OrderLineId);
+        Assert.Equal(persistedLine.RequestedQuantity, financeLine.Quantity);
+        Assert.Equal(persistedLine.NetAmount, financeLine.NetAmount);
+        Assert.Equal(persistedLine.TaxAmount, financeLine.TaxAmount);
+        Assert.Equal(persistedLine.GrossAmount, financeLine.GrossAmount);
+        Assert.Equal(persistedLine.TaxEvidence?.TaxId, financeLine.TaxId);
+    }
+
+    [Fact]
+    public async Task Service_rejects_inventory_effects_with_wrong_tenant_or_revision()
+    {
+        foreach (var corrupt in new Action<HandoffInventoryPort>[]
+        {
+            inventory => inventory.ReturnedTenantId = TenantB,
+            inventory => inventory.ReturnedOrderRevision = 2
+        })
+        {
+            var order = HandoffOrder();
+            var persistence = new CapturingSalesPersistence(order);
+            var inventory = new HandoffInventoryPort(order.Id, order.Lines.Single().Id);
+            corrupt(inventory);
+            var service = CreateHandoffService(persistence, inventory, new ControllableFinanceSettlementPersistence());
+            var result = await service.CreateDeliveryAsync(Context(Creator, permission: "tenant.sales.delivery.post"), order.Id, new SalesDeliveryRequest(inventory.WarehouseId, new DateOnly(2026, 8, 29), [new SalesDeliveryRequestLine(order.Lines.Single().Id, inventory.ReservationId, 1m)]), $"service-delivery-corrupt-{Guid.NewGuid():N}", order.Version);
+            Assert.False(result.Succeeded);
+            Assert.Equal("inventory_effect_mismatch", result.Code);
+        }
+    }
+
+    [Fact]
+    public async Task Service_fails_closed_when_finance_effect_provenance_is_wrong()
+    {
+        foreach (var corrupt in new Action<ControllableFinanceSettlementPersistence>[]
+        {
+            finance => finance.ReturnWrongSalesInvoiceEvidence = true,
+            finance => finance.ReturnedSalesInvoiceTenantId = TenantB,
+            finance => finance.ReturnedSalesInvoiceRevision = 2
+        })
+        {
+            var order = HandoffOrder();
+            var persistence = new CapturingSalesPersistence(order)
+            {
+                Delivery = new SalesDeliveryResponse(Guid.NewGuid(), TenantA, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.NewGuid(), SalesDeliveryStatus.Posted, null, [new SalesDeliveryRequestLine(order.Lines.Single().Id, Guid.NewGuid(), 1m)], [Guid.NewGuid()], DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, [1], new SalesHandoffEvidence("inventory.sales-delivery.post", [], "Committed", "Acknowledged", "Reconciled", null, 1, DateTimeOffset.UtcNow, "delivery-fp"))
+            };
+            var finance = new ControllableFinanceSettlementPersistence
+            {
+                SalesInvoiceResult = new FinanceOpenItemRecord(Guid.NewGuid(), TenantA, CompanyA, FinanceOpenItemKind.Receivable, null, CustomerA, "sales-invoice.v1", order.Id, order.RevisionNumber, Guid.NewGuid(), 1, "sales-invoice", new DateOnly(2026, 8, 29), new DateOnly(2026, 9, 28), "SAR", 100m, "SAR", 100m, null, null, null, null, new FinancePaymentTermSnapshotRecord(order.PaymentTerm!.Id, order.PaymentTerm.Code, order.PaymentTerm.EnglishName, order.PaymentTerm.ArabicName, order.PaymentTerm.VersionNumber, order.PaymentTerm.VersionId, order.PaymentTerm.EffectiveOn, new DateOnly(2026, 9, 2)), null, null, FinanceOpenItemRecognitionState.Recognized, Guid.NewGuid(), 0m, 100m, FinanceOpenItemStatus.Open, [1])
+            };
+            corrupt(finance);
+            var service = CreateHandoffService(persistence, new HandoffInventoryPort(order.Id, order.Lines.Single().Id), finance);
+            var result = await service.CreateInvoiceRequestAsync(Context(Creator, permission: "tenant.sales.invoice.create"), order.Id, new SalesInvoiceEligibilityRequest(persistence.Delivery!.Id, null, new DateOnly(2026, 8, 29), [new SalesInvoiceRequestLine(order.Lines.Single().Id, 1m)]), $"service-invoice-corrupt-{Guid.NewGuid():N}", order.Version);
+            Assert.False(result.Succeeded);
+            Assert.Equal("finance_effect_mismatch", result.Code);
+            Assert.Equal(SalesInvoiceRequestStatus.Unknown, persistence.Invoice!.Status);
+            Assert.Empty(persistence.Invoice.Handoff!.DownstreamEffectIds);
+            Assert.Equal(1, finance.SalesInvoicePostAttempts);
+        }
+    }
+
+    [Fact]
+    public async Task Service_rejects_invoice_for_wrong_delivery_before_finance_handoff()
+    {
+        var order = HandoffOrder();
+        var persistence = new CapturingSalesPersistence(order)
+        {
+            Delivery = new SalesDeliveryResponse(Guid.NewGuid(), TenantA, order.Id, order.RevisionNumber, CompanyA, BranchA, CustomerA, Guid.NewGuid(), SalesDeliveryStatus.Posted, null, [new SalesDeliveryRequestLine(order.Lines.Single().Id, Guid.NewGuid(), 1m)], [Guid.NewGuid()], DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, [1], new SalesHandoffEvidence("inventory.sales-delivery.post", [], "Committed", "Acknowledged", "Reconciled", null, 1, DateTimeOffset.UtcNow, "delivery-fp"))
+        };
+        var finance = new ControllableFinanceSettlementPersistence();
+        var service = CreateHandoffService(persistence, new HandoffInventoryPort(order.Id, order.Lines.Single().Id), finance);
+
+        var result = await service.CreateInvoiceRequestAsync(Context(Creator, permission: "tenant.sales.invoice.create"), order.Id, new SalesInvoiceEligibilityRequest(Guid.NewGuid(), null, new DateOnly(2026, 8, 29), [new SalesInvoiceRequestLine(order.Lines.Single().Id, 1m)]), "service-invoice-wrong-delivery", order.Version);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("delivery_not_posted", result.Code);
+        Assert.Null(persistence.Invoice);
+        Assert.Equal(0, finance.SalesInvoicePostAttempts);
     }
 
     [Fact]
@@ -1081,6 +1595,29 @@ public sealed class SalesTests
     private static Task<SalesOperationResult<SalesOrderResponse>> ConfirmOrderAsync(Fixture fixture, SalesService service, SalesOrderResponse order, string key) =>
         service.TransitionOrderAsync(fixture.Context(Approver, permission: "tenant.sales.order.confirm"), order.Id, SalesOrderStatus.Confirmed, null, order.Version, key);
 
+    private static SalesOrderResponse HandoffOrder()
+    {
+        var line = new SalesQuotationLineResponse(Guid.NewGuid(), ProductA, "SKU-001", "Product A", UomA, "EA", 1m, 100m, 100m, 0m, 0m, 0m, 100m, PriceListA, 1, new DateOnly(2026, 1, 1), "PriceList", "price", false, null, null, null, null);
+        var term = new SalesPaymentTermSnapshot(PaymentTermA, "NET4", "Net 4", null, PaymentTermVersionA, 2, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), null, PaymentTermBaseDateRule.DocumentDate, PaymentTermScheduleMode.SingleDueDate, 4, 0, "masterdata.payment-term", "NET4;v2", []);
+        return new SalesOrderResponse(Guid.NewGuid(), "SO-HANDOFF", TenantA, CompanyA, BranchA, CustomerA, "CUST-001", "Customer A", Creator, Guid.NewGuid(), "SQ-HANDOFF", 1, CurrencyA, "SAR", 100m, 0m, 0m, 100m, SalesOrderStatus.Confirmed, SalesCreditOutcome.Eligible, null, DateTimeOffset.UtcNow, null, [line], [1], DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, null, 1, null, term);
+    }
+
+    private static SalesService CreateHandoffService(CapturingSalesPersistence persistence, ISalesInventoryPort inventory, IFinanceSettlementPersistence finance) => new(
+        persistence,
+        new SalesAuthorizationService(new PurchaseRequestAuthorizationService()),
+        new ConfigurationSalesApprovalPolicyProvider(new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(ApprovalOption("quotation", "handoff", 1, Approver), ApprovalOption("order", "handoff", 1, Approver)))),
+        new NoSalesCommercialAuthorityProvider(),
+        new ConfigurationSalesApprovalDelegationProvider(new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(ApprovalOption("quotation", "handoff", 1, Approver), ApprovalOption("order", "handoff", 1, Approver)))),
+        new ConfigurationSalesCreditLimitProvider(new MutableOptionsMonitor<SalesPolicyOptions>(RuntimeOptions(ApprovalOption("quotation", "handoff", 1, Approver), ApprovalOption("order", "handoff", 1, Approver)))),
+        finance,
+        new ConfiguredFinanceCompanyProvider([new FinanceCompanyOption(TenantA, CompanyA, "Company A", "SAR", BranchA)]),
+        new CustomerReferenceFake(),
+        new ProductReferenceFake(),
+        new PriceReferenceFake("SAR"),
+        new UnavailableSalesTaxReferenceProvider(),
+        new UnavailableSalesExchangeRateReferenceProvider(),
+        inventory);
+
     private static ProcurementRequestContext Context(Guid actor, Guid tenantId = default, Guid companyId = default, string permission = "tenant.sales.quotation.create")
     {
         tenantId = tenantId == Guid.Empty ? TenantA : tenantId;
@@ -1104,6 +1641,7 @@ public sealed class SalesTests
         }
 
         public SalesPersistence Persistence { get; }
+        public DbContextOptions Options => options;
 
         public static async Task<Fixture> CreateAsync()
         {
@@ -1145,7 +1683,8 @@ public sealed class SalesTests
         public SalesQuotationWriteModel Model(Guid? id = null) => new(
             id ?? Guid.NewGuid(), CompanyA, BranchA, CustomerA, "CUST-001", "Customer A", new DateOnly(2026, 8, 28), new DateOnly(2026, 9, 30), CurrencyA, "SAR", "contact-1", "Commercial note", null,
             [new SalesLineWriteModel(Guid.NewGuid(), ProductA, "SKU-001", "Product A", UomA, "EA", 3m, 50m, 50m, 0m, 0m, 0m, 150m, PriceListA, 4, new DateOnly(2026, 8, 1), "PriceList", "price-source-4", false, null, null, null, "line note")],
-            150m, 0m, 0m, 150m);
+            150m, 0m, 0m, 150m,
+            PaymentTerm: new SalesPaymentTermSnapshot(PaymentTermA, "NET4", "Net 4", null, PaymentTermVersionA, 2, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), null, PaymentTermBaseDateRule.DocumentDate, PaymentTermScheduleMode.SingleDueDate, 4, 0, "masterdata.payment-term", "NET4;v2", []));
 
         private static TenantContext TenantContext(Guid tenantId, Guid actor, Guid companyId) => MiniErp.App.BuildingBlocks.Tenancy.TenantContext.ForOrdinaryMembership(new TenantId(tenantId), new MembershipReference(Guid.NewGuid()), new ScopeReference($"Company:{companyId:D}"), new CorrelationId($"sales-fixture-{Guid.NewGuid():N}"), actor);
 
@@ -1173,6 +1712,15 @@ public sealed class SalesTests
     {
         private readonly UnavailableFinanceSettlementPersistence fallback = new();
         public FinanceCustomerExposureRecord? Exposure { get; set; }
+        public FinanceOpenItemRecord? SalesInvoiceResult { get; set; }
+        public FinanceSalesInvoiceCommand? LastSalesInvoiceCommand { get; private set; }
+        public bool SalesInvoiceCommitted { get; private set; }
+        public int SalesInvoicePostAttempts { get; private set; }
+        public bool ReturnWrongSalesInvoiceEvidence { get; set; }
+        public Guid? ReturnedSalesInvoiceTenantId { get; set; }
+        public int? ReturnedSalesInvoiceRevision { get; set; }
+        private readonly HashSet<Guid> salesInvoiceEffects = [];
+        public IReadOnlyCollection<Guid> SalesInvoiceEffects => salesInvoiceEffects;
 
         public Task<IReadOnlyList<FinancePaymentMethodRecord>> ListPaymentMethodsAsync(FinanceRequestContext context, Guid companyId, CancellationToken cancellationToken = default) => fallback.ListPaymentMethodsAsync(context, companyId, cancellationToken);
         public Task<FinanceOperationResult<FinancePaymentMethodRecord>> CreatePaymentMethodAsync(FinanceRequestContext context, FinancePaymentMethodCommand command, CancellationToken cancellationToken = default) => fallback.CreatePaymentMethodAsync(context, command, cancellationToken);
@@ -1188,6 +1736,29 @@ public sealed class SalesTests
         public Task<IReadOnlyList<FinanceApSourceReadyRecord>> ListApSourceReadyAsync(FinanceRequestContext context, Guid? companyId = null, CancellationToken cancellationToken = default) => fallback.ListApSourceReadyAsync(context, companyId, cancellationToken);
         public Task<FinanceOperationResult<FinanceOpenItemRecord>> RecognizeSupplierInvoiceAsync(FinanceRequestContext context, FinanceSupplierInvoiceRecognitionCommand command, CancellationToken cancellationToken = default) => fallback.RecognizeSupplierInvoiceAsync(context, command, cancellationToken);
         public Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateManualReceivableAsync(FinanceRequestContext context, FinanceManualReceivableCommand command, CancellationToken cancellationToken = default) => fallback.CreateManualReceivableAsync(context, command, cancellationToken);
+        public Task<FinanceOperationResult<FinanceSalesInvoiceEligibilityRecord>> EvaluateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default) => SalesInvoiceResult is null ? fallback.EvaluateSalesInvoiceAsync(context, command, cancellationToken) : Task.FromResult(FinanceOperationResult<FinanceSalesInvoiceEligibilityRecord>.Success(new(true, "eligible", command.Amount, command.CurrencyCode, command.SalesOrderId, command.SalesOrderRevision, command.DocumentDate, command.PaymentTerm, null, null, null, null)));
+        public Task<FinanceOperationResult<FinanceOpenItemRecord>> CreateSalesInvoiceAsync(FinanceRequestContext context, FinanceSalesInvoiceCommand command, CancellationToken cancellationToken = default)
+        {
+            if (SalesInvoiceResult is null) return fallback.CreateSalesInvoiceAsync(context, command, cancellationToken);
+            LastSalesInvoiceCommand = command;
+            SalesInvoicePostAttempts++;
+            SalesInvoiceCommitted = true;
+            var effect = SalesInvoiceResult with
+            {
+                TenantId = ReturnedSalesInvoiceTenantId ?? context.TenantId.Value,
+                CompanyId = command.CompanyId,
+                CustomerId = command.CustomerId,
+                SourceDocumentId = command.SalesOrderId,
+                SourceDocumentVersion = ReturnedSalesInvoiceRevision ?? command.SalesOrderRevision,
+                SourceEvidenceId = ReturnWrongSalesInvoiceEvidence ? Guid.NewGuid() : command.InvoiceRequestId,
+                SourceEvidenceVersion = 1,
+                DocumentDate = command.DocumentDate,
+                CurrencyCode = command.CurrencyCode,
+                OriginalAmount = command.Amount
+            };
+            salesInvoiceEffects.Add(effect.Id);
+            return Task.FromResult(FinanceOperationResult<FinanceOpenItemRecord>.Success(effect));
+        }
         public Task<IReadOnlyList<FinanceSettlementDocumentRecord>> ListSettlementDocumentsAsync(FinanceRequestContext context, FinanceSettlementQuery query, CancellationToken cancellationToken = default) => fallback.ListSettlementDocumentsAsync(context, query, cancellationToken);
         public Task<FinanceSettlementDocumentRecord?> GetSettlementDocumentAsync(FinanceRequestContext context, Guid documentId, FinancePaymentMethodDirection? expectedDirection = null, CancellationToken cancellationToken = default) => fallback.GetSettlementDocumentAsync(context, documentId, expectedDirection, cancellationToken);
         public Task<FinanceOperationResult<FinanceSettlementDocumentRecord>> CreateSettlementDocumentAsync(FinanceRequestContext context, FinanceSettlementDocumentCommand command, CancellationToken cancellationToken = default) => fallback.CreateSettlementDocumentAsync(context, command, cancellationToken);
@@ -1207,9 +1778,17 @@ public sealed class SalesTests
     private sealed class CapturingSalesPersistence : ISalesPersistence
     {
         private readonly SalesQuotationResponse? quotation;
+        private readonly SalesOrderResponse? order;
 
         public CapturingSalesPersistence(SalesQuotationResponse? quotation = null) => this.quotation = quotation;
+        public CapturingSalesPersistence(SalesOrderResponse order) => this.order = order;
         public SalesQuotationWriteModel? Captured { get; private set; }
+        public SalesDeliveryResponse? Delivery { get; set; }
+        public SalesInvoiceRequestResponse? Invoice { get; private set; }
+        public bool DeliveryFailedUnknown { get; private set; }
+        public bool InvoiceFailedUnknown { get; private set; }
+        public int DeliveryFinalizationFailuresRemaining { get; set; } = 1;
+        public int InvoiceFinalizationFailuresRemaining { get; set; } = 1;
 
         public Task<IReadOnlyList<SalesQuotationSummaryResponse>> ListQuotationsAsync(ProcurementRequestContext context, Guid? companyId, SalesQuotationStatus? status, CancellationToken cancellationToken = default) => EmptyList<SalesQuotationSummaryResponse>();
         public Task<SalesQuotationResponse?> GetQuotationAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => Task.FromResult(quotation);
@@ -1226,15 +1805,90 @@ public sealed class SalesTests
         public Task<IReadOnlyList<SalesAuditResponse>> ListAuditAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default) => EmptyList<SalesAuditResponse>();
         public Task<SalesApprovalPolicyDefinition?> GetApprovalPolicyAsync(ProcurementRequestContext context, string documentType, Guid id, CancellationToken cancellationToken = default) => Empty<SalesApprovalPolicyDefinition?>();
         public Task<IReadOnlyList<SalesOrderSummaryResponse>> ListOrdersAsync(ProcurementRequestContext context, Guid? companyId, SalesOrderStatus? status, CancellationToken cancellationToken = default) => EmptyList<SalesOrderSummaryResponse>();
-        public Task<SalesOrderResponse?> GetOrderAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => Empty<SalesOrderResponse?>();
+        public Task<SalesOrderResponse?> GetOrderAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => Task.FromResult(order?.Id == id ? order : null);
         public Task<SalesOperationResult<SalesOrderResponse>> ConvertQuotationAsync(ProcurementRequestContext context, Guid quotationId, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesApprovalPolicyDefinition? policy, CancellationToken cancellationToken = default) => Failure<SalesOrderResponse>();
         public Task<SalesOperationResult<SalesOrderResponse>> TransitionOrderAsync(ProcurementRequestContext context, Guid id, SalesOrderStatus target, string? reason, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesCreditEvaluation? credit, SalesApprovalPolicyDefinition? policy, Guid? delegatedFromActorId = null, CancellationToken cancellationToken = default) => Failure<SalesOrderResponse>();
         public Task<SalesOperationResult<SalesOrderResponse>> OverrideOrderCreditAsync(ProcurementRequestContext context, Guid id, string reason, DateTimeOffset expiresAt, string? scope, string? sourceReference, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesCreditEvaluation credit, CancellationToken cancellationToken = default) => Failure<SalesOrderResponse>();
         public Task<SalesCreditResponse?> GetOrderCreditAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default) => Empty<SalesCreditResponse?>();
+        public Task<IReadOnlyList<SalesDeliveryResponse>> ListDeliveriesAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<SalesDeliveryResponse>>(Delivery is null ? [] : [Delivery]);
+        public Task<SalesDeliveryResponse?> GetDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, CancellationToken cancellationToken = default) => Task.FromResult(Delivery?.Id == deliveryId ? Delivery : null);
+        public Task<SalesOperationResult<SalesDeliveryResponse>> CreateDeliveryAsync(ProcurementRequestContext context, SalesDeliveryWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default)
+        {
+            if (Delivery?.Id == model.Id) return Task.FromResult(SalesOperationResult<SalesDeliveryResponse>.Success(Delivery));
+            Delivery = new SalesDeliveryResponse(model.Id, context.TenantId.Value, model.OrderId, model.OrderRevisionNumber, model.CompanyId, model.BranchId, model.CustomerId, model.WarehouseId, SalesDeliveryStatus.Draft, null, model.Lines, [], DateTimeOffset.UtcNow, null, [1]);
+            return Task.FromResult(SalesOperationResult<SalesDeliveryResponse>.Success(Delivery));
+        }
+        public Task<SalesOperationResult<SalesDeliveryResponse>> CompleteDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, IReadOnlyList<Guid> movementIds, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null)
+        {
+            if (DeliveryFinalizationFailuresRemaining-- > 0) return Failure<SalesDeliveryResponse>();
+            if (Delivery?.Id != deliveryId) return Task.FromResult(SalesOperationResult<SalesDeliveryResponse>.Failure("delivery_not_found"));
+            Delivery = Delivery with { Status = SalesDeliveryStatus.Posted, MovementIds = movementIds, PostedAt = DateTimeOffset.UtcNow, Handoff = new SalesHandoffEvidence("inventory.sales-delivery.post", movementIds, "Committed", "Acknowledged", "Reconciled", null, 1, DateTimeOffset.UtcNow, Delivery.Handoff?.RequestFingerprint ?? string.Empty, downstreamIdempotencyKey, downstreamRequestFingerprint) };
+            return Task.FromResult(SalesOperationResult<SalesDeliveryResponse>.Success(Delivery));
+        }
+        public Task<SalesOperationResult<SalesDeliveryResponse>> FailDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, string code, bool unknown, CancellationToken cancellationToken = default, SalesDownstreamEvidence? downstream = null)
+        {
+            if (Delivery?.Id != deliveryId) return Task.FromResult(SalesOperationResult<SalesDeliveryResponse>.Failure("delivery_not_found"));
+            DeliveryFailedUnknown = unknown;
+            Delivery = Delivery with { Status = unknown ? SalesDeliveryStatus.Unknown : SalesDeliveryStatus.Failed, ErrorCode = code, Handoff = downstream is null ? Delivery.Handoff : new SalesHandoffEvidence("inventory.sales-delivery.post", downstream.EffectIds, downstream.CommitState, downstream.AcknowledgementState, downstream.ReconciliationStatus, code, 1, DateTimeOffset.UtcNow, Delivery.Handoff?.RequestFingerprint ?? string.Empty, downstream.IdempotencyKey, downstream.RequestFingerprint) };
+            return Task.FromResult(SalesOperationResult<SalesDeliveryResponse>.Success(Delivery));
+        }
+        public Task<IReadOnlyList<SalesInvoiceRequestResponse>> ListInvoiceRequestsAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<SalesInvoiceRequestResponse>>(Invoice is null ? [] : [Invoice]);
+        public Task<SalesInvoiceRequestResponse?> GetInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, CancellationToken cancellationToken = default) => Task.FromResult(Invoice?.Id == requestId ? Invoice : null);
+        public Task<SalesOperationResult<SalesInvoiceRequestResponse>> CreateInvoiceRequestAsync(ProcurementRequestContext context, SalesInvoiceRequestWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default)
+        {
+            if (Invoice?.Id == model.Id) return Task.FromResult(SalesOperationResult<SalesInvoiceRequestResponse>.Success(Invoice));
+            Invoice = new SalesInvoiceRequestResponse(model.Id, context.TenantId.Value, model.OrderId, model.OrderRevisionNumber, model.DeliveryId, SalesInvoiceRequestStatus.Pending, null, null, model.Amount, model.Lines, DateTimeOffset.UtcNow, null, [1], model.NetAmount, model.TaxAmount, model.PaymentTerm, model.LineEvidence, null, model.CurrencyCode, model.InvoiceDate, model.SourceSnapshot);
+            return Task.FromResult(SalesOperationResult<SalesInvoiceRequestResponse>.Success(Invoice));
+        }
+        public Task<SalesOperationResult<SalesInvoiceRequestResponse>> CompleteInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, Guid financeOpenItemId, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null)
+        {
+            if (InvoiceFinalizationFailuresRemaining-- > 0) return Failure<SalesInvoiceRequestResponse>();
+            if (Invoice?.Id != requestId) return Task.FromResult(SalesOperationResult<SalesInvoiceRequestResponse>.Failure("invoice_not_found"));
+            Invoice = Invoice with { Status = SalesInvoiceRequestStatus.Posted, FinanceOpenItemId = financeOpenItemId, PostedAt = DateTimeOffset.UtcNow, Handoff = new SalesHandoffEvidence("finance.sales-invoice.create", [financeOpenItemId], "Committed", "Acknowledged", "Reconciled", null, 1, DateTimeOffset.UtcNow, Invoice.Handoff?.RequestFingerprint ?? string.Empty, downstreamIdempotencyKey, downstreamRequestFingerprint) };
+            return Task.FromResult(SalesOperationResult<SalesInvoiceRequestResponse>.Success(Invoice));
+        }
+        public Task<SalesOperationResult<SalesInvoiceRequestResponse>> FailInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, string code, bool unknown, CancellationToken cancellationToken = default, SalesDownstreamEvidence? downstream = null)
+        {
+            if (Invoice?.Id != requestId) return Task.FromResult(SalesOperationResult<SalesInvoiceRequestResponse>.Failure("invoice_not_found"));
+            InvoiceFailedUnknown = unknown;
+            Invoice = Invoice with { Status = unknown ? SalesInvoiceRequestStatus.Unknown : SalesInvoiceRequestStatus.Failed, ErrorCode = code, FinanceOpenItemId = downstream is null ? Invoice.FinanceOpenItemId : downstream.EffectIds.FirstOrDefault(), Handoff = downstream is null ? Invoice.Handoff : new SalesHandoffEvidence("finance.sales-invoice.create", downstream.EffectIds, downstream.CommitState, downstream.AcknowledgementState, downstream.ReconciliationStatus, code, 1, DateTimeOffset.UtcNow, Invoice.Handoff?.RequestFingerprint ?? string.Empty, downstream.IdempotencyKey, downstream.RequestFingerprint) };
+            return Task.FromResult(SalesOperationResult<SalesInvoiceRequestResponse>.Success(Invoice));
+        }
 
         private static Task<T> Empty<T>() => Task.FromResult<T>(default!);
         private static Task<IReadOnlyList<T>> EmptyList<T>() => Task.FromResult<IReadOnlyList<T>>([]);
         private static Task<SalesOperationResult<T>> Failure<T>() => Task.FromResult(SalesOperationResult<T>.Failure("not-called"));
+    }
+
+    private sealed class HandoffInventoryPort(Guid orderId, Guid lineId) : ISalesInventoryPort
+    {
+        private static readonly Guid HandoffWarehouseId = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        public Guid WarehouseId => HandoffWarehouseId;
+        public Guid ReservationId { get; } = Guid.NewGuid();
+        public List<Guid> MovementIds { get; } = [Guid.NewGuid()];
+        public bool DeliveryCommitted { get; private set; }
+        public int PostAttempts { get; private set; }
+        public Guid? ReturnedTenantId { get; set; }
+        public int? ReturnedOrderRevision { get; set; }
+        public IReadOnlyList<Guid>? ReturnedMovementIds { get; set; }
+
+        public Task<InventoryOperationResult<IReadOnlyList<InventoryReservationRecord>>> ListSalesReservationsAsync(InventoryRequestContext context, string sourceReference, string operationId = "sales.fulfillment.read", CancellationToken cancellationToken = default) =>
+            Task.FromResult(InventoryOperationResult<IReadOnlyList<InventoryReservationRecord>>.Success([
+                new InventoryReservationRecord(ReservationId, TenantA, CompanyA, BranchA, HandoffWarehouseId, "WH-1", "Warehouse", ProductA, "SKU-001", "Product A", UomA, "EA", null, "sales-order", sourceReference, 1m, 1m, 0m, InventoryReservationStatus.Active, Creator, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, [1], 0m, orderId, lineId, 1)
+            ]));
+
+        public Task<InventoryOperationResult<InventoryReservationRecord>> AllocateSalesReservationAsync(InventoryRequestContext context, InventoryReservationRecord reservation, decimal quantity, string? idempotencyKey, CancellationToken cancellationToken = default) =>
+            Task.FromResult(InventoryOperationResult<InventoryReservationRecord>.Failure("not-called"));
+
+        public Task<InventoryOperationResult<InventoryReservationRecord>> CreateSalesReservationAsync(InventoryRequestContext context, InventoryReservationCreateRequest request, string? idempotencyKey, CancellationToken cancellationToken = default) =>
+            Task.FromResult(InventoryOperationResult<InventoryReservationRecord>.Failure("not-called"));
+
+        public Task<InventoryOperationResult<InventorySalesDeliveryPostingRecord>> PostSalesDeliveryAsync(InventoryRequestContext context, InventorySalesDeliveryPostCommand command, CancellationToken cancellationToken = default)
+        {
+            PostAttempts++;
+            DeliveryCommitted = true;
+            return Task.FromResult(InventoryOperationResult<InventorySalesDeliveryPostingRecord>.Success(new InventorySalesDeliveryPostingRecord(command.DeliveryId, command.SalesOrderId, ReturnedMovementIds ?? MovementIds, command.Lines.Sum(item => item.Quantity), DateTimeOffset.UtcNow, ReturnedTenantId ?? context.TenantId.Value, ReturnedOrderRevision ?? command.SalesOrderRevision)));
+        }
     }
 
     private sealed class CustomerReferenceFake : ICustomerPersistence
@@ -1284,6 +1938,47 @@ public sealed class SalesTests
                 : SalesExchangeRateResolution.Failure("exchange_rate_not_found"));
     }
 
+    private sealed class PaymentTermReferenceFake : IMasterDataCurrencyPaymentTermPersistence
+    {
+        private static readonly MasterDataPaymentTermRecord Record = new(
+            PaymentTermA,
+            new TenantId(TenantA),
+            "NET4",
+            new LocalizedName("Net 4"),
+            MasterDataLifecycleState.Active,
+            2,
+            [
+                new MasterDataPaymentTermVersionRecord(
+                    PaymentTermVersionA,
+                    2,
+                    new DateOnly(2026, 1, 1),
+                    null,
+                    PaymentTermBaseDateRule.DocumentDate,
+                    PaymentTermScheduleMode.SingleDueDate,
+                    new MasterDataPaymentTermOffset(4, 0),
+                    [],
+                    MasterDataEarlySettlementDiscount.Disabled(),
+                    "NET4",
+                    new LocalizedName("Net 4"))
+            ],
+            [1]);
+
+        public Task<IReadOnlyList<MasterDataCurrencyRecord>> ListCurrenciesAsync(TenantContext tenantContext, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataCurrencyRecord>>([]);
+        public Task<MasterDataCurrencyRecord?> FindCurrencyAsync(TenantContext tenantContext, Guid currencyId, CancellationToken cancellationToken = default) => Task.FromResult<MasterDataCurrencyRecord?>(null);
+        public Task<MasterDataPersistenceResult<MasterDataCurrencyRecord>> CreateCurrencyAsync(TenantContext tenantContext, Guid currencyId, CreateMasterDataCurrencyCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataCurrencyRecord>();
+        public Task<MasterDataPersistenceResult<MasterDataCurrencyRecord>> EditCurrencyAsync(TenantContext tenantContext, EditMasterDataCurrencyCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataCurrencyRecord>();
+        public Task<MasterDataPersistenceResult<MasterDataCurrencyRecord>> SetCurrencyLifecycleAsync(TenantContext tenantContext, Guid currencyId, MasterDataLifecycleState lifecycleState, byte[] expectedVersion, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataCurrencyRecord>();
+        public Task<IReadOnlyList<MasterDataPaymentTermRecord>> ListPaymentTermsAsync(TenantContext tenantContext, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataPaymentTermRecord>>([Record]);
+        public Task<MasterDataPaymentTermRecord?> FindPaymentTermAsync(TenantContext tenantContext, Guid paymentTermId, CancellationToken cancellationToken = default) => Task.FromResult<MasterDataPaymentTermRecord?>(paymentTermId == PaymentTermA ? Record : null);
+        public Task<MasterDataPersistenceResult<MasterDataPaymentTermRecord>> CreatePaymentTermAsync(TenantContext tenantContext, Guid paymentTermId, CreateMasterDataPaymentTermCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataPaymentTermRecord>();
+        public Task<MasterDataPersistenceResult<MasterDataPaymentTermRecord>> EditPaymentTermAsync(TenantContext tenantContext, EditMasterDataPaymentTermCommand command, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataPaymentTermRecord>();
+        public Task<MasterDataPersistenceResult<MasterDataPaymentTermRecord>> SetPaymentTermLifecycleAsync(TenantContext tenantContext, Guid paymentTermId, MasterDataLifecycleState lifecycleState, byte[] expectedVersion, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataPaymentTermRecord>();
+        public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(TenantContext tenantContext, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataAuditRecord>();
+        public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(TenantContext tenantContext, MasterDataResourceKind resourceKind, Guid? resourceId = null, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataAuditRecord>>([]);
+
+        private static Task<MasterDataPersistenceResult<T>> Failure<T>() => Task.FromResult(MasterDataPersistenceResult<T>.Denied(MasterDataPersistenceOutcome.Failure, "not-called"));
+    }
+
     private sealed class PriceReferenceFake : IMasterDataPriceListPersistence
     {
         private readonly string currencyCode;
@@ -1300,12 +1995,13 @@ public sealed class SalesTests
         public Task<MasterDataPersistenceResult<MasterDataAuditRecord>> AppendAuditAsync(TenantContext tenantContext, MasterDataAuditEvidence evidence, CancellationToken cancellationToken = default) => Failure<MasterDataAuditRecord>();
         public Task<IReadOnlyList<MasterDataAuditRecord>> ReadAuditHistoryAsync(TenantContext tenantContext, Guid? priceListId = null, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MasterDataAuditRecord>>([]);
 
-        private MasterDataPriceListReferenceRecord CreateRecord(DateOnly effective)
+        private MasterDataPriceListReferenceRecord CreateRecord(DateOnly effectiveOn)
         {
+            var effective = effectiveOn;
             var price = new MasterDataPriceListPriceRecord(Guid.NewGuid(), 4, ProductA, "SKU-001", UomA, "EA", CurrencyA, currencyCode, CustomerA, OrganizationScopeKind.Branch, BranchA, 1, effective, null, 50m, 2, PriceListProvenance.Configured, "price-row-4", [1]);
             var configuration = new MasterDataPriceListCurrentConfiguration(CurrencyA, currencyCode, CustomerA, OrganizationScopeKind.Branch, BranchA, 1, MasterDataLifecycleState.Active);
             var snapshot = new ReferenceSnapshot(MasterDataResourceKind.PriceList, PriceListA, new TenantOwnership(TenantA), 4, "price-row-4", effective);
-            return new MasterDataPriceListReferenceRecord(PriceListA, new TenantId(TenantA), "STANDARD", price, configuration, effective, snapshot, [1]);
+            return new MasterDataPriceListReferenceRecord(PriceListA, new TenantId(TenantA), "STANDARD", price, configuration, effectiveOn, snapshot, [1]);
         }
 
         private static Task<T> Empty<T>() => Task.FromResult<T>(default!);

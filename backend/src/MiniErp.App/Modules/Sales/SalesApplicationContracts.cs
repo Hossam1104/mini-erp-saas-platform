@@ -7,10 +7,12 @@ using Microsoft.Extensions.Options;
 using MiniErp.App.BuildingBlocks.Tenancy;
 using MiniErp.App.Modules.BusinessParties;
 using MiniErp.App.Modules.Finance;
+using MiniErp.App.Modules.Inventory;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.App.Modules.Procurement;
 using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Foundation;
+using MiniErp.Contracts.Modules.Inventory;
 using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Contracts.Modules.Sales;
 
@@ -25,6 +27,14 @@ public sealed record SalesOperationResult<T>(bool Succeeded, string Code, T? Val
 public sealed record SalesScope(Guid TenantId, Guid CompanyId, Guid? BranchId)
 {
     public PurchaseRequestScope ToProcurementScope() => new(TenantId, CompanyId, BranchId);
+}
+
+public interface ISalesInventoryPort
+{
+    Task<InventoryOperationResult<IReadOnlyList<InventoryReservationRecord>>> ListSalesReservationsAsync(InventoryRequestContext context, string sourceReference, string operationId = "sales.fulfillment.read", CancellationToken cancellationToken = default);
+    Task<InventoryOperationResult<InventoryReservationRecord>> AllocateSalesReservationAsync(InventoryRequestContext context, InventoryReservationRecord reservation, decimal quantity, string? idempotencyKey, CancellationToken cancellationToken = default);
+    Task<InventoryOperationResult<InventoryReservationRecord>> CreateSalesReservationAsync(InventoryRequestContext context, InventoryReservationCreateRequest request, string? idempotencyKey, CancellationToken cancellationToken = default);
+    Task<InventoryOperationResult<InventorySalesDeliveryPostingRecord>> PostSalesDeliveryAsync(InventoryRequestContext context, InventorySalesDeliveryPostCommand command, CancellationToken cancellationToken = default);
 }
 
 public sealed record SalesTaxEvidence(
@@ -261,7 +271,8 @@ public sealed record SalesQuotationWriteModel(
     decimal TaxAmount,
     decimal Total,
     string? Reason = null,
-    SalesExchangeRateEvidence? ExchangeRateEvidence = null);
+    SalesExchangeRateEvidence? ExchangeRateEvidence = null,
+    SalesPaymentTermSnapshot? PaymentTerm = null);
 
 public sealed record SalesApprovalStageDefinition(
     string StageKey,
@@ -622,6 +633,37 @@ public sealed record SalesCreditEvaluation(
     public static SalesCreditEvaluation Unknown(DateOnly asOfDate, string reason) => new(SalesCreditOutcome.Unknown, reason, null, null, null, null, null, asOfDate, DateTimeOffset.UtcNow);
 }
 
+public sealed record SalesDeliveryWriteModel(
+    Guid Id,
+    Guid OrderId,
+    int OrderRevisionNumber,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid CustomerId,
+    Guid WarehouseId,
+    IReadOnlyList<SalesDeliveryRequestLine> Lines,
+    string SourceSnapshot,
+    Guid ActorId);
+
+public sealed record SalesInvoiceRequestWriteModel(
+    Guid Id,
+    Guid OrderId,
+    int OrderRevisionNumber,
+    Guid? DeliveryId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid CustomerId,
+    DateOnly InvoiceDate,
+    decimal Amount,
+    string CurrencyCode,
+    IReadOnlyList<SalesInvoiceRequestLine> Lines,
+    string SourceSnapshot,
+    Guid ActorId,
+    decimal NetAmount = 0m,
+    decimal TaxAmount = 0m,
+    SalesPaymentTermSnapshot? PaymentTerm = null,
+    IReadOnlyList<SalesInvoiceLineEvidence>? LineEvidence = null);
+
 public interface ISalesPersistence
 {
     Task<IReadOnlyList<SalesQuotationSummaryResponse>> ListQuotationsAsync(ProcurementRequestContext context, Guid? companyId, SalesQuotationStatus? status, CancellationToken cancellationToken = default);
@@ -640,6 +682,16 @@ public interface ISalesPersistence
     Task<SalesOperationResult<SalesOrderResponse>> TransitionOrderAsync(ProcurementRequestContext context, Guid id, SalesOrderStatus target, string? reason, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesCreditEvaluation? credit, SalesApprovalPolicyDefinition? policy, Guid? delegatedFromActorId = null, CancellationToken cancellationToken = default);
     Task<SalesOperationResult<SalesOrderResponse>> OverrideOrderCreditAsync(ProcurementRequestContext context, Guid id, string reason, DateTimeOffset expiresAt, string? scope, string? sourceReference, byte[] expectedVersion, string idempotencyKey, string requestFingerprint, SalesCreditEvaluation credit, CancellationToken cancellationToken = default);
     Task<SalesCreditResponse?> GetOrderCreditAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SalesDeliveryResponse>> ListDeliveriesAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default);
+    Task<SalesDeliveryResponse?> GetDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, CancellationToken cancellationToken = default);
+    Task<SalesOperationResult<SalesDeliveryResponse>> CreateDeliveryAsync(ProcurementRequestContext context, SalesDeliveryWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default);
+    Task<SalesOperationResult<SalesDeliveryResponse>> CompleteDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, IReadOnlyList<Guid> movementIds, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null);
+    Task<SalesOperationResult<SalesDeliveryResponse>> FailDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, string code, bool unknown, CancellationToken cancellationToken = default, SalesDownstreamEvidence? downstream = null);
+    Task<IReadOnlyList<SalesInvoiceRequestResponse>> ListInvoiceRequestsAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default);
+    Task<SalesInvoiceRequestResponse?> GetInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, CancellationToken cancellationToken = default);
+    Task<SalesOperationResult<SalesInvoiceRequestResponse>> CreateInvoiceRequestAsync(ProcurementRequestContext context, SalesInvoiceRequestWriteModel model, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default);
+    Task<SalesOperationResult<SalesInvoiceRequestResponse>> CompleteInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, Guid financeOpenItemId, string idempotencyKey, string requestFingerprint, CancellationToken cancellationToken = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null);
+    Task<SalesOperationResult<SalesInvoiceRequestResponse>> FailInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, string code, bool unknown, CancellationToken cancellationToken = default, SalesDownstreamEvidence? downstream = null);
 }
 
 public sealed class UnavailableSalesPersistence : ISalesPersistence
@@ -663,6 +715,16 @@ public sealed class UnavailableSalesPersistence : ISalesPersistence
     public Task<SalesOperationResult<SalesOrderResponse>> TransitionOrderAsync(ProcurementRequestContext c, Guid id, SalesOrderStatus t, string? r, byte[] v, string k, string f, SalesCreditEvaluation? credit, SalesApprovalPolicyDefinition? p, Guid? d = null, CancellationToken x = default) => Task.FromResult(Failure<SalesOrderResponse>());
     public Task<SalesOperationResult<SalesOrderResponse>> OverrideOrderCreditAsync(ProcurementRequestContext c, Guid id, string r, DateTimeOffset e, string? s, string? sr, byte[] v, string k, string f, SalesCreditEvaluation credit, CancellationToken x = default) => Task.FromResult(Failure<SalesOrderResponse>());
     public Task<SalesCreditResponse?> GetOrderCreditAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => Empty<SalesCreditResponse?>();
+    public Task<IReadOnlyList<SalesDeliveryResponse>> ListDeliveriesAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => EmptyList<SalesDeliveryResponse>();
+    public Task<SalesDeliveryResponse?> GetDeliveryAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => Empty<SalesDeliveryResponse?>();
+    public Task<SalesOperationResult<SalesDeliveryResponse>> CreateDeliveryAsync(ProcurementRequestContext c, SalesDeliveryWriteModel m, string k, string f, CancellationToken x = default) => Task.FromResult(Failure<SalesDeliveryResponse>());
+    public Task<SalesOperationResult<SalesDeliveryResponse>> CompleteDeliveryAsync(ProcurementRequestContext c, Guid id, IReadOnlyList<Guid> movements, string k, string f, CancellationToken x = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null) => Task.FromResult(Failure<SalesDeliveryResponse>());
+    public Task<SalesOperationResult<SalesDeliveryResponse>> FailDeliveryAsync(ProcurementRequestContext c, Guid id, string code, bool unknown, CancellationToken x = default, SalesDownstreamEvidence? downstream = null) => Task.FromResult(Failure<SalesDeliveryResponse>());
+    public Task<IReadOnlyList<SalesInvoiceRequestResponse>> ListInvoiceRequestsAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => EmptyList<SalesInvoiceRequestResponse>();
+    public Task<SalesInvoiceRequestResponse?> GetInvoiceRequestAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => Empty<SalesInvoiceRequestResponse?>();
+    public Task<SalesOperationResult<SalesInvoiceRequestResponse>> CreateInvoiceRequestAsync(ProcurementRequestContext c, SalesInvoiceRequestWriteModel m, string k, string f, CancellationToken x = default) => Task.FromResult(Failure<SalesInvoiceRequestResponse>());
+    public Task<SalesOperationResult<SalesInvoiceRequestResponse>> CompleteInvoiceRequestAsync(ProcurementRequestContext c, Guid id, Guid financeOpenItemId, string k, string f, CancellationToken x = default, string? downstreamIdempotencyKey = null, string? downstreamRequestFingerprint = null) => Task.FromResult(Failure<SalesInvoiceRequestResponse>());
+    public Task<SalesOperationResult<SalesInvoiceRequestResponse>> FailInvoiceRequestAsync(ProcurementRequestContext c, Guid id, string code, bool unknown, CancellationToken x = default, SalesDownstreamEvidence? downstream = null) => Task.FromResult(Failure<SalesInvoiceRequestResponse>());
 }
 
 public sealed class SalesAuthorizationService(PurchaseRequestAuthorizationService authorization)
@@ -687,7 +749,9 @@ public sealed class SalesService(
     IProductIdentityPersistence products,
     IMasterDataPriceListPersistence prices,
     ISalesTaxReferenceProvider taxes,
-    ISalesExchangeRateReferenceProvider exchangeRates)
+    ISalesExchangeRateReferenceProvider exchangeRates,
+    ISalesInventoryPort? inventory = null,
+    IMasterDataCurrencyPaymentTermPersistence? paymentTerms = null)
 {
     private readonly ISalesPersistence persistence = persistence;
     private readonly SalesAuthorizationService authorization = authorization;
@@ -702,6 +766,8 @@ public sealed class SalesService(
     private readonly IMasterDataPriceListPersistence prices = prices;
     private readonly ISalesTaxReferenceProvider taxes = taxes;
     private readonly ISalesExchangeRateReferenceProvider exchangeRates = exchangeRates;
+    private readonly ISalesInventoryPort? inventory = inventory;
+    private readonly IMasterDataCurrencyPaymentTermPersistence? paymentTerms = paymentTerms;
 
     public Task<IReadOnlyList<SalesQuotationSummaryResponse>> ListQuotationsAsync(ProcurementRequestContext c, Guid? companyId, SalesQuotationStatus? status, CancellationToken x = default) => persistence.ListQuotationsAsync(c, companyId, status, x);
     public Task<SalesQuotationResponse?> GetQuotationAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => persistence.GetQuotationAsync(c, id, x);
@@ -717,7 +783,7 @@ public sealed class SalesService(
         var requestedScope = new SalesScope(context.TenantId.Value, request.CompanyId, request.BranchId);
         var authorizationDecision = authorization.Decide(context, "sales.quotation.create", requestedScope);
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesQuotationResponse>.Failure(ScopeFailure(authorizationDecision.Code, "quotation_not_found"));
-        var model = await BuildModelAsync(context, Guid.NewGuid(), request.CompanyId, request.BranchId, request.CustomerId, request.QuotationDate, request.ValidUntil, request.CurrencyId, request.PriceListId, request.ExchangeRateId, request.CustomerContactId, request.Notes, request.CustomerReference, request.Lines, cancellationToken);
+        var model = await BuildModelAsync(context, Guid.NewGuid(), request.CompanyId, request.BranchId, request.CustomerId, request.QuotationDate, request.ValidUntil, request.CurrencyId, request.PriceListId, request.ExchangeRateId, request.CustomerContactId, request.Notes, request.CustomerReference, request.Lines, cancellationToken, paymentTermId: request.PaymentTermId);
         if (model is null) return SalesOperationResult<SalesQuotationResponse>.Failure("commercial_reference_invalid");
         var policy = await approvalPolicies.ResolveAsync(context, Scope(context, model.CompanyId, model.BranchId), "quotation", model.Total, DateTimeOffset.UtcNow, cancellationToken, model.CurrencyCode);
         return await persistence.CreateQuotationAsync(context, model, key, Fingerprint(request), policy, cancellationToken);
@@ -731,7 +797,7 @@ public sealed class SalesService(
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesQuotationResponse>.Failure(ScopeFailure(authorizationDecision.Code, "quotation_not_found"));
         if (request.CompanyId != existing.CompanyId || request.BranchId != existing.BranchId)
             return SalesOperationResult<SalesQuotationResponse>.Failure("quotation_scope_immutable");
-        var model = await BuildModelAsync(context, id, existing.CompanyId, existing.BranchId, existing.CustomerId, existing.QuotationDate, request.ValidUntil, request.CurrencyId, request.PriceListId, request.ExchangeRateId, request.CustomerContactId, request.Notes, request.CustomerReference, request.Lines, cancellationToken);
+        var model = await BuildModelAsync(context, id, existing.CompanyId, existing.BranchId, existing.CustomerId, existing.QuotationDate, request.ValidUntil, request.CurrencyId, request.PriceListId, request.ExchangeRateId, request.CustomerContactId, request.Notes, request.CustomerReference, request.Lines, cancellationToken, paymentTermId: request.PaymentTermId);
         if (model is null) return SalesOperationResult<SalesQuotationResponse>.Failure("commercial_reference_invalid");
         var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "quotation", model.Total, DateTimeOffset.UtcNow, cancellationToken, model.CurrencyCode);
         return await persistence.EditQuotationAsync(context, id, model, expectedVersion, key, Fingerprint(request), cancellationToken, policy);
@@ -745,7 +811,7 @@ public sealed class SalesService(
         if (!authorizationDecision.Allowed) return SalesOperationResult<SalesOrderResponse>.Failure(ScopeFailure(authorizationDecision.Code, "order_not_found"));
         if (existing.Status is not (SalesOrderStatus.Draft or SalesOrderStatus.ReturnedForChange)) return SalesOperationResult<SalesOrderResponse>.Failure("order_edit_locked");
         var date = DateOnly.FromDateTime(DateTime.UtcNow);
-        var model = await BuildModelAsync(context, id, existing.CompanyId, existing.BranchId, existing.CustomerId, date, date, request.CurrencyId, request.PriceListId, request.ExchangeRateId, null, null, null, request.Lines, cancellationToken, "order");
+        var model = await BuildModelAsync(context, id, existing.CompanyId, existing.BranchId, existing.CustomerId, date, date, request.CurrencyId, request.PriceListId, request.ExchangeRateId, null, null, null, request.Lines, cancellationToken, "order", existing.PaymentTerm);
         if (model is null) return SalesOperationResult<SalesOrderResponse>.Failure("commercial_reference_invalid");
         var policy = await approvalPolicies.ResolveAsync(context, Scope(context, existing.CompanyId, existing.BranchId), "order", model.Total, DateTimeOffset.UtcNow, cancellationToken, model.CurrencyCode);
         return await persistence.EditOrderAsync(context, id, model, expectedVersion, key, Fingerprint(request), policy, cancellationToken);
@@ -860,6 +926,356 @@ public sealed class SalesService(
     }
 
     public Task<SalesCreditResponse?> GetOrderCreditAsync(ProcurementRequestContext c, Guid id, CancellationToken x = default) => persistence.GetOrderCreditAsync(c, id, x);
+
+    public async Task<SalesOperationResult<SalesFulfillmentResponse>> GetFulfillmentAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default)
+    {
+        var order = await persistence.GetOrderAsync(context, orderId, cancellationToken);
+        if (order is null) return SalesOperationResult<SalesFulfillmentResponse>.Failure("order_not_found");
+        var decision = authorization.Decide(context, "sales.fulfillment.read", Scope(context, order.CompanyId, order.BranchId));
+        if (!decision.Allowed) return SalesOperationResult<SalesFulfillmentResponse>.Failure(ScopeFailure(decision.Code, "order_not_found"));
+        return await BuildFulfillmentAsync(context, order, "sales.fulfillment.read", cancellationToken);
+    }
+
+    public async Task<SalesOperationResult<SalesReservationResponse>> ReserveOrderAsync(ProcurementRequestContext context, Guid orderId, SalesReservationRequest request, string key, byte[]? expectedOrderVersion = null, CancellationToken cancellationToken = default)
+    {
+        var order = await persistence.GetOrderAsync(context, orderId, cancellationToken);
+        if (order is null) return SalesOperationResult<SalesReservationResponse>.Failure("order_not_found");
+        if (expectedOrderVersion is not null && !order.Version.SequenceEqual(expectedOrderVersion)) return SalesOperationResult<SalesReservationResponse>.Failure("concurrency_conflict");
+        var decision = authorization.Decide(context, "sales.fulfillment.reserve", Scope(context, order.CompanyId, order.BranchId));
+        if (!decision.Allowed) return SalesOperationResult<SalesReservationResponse>.Failure(ScopeFailure(decision.Code, "order_not_found"));
+        if (inventory is null) return SalesOperationResult<SalesReservationResponse>.Failure("inventory_unavailable");
+        if (order.Status != SalesOrderStatus.Confirmed || order.CreditOutcome is SalesCreditOutcome.Blocked or SalesCreditOutcome.Pending or SalesCreditOutcome.Unknown)
+            return SalesOperationResult<SalesReservationResponse>.Failure("order_not_fulfillable");
+        if (request.WarehouseId == Guid.Empty || request.Lines is null || request.Lines.Count == 0 || request.Lines.Any(item => item.OrderLineId == Guid.Empty || item.Quantity <= 0m) || request.Lines.Select(item => item.OrderLineId).Distinct().Count() != request.Lines.Count)
+            return SalesOperationResult<SalesReservationResponse>.Failure("invalid_reservation");
+
+        var inventoryContext = InventoryRequestContext.FromFoundationContext(context.FoundationContext);
+        var result = new List<InventoryReservationRecord>();
+        foreach (var requested in request.Lines)
+        {
+            var line = order.Lines.SingleOrDefault(item => item.Id == requested.OrderLineId);
+            if (line is null || requested.Quantity > line.Quantity) return SalesOperationResult<SalesReservationResponse>.Failure("reservation_quantity_invalid");
+            var source = ReservationSource(order, line.Id);
+            var existingResult = await inventory!.ListSalesReservationsAsync(inventoryContext, source, "sales.fulfillment.reserve", cancellationToken);
+            if (!existingResult.Succeeded || existingResult.Value is null) return SalesOperationResult<SalesReservationResponse>.Failure(existingResult.Code);
+            var existing = existingResult.Value;
+            if (existing.Any(item => item.WarehouseId != request.WarehouseId)) return SalesOperationResult<SalesReservationResponse>.Failure("reservation_warehouse_immutable");
+            var fulfilled = existing.Sum(item => item.FulfilledQuantity);
+            var reserved = existing.Where(item => item.Status == InventoryReservationStatus.Active).Sum(item => item.ReservedQuantity);
+            if (requested.Quantity < fulfilled) return SalesOperationResult<SalesReservationResponse>.Failure("reservation_below_fulfilled");
+            var remaining = Math.Max(0m, requested.Quantity - fulfilled - reserved);
+
+            foreach (var reservation in existing.Where(item => item.Status == InventoryReservationStatus.Active && item.UnallocatedQuantity > 0m).OrderBy(item => item.CreatedAt))
+            {
+                if (remaining == 0m) break;
+                var allocation = Math.Min(remaining, reservation.UnallocatedQuantity);
+                var allocated = await inventory!.AllocateSalesReservationAsync(inventoryContext, reservation, allocation, $"{key}:{line.Id:N}:allocate", cancellationToken);
+                if (!allocated.Succeeded || allocated.Value is null) return SalesOperationResult<SalesReservationResponse>.Failure(allocated.Code);
+                remaining -= allocation;
+            }
+
+            if (remaining > 0m)
+            {
+                var created = await inventory!.CreateSalesReservationAsync(inventoryContext, new InventoryReservationCreateRequest(
+                    order.CompanyId, order.BranchId, request.WarehouseId, line.ProductId, line.UnitOfMeasureId, remaining,
+                    "sales-order", source, true, null, order.Id, line.Id, order.RevisionNumber, line.Quantity), $"{key}:{line.Id:N}:create", cancellationToken);
+                if (!created.Succeeded || created.Value is null) return SalesOperationResult<SalesReservationResponse>.Failure(created.Code);
+            }
+
+            var current = await inventory!.ListSalesReservationsAsync(inventoryContext, source, "sales.fulfillment.reserve", cancellationToken);
+            if (!current.Succeeded || current.Value is null) return SalesOperationResult<SalesReservationResponse>.Failure(current.Code);
+            result.AddRange(current.Value);
+        }
+        return SalesOperationResult<SalesReservationResponse>.Success(new(order.Id, order.RevisionNumber, result));
+    }
+
+    public async Task<SalesOperationResult<SalesDeliveryResponse>> CreateDeliveryAsync(ProcurementRequestContext context, Guid orderId, SalesDeliveryRequest request, string key, byte[]? expectedOrderVersion = null, CancellationToken cancellationToken = default)
+    {
+        var order = await persistence.GetOrderAsync(context, orderId, cancellationToken);
+        if (order is null) return SalesOperationResult<SalesDeliveryResponse>.Failure("order_not_found");
+        if (expectedOrderVersion is not null && !order.Version.SequenceEqual(expectedOrderVersion)) return SalesOperationResult<SalesDeliveryResponse>.Failure("concurrency_conflict");
+        var decision = authorization.Decide(context, "sales.delivery.post", Scope(context, order.CompanyId, order.BranchId));
+        if (!decision.Allowed) return SalesOperationResult<SalesDeliveryResponse>.Failure(ScopeFailure(decision.Code, "order_not_found"));
+        if (inventory is null) return SalesOperationResult<SalesDeliveryResponse>.Failure("inventory_unavailable");
+        if (order.Status != SalesOrderStatus.Confirmed || order.CreditOutcome is SalesCreditOutcome.Blocked or SalesCreditOutcome.Pending or SalesCreditOutcome.Unknown)
+            return SalesOperationResult<SalesDeliveryResponse>.Failure("order_not_fulfillable");
+        if (request.WarehouseId == Guid.Empty || request.DeliveryDate == default || request.Lines is null || request.Lines.Count == 0 || request.Lines.Any(item => item.OrderLineId == Guid.Empty || item.ReservationId == Guid.Empty || item.Quantity <= 0m) || request.Lines.Select(item => item.OrderLineId).Distinct().Count() != request.Lines.Count)
+            return SalesOperationResult<SalesDeliveryResponse>.Failure("invalid_delivery");
+
+        var inventoryContext = InventoryRequestContext.FromFoundationContext(context.FoundationContext);
+        var inventoryLines = new List<InventorySalesDeliveryLineCommand>();
+        foreach (var requested in request.Lines)
+        {
+            var line = order.Lines.SingleOrDefault(item => item.Id == requested.OrderLineId);
+            if (line is null) return SalesOperationResult<SalesDeliveryResponse>.Failure("order_line_not_found");
+            var source = ReservationSource(order, line.Id);
+            var reservations = await inventory!.ListSalesReservationsAsync(inventoryContext, source, "sales.delivery.post", cancellationToken);
+            if (!reservations.Succeeded || reservations.Value is null) return SalesOperationResult<SalesDeliveryResponse>.Failure(reservations.Code);
+            var reservation = reservations.Value.SingleOrDefault(item => item.Id == requested.ReservationId && item.Status == InventoryReservationStatus.Active);
+            if (reservation is null || reservation.WarehouseId != request.WarehouseId || reservation.SourceLineId != line.Id || reservation.SourceDocumentId != order.Id || reservation.SourceRevision != order.RevisionNumber)
+                return SalesOperationResult<SalesDeliveryResponse>.Failure("reservation_not_eligible");
+            if (requested.Quantity > reservation.ReservedQuantity) return SalesOperationResult<SalesDeliveryResponse>.Failure("delivery_exceeds_reserved");
+            inventoryLines.Add(new(reservation.Id, reservation.Version, line.Id, requested.Quantity, source));
+        }
+
+        var deliveryId = Guid.NewGuid();
+        var snapshot = JsonSerializer.Serialize(new { Order = order, Request = request, DeliveryId = deliveryId });
+        var created = await persistence.CreateDeliveryAsync(context, new SalesDeliveryWriteModel(deliveryId, order.Id, order.RevisionNumber, order.CompanyId, order.BranchId, order.CustomerId, request.WarehouseId, request.Lines, snapshot, context.ActorId), key, Fingerprint(request), cancellationToken);
+        if (!created.Succeeded || created.Value is null) return created;
+        var delivery = created.Value;
+        if (delivery.Status == SalesDeliveryStatus.Posted) return created;
+        if (delivery.Status is not (SalesDeliveryStatus.Draft or SalesDeliveryStatus.Unknown)) return SalesOperationResult<SalesDeliveryResponse>.Failure(delivery.ErrorCode ?? "delivery_not_postable");
+        var inventoryKey = delivery.Handoff?.DownstreamIdempotencyKey ?? $"{key}:inventory";
+        var inventoryFingerprint = delivery.Handoff?.DownstreamRequestFingerprint ?? Fingerprint(new { deliveryId = delivery.Id, request });
+        var posted = await inventory!.PostSalesDeliveryAsync(inventoryContext, new InventorySalesDeliveryPostCommand(
+            delivery.Id, order.Id, order.RevisionNumber, string.Join(';', inventoryLines.Select(item => item.SourceReference)), request.DeliveryDate,
+            inventoryLines, context.ActorId, DateTimeOffset.UtcNow, context.CorrelationId?.Value ?? Guid.NewGuid().ToString("N"), inventoryKey, inventoryFingerprint), cancellationToken);
+        if (!posted.Succeeded || posted.Value is null)
+        {
+            await persistence.FailDeliveryAsync(context, delivery.Id, posted.Code, true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", inventoryKey, inventoryFingerprint));
+            return SalesOperationResult<SalesDeliveryResponse>.Failure(posted.Code);
+        }
+        if (posted.Value.TenantId != context.TenantId.Value || posted.Value.SalesOrderRevision != order.RevisionNumber || posted.Value.DeliveryId != delivery.Id || posted.Value.SalesOrderId != order.Id || posted.Value.MovementIds.Count == 0 || posted.Value.MovementIds.Distinct().Count() != posted.Value.MovementIds.Count || posted.Value.PostedQuantity != inventoryLines.Sum(item => item.Quantity))
+        {
+            await persistence.FailDeliveryAsync(context, delivery.Id, "inventory_effect_mismatch", true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", inventoryKey, inventoryFingerprint));
+            return SalesOperationResult<SalesDeliveryResponse>.Failure("inventory_effect_mismatch");
+        }
+        var completed = await persistence.CompleteDeliveryAsync(context, delivery.Id, posted.Value.MovementIds, $"{key}:complete", Fingerprint(new { deliveryId = delivery.Id, posted.Value.MovementIds }), cancellationToken, inventoryKey, inventoryFingerprint);
+        if (!completed.Succeeded)
+        {
+            await persistence.FailDeliveryAsync(context, delivery.Id, "sales_finalization_failed", true, cancellationToken, new SalesDownstreamEvidence(posted.Value.MovementIds, "Committed", "NotAcknowledged", "Required", inventoryKey, inventoryFingerprint));
+            return SalesOperationResult<SalesDeliveryResponse>.Failure("sales_finalization_failed");
+        }
+        return completed;
+    }
+
+    public async Task<SalesOperationResult<SalesInvoiceEligibilityResponse>> EvaluateInvoiceEligibilityAsync(ProcurementRequestContext context, Guid orderId, SalesInvoiceEligibilityRequest request, CancellationToken cancellationToken = default)
+    {
+        var order = await persistence.GetOrderAsync(context, orderId, cancellationToken);
+        if (order is null) return SalesOperationResult<SalesInvoiceEligibilityResponse>.Failure("order_not_found");
+        var decision = authorization.Decide(context, "sales.invoice.eligibility.read", Scope(context, order.CompanyId, order.BranchId));
+        if (!decision.Allowed) return SalesOperationResult<SalesInvoiceEligibilityResponse>.Failure(ScopeFailure(decision.Code, "order_not_found"));
+        var evaluation = await EvaluateInvoiceInternalAsync(context, order, request, "sales.invoice.eligibility.read", null, cancellationToken);
+        return evaluation.Response is null ? SalesOperationResult<SalesInvoiceEligibilityResponse>.Failure(evaluation.Code) : SalesOperationResult<SalesInvoiceEligibilityResponse>.Success(evaluation.Response);
+    }
+
+    public async Task<SalesOperationResult<SalesInvoiceRequestResponse>> CreateInvoiceRequestAsync(ProcurementRequestContext context, Guid orderId, SalesInvoiceEligibilityRequest request, string key, byte[]? expectedOrderVersion = null, CancellationToken cancellationToken = default)
+    {
+        var order = await persistence.GetOrderAsync(context, orderId, cancellationToken);
+        if (order is null) return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("order_not_found");
+        if (expectedOrderVersion is not null && !order.Version.SequenceEqual(expectedOrderVersion)) return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("concurrency_conflict");
+        var decision = authorization.Decide(context, "sales.invoice.request", Scope(context, order.CompanyId, order.BranchId));
+        if (!decision.Allowed) return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(ScopeFailure(decision.Code, "order_not_found"));
+        var requestId = Guid.NewGuid();
+        var evaluation = await EvaluateInvoiceInternalAsync(context, order, request, "sales.invoice.request", requestId, cancellationToken, allowUnknownRecovery: true);
+        if (evaluation.Response is null) return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(evaluation.Code);
+        if (evaluation.Response.Status != SalesInvoiceEligibilityStatus.Eligible || evaluation.FinanceCommand is null)
+            return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(evaluation.Response.Code);
+
+        var snapshot = JsonSerializer.Serialize(new { Order = order, Request = request, Eligibility = evaluation.Response });
+        var created = await persistence.CreateInvoiceRequestAsync(context, new SalesInvoiceRequestWriteModel(requestId, order.Id, order.RevisionNumber, request.DeliveryId, order.CompanyId, order.BranchId, order.CustomerId, request.InvoiceDate, evaluation.Response.TotalAmount, order.CurrencyCode, request.Lines, snapshot, context.ActorId, evaluation.Response.Lines.Sum(item => item.NetAmount), evaluation.Response.Lines.Sum(item => item.TaxAmount), evaluation.Response.PaymentTerm, evaluation.Response.Lines.Select(item => new SalesInvoiceLineEvidence(item.OrderLineId, order.Lines.Single(line => line.Id == item.OrderLineId).Quantity, item.InvoicedQuantity, item.RequestedQuantity, item.NetAmount, item.TaxAmount, item.GrossAmount, item.TaxEvidence, item.Allocations ?? [])).ToArray()), key, Fingerprint(request), cancellationToken);
+        if (!created.Succeeded || created.Value is null) return created;
+        var invoiceRequest = created.Value;
+        if (invoiceRequest.Status == SalesInvoiceRequestStatus.Posted) return created;
+        if (invoiceRequest.Status is not (SalesInvoiceRequestStatus.Pending or SalesInvoiceRequestStatus.Unknown)) return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(invoiceRequest.ErrorCode ?? "invoice_request_not_postable");
+        var financeKey = invoiceRequest.Handoff?.DownstreamIdempotencyKey ?? $"{key}:finance";
+        var financeFingerprint = invoiceRequest.Handoff?.DownstreamRequestFingerprint ?? Fingerprint(new { invoiceRequest.Id, invoiceRequest.OrderId, invoiceRequest.OrderRevisionNumber, invoiceRequest.InvoiceDate, invoiceRequest.CurrencyCode, invoiceRequest.Amount, invoiceRequest.NetAmount, invoiceRequest.TaxAmount, invoiceRequest.LineEvidence, invoiceRequest.PaymentTerm, invoiceRequest.SourceSnapshot });
+        var financeContext = FinanceRequestContext.TryCreate(context.FoundationContext, out var fc) ? fc : null;
+        if (financeContext is null)
+        {
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "finance_context_unavailable", true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", financeKey, financeFingerprint));
+            return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("finance_context_unavailable");
+        }
+        var financeCommand = BuildFinanceCommandFromPersistedInvoiceRequest(order, invoiceRequest, request.InvoiceDate, financeKey, financeFingerprint);
+        if (financeCommand is null)
+        {
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "invoice_source_evidence_missing", true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", financeKey, financeFingerprint));
+            return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("invoice_source_evidence_missing");
+        }
+        var posted = await finance.CreateSalesInvoiceAsync(financeContext, financeCommand, cancellationToken);
+        if (!posted.Succeeded || posted.Value is null)
+        {
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, posted.Code, true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", financeKey, financeFingerprint));
+            return SalesOperationResult<SalesInvoiceRequestResponse>.Failure(posted.Code);
+        }
+        if (!FinanceEffectMatches(context, order, invoiceRequest, posted.Value))
+        {
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "finance_effect_mismatch", true, cancellationToken, new SalesDownstreamEvidence([], "Unknown", "NotAcknowledged", "Required", financeKey, financeFingerprint));
+            return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("finance_effect_mismatch");
+        }
+        var completed = await persistence.CompleteInvoiceRequestAsync(context, invoiceRequest.Id, posted.Value.Id, $"{key}:complete", Fingerprint(new { requestId = invoiceRequest.Id, posted.Value.Id }), cancellationToken, financeKey, financeFingerprint);
+        if (!completed.Succeeded)
+        {
+            await persistence.FailInvoiceRequestAsync(context, invoiceRequest.Id, "sales_finalization_failed", true, cancellationToken, new SalesDownstreamEvidence([posted.Value.Id], "Committed", "NotAcknowledged", "Required", financeKey, financeFingerprint));
+            return SalesOperationResult<SalesInvoiceRequestResponse>.Failure("sales_finalization_failed");
+        }
+        return completed;
+    }
+
+    public Task<IReadOnlyList<SalesDeliveryResponse>> ListDeliveriesAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default) => persistence.ListDeliveriesAsync(context, orderId, cancellationToken);
+    public Task<SalesDeliveryResponse?> GetDeliveryAsync(ProcurementRequestContext context, Guid deliveryId, CancellationToken cancellationToken = default) => persistence.GetDeliveryAsync(context, deliveryId, cancellationToken);
+    public Task<IReadOnlyList<SalesInvoiceRequestResponse>> ListInvoiceRequestsAsync(ProcurementRequestContext context, Guid orderId, CancellationToken cancellationToken = default) => persistence.ListInvoiceRequestsAsync(context, orderId, cancellationToken);
+    public Task<SalesInvoiceRequestResponse?> GetInvoiceRequestAsync(ProcurementRequestContext context, Guid requestId, CancellationToken cancellationToken = default) => persistence.GetInvoiceRequestAsync(context, requestId, cancellationToken);
+
+    private async Task<SalesOperationResult<SalesFulfillmentResponse>> BuildFulfillmentAsync(ProcurementRequestContext context, SalesOrderResponse order, string inventoryOperation, CancellationToken cancellationToken, bool allowUnknownRecovery = false)
+    {
+        if (inventory is null) return SalesOperationResult<SalesFulfillmentResponse>.Failure("inventory_unavailable");
+        InventoryRequestContext inventoryContext;
+        try { inventoryContext = InventoryRequestContext.FromFoundationContext(context.FoundationContext); }
+        catch (ArgumentException) { return SalesOperationResult<SalesFulfillmentResponse>.Failure("inventory_context_unavailable"); }
+        var deliveries = await persistence.ListDeliveriesAsync(context, order.Id, cancellationToken);
+        var invoices = await persistence.ListInvoiceRequestsAsync(context, order.Id, cancellationToken);
+        var lines = new List<SalesFulfillmentLineResponse>(order.Lines.Count);
+        foreach (var line in order.Lines)
+        {
+            var reservations = await inventory!.ListSalesReservationsAsync(inventoryContext, ReservationSource(order, line.Id), inventoryOperation, cancellationToken);
+            if (!reservations.Succeeded || reservations.Value is null) return SalesOperationResult<SalesFulfillmentResponse>.Failure(reservations.Code);
+            var delivered = deliveries.Where(item => item.Status == SalesDeliveryStatus.Posted).SelectMany(item => item.Lines).Where(item => item.OrderLineId == line.Id).Sum(item => item.Quantity);
+            var invoiced = invoices.Where(item => item.Status is SalesInvoiceRequestStatus.Pending or SalesInvoiceRequestStatus.Posted || !allowUnknownRecovery && item.Status == SalesInvoiceRequestStatus.Unknown).SelectMany(item => item.Lines).Where(item => item.OrderLineId == line.Id).Sum(item => item.Quantity);
+            var reserved = reservations.Value.Where(item => item.Status == InventoryReservationStatus.Active).Sum(item => item.ReservedQuantity);
+            var unallocated = reservations.Value.Where(item => item.Status == InventoryReservationStatus.Active).Sum(item => item.UnallocatedQuantity);
+            var fulfilled = reservations.Value.Sum(item => item.FulfilledQuantity);
+            var status = delivered >= line.Quantity ? SalesFulfillmentLineStatus.Delivered
+                : delivered > 0m ? SalesFulfillmentLineStatus.PartiallyDelivered
+                : reserved > 0m && unallocated > 0m ? SalesFulfillmentLineStatus.PartiallyReserved
+                : reserved > 0m ? SalesFulfillmentLineStatus.Reserved
+                : unallocated > 0m ? SalesFulfillmentLineStatus.Backordered
+                : SalesFulfillmentLineStatus.AwaitingReservation;
+            if (fulfilled + reserved + unallocated > line.Quantity || delivered > line.Quantity || invoiced > delivered) return SalesOperationResult<SalesFulfillmentResponse>.Failure("fulfillment_quantity_invariant");
+            lines.Add(new(line.Id, line.Quantity, reserved, unallocated, fulfilled, delivered, invoiced, Math.Max(0m, line.Quantity - delivered), Math.Max(0m, delivered - invoiced), status));
+        }
+        if (!allowUnknownRecovery && invoices.Any(item => item.Status == SalesInvoiceRequestStatus.Unknown))
+            return SalesOperationResult<SalesFulfillmentResponse>.Failure("invoice_source_unknown");
+        return SalesOperationResult<SalesFulfillmentResponse>.Success(new(order.Id, order.RevisionNumber, lines, deliveries, invoices));
+    }
+
+    private async Task<(SalesInvoiceEligibilityResponse? Response, string Code, FinanceSalesInvoiceCommand? FinanceCommand)> EvaluateInvoiceInternalAsync(ProcurementRequestContext context, SalesOrderResponse order, SalesInvoiceEligibilityRequest request, string inventoryOperation, Guid? invoiceRequestId, CancellationToken cancellationToken, bool allowUnknownRecovery = false)
+    {
+        var blocked = (string code) => (new SalesInvoiceEligibilityResponse(order.Id, order.RevisionNumber, SalesInvoiceEligibilityStatus.Blocked, code, 0m, order.CurrencyCode, [], request.InvoiceDate, order.PaymentTerm), code, (FinanceSalesInvoiceCommand?)null);
+        if (order.Status != SalesOrderStatus.Confirmed || order.CreditOutcome is SalesCreditOutcome.Blocked or SalesCreditOutcome.Pending or SalesCreditOutcome.Unknown) return blocked("order_not_invoiceable");
+        if (order.PaymentTerm is null) return blocked("payment_term_not_configured");
+        if (request.PaymentTermId is { } requestedPaymentTermId && requestedPaymentTermId != order.PaymentTerm.Id) return blocked("payment_term_mismatch");
+        if (request.InvoiceDate == default || request.Lines is null || request.Lines.Count == 0 || request.Lines.Any(item => item.OrderLineId == Guid.Empty || item.Quantity <= 0m) || request.Lines.Select(item => item.OrderLineId).Distinct().Count() != request.Lines.Count)
+            return blocked("invalid_invoice_request");
+        if (request.DeliveryId is { } deliveryId)
+        {
+            var delivery = await persistence.GetDeliveryAsync(context, deliveryId, cancellationToken);
+            if (delivery is null || delivery.OrderId != order.Id || delivery.OrderRevisionNumber != order.RevisionNumber || delivery.CompanyId != order.CompanyId || delivery.BranchId != order.BranchId || delivery.CustomerId != order.CustomerId || delivery.Status != SalesDeliveryStatus.Posted) return blocked("delivery_not_posted");
+        }
+        var fulfillment = await BuildFulfillmentAsync(context, order, inventoryOperation, cancellationToken, allowUnknownRecovery);
+        if (!fulfillment.Succeeded || fulfillment.Value is null) return (null, fulfillment.Code, null);
+        var responseLines = new List<SalesInvoiceEligibilityLineResponse>();
+        var invalid = false;
+        foreach (var requested in request.Lines)
+        {
+            var line = order.Lines.SingleOrDefault(item => item.Id == requested.OrderLineId);
+            var state = fulfillment.Value.Lines.SingleOrDefault(item => item.OrderLineId == requested.OrderLineId);
+            if (line is null || state is null || requested.Quantity > state.RemainingInvoiceableQuantity)
+            {
+                invalid = true;
+                if (line is not null && state is not null) responseLines.Add(new(line.Id, state.DeliveredQuantity, state.InvoicedQuantity, requested.Quantity, state.RemainingInvoiceableQuantity, 0m, "blocked"));
+                continue;
+            }
+            var prior = fulfillment.Value.InvoiceRequests.Where(item => item.Status is SalesInvoiceRequestStatus.Pending or SalesInvoiceRequestStatus.Posted).SelectMany(item => item.LineEvidence ?? []).Where(item => item.OrderLineId == line.Id).ToArray();
+            if (fulfillment.Value.InvoiceRequests.Where(item => item.Status is SalesInvoiceRequestStatus.Pending or SalesInvoiceRequestStatus.Posted).SelectMany(item => item.Lines).Any(item => item.OrderLineId == line.Id) && prior.Length == 0) return (null, "invoice_source_evidence_missing", null);
+            var residual = state.InvoicedQuantity + requested.Quantity >= line.Quantity;
+            var priorNet = prior.Sum(item => item.NetAmount);
+            var priorTax = prior.Sum(item => item.TaxAmount);
+            var priorTaxableBase = prior.Sum(item => item.TaxEvidence?.TaxableBase ?? 0m);
+            var net = residual ? decimal.Round(line.LineTotal - priorNet, 2, MidpointRounding.AwayFromZero) : decimal.Round(line.LineTotal * requested.Quantity / line.Quantity, 2, MidpointRounding.AwayFromZero);
+            var tax = residual ? decimal.Round(line.TaxAmount - priorTax, 2, MidpointRounding.AwayFromZero) : decimal.Round(line.TaxAmount * requested.Quantity / line.Quantity, 2, MidpointRounding.AwayFromZero);
+            if (net < 0m || tax < 0m) return (null, "invoice_amount_conflict", null);
+            SalesInvoiceTaxEvidence? taxEvidence = null;
+            if (line.TaxAmount > 0m)
+            {
+                if (line.TaxId is not { } taxId || line.TaxRateVersionId is not { } rateVersionId || line.TaxRateVersionNumber is not { } rateVersionNumber || line.TaxRatePercentage is not { } rate || line.TaxableBase is not { } taxableBase || string.IsNullOrWhiteSpace(line.TaxReferenceValue) || rate < 0m || taxableBase < 0m) return (null, "tax_evidence_missing", null);
+                var currentTaxableBase = residual ? decimal.Round(taxableBase - priorTaxableBase, 2, MidpointRounding.AwayFromZero) : decimal.Round(taxableBase * requested.Quantity / line.Quantity, 2, MidpointRounding.AwayFromZero);
+                taxEvidence = new(taxId, line.TaxCode ?? string.Empty, rateVersionId, rateVersionNumber, line.TaxEffectiveFrom ?? order.PaymentTerm.EffectiveOn, line.TaxEffectiveFrom ?? order.PaymentTerm.EffectiveOn, line.TaxEffectiveTo, rate, currentTaxableBase, tax, line.TaxReferenceValue);
+            }
+            var allocations = BuildInvoiceAllocations(fulfillment.Value, order, requested.OrderLineId, requested.Quantity, request.DeliveryId);
+            if (allocations is null) return (null, "invoice_quantity_conflict", null);
+            responseLines.Add(new(line.Id, state.DeliveredQuantity, state.InvoicedQuantity, requested.Quantity, state.RemainingInvoiceableQuantity, net, "eligible", net, tax, decimal.Round(net + tax, 2, MidpointRounding.AwayFromZero), taxEvidence, allocations));
+        }
+        var total = decimal.Round(responseLines.Sum(item => item.GrossAmount), 2, MidpointRounding.AwayFromZero);
+        var netTotal = decimal.Round(responseLines.Sum(item => item.NetAmount), 2, MidpointRounding.AwayFromZero);
+        var taxTotal = decimal.Round(responseLines.Sum(item => item.TaxAmount), 2, MidpointRounding.AwayFromZero);
+        if (invalid) return (new(order.Id, order.RevisionNumber, responseLines.Count == 0 ? SalesInvoiceEligibilityStatus.Blocked : SalesInvoiceEligibilityStatus.PartiallyEligible, responseLines.Count == 0 ? "invoice_not_eligible" : "partial_invoice_eligibility", total, order.CurrencyCode, responseLines, request.InvoiceDate, order.PaymentTerm), responseLines.Count == 0 ? "invoice_not_eligible" : "partial_invoice_eligibility", null);
+        var requestId = invoiceRequestId ?? Guid.NewGuid();
+        if (!FinanceRequestContext.TryCreate(context.FoundationContext, out var financeContext) || financeContext is null) return (null, "finance_context_unavailable", null);
+        var company = companies.List(context.TenantId).FirstOrDefault(item => item.CompanyId == order.CompanyId && item.BranchId == order.BranchId && item.IsActive);
+        if (company is null) return (null, "finance_company_unavailable", null);
+        var currency = NormalizeCurrencyCode(order.CurrencyCode);
+        if (currency is null) return (null, "invoice_currency_invalid", null);
+        var exchange = order.ExchangeRateEvidence;
+        var paymentTerm = ResolveFinancePaymentTerm(order.PaymentTerm, request.InvoiceDate);
+        if (paymentTerm is null) return (null, "payment_term_not_configured", null);
+        var financeLines = responseLines.Select(item => new FinanceSalesInvoiceLine(item.OrderLineId, item.RequestedQuantity, item.NetAmount, item.TaxAmount, item.GrossAmount, item.TaxEvidence?.TaxId, item.TaxEvidence?.TaxCode, item.TaxEvidence?.RateVersionId, item.TaxEvidence?.RateVersionNumber, item.TaxEvidence?.EffectiveFrom, item.TaxEvidence?.EffectiveTo, item.TaxEvidence?.RatePercentage, item.TaxEvidence?.TaxableBase, item.TaxEvidence?.ReferenceValue)).ToArray();
+        var financeCommand = new FinanceSalesInvoiceCommand(order.CompanyId, order.CustomerId, order.Id, order.RevisionNumber, requestId, request.InvoiceDate, order.PaymentTerm.Id, currency, total, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.Rate, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.ExchangeRateId, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.ExchangeRateVersionId, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.VersionNumber, JsonSerializer.Serialize(new { Order = order, DeliveryId = request.DeliveryId, Lines = responseLines, PaymentTerm = order.PaymentTerm }), null, $"sales-invoice:{requestId:N}", Fingerprint(request), netTotal, taxTotal, financeLines, paymentTerm);
+        var financeEligibility = await finance.EvaluateSalesInvoiceAsync(financeContext, financeCommand, cancellationToken);
+        if (!financeEligibility.Succeeded || financeEligibility.Value is null) return (null, financeEligibility.Code, null);
+        return (new(order.Id, order.RevisionNumber, SalesInvoiceEligibilityStatus.Eligible, "eligible", total, currency, responseLines, request.InvoiceDate, order.PaymentTerm), "eligible", financeCommand);
+    }
+
+    private FinanceSalesInvoiceCommand? BuildFinanceCommandFromPersistedInvoiceRequest(SalesOrderResponse order, SalesInvoiceRequestResponse invoice, DateOnly fallbackInvoiceDate, string idempotencyKey, string requestFingerprint)
+    {
+        var company = companies.List(new TenantId(invoice.TenantId)).FirstOrDefault(item => item.CompanyId == order.CompanyId && item.BranchId == order.BranchId && item.IsActive);
+        var currency = NormalizeCurrencyCode(string.IsNullOrWhiteSpace(invoice.CurrencyCode) ? order.CurrencyCode : invoice.CurrencyCode);
+        var paymentTerm = invoice.PaymentTerm ?? order.PaymentTerm;
+        var invoiceDate = invoice.InvoiceDate == default ? fallbackInvoiceDate : invoice.InvoiceDate;
+        if (company is null || currency is null || paymentTerm is null || invoice.Amount <= 0m || invoice.LineEvidence is null || invoice.LineEvidence.Count == 0 || string.IsNullOrWhiteSpace(invoice.SourceSnapshot)) return null;
+        var paymentTermSnapshot = ResolveFinancePaymentTerm(paymentTerm, invoiceDate);
+        if (paymentTermSnapshot is null) return null;
+        var exchange = order.ExchangeRateEvidence;
+        var lines = invoice.LineEvidence.Select(item => new FinanceSalesInvoiceLine(item.OrderLineId, item.RequestedQuantity, item.NetAmount, item.TaxAmount, item.GrossAmount, item.TaxEvidence?.TaxId, item.TaxEvidence?.TaxCode, item.TaxEvidence?.RateVersionId, item.TaxEvidence?.RateVersionNumber, item.TaxEvidence?.EffectiveFrom, item.TaxEvidence?.EffectiveTo, item.TaxEvidence?.RatePercentage, item.TaxEvidence?.TaxableBase, item.TaxEvidence?.ReferenceValue)).ToArray();
+        return new FinanceSalesInvoiceCommand(order.CompanyId, order.CustomerId, order.Id, order.RevisionNumber, invoice.Id, invoiceDate, paymentTerm.Id, currency, invoice.Amount, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.Rate, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.ExchangeRateId, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.ExchangeRateVersionId, currency.Equals(company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : exchange?.VersionNumber, invoice.SourceSnapshot, $"sales-invoice:{invoice.Id:N}", idempotencyKey, requestFingerprint, invoice.NetAmount, invoice.TaxAmount, lines, paymentTermSnapshot);
+    }
+
+    private static bool FinanceEffectMatches(ProcurementRequestContext context, SalesOrderResponse order, SalesInvoiceRequestResponse invoice, FinanceOpenItemRecord effect) =>
+        effect.TenantId == context.TenantId.Value
+        && effect.CompanyId == order.CompanyId
+        && effect.CustomerId == order.CustomerId
+        && effect.Kind == FinanceOpenItemKind.Receivable
+        && effect.SourceContract == "sales-invoice.v1"
+        && effect.SourceDocumentId == order.Id
+        && effect.SourceDocumentVersion == order.RevisionNumber
+        && effect.SourceEvidenceId == invoice.Id
+        && effect.SourceEvidenceVersion == 1
+        && effect.DocumentDate == invoice.InvoiceDate
+        && effect.CurrencyCode.Equals(string.IsNullOrWhiteSpace(invoice.CurrencyCode) ? order.CurrencyCode : invoice.CurrencyCode, StringComparison.OrdinalIgnoreCase)
+        && effect.OriginalAmount == invoice.Amount
+        && effect.PaymentTerm?.Id == invoice.PaymentTerm?.Id
+        && effect.PaymentTerm?.VersionId == invoice.PaymentTerm?.VersionId;
+
+    private static IReadOnlyList<SalesInvoiceSourceAllocation>? BuildInvoiceAllocations(SalesFulfillmentResponse fulfillment, SalesOrderResponse order, Guid orderLineId, decimal quantity, Guid? selectedDeliveryId)
+    {
+        var existing = fulfillment.InvoiceRequests.Where(item => item.Status is SalesInvoiceRequestStatus.Pending or SalesInvoiceRequestStatus.Posted).SelectMany(item => item.LineEvidence ?? []).SelectMany(item => item.Allocations).Where(item => item.OrderLineId == orderLineId).ToArray();
+        var sources = (selectedDeliveryId is { } selected ? fulfillment.Deliveries.Where(item => item.Id == selected) : fulfillment.Deliveries).Where(item => item.Status == SalesDeliveryStatus.Posted).OrderBy(item => item.CreatedAt).ThenBy(item => item.Id);
+        var remaining = quantity;
+        var result = new List<SalesInvoiceSourceAllocation>();
+        foreach (var delivery in sources)
+        {
+            var sourceQuantity = delivery.Lines.Where(item => item.OrderLineId == orderLineId).Sum(item => item.Quantity);
+            var prior = existing.Where(item => item.DeliveryId == delivery.Id && item.OrderRevisionNumber == order.RevisionNumber).Sum(item => item.ConsumedQuantity);
+            var available = Math.Max(0m, sourceQuantity - prior);
+            var consumed = Math.Min(remaining, available);
+            if (consumed > 0m) result.Add(new(delivery.Id, orderLineId, order.RevisionNumber, sourceQuantity, prior, consumed, Math.Max(0m, available - consumed)));
+            remaining -= consumed;
+            if (remaining == 0m) break;
+        }
+        return remaining == 0m ? result : null;
+    }
+
+    private static FinancePaymentTermSnapshotRecord? ResolveFinancePaymentTerm(SalesPaymentTermSnapshot term, DateOnly invoiceDate)
+    {
+        if (term.BaseDateRule is not (PaymentTermBaseDateRule.DocumentDate or PaymentTermBaseDateRule.InvoiceDate)) return null;
+        var baseDate = invoiceDate;
+        var due = term.ScheduleMode == PaymentTermScheduleMode.SingleDueDate
+            ? baseDate.AddMonths(term.DueOffsetMonths).AddDays(term.DueOffsetDays)
+            : term.Installments?.OrderBy(item => item.Sequence).Select(item => baseDate.AddMonths(item.Months).AddDays(item.Days)).LastOrDefault(baseDate) ?? baseDate;
+        return new(term.Id, term.Code, term.EnglishName, term.ArabicName, term.VersionNumber, term.VersionId, invoiceDate, due);
+    }
+
+    private static string ReservationSource(SalesOrderResponse order, Guid lineId) => $"sales-order:{order.Id:N}:revision:{order.RevisionNumber}:line:{lineId:N}";
 
     private async Task<SalesApprovalPolicyDefinition?> ResolveTransitionPolicyAsync(
         ProcurementRequestContext context,
@@ -1012,7 +1428,7 @@ public sealed class SalesService(
         }
     }
 
-    private async Task<SalesQuotationWriteModel?> BuildModelAsync(ProcurementRequestContext context, Guid id, Guid companyId, Guid? branchId, Guid customerId, DateOnly quotationDate, DateOnly validUntil, Guid currencyId, Guid? priceListId, Guid? exchangeRateId, string? contactId, string? notes, string? reference, IReadOnlyList<SalesQuotationLineRequest> lineRequests, CancellationToken cancellationToken, string documentType = "quotation")
+    private async Task<SalesQuotationWriteModel?> BuildModelAsync(ProcurementRequestContext context, Guid id, Guid companyId, Guid? branchId, Guid customerId, DateOnly quotationDate, DateOnly validUntil, Guid currencyId, Guid? priceListId, Guid? exchangeRateId, string? contactId, string? notes, string? reference, IReadOnlyList<SalesQuotationLineRequest> lineRequests, CancellationToken cancellationToken, string documentType = "quotation", SalesPaymentTermSnapshot? paymentTerm = null, Guid? paymentTermId = null)
     {
         if (companyId == Guid.Empty || customerId == Guid.Empty || currencyId == Guid.Empty || validUntil < quotationDate || lineRequests is null || lineRequests.Count == 0 || lineRequests.Count > 500) return null;
         var company = companies.List(context.TenantId).FirstOrDefault(item => item.CompanyId == companyId && item.BranchId == branchId);
@@ -1077,11 +1493,26 @@ public sealed class SalesService(
         }
         if (!isFunctionalCurrency && exchangeRate is null) return null;
         if (isFunctionalCurrency && exchangeRateId is not null) return null;
+        if (paymentTermId is { } requestedPaymentTermId)
+        {
+            paymentTerm = await ResolvePaymentTermAsync(context, requestedPaymentTermId, quotationDate, cancellationToken);
+            if (paymentTerm is null) return null;
+        }
         var subtotal = decimal.Round(lines.Sum(item => item.UnitPrice * item.Quantity), 2, MidpointRounding.AwayFromZero);
         var discount = decimal.Round(lines.Sum(item => item.DiscountAmount), 2, MidpointRounding.AwayFromZero);
         var taxAmount = decimal.Round(lines.Sum(item => item.TaxAmount), 2, MidpointRounding.AwayFromZero);
         var total = decimal.Round(subtotal - discount + taxAmount, 2, MidpointRounding.AwayFromZero);
-        return new(id, companyId, branchId, customerId, customer.Code, customer.TradingName?.English ?? customer.TradingName?.Arabic ?? customer.LegalName.English ?? customer.LegalName.Arabic ?? customer.Code, quotationDate, validUntil, currencyId, currencyCode, contactId, notes, reference, lines, subtotal, discount, taxAmount, total, null, exchangeRate);
+        return new(id, companyId, branchId, customerId, customer.Code, customer.TradingName?.English ?? customer.TradingName?.Arabic ?? customer.LegalName.English ?? customer.LegalName.Arabic ?? customer.Code, quotationDate, validUntil, currencyId, currencyCode, contactId, notes, reference, lines, subtotal, discount, taxAmount, total, null, exchangeRate, paymentTerm);
+    }
+
+    private async Task<SalesPaymentTermSnapshot?> ResolvePaymentTermAsync(ProcurementRequestContext context, Guid paymentTermId, DateOnly effectiveOn, CancellationToken cancellationToken)
+    {
+        if (paymentTerms is null || paymentTermId == Guid.Empty) return null;
+        var term = await paymentTerms.FindPaymentTermAsync(context.TenantContext, paymentTermId, cancellationToken);
+        if (term is null || term.TenantId.Value != context.TenantId.Value || term.LifecycleState != MasterDataLifecycleState.Active || string.IsNullOrWhiteSpace(term.Code)) return null;
+        var version = term.Versions.Where(item => item.EffectiveFrom <= effectiveOn && (item.EffectiveTo is null || effectiveOn <= item.EffectiveTo.Value)).OrderByDescending(item => item.VersionNumber).FirstOrDefault();
+        if (version is null || version.Id == Guid.Empty || version.VersionNumber <= 0) return null;
+        return new(term.Id, term.Code, version.Name.English ?? version.Code, version.Name.Arabic, version.Id, version.VersionNumber, effectiveOn, version.EffectiveFrom, version.EffectiveTo, version.BaseDateRule, version.ScheduleMode, version.DueOffset.Days, version.DueOffset.Months, "masterdata.payment-term", $"{term.Code};v{version.VersionNumber}", version.Installments.Select(item => new SalesPaymentTermInstallmentSnapshot(item.Sequence, item.Percentage, item.Offset.Days, item.Offset.Months)).ToArray());
     }
 
     private async Task<SalesExchangeRateEvidence?> ResolveExchangeRateAsync(ProcurementRequestContext context, Guid? exchangeRateId, string sourceCurrencyCode, string targetCurrencyCode, DateOnly effectiveOn, CancellationToken cancellationToken)

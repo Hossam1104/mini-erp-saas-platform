@@ -1,0 +1,7 @@
+project_name: "mini-erp-saas-platform"
+language_servers:
+  - csharp
+ignore_all_files_in_gitignore: true
+ls_workspace_folders:
+  - "."
+read_only: false

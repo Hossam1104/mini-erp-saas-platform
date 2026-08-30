@@ -349,7 +349,8 @@ public sealed class SqlServerSafetyTests
                     "20260823104702_MESP130InventoryCountLedgerFence",
                     "20260823124304_MESP131MovingWeightedAverageValuation",
                     "20260823180537_MESP131SolFinancialIntegrityRemediation",
-                    "20260823225921_MESP131SolFinalValuationIntegrity"
+                    "20260823225921_MESP131SolFinalValuationIntegrity",
+                    "20260829150156_MESP137ReservationFulfillment"
                 ],
                 (await inventory.Database.GetAppliedMigrationsAsync()).ToArray());
             Assert.Empty(await inventory.Database.GetPendingMigrationsAsync());

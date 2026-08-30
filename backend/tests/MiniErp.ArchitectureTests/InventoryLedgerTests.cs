@@ -492,6 +492,70 @@ public sealed class InventoryLedgerTests
     }
 
     [Fact]
+    public async Task Sales_delivery_consumes_reservation_partially_then_fulfills_it_idempotently()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder().UseSqlite(connection).Options;
+        var context = Context(TenantA, new ScopeReference($"Warehouse:{WarehouseA:D}"));
+        var scope = new InventoryScope(TenantA, CompanyA, null, WarehouseA);
+        var persistence = new InventoryPersistence(options);
+        await EnsureInventoryCreatedAsync(options, context);
+        await SeedStockAsync(options, context, WarehouseA, 10m);
+
+        var salesOrderId = Guid.NewGuid();
+        var salesLineId = Guid.NewGuid();
+        var sourceReference = "SO-MESP137-001";
+        var reservation = Assert.IsType<InventoryReservationRecord>(await persistence.CreateReservationAsync(
+            context,
+            new InventoryReservationCommand(
+                Guid.NewGuid(), scope, ProductA, UnitA, 5m, "SalesOrder", sourceReference, true, null,
+                Product(), Warehouse().Code, Warehouse().Name, Actor, DateTimeOffset.UtcNow,
+                "sales-reservation", "sales-reservation-key", "sales-reservation-fingerprint",
+                salesOrderId, salesLineId, 1, 5m),
+            10m));
+        Assert.Null(await persistence.CreateReservationAsync(
+            context,
+            new InventoryReservationCommand(
+                Guid.NewGuid(), scope, ProductA, UnitA, 1m, "SalesOrder", sourceReference, true, null,
+                Product(), Warehouse().Code, Warehouse().Name, Actor, DateTimeOffset.UtcNow,
+                "sales-reservation-2", "sales-reservation-key-2", "sales-reservation-fingerprint-2",
+                salesOrderId, salesLineId, 1, 5m),
+            10m));
+
+        var firstDelivery = new InventorySalesDeliveryPostCommand(
+            Guid.NewGuid(), salesOrderId, 1, sourceReference, new DateOnly(2026, 8, 29),
+            [new InventorySalesDeliveryLineCommand(reservation.Id, reservation.Version, salesLineId, 3m, sourceReference)],
+            Actor, DateTimeOffset.UtcNow, "sales-delivery-1", "sales-delivery-1-key", "sales-delivery-1-fingerprint");
+        var firstPost = Assert.IsType<InventorySalesDeliveryPostingRecord>(await persistence.PostSalesDeliveryAsync(context, firstDelivery));
+        Assert.Equal(3m, firstPost.PostedQuantity);
+        var afterFirst = Assert.IsType<InventoryReservationRecord>(await persistence.FindReservationAsync(context, reservation.Id));
+        Assert.Equal(2m, afterFirst.ReservedQuantity);
+        Assert.Equal(3m, afterFirst.FulfilledQuantity);
+        Assert.Equal(InventoryReservationStatus.Active, afterFirst.Status);
+
+        var replay = Assert.IsType<InventorySalesDeliveryPostingRecord>(await persistence.PostSalesDeliveryAsync(context, firstDelivery));
+        Assert.Equal(firstPost.MovementIds, replay.MovementIds);
+
+        var secondDelivery = firstDelivery with
+        {
+            DeliveryId = Guid.NewGuid(),
+            Lines = [new InventorySalesDeliveryLineCommand(afterFirst.Id, afterFirst.Version, salesLineId, 2m, sourceReference)],
+            CorrelationId = "sales-delivery-2",
+            IdempotencyKey = "sales-delivery-2-key",
+            RequestFingerprint = "sales-delivery-2-fingerprint"
+        };
+        var secondPost = Assert.IsType<InventorySalesDeliveryPostingRecord>(await persistence.PostSalesDeliveryAsync(context, secondDelivery));
+        Assert.Equal(2m, secondPost.PostedQuantity);
+        var fulfilled = Assert.IsType<InventoryReservationRecord>(await persistence.FindReservationAsync(context, reservation.Id));
+        Assert.Equal(5m, fulfilled.FulfilledQuantity);
+        Assert.Equal(0m, fulfilled.ReservedQuantity);
+        Assert.Equal(InventoryReservationStatus.Fulfilled, fulfilled.Status);
+        Assert.Equal(2, (await persistence.ListMovementsAsync(context, scope)).Count(item => item.SourceType == InventoryMovementSourceType.SalesDelivery));
+        Assert.Equal(3, (await persistence.ReadReservationHistoryAsync(context, reservation.Id)).Count);
+    }
+
+    [Fact]
     public async Task Opening_correction_reverses_all_rows_cumulatively_for_one_stock_identity()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

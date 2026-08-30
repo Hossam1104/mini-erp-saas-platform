@@ -13,6 +13,12 @@ import {
   SalesOrderEditRequest,
   SalesOrderStatus,
   SalesOrderSummaryResponse,
+  SalesDeliveryResponse,
+  SalesFulfillmentResponse,
+  SalesInvoiceEligibilityRequest,
+  SalesInvoiceEligibilityResponse,
+  SalesInvoiceRequestResponse,
+  SalesReservationRequest,
   SalesQuotationCreateRequest,
   SalesQuotationEditRequest,
   SalesQuotationResponse,
@@ -43,6 +49,9 @@ export class SalesService {
   orderHistory(id: string): Observable<SalesHistoryResponse[]> { return this.api.get<SalesHistoryResponse[]>(`/sales/orders/${id}/history`); }
   orderAudit(id: string): Observable<SalesAuditResponse[]> { return this.api.get<SalesAuditResponse[]>(`/sales/orders/${id}/audit`); }
   orderCredit(id: string): Observable<SalesCreditResponse> { return this.api.get<SalesCreditResponse>(`/sales/orders/${id}/credit`); }
+  fulfillment(id: string): Observable<SalesFulfillmentResponse> { return this.api.get<SalesFulfillmentResponse>(`/sales/orders/${id}/fulfillment`); }
+  delivery(id: string): Observable<SalesDeliveryResponse> { return this.api.get<SalesDeliveryResponse>(`/sales/deliveries/${id}`); }
+  invoiceRequest(id: string): Observable<SalesInvoiceRequestResponse> { return this.api.get<SalesInvoiceRequestResponse>(`/sales/invoice-requests/${id}`); }
 
   createQuotation(payload: SalesQuotationCreateRequest): Promise<SalesQuotationResponse> { return this.mutate('/sales/quotations', payload); }
   editQuotation(id: string, payload: SalesQuotationEditRequest, version: string): Promise<SalesQuotationResponse> { return this.mutate(`/sales/quotations/${id}/edit`, payload, version); }
@@ -58,6 +67,10 @@ export class SalesService {
   }
 
   overrideCredit(id: string, payload: SalesCreditOverrideRequest, version: string): Promise<SalesOrderResponse> { return this.mutate(`/sales/orders/${id}/credit/override`, payload, version); }
+  reserveOrder(id: string, payload: SalesReservationRequest, version: string): Promise<unknown> { return this.mutate(`/sales/orders/${id}/reservations`, payload, version); }
+  postDelivery(id: string, payload: { warehouseId: string; deliveryDate: string; lines: Array<{ orderLineId: string; reservationId: string; quantity: number }> }, version: string): Promise<SalesDeliveryResponse> { return this.mutate(`/sales/orders/${id}/deliveries`, payload, version); }
+  evaluateInvoiceEligibility(id: string, payload: SalesInvoiceEligibilityRequest): Observable<SalesInvoiceEligibilityResponse> { return this.api.post<SalesInvoiceEligibilityResponse>(`/sales/orders/${id}/invoice-eligibility`, payload); }
+  requestInvoice(id: string, payload: SalesInvoiceEligibilityRequest, version: string): Promise<SalesInvoiceRequestResponse> { return this.mutate(`/sales/orders/${id}/invoice-requests`, payload, version); }
 
   private async mutate<T>(path: string, payload: unknown, version?: string): Promise<T> {
     const antiforgeryReady = await this.auth.bootstrapAntiforgery();

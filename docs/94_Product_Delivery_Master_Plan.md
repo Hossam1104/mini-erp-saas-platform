@@ -14,12 +14,13 @@
 > is complete, reviewed by Claude Opus 5 (APPROVE FOR MERGE), and squash-merged to `main`
 > at commit `c742d9c897edb715c7e3c25df7e9ca2c4f30d1e6` (PR #68).
 >
-> No feature implementation is active. MESP-136 is accepted/merged/closed and
-> MESP-144 is the current In Progress repository-health checkpoint. The
+> No feature implementation is active. MESP-136 and MESP-137 are
+> accepted/merged/closed and MESP-144 is the current In Progress
+> repository-health checkpoint. The
 > dedicated branch is `chore/project-health-reconciliation-cleanup`, starting
 > from `c8c9084d2cf72550e7a51e4ab9475ef54d14e864`. Fast-track progress is
-> 20/26 = 76.9%; production readiness remains approximately 47% overall and
-> 41% Procurement/P2P. MESP-137 through MESP-142 remain To Do/inactive.
+> 21/26 = 80.8%; production readiness remains approximately 47% overall and
+> 41% Procurement/P2P. MESP-138 through MESP-142 remain To Do/inactive.
 >
 > **Authoritative current project-state overlay - 30 August 2026.** MESP-137
 > is Done, independently accepted, and squash-merged through PR #84 from
@@ -28,8 +29,9 @@
 > documentation reconciliation to `main` at
 > `4d6e33189a3835d5d8d2a58736055a837a3f5bc9`.
 >
-> MESP-144 remains the active In Progress repository-health checkpoint. Draft
-> PR #82 remains Open/Unmerged for independent Sol review. No feature
+> MESP-144 remains the active In Progress repository-health checkpoint under
+> Sol HOLD 3 comment `12288`. Draft PR #82 remains Open/Unmerged for
+> independent Sol review at the executor handoff. No feature
 > implementation capability is active; MESP-138 through MESP-142 remain
 > To Do/inactive, and MESP-48/MESP-50 remain open production gates. Accepted
 > fast-track completion is 21/26 (80.8%); production readiness remains
