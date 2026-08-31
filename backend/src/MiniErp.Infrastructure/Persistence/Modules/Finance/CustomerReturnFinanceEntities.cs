@@ -7,7 +7,13 @@ namespace MiniErp.Infrastructure.Persistence.Modules.Finance;
 
 internal sealed class FinanceCreditNoteEntity : FinanceEntity
 {
-    private FinanceCreditNoteEntity() { CurrencyCode = FunctionalCurrencyCode = SourceEvidence = HandoffState = TaxReversalJournalIdsJson = string.Empty; Lines = []; }
+    private FinanceCreditNoteEntity()
+    {
+        CurrencyCode = FunctionalCurrencyCode = SourceEvidence = HandoffState = TaxReversalJournalIdsJson = string.Empty;
+        FinanceCommitState = SalesAcknowledgementState = ReconciliationState = "Pending";
+        ReversalFinanceCommitState = ReversalSalesAcknowledgementState = ReversalReconciliationState = "Pending";
+        Lines = [];
+    }
     internal FinanceCreditNoteEntity(TenantId tenantId, FinanceCreditNoteCreateRequest request, Guid id, Guid deliveryId, Guid? invoiceId, Guid financeOpenItemId, Guid companyId, Guid customerId, string currencyCode, string functionalCurrencyCode, decimal net, decimal tax, decimal gross, decimal functionalAmount, string evidence, decimal? exchangeRate = null, Guid? exchangeRateId = null, Guid? exchangeRateVersionId = null, int? exchangeRateVersionNumber = null) : base(tenantId, id)
     { SalesCustomerReturnId = request.SalesCustomerReturnId; DeliveryId = deliveryId; InvoiceId = invoiceId; FinanceOpenItemId = financeOpenItemId; CompanyId = companyId; CustomerId = customerId; Status = FinanceCreditNoteStatus.Draft; CurrencyCode = currencyCode; FunctionalCurrencyCode = functionalCurrencyCode; NetAmount = net; TaxAmount = tax; GrossAmount = gross; FunctionalAmount = functionalAmount; ExchangeRate = exchangeRate; ExchangeRateId = exchangeRateId; ExchangeRateVersionId = exchangeRateVersionId; ExchangeRateVersionNumber = exchangeRateVersionNumber; SourceEvidence = evidence; HandoffState = "NotCommitted"; TaxReversalJournalIdsJson = "[]"; CreditNoteDate = request.CreditNoteDate; Reason = request.Reason; CreatedAt = DateTimeOffset.UtcNow; }
     internal Guid SalesCustomerReturnId { get; private set; }
@@ -37,12 +43,81 @@ internal sealed class FinanceCreditNoteEntity : FinanceEntity
     internal Guid? PostingJournalId { get; private set; }
     internal Guid? ReversalJournalId { get; private set; }
     internal string TaxReversalJournalIdsJson { get; private set; }
+    internal string FinanceCommitState { get; private set; } = "NotCommitted";
+    internal string SalesAcknowledgementState { get; private set; } = "NotAcknowledged";
+    internal string ReconciliationState { get; private set; } = "Pending";
+    internal Guid? FinanceEffectId { get; private set; }
+    internal string? EffectFingerprint { get; private set; }
+    internal string? RequestFingerprint { get; private set; }
+    internal string? SourceFingerprint { get; private set; }
+    internal string? DownstreamIdempotencyKey { get; private set; }
+    internal int AttemptCount { get; private set; }
+    internal string? LastError { get; private set; }
+    internal DateTimeOffset? LastAttemptAt { get; private set; }
+    internal DateTimeOffset? AcknowledgedAt { get; private set; }
+    internal string ReversalFinanceCommitState { get; private set; } = "NotCommitted";
+    internal string ReversalSalesAcknowledgementState { get; private set; } = "NotAcknowledged";
+    internal string ReversalReconciliationState { get; private set; } = "Pending";
+    internal Guid? ReversalFinanceEffectId { get; private set; }
+    internal string? ReversalEffectFingerprint { get; private set; }
+    internal string? ReversalRequestFingerprint { get; private set; }
+    internal string? ReversalDownstreamIdempotencyKey { get; private set; }
+    internal int ReversalAttemptCount { get; private set; }
+    internal string? ReversalLastError { get; private set; }
+    internal DateTimeOffset? ReversalLastAttemptAt { get; private set; }
+    internal DateTimeOffset? ReversalAcknowledgedAt { get; private set; }
     internal List<FinanceCreditNoteLineEntity> Lines { get; private set; } = [];
     internal void SetStatus(FinanceCreditNoteStatus status, DateTimeOffset at) { Status = status; if (status == FinanceCreditNoteStatus.Posted) PostedAt = at; HandoffState = status == FinanceCreditNoteStatus.Posted ? "Committed" : status is FinanceCreditNoteStatus.Unknown or FinanceCreditNoteStatus.ReconciliationRequired ? "ReconciliationRequired" : HandoffState; TouchVersion(); }
     internal void SetCredit(Guid id) { CustomerCreditId = id; TouchVersion(); }
     internal void SetPostingJournal(Guid id) { PostingJournalId = id; TouchVersion(); }
     internal void SetReversalJournal(Guid id) { ReversalJournalId = id; TouchVersion(); }
     internal void SetTaxReversalJournals(IEnumerable<Guid> ids) { TaxReversalJournalIdsJson = System.Text.Json.JsonSerializer.Serialize(ids.Distinct()); TouchVersion(); }
+    internal void SetPostCoordination(Guid effectId, string effectFingerprint, string requestFingerprint, string sourceFingerprint, string downstreamIdempotencyKey)
+    {
+        FinanceCommitState = "Committed";
+        SalesAcknowledgementState = "NotAcknowledged";
+        ReconciliationState = "Required";
+        FinanceEffectId = effectId;
+        EffectFingerprint = effectFingerprint;
+        RequestFingerprint = requestFingerprint;
+        SourceFingerprint = sourceFingerprint;
+        DownstreamIdempotencyKey = downstreamIdempotencyKey;
+        LastError = null;
+        TouchVersion();
+    }
+    internal void RecordPostAcknowledgement(bool acknowledged, string? error, DateTimeOffset at)
+    {
+        SalesAcknowledgementState = acknowledged ? "Acknowledged" : "NotAcknowledged";
+        ReconciliationState = acknowledged ? "Reconciled" : "Required";
+        LastError = acknowledged ? null : error;
+        AttemptCount++;
+        LastAttemptAt = at;
+        AcknowledgedAt = acknowledged ? at : AcknowledgedAt;
+        HandoffState = acknowledged ? "Committed" : "ReconciliationRequired";
+        TouchVersion();
+    }
+    internal void SetReversalCoordination(Guid effectId, string effectFingerprint, string requestFingerprint, string downstreamIdempotencyKey)
+    {
+        ReversalFinanceCommitState = "Committed";
+        ReversalSalesAcknowledgementState = "NotAcknowledged";
+        ReversalReconciliationState = "Required";
+        ReversalFinanceEffectId = effectId;
+        ReversalEffectFingerprint = effectFingerprint;
+        ReversalRequestFingerprint = requestFingerprint;
+        ReversalDownstreamIdempotencyKey = downstreamIdempotencyKey;
+        ReversalLastError = null;
+        TouchVersion();
+    }
+    internal void RecordReversalAcknowledgement(bool acknowledged, string? error, DateTimeOffset at)
+    {
+        ReversalSalesAcknowledgementState = acknowledged ? "Acknowledged" : "NotAcknowledged";
+        ReversalReconciliationState = acknowledged ? "Reconciled" : "Required";
+        ReversalLastError = acknowledged ? null : error;
+        ReversalAttemptCount++;
+        ReversalLastAttemptAt = at;
+        ReversalAcknowledgedAt = acknowledged ? at : ReversalAcknowledgedAt;
+        TouchVersion();
+    }
 }
 
 internal sealed class FinanceCreditNoteLineEntity : FinanceEntity

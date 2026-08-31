@@ -15,6 +15,7 @@ internal sealed class SalesCustomerReturnEntity : ITenantOwned
         EvidenceJson = "[]";
         HandoffJson = "{}";
         FinanceCreditNoteIdsJson = "[]";
+        FinanceReversedCreditNoteIdsJson = "[]";
     }
 
     internal SalesCustomerReturnEntity(TenantId tenantId, Guid id, SalesCustomerReturnCreateRequest request, SalesCustomerReturnSourceRecord source, Guid actorId, DateTimeOffset at)
@@ -82,6 +83,7 @@ internal sealed class SalesCustomerReturnEntity : ITenantOwned
     internal string FinanceEffectState { get; private set; } = "NotRequired";
     internal int ActiveFinanceCreditNoteCount { get; private set; }
     internal string FinanceCreditNoteIdsJson { get; private set; } = "[]";
+    internal string FinanceReversedCreditNoteIdsJson { get; private set; } = "[]";
     internal Guid CreatedByActorId { get; private set; }
     internal DateTimeOffset CreatedAt { get; private set; }
     internal DateTimeOffset UpdatedAt { get; private set; }
@@ -155,8 +157,29 @@ internal sealed class SalesCustomerReturnEntity : ITenantOwned
         }
         else if (string.Equals(command.Downstream, "finance", StringComparison.OrdinalIgnoreCase))
         {
-            if (ActiveFinanceCreditNoteCount == 0) throw new InvalidOperationException("finance_effect_mismatch");
-            ActiveFinanceCreditNoteCount = Math.Max(0, ActiveFinanceCreditNoteCount - 1);
+            var activeIds = JsonSerializer.Deserialize<IReadOnlyList<Guid>>(FinanceCreditNoteIdsJson) ?? [];
+            var reversedIds = JsonSerializer.Deserialize<IReadOnlyList<Guid>>(FinanceReversedCreditNoteIdsJson) ?? [];
+            if (command.CreditNoteId is { } creditNoteId)
+            {
+                if (creditNoteId == Guid.Empty || command.ReversalJournalId is not { } reversalJournalId || reversalJournalId == Guid.Empty || command.OriginalJournalId is not { } originalJournalId || originalJournalId == Guid.Empty || string.IsNullOrWhiteSpace(command.EffectFingerprint) || string.IsNullOrWhiteSpace(command.RequestFingerprint) || !string.Equals(command.CommitState, "Committed", StringComparison.Ordinal)) throw new InvalidOperationException("finance_effect_mismatch");
+                if (reversedIds.Contains(creditNoteId)) return;
+                if (!activeIds.Contains(creditNoteId)) throw new InvalidOperationException("finance_effect_mismatch");
+                activeIds = activeIds.Where(item => item != creditNoteId).ToArray();
+                reversedIds = reversedIds.Append(creditNoteId).Distinct().ToArray();
+                FinanceCreditNoteIdsJson = JsonSerializer.Serialize(activeIds);
+                FinanceReversedCreditNoteIdsJson = JsonSerializer.Serialize(reversedIds);
+            }
+            else
+            {
+                if (ActiveFinanceCreditNoteCount == 0) throw new InvalidOperationException("finance_effect_mismatch");
+                ActiveFinanceCreditNoteCount = Math.Max(0, ActiveFinanceCreditNoteCount - 1);
+                if (activeIds.Count > ActiveFinanceCreditNoteCount)
+                {
+                    activeIds = activeIds.Take(ActiveFinanceCreditNoteCount).ToArray();
+                    FinanceCreditNoteIdsJson = JsonSerializer.Serialize(activeIds);
+                }
+            }
+            if (command.CreditNoteId is not null) ActiveFinanceCreditNoteCount = activeIds.Count;
             FinanceEffectState = ActiveFinanceCreditNoteCount == 0 ? "Reversed" : "Committed";
         }
         else throw new InvalidOperationException("downstream_reversal_mismatch");
@@ -168,6 +191,8 @@ internal sealed class SalesCustomerReturnEntity : ITenantOwned
     {
         if (command.TenantId != TenantId.Value || command.ReturnId != Id || command.CreditNoteId == Guid.Empty || command.InvoiceId == Guid.Empty || command.SourceAllocationIds is null || command.SourceAllocationIds.Count == 0 || command.SourceAllocationIds.Any(item => item == Guid.Empty)) throw new InvalidOperationException("finance_effect_mismatch");
         if (InvoiceId is { } invoiceId && invoiceId != command.InvoiceId) throw new InvalidOperationException("finance_effect_mismatch");
+        var richEffect = command.FinanceOpenItemId is not null || command.PostingJournalId is not null || command.TaxJournalIds is not null || command.NetAmount is not null || command.TaxAmount is not null || command.GrossAmount is not null || command.CurrencyCode is not null || command.SourceFingerprint is not null || command.EffectFingerprint is not null || command.RequestFingerprint is not null || command.CommitState is not null || command.DownstreamIdempotencyKey is not null;
+        if (richEffect && (command.FinanceOpenItemId is not { } openItemId || openItemId != FinanceOpenItemId || command.PostingJournalId is not { } postingJournalId || postingJournalId == Guid.Empty || command.TaxJournalIds is null || command.TaxJournalIds.Any(item => item == Guid.Empty) || command.NetAmount is not { } net || command.TaxAmount is not { } tax || command.GrossAmount is not { } gross || net < 0m || tax < 0m || gross <= 0m || Math.Round(net + tax, 8, MidpointRounding.ToEven) != gross || string.IsNullOrWhiteSpace(command.CurrencyCode) || !string.Equals(command.CommitState, "Committed", StringComparison.Ordinal) || string.IsNullOrWhiteSpace(command.SourceFingerprint) || string.IsNullOrWhiteSpace(command.EffectFingerprint) || string.IsNullOrWhiteSpace(command.RequestFingerprint) || string.IsNullOrWhiteSpace(command.DownstreamIdempotencyKey))) throw new InvalidOperationException("finance_effect_mismatch");
         var ids = JsonSerializer.Deserialize<IReadOnlyList<Guid>>(FinanceCreditNoteIdsJson) ?? [];
         if (ids.Contains(command.CreditNoteId)) return;
         FinanceCreditNoteIdsJson = JsonSerializer.Serialize(ids.Append(command.CreditNoteId).Distinct());

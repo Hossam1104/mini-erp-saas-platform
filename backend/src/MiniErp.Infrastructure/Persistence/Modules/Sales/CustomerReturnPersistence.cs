@@ -220,6 +220,8 @@ public sealed class CustomerReturnPersistence(DbContextOptions options) : ISales
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var entity = await db.CustomerReturns.Include(item => item.Lines).SingleOrDefaultAsync(item => item.Id == command.ReturnId && item.TenantId.Value == command.TenantId, cancellationToken);
         if (entity is null) return Failure("customer_return_not_found");
+        var expectedAllocationIds = await db.CustomerReturnInvoiceAllocations.AsNoTracking().Where(item => item.CustomerReturnId == entity.Id && item.InvoiceId == command.InvoiceId).Select(item => item.Id).ToListAsync(cancellationToken);
+        if (command.SourceAllocationIds is null || !expectedAllocationIds.ToHashSet().SetEquals(command.SourceAllocationIds)) return Failure("finance_effect_mismatch");
         try { entity.RegisterFinanceCreditNote(command, command.OccurredAt); }
         catch (InvalidOperationException exception) { return Failure(exception.Message); }
         await db.SaveChangesAsync(cancellationToken);
@@ -236,7 +238,13 @@ public sealed class CustomerReturnPersistence(DbContextOptions options) : ISales
         var activeReturnIds = (await db.CustomerReturns.AsNoTracking().Where(item => item.DeliveryId == delivery.Id && item.Status != SalesCustomerReturnStatus.Rejected && item.Status != SalesCustomerReturnStatus.Cancelled && item.Status != SalesCustomerReturnStatus.Reversed).Select(item => item.Id).ToListAsync(cancellationToken)).Where(item => current?.Id != item).ToHashSet();
         var consumed = await db.CustomerReturnLines.AsNoTracking().Where(item => item.DeliveryId == delivery.Id && activeReturnIds.Contains(item.CustomerReturnId)).GroupBy(item => item.OrderLineId).Select(group => new { group.Key, Quantity = group.Sum(item => item.ReturnQuantity) }).ToDictionaryAsync(item => item.Key, item => item.Quantity, cancellationToken);
         var currentLines = current?.Lines.ToDictionary(item => item.OrderLineId) ?? [];
-        var postedInvoices = await db.InvoiceRequests.AsNoTracking().Where(item => item.DeliveryId == delivery.Id && item.Status == SalesInvoiceRequestStatus.Posted).ToListAsync(cancellationToken);
+        var postedInvoices = await db.InvoiceRequests.AsNoTracking()
+            .Where(item => item.OrderId == delivery.OrderId
+                && item.OrderRevisionNumber == delivery.OrderRevisionNumber
+                && item.CompanyId == delivery.CompanyId
+                && item.CustomerId == delivery.CustomerId
+                && item.Status == SalesInvoiceRequestStatus.Posted)
+            .ToListAsync(cancellationToken);
         var persistedAllocations = current is null ? [] : await db.CustomerReturnInvoiceAllocations.AsNoTracking().Where(item => item.CustomerReturnId == current.Id).ToListAsync(cancellationToken);
         var invoiceAllocations = current is null
             ? BuildInvoiceAllocations(postedInvoices, delivery.Id, delivery.OrderRevisionNumber, order.CurrencyCode, cancellationToken)
@@ -269,19 +277,22 @@ public sealed class CustomerReturnPersistence(DbContextOptions options) : ISales
             var invoiceFingerprint = Hash(new { invoice.Id, invoice.Version, invoice.SourceSnapshotJson, invoice.LinesJson });
             foreach (var evidence in persisted.Evidence)
             {
-                var selected = evidence.Allocations.Where(item => item.DeliveryId == deliveryId && item.OrderRevisionNumber == orderRevision).ToArray();
-                var totalQuantity = selected.Sum(item => item.ConsumedQuantity);
+                var complete = evidence.Allocations
+                    .Where(item => item.OrderRevisionNumber == orderRevision && item.ConsumedQuantity > 0m)
+                    .ToArray();
+                var totalQuantity = complete.Sum(item => item.ConsumedQuantity);
+                if (totalQuantity <= 0m) continue;
                 var netUsed = 0m; var taxUsed = 0m; var grossUsed = 0m;
-                for (var index = 0; index < selected.Length; index++)
+                for (var index = 0; index < complete.Length; index++)
                 {
-                    var allocation = selected[index];
-                    var isLast = index == selected.Length - 1;
+                    var allocation = complete[index];
+                    var isLast = index == complete.Length - 1;
                     var net = isLast ? evidence.NetAmount - netUsed : Round(evidence.NetAmount * allocation.ConsumedQuantity / totalQuantity);
                     var tax = isLast ? evidence.TaxAmount - taxUsed : Round(evidence.TaxAmount * allocation.ConsumedQuantity / totalQuantity);
                     var gross = isLast ? evidence.GrossAmount - grossUsed : Round(evidence.GrossAmount * allocation.ConsumedQuantity / totalQuantity);
                     netUsed += net; taxUsed += tax; grossUsed += gross;
                     var sourceFingerprint = Hash(new { invoice.Id, allocation.DeliveryId, allocation.OrderLineId, allocation.OrderRevisionNumber, allocation.SourceQuantity, allocation.ConsumedQuantity, index });
-                    result.Add(new(StableId(sourceFingerprint), invoice.Id, invoice.FinanceOpenItemId, deliveryId, allocation.OrderLineId, orderRevision, allocation.ConsumedQuantity, 0m, 0m, 0m, allocation.ConsumedQuantity, net, tax, gross, currencyCode, evidence.TaxEvidence?.TaxId, evidence.TaxEvidence?.RateVersionId, evidence.TaxEvidence?.RateVersionNumber, sourceFingerprint, invoiceFingerprint));
+                    if (allocation.DeliveryId == deliveryId) result.Add(new(StableId(sourceFingerprint), invoice.Id, invoice.FinanceOpenItemId, allocation.DeliveryId, allocation.OrderLineId, allocation.OrderRevisionNumber, allocation.ConsumedQuantity, 0m, 0m, 0m, allocation.ConsumedQuantity, net, tax, gross, currencyCode, evidence.TaxEvidence?.TaxId, evidence.TaxEvidence?.RateVersionId, evidence.TaxEvidence?.RateVersionNumber, sourceFingerprint, invoiceFingerprint));
                 }
             }
         }

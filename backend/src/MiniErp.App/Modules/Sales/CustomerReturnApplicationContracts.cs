@@ -122,7 +122,14 @@ public sealed record SalesCustomerReturnDownstreamReversalCommand(
     Guid TenantId,
     string Downstream,
     string CorrelationId,
-    DateTimeOffset OccurredAt);
+    DateTimeOffset OccurredAt,
+    Guid? CreditNoteId = null,
+    Guid? ReversalJournalId = null,
+    Guid? OriginalJournalId = null,
+    string? EffectFingerprint = null,
+    string? RequestFingerprint = null,
+    string? CommitState = null,
+    string? DownstreamIdempotencyKey = null);
 
 public sealed record SalesCustomerReturnFinanceEffectCommand(
     Guid ReturnId,
@@ -130,7 +137,19 @@ public sealed record SalesCustomerReturnFinanceEffectCommand(
     Guid CreditNoteId,
     Guid InvoiceId,
     IReadOnlyList<Guid> SourceAllocationIds,
-    DateTimeOffset OccurredAt);
+    DateTimeOffset OccurredAt,
+    Guid? FinanceOpenItemId = null,
+    Guid? PostingJournalId = null,
+    IReadOnlyList<Guid>? TaxJournalIds = null,
+    decimal? NetAmount = null,
+    decimal? TaxAmount = null,
+    decimal? GrossAmount = null,
+    string? CurrencyCode = null,
+    string? SourceFingerprint = null,
+    string? EffectFingerprint = null,
+    string? RequestFingerprint = null,
+    string? CommitState = null,
+    string? DownstreamIdempotencyKey = null);
 
 public sealed record SalesCustomerReturnOperationResult<T>(bool Succeeded, string Code, T? Value)
 {

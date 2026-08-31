@@ -55,7 +55,7 @@ public sealed class FinanceCustomerReturnService(
         var operation = "finance.credit-note." + action.ToString().ToLowerInvariant();
         var auth = authorization.Authorize(context, operation, value.CompanyId);
         if (!auth.Allowed) return FinanceOperationResult<FinanceCreditNoteResponse>.Failure(auth.Code);
-        return await persistence.MutateAsync(context, id, expectedVersion, action, Normalize(reason), Normalize(idempotencyKey), Fingerprint(new { id, expectedVersion, action, reason }), cancellationToken);
+        return await persistence.MutateAsync(context, id, expectedVersion, action, Normalize(reason), Normalize(idempotencyKey), Fingerprint(new { id, action, reason }), cancellationToken);
     }
 
     private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
