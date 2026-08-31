@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Sales;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Sales;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
 {
     [DbContext(typeof(SalesDbContext))]
-    partial class SalesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260831102044_MESP138Hold1Remediation")]
+    partial class MESP138Hold1Remediation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -267,11 +270,6 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Sales
 
                     b.Property<Guid?>("FinanceOpenItemId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("FinanceReversedCreditNoteIdsJson")
-                        .IsRequired()
-                        .HasMaxLength(8192)
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("HandoffJson")
                         .IsRequired()

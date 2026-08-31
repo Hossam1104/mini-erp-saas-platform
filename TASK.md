@@ -1,4 +1,63 @@
 
+# MESP-138 HOLD 2 remediation handoff - 31 August 2026
+
+MESP-138 is explicitly activated and **In Progress** under Sol activation
+comment `12305` and MESP-9 reconciliation comment `12306`; Sol HOLD 2 authority
+is comment `12346`. The bounded Phase A backend implementation and HOLD 2
+remediation are complete on branch
+`feat/MESP-138-customer-return-credit-receipts` in isolated worktree
+`D:\AI Tools\Active Projects\mini-erp-saas-platform-MESP-138`, from exact
+reviewed starting head `919ddec89a072799c3ffbfe7a8335451657a5567` and exact
+`origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. Draft PR
+`#86` is Open/Draft/Unmerged for independent GPT-5.6 Sol review. No reviewer
+request, Ready transition, merge, rebase, force-push, or Jira write beyond the
+authorized activation/reconciliation was performed. The exact final branch
+head is the commit containing this documentation/tracker handoff.
+
+The HOLD 2 implementation/remediation commit is `f45b5fd`; the exact final
+branch head is the subsequent documentation/tracker handoff commit.
+
+HOLD-138-E makes Finance commit before Sales acknowledgement, with durable
+post/reversal coordination, effect/request/source fingerprints, downstream
+idempotency identity, attempt/error evidence, and fail-closed recovery. HOLD-
+138-F repairs gross AR reduction, original Sales recognition lineage, configured
+tax reversal composition, account/period validation, and CustomerCredit/AR
+application bounds. HOLD-138-G computes full-invoice allocation residuals before
+Delivery filtering with stable source identity; HOLD-138-H validates inherited
+FX against source document date and exact historical rate identity; and
+HOLD-138-I adds actual relational persistence, integration, and failure-
+injection evidence. Four focused HOLD 2 tests pass.
+
+Phase A delivers the Sales posted-Delivery return source and lifecycle with
+bounded quantity, tax, currency, invoice/open-item, evidence, idempotency,
+history, and audit controls; Inventory receipt/inspection with If-Match,
+disposition, restock movement lineage, non-restockable handling, and durable
+audit/idempotency; and Finance same-currency credit-note lifecycle, balanced
+posting/reversal journal lineage, source/effect evidence, customer-credit
+application foundation, and exposure integration. Sales, Inventory, and
+Finance additive migrations, Tenant filters/ownership, REST/OpenAPI metadata,
+and architecture coverage are included.
+
+Final validation is Release `0 warnings / 0 errors`; focused HOLD 2 integration
+coverage is `4/4`; total MESP-138-focused coverage is `13/13`; affected
+Finance/Inventory coverage is `144/144`; and full non-SQL backend regression is
+`1,071/1,071` passed with `0` skipped. The prior 1,067/1,067 non-SQL result was
+the HOLD 1 baseline for this remediation. EF pending-model checks are clear for
+the changed Finance and Sales contexts; REST/OpenAPI/catalogue checks are
+`40/40`; NuGet vulnerability scanning is clear across all five backend
+projects; and `git diff --check` is clean. SQL/provider validation is gated
+because `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is unavailable and is not
+claimed as passing (`80` cases remain gated). Angular/UI, Phase B, refunds,
+replacement flows, external/statutory integrations, ZATCA/FATOORA, production
+certification, and MESP-139 remain excluded. The fast-track figure remains
+`21/26 = 80.8%` until Sol acceptance, merge, and Jira closure; production
+readiness remains separate at approximately `47% overall / 41% Procurement/P2P`.
+
+The next technical boundary is independent GPT-5.6 Sol review of the exact PR
+head and evidence. After that review, Sol/Owner must explicitly authorize any
+completion/merge or bounded continuation. No Phase B or MESP-139 action is
+implied by this handoff.
+
 # MESP-144 HOLD 6 merge-safety remediation — executor handoff
 
 MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
