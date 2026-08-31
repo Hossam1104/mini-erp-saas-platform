@@ -1,5 +1,42 @@
 # Current State
 
+## MESP-138 Phase A implementation handoff - 31 August 2026
+
+MESP-138 is explicitly activated and **In Progress** under activation comment
+`12305` and MESP-9 reconciliation comment `12306`. Phase A backend
+implementation is complete on isolated branch
+`feat/MESP-138-customer-return-credit-receipts` from exact
+`origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. The pushed
+head is `92d4f8aaec958d811d0484cc8f35ed5ee7228101`; Draft PR `#86` is
+Open/Draft/Unmerged and awaits independent GPT-5.6 Sol review. No Ready
+transition, merge, rebase, force-push, reviewer request, or unauthorized Jira
+mutation was performed. MESP-139 remains To Do/inactive.
+
+The bounded capability covers Sales posted-Delivery return source and
+lifecycle, quantity/tax/currency/invoice/open-item validation, durable
+evidence/history/audit/idempotency, Inventory receipt and inspection with
+If-Match and disposition/restock movement lineage, and Finance same-currency
+credit-note posting/reversal with balanced journal/effect evidence and
+customer-credit exposure integration. Additive Sales, Inventory, and Finance
+migrations plus Tenant ownership/query-filter and REST/OpenAPI architecture
+coverage are included. Explicit cross-invoice credit application API, return
+edit/register UI, Phase B Angular surfaces, refunds/replacement, external or
+statutory integration, ZATCA/FATOORA, and production certification remain
+outside this bounded handoff.
+
+Validation is Release `0 warnings / 0 errors`; non-SQL regression `1,060/1,060`
+passed with `0` skipped; direct Phase A architecture coverage is `2/2`; EF
+pending-model checks are clear for Sales/Inventory/Finance; and NuGet
+vulnerability scanning is clear across five backend projects. SQL safety is
+`80 gated`, not passing, because the approved safety connection variable is
+absent. Fast-track remains `21/26 = 80.8%` pending Sol acceptance, merge, and
+Jira closure; production readiness remains approximately `47% overall / 41%
+Procurement/P2P`; MESP-9 remains In Progress.
+
+The next boundary is independent GPT-5.6 Sol review of PR #86 at the exact
+pushed head. No Phase B, MESP-139 activation, merge, Ready transition, or
+further capability mutation is implied.
+
 ## MESP-144 reconciliation record - 30 August 2026 - HOLD 5 merge-safety
 
 MESP-144 reconciliation reached Sol content acceptance at comment `12293` on

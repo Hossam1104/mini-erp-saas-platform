@@ -1,5 +1,48 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
+## Current MESP-138 Phase A implementation handoff - 31 August 2026
+
+- MESP-138 is **In Progress / activated** under Sol activation comment `12305`
+  and MESP-9 reconciliation comment `12306`. Phase A backend implementation is
+  complete on `feat/MESP-138-customer-return-credit-receipts`, from exact
+  `origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`, at pushed
+  head `92d4f8aaec958d811d0484cc8f35ed5ee7228101`. Draft PR `#86` is
+  Open/Draft/Unmerged and awaits independent GPT-5.6 Sol review.
+- Phase A includes Sales posted-Delivery customer-return source and lifecycle;
+  bounded quantity/tax/currency/invoice/open-item validation; durable
+  evidence/history/audit/idempotency; Inventory receipt/inspection with
+  If-Match, disposition, restock movement lineage, and non-restockable
+  handling; Finance same-currency credit-note posting/reversal with balanced
+  journal/effect evidence and customer-credit exposure integration; additive
+  migrations; Tenant ownership/query filters; REST/OpenAPI metadata; and
+  architecture coverage.
+- Validation is Release `0 warnings / 0 errors`; non-SQL backend regression is
+  `1,060/1,060` passed with `0` skipped; direct Phase A architecture coverage is
+  `2/2`; EF pending-model checks are clear for Sales/Inventory/Finance; and
+  NuGet vulnerability scanning is clear across five backend projects. SQL
+  safety is `80 gated` because the approved safety connection variable is
+  absent, and is not claimed as passing.
+- Angular/UI, Phase B, explicit cross-invoice credit-application API, return
+  edit/register UI, refunds, replacement flows, external/statutory
+  integrations, ZATCA/FATOORA, production certification, and MESP-139 remain
+  outside this bounded handoff. Fast-track remains **21/26 = 80.8%** pending
+  Sol acceptance, merge, and Jira closure; production readiness remains
+  approximately **47% overall / 41% Procurement/P2P**; MESP-9 remains In
+  Progress; and MESP-48/MESP-50 remain open production gates.
+
+## Progress history - 31 August 2026 (MESP-138 Phase A implementation)
+
+MESP-138 was explicitly activated under Sol comment `12305` with MESP-9
+reconciliation `12306`. Phase A backend implementation was committed at
+`92d4f8aaec958d811d0484cc8f35ed5ee7228101`, pushed from exact baseline
+`644e7b364006a3a62dc8e9756b9a9a64afbd33e1`, and placed in Draft PR `#86` for
+independent GPT-5.6 Sol review. Non-SQL validation is `1,060/1,060` passed;
+SQL safety is `80` gated by the absent approved safety connection variable;
+the fast-track and production-readiness figures are unchanged at `21/26 =
+80.8%`, approximately `47% overall`, and approximately `41% Procurement/P2P`.
+No Phase B, MESP-139 activation, Ready transition, merge, or production
+certification was performed.
+
 ## MESP-144 reconciliation record - 30 August 2026 (HOLD 5 merge-safety)
 
 - MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
@@ -86,7 +129,7 @@ explicitly current authoritative snapshot above.
   current and final status.
 <!-- MESP-137-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-30 (MESP-144 HOLD 5 merge-safety remediation)
+**Last Updated:** 2026-08-31 (MESP-138 Phase A implementation handoff)
 
 ## Progress history - 30 August 2026 (MESP-137 closure reconciliation)
 

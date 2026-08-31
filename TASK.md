@@ -1,4 +1,43 @@
 
+# MESP-138 Phase A implementation handoff — 31 August 2026
+
+MESP-138 is explicitly activated and **In Progress** under Sol activation
+comment `12305` and MESP-9 reconciliation comment `12306`. The bounded Phase A
+backend implementation is complete on branch
+`feat/MESP-138-customer-return-credit-receipts` in isolated worktree
+`D:\AI Tools\Active Projects\mini-erp-saas-platform-MESP-138`, from exact
+`origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. The pushed
+implementation head is `92d4f8aaec958d811d0484cc8f35ed5ee7228101` and Draft PR
+`#86` is Open/Draft/Unmerged for independent GPT-5.6 Sol review. No reviewer
+request, Ready transition, merge, rebase, force-push, or Jira write beyond the
+authorized activation/reconciliation was performed.
+
+Phase A delivers the Sales posted-Delivery return source and lifecycle with
+bounded quantity, tax, currency, invoice/open-item, evidence, idempotency,
+history, and audit controls; Inventory receipt/inspection with If-Match,
+disposition, restock movement lineage, non-restockable handling, and durable
+audit/idempotency; and Finance same-currency credit-note lifecycle, balanced
+posting/reversal journal lineage, source/effect evidence, customer-credit
+application foundation, and exposure integration. Sales, Inventory, and
+Finance additive migrations, Tenant filters/ownership, REST/OpenAPI metadata,
+and architecture coverage are included.
+
+Final validation is Release `0 warnings / 0 errors`; non-SQL backend regression
+`1,060/1,060` passed with `0` skipped; direct Phase A architecture coverage
+`2/2`; EF pending-model checks clear for Sales, Inventory, and Finance; and
+NuGet vulnerability scanning clear across all five backend projects. SQL safety
+is `80 gated` because the approved safety connection variable was absent; it is
+not claimed as passing. Angular/UI, Phase B, refunds, replacement flows,
+external/statutory integrations, ZATCA/FATOORA, production certification, and
+MESP-139 remain excluded. The fast-track figure remains `21/26 = 80.8%` until
+Sol acceptance, merge, and Jira closure; production readiness remains separate
+at approximately `47% overall / 41% Procurement/P2P`.
+
+The next technical boundary is independent GPT-5.6 Sol review of the exact PR
+head and evidence. After that review, Sol/Owner must explicitly authorize any
+completion/merge or bounded continuation. No Phase B or MESP-139 action is
+implied by this handoff.
+
 # MESP-144 HOLD 6 merge-safety remediation — executor handoff
 
 MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
