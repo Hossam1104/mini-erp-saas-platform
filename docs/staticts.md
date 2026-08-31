@@ -1,47 +1,55 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
-## Current MESP-138 Phase A implementation handoff - 31 August 2026
+## Current MESP-138 HOLD 1 remediation handoff - 31 August 2026
 
-- MESP-138 is **In Progress / activated** under Sol activation comment `12305`
-  and MESP-9 reconciliation comment `12306`. Phase A backend implementation is
-  complete on `feat/MESP-138-customer-return-credit-receipts`, from exact
-  `origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`, at pushed
-  head `92d4f8aaec958d811d0484cc8f35ed5ee7228101`. Draft PR `#86` is
-  Open/Draft/Unmerged and awaits independent GPT-5.6 Sol review.
-- Phase A includes Sales posted-Delivery customer-return source and lifecycle;
-  bounded quantity/tax/currency/invoice/open-item validation; durable
-  evidence/history/audit/idempotency; Inventory receipt/inspection with
-  If-Match, disposition, restock movement lineage, and non-restockable
-  handling; Finance same-currency credit-note posting/reversal with balanced
-  journal/effect evidence and customer-credit exposure integration; additive
-  migrations; Tenant ownership/query filters; REST/OpenAPI metadata; and
-  architecture coverage.
-- Validation is Release `0 warnings / 0 errors`; non-SQL backend regression is
-  `1,060/1,060` passed with `0` skipped; direct Phase A architecture coverage is
-  `2/2`; EF pending-model checks are clear for Sales/Inventory/Finance; and
-  NuGet vulnerability scanning is clear across five backend projects. SQL
-  safety is `80 gated` because the approved safety connection variable is
-  absent, and is not claimed as passing.
-- Angular/UI, Phase B, explicit cross-invoice credit-application API, return
-  edit/register UI, refunds, replacement flows, external/statutory
+- MESP-138 is **In Progress / activated** under Sol activation comment `12305`,
+  MESP-9 reconciliation `12306`, and HOLD 1 authority `12342`. The bounded
+  remediation is on `feat/MESP-138-customer-return-credit-receipts`, from exact
+  reviewed starting head `63203e9f7be3c2ab38bd3bf9715a0f7c15113148` and exact
+  `origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. PR `#86`
+  remains Open/Draft/Unmerged for independent GPT-5.6 Sol review.
+- The implementation/remediation commit is
+  `07da61066e1933cf554a892ec70ea1e0586a32cc`; the final branch head is the
+  subsequent documentation/tracker handoff commit.
+- HOLD-138-A repairs durable Inventory effect identity, idempotency/fingerprint
+  evidence, physical/inspection evidence, per-line commercial acceptance and
+  disposition, movement lineage, and Inventory-first commit/Sales
+  acknowledgement recovery. HOLD-138-B repairs multi-Invoice lineage using
+  persisted MESP-137 recognized source allocations, excluding uninvoiced AR and
+  enforcing per-source Credit Note uniqueness. HOLD-138-C derives Credit Note
+  authority from persisted recognized net/tax/gross evidence with ToEven
+  residual rounding, tax identity, FX evidence, and configured tax reversal
+  composition. HOLD-138-D adds six behavioral tests; focused HOLD 1 coverage is
+  `8/8`.
+- Validation is Release `0 warnings / 0 errors`; full non-SQL backend regression
+  is `1,066/1,066` passed with `0` skipped. `1,060` was not treated as a
+  regression; the comparable pre-Phase-A non-SQL baseline was `1,058`. EF
+  pending-model checks are clear for Sales/Inventory/Finance; NuGet
+  vulnerability scanning is clear across all five backend projects; and
+  `git diff --check` is clean. SQL/provider validation is gated because
+  `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is unavailable and is not claimed
+  as passing.
+- Angular/UI, Phase B, refunds, replacement flows, external/statutory
   integrations, ZATCA/FATOORA, production certification, and MESP-139 remain
   outside this bounded handoff. Fast-track remains **21/26 = 80.8%** pending
   Sol acceptance, merge, and Jira closure; production readiness remains
   approximately **47% overall / 41% Procurement/P2P**; MESP-9 remains In
   Progress; and MESP-48/MESP-50 remain open production gates.
 
-## Progress history - 31 August 2026 (MESP-138 Phase A implementation)
+## Progress history - 31 August 2026 (MESP-138 HOLD 1 remediation)
 
-MESP-138 was explicitly activated under Sol comment `12305` with MESP-9
-reconciliation `12306`. Phase A backend implementation was committed at
-`92d4f8aaec958d811d0484cc8f35ed5ee7228101`, pushed from exact baseline
-`644e7b364006a3a62dc8e9756b9a9a64afbd33e1`, and placed in Draft PR `#86` for
-independent GPT-5.6 Sol review. Non-SQL validation is `1,060/1,060` passed;
-SQL safety is `80` gated by the absent approved safety connection variable;
-the fast-track and production-readiness figures are unchanged at `21/26 =
-80.8%`, approximately `47% overall`, and approximately `41% Procurement/P2P`.
-No Phase B, MESP-139 activation, Ready transition, merge, or production
-certification was performed.
+MESP-138 HOLD 1 remediation was implemented under Sol comment `12342` in
+implementation commit `07da61066e1933cf554a892ec70ea1e0586a32cc` on
+starting head `63203e9f7be3c2ab38bd3bf9715a0f7c15113148`, from exact main
+baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`, and retained in Draft PR
+`#86` for independent review. The final branch head is recorded after the
+documentation commit. Full non-SQL validation is `1,066/1,066` passed with
+`0` skipped, including six new behavioral tests; focused HOLD 1 coverage is
+`8/8`; SQL/provider validation is gated by the absent approved safety variable;
+and the fast-track and production-readiness figures remain `21/26 = 80.8%`,
+approximately `47% overall`, and approximately `41% Procurement/P2P`. No
+Phase B, MESP-139 activation, Ready transition, merge, or Jira write was
+performed.
 
 ## MESP-144 reconciliation record - 30 August 2026 (HOLD 5 merge-safety)
 
@@ -129,7 +137,7 @@ explicitly current authoritative snapshot above.
   current and final status.
 <!-- MESP-137-JIRA-SYNC-END -->
 
-**Last Updated:** 2026-08-31 (MESP-138 Phase A implementation handoff)
+**Last Updated:** 2026-08-31 (MESP-138 HOLD 1 remediation handoff)
 
 ## Progress history - 30 August 2026 (MESP-137 closure reconciliation)
 

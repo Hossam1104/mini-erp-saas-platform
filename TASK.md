@@ -1,16 +1,34 @@
 
-# MESP-138 Phase A implementation handoff — 31 August 2026
+# MESP-138 HOLD 1 remediation handoff - 31 August 2026
 
 MESP-138 is explicitly activated and **In Progress** under Sol activation
 comment `12305` and MESP-9 reconciliation comment `12306`. The bounded Phase A
 backend implementation is complete on branch
 `feat/MESP-138-customer-return-credit-receipts` in isolated worktree
 `D:\AI Tools\Active Projects\mini-erp-saas-platform-MESP-138`, from exact
-`origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. The pushed
-implementation head is `92d4f8aaec958d811d0484cc8f35ed5ee7228101` and Draft PR
+`origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. The prior
+Phase A head was `92d4f8aaec958d811d0484cc8f35ed5ee7228101`; this HOLD 1
+remediation handoff records the final head after the documentation commit. Draft PR
 `#86` is Open/Draft/Unmerged for independent GPT-5.6 Sol review. No reviewer
 request, Ready transition, merge, rebase, force-push, or Jira write beyond the
 authorized activation/reconciliation was performed.
+
+The implementation/remediation commit is
+`07da61066e1933cf554a892ec70ea1e0586a32cc`; the final branch head will be the
+subsequent documentation/tracker handoff commit.
+
+Sol HOLD 1 authority is MESP-138 comment `12342`. HOLD-138-A repairs durable
+Inventory effect identity, idempotency/fingerprint evidence, physical and
+inspection evidence, per-line commercial acceptance/disposition, movement
+lineage, and Inventory-first commit/Sales acknowledgement recovery.
+HOLD-138-B repairs multi-Invoice lineage using persisted MESP-137 recognized
+source allocations, including uninvoiced remainder exclusion and per-source
+Credit Note uniqueness. HOLD-138-C derives Credit Note monetary authority from
+persisted recognized net/tax/gross evidence with ToEven residual rounding, tax
+identity, FX evidence, and configured tax reversal composition. HOLD-138-D
+adds six behavioral tests for disposition, durable handoff failure recovery,
+finance-effect idempotency/reversal, and customer-credit bounds; focused HOLD
+1 coverage is `8/8`.
 
 Phase A delivers the Sales posted-Delivery return source and lifecycle with
 bounded quantity, tax, currency, invoice/open-item, evidence, idempotency,
@@ -22,11 +40,14 @@ application foundation, and exposure integration. Sales, Inventory, and
 Finance additive migrations, Tenant filters/ownership, REST/OpenAPI metadata,
 and architecture coverage are included.
 
-Final validation is Release `0 warnings / 0 errors`; non-SQL backend regression
-`1,060/1,060` passed with `0` skipped; direct Phase A architecture coverage
-`2/2`; EF pending-model checks clear for Sales, Inventory, and Finance; and
-NuGet vulnerability scanning clear across all five backend projects. SQL safety
-is `80 gated` because the approved safety connection variable was absent; it is
+Final validation is Release `0 warnings / 0 errors`; focused HOLD 1 coverage is
+`8/8`; full non-SQL backend regression is `1,066/1,066` passed with `0`
+skipped; and the six new behavioral tests are included in that discovered
+total. `1,060` was not treated as a regression; the comparable pre-Phase-A
+non-SQL baseline was `1,058`. EF pending-model checks are clear for
+Sales/Inventory/Finance; NuGet vulnerability scanning is clear across all five
+backend projects; and `git diff --check` is clean. SQL/provider validation is
+gated because `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is unavailable and is
 not claimed as passing. Angular/UI, Phase B, refunds, replacement flows,
 external/statutory integrations, ZATCA/FATOORA, production certification, and
 MESP-139 remain excluded. The fast-track figure remains `21/26 = 80.8%` until

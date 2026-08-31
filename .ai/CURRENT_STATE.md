@@ -1,41 +1,55 @@
 # Current State
 
-## MESP-138 Phase A implementation handoff - 31 August 2026
+## MESP-138 HOLD 1 remediation handoff - 31 August 2026
 
-MESP-138 is explicitly activated and **In Progress** under activation comment
-`12305` and MESP-9 reconciliation comment `12306`. Phase A backend
-implementation is complete on isolated branch
-`feat/MESP-138-customer-return-credit-receipts` from exact
-`origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. The pushed
-head is `92d4f8aaec958d811d0484cc8f35ed5ee7228101`; Draft PR `#86` is
-Open/Draft/Unmerged and awaits independent GPT-5.6 Sol review. No Ready
-transition, merge, rebase, force-push, reviewer request, or unauthorized Jira
-mutation was performed. MESP-139 remains To Do/inactive.
+MESP-138 remains **In Progress** under activation comment `12305`, MESP-9
+reconciliation `12306`, and Sol HOLD 1 authority `12342`. The bounded
+remediation is on isolated branch
+`feat/MESP-138-customer-return-credit-receipts`, from exact reviewed starting
+head `63203e9f7be3c2ab38bd3bf9715a0f7c15113148` and exact `origin/main`
+baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. PR `#86` remains
+Open/Draft/Unmerged for independent GPT-5.6 Sol review. No Ready transition,
+merge, rebase, force-push, reviewer request, or Jira write was performed.
+MESP-139 remains To Do/inactive.
 
-The bounded capability covers Sales posted-Delivery return source and
-lifecycle, quantity/tax/currency/invoice/open-item validation, durable
-evidence/history/audit/idempotency, Inventory receipt and inspection with
-If-Match and disposition/restock movement lineage, and Finance same-currency
-credit-note posting/reversal with balanced journal/effect evidence and
-customer-credit exposure integration. Additive Sales, Inventory, and Finance
-migrations plus Tenant ownership/query-filter and REST/OpenAPI architecture
-coverage are included. Explicit cross-invoice credit application API, return
-edit/register UI, Phase B Angular surfaces, refunds/replacement, external or
-statutory integration, ZATCA/FATOORA, and production certification remain
-outside this bounded handoff.
+The implementation/remediation commit is
+`07da61066e1933cf554a892ec70ea1e0586a32cc`; the final branch head will be the
+subsequent documentation/tracker handoff commit.
 
-Validation is Release `0 warnings / 0 errors`; non-SQL regression `1,060/1,060`
-passed with `0` skipped; direct Phase A architecture coverage is `2/2`; EF
-pending-model checks are clear for Sales/Inventory/Finance; and NuGet
-vulnerability scanning is clear across five backend projects. SQL safety is
-`80 gated`, not passing, because the approved safety connection variable is
-absent. Fast-track remains `21/26 = 80.8%` pending Sol acceptance, merge, and
-Jira closure; production readiness remains approximately `47% overall / 41%
-Procurement/P2P`; MESP-9 remains In Progress.
+HOLD-138-A now persists Inventory receipt/inspection effect identity,
+idempotency and request/effect fingerprints, physical and inspection evidence,
+per-line commercial acceptance and stock disposition, movement lineage, and
+commit/acknowledgement/reconciliation state. Inventory commits first and Sales
+acknowledges only after the durable effect; failure retains the effect for
+same-identity recovery without duplicate movement. HOLD-138-B uses persisted
+MESP-137 invoice/source-allocation evidence across multiple recognized
+Invoices, with no AR for uninvoiced remainder and per-source Credit Note
+uniqueness. HOLD-138-C derives residual net/tax/gross authority with ToEven
+rounding, tax identity, FX evidence, and configured tax-reversal composition.
+HOLD-138-D adds six behavioral failure/recovery, disposition, handoff,
+financial-effect, and customer-credit tests (eight focused tests total).
 
-The next boundary is independent GPT-5.6 Sol review of PR #86 at the exact
-pushed head. No Phase B, MESP-139 activation, merge, Ready transition, or
-further capability mutation is implied.
+Additive Sales, Inventory, and Finance migrations, Tenant ownership/query
+filters, and REST/OpenAPI architecture coverage are included. Phase B Angular
+surfaces, refunds, replacement flows, external/statutory integrations,
+ZATCA/FATOORA, and production certification remain excluded.
+
+Validation is Release `0 warnings / 0 errors`; focused HOLD 1 coverage is
+`8/8`; full non-SQL backend regression is `1,066/1,066` with `0` skipped; and
+the six new behavioral tests are included in that discovered total. `1,060`
+was not treated as a regression; the comparable pre-Phase-A non-SQL baseline
+was `1,058`. EF pending-model checks are clear for Sales/Inventory/Finance;
+NuGet vulnerability scanning is clear across five backend projects; and
+`git diff --check` is clean. SQL safety/provider validation is gated because
+`MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is unavailable and is not claimed
+as passing.
+
+Fast-track remains `21/26 = 80.8%` pending Sol acceptance, merge, and Jira
+closure; production readiness remains approximately `47% overall / 41%
+Procurement/P2P`; and MESP-9 remains In Progress. At the HOLD 1 remediation
+executor handoff, PR #86 remained Draft/Unmerged for Sol review; GitHub is
+authoritative for later lifecycle. No Phase B, MESP-139 activation, merge,
+Ready transition, or further capability mutation is implied.
 
 ## MESP-144 reconciliation record - 30 August 2026 - HOLD 5 merge-safety
 
