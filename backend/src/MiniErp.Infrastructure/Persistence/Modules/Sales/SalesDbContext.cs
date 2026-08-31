@@ -19,6 +19,8 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
     internal DbSet<SalesCreditEntity> Credit => Set<SalesCreditEntity>();
     internal DbSet<SalesDeliveryEntity> Deliveries => Set<SalesDeliveryEntity>();
     internal DbSet<SalesInvoiceRequestEntity> InvoiceRequests => Set<SalesInvoiceRequestEntity>();
+    internal DbSet<SalesCustomerReturnEntity> CustomerReturns => Set<SalesCustomerReturnEntity>();
+    internal DbSet<SalesCustomerReturnLineEntity> CustomerReturnLines => Set<SalesCustomerReturnLineEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +34,8 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
         Configure(modelBuilder.Entity<SalesCreditEntity>(), "SalesCreditEvaluations");
         Configure(modelBuilder.Entity<SalesDeliveryEntity>(), "SalesDeliveries");
         Configure(modelBuilder.Entity<SalesInvoiceRequestEntity>(), "SalesInvoiceRequests");
+        Configure(modelBuilder.Entity<SalesCustomerReturnEntity>(), "SalesCustomerReturns");
+        Configure(modelBuilder.Entity<SalesCustomerReturnLineEntity>(), "SalesCustomerReturnLines");
 
         var quote = modelBuilder.Entity<SalesQuotationEntity>();
         quote.Property(item => item.Id).ValueGeneratedNever();
@@ -117,6 +121,13 @@ internal sealed class SalesDbContext(DbContextOptions options, TenantContext ten
 
         var invoice = modelBuilder.Entity<SalesInvoiceRequestEntity>();
         invoice.Property(item => item.Id).ValueGeneratedNever(); invoice.Property(item => item.OrderId).IsRequired(); invoice.Property(item => item.OrderRevisionNumber).IsRequired(); invoice.Property(item => item.DeliveryId).IsRequired(false); invoice.Property(item => item.CompanyId).IsRequired(); invoice.Property(item => item.BranchId).IsRequired(false); invoice.Property(item => item.CustomerId).IsRequired(); invoice.Property(item => item.InvoiceDate).IsRequired(); invoice.Property(item => item.LinesJson).HasMaxLength(131072).IsRequired(); invoice.Property(item => item.Amount).HasPrecision(28, 8).IsRequired(); invoice.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired(); invoice.Property(item => item.SourceSnapshotJson).HasMaxLength(262144).IsRequired(); invoice.Property(item => item.HandoffJson).HasMaxLength(16384).IsRequired(); invoice.Property(item => item.PaymentTermJson).HasMaxLength(8192).IsRequired(false); invoice.Property(item => item.Status).IsRequired(); invoice.Property(item => item.ErrorCode).HasMaxLength(128).IsRequired(false); invoice.Property(item => item.FinanceOpenItemId).IsRequired(false); invoice.Property(item => item.ActorId).IsRequired(); invoice.Property(item => item.IdempotencyKey).HasMaxLength(256).IsRequired(false); invoice.Property(item => item.CreatedAt).IsRequired(); invoice.Property(item => item.PostedAt).IsRequired(false); invoice.HasIndex(item => new { item.TenantId, item.OrderId, item.Status }); invoice.HasIndex(item => new { item.TenantId, item.IdempotencyKey }).IsUnique().HasFilter(Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer" ? "[IdempotencyKey] IS NOT NULL" : "IdempotencyKey IS NOT NULL"); invoice.HasIndex(item => new { item.TenantId, item.DeliveryId, item.Status });
+
+        var customerReturn = modelBuilder.Entity<SalesCustomerReturnEntity>();
+        customerReturn.Property(item => item.Id).ValueGeneratedNever();
+        customerReturn.Property(item => item.DeliveryId).IsRequired(); customerReturn.Property(item => item.OrderId).IsRequired(); customerReturn.Property(item => item.OrderRevisionNumber).IsRequired(); customerReturn.Property(item => item.CompanyId).IsRequired(); customerReturn.Property(item => item.BranchId).IsRequired(false); customerReturn.Property(item => item.CustomerId).IsRequired(); customerReturn.Property(item => item.WarehouseId).IsRequired(); customerReturn.Property(item => item.InvoiceId).IsRequired(false); customerReturn.Property(item => item.FinanceOpenItemId).IsRequired(false); customerReturn.Property(item => item.CurrencyCode).HasMaxLength(16).IsRequired(); customerReturn.Property(item => item.Status).IsRequired(); customerReturn.Property(item => item.Consequence).IsRequired(); customerReturn.Property(item => item.ReturnDate).IsRequired(); customerReturn.Property(item => item.Reason).HasMaxLength(2048).IsRequired(false); customerReturn.Property(item => item.EvidenceJson).HasMaxLength(65536).IsRequired(); customerReturn.Property(item => item.HandoffJson).HasMaxLength(16384).IsRequired(); customerReturn.Property(item => item.CreatedByActorId).IsRequired(); customerReturn.Property(item => item.CreatedAt).IsRequired(); customerReturn.Property(item => item.UpdatedAt).IsRequired(); customerReturn.HasIndex(item => new { item.TenantId, item.DeliveryId, item.CreatedAt }); customerReturn.HasIndex(item => new { item.TenantId, item.FinanceOpenItemId, item.Status });
+
+        var customerReturnLine = modelBuilder.Entity<SalesCustomerReturnLineEntity>();
+        customerReturnLine.Property(item => item.Id).ValueGeneratedNever(); customerReturnLine.Property(item => item.CustomerReturnId).IsRequired(); customerReturnLine.Property(item => item.DeliveryId).IsRequired(); customerReturnLine.Property(item => item.OrderLineId).IsRequired(); customerReturnLine.Property(item => item.DeliveredQuantity).HasPrecision(28, 8).IsRequired(); customerReturnLine.Property(item => item.PreviouslyReturnedQuantity).HasPrecision(28, 8).IsRequired(); customerReturnLine.Property(item => item.ReturnQuantity).HasPrecision(28, 8).IsRequired(); customerReturnLine.Property(item => item.Reason).HasMaxLength(2048).IsRequired(false); customerReturnLine.HasIndex(item => new { item.TenantId, item.CustomerReturnId, item.OrderLineId }).IsUnique(); customerReturnLine.HasIndex(item => new { item.TenantId, item.DeliveryId, item.OrderLineId }); customerReturnLine.HasOne<SalesCustomerReturnEntity>().WithMany(item => item.Lines).HasForeignKey(item => new { item.TenantId, item.CustomerReturnId }).HasPrincipalKey(item => new { item.TenantId, item.Id }).OnDelete(DeleteBehavior.Cascade);
 
         var history = modelBuilder.Entity<SalesHistoryEntity>();
         history.Property(item => item.Id).ValueGeneratedNever();

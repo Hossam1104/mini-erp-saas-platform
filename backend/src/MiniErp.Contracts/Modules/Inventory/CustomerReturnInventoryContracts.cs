@@ -1,0 +1,69 @@
+#pragma warning disable CS1591
+
+namespace MiniErp.Contracts.Modules.Inventory;
+
+public enum InventoryCustomerReturnStatus
+{
+    AwaitingReceipt = 1,
+    Received = 2,
+    Inspected = 3,
+    Posted = 4,
+    Unknown = 5,
+    ReconciliationRequired = 6
+}
+
+public enum InventoryCustomerReturnDisposition
+{
+    PendingInspection = 1,
+    Restockable = 2,
+    NonRestockable = 3,
+    Damaged = 4,
+    Scrap = 5,
+    Rejected = 6
+}
+
+public sealed record InventoryCustomerReturnReceiptLineRequest(Guid OrderLineId, decimal Quantity);
+
+public sealed record InventoryCustomerReturnReceiptRequest(
+    DateOnly ReceiptDate,
+    IReadOnlyList<InventoryCustomerReturnReceiptLineRequest> Lines,
+    string PhysicalEvidenceReference);
+
+public sealed record InventoryCustomerReturnInspectionLineRequest(
+    Guid OrderLineId,
+    decimal Quantity,
+    InventoryCustomerReturnDisposition Disposition,
+    string? Notes = null);
+
+public sealed record InventoryCustomerReturnInspectionRequest(
+    IReadOnlyList<InventoryCustomerReturnInspectionLineRequest> Lines,
+    string InspectionEvidenceReference);
+
+public sealed record InventoryCustomerReturnLineResponse(
+    Guid Id,
+    Guid OrderLineId,
+    decimal ReceivedQuantity,
+    decimal DispositionedQuantity,
+    InventoryCustomerReturnDisposition Disposition,
+    Guid? MovementId,
+    Guid? DeliveryMovementId,
+    decimal? DeliveryUnitCost,
+    string? Notes);
+
+public sealed record InventoryCustomerReturnResponse(
+    Guid Id,
+    Guid TenantId,
+    Guid SalesCustomerReturnId,
+    Guid CompanyId,
+    Guid? BranchId,
+    Guid WarehouseId,
+    InventoryCustomerReturnStatus Status,
+    string PhysicalEvidenceReference,
+    string InspectionEvidenceReference,
+    string HandoffState,
+    DateOnly? ReceiptDate,
+    DateTimeOffset? PostedAt,
+    IReadOnlyList<InventoryCustomerReturnLineResponse> Lines,
+    byte[] Version);
+
+#pragma warning restore CS1591

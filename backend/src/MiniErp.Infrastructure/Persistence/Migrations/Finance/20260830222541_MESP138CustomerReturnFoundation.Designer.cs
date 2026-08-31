@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Infrastructure.Persistence.Modules.Finance;
 
@@ -11,9 +12,11 @@ using MiniErp.Infrastructure.Persistence.Modules.Finance;
 namespace MiniErp.Infrastructure.Persistence.Migrations.Finance
 {
     [DbContext(typeof(FinanceDbContext))]
-    partial class FinanceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260830222541_MESP138CustomerReturnFoundation")]
+    partial class MESP138CustomerReturnFoundation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -450,15 +453,9 @@ namespace MiniErp.Infrastructure.Persistence.Migrations.Finance
                     b.Property<DateTimeOffset?>("PostedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("PostingJournalId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Reason")
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
-
-                    b.Property<Guid?>("ReversalJournalId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("SalesCustomerReturnId")
                         .HasColumnType("uniqueidentifier");

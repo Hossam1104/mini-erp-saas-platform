@@ -1,0 +1,93 @@
+#pragma warning disable CS1591
+
+using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.Contracts.Modules.Finance;
+
+namespace MiniErp.Infrastructure.Persistence.Modules.Finance;
+
+internal sealed class FinanceCreditNoteEntity : FinanceEntity
+{
+    private FinanceCreditNoteEntity() { CurrencyCode = FunctionalCurrencyCode = SourceEvidence = HandoffState = string.Empty; Lines = []; }
+    internal FinanceCreditNoteEntity(TenantId tenantId, FinanceCreditNoteCreateRequest request, Guid id, Guid deliveryId, Guid? invoiceId, Guid financeOpenItemId, Guid companyId, Guid customerId, string currencyCode, string functionalCurrencyCode, decimal net, decimal tax, decimal gross, decimal functionalAmount, string evidence) : base(tenantId, id)
+    { SalesCustomerReturnId = request.SalesCustomerReturnId; DeliveryId = deliveryId; InvoiceId = invoiceId; FinanceOpenItemId = financeOpenItemId; CompanyId = companyId; CustomerId = customerId; Status = FinanceCreditNoteStatus.Draft; CurrencyCode = currencyCode; FunctionalCurrencyCode = functionalCurrencyCode; NetAmount = net; TaxAmount = tax; GrossAmount = gross; FunctionalAmount = functionalAmount; SourceEvidence = evidence; HandoffState = "NotCommitted"; CreditNoteDate = request.CreditNoteDate; Reason = request.Reason; CreatedAt = DateTimeOffset.UtcNow; }
+    internal Guid SalesCustomerReturnId { get; private set; }
+    internal Guid DeliveryId { get; private set; }
+    internal Guid? InvoiceId { get; private set; }
+    internal Guid FinanceOpenItemId { get; private set; }
+    internal Guid CompanyId { get; private set; }
+    internal Guid CustomerId { get; private set; }
+    internal FinanceCreditNoteStatus Status { get; private set; }
+    internal string CurrencyCode { get; private set; }
+    internal string FunctionalCurrencyCode { get; private set; }
+    internal decimal NetAmount { get; private set; }
+    internal decimal TaxAmount { get; private set; }
+    internal decimal GrossAmount { get; private set; }
+    internal decimal FunctionalAmount { get; private set; }
+    internal string SourceEvidence { get; private set; }
+    internal string HandoffState { get; private set; }
+    internal DateOnly CreditNoteDate { get; private set; }
+    internal DateTimeOffset? PostedAt { get; private set; }
+    internal DateTimeOffset CreatedAt { get; private set; }
+    internal string? Reason { get; private set; }
+    internal Guid? CustomerCreditId { get; private set; }
+    internal Guid? PostingJournalId { get; private set; }
+    internal Guid? ReversalJournalId { get; private set; }
+    internal List<FinanceCreditNoteLineEntity> Lines { get; private set; } = [];
+    internal void SetStatus(FinanceCreditNoteStatus status, DateTimeOffset at) { Status = status; if (status == FinanceCreditNoteStatus.Posted) PostedAt = at; HandoffState = status == FinanceCreditNoteStatus.Posted ? "Committed" : status is FinanceCreditNoteStatus.Unknown or FinanceCreditNoteStatus.ReconciliationRequired ? "ReconciliationRequired" : HandoffState; TouchVersion(); }
+    internal void SetCredit(Guid id) { CustomerCreditId = id; TouchVersion(); }
+    internal void SetPostingJournal(Guid id) { PostingJournalId = id; TouchVersion(); }
+    internal void SetReversalJournal(Guid id) { ReversalJournalId = id; TouchVersion(); }
+}
+
+internal sealed class FinanceCreditNoteLineEntity : FinanceEntity
+{
+    private FinanceCreditNoteLineEntity() { CurrencyCode = string.Empty; }
+    internal FinanceCreditNoteLineEntity(TenantId tenantId, Guid id, Guid creditNoteId, Guid orderLineId, decimal quantity, decimal net, decimal tax, decimal gross, string currencyCode, Guid? taxId, Guid? taxRateVersionId) : base(tenantId, id)
+    { CreditNoteId = creditNoteId; OrderLineId = orderLineId; Quantity = quantity; NetAmount = net; TaxAmount = tax; GrossAmount = gross; CurrencyCode = currencyCode; TaxId = taxId; TaxRateVersionId = taxRateVersionId; }
+    internal Guid CreditNoteId { get; private set; }
+    internal Guid OrderLineId { get; private set; }
+    internal decimal Quantity { get; private set; }
+    internal decimal NetAmount { get; private set; }
+    internal decimal TaxAmount { get; private set; }
+    internal decimal GrossAmount { get; private set; }
+    internal string CurrencyCode { get; private set; }
+    internal Guid? TaxId { get; private set; }
+    internal Guid? TaxRateVersionId { get; private set; }
+}
+
+internal sealed class FinanceCustomerCreditEntity : FinanceEntity
+{
+    private FinanceCustomerCreditEntity() { CurrencyCode = string.Empty; }
+    internal FinanceCustomerCreditEntity(TenantId tenantId, Guid id, FinanceCreditNoteEntity note) : base(tenantId, id)
+    { CompanyId = note.CompanyId; CustomerId = note.CustomerId; CreditNoteId = note.Id; CurrencyCode = note.CurrencyCode; OriginalAmount = note.GrossAmount; Status = FinanceCustomerCreditStatus.Available; }
+    internal Guid CompanyId { get; private set; }
+    internal Guid CustomerId { get; private set; }
+    internal Guid CreditNoteId { get; private set; }
+    internal Guid? AppliedToOpenItemId { get; private set; }
+    internal string CurrencyCode { get; private set; }
+    internal decimal OriginalAmount { get; private set; }
+    internal decimal AppliedAmount { get; private set; }
+    internal FinanceCustomerCreditStatus Status { get; private set; }
+    internal decimal OutstandingAmount => Math.Max(0m, OriginalAmount - AppliedAmount);
+    internal void Apply(decimal amount, Guid? openItemId) { if (amount < 0m || amount > OutstandingAmount) throw new InvalidOperationException("credit_over_application"); AppliedAmount += amount; AppliedToOpenItemId = openItemId; Status = OutstandingAmount == 0m ? FinanceCustomerCreditStatus.FullyApplied : FinanceCustomerCreditStatus.PartiallyApplied; TouchVersion(); }
+    internal void Reverse() { AppliedAmount = 0m; AppliedToOpenItemId = null; Status = FinanceCustomerCreditStatus.Reversed; TouchVersion(); }
+}
+
+internal sealed class FinanceCustomerCreditApplicationEntity : FinanceEntity
+{
+    private FinanceCustomerCreditApplicationEntity() { CurrencyCode = string.Empty; }
+    internal FinanceCustomerCreditApplicationEntity(TenantId tenantId, Guid id, Guid creditId, Guid openItemId, Guid companyId, Guid customerId, decimal amount, string currencyCode, Guid creditNoteId, DateOnly date) : base(tenantId, id)
+    { CustomerCreditId = creditId; OpenItemId = openItemId; CompanyId = companyId; CustomerId = customerId; Amount = amount; CurrencyCode = currencyCode; CreditNoteId = creditNoteId; ApplicationDate = date; }
+    internal Guid CustomerCreditId { get; private set; }
+    internal Guid OpenItemId { get; private set; }
+    internal Guid CompanyId { get; private set; }
+    internal Guid CustomerId { get; private set; }
+    internal decimal Amount { get; private set; }
+    internal string CurrencyCode { get; private set; }
+    internal Guid CreditNoteId { get; private set; }
+    internal DateOnly ApplicationDate { get; private set; }
+    internal bool Reversed { get; private set; }
+    internal void Reverse() { Reversed = true; TouchVersion(); }
+}
+
+#pragma warning restore CS1591
