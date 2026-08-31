@@ -33,7 +33,7 @@ public sealed class InventoryCustomerReturnService(
     {
         if (id == Guid.Empty || expectedVersion is null || expectedVersion.Length == 0 || request is null || request.ReceiptDate == default || string.IsNullOrWhiteSpace(request.PhysicalEvidenceReference) || request.Lines is null || request.Lines.Count == 0 || request.Lines.Any(item => item.OrderLineId == Guid.Empty || item.Quantity <= 0m) || request.Lines.Select(item => item.OrderLineId).Distinct().Count() != request.Lines.Count) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("validation_failed");
         var source = await salesReturns.GetCustomerReturnSourceAsync(context.TenantContext, id, cancellationToken);
-        if (source is null || source.Status != SalesCustomerReturnStatus.AwaitingReceipt) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("sales_return_not_awaiting_receipt");
+        if (source is null || source.Status is not (SalesCustomerReturnStatus.AwaitingReceipt or SalesCustomerReturnStatus.PartiallyReceived or SalesCustomerReturnStatus.ReconciliationRequired or SalesCustomerReturnStatus.Unknown)) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("sales_return_not_awaiting_receipt");
         if (source.Version is null || !source.Version.SequenceEqual(expectedVersion)) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("concurrency_conflict");
         if (!authorization.IsAllowed(context, "inventory.customer-return.receive", new InventoryScope(source.TenantId, source.CompanyId, source.BranchId, source.WarehouseId))) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("permission_denied");
         foreach (var line in request.Lines)

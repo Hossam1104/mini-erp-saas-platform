@@ -26,7 +26,39 @@ public sealed record SalesCustomerReturnSourceLineRecord(
     decimal ReturnQuantity = 0m,
     Guid? ReturnLineId = null,
     Guid? TaxId = null,
-    Guid? TaxRateVersionId = null);
+    Guid? TaxRateVersionId = null,
+    decimal ReceivedQuantity = 0m,
+    decimal InspectedQuantity = 0m,
+    decimal CommerciallyAcceptedQuantity = 0m,
+    decimal RestockedQuantity = 0m,
+    decimal NonRestockableAcceptedQuantity = 0m,
+    decimal RejectedQuantity = 0m,
+    string StockDisposition = "PendingInspection",
+    IReadOnlyList<Guid>? InventoryMovementIds = null,
+    IReadOnlyList<Guid>? DeliveryMovementIds = null,
+    decimal? DeliveryUnitCost = null);
+
+public sealed record SalesCustomerReturnInvoiceAllocationRecord(
+    Guid Id,
+    Guid InvoiceId,
+    Guid? FinanceOpenItemId,
+    Guid DeliveryId,
+    Guid OrderLineId,
+    int OrderRevisionNumber,
+    decimal RecognizedQuantity,
+    decimal ReturnQuantity,
+    decimal CommerciallyAcceptedQuantity,
+    decimal PreviouslyCreditedQuantity,
+    decimal RemainingCreditableQuantity,
+    decimal NetAmount,
+    decimal TaxAmount,
+    decimal GrossAmount,
+    string CurrencyCode,
+    Guid? TaxId,
+    Guid? TaxRateVersionId,
+    int? TaxRateVersionNumber,
+    string SourceAllocationFingerprint,
+    string SourceInvoiceFingerprint);
 
 public sealed record SalesCustomerReturnSourceRecord(
     Guid ReturnSourceId,
@@ -45,7 +77,60 @@ public sealed record SalesCustomerReturnSourceRecord(
     IReadOnlyList<SalesCustomerReturnSourceLineRecord> Lines,
     SalesCustomerReturnStatus Status = SalesCustomerReturnStatus.Approved,
     SalesCustomerReturnConsequence Consequence = SalesCustomerReturnConsequence.None,
-    byte[]? Version = null);
+    byte[]? Version = null,
+    IReadOnlyList<SalesCustomerReturnInvoiceAllocationRecord>? InvoiceAllocations = null);
+
+public sealed record SalesCustomerReturnInventoryAcknowledgementLine(
+    Guid OrderLineId,
+    decimal ReceivedQuantity,
+    decimal InspectedQuantity,
+    decimal CommerciallyAcceptedQuantity,
+    decimal RestockedQuantity,
+    decimal NonRestockableAcceptedQuantity,
+    decimal RejectedQuantity,
+    string StockDisposition,
+    IReadOnlyList<Guid> InventoryMovementIds,
+    IReadOnlyList<Guid> DeliveryMovementIds,
+    decimal? DeliveryUnitCost);
+
+public sealed record SalesCustomerReturnInventoryAcknowledgementCommand(
+    Guid ReturnId,
+    Guid TenantId,
+    Guid InventoryEffectId,
+    string EffectFingerprint,
+    string RequestFingerprint,
+    string? DownstreamIdempotencyKey,
+    string PhysicalEvidenceReference,
+    string InspectionEvidenceReference,
+    IReadOnlyList<SalesCustomerReturnInventoryAcknowledgementLine> Lines,
+    string CommitState,
+    string CorrelationId,
+    DateTimeOffset OccurredAt);
+
+public sealed record SalesCustomerReturnInventoryFailureCommand(
+    Guid ReturnId,
+    Guid TenantId,
+    Guid InventoryEffectId,
+    string EffectFingerprint,
+    string RequestFingerprint,
+    string Error,
+    string CorrelationId,
+    DateTimeOffset OccurredAt);
+
+public sealed record SalesCustomerReturnDownstreamReversalCommand(
+    Guid ReturnId,
+    Guid TenantId,
+    string Downstream,
+    string CorrelationId,
+    DateTimeOffset OccurredAt);
+
+public sealed record SalesCustomerReturnFinanceEffectCommand(
+    Guid ReturnId,
+    Guid TenantId,
+    Guid CreditNoteId,
+    Guid InvoiceId,
+    IReadOnlyList<Guid> SourceAllocationIds,
+    DateTimeOffset OccurredAt);
 
 public sealed record SalesCustomerReturnOperationResult<T>(bool Succeeded, string Code, T? Value)
 {
@@ -89,11 +174,19 @@ public interface ISalesCustomerReturnPersistence
     Task<IReadOnlyList<SalesAuditResponse>> ListAuditAsync(ProcurementRequestContext context, Guid id, CancellationToken cancellationToken = default);
     Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> CreateAsync(ProcurementRequestContext context, SalesCustomerReturnCreateCommand command, CancellationToken cancellationToken = default);
     Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> MutateAsync(ProcurementRequestContext context, SalesCustomerReturnActionCommand command, CancellationToken cancellationToken = default);
+    Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> AcknowledgeInventoryAsync(TenantContext context, SalesCustomerReturnInventoryAcknowledgementCommand command, CancellationToken cancellationToken = default);
+    Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RecordInventoryFailureAsync(TenantContext context, SalesCustomerReturnInventoryFailureCommand command, CancellationToken cancellationToken = default);
+    Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RecordDownstreamReversalAsync(TenantContext context, SalesCustomerReturnDownstreamReversalCommand command, CancellationToken cancellationToken = default);
+    Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RegisterFinanceCreditNoteAsync(TenantContext context, SalesCustomerReturnFinanceEffectCommand command, CancellationToken cancellationToken = default);
 }
 
 public interface ISalesCustomerReturnSourceProvider
 {
     Task<SalesCustomerReturnSourceRecord?> GetCustomerReturnSourceAsync(TenantContext context, Guid returnId, CancellationToken cancellationToken = default);
+    Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> AcknowledgeInventoryAsync(TenantContext context, SalesCustomerReturnInventoryAcknowledgementCommand command, CancellationToken cancellationToken = default);
+    Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RecordInventoryFailureAsync(TenantContext context, SalesCustomerReturnInventoryFailureCommand command, CancellationToken cancellationToken = default);
+    Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RecordDownstreamReversalAsync(TenantContext context, SalesCustomerReturnDownstreamReversalCommand command, CancellationToken cancellationToken = default);
+    Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RegisterFinanceCreditNoteAsync(TenantContext context, SalesCustomerReturnFinanceEffectCommand command, CancellationToken cancellationToken = default);
 }
 
 public sealed class UnavailableSalesCustomerReturnPersistence : ISalesCustomerReturnPersistence, ISalesCustomerReturnSourceProvider
@@ -108,6 +201,10 @@ public sealed class UnavailableSalesCustomerReturnPersistence : ISalesCustomerRe
     public Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> CreateAsync(ProcurementRequestContext c, SalesCustomerReturnCreateCommand m, CancellationToken x = default) => Task.FromResult(Failure<SalesCustomerReturnResponse>());
     public Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> MutateAsync(ProcurementRequestContext c, SalesCustomerReturnActionCommand m, CancellationToken x = default) => Task.FromResult(Failure<SalesCustomerReturnResponse>());
     public Task<SalesCustomerReturnSourceRecord?> GetCustomerReturnSourceAsync(TenantContext c, Guid id, CancellationToken x = default) => Task.FromResult<SalesCustomerReturnSourceRecord?>(null);
+    public Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> AcknowledgeInventoryAsync(TenantContext c, SalesCustomerReturnInventoryAcknowledgementCommand m, CancellationToken x = default) => Task.FromResult(Failure<SalesCustomerReturnResponse>());
+    public Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RecordInventoryFailureAsync(TenantContext c, SalesCustomerReturnInventoryFailureCommand m, CancellationToken x = default) => Task.FromResult(Failure<SalesCustomerReturnResponse>());
+    public Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RecordDownstreamReversalAsync(TenantContext c, SalesCustomerReturnDownstreamReversalCommand m, CancellationToken x = default) => Task.FromResult(Failure<SalesCustomerReturnResponse>());
+    public Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RegisterFinanceCreditNoteAsync(TenantContext c, SalesCustomerReturnFinanceEffectCommand m, CancellationToken x = default) => Task.FromResult(Failure<SalesCustomerReturnResponse>());
 }
 
 public sealed class SalesCustomerReturnService(
@@ -170,7 +267,11 @@ public sealed class SalesCustomerReturnService(
         return await persistence.MutateAsync(context, new SalesCustomerReturnActionCommand(id, expectedVersion, action, reason, context.ActorId, DateTimeOffset.UtcNow, Normalize(idempotencyKey), Fingerprint(new { id, action, reason, expectedVersion })), cancellationToken);
     }
 
-    private static SalesCustomerReturnSourceResponse ToSourceResponse(SalesCustomerReturnSourceRecord source) => new(source.DeliveryId, source.OrderId, source.OrderRevisionNumber, source.CompanyId, source.BranchId, source.CustomerId, source.WarehouseId, source.DeliveryPostedAt, source.RecognizedInvoiceId, source.FinanceOpenItemId, source.CurrencyCode, source.Lines.Select(line => new SalesCustomerReturnSourceLineResponse(line.OrderLineId, line.ProductId, line.ProductSku, line.ProductName, line.UnitOfMeasureId, line.UnitOfMeasureCode, line.DeliveredQuantity, line.AlreadyReturnedQuantity, line.EligibleQuantity, line.UnitNetAmount, line.UnitTaxAmount, line.UnitGrossAmount, line.DeliveryMovementId)).ToArray(), source.Version);
+    public Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> AcknowledgeInventoryAsync(TenantContext context, SalesCustomerReturnInventoryAcknowledgementCommand command, CancellationToken cancellationToken = default) => persistence.AcknowledgeInventoryAsync(context, command, cancellationToken);
+    public Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RecordInventoryFailureAsync(TenantContext context, SalesCustomerReturnInventoryFailureCommand command, CancellationToken cancellationToken = default) => persistence.RecordInventoryFailureAsync(context, command, cancellationToken);
+    public Task<SalesCustomerReturnOperationResult<SalesCustomerReturnResponse>> RecordDownstreamReversalAsync(TenantContext context, SalesCustomerReturnDownstreamReversalCommand command, CancellationToken cancellationToken = default) => persistence.RecordDownstreamReversalAsync(context, command, cancellationToken);
+
+    private static SalesCustomerReturnSourceResponse ToSourceResponse(SalesCustomerReturnSourceRecord source) => new(source.DeliveryId, source.OrderId, source.OrderRevisionNumber, source.CompanyId, source.BranchId, source.CustomerId, source.WarehouseId, source.DeliveryPostedAt, source.RecognizedInvoiceId, source.FinanceOpenItemId, source.CurrencyCode, source.Lines.Select(line => new SalesCustomerReturnSourceLineResponse(line.OrderLineId, line.ProductId, line.ProductSku, line.ProductName, line.UnitOfMeasureId, line.UnitOfMeasureCode, line.DeliveredQuantity, line.AlreadyReturnedQuantity, line.EligibleQuantity, line.UnitNetAmount, line.UnitTaxAmount, line.UnitGrossAmount, line.DeliveryMovementId)).ToArray(), source.Version, source.InvoiceAllocations?.Select(line => new SalesCustomerReturnInvoiceAllocationResponse(line.Id, line.InvoiceId, line.FinanceOpenItemId, line.DeliveryId, line.OrderLineId, line.OrderRevisionNumber, line.RecognizedQuantity, line.ReturnQuantity, line.CommerciallyAcceptedQuantity, line.PreviouslyCreditedQuantity, line.RemainingCreditableQuantity, line.NetAmount, line.TaxAmount, line.GrossAmount, line.CurrencyCode, line.TaxId, line.TaxRateVersionId, line.TaxRateVersionNumber, line.SourceAllocationFingerprint, line.SourceInvoiceFingerprint)).ToArray());
     private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static string Fingerprint<T>(T value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value))));
 }

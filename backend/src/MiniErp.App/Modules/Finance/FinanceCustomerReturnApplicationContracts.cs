@@ -40,8 +40,8 @@ public sealed class FinanceCustomerReturnService(
     {
         if (request is null || request.SalesCustomerReturnId == Guid.Empty || request.CreditNoteDate == default) return FinanceOperationResult<FinanceCreditNoteResponse>.Failure("validation_failed");
         var source = await salesReturns.GetCustomerReturnSourceAsync(context.TenantContext, request.SalesCustomerReturnId, cancellationToken);
-        if (source is null || source.Consequence != SalesCustomerReturnConsequence.CreditNote || source.Status is not (SalesCustomerReturnStatus.AwaitingReceipt or SalesCustomerReturnStatus.PartiallyReceived or SalesCustomerReturnStatus.Received or SalesCustomerReturnStatus.Completed)) return FinanceOperationResult<FinanceCreditNoteResponse>.Failure("sales_return_not_creditable");
-        if (source.FinanceOpenItemId is null) return FinanceOperationResult<FinanceCreditNoteResponse>.Failure("recognized_invoice_required");
+        if (source is null || source.Consequence != SalesCustomerReturnConsequence.CreditNote || source.Status is not (SalesCustomerReturnStatus.Received or SalesCustomerReturnStatus.Completed) || source.Lines.Sum(item => item.CommerciallyAcceptedQuantity) <= 0m || source.Lines.Sum(item => item.InspectedQuantity) < source.Lines.Sum(item => item.CommerciallyAcceptedQuantity)) return FinanceOperationResult<FinanceCreditNoteResponse>.Failure("sales_return_not_creditable");
+        if (source.InvoiceAllocations is null || source.InvoiceAllocations.Count == 0) return FinanceOperationResult<FinanceCreditNoteResponse>.Failure("recognized_invoice_required");
         var auth = authorization.Authorize(context, "finance.credit-note.create", source.CompanyId);
         if (!auth.Allowed) return FinanceOperationResult<FinanceCreditNoteResponse>.Failure(auth.Code);
         return await persistence.CreateAsync(context, request, Normalize(idempotencyKey), Fingerprint(request), cancellationToken);

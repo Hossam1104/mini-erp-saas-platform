@@ -7,9 +7,9 @@ namespace MiniErp.Infrastructure.Persistence.Modules.Finance;
 
 internal sealed class FinanceCreditNoteEntity : FinanceEntity
 {
-    private FinanceCreditNoteEntity() { CurrencyCode = FunctionalCurrencyCode = SourceEvidence = HandoffState = string.Empty; Lines = []; }
-    internal FinanceCreditNoteEntity(TenantId tenantId, FinanceCreditNoteCreateRequest request, Guid id, Guid deliveryId, Guid? invoiceId, Guid financeOpenItemId, Guid companyId, Guid customerId, string currencyCode, string functionalCurrencyCode, decimal net, decimal tax, decimal gross, decimal functionalAmount, string evidence) : base(tenantId, id)
-    { SalesCustomerReturnId = request.SalesCustomerReturnId; DeliveryId = deliveryId; InvoiceId = invoiceId; FinanceOpenItemId = financeOpenItemId; CompanyId = companyId; CustomerId = customerId; Status = FinanceCreditNoteStatus.Draft; CurrencyCode = currencyCode; FunctionalCurrencyCode = functionalCurrencyCode; NetAmount = net; TaxAmount = tax; GrossAmount = gross; FunctionalAmount = functionalAmount; SourceEvidence = evidence; HandoffState = "NotCommitted"; CreditNoteDate = request.CreditNoteDate; Reason = request.Reason; CreatedAt = DateTimeOffset.UtcNow; }
+    private FinanceCreditNoteEntity() { CurrencyCode = FunctionalCurrencyCode = SourceEvidence = HandoffState = TaxReversalJournalIdsJson = string.Empty; Lines = []; }
+    internal FinanceCreditNoteEntity(TenantId tenantId, FinanceCreditNoteCreateRequest request, Guid id, Guid deliveryId, Guid? invoiceId, Guid financeOpenItemId, Guid companyId, Guid customerId, string currencyCode, string functionalCurrencyCode, decimal net, decimal tax, decimal gross, decimal functionalAmount, string evidence, decimal? exchangeRate = null, Guid? exchangeRateId = null, Guid? exchangeRateVersionId = null, int? exchangeRateVersionNumber = null) : base(tenantId, id)
+    { SalesCustomerReturnId = request.SalesCustomerReturnId; DeliveryId = deliveryId; InvoiceId = invoiceId; FinanceOpenItemId = financeOpenItemId; CompanyId = companyId; CustomerId = customerId; Status = FinanceCreditNoteStatus.Draft; CurrencyCode = currencyCode; FunctionalCurrencyCode = functionalCurrencyCode; NetAmount = net; TaxAmount = tax; GrossAmount = gross; FunctionalAmount = functionalAmount; ExchangeRate = exchangeRate; ExchangeRateId = exchangeRateId; ExchangeRateVersionId = exchangeRateVersionId; ExchangeRateVersionNumber = exchangeRateVersionNumber; SourceEvidence = evidence; HandoffState = "NotCommitted"; TaxReversalJournalIdsJson = "[]"; CreditNoteDate = request.CreditNoteDate; Reason = request.Reason; CreatedAt = DateTimeOffset.UtcNow; }
     internal Guid SalesCustomerReturnId { get; private set; }
     internal Guid DeliveryId { get; private set; }
     internal Guid? InvoiceId { get; private set; }
@@ -23,6 +23,10 @@ internal sealed class FinanceCreditNoteEntity : FinanceEntity
     internal decimal TaxAmount { get; private set; }
     internal decimal GrossAmount { get; private set; }
     internal decimal FunctionalAmount { get; private set; }
+    internal decimal? ExchangeRate { get; private set; }
+    internal Guid? ExchangeRateId { get; private set; }
+    internal Guid? ExchangeRateVersionId { get; private set; }
+    internal int? ExchangeRateVersionNumber { get; private set; }
     internal string SourceEvidence { get; private set; }
     internal string HandoffState { get; private set; }
     internal DateOnly CreditNoteDate { get; private set; }
@@ -32,18 +36,20 @@ internal sealed class FinanceCreditNoteEntity : FinanceEntity
     internal Guid? CustomerCreditId { get; private set; }
     internal Guid? PostingJournalId { get; private set; }
     internal Guid? ReversalJournalId { get; private set; }
+    internal string TaxReversalJournalIdsJson { get; private set; }
     internal List<FinanceCreditNoteLineEntity> Lines { get; private set; } = [];
     internal void SetStatus(FinanceCreditNoteStatus status, DateTimeOffset at) { Status = status; if (status == FinanceCreditNoteStatus.Posted) PostedAt = at; HandoffState = status == FinanceCreditNoteStatus.Posted ? "Committed" : status is FinanceCreditNoteStatus.Unknown or FinanceCreditNoteStatus.ReconciliationRequired ? "ReconciliationRequired" : HandoffState; TouchVersion(); }
     internal void SetCredit(Guid id) { CustomerCreditId = id; TouchVersion(); }
     internal void SetPostingJournal(Guid id) { PostingJournalId = id; TouchVersion(); }
     internal void SetReversalJournal(Guid id) { ReversalJournalId = id; TouchVersion(); }
+    internal void SetTaxReversalJournals(IEnumerable<Guid> ids) { TaxReversalJournalIdsJson = System.Text.Json.JsonSerializer.Serialize(ids.Distinct()); TouchVersion(); }
 }
 
 internal sealed class FinanceCreditNoteLineEntity : FinanceEntity
 {
     private FinanceCreditNoteLineEntity() { CurrencyCode = string.Empty; }
-    internal FinanceCreditNoteLineEntity(TenantId tenantId, Guid id, Guid creditNoteId, Guid orderLineId, decimal quantity, decimal net, decimal tax, decimal gross, string currencyCode, Guid? taxId, Guid? taxRateVersionId) : base(tenantId, id)
-    { CreditNoteId = creditNoteId; OrderLineId = orderLineId; Quantity = quantity; NetAmount = net; TaxAmount = tax; GrossAmount = gross; CurrencyCode = currencyCode; TaxId = taxId; TaxRateVersionId = taxRateVersionId; }
+    internal FinanceCreditNoteLineEntity(TenantId tenantId, Guid id, Guid creditNoteId, Guid orderLineId, decimal quantity, decimal net, decimal tax, decimal gross, string currencyCode, Guid? taxId, Guid? taxRateVersionId, int? taxRateVersionNumber, Guid sourceAllocationId, decimal recognizedQuantity, decimal recognizedNetAmount, decimal recognizedTaxAmount, decimal recognizedGrossAmount, string sourceAllocationFingerprint) : base(tenantId, id)
+    { CreditNoteId = creditNoteId; OrderLineId = orderLineId; Quantity = quantity; NetAmount = net; TaxAmount = tax; GrossAmount = gross; CurrencyCode = currencyCode; TaxId = taxId; TaxRateVersionId = taxRateVersionId; TaxRateVersionNumber = taxRateVersionNumber; SourceAllocationId = sourceAllocationId; RecognizedQuantity = recognizedQuantity; RecognizedNetAmount = recognizedNetAmount; RecognizedTaxAmount = recognizedTaxAmount; RecognizedGrossAmount = recognizedGrossAmount; SourceAllocationFingerprint = sourceAllocationFingerprint; }
     internal Guid CreditNoteId { get; private set; }
     internal Guid OrderLineId { get; private set; }
     internal decimal Quantity { get; private set; }
@@ -53,6 +59,13 @@ internal sealed class FinanceCreditNoteLineEntity : FinanceEntity
     internal string CurrencyCode { get; private set; }
     internal Guid? TaxId { get; private set; }
     internal Guid? TaxRateVersionId { get; private set; }
+    internal int? TaxRateVersionNumber { get; private set; }
+    internal Guid SourceAllocationId { get; private set; }
+    internal decimal RecognizedQuantity { get; private set; }
+    internal decimal RecognizedNetAmount { get; private set; }
+    internal decimal RecognizedTaxAmount { get; private set; }
+    internal decimal RecognizedGrossAmount { get; private set; }
+    internal string SourceAllocationFingerprint { get; private set; } = string.Empty;
 }
 
 internal sealed class FinanceCustomerCreditEntity : FinanceEntity

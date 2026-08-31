@@ -1,7 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using MiniErp.App.BuildingBlocks.Tenancy;
+using MiniErp.App.Modules.Sales;
+using MiniErp.Contracts.Modules.Finance;
 using MiniErp.Contracts.Modules.Foundation;
+using MiniErp.Contracts.Modules.Inventory;
+using MiniErp.Contracts.Modules.Sales;
 using MiniErp.Infrastructure.Persistence.Modules.Finance;
 using MiniErp.Infrastructure.Persistence.Modules.Inventory;
 using MiniErp.Infrastructure.Persistence.Modules.Sales;
@@ -70,12 +74,104 @@ public sealed class CustomerReturnFoundationTests
 
         AssertTenantOwned(sales.Model, "MiniErp.Infrastructure.Persistence.Modules.Sales.SalesCustomerReturnEntity");
         AssertTenantOwned(sales.Model, "MiniErp.Infrastructure.Persistence.Modules.Sales.SalesCustomerReturnLineEntity");
+        AssertTenantOwned(sales.Model, "MiniErp.Infrastructure.Persistence.Modules.Sales.SalesCustomerReturnInvoiceAllocationEntity");
         AssertTenantOwned(inventory.Model, "MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryCustomerReturnEntity");
         AssertTenantOwned(inventory.Model, "MiniErp.Infrastructure.Persistence.Modules.Inventory.InventoryCustomerReturnLineEntity");
         AssertTenantOwned(finance.Model, "MiniErp.Infrastructure.Persistence.Modules.Finance.FinanceCreditNoteEntity");
         AssertTenantOwned(finance.Model, "MiniErp.Infrastructure.Persistence.Modules.Finance.FinanceCreditNoteLineEntity");
         AssertTenantOwned(finance.Model, "MiniErp.Infrastructure.Persistence.Modules.Finance.FinanceCustomerCreditEntity");
         AssertTenantOwned(finance.Model, "MiniErp.Infrastructure.Persistence.Modules.Finance.FinanceCustomerCreditApplicationEntity");
+    }
+
+    [Fact]
+    public void Inventory_return_line_separates_commercial_acceptance_from_stock_disposition()
+    {
+        var line = new InventoryCustomerReturnLineEntity(TenantIdValue, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 0m);
+
+        line.Receive(5m);
+        line.Dispose(2m, InventoryCustomerReturnDisposition.NonRestockable, commerciallyAccepted: true, "usable only commercially", null, null, null);
+
+        Assert.Equal(2m, line.CommerciallyAcceptedQuantity);
+        Assert.Equal(0m, line.RestockedQuantity);
+        Assert.Equal(2m, line.NonRestockableAcceptedQuantity);
+        Assert.Equal(0m, line.RejectedQuantity);
+        Assert.Throws<InvalidOperationException>(() => line.Dispose(4m, InventoryCustomerReturnDisposition.Restockable, true, null, Guid.NewGuid(), Guid.NewGuid(), 10m));
+    }
+
+    [Fact]
+    public void Sales_inventory_acknowledgement_moves_from_receipt_to_completed_only_after_inspection()
+    {
+        var entity = CreateSalesReturn(3m);
+        var line = entity.Lines.Single();
+        var effectId = Guid.NewGuid();
+
+        entity.AcknowledgeInventory(Acknowledgement(entity, effectId, "receipt", 3m, 0m, 0m, 0m, 0m, 0m), DateTimeOffset.UtcNow);
+        Assert.Equal(SalesCustomerReturnStatus.Received, entity.Status);
+
+        entity.AcknowledgeInventory(Acknowledgement(entity, effectId, "inspection", 3m, 3m, 2m, 1m, 1m, 1m), DateTimeOffset.UtcNow);
+        Assert.Equal(SalesCustomerReturnStatus.Completed, entity.Status);
+        Assert.Equal(2m, line.CommerciallyAcceptedQuantity);
+        Assert.Equal(1m, line.RestockedQuantity);
+        Assert.Equal(1m, line.NonRestockableAcceptedQuantity);
+        Assert.Equal(1m, line.RejectedQuantity);
+    }
+
+    [Fact]
+    public void Sales_inventory_acknowledgement_rejects_wrong_effect_or_line_set()
+    {
+        var entity = CreateSalesReturn(1m);
+        var effectId = Guid.NewGuid();
+        entity.AcknowledgeInventory(Acknowledgement(entity, effectId, "receipt", 1m, 0m, 0m, 0m, 0m, 0m), DateTimeOffset.UtcNow);
+
+        Assert.Throws<InvalidOperationException>(() => entity.AcknowledgeInventory(Acknowledgement(entity, Guid.NewGuid(), "retry", 1m, 0m, 0m, 0m, 0m, 0m), DateTimeOffset.UtcNow));
+        Assert.Throws<InvalidOperationException>(() => entity.AcknowledgeInventory(new SalesCustomerReturnInventoryAcknowledgementCommand(entity.Id, TenantId, effectId, "receipt", "retry", null, "physical", string.Empty, [], "Committed", "test", DateTimeOffset.UtcNow), DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void Sales_inventory_failure_is_reconcilable_with_a_later_acknowledgement()
+    {
+        var entity = CreateSalesReturn(2m);
+        var effectId = Guid.NewGuid();
+
+        entity.RecordInventoryFailure(new SalesCustomerReturnInventoryFailureCommand(entity.Id, TenantId, effectId, "effect", "inspection", "sales unavailable", "test", DateTimeOffset.UtcNow));
+        Assert.Equal(SalesCustomerReturnStatus.ReconciliationRequired, entity.Status);
+        Assert.Equal("Required", entity.InventoryReconciliationState);
+
+        entity.AcknowledgeInventory(Acknowledgement(entity, effectId, "inspection", 2m, 2m, 2m, 2m, 0m, 0m), DateTimeOffset.UtcNow);
+        Assert.Equal(SalesCustomerReturnStatus.Completed, entity.Status);
+        Assert.Equal("Reconciled", entity.InventoryReconciliationState);
+    }
+
+    [Fact]
+    public void Sales_finance_effect_registration_is_idempotent_and_reversal_is_guarded()
+    {
+        var entity = CreateSalesReturn(1m);
+        var effectId = Guid.NewGuid();
+        entity.AcknowledgeInventory(Acknowledgement(entity, effectId, "receipt", 1m, 1m, 1m, 1m, 0m, 0m), DateTimeOffset.UtcNow);
+        var command = new SalesCustomerReturnFinanceEffectCommand(entity.Id, TenantId, Guid.NewGuid(), entity.InvoiceId!.Value, [Guid.NewGuid()], DateTimeOffset.UtcNow);
+
+        entity.RegisterFinanceCreditNote(command, DateTimeOffset.UtcNow);
+        entity.RegisterFinanceCreditNote(command, DateTimeOffset.UtcNow);
+        Assert.Equal(1, entity.ActiveFinanceCreditNoteCount);
+
+        entity.RecordDownstreamReversal(new SalesCustomerReturnDownstreamReversalCommand(entity.Id, TenantId, "finance", "test", DateTimeOffset.UtcNow));
+        Assert.Equal(0, entity.ActiveFinanceCreditNoteCount);
+        Assert.Throws<InvalidOperationException>(() => entity.RecordDownstreamReversal(new SalesCustomerReturnDownstreamReversalCommand(entity.Id, TenantId, "finance", "test", DateTimeOffset.UtcNow)));
+    }
+
+    [Fact]
+    public void Customer_credit_rejects_over_application_and_restores_balance_on_reversal()
+    {
+        var request = new FinanceCreditNoteCreateRequest(Guid.NewGuid(), new DateOnly(2026, 8, 31), "test");
+        var note = new FinanceCreditNoteEntity(TenantIdValue, request, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "SAR", "SAR", 80m, 20m, 100m, 100m, "evidence");
+        var credit = new FinanceCustomerCreditEntity(TenantIdValue, Guid.NewGuid(), note);
+
+        Assert.Throws<InvalidOperationException>(() => credit.Apply(100.01m, Guid.NewGuid()));
+        credit.Apply(40m, Guid.NewGuid());
+        Assert.Equal(60m, credit.OutstandingAmount);
+        credit.Reverse();
+        Assert.Equal(FinanceCustomerCreditStatus.Reversed, credit.Status);
+        Assert.Equal(0m, credit.AppliedAmount);
     }
 
     private static void AssertTenantOwned(IModel model, string entityName)
@@ -90,4 +186,40 @@ public sealed class CustomerReturnFoundationTests
         new TenantId(TenantId),
         new MembershipReference(Guid.NewGuid()),
         correlationId: new CorrelationId($"return-{purpose}"));
+
+    private static TenantId TenantIdValue => new(TenantId);
+
+    private static SalesCustomerReturnEntity CreateSalesReturn(decimal quantity)
+    {
+        var deliveryId = Guid.NewGuid();
+        var orderId = Guid.NewGuid();
+        var orderLineId = Guid.NewGuid();
+        var returnId = Guid.NewGuid();
+        var invoiceId = Guid.NewGuid();
+        var allocationId = Guid.NewGuid();
+        var source = new SalesCustomerReturnSourceRecord(
+            Guid.Empty,
+            deliveryId,
+            orderId,
+            1,
+            TenantId,
+            Guid.NewGuid(),
+            null,
+            invoiceId,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "SAR",
+            [new SalesCustomerReturnSourceLineRecord(orderLineId, Guid.NewGuid(), "SKU", "Product", Guid.NewGuid(), "EA", quantity, 0m, quantity, 80m, 20m, 100m, null)],
+            SalesCustomerReturnStatus.Approved,
+            SalesCustomerReturnConsequence.CreditNote,
+            Guid.NewGuid().ToByteArray(),
+            [new SalesCustomerReturnInvoiceAllocationRecord(allocationId, invoiceId, Guid.NewGuid(), deliveryId, orderLineId, 1, quantity, quantity, 0m, 0m, quantity, 80m, 20m, 100m, "SAR", null, null, null, "allocation", "invoice")]);
+        var request = new SalesCustomerReturnCreateRequest(deliveryId, new DateOnly(2026, 8, 31), SalesCustomerReturnConsequence.CreditNote, source.RecognizedInvoiceId, [new SalesCustomerReturnLineRequest(orderLineId, quantity)], "test");
+        return new SalesCustomerReturnEntity(TenantIdValue, returnId, request, source, Guid.NewGuid(), DateTimeOffset.UtcNow) { Lines = { new SalesCustomerReturnLineEntity(TenantIdValue, Guid.NewGuid(), returnId, deliveryId, request.Lines[0], source.Lines[0]) } };
+    }
+
+    private static SalesCustomerReturnInventoryAcknowledgementCommand Acknowledgement(SalesCustomerReturnEntity entity, Guid effectId, string requestFingerprint, decimal received, decimal inspected, decimal accepted, decimal restocked, decimal nonRestockable, decimal rejected) =>
+        new(entity.Id, TenantId, effectId, "effect", requestFingerprint, "inventory-key", "physical", inspected == 0m ? string.Empty : "inspection", [new(entity.Lines.Single().OrderLineId, received, inspected, accepted, restocked, nonRestockable, rejected, inspected == 0m ? "PendingInspection" : "Restockable", [], [], 10m)], "Committed", "test", DateTimeOffset.UtcNow);
 }

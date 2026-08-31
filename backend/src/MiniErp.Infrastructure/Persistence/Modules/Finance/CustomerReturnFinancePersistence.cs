@@ -1,6 +1,8 @@
 #pragma warning disable CS1591
 
 using System.Data;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.App.BuildingBlocks.Tenancy;
@@ -8,6 +10,7 @@ using MiniErp.App.Modules.Finance;
 using MiniErp.App.Modules.Sales;
 using MiniErp.App.Modules.MasterData;
 using MiniErp.Contracts.Modules.Finance;
+using MiniErp.Contracts.Modules.MasterData;
 using MiniErp.Contracts.Modules.Sales;
 
 namespace MiniErp.Infrastructure.Persistence.Modules.Finance;
@@ -35,23 +38,65 @@ public sealed class CustomerReturnFinancePersistence(
         var replay = await ReplayAsync(db, context, "finance.credit-note.create", idempotencyKey, fingerprint, cancellationToken);
         if (replay is not null) return replay;
         var source = await salesReturns.GetCustomerReturnSourceAsync(context.TenantContext, request.SalesCustomerReturnId, cancellationToken);
-        if (source is null || source.Status is not (SalesCustomerReturnStatus.AwaitingReceipt or SalesCustomerReturnStatus.PartiallyReceived or SalesCustomerReturnStatus.Received or SalesCustomerReturnStatus.Completed)) return Failure("sales_return_not_creditable");
-        if (source.FinanceOpenItemId is null) return Failure("recognized_invoice_required");
+        if (source is null || source.Status is not (SalesCustomerReturnStatus.Received or SalesCustomerReturnStatus.Completed)) return Failure("sales_return_not_creditable");
         if (source.Consequence != SalesCustomerReturnConsequence.CreditNote) return Failure("credit_note_not_requested");
-        if (await db.CreditNotes.AnyAsync(item => item.SalesCustomerReturnId == request.SalesCustomerReturnId, cancellationToken)) return Failure("credit_note_duplicate");
         var company = companies.List(context.TenantId).SingleOrDefault(item => item.CompanyId == source.CompanyId && item.IsActive);
         if (company is null || string.IsNullOrWhiteSpace(company.FunctionalCurrencyCode)) return Failure("company_currency_unavailable");
-        if (!string.Equals(company.FunctionalCurrencyCode, source.CurrencyCode, StringComparison.OrdinalIgnoreCase)) return Failure("finance_exchange_rate_evidence_required");
-        var sourceLines = source.Lines.Where(item => item.ReturnQuantity > 0m).ToArray();
-        if (sourceLines.Length == 0) return Failure("credit_note_lines_missing");
-        var net = Round(sourceLines.Sum(item => item.ReturnQuantity * item.UnitNetAmount));
-        var tax = Round(sourceLines.Sum(item => item.ReturnQuantity * item.UnitTaxAmount));
-        var gross = Round(net + tax);
-        if (gross <= 0m) return Failure("credit_note_amount_invalid");
-        var openItem = await db.OpenItems.SingleOrDefaultAsync(item => item.Id == source.FinanceOpenItemId && item.CompanyId == source.CompanyId && item.CustomerId == source.CustomerId && item.Kind == FinanceOpenItemKind.Receivable && item.CurrencyCode == source.CurrencyCode, cancellationToken);
+        var allocations = source.InvoiceAllocations?.Where(item => item.CommerciallyAcceptedQuantity > 0m).ToArray() ?? [];
+        if (allocations.Length == 0) return Failure("credit_note_lines_missing");
+        var invoiceIds = allocations.Select(item => item.InvoiceId).Distinct().ToArray();
+        var selectedInvoiceId = request.InvoiceId ?? (invoiceIds.Length == 1 ? invoiceIds[0] : Guid.Empty);
+        if (selectedInvoiceId == Guid.Empty || invoiceIds.Any(item => item == selectedInvoiceId) == false) return Failure("invoice_selector_required");
+        var selected = allocations.Where(item => item.InvoiceId == selectedInvoiceId).ToArray();
+        var openItemIds = selected.Select(item => item.FinanceOpenItemId).Distinct().ToArray();
+        if (openItemIds.Length != 1 || openItemIds[0] == Guid.Empty) return Failure("recognized_invoice_required");
+        var openItem = await db.OpenItems.SingleOrDefaultAsync(item => item.Id == openItemIds[0] && item.CompanyId == source.CompanyId && item.CustomerId == source.CustomerId && item.Kind == FinanceOpenItemKind.Receivable && item.CurrencyCode == selected[0].CurrencyCode, cancellationToken);
         if (openItem is null || openItem.RecognitionState != FinanceOpenItemRecognitionState.Recognized) return Failure("finance_open_item_unavailable");
-        var entity = new FinanceCreditNoteEntity(context.TenantId, request, Guid.NewGuid(), source.DeliveryId, source.RecognizedInvoiceId, source.FinanceOpenItemId.Value, source.CompanyId, source.CustomerId, source.CurrencyCode, company.FunctionalCurrencyCode, net, tax, gross, gross, JsonSerializer.Serialize(new { Source = source, Request = request }, Json));
-        foreach (var line in sourceLines) entity.Lines.Add(new FinanceCreditNoteLineEntity(context.TenantId, Guid.NewGuid(), entity.Id, line.OrderLineId, line.ReturnQuantity, Round(line.ReturnQuantity * line.UnitNetAmount), Round(line.ReturnQuantity * line.UnitTaxAmount), Round(line.ReturnQuantity * line.UnitGrossAmount), source.CurrencyCode, line.TaxId, line.TaxRateVersionId));
+        var previousIds = selected.Select(item => item.Id).ToArray();
+        var previous = await (from line in db.CreditNoteLines
+                              join note in db.CreditNotes on line.CreditNoteId equals note.Id
+                              where previousIds.Contains(line.SourceAllocationId) && note.Status != FinanceCreditNoteStatus.Rejected && note.Status != FinanceCreditNoteStatus.Cancelled && note.Status != FinanceCreditNoteStatus.Reversed
+                              select new { line.SourceAllocationId, line.Quantity, line.NetAmount, line.TaxAmount, line.GrossAmount }).ToListAsync(cancellationToken);
+        var requested = request.Lines is { Count: > 0 }
+            ? request.Lines.GroupBy(item => item.SourceAllocationId).ToDictionary(item => item.Key, item => item.Sum(value => value.Quantity))
+            : selected.ToDictionary(item => item.Id, item => item.CommerciallyAcceptedQuantity - previous.Where(value => value.SourceAllocationId == item.Id).Sum(value => value.Quantity));
+        if (requested.Any(item => item.Key == Guid.Empty || item.Value <= 0m)) return Failure("credit_note_lines_invalid");
+        if (requested.Keys.Any(item => selected.All(value => value.Id != item))) return Failure("credit_note_source_mismatch");
+        var noteLines = new List<(SalesCustomerReturnInvoiceAllocationRecord Source, decimal Quantity, decimal Net, decimal Tax, decimal Gross, decimal RecognizedQuantity, decimal RecognizedNet, decimal RecognizedTax, decimal RecognizedGross)>();
+        foreach (var item in selected)
+        {
+            if (!requested.TryGetValue(item.Id, out var quantity) || quantity <= 0m) continue;
+            var prior = previous.Where(value => value.SourceAllocationId == item.Id).ToArray();
+            var priorQuantity = prior.Sum(value => value.Quantity);
+            var remainingQuantity = item.CommerciallyAcceptedQuantity - priorQuantity;
+            if (quantity > remainingQuantity) return Failure("credit_note_quantity_conflict");
+            var acceptedRatio = item.ReturnQuantity == 0m ? 0m : item.CommerciallyAcceptedQuantity / item.ReturnQuantity;
+            var recognizedNet = Round(item.NetAmount * acceptedRatio);
+            var recognizedTax = Round(item.TaxAmount * acceptedRatio);
+            var recognizedGross = Round(item.GrossAmount * acceptedRatio);
+            if (Round(item.NetAmount + item.TaxAmount) != item.GrossAmount) return Failure("credit_note_amount_invalid");
+            var net = quantity == remainingQuantity ? Round(recognizedNet - prior.Sum(value => value.NetAmount)) : Round(recognizedNet * quantity / item.CommerciallyAcceptedQuantity);
+            var tax = quantity == remainingQuantity ? Round(recognizedTax - prior.Sum(value => value.TaxAmount)) : Round(recognizedTax * quantity / item.CommerciallyAcceptedQuantity);
+            var gross = quantity == remainingQuantity ? Round(recognizedGross - prior.Sum(value => value.GrossAmount)) : Round(net + tax);
+            if (net < 0m || tax < 0m || gross <= 0m || Round(net + tax) != gross) return Failure("credit_note_amount_invalid");
+            noteLines.Add((item, quantity, net, tax, gross, item.CommerciallyAcceptedQuantity, recognizedNet, recognizedTax, recognizedGross));
+        }
+        if (noteLines.Count == 0) return Failure("credit_note_lines_missing");
+        var netTotal = Round(noteLines.Sum(item => item.Net));
+        var taxTotal = Round(noteLines.Sum(item => item.Tax));
+        var grossTotal = Round(noteLines.Sum(item => item.Gross));
+        if (grossTotal <= 0m || Round(netTotal + taxTotal) != grossTotal) return Failure("credit_note_amount_invalid");
+        var currency = selected[0].CurrencyCode;
+        var rate = string.Equals(currency, company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? 1m : openItem.ExchangeRate;
+        if (string.Equals(currency, company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase))
+        {
+            if (openItem.ExchangeRate is not null || openItem.ExchangeRateId is not null || openItem.ExchangeRateVersionId is not null || openItem.ExchangeRateVersionNumber is not null) return Failure("exchange_rate_evidence_mismatch");
+        }
+        else if (rate is not > 0m || openItem.ExchangeRateId is not { } rateId || openItem.ExchangeRateVersionId is not { } versionId || openItem.ExchangeRateVersionNumber is not { } versionNumber || !await ExchangeRateMatchesAsync(context, currency, company.FunctionalCurrencyCode, request.CreditNoteDate, rate.Value, rateId, versionId, versionNumber, cancellationToken)) return Failure("exchange_rate_evidence_mismatch");
+        if (rate is null) return Failure("exchange_rate_evidence_mismatch");
+        var functionalTotal = Round(grossTotal * rate.Value);
+        var entity = new FinanceCreditNoteEntity(context.TenantId, request, Guid.NewGuid(), source.DeliveryId, selectedInvoiceId, openItem.Id, source.CompanyId, source.CustomerId, currency, company.FunctionalCurrencyCode, netTotal, taxTotal, grossTotal, functionalTotal, JsonSerializer.Serialize(new { Source = source, Request = request, Allocations = noteLines.Select(item => item.Source) }, Json), rate, string.Equals(currency, company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : openItem.ExchangeRateId, string.Equals(currency, company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : openItem.ExchangeRateVersionId, string.Equals(currency, company.FunctionalCurrencyCode, StringComparison.OrdinalIgnoreCase) ? null : openItem.ExchangeRateVersionNumber);
+        foreach (var line in noteLines) entity.Lines.Add(new FinanceCreditNoteLineEntity(context.TenantId, Guid.NewGuid(), entity.Id, line.Source.OrderLineId, line.Quantity, line.Net, line.Tax, line.Gross, currency, line.Source.TaxId, line.Source.TaxRateVersionId, line.Source.TaxRateVersionNumber, line.Source.Id, line.RecognizedQuantity, line.RecognizedNet, line.RecognizedTax, line.RecognizedGross, line.Source.SourceAllocationFingerprint));
         db.CreditNotes.Add(entity);
         AddAudit(db, context, "finance.credit-note.create", entity.Id, "Succeeded", null, idempotencyKey);
         await db.SaveChangesAsync(cancellationToken);
@@ -94,6 +139,8 @@ public sealed class CustomerReturnFinancePersistence(
             if (rule is null) return Failure("pending_mapping");
             var journal = await CreatePostedJournalAsync(db, context, entity, rule, cancellationToken);
             if (!journal.Succeeded || journal.Value is null) return Failure(journal.Code);
+            var taxJournals = await CreateTaxReversalJournalsAsync(db, context, entity, cancellationToken);
+            if (!taxJournals.Succeeded) return Failure(taxJournals.Code);
             var credit = new FinanceCustomerCreditEntity(context.TenantId, Guid.NewGuid(), entity);
             db.CustomerCredits.Add(credit);
             if (apply > 0m)
@@ -103,6 +150,9 @@ public sealed class CustomerReturnFinancePersistence(
             }
             entity.SetCredit(credit.Id);
             entity.SetPostingJournal(journal.Value.Value);
+            entity.SetTaxReversalJournals(taxJournals.JournalIds);
+            var financeAcknowledgement = await salesReturns.RegisterFinanceCreditNoteAsync(context.TenantContext, new SalesCustomerReturnFinanceEffectCommand(entity.SalesCustomerReturnId, context.TenantId.Value, entity.Id, entity.InvoiceId ?? Guid.Empty, entity.Lines.Select(item => item.SourceAllocationId).ToArray(), DateTimeOffset.UtcNow), cancellationToken);
+            if (!financeAcknowledgement.Succeeded) return Failure("sales_finance_acknowledgement_required");
         }
         if (action == FinanceCreditNoteMutation.Reverse)
         {
@@ -113,9 +163,20 @@ public sealed class CustomerReturnFinancePersistence(
             if (!reversal.Succeeded || reversal.Value is null) return Failure(reversal.Code);
             original.LinkReversal(reversal.Value.Value);
             entity.SetReversalJournal(reversal.Value.Value);
+            var taxJournalIds = JsonSerializer.Deserialize<IReadOnlyList<Guid>>(entity.TaxReversalJournalIdsJson, Json) ?? [];
+            foreach (var taxJournalId in taxJournalIds)
+            {
+                var taxJournal = await db.Journals.Include(item => item.Lines).SingleOrDefaultAsync(item => item.Id == taxJournalId, cancellationToken);
+                if (taxJournal is null || taxJournal.ReversalJournalId is not null) return Failure("tax_reversal_lineage_missing");
+                var taxReversal = await CreateReversalJournalAsync(db, context, taxJournal, entity.CreditNoteDate, reason ?? "Credit note tax reversal", cancellationToken);
+                if (!taxReversal.Succeeded || taxReversal.Value is null) return Failure(taxReversal.Code);
+                taxJournal.LinkReversal(taxReversal.Value.Value);
+            }
             if (entity.CustomerCreditId is not { } creditId) return Failure("customer_credit_missing");
             var credit = await db.CustomerCredits.SingleOrDefaultAsync(item => item.Id == creditId, cancellationToken);
             if (credit is not null) { credit.Reverse(); foreach (var application in await db.CustomerCreditApplications.Where(item => item.CustomerCreditId == creditId && !item.Reversed).ToListAsync(cancellationToken)) application.Reverse(); }
+            var salesReversal = await salesReturns.RecordDownstreamReversalAsync(context.TenantContext, new SalesCustomerReturnDownstreamReversalCommand(entity.SalesCustomerReturnId, context.TenantId.Value, "finance", context.CorrelationId, DateTimeOffset.UtcNow), cancellationToken);
+            if (!salesReversal.Succeeded) return Failure("sales_finance_reversal_required");
         }
         var before = entity.Status;
         entity.SetStatus(target.Value, DateTimeOffset.UtcNow);
@@ -129,6 +190,12 @@ public sealed class CustomerReturnFinancePersistence(
     }
 
     private static decimal Round(decimal value) => decimal.Round(value, 8, MidpointRounding.ToEven);
+    private async Task<bool> ExchangeRateMatchesAsync(FinanceRequestContext context, string sourceCurrency, string targetCurrency, DateOnly date, decimal rate, Guid rateId, Guid versionId, int versionNumber, CancellationToken cancellationToken)
+    {
+        var record = await exchangeRates.FindExchangeRateAsync(context.TenantContext, rateId, cancellationToken);
+        var version = record?.Versions.SingleOrDefault(item => item.Id == versionId && item.VersionNumber == versionNumber);
+        return record is not null && record.LifecycleState == MasterDataLifecycleState.Active && version is not null && string.Equals(record.SourceCurrencyCode, sourceCurrency, StringComparison.OrdinalIgnoreCase) && string.Equals(record.TargetCurrencyCode, targetCurrency, StringComparison.OrdinalIgnoreCase) && version.Rate == rate && version.EffectiveFrom <= date && version.EffectiveTo >= date;
+    }
     private async Task<(bool Succeeded, string Code, Guid? Value)> CreatePostedJournalAsync(FinanceDbContext db, FinanceRequestContext context, FinanceCreditNoteEntity entity, FinancePostingRuleEntity rule, CancellationToken cancellationToken)
     {
         var period = await db.FiscalPeriods.Where(item => item.CompanyId == entity.CompanyId && item.StartDate <= entity.CreditNoteDate && item.EndDate >= entity.CreditNoteDate).SingleOrDefaultAsync(cancellationToken);
@@ -138,18 +205,58 @@ public sealed class CustomerReturnFinancePersistence(
         if (accounts.Count != 2 || accounts.Values.Any(item => !item.IsPostingAccount || item.Lifecycle != FinanceAccountLifecycle.Active || item.EffectiveFrom > entity.CreditNoteDate || item.EffectiveTo < entity.CreditNoteDate)) return (false, "account_not_postable", null);
         if (await db.Journals.AnyAsync(item => item.SourceContract == "sales-credit-note.v1" && item.SourceEvidenceId == entity.Id && item.SourceEvidenceVersion == 1, cancellationToken)) return (false, "source_effect_exists", null);
         var journalId = Guid.NewGuid();
-        var command = new FinanceJournalCommand(entity.CompanyId, entity.CreditNoteDate, entity.CreditNoteDate, entity.CurrencyCode, 1m, null, null, null, "sales-credit-note.v1", "posting", entity.Id, 1, rule.Id, entity.Reason ?? "Customer credit note", [new(rule.DebitAccountId, entity.GrossAmount, 0m, entity.GrossAmount, entity.CurrencyCode, null, "Customer credit note"), new(rule.CreditAccountId, 0m, entity.GrossAmount, entity.GrossAmount, entity.CurrencyCode, null, "Customer credit note")], journalId, Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"), FinanceJournalAmountAuthority.ManualTransactionCurrency, FinanceApprovalRequirement.NotRequired);
+        var rate = entity.ExchangeRate ?? 1m;
+        var functionalNet = Round(entity.NetAmount * rate);
+        var command = new FinanceJournalCommand(entity.CompanyId, entity.CreditNoteDate, entity.CreditNoteDate, entity.CurrencyCode, rate, entity.ExchangeRateId, entity.ExchangeRateVersionId, entity.ExchangeRateVersionNumber, "sales-credit-note.v1", "posting", entity.Id, 1, rule.Id, entity.Reason ?? "Customer credit note", [new(rule.DebitAccountId, entity.NetAmount, 0m, entity.NetAmount, entity.CurrencyCode, null, "Customer credit note revenue consequence"), new(rule.CreditAccountId, 0m, entity.NetAmount, entity.NetAmount, entity.CurrencyCode, null, "Customer credit note AR reduction")], journalId, Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"), FinanceJournalAmountAuthority.ManualTransactionCurrency, FinanceApprovalRequirement.NotRequired);
         var journal = new FinanceJournalEntity(context.TenantId, journalId, command, (await db.Journals.Where(item => item.CompanyId == entity.CompanyId).Select(item => (long?)item.JournalSequence).MaxAsync(cancellationToken) ?? 0L) + 1L, entity.FunctionalCurrencyCode, context.ActorId, DateTimeOffset.UtcNow);
         journal.SetCorrelation(context.CorrelationId); journal.SetPeriod(period.FiscalYearId, period.Id); journal.SetRule(rule.Id, rule.VersionNumber); journal.SetStatus(FinanceJournalStatus.Posted, context.ActorId, DateTimeOffset.UtcNow);
-        journal.Lines.Add(new FinanceJournalLineEntity(context.TenantId, Guid.NewGuid(), journal.Id, 1, accounts[rule.DebitAccountId], command.Lines[0], null, entity.FunctionalAmount, 0m, FinanceJournalAmountAuthority.ManualTransactionCurrency));
-        journal.Lines.Add(new FinanceJournalLineEntity(context.TenantId, Guid.NewGuid(), journal.Id, 2, accounts[rule.CreditAccountId], command.Lines[1], null, 0m, entity.FunctionalAmount, FinanceJournalAmountAuthority.ManualTransactionCurrency));
-        var evidence = await FinanceJournalMonetaryEvidenceFactory.BuildAsync(db, context.TenantContext, exchangeRates, entity.CompanyId, entity.CreditNoteDate, entity.CurrencyCode, entity.GrossAmount, entity.FunctionalCurrencyCode, entity.FunctionalAmount, 1m, null, null, null, cancellationToken);
+        journal.Lines.Add(new FinanceJournalLineEntity(context.TenantId, Guid.NewGuid(), journal.Id, 1, accounts[rule.DebitAccountId], command.Lines[0], null, functionalNet, 0m, FinanceJournalAmountAuthority.ManualTransactionCurrency));
+        journal.Lines.Add(new FinanceJournalLineEntity(context.TenantId, Guid.NewGuid(), journal.Id, 2, accounts[rule.CreditAccountId], command.Lines[1], null, 0m, functionalNet, FinanceJournalAmountAuthority.ManualTransactionCurrency));
+        var evidence = await FinanceJournalMonetaryEvidenceFactory.BuildAsync(db, context.TenantContext, exchangeRates, entity.CompanyId, entity.CreditNoteDate, entity.CurrencyCode, entity.NetAmount, entity.FunctionalCurrencyCode, functionalNet, entity.ExchangeRate, entity.ExchangeRateId, entity.ExchangeRateVersionId, entity.ExchangeRateVersionNumber, cancellationToken);
         if (!evidence.Succeeded) return (false, evidence.Code, null);
         db.Journals.Add(journal);
         if (evidence.Evidence is not null) db.JournalMonetaryEvidence.Add(new FinanceJournalMonetaryEvidenceEntity(context.TenantId, Guid.NewGuid(), journal.Id, entity.CompanyId, null, evidence.Evidence, DateTimeOffset.UtcNow));
         db.SourceEffects.Add(new FinanceSourceEffectEntity(context.TenantId, Guid.NewGuid(), entity.CompanyId, "sales-credit-note.v1", entity.Id, 1, journal.Id, DateTimeOffset.UtcNow));
         return (true, "succeeded", journal.Id);
     }
+
+    private async Task<(bool Succeeded, string Code, IReadOnlyList<Guid> JournalIds)> CreateTaxReversalJournalsAsync(FinanceDbContext db, FinanceRequestContext context, FinanceCreditNoteEntity entity, CancellationToken cancellationToken)
+    {
+        var taxable = entity.Lines.Where(item => item.TaxAmount > 0m).ToArray();
+        if (taxable.Length == 0) return (true, "succeeded", []);
+        if (taxable.Any(item => item.TaxId is null || item.TaxRateVersionId is null || item.TaxRateVersionNumber is not > 0)) return (false, "tax_evidence_not_authoritative", []);
+        var rule = await FindRuleAsync(db, entity.CompanyId, "finance-tax.v1", "output", entity.CreditNoteDate, cancellationToken);
+        if (rule is null) return (false, "tax_posting_rule_not_configured", []);
+        var period = await db.FiscalPeriods.SingleOrDefaultAsync(item => item.CompanyId == entity.CompanyId && item.StartDate <= entity.CreditNoteDate && item.EndDate >= entity.CreditNoteDate, cancellationToken);
+        if (period is null) return (false, "period_not_configured", []);
+        if (period.State != FinanceFiscalPeriodState.Open) return (false, period.State == FinanceFiscalPeriodState.SoftClosed ? "period_soft_closed" : "period_closed", []);
+        var accountIds = new[] { rule.DebitAccountId, rule.CreditAccountId }.Distinct().ToArray();
+        var accounts = await db.Accounts.Where(item => item.CompanyId == entity.CompanyId && accountIds.Contains(item.Id)).ToDictionaryAsync(item => item.Id, cancellationToken);
+        if (accounts.Count != accountIds.Length || accounts.Values.Any(item => !item.IsPostingAccount || item.Lifecycle != FinanceAccountLifecycle.Active || item.EffectiveFrom > entity.CreditNoteDate || item.EffectiveTo < entity.CreditNoteDate)) return (false, "account_not_postable", []);
+        var rate = entity.ExchangeRate ?? 1m;
+        var result = new List<Guid>();
+        foreach (var group in taxable.GroupBy(item => new { item.TaxId, item.TaxRateVersionId, item.TaxRateVersionNumber }))
+        {
+            var amount = Round(group.Sum(item => item.TaxAmount));
+            if (amount <= 0m) continue;
+            var sourceEvidenceId = StableGuid(entity.Id, group.Key.TaxId!.Value);
+            if (await db.SourceEffects.AnyAsync(item => item.SourceContract == "sales-credit-note.tax.v1" && item.SourceEvidenceId == sourceEvidenceId && item.SourceEvidenceVersion == 1, cancellationToken)) return (false, "source_effect_exists", []);
+            var functionalAmount = Round(amount * rate);
+            var journalId = Guid.NewGuid();
+            var command = new FinanceJournalCommand(entity.CompanyId, entity.CreditNoteDate, entity.CreditNoteDate, entity.CurrencyCode, rate, entity.ExchangeRateId, entity.ExchangeRateVersionId, entity.ExchangeRateVersionNumber, "sales-credit-note.tax.v1", "output-reversal", sourceEvidenceId, 1, rule.Id, entity.Reason ?? "Customer credit note tax reversal", [new(rule.CreditAccountId, amount, 0m, amount, entity.CurrencyCode, null, "Customer credit note tax reversal"), new(rule.DebitAccountId, 0m, amount, amount, entity.CurrencyCode, null, "Customer credit note tax reversal")], journalId, Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"), FinanceJournalAmountAuthority.ManualTransactionCurrency, FinanceApprovalRequirement.NotRequired);
+            var now = DateTimeOffset.UtcNow;
+            var journal = new FinanceJournalEntity(context.TenantId, journalId, command, (await db.Journals.Where(item => item.CompanyId == entity.CompanyId).Select(item => (long?)item.JournalSequence).MaxAsync(cancellationToken) ?? 0L) + 1L, entity.FunctionalCurrencyCode, context.ActorId, now);
+            journal.SetCorrelation(context.CorrelationId); journal.SetPeriod(period.FiscalYearId, period.Id); journal.SetRule(rule.Id, rule.VersionNumber); journal.SetStatus(FinanceJournalStatus.Posted, context.ActorId, now);
+            journal.Lines.Add(new FinanceJournalLineEntity(context.TenantId, Guid.NewGuid(), journal.Id, 1, accounts[rule.CreditAccountId], command.Lines[0], null, functionalAmount, 0m, FinanceJournalAmountAuthority.ManualTransactionCurrency));
+            journal.Lines.Add(new FinanceJournalLineEntity(context.TenantId, Guid.NewGuid(), journal.Id, 2, accounts[rule.DebitAccountId], command.Lines[1], null, 0m, functionalAmount, FinanceJournalAmountAuthority.ManualTransactionCurrency));
+            var evidence = await FinanceJournalMonetaryEvidenceFactory.BuildAsync(db, context.TenantContext, exchangeRates, entity.CompanyId, entity.CreditNoteDate, entity.CurrencyCode, amount, entity.FunctionalCurrencyCode, functionalAmount, entity.ExchangeRate, entity.ExchangeRateId, entity.ExchangeRateVersionId, entity.ExchangeRateVersionNumber, cancellationToken);
+            if (!evidence.Succeeded || evidence.Evidence is null) return (false, evidence.Code, []);
+            db.Journals.Add(journal); db.JournalMonetaryEvidence.Add(new FinanceJournalMonetaryEvidenceEntity(context.TenantId, Guid.NewGuid(), journal.Id, entity.CompanyId, null, evidence.Evidence, now)); db.SourceEffects.Add(new FinanceSourceEffectEntity(context.TenantId, Guid.NewGuid(), entity.CompanyId, "sales-credit-note.tax.v1", sourceEvidenceId, 1, journal.Id, now)); result.Add(journal.Id);
+        }
+        return (true, "succeeded", result);
+    }
+
+    private static Guid StableGuid(Guid first, Guid second) => new(SHA256.HashData(Encoding.UTF8.GetBytes($"{first:D}:{second:D}"))[..16]);
 
     private async Task<(bool Succeeded, string Code, Guid? Value)> CreateReversalJournalAsync(FinanceDbContext db, FinanceRequestContext context, FinanceJournalEntity original, DateOnly postingDate, string reason, CancellationToken cancellationToken)
     {

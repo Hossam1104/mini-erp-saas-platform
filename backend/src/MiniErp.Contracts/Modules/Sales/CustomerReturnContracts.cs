@@ -43,6 +43,28 @@ public sealed record SalesCustomerReturnCreateRequest(
     string? Reason,
     IReadOnlyList<SalesCustomerReturnEvidenceReference>? Evidence = null);
 
+public sealed record SalesCustomerReturnInvoiceAllocationResponse(
+    Guid Id,
+    Guid InvoiceId,
+    Guid? FinanceOpenItemId,
+    Guid DeliveryId,
+    Guid OrderLineId,
+    int OrderRevisionNumber,
+    decimal RecognizedQuantity,
+    decimal ReturnQuantity,
+    decimal CommerciallyAcceptedQuantity,
+    decimal PreviouslyCreditedQuantity,
+    decimal RemainingCreditableQuantity,
+    decimal NetAmount,
+    decimal TaxAmount,
+    decimal GrossAmount,
+    string CurrencyCode,
+    Guid? TaxId,
+    Guid? TaxRateVersionId,
+    int? TaxRateVersionNumber,
+    string SourceAllocationFingerprint,
+    string SourceInvoiceFingerprint);
+
 public sealed record SalesCustomerReturnActionRequest(string? Reason);
 
 public sealed record SalesCustomerReturnSourceLineResponse(
@@ -73,7 +95,8 @@ public sealed record SalesCustomerReturnSourceResponse(
     Guid? FinanceOpenItemId,
     string CurrencyCode,
     IReadOnlyList<SalesCustomerReturnSourceLineResponse> Lines,
-    byte[]? Version = null);
+    byte[]? Version = null,
+    IReadOnlyList<SalesCustomerReturnInvoiceAllocationResponse>? InvoiceAllocations = null);
 
 public sealed record SalesCustomerReturnLineResponse(
     Guid Id,

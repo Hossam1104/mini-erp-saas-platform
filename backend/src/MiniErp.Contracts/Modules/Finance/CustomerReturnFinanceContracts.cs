@@ -27,7 +27,11 @@ public enum FinanceCustomerCreditStatus
 public sealed record FinanceCreditNoteCreateRequest(
     Guid SalesCustomerReturnId,
     DateOnly CreditNoteDate,
-    string? Reason);
+    string? Reason,
+    Guid? InvoiceId = null,
+    IReadOnlyList<FinanceCreditNoteLineRequest>? Lines = null);
+
+public sealed record FinanceCreditNoteLineRequest(Guid SourceAllocationId, decimal Quantity);
 
 public sealed record FinanceCreditNoteActionRequest(string? Reason);
 

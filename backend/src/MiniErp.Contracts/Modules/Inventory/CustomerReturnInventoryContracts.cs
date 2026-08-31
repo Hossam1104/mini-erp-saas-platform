@@ -33,7 +33,8 @@ public sealed record InventoryCustomerReturnInspectionLineRequest(
     Guid OrderLineId,
     decimal Quantity,
     InventoryCustomerReturnDisposition Disposition,
-    string? Notes = null);
+    string? Notes = null,
+    bool? CommerciallyAccepted = null);
 
 public sealed record InventoryCustomerReturnInspectionRequest(
     IReadOnlyList<InventoryCustomerReturnInspectionLineRequest> Lines,
@@ -48,7 +49,13 @@ public sealed record InventoryCustomerReturnLineResponse(
     Guid? MovementId,
     Guid? DeliveryMovementId,
     decimal? DeliveryUnitCost,
-    string? Notes);
+    string? Notes,
+    decimal CommerciallyAcceptedQuantity = 0m,
+    decimal RestockedQuantity = 0m,
+    decimal NonRestockableAcceptedQuantity = 0m,
+    decimal RejectedQuantity = 0m,
+    IReadOnlyList<Guid>? MovementIds = null,
+    IReadOnlyList<Guid>? DeliveryMovementIds = null);
 
 public sealed record InventoryCustomerReturnResponse(
     Guid Id,
@@ -64,6 +71,16 @@ public sealed record InventoryCustomerReturnResponse(
     DateOnly? ReceiptDate,
     DateTimeOffset? PostedAt,
     IReadOnlyList<InventoryCustomerReturnLineResponse> Lines,
-    byte[] Version);
+    byte[] Version,
+    Guid? EffectId = null,
+    string? EffectFingerprint = null,
+    string? RequestFingerprint = null,
+    string? CommitState = null,
+    string? AcknowledgementState = null,
+    string? ReconciliationState = null,
+    int AttemptCount = 0,
+    string? LastError = null,
+    DateTimeOffset? LastAttemptAt = null,
+    string? CorrelationId = null);
 
 #pragma warning restore CS1591
