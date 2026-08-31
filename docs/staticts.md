@@ -8,21 +8,24 @@
   reviewed starting head `63203e9f7be3c2ab38bd3bf9715a0f7c15113148` and exact
   `origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. PR `#86`
   remains Open/Draft/Unmerged for independent GPT-5.6 Sol review.
-- The implementation/remediation commit is
-  `07da61066e1933cf554a892ec70ea1e0586a32cc`; the final branch head is the
+- The implementation/remediation commits are
+  `07da61066e1933cf554a892ec70ea1e0586a32cc` and
+  `03499dbd42b9883144c8b29782b014ef2cba5e9e`; the final branch head is the
   subsequent documentation/tracker handoff commit.
 - HOLD-138-A repairs durable Inventory effect identity, idempotency/fingerprint
   evidence, physical/inspection evidence, per-line commercial acceptance and
   disposition, movement lineage, and Inventory-first commit/Sales
-  acknowledgement recovery. HOLD-138-B repairs multi-Invoice lineage using
-  persisted MESP-137 recognized source allocations, excluding uninvoiced AR and
-  enforcing per-source Credit Note uniqueness. HOLD-138-C derives Credit Note
-  authority from persisted recognized net/tax/gross evidence with ToEven
-  residual rounding, tax identity, FX evidence, and configured tax reversal
-  composition. HOLD-138-D adds six behavioral tests; focused HOLD 1 coverage is
-  `8/8`.
+  acknowledgement recovery. A bounded Inventory reversal appends equal-and-
+  opposite correction movements linked to the original CustomerReturn effect
+  and records downstream reversal state without editing the original posted
+  movement. HOLD-138-B repairs multi-Invoice lineage using persisted MESP-137
+  recognized source allocations, excluding uninvoiced AR and enforcing
+  per-source Credit Note uniqueness. HOLD-138-C derives Credit Note authority
+  from persisted recognized net/tax/gross evidence with ToEven residual
+  rounding, tax identity, FX evidence, and configured tax reversal composition.
+  HOLD-138-D adds seven behavioral tests; focused HOLD 1 coverage is `9/9`.
 - Validation is Release `0 warnings / 0 errors`; full non-SQL backend regression
-  is `1,066/1,066` passed with `0` skipped. `1,060` was not treated as a
+  is `1,067/1,067` passed with `0` skipped. `1,060` was not treated as a
   regression; the comparable pre-Phase-A non-SQL baseline was `1,058`. EF
   pending-model checks are clear for Sales/Inventory/Finance; NuGet
   vulnerability scanning is clear across all five backend projects; and
@@ -39,13 +42,14 @@
 ## Progress history - 31 August 2026 (MESP-138 HOLD 1 remediation)
 
 MESP-138 HOLD 1 remediation was implemented under Sol comment `12342` in
-implementation commit `07da61066e1933cf554a892ec70ea1e0586a32cc` on
+implementation commits `07da61066e1933cf554a892ec70ea1e0586a32cc` and
+`03499dbd42b9883144c8b29782b014ef2cba5e9e` on
 starting head `63203e9f7be3c2ab38bd3bf9715a0f7c15113148`, from exact main
 baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`, and retained in Draft PR
 `#86` for independent review. The final branch head is recorded after the
-documentation commit. Full non-SQL validation is `1,066/1,066` passed with
-`0` skipped, including six new behavioral tests; focused HOLD 1 coverage is
-`8/8`; SQL/provider validation is gated by the absent approved safety variable;
+documentation commit. Full non-SQL validation is `1,067/1,067` passed with
+`0` skipped, including seven new behavioral tests; focused HOLD 1 coverage is
+`9/9`; SQL/provider validation is gated by the absent approved safety variable;
 and the fast-track and production-readiness figures remain `21/26 = 80.8%`,
 approximately `47% overall`, and approximately `41% Procurement/P2P`. No
 Phase B, MESP-139 activation, Ready transition, merge, or Jira write was

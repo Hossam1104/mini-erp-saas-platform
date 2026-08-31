@@ -12,8 +12,9 @@ Open/Draft/Unmerged for independent GPT-5.6 Sol review. No Ready transition,
 merge, rebase, force-push, reviewer request, or Jira write was performed.
 MESP-139 remains To Do/inactive.
 
-The implementation/remediation commit is
-`07da61066e1933cf554a892ec70ea1e0586a32cc`; the final branch head will be the
+The implementation/remediation commits are
+`07da61066e1933cf554a892ec70ea1e0586a32cc` and
+`03499dbd42b9883144c8b29782b014ef2cba5e9e`; the final branch head will be the
 subsequent documentation/tracker handoff commit.
 
 HOLD-138-A now persists Inventory receipt/inspection effect identity,
@@ -21,13 +22,16 @@ idempotency and request/effect fingerprints, physical and inspection evidence,
 per-line commercial acceptance and stock disposition, movement lineage, and
 commit/acknowledgement/reconciliation state. Inventory commits first and Sales
 acknowledges only after the durable effect; failure retains the effect for
-same-identity recovery without duplicate movement. HOLD-138-B uses persisted
-MESP-137 invoice/source-allocation evidence across multiple recognized
-Invoices, with no AR for uninvoiced remainder and per-source Credit Note
-uniqueness. HOLD-138-C derives residual net/tax/gross authority with ToEven
-rounding, tax identity, FX evidence, and configured tax-reversal composition.
-HOLD-138-D adds six behavioral failure/recovery, disposition, handoff,
-financial-effect, and customer-credit tests (eight focused tests total).
+same-identity recovery without duplicate movement. A bounded Inventory reversal
+appends equal-and-opposite correction movements linked to the original
+CustomerReturn effect and records the downstream reversal state without editing
+the original posted movement. HOLD-138-B uses persisted MESP-137
+invoice/source-allocation evidence across multiple recognized Invoices, with no
+AR for uninvoiced remainder and per-source Credit Note uniqueness. HOLD-138-C
+derives residual net/tax/gross authority with ToEven rounding, tax identity, FX
+evidence, and configured tax-reversal composition. HOLD-138-D adds seven
+behavioral failure/recovery, disposition, handoff, financial-effect,
+customer-credit, and Inventory reversal tests (nine focused tests total).
 
 Additive Sales, Inventory, and Finance migrations, Tenant ownership/query
 filters, and REST/OpenAPI architecture coverage are included. Phase B Angular
@@ -35,8 +39,8 @@ surfaces, refunds, replacement flows, external/statutory integrations,
 ZATCA/FATOORA, and production certification remain excluded.
 
 Validation is Release `0 warnings / 0 errors`; focused HOLD 1 coverage is
-`8/8`; full non-SQL backend regression is `1,066/1,066` with `0` skipped; and
-the six new behavioral tests are included in that discovered total. `1,060`
+`9/9`; full non-SQL backend regression is `1,067/1,067` with `0` skipped; and
+the seven new behavioral tests are included in that discovered total. `1,060`
 was not treated as a regression; the comparable pre-Phase-A non-SQL baseline
 was `1,058`. EF pending-model checks are clear for Sales/Inventory/Finance;
 NuGet vulnerability scanning is clear across five backend projects; and

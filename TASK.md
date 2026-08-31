@@ -13,22 +13,26 @@ remediation handoff records the final head after the documentation commit. Draft
 request, Ready transition, merge, rebase, force-push, or Jira write beyond the
 authorized activation/reconciliation was performed.
 
-The implementation/remediation commit is
-`07da61066e1933cf554a892ec70ea1e0586a32cc`; the final branch head will be the
+The implementation/remediation commits are
+`07da61066e1933cf554a892ec70ea1e0586a32cc` and
+`03499dbd42b9883144c8b29782b014ef2cba5e9e`; the final branch head will be the
 subsequent documentation/tracker handoff commit.
 
 Sol HOLD 1 authority is MESP-138 comment `12342`. HOLD-138-A repairs durable
 Inventory effect identity, idempotency/fingerprint evidence, physical and
 inspection evidence, per-line commercial acceptance/disposition, movement
-lineage, and Inventory-first commit/Sales acknowledgement recovery.
-HOLD-138-B repairs multi-Invoice lineage using persisted MESP-137 recognized
-source allocations, including uninvoiced remainder exclusion and per-source
-Credit Note uniqueness. HOLD-138-C derives Credit Note monetary authority from
-persisted recognized net/tax/gross evidence with ToEven residual rounding, tax
-identity, FX evidence, and configured tax reversal composition. HOLD-138-D
-adds six behavioral tests for disposition, durable handoff failure recovery,
-finance-effect idempotency/reversal, and customer-credit bounds; focused HOLD
-1 coverage is `8/8`.
+lineage, and Inventory-first commit/Sales acknowledgement recovery. A bounded
+Inventory reversal appends equal-and-opposite correction movements linked to the
+original CustomerReturn effect and records downstream reversal state without
+editing the original posted movement. HOLD-138-B repairs multi-Invoice lineage
+using persisted MESP-137 recognized source allocations, including uninvoiced
+remainder exclusion and per-source Credit Note uniqueness. HOLD-138-C derives
+Credit Note monetary authority from persisted recognized net/tax/gross evidence
+with ToEven residual rounding, tax identity, FX evidence, and configured tax
+reversal composition. HOLD-138-D adds seven behavioral tests for disposition,
+durable handoff failure recovery, finance-effect idempotency/reversal,
+customer-credit bounds, and Inventory reversal; focused HOLD 1 coverage is
+`9/9`.
 
 Phase A delivers the Sales posted-Delivery return source and lifecycle with
 bounded quantity, tax, currency, invoice/open-item, evidence, idempotency,
@@ -41,8 +45,8 @@ Finance additive migrations, Tenant filters/ownership, REST/OpenAPI metadata,
 and architecture coverage are included.
 
 Final validation is Release `0 warnings / 0 errors`; focused HOLD 1 coverage is
-`8/8`; full non-SQL backend regression is `1,066/1,066` passed with `0`
-skipped; and the six new behavioral tests are included in that discovered
+`9/9`; full non-SQL backend regression is `1,067/1,067` passed with `0`
+skipped; and the seven new behavioral tests are included in that discovered
 total. `1,060` was not treated as a regression; the comparable pre-Phase-A
 non-SQL baseline was `1,058`. EF pending-model checks are clear for
 Sales/Inventory/Finance; NuGet vulnerability scanning is clear across all five
