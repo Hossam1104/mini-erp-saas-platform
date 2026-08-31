@@ -52,6 +52,31 @@ internal sealed class InventoryCustomerReturnEntity : ITenantOwned
         Version = Guid.NewGuid().ToByteArray();
     }
     internal void SetOperation(string requestFingerprint, string? idempotencyKey) { RequestFingerprint = requestFingerprint; DownstreamIdempotencyKey = idempotencyKey; UpdatedAt = DateTimeOffset.UtcNow; Version = Guid.NewGuid().ToByteArray(); }
+    internal void BeginReversal(DateTimeOffset at, string requestFingerprint)
+    {
+        if (Status == InventoryCustomerReturnStatus.Reversed) return;
+        if (Status is not (InventoryCustomerReturnStatus.Posted or InventoryCustomerReturnStatus.ReconciliationRequired or InventoryCustomerReturnStatus.Unknown)) throw new InvalidOperationException("return_reversal_transition_invalid");
+        Status = InventoryCustomerReturnStatus.Reversed;
+        CommitState = "Reversed";
+        AcknowledgementState = "NotAcknowledged";
+        ReconciliationState = "Pending";
+        HandoffState = "ReversalRecorded";
+        RequestFingerprint = requestFingerprint;
+        LastError = null;
+        UpdatedAt = at;
+        Version = Guid.NewGuid().ToByteArray();
+    }
+    internal void SetReversalHandoff(bool acknowledged, string? error, DateTimeOffset at)
+    {
+        AcknowledgementState = acknowledged ? "Acknowledged" : "NotAcknowledged";
+        ReconciliationState = acknowledged ? "Reconciled" : "Required";
+        HandoffState = acknowledged ? "ReversalAcknowledged" : "ReversalReconciliationRequired";
+        LastError = error;
+        AttemptCount++;
+        LastAttemptAt = at;
+        UpdatedAt = at;
+        Version = Guid.NewGuid().ToByteArray();
+    }
 }
 
 internal sealed class InventoryCustomerReturnLineEntity : ITenantOwned
@@ -76,6 +101,7 @@ internal sealed class InventoryCustomerReturnLineEntity : ITenantOwned
     internal decimal RejectedQuantity { get; private set; }
     internal string MovementIdsJson { get; private set; } = "[]";
     internal string DeliveryMovementIdsJson { get; private set; } = "[]";
+    internal string ReversalMovementIdsJson { get; private set; } = "[]";
     internal byte[] Version { get; private set; } = [];
     internal void Receive(decimal quantity) { if (quantity <= 0m || ReceivedQuantity + quantity < ReceivedQuantity) throw new InvalidOperationException("return_quantity_conflict"); ReceivedQuantity += quantity; Version = Guid.NewGuid().ToByteArray(); }
     internal void Dispose(decimal quantity, InventoryCustomerReturnDisposition disposition, bool commerciallyAccepted, string? notes, Guid? movementId, Guid? deliveryMovementId, decimal? deliveryUnitCost)
@@ -84,6 +110,13 @@ internal sealed class InventoryCustomerReturnLineEntity : ITenantOwned
         DispositionedQuantity += quantity; Disposition = disposition; Notes = notes; MovementId ??= movementId; DeliveryMovementId ??= deliveryMovementId; DeliveryUnitCost ??= deliveryUnitCost;
         if (commerciallyAccepted) { CommerciallyAcceptedQuantity += quantity; if (disposition == InventoryCustomerReturnDisposition.Restockable) RestockedQuantity += quantity; if (disposition == InventoryCustomerReturnDisposition.NonRestockable) NonRestockableAcceptedQuantity += quantity; } else RejectedQuantity += quantity;
         var movements = JsonSerializer.Deserialize<IReadOnlyList<Guid>>(MovementIdsJson) ?? []; MovementIdsJson = JsonSerializer.Serialize(movements.Concat(movementId is { } value ? [value] : []).Distinct()); var deliveryMovements = JsonSerializer.Deserialize<IReadOnlyList<Guid>>(DeliveryMovementIdsJson) ?? []; DeliveryMovementIdsJson = JsonSerializer.Serialize(deliveryMovements.Concat(deliveryMovementId is { } deliveryValue ? [deliveryValue] : []).Distinct()); Version = Guid.NewGuid().ToByteArray();
+    }
+    internal void RecordReversalMovement(Guid movementId)
+    {
+        if (movementId == Guid.Empty) throw new InvalidOperationException("return_reversal_movement_invalid");
+        var movements = JsonSerializer.Deserialize<IReadOnlyList<Guid>>(ReversalMovementIdsJson) ?? [];
+        ReversalMovementIdsJson = JsonSerializer.Serialize(movements.Append(movementId).Distinct());
+        Version = Guid.NewGuid().ToByteArray();
     }
 }
 

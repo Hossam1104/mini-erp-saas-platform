@@ -111,6 +111,47 @@ public sealed class CustomerReturnInventoryPersistence(
         return await CompleteHandoffAsync(context, entity.Id, "inventory.customer-return.inspect", idempotencyKey, fingerprint, cancellationToken);
     }
 
+    public async Task<InventoryOperationResult<InventoryCustomerReturnResponse>> ReverseAsync(InventoryRequestContext context, Guid salesCustomerReturnId, byte[] expectedVersion, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default)
+    {
+        await using var db = Create(context);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var replay = await ReplayAsync(db, context, "inventory.customer-return.reverse", idempotencyKey, fingerprint, cancellationToken);
+        if (replay is not null) return replay;
+        var entity = await db.CustomerReturns.Include(item => item.Lines).SingleOrDefaultAsync(item => item.SalesCustomerReturnId == salesCustomerReturnId, cancellationToken);
+        if (entity is null) return Failure("inventory_customer_return_not_found");
+        if (!entity.Version.SequenceEqual(expectedVersion)) return Failure("concurrency_conflict");
+        if (entity.Status is not (InventoryCustomerReturnStatus.Posted or InventoryCustomerReturnStatus.ReconciliationRequired or InventoryCustomerReturnStatus.Unknown or InventoryCustomerReturnStatus.Reversed)) return Failure("return_reversal_transition_invalid");
+        if (entity.Status != InventoryCustomerReturnStatus.Reversed)
+        {
+            var originalIds = entity.Lines.SelectMany(line => DeserializeIds(line.MovementIdsJson)).Distinct().ToArray();
+            var originals = await db.StockMovements.Where(item => originalIds.Contains(item.Id)).ToDictionaryAsync(item => item.Id, cancellationToken);
+            if (originals.Count != originalIds.Length || originals.Values.Any(item => item.TenantId.Value != context.TenantId.Value || item.SourceType != InventoryMovementSourceType.CustomerReturn || item.Direction != InventoryMovementDirection.Inbound || item.SourceDocumentId != entity.SalesCustomerReturnId)) return Failure("return_movement_lineage_mismatch");
+            foreach (var line in entity.Lines)
+            {
+                foreach (var originalId in DeserializeIds(line.MovementIdsJson))
+                {
+                    var existingCorrection = await db.StockMovements.SingleOrDefaultAsync(item => item.CorrectionOfMovementId == originalId, cancellationToken);
+                    if (existingCorrection is not null)
+                    {
+                        if (existingCorrection.SourceType != InventoryMovementSourceType.Correction || existingCorrection.SourceDocumentId != entity.SalesCustomerReturnId || existingCorrection.Direction != InventoryMovementDirection.Outbound) return Failure("return_reversal_lineage_conflict");
+                        line.RecordReversalMovement(existingCorrection.Id);
+                        continue;
+                    }
+                    var original = originals[originalId];
+                    var reversal = new InventoryStockMovementEntity(context.TenantId, Guid.NewGuid(), original.CompanyId, original.BranchId, original.WarehouseId, original.WarehouseCode, original.WarehouseName, original.ProductId, original.ProductSku, original.ProductName, original.UnitOfMeasureId, original.UnitOfMeasureCode, InventoryMovementDirection.Outbound, original.Quantity, original.UnitCost, original.CurrencyCode, InventoryValuationStatus.Known, original.TrackingIdentity, InventoryMovementSourceType.Correction, entity.SalesCustomerReturnId, Guid.NewGuid(), original.Id, original.EffectiveDate, context.ActorId, context.CorrelationId?.Value ?? "inventory", DateTimeOffset.UtcNow, sourceReference: $"customer-return:{entity.SalesCustomerReturnId:D};correction-of:{original.Id:D};{original.SourceReference}");
+                    db.StockMovements.Add(reversal);
+                    line.RecordReversalMovement(reversal.Id);
+                }
+            }
+            var now = DateTimeOffset.UtcNow;
+            entity.BeginReversal(now, fingerprint);
+            AddAudit(db, context, "inventory.customer-return.reverse", entity.Id, "Succeeded", null, "Posted", "Reversed", idempotencyKey, fingerprint);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        await transaction.CommitAsync(cancellationToken);
+        return await CompleteReversalHandoffAsync(context, entity.Id, idempotencyKey, fingerprint, cancellationToken);
+    }
+
     private async Task<InventoryOperationResult<InventoryCustomerReturnResponse>> CompleteHandoffAsync(InventoryRequestContext context, Guid entityId, string operation, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken)
     {
         await using var db = Create(context);
@@ -144,7 +185,39 @@ public sealed class CustomerReturnInventoryPersistence(
         return InventoryOperationResult<InventoryCustomerReturnResponse>.Success(response);
     }
 
-    private static InventoryCustomerReturnResponse ToResponse(InventoryCustomerReturnEntity item) => new(item.Id, item.TenantId.Value, item.SalesCustomerReturnId, item.CompanyId, item.BranchId, item.WarehouseId, item.Status, item.PhysicalEvidenceReference, item.InspectionEvidenceReference, item.HandoffState, item.ReceiptDate, item.PostedAt, item.Lines.Select(line => new InventoryCustomerReturnLineResponse(line.Id, line.OrderLineId, line.ReceivedQuantity, line.DispositionedQuantity, line.Disposition, line.MovementId, line.DeliveryMovementId, line.DeliveryUnitCost, line.Notes, line.CommerciallyAcceptedQuantity, line.RestockedQuantity, line.NonRestockableAcceptedQuantity, line.RejectedQuantity, DeserializeIds(line.MovementIdsJson), DeserializeIds(line.DeliveryMovementIdsJson))).ToArray(), item.Version, item.Id, item.EffectFingerprint, item.RequestFingerprint, item.CommitState, item.AcknowledgementState, item.ReconciliationState, item.AttemptCount, item.LastError, item.LastAttemptAt, item.CorrelationId);
+    private async Task<InventoryOperationResult<InventoryCustomerReturnResponse>> CompleteReversalHandoffAsync(InventoryRequestContext context, Guid entityId, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken)
+    {
+        await using var db = Create(context);
+        var entity = await db.CustomerReturns.Include(item => item.Lines).SingleOrDefaultAsync(item => item.Id == entityId, cancellationToken);
+        if (entity is null) return Failure("inventory_customer_return_not_found");
+        var acknowledged = false;
+        string? error = null;
+        try
+        {
+            var result = await salesReturns.RecordDownstreamReversalAsync(context.TenantContext, new SalesCustomerReturnDownstreamReversalCommand(entity.SalesCustomerReturnId, context.TenantId.Value, "Inventory", entity.CorrelationId, DateTimeOffset.UtcNow), cancellationToken);
+            acknowledged = result.Succeeded;
+            error = result.Succeeded ? null : result.Code;
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or DbUpdateException)
+        {
+            error = exception.Message;
+        }
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        entity.SetReversalHandoff(acknowledged, error, DateTimeOffset.UtcNow);
+        await db.SaveChangesAsync(cancellationToken);
+        if (!acknowledged)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return Failure(error ?? "sales_reversal_acknowledgement_failed");
+        }
+        var response = ToResponse(entity);
+        if (!string.IsNullOrWhiteSpace(idempotencyKey)) db.Idempotency.Add(new InventoryIdempotencyEntity(context.TenantId, Guid.NewGuid(), context.ActorId, "inventory.customer-return.reverse", idempotencyKey!, fingerprint, "customer-return", response.SalesCustomerReturnId, JsonSerializer.Serialize(response, Json), DateTimeOffset.UtcNow));
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return InventoryOperationResult<InventoryCustomerReturnResponse>.Success(response);
+    }
+
+    private static InventoryCustomerReturnResponse ToResponse(InventoryCustomerReturnEntity item) => new(item.Id, item.TenantId.Value, item.SalesCustomerReturnId, item.CompanyId, item.BranchId, item.WarehouseId, item.Status, item.PhysicalEvidenceReference, item.InspectionEvidenceReference, item.HandoffState, item.ReceiptDate, item.PostedAt, item.Lines.Select(line => new InventoryCustomerReturnLineResponse(line.Id, line.OrderLineId, line.ReceivedQuantity, line.DispositionedQuantity, line.Disposition, line.MovementId, line.DeliveryMovementId, line.DeliveryUnitCost, line.Notes, line.CommerciallyAcceptedQuantity, line.RestockedQuantity, line.NonRestockableAcceptedQuantity, line.RejectedQuantity, DeserializeIds(line.MovementIdsJson), DeserializeIds(line.DeliveryMovementIdsJson), DeserializeIds(line.ReversalMovementIdsJson))).ToArray(), item.Version, item.Id, item.EffectFingerprint, item.RequestFingerprint, item.CommitState, item.AcknowledgementState, item.ReconciliationState, item.AttemptCount, item.LastError, item.LastAttemptAt, item.CorrelationId);
     private static IReadOnlyList<Guid> DeserializeIds(string json) => JsonSerializer.Deserialize<IReadOnlyList<Guid>>(json, Json) ?? [];
     private static bool InScope(InventoryRequestContext context, Guid companyId, Guid? branchId) => context.TenantContext.Scope is not { } scope || ScopeMatches(scope.Value, companyId, branchId);
     private static bool ScopeMatches(string value, Guid companyId, Guid? branchId) { var parts = value.Split(':', 2); return parts.Length == 2 && Guid.TryParse(parts[1], out var id) && (parts[0] switch { "Tenant" => true, "Company" => companyId == id, "Branch" => branchId == id, _ => false }); }

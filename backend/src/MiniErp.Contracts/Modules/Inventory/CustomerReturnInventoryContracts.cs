@@ -9,7 +9,8 @@ public enum InventoryCustomerReturnStatus
     Inspected = 3,
     Posted = 4,
     Unknown = 5,
-    ReconciliationRequired = 6
+    ReconciliationRequired = 6,
+    Reversed = 7
 }
 
 public enum InventoryCustomerReturnDisposition
@@ -55,7 +56,8 @@ public sealed record InventoryCustomerReturnLineResponse(
     decimal NonRestockableAcceptedQuantity = 0m,
     decimal RejectedQuantity = 0m,
     IReadOnlyList<Guid>? MovementIds = null,
-    IReadOnlyList<Guid>? DeliveryMovementIds = null);
+    IReadOnlyList<Guid>? DeliveryMovementIds = null,
+    IReadOnlyList<Guid>? ReversalMovementIds = null);
 
 public sealed record InventoryCustomerReturnResponse(
     Guid Id,

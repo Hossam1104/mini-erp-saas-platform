@@ -15,6 +15,7 @@ public interface IInventoryCustomerReturnPersistence
     Task<InventoryCustomerReturnResponse?> GetAsync(InventoryRequestContext context, Guid salesCustomerReturnId, CancellationToken cancellationToken = default);
     Task<InventoryOperationResult<InventoryCustomerReturnResponse>> ReceiveAsync(InventoryRequestContext context, Guid salesCustomerReturnId, byte[] expectedVersion, InventoryCustomerReturnReceiptRequest request, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default);
     Task<InventoryOperationResult<InventoryCustomerReturnResponse>> InspectAsync(InventoryRequestContext context, Guid salesCustomerReturnId, byte[] expectedVersion, InventoryCustomerReturnInspectionRequest request, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default);
+    Task<InventoryOperationResult<InventoryCustomerReturnResponse>> ReverseAsync(InventoryRequestContext context, Guid salesCustomerReturnId, byte[] expectedVersion, string? idempotencyKey, string fingerprint, CancellationToken cancellationToken = default);
 }
 
 public sealed class UnavailableInventoryCustomerReturnPersistence : IInventoryCustomerReturnPersistence
@@ -22,6 +23,7 @@ public sealed class UnavailableInventoryCustomerReturnPersistence : IInventoryCu
     public Task<InventoryCustomerReturnResponse?> GetAsync(InventoryRequestContext c, Guid id, CancellationToken x = default) => Task.FromResult<InventoryCustomerReturnResponse?>(null);
     public Task<InventoryOperationResult<InventoryCustomerReturnResponse>> ReceiveAsync(InventoryRequestContext c, Guid id, byte[] v, InventoryCustomerReturnReceiptRequest r, string? k, string f, CancellationToken x = default) => Task.FromResult(InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("inventory_customer_return_persistence_unavailable"));
     public Task<InventoryOperationResult<InventoryCustomerReturnResponse>> InspectAsync(InventoryRequestContext c, Guid id, byte[] v, InventoryCustomerReturnInspectionRequest r, string? k, string f, CancellationToken x = default) => Task.FromResult(InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("inventory_customer_return_persistence_unavailable"));
+    public Task<InventoryOperationResult<InventoryCustomerReturnResponse>> ReverseAsync(InventoryRequestContext c, Guid id, byte[] v, string? k, string f, CancellationToken x = default) => Task.FromResult(InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("inventory_customer_return_persistence_unavailable"));
 }
 
 public sealed class InventoryCustomerReturnService(
@@ -51,6 +53,15 @@ public sealed class InventoryCustomerReturnService(
         if (value is null) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("inventory_customer_return_not_found");
         if (!authorization.IsAllowed(context, "inventory.customer-return.inspect", new InventoryScope(value.TenantId, value.CompanyId, value.BranchId, value.WarehouseId))) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("permission_denied");
         return await persistence.InspectAsync(context, id, expectedVersion, request, Normalize(idempotencyKey), Fingerprint(request), cancellationToken);
+    }
+
+    public async Task<InventoryOperationResult<InventoryCustomerReturnResponse>> ReverseAsync(InventoryRequestContext context, Guid id, byte[] expectedVersion, string? idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        if (id == Guid.Empty || expectedVersion is null || expectedVersion.Length == 0) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("validation_failed");
+        var value = await persistence.GetAsync(context, id, cancellationToken);
+        if (value is null) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("inventory_customer_return_not_found");
+        if (!authorization.IsAllowed(context, "inventory.customer-return.reverse", new InventoryScope(value.TenantId, value.CompanyId, value.BranchId, value.WarehouseId))) return InventoryOperationResult<InventoryCustomerReturnResponse>.Failure("permission_denied");
+        return await persistence.ReverseAsync(context, id, expectedVersion, Normalize(idempotencyKey), Fingerprint(new { id, expectedVersion }), cancellationToken);
     }
 
     public async Task<InventoryOperationResult<InventoryCustomerReturnResponse>> GetAsync(InventoryRequestContext context, Guid id, CancellationToken cancellationToken = default)

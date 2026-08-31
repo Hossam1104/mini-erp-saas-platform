@@ -35,6 +35,7 @@ public sealed class CustomerReturnFoundationTests
             "sales.customer-return.audit.read",
             "inventory.customer-return.receive",
             "inventory.customer-return.inspect",
+            "inventory.customer-return.reverse",
             "inventory.customer-return.read",
             "finance.credit-note.create",
             "finance.credit-note.read",
@@ -157,6 +158,31 @@ public sealed class CustomerReturnFoundationTests
         entity.RecordDownstreamReversal(new SalesCustomerReturnDownstreamReversalCommand(entity.Id, TenantId, "finance", "test", DateTimeOffset.UtcNow));
         Assert.Equal(0, entity.ActiveFinanceCreditNoteCount);
         Assert.Throws<InvalidOperationException>(() => entity.RecordDownstreamReversal(new SalesCustomerReturnDownstreamReversalCommand(entity.Id, TenantId, "finance", "test", DateTimeOffset.UtcNow)));
+    }
+
+    [Fact]
+    public void Inventory_return_reversal_records_equal_opposite_lineage_without_editing_original_effect()
+    {
+        var returnId = Guid.NewGuid();
+        var lineId = Guid.NewGuid();
+        var originalMovementId = Guid.NewGuid();
+        var deliveryMovementId = Guid.NewGuid();
+        var entity = new InventoryCustomerReturnEntity(TenantIdValue, Guid.NewGuid(), returnId, Guid.NewGuid(), null, Guid.NewGuid(), new InventoryCustomerReturnReceiptRequest(new DateOnly(2026, 8, 31), [new InventoryCustomerReturnReceiptLineRequest(Guid.NewGuid(), 2m)], "physical"), Guid.NewGuid(), DateTimeOffset.UtcNow, "receipt", "return-key", "return-correlation");
+        var line = new InventoryCustomerReturnLineEntity(TenantIdValue, lineId, entity.Id, Guid.NewGuid(), 2m);
+        entity.Lines.Add(line);
+        line.Dispose(1m, InventoryCustomerReturnDisposition.Restockable, commerciallyAccepted: true, "accepted", originalMovementId, deliveryMovementId, 10m);
+        entity.SetInspected("inspection", InventoryCustomerReturnStatus.Posted, DateTimeOffset.UtcNow, "inspection");
+
+        entity.BeginReversal(DateTimeOffset.UtcNow, "reversal");
+        var reversalMovementId = Guid.NewGuid();
+        line.RecordReversalMovement(reversalMovementId);
+        entity.SetReversalHandoff(true, null, DateTimeOffset.UtcNow);
+
+        Assert.Equal(InventoryCustomerReturnStatus.Reversed, entity.Status);
+        Assert.Equal("Reversed", entity.CommitState);
+        Assert.Contains(originalMovementId.ToString("D"), line.MovementIdsJson);
+        Assert.Contains(reversalMovementId.ToString("D"), line.ReversalMovementIdsJson);
+        Assert.Equal("Reconciled", entity.ReconciliationState);
     }
 
     [Fact]
