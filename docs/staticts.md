@@ -1,43 +1,54 @@
 # Mini ERP SaaS Platform — Project Statistics & Production Readiness Tracker
 
-## Current MESP-138 HOLD 1 remediation handoff - 31 August 2026
+## Current MESP-138 HOLD 2 remediation handoff - 31 August 2026
 
 - MESP-138 is **In Progress / activated** under Sol activation comment `12305`,
-  MESP-9 reconciliation `12306`, and HOLD 1 authority `12342`. The bounded
+  MESP-9 reconciliation `12306`, and HOLD 2 authority `12346`. The bounded
   remediation is on `feat/MESP-138-customer-return-credit-receipts`, from exact
-  reviewed starting head `63203e9f7be3c2ab38bd3bf9715a0f7c15113148` and exact
+  reviewed starting head `919ddec89a072799c3ffbfe7a8335451657a5567` and exact
   `origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. PR `#86`
   remains Open/Draft/Unmerged for independent GPT-5.6 Sol review.
-- The implementation/remediation commits are
-  `07da61066e1933cf554a892ec70ea1e0586a32cc` and
-  `03499dbd42b9883144c8b29782b014ef2cba5e9e`; the final branch head is the
-  subsequent documentation/tracker handoff commit.
-- HOLD-138-A repairs durable Inventory effect identity, idempotency/fingerprint
-  evidence, physical/inspection evidence, per-line commercial acceptance and
-  disposition, movement lineage, and Inventory-first commit/Sales
-  acknowledgement recovery. A bounded Inventory reversal appends equal-and-
-  opposite correction movements linked to the original CustomerReturn effect
-  and records downstream reversal state without editing the original posted
-  movement. HOLD-138-B repairs multi-Invoice lineage using persisted MESP-137
-  recognized source allocations, excluding uninvoiced AR and enforcing
-  per-source Credit Note uniqueness. HOLD-138-C derives Credit Note authority
-  from persisted recognized net/tax/gross evidence with ToEven residual
-  rounding, tax identity, FX evidence, and configured tax reversal composition.
-  HOLD-138-D adds seven behavioral tests; focused HOLD 1 coverage is `9/9`.
-- Validation is Release `0 warnings / 0 errors`; full non-SQL backend regression
-  is `1,067/1,067` passed with `0` skipped. `1,060` was not treated as a
-  regression; the comparable pre-Phase-A non-SQL baseline was `1,058`. EF
-  pending-model checks are clear for Sales/Inventory/Finance; NuGet
-  vulnerability scanning is clear across all five backend projects; and
-  `git diff --check` is clean. SQL/provider validation is gated because
+- The HOLD 2 implementation/remediation commit is `f45b5fd`; the exact final
+  branch head is the subsequent documentation/tracker handoff commit.
+- HOLD-138-E makes Finance commit before Sales acknowledgement and persists
+  post/reversal coordination, effect/request/source fingerprints,
+  downstream-idempotency identity, attempt/error evidence, and retry state.
+  HOLD-138-F repairs gross AR, original recognition lineage, configured tax
+  reversal composition, and CustomerCredit/AR bounds. HOLD-138-G computes
+  complete-invoice allocation residuals before Delivery filtering with stable
+  source identity. HOLD-138-H validates source-date FX provenance, including an
+  exact historical inactive rate. HOLD-138-I adds four relational
+  persistence/integration/failure-injection tests.
+- Validation is Release `0 warnings / 0 errors`; focused HOLD 2 integration is
+  `4/4`; total MESP-138-focused coverage is `13/13`; affected Finance/Inventory
+  coverage is `144/144`; and full non-SQL backend regression is `1,071/1,071`
+  passed with `0` skipped. The prior 1,067/1,067 non-SQL result was the HOLD 1
+  baseline for this remediation. EF pending-model checks are clear for changed
+  Finance/Sales contexts; REST/OpenAPI/catalogue is `40/40`; NuGet vulnerability
+  scanning is clear across all five backend projects; and `git diff --check` is
+  clean. SQL/provider validation is gated because
   `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is unavailable and is not claimed
-  as passing.
+  as passing (`80` cases remain gated).
 - Angular/UI, Phase B, refunds, replacement flows, external/statutory
   integrations, ZATCA/FATOORA, production certification, and MESP-139 remain
   outside this bounded handoff. Fast-track remains **21/26 = 80.8%** pending
   Sol acceptance, merge, and Jira closure; production readiness remains
   approximately **47% overall / 41% Procurement/P2P**; MESP-9 remains In
   Progress; and MESP-48/MESP-50 remain open production gates.
+
+## Progress history - 31 August 2026 (MESP-138 HOLD 2 remediation)
+
+MESP-138 HOLD 2 remediation was implemented under Sol comment `12346` from
+reviewed starting head `919ddec89a072799c3ffbfe7a8335451657a5567` and exact
+main baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`, and retained in Draft
+PR `#86` for independent review. Finance-first commit/acknowledgement,
+gross-AR/tax composition, complete-invoice residual allocation, source-date FX,
+and persistence/failure-injection evidence are captured above. Release is
+`0/0`; focused HOLD 2 is `4/4`; MESP-138-focused is `13/13`; full non-SQL is
+`1,071/1,071`; SQL safety has `80` gated cases; and the fast-track and
+production-readiness figures remain `21/26 = 80.8%`, approximately `47%`, and
+approximately `41% Procurement/P2P`. No Phase B, MESP-139 activation, Ready
+transition, merge, or Jira write was performed.
 
 ## Progress history - 31 August 2026 (MESP-138 HOLD 1 remediation)
 

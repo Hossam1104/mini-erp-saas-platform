@@ -1,38 +1,32 @@
 
-# MESP-138 HOLD 1 remediation handoff - 31 August 2026
+# MESP-138 HOLD 2 remediation handoff - 31 August 2026
 
 MESP-138 is explicitly activated and **In Progress** under Sol activation
-comment `12305` and MESP-9 reconciliation comment `12306`. The bounded Phase A
-backend implementation is complete on branch
+comment `12305` and MESP-9 reconciliation comment `12306`; Sol HOLD 2 authority
+is comment `12346`. The bounded Phase A backend implementation and HOLD 2
+remediation are complete on branch
 `feat/MESP-138-customer-return-credit-receipts` in isolated worktree
 `D:\AI Tools\Active Projects\mini-erp-saas-platform-MESP-138`, from exact
-`origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. The prior
-Phase A head was `92d4f8aaec958d811d0484cc8f35ed5ee7228101`; this HOLD 1
-remediation handoff records the final head after the documentation commit. Draft PR
+reviewed starting head `919ddec89a072799c3ffbfe7a8335451657a5567` and exact
+`origin/main` baseline `644e7b364006a3a62dc8e9756b9a9a64afbd33e1`. Draft PR
 `#86` is Open/Draft/Unmerged for independent GPT-5.6 Sol review. No reviewer
 request, Ready transition, merge, rebase, force-push, or Jira write beyond the
-authorized activation/reconciliation was performed.
+authorized activation/reconciliation was performed. The exact final branch
+head is the commit containing this documentation/tracker handoff.
 
-The implementation/remediation commits are
-`07da61066e1933cf554a892ec70ea1e0586a32cc` and
-`03499dbd42b9883144c8b29782b014ef2cba5e9e`; the final branch head will be the
-subsequent documentation/tracker handoff commit.
+The HOLD 2 implementation/remediation commit is `f45b5fd`; the exact final
+branch head is the subsequent documentation/tracker handoff commit.
 
-Sol HOLD 1 authority is MESP-138 comment `12342`. HOLD-138-A repairs durable
-Inventory effect identity, idempotency/fingerprint evidence, physical and
-inspection evidence, per-line commercial acceptance/disposition, movement
-lineage, and Inventory-first commit/Sales acknowledgement recovery. A bounded
-Inventory reversal appends equal-and-opposite correction movements linked to the
-original CustomerReturn effect and records downstream reversal state without
-editing the original posted movement. HOLD-138-B repairs multi-Invoice lineage
-using persisted MESP-137 recognized source allocations, including uninvoiced
-remainder exclusion and per-source Credit Note uniqueness. HOLD-138-C derives
-Credit Note monetary authority from persisted recognized net/tax/gross evidence
-with ToEven residual rounding, tax identity, FX evidence, and configured tax
-reversal composition. HOLD-138-D adds seven behavioral tests for disposition,
-durable handoff failure recovery, finance-effect idempotency/reversal,
-customer-credit bounds, and Inventory reversal; focused HOLD 1 coverage is
-`9/9`.
+HOLD-138-E makes Finance commit before Sales acknowledgement, with durable
+post/reversal coordination, effect/request/source fingerprints, downstream
+idempotency identity, attempt/error evidence, and fail-closed recovery. HOLD-
+138-F repairs gross AR reduction, original Sales recognition lineage, configured
+tax reversal composition, account/period validation, and CustomerCredit/AR
+application bounds. HOLD-138-G computes full-invoice allocation residuals before
+Delivery filtering with stable source identity; HOLD-138-H validates inherited
+FX against source document date and exact historical rate identity; and
+HOLD-138-I adds actual relational persistence, integration, and failure-
+injection evidence. Four focused HOLD 2 tests pass.
 
 Phase A delivers the Sales posted-Delivery return source and lifecycle with
 bounded quantity, tax, currency, invoice/open-item, evidence, idempotency,
@@ -44,19 +38,20 @@ application foundation, and exposure integration. Sales, Inventory, and
 Finance additive migrations, Tenant filters/ownership, REST/OpenAPI metadata,
 and architecture coverage are included.
 
-Final validation is Release `0 warnings / 0 errors`; focused HOLD 1 coverage is
-`9/9`; full non-SQL backend regression is `1,067/1,067` passed with `0`
-skipped; and the seven new behavioral tests are included in that discovered
-total. `1,060` was not treated as a regression; the comparable pre-Phase-A
-non-SQL baseline was `1,058`. EF pending-model checks are clear for
-Sales/Inventory/Finance; NuGet vulnerability scanning is clear across all five
-backend projects; and `git diff --check` is clean. SQL/provider validation is
-gated because `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is unavailable and is
-not claimed as passing. Angular/UI, Phase B, refunds, replacement flows,
-external/statutory integrations, ZATCA/FATOORA, production certification, and
-MESP-139 remain excluded. The fast-track figure remains `21/26 = 80.8%` until
-Sol acceptance, merge, and Jira closure; production readiness remains separate
-at approximately `47% overall / 41% Procurement/P2P`.
+Final validation is Release `0 warnings / 0 errors`; focused HOLD 2 integration
+coverage is `4/4`; total MESP-138-focused coverage is `13/13`; affected
+Finance/Inventory coverage is `144/144`; and full non-SQL backend regression is
+`1,071/1,071` passed with `0` skipped. The prior 1,067/1,067 non-SQL result was
+the HOLD 1 baseline for this remediation. EF pending-model checks are clear for
+the changed Finance and Sales contexts; REST/OpenAPI/catalogue checks are
+`40/40`; NuGet vulnerability scanning is clear across all five backend
+projects; and `git diff --check` is clean. SQL/provider validation is gated
+because `MESP_SQLSERVER_SAFETY_CONNECTION_STRING` is unavailable and is not
+claimed as passing (`80` cases remain gated). Angular/UI, Phase B, refunds,
+replacement flows, external/statutory integrations, ZATCA/FATOORA, production
+certification, and MESP-139 remain excluded. The fast-track figure remains
+`21/26 = 80.8%` until Sol acceptance, merge, and Jira closure; production
+readiness remains separate at approximately `47% overall / 41% Procurement/P2P`.
 
 The next technical boundary is independent GPT-5.6 Sol review of the exact PR
 head and evidence. After that review, Sol/Owner must explicitly authorize any
