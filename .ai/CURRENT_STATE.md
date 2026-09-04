@@ -1,5 +1,94 @@
 # Current State
 
+> **How to read this file.** The single block below titled
+> **CURRENT AUTHORITY** is the only current-state authority in this file.
+> Everything after the `HISTORICAL RECORD` divider is preserved, dated
+> evidence describing what was true when it was written. Historical entries
+> are **not** current authority and must not be used to infer live state,
+> even where they say "current". Live Jira and live GitHub outrank this file
+> for mutable facts.
+
+---
+
+## CURRENT AUTHORITY — 4 September 2026
+
+### Identity
+
+| Item | Value |
+| --- | --- |
+| Canonical project identity | `Mini_ERP_SaaS_Platform` |
+| Authoritative SCM | GitHub — `Hossam1104/Mini_ERP_SaaS_Platform` (repository ID `1318676370`) |
+| Authoritative tracker | Jira — project `Mini_ERP_SaaS_Platform`, key `MESP`, cloud `faf30621-ff37-4141-a474-72dcc3a6ea20` |
+| Default branch | `main` |
+| Azure DevOps | Not an authoritative MESP tracker or SCM |
+
+### Source-control position
+
+| Item | Value |
+| --- | --- |
+| Accepted `main` | `644e7b364006a3a62dc8e9756b9a9a64afbd33e1` — `MESP-144: reconcile repository health and project state (#82)` |
+| Active implementation branch | `feat/MESP-138-customer-return-credit-receipts` |
+| Active branch head | `8480deef9b0fa1225dfc83c0eb59bc768b1a2960` |
+| Active PR | **#86** — Open / Draft / Unmerged, base `main`, 8 commits, 57 changed files |
+| CI | **NONE / NOT CLAIMED** — the repository has no GitHub Actions workflow; the only registered workflow is the dynamic Copilot PR reviewer |
+
+### Active capability
+
+**MESP-138 — Customer Return, Credit Note, receipts/allocation, and Sales
+correction** is the single active implementation capability, **In Progress**
+under Epic **MESP-9** (In Progress).
+
+MESP-138 is under **GPT-5.6 Sol HOLD 3**, authority **MESP-138 comment
+`12349`** — *multi-invoice acknowledgement, exact Finance-effect lineage, and
+tax-source reversal evidence*. Activation authority is MESP-138 comment
+`12305`, with MESP-9 reconciliation comment `12306`.
+
+Open HOLD 3 blockers, all of which remain the property of a later authorized
+remediation task and none of which were remediated by this checkpoint:
+
+| Blocker | Subject |
+| --- | --- |
+| HOLD-138-J | Multi-invoice acknowledgement against exact persisted Return allocations |
+| HOLD-138-K | Partial Credit Note allocation subsets, without overlap, duplication, or over-credit |
+| HOLD-138-L | Typed, durable per-Credit-Note Finance-effect lineage in Sales |
+| HOLD-138-M | Original Invoice tax-account lineage on correction |
+| HOLD-138-N | Persistence / integration evidence for the ten named scenarios |
+
+### Tracker position
+
+| Key | Status | Note |
+| --- | --- | --- |
+| MESP-9 | In Progress | B2B Sales and Order-to-Cash Epic |
+| MESP-138 | In Progress | Active capability, HOLD 3, **not accepted** |
+| MESP-139 | To Do | `not-activated` — must not be started |
+| MESP-144 | Done | Repository/governance reconciliation; not a product capability |
+| MESP-48 | To Do | Open production gate — reference tenant volume assumptions |
+| MESP-50 | To Do | Open production gate — tenant data residency and retention |
+
+### Completion
+
+Accepted (Sol-accepted and merged) fast-track capability completion is
+**21 / 26 = 80.8%**. MESP-138 **does not** count toward this until Sol accepts
+it. Production readiness is a separate measure and remains approximately
+**47% overall** and **41% Procurement/P2P**.
+
+### Next execution boundary
+
+This checkpoint ends at an independent **GPT-5.6 Sol** review boundary. No
+implementation capability may be started, no PR may be marked Ready or merged,
+and MESP-139 may not be activated, without explicit Sol authorization. See
+`.ai/AI_EXECUTION_POLICY.md`, which is authoritative for executor
+authorization, and `AGENTS.md` for the active AI model routing baseline.
+
+---
+
+# HISTORICAL RECORD
+
+Everything below this divider is preserved historical evidence. It is dated,
+it reflects what was believed true at the time of writing, and it is **not**
+current authority.
+
+
 ## MESP-144 reconciliation record - 30 August 2026 - HOLD 5 merge-safety
 
 MESP-144 reconciliation reached Sol content acceptance at comment `12293` on
